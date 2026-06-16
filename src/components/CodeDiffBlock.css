@@ -1,0 +1,137 @@
+.code-diff-block {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  animation: code-diff-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+@keyframes code-diff-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.code-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.code-diff-path {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.code-diff-stats {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.code-diff-stat-add {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.code-diff-stat-del {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.code-diff-body {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(39, 39, 42, 0.06);
+}
+
+.code-diff-line {
+  display: flex;
+  align-items: stretch;
+  min-height: 1.5em;
+}
+
+.code-diff-line--add {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.code-diff-line--del {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.code-diff-line--ctx {
+  background: rgba(39, 39, 42, 0.02);
+}
+
+.code-diff-gutter {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 6px;
+  user-select: none;
+  color: var(--text-muted);
+  border-right: 1px solid rgba(39, 39, 42, 0.06);
+  min-width: 52px;
+}
+
+.code-diff-sign {
+  width: 10px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.code-diff-line--add .code-diff-sign {
+  color: #16a34a;
+}
+
+.code-diff-line--del .code-diff-sign {
+  color: #dc2626;
+}
+
+.code-diff-ln {
+  width: 28px;
+  text-align: right;
+  opacity: 0.65;
+  font-size: 10px;
+}
+
+.code-diff-text {
+  flex: 1;
+  padding: 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.code-diff-expand {
+  margin-top: 6px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.code-diff-expand:hover {
+  color: var(--accent-hover);
+}
+
+/* Markdown 内嵌 diff 块 */
+.message-body--assistant .code-diff-block {
+  margin: 10px 0;
+}

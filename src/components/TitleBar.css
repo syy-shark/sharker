@@ -1,0 +1,168 @@
+html.window-rounded .titlebar {
+  border-top-left-radius: var(--window-radius);
+  border-top-right-radius: var(--window-radius);
+}
+
+html.window-rounded .titlebar-controls .titlebar-btn:last-child {
+  border-top-right-radius: calc(var(--window-radius) - 2px);
+}
+
+html.window-rounded .titlebar::before {
+  border-top-left-radius: var(--window-radius);
+  border-top-right-radius: var(--window-radius);
+}
+
+.titlebar {
+  position: relative;
+  z-index: 20;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background:
+    radial-gradient(ellipse 90% 120% at 0% 0%, rgba(191, 219, 254, 0.5), transparent 55%),
+    radial-gradient(ellipse 70% 90% at 100% 100%, rgba(59, 130, 246, 0.2), transparent 50%),
+    linear-gradient(
+      180deg,
+      var(--layer-titlebar-fill-top) 0%,
+      var(--layer-titlebar-fill-mid) 48%,
+      var(--layer-titlebar-fill-bottom) 100%
+    );
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border-bottom: 1px solid var(--layer-titlebar-chrome);
+  box-shadow:
+    var(--glass-inset-titlebar),
+    0 1px 0 rgba(96, 165, 250, 0.12),
+    0 4px 20px rgba(37, 99, 235, 0.1);
+  user-select: none;
+  isolation: isolate;
+}
+
+.titlebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  bottom: 1px;
+  background:
+    var(--glass-facet-titlebar),
+    linear-gradient(
+      180deg,
+      var(--layer-titlebar-tint-deep) 0%,
+      transparent 55%
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.titlebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 4%;
+  right: 4%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-shine) 15%,
+    var(--glass-shine) 85%,
+    transparent
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.titlebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.titlebar-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  -webkit-app-region: drag;
+  z-index: 1;
+}
+
+.titlebar-title-accent {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.titlebar-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.titlebar-logo-wrap {
+  margin-left: 14px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  height: 44px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.titlebar-drag {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--text);
+}
+
+.titlebar-btn:active {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.titlebar-btn-close:hover {
+  background: #dc2626;
+  color: white;
+}
+
+.titlebar-btn-close:active {
+  background: #b91c1c;
+  color: white;
+}

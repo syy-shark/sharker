@@ -1,0 +1,71 @@
+.thinking-indicator {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.thinking-indicator-track {
+  position: relative;
+  height: 3px;
+  max-width: 120px;
+  border-radius: 999px;
+  background: rgba(39, 39, 42, 0.08);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.thinking-indicator-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(24, 24, 27, 0.08) 20%,
+    rgba(24, 24, 27, 0.28) 50%,
+    rgba(24, 24, 27, 0.08) 80%,
+    transparent 100%
+  );
+  animation: thinkingSweep 2s var(--motion-ease-soft) infinite;
+}
+
+@keyframes thinkingSweep {
+  0% {
+    transform: translateX(-110%);
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(320%);
+    opacity: 0.4;
+  }
+}
+
+.thinking-indicator {
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+.thinking-indicator-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.thinking-indicator-text {
+  margin: 8px 0 0;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 140px;
+  overflow-y: auto;
+}

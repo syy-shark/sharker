@@ -1,0 +1,286 @@
+.st-section {
+  margin-bottom: 28px;
+}
+
+.st-section-title {
+  margin: 0 0 10px;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.st-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border-soft);
+  background: linear-gradient(
+    168deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(241, 245, 249, 0.14) 42%,
+    rgba(228, 233, 240, 0.1) 100%
+  );
+  backdrop-filter: blur(28px) saturate(1.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+  box-shadow: var(--shadow-panel);
+  overflow: visible;
+}
+
+.st-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    transparent 28%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.st-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--surface-border-faint);
+}
+
+.st-row--last {
+  border-bottom: none;
+}
+
+.st-row-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.st-row-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.st-row-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  max-width: 42ch;
+}
+
+.st-row-control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.st-choice-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+}
+
+.st-choice-slide {
+  position: absolute;
+  z-index: 0;
+  border-radius: 12px;
+  background: var(--surface-frost-raised);
+  box-shadow:
+    inset 0 0 0 1px rgba(37, 99, 235, 0.22),
+    0 4px 20px rgba(15, 23, 42, 0.05);
+  pointer-events: none;
+  transition:
+    transform var(--motion-duration-normal) var(--motion-ease-spring),
+    width var(--motion-duration-normal) var(--motion-ease-spring),
+    height var(--motion-duration-normal) var(--motion-ease-spring);
+  will-change: transform, width, height;
+}
+
+.st-choice-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border-soft);
+  background: var(--surface-nested);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-normal) var(--motion-ease-soft),
+    background var(--motion-duration-normal) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-normal) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.st-choice-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    transparent 42%
+  );
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.st-choice-card:hover {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: var(--surface-nested-hover);
+}
+
+.st-choice-card--selected {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.st-choice-card-radio {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.st-choice-card--selected .st-choice-card-radio {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.st-choice-card-radio-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.st-choice-card-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  color: var(--text-muted);
+}
+
+.st-choice-card--selected .st-choice-card-icon {
+  color: var(--text-secondary);
+}
+
+.st-choice-card-title {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.st-choice-card-desc {
+  position: relative;
+  z-index: 1;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.st-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.1);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.st-toggle--on {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.st-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.st-toggle--on .st-toggle-knob {
+  transform: translateX(20px);
+}
+
+.st-pill-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  border-radius: 8px;
+  border: 1px solid var(--surface-border-soft);
+  background: var(--surface-frost);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.st-pill-btn:hover {
+  background: var(--surface-frost-hover);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.st-pill-btn--primary {
+  color: #fff;
+  border-color: rgba(29, 78, 216, 0.3);
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.st-pill-btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.st-row-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border-soft);
+  background: var(--surface-frost);
+}

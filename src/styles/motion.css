@@ -1,0 +1,95 @@
+/* 全局动效：统一弹层、切换、交互的曲线与时长 */
+:root {
+  --motion-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --motion-duration-fast: 0.18s;
+  --motion-duration-normal: 0.32s;
+  --motion-duration-slow: 0.42s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0.01ms;
+    --motion-duration-normal: 0.01ms;
+    --motion-duration-slow: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes popover-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popover-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes list-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popover-surface,
+.popover-enter {
+  transform-origin: bottom center;
+  animation: popover-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+.popover-exit {
+  transform-origin: bottom center;
+  animation: popover-exit var(--motion-duration-normal) var(--motion-ease-soft) both;
+  pointer-events: none;
+}
+
+.view-enter {
+  animation: view-enter var(--motion-duration-slow) var(--motion-ease-spring) both;
+}
+
+.ui-interactive {
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
+    opacity var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}

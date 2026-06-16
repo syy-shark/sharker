@@ -1,0 +1,90 @@
+/* Crystal glass — white facet highlights, not blue tint overlays */
+
+.glass-crystal {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
+  box-shadow: var(--glass-inset);
+}
+
+.glass-crystal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-facet);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-crystal > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-crystal-rim::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-shine) 22%,
+    var(--glass-shine) 78%,
+    transparent
+  );
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.9;
+}
+
+.glass-card {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-crystal);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-facet-strong);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.95) 30%,
+    rgba(255, 255, 255, 0.95) 70%,
+    transparent
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 2;
+}
