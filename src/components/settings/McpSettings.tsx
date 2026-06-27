@@ -22,16 +22,20 @@ interface Props {
   draft: AppSettings
 }
 
+const HIDDEN_FEATURES = new Set(['computerUse', 'browserUse'])
+
 function mergeCatalogWithInstalled(rows: PluginRow[] | null): PluginRow[] {
   const installedById = new Map((rows ?? []).map((r) => [r.id, r.installed]))
-  return MCP_CATALOG.map((item) => ({
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    category: item.category,
-    feature: item.feature,
-    installed: installedById.get(item.id) ?? false
-  }))
+  return MCP_CATALOG.filter((item) => !item.feature || !HIDDEN_FEATURES.has(item.feature)).map(
+    (item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      category: item.category,
+      feature: item.feature,
+      installed: installedById.get(item.id) ?? false
+    })
+  )
 }
 
 function matchesQuery(p: PluginRow, q: string): boolean {

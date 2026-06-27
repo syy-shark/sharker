@@ -91,8 +91,6 @@ const SETTINGS_NAV: { id: SettingsTab; label: string }[] = [
   { id: 'permissions', label: '权限' },
   { id: 'models', label: '模型' },
   { id: 'skills', label: 'Skill' },
-  { id: 'computerUse', label: 'Computer Use' },
-  { id: 'browserUse', label: 'Browser Use' },
   { id: 'mcp', label: 'MCP' },
   { id: 'usage', label: 'Token' },
   { id: 'pet', label: '宠物' },
@@ -223,6 +221,8 @@ export function Sidebar({
   const settingsNavItemRefs = useRef(new Map<SettingsTab, HTMLButtonElement>())
   const collapsedNavRef = useRef<HTMLElement>(null)
   const collapsedNavItemRefs = useRef(new Map<SettingsTab, HTMLButtonElement>())
+  const effectiveSettingsTab: SettingsTab =
+    settingsTab === 'computerUse' || settingsTab === 'browserUse' ? 'mcp' : settingsTab
 
   const getSettingsNavEl = useCallback(
     (id: string) => settingsNavItemRefs.current.get(id as SettingsTab),
@@ -230,7 +230,7 @@ export function Sidebar({
   )
 
   const settingsNavSlide = useSlidingIndicator(
-    settingsTab,
+    effectiveSettingsTab,
     settingsNavRef,
     getSettingsNavEl,
     [page, collapsed],
@@ -246,7 +246,7 @@ export function Sidebar({
   )
 
   const collapsedNavSlide = useSlidingIndicator(
-    settingsTab,
+    effectiveSettingsTab,
     collapsedNavRef,
     getCollapsedNavEl,
     [page, collapsed],
@@ -396,7 +396,7 @@ export function Sidebar({
                 if (el) collapsedNavItemRefs.current.set(item.id, el)
                 else collapsedNavItemRefs.current.delete(item.id)
               }}
-              className={`sidebar-icon-btn ${settingsTab === item.id ? 'active' : ''}`}
+              className={`sidebar-icon-btn ${effectiveSettingsTab === item.id ? 'active' : ''}`}
               title={item.label}
               aria-label={item.label}
               onClick={() => onNavigate('settings', item.id)}
@@ -447,7 +447,7 @@ export function Sidebar({
                   if (el) settingsNavItemRefs.current.set(item.id, el)
                   else settingsNavItemRefs.current.delete(item.id)
                 }}
-                className={`sidebar-nav-item ${settingsTab === item.id ? 'active' : ''}`}
+                className={`sidebar-nav-item ${effectiveSettingsTab === item.id ? 'active' : ''}`}
                 onClick={() => onNavigate('settings', item.id)}
               >
                 <span className="sidebar-nav-icon">

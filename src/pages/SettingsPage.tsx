@@ -9,8 +9,6 @@ import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { SkillsSettings } from '../components/settings/SkillsSettings'
 import { McpSettings } from '../components/settings/McpSettings'
-import { ComputerUseSettings } from '../components/settings/ComputerUseSettings'
-import { BrowserUseSettings } from '../components/settings/BrowserUseSettings'
 import { TokenUsageSettings } from '../components/settings/TokenUsageSettings'
 import { PetSettings } from '../components/settings/PetSettings'
 import { ExtensionsSettings } from '../components/settings/ExtensionsSettings'
@@ -33,14 +31,8 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
     title: 'MCP',
     desc: ''
   },
-  computerUse: {
-    title: 'Computer Use',
-    desc: '开启后 Agent 可操作桌面。'
-  },
-  browserUse: {
-    title: 'Browser Use',
-    desc: '开启后 Agent 可控制浏览器。'
-  },
+  computerUse: { title: 'MCP', desc: '' },
+  browserUse: { title: 'MCP', desc: '' },
   usage: {
     title: 'Token 消耗',
     desc: '查看每日上下文 token 估算与近一年热力图。'
@@ -66,38 +58,34 @@ interface Props {
 
 /** 设置页：按 Tab 渲染权限/模型/Skill 子面板 */
 export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
-  const meta = TAB_META[tab]
+  const effectiveTab: SettingsTab =
+    tab === 'computerUse' || tab === 'browserUse' ? 'mcp' : tab
+  const meta = TAB_META[effectiveTab]
 
   return (
     <div className="settings-page">
       <div className="settings-page-inner">
-        <header key={`header-${tab}`} className="settings-page-header view-enter">
+        <header key={`header-${effectiveTab}`} className="settings-page-header view-enter">
           <h1>{meta.title}</h1>
           {meta.desc ? <p>{meta.desc}</p> : null}
         </header>
 
-        <div key={tab} className="settings-stack settings-panel view-enter">
-          {tab === 'permissions' && (
+        <div key={effectiveTab} className="settings-stack settings-panel view-enter">
+          {effectiveTab === 'permissions' && (
             <PermissionsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {tab === 'models' && (
+          {effectiveTab === 'models' && (
             <ModelsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {tab === 'skills' && (
+          {effectiveTab === 'skills' && (
             <SkillsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {tab === 'mcp' && <McpSettings draft={draft} />}
-          {tab === 'computerUse' && (
-            <ComputerUseSettings draft={draft} setDraft={setDraft} onSave={onSave} />
-          )}
-          {tab === 'browserUse' && (
-            <BrowserUseSettings draft={draft} setDraft={setDraft} onSave={onSave} />
-          )}
-          {tab === 'usage' && <TokenUsageSettings />}
-          {tab === 'pet' && (
+          {effectiveTab === 'mcp' && <McpSettings draft={draft} />}
+          {effectiveTab === 'usage' && <TokenUsageSettings />}
+          {effectiveTab === 'pet' && (
             <PetSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {tab === 'extensions' && <ExtensionsSettings draft={draft} />}
+          {effectiveTab === 'extensions' && <ExtensionsSettings draft={draft} />}
         </div>
       </div>
     </div>
