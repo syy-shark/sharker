@@ -208,7 +208,8 @@ export function extractFinalContent(
     const activeText = [...segments]
       .reverse()
       .find((s) => s.kind === 'text' && s.status === 'active')
-    if (activeText?.content?.trim()) return activeText.content.trim()
+    // 流式阶段保留未 trim 的正文，避免首字符到达前空白被误判为「无输出」
+    if (activeText?.content) return activeText.content
   }
 
   const finalSeg = [...segments].reverse().find((s) => s.kind === 'text' && s.role === 'final')

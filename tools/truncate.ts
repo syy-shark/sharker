@@ -6,10 +6,14 @@ const DEFAULT_MAX_CHARS = 10_000
 const HEAD_RATIO = 0.55
 
 /** 截断过长工具输出：保留头尾，中间省略 */
-export function truncateToolOutput(text: string, maxChars = DEFAULT_MAX_CHARS): string {
-  if (text.length <= maxChars) return text
-  const headLen = Math.floor(maxChars * HEAD_RATIO)
-  const tailLen = maxChars - headLen - 80
+export function truncateToolOutput(text: string, maxChars?: number, toolName?: string): string {
+  let limit = maxChars ?? DEFAULT_MAX_CHARS
+  if (toolName?.includes('get_app_state') || toolName?.includes('mcp_computer_use__')) {
+    limit = Math.max(limit, 120_000)
+  }
+  if (text.length <= limit) return text
+  const headLen = Math.floor(limit * HEAD_RATIO)
+  const tailLen = limit - headLen - 80
   const omitted = text.length - headLen - tailLen
   return (
     text.slice(0, headLen) +

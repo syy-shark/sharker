@@ -4,6 +4,7 @@
  */
 import { spawn, type ChildProcess } from 'child_process'
 import net from 'net'
+import { wrapShellCommand } from './shared/shell-spawn'
 
 const DEFAULT_BLOCK_MS = 30_000
 /** 开发服务器最长等待就绪时间 */
@@ -41,11 +42,19 @@ export function killAllShellChildren(): void {
   activeChildren.clear()
 }
 
-/** 终止子进程及其进程组（Unix） */
+/** 终止子进程及其进程组（Unix）；Windows 仅 kill 子进程 */
 function killChildTree(child: ChildProcess): void {
   if (!child.pid) {
     try {
       child.kill('SIGTERM')
+    } catch {
+      /* ignore */
+    }
+    return
+  }
+  if (process.platform === 'win32') {
+    try {
+      child.kill()
     } catch {
       /* ignore */
     }
@@ -180,9 +189,10 @@ export async function runShellCommand(
     blockMs = DEV_SERVER_MAX_BLOCK_MS
   }
   const runCommand = augmentDevServerCommand(command)
+  const { command: shellBin, args: shellArgs } = wrapShellCommand(runCommand)
 
   return new Promise((resolve, reject) => {
-    const child = spawn('/bin/bash', ['-lc', runCommand], {
+    const child = spawn(shellBin, shellArgs, {
       cwd,
       env: isDevServer ? devServerSpawnEnv() : { ...process.env, TERM: 'dumb' },
       detached: true,

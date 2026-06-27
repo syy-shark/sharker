@@ -3,7 +3,16 @@
  * @see src/README.md
  */
 /** 主界面页面：聊天或设置 */
-export type AppPage = 'chat' | 'settings'
+export type AppPage = 'chat' | 'settings' | 'automations'
 
 /** 设置页 Tab */
-export type SettingsTab = 'permissions' | 'models' | 'skills'
+export type SettingsTab =
+  | 'permissions'
+  | 'models'
+  | 'skills'
+  | 'mcp'
+  | 'computerUse'
+  | 'browserUse'
+  | 'usage'
+  | 'pet'
+  | 'extensions'

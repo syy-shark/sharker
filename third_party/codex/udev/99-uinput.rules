@@ -1,0 +1,4 @@
+# 允许 input 组读写 uinput（Computer Use 绝对指针输入）
+# 来源：codex-desktop-linux docs/linux-computer-use.md（MIT）
+# 安装：sudo cp third_party/codex/udev/99-uinput.rules /etc/udev/rules.d/ && sudo udevadm control --reload-rules
+KERNEL=="uinput", MODE="0660", GROUP="input"

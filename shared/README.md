@@ -12,7 +12,7 @@
 |------|------|
 | `types.ts` | 核心 TypeScript 类型 |
 | `ipc.ts` | IPC channel 名称常量 |
-| `workspace.ts` | 工作区列表、Home、排序 |
+| `workspace.ts` | 工作区列表、排序、归一化 |
 | `conversation.ts` | 对话、标题推导、排序 |
 | `needs-tools.ts` | 寒暄是否跳过 tools |
 | `context-limit.ts` | 各模型 context 上限表 |

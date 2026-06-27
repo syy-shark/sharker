@@ -50,7 +50,7 @@ flowchart LR
 ```
 sharker/
 ├── agent/          # Harness：loop、verify、bootstrap、tool-definitions
-├── tools/          # 工具实现与权限
+├── tools/          # 模块化工具：schemas + builtins + registry
 ├── skills/         # Skill 发现与 prompt 注入
 ├── providers/      # LLM API 客户端
 ├── shared/         # 主/renderer 共用类型与纯逻辑
@@ -64,9 +64,8 @@ sharker/
 | 数据 | 路径 |
 |------|------|
 | 应用设置 | `~/.config/.../settings.json`（userData，API Key 加密） |
-| 用户工作区对话 | `<workspace>/.sharker/conversations/*.json` |
-| 全局 Skills | `~/.sharker/skills/` |
-| 项目 Skills | `<workspace>/.sharker/skills/` |
+| 会话、长期记忆、Agent 事件 | `~/.sharker/memory-db`（嵌入式 PGlite） |
+| Skills（优先 .claude，其次 .sharker） | `~/.claude/skills/`、`<workspace>/.claude/skills/`、`~/.sharker/skills/`、`<workspace>/.sharker/skills/` |
 
 ## 权限
 

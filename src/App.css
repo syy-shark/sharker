@@ -144,3 +144,7 @@ html.window-rounded .main::after {
   min-height: 0;
   min-width: 0;
 }
+
+.main-pane--chat {
+  min-height: 0;
+}

@@ -1,10 +1,10 @@
 /**
- * 工作区列表、Home 注入、排序与设置归一化。
+ * 工作区列表、排序与设置归一化。
  * 详见 shared/README.md
  */
 import type { AppSettings, WorkspaceItem } from './types'
 
-/** Home 工作区固定 ID */
+/** @deprecated 旧版 Home 工作区 ID；新安装不再注入 Home */
 export const HOME_WORKSPACE_ID = 'home'
 
 /** 当前激活工作区的文件系统路径 */
@@ -19,19 +19,26 @@ export function getActiveWorkspace(settings: AppSettings): WorkspaceItem | undef
   return settings.workspaces.find((w) => w.id === settings.activeWorkspaceId)
 }
 
-/** 排序：Home → 置顶 → 普通 */
+/** 排序：置顶 → 普通 */
 export function sortWorkspaces(workspaces: WorkspaceItem[]): WorkspaceItem[] {
-  const home = workspaces.filter((w) => w.isHome)
-  const rest = workspaces.filter((w) => !w.isHome)
-  const pinned = rest.filter((w) => w.pinned)
-  const normal = rest.filter((w) => !w.pinned)
-  return [...home, ...pinned, ...normal]
+  const pinned = workspaces.filter((w) => w.pinned)
+  const normal = workspaces.filter((w) => !w.pinned)
+  return [...pinned, ...normal]
 }
 
-/** 迁移旧版单 workspacePath，补全 Home 并去重路径 */
+/** 解析有效 activeWorkspaceId（无工作区时为空） */
+export function pickActiveWorkspaceId(
+  workspaces: WorkspaceItem[],
+  preferredId: string
+): string {
+  if (preferredId && workspaces.some((w) => w.id === preferredId)) return preferredId
+  return workspaces[0]?.id ?? ''
+}
+
+/** 迁移旧版 workspacePath；不再自动注入 Home（Windows / 桌面通用） */
 export function normalizeSettings(
   raw: Partial<AppSettings> & { workspacePath?: string },
-  homeDir: string
+  _homeDir?: string
 ): AppSettings {
   const providers = Array.isArray(raw.providers) ? raw.providers : []
   let activeProviderId = raw.activeProviderId ?? ''
@@ -42,14 +49,20 @@ export function normalizeSettings(
   const merged: AppSettings = {
     workspacePath: '',
     permissionMode: raw.permissionMode ?? 'sandbox',
+    networkMode: raw.networkMode ?? 'open',
+    workspaceProfile: raw.workspaceProfile ?? '',
     providers,
     activeProviderId,
     skillRepoUrls: raw.skillRepoUrls ?? [],
+    computerUseEnabled: raw.computerUseEnabled ?? true,
+    browserUseEnabled: raw.browserUseEnabled ?? true,
+    installedSkillIds: raw.installedSkillIds ?? [],
+    petEnabled: raw.petEnabled ?? false,
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }
 
-  let workspaces = [...merged.workspaces]
+  let workspaces = [...merged.workspaces].filter((w) => !w.isHome)
 
   if (workspaces.length === 0 && raw.workspacePath) {
     workspaces.push({
@@ -59,28 +72,10 @@ export function normalizeSettings(
     })
   }
 
-  if (!workspaces.some((w) => w.isHome)) {
-    workspaces.unshift({
-      id: HOME_WORKSPACE_ID,
-      path: homeDir,
-      label: 'Home',
-      isHome: true
-    })
-  } else {
-    const home = workspaces.find((w) => w.isHome)!
-    home.path = homeDir
-    home.label = 'Home'
-  }
-
   workspaces = dedupeByPath(workspaces)
 
-  let activeWorkspaceId = merged.activeWorkspaceId
-  if (!activeWorkspaceId || !workspaces.some((w) => w.id === activeWorkspaceId)) {
-    activeWorkspaceId = HOME_WORKSPACE_ID
-  }
-
   merged.workspaces = sortWorkspaces(workspaces)
-  merged.activeWorkspaceId = activeWorkspaceId
+  merged.activeWorkspaceId = pickActiveWorkspaceId(workspaces, merged.activeWorkspaceId)
   merged.workspacePath = getActiveWorkspacePath(merged)
 
   return merged

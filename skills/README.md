@@ -14,10 +14,14 @@
 
 ## Skill 目录约定
 
-```
-~/.sharker/skills/<name>/SKILL.md
-<workspace>/.sharker/skills/<name>/SKILL.md
-```
+按优先级发现（同名时先发现的生效）：
+
+1. `<workspace>/.claude/skills/<name>/SKILL.md` — 项目 Claude Code
+2. `~/.claude/skills/<name>/SKILL.md` — 全局 Claude Code
+3. `<workspace>/.sharker/skills/<name>/SKILL.md` — 项目 Sharker
+4. `~/.sharker/skills/<name>/SKILL.md` — 全局 Sharker
+
+`.claude` 与 Claude Code 目录结构兼容；GitHub 导入仍写入 `~/.sharker/skills/`。
 
 `SKILL.md` 含 YAML frontmatter（`name`、`description`）+ Markdown 正文。
 

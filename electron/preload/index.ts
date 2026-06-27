@@ -53,5 +53,67 @@ contextBridge.exposeInMainWorld('sharker', {
   windowMinimize: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_MINIMIZE),
   windowMaximize: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_MAXIMIZE),
   windowClose: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_CLOSE),
-  openExternal: (url: string): Promise<boolean> => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url)
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
+  getMcpConfig: (workspace: string): Promise<{ raw: string; path: string }> =>
+    ipcRenderer.invoke(IPC.GET_MCP_CONFIG, workspace),
+  saveMcpConfig: (targetPath: string, raw: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC.SAVE_MCP_CONFIG, targetPath, raw),
+  testMcpConfig: (workspace: string): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke(IPC.TEST_MCP_CONFIG, workspace),
+  getComputerUseStatus: (workspace: string) =>
+    ipcRenderer.invoke(IPC.GET_COMPUTER_USE_STATUS, workspace),
+  getBrowserUseStatus: (workspace: string) =>
+    ipcRenderer.invoke(IPC.GET_BROWSER_USE_STATUS, workspace),
+  installBrowserUseManifest: (): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke(IPC.INSTALL_BROWSER_USE_MANIFEST),
+  listMcpPlugins: (workspace: string) => ipcRenderer.invoke(IPC.LIST_MCP_PLUGINS, workspace),
+  toggleMcpPlugin: (workspace: string, pluginId: string, enabled: boolean) =>
+    ipcRenderer.invoke(IPC.TOGGLE_MCP_PLUGIN, workspace, pluginId, enabled),
+  compressContext: (history: ChatMessage[]) =>
+    ipcRenderer.invoke(IPC.COMPRESS_CONTEXT, history),
+  getTokenUsage: (days?: number) => ipcRenderer.invoke(IPC.GET_TOKEN_USAGE, days),
+  getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly),
+  readTextFile: (filePath: string) => ipcRenderer.invoke(IPC.READ_TEXT_FILE, filePath),
+  getGitBranchInfo: (cwd: string) => ipcRenderer.invoke(IPC.GIT_BRANCH_INFO, cwd),
+  listGitBranches: (cwd: string) => ipcRenderer.invoke(IPC.GIT_LIST_BRANCHES, cwd),
+  gitCheckout: (cwd: string, branch: string) =>
+    ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch),
+  createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),
+  writeTerminal: (id: string, data: string) =>
+    ipcRenderer.invoke(IPC.TERMINAL_WRITE, id, data),
+  resizeTerminal: (id: string, cols: number, rows: number) =>
+    ipcRenderer.invoke(IPC.TERMINAL_RESIZE, id, cols, rows),
+  killTerminal: (id: string) => ipcRenderer.invoke(IPC.TERMINAL_KILL, id),
+  onTerminalData: (cb: (payload: { id: string; data: string }) => void) => {
+    const handler = (_: unknown, payload: { id: string; data: string }) => cb(payload)
+    ipcRenderer.on('terminal:data', handler)
+    return () => ipcRenderer.removeListener('terminal:data', handler)
+  },
+  onTerminalExit: (cb: (payload: { id: string }) => void) => {
+    const handler = (_: unknown, payload: { id: string }) => cb(payload)
+    ipcRenderer.on('terminal:exit', handler)
+    return () => ipcRenderer.removeListener('terminal:exit', handler)
+  },
+  listAutomations: () => ipcRenderer.invoke(IPC.LIST_AUTOMATIONS),
+  saveAutomations: (jobs: unknown) => ipcRenderer.invoke(IPC.SAVE_AUTOMATIONS, jobs),
+  onAutomationRun: (cb: (job: unknown) => void) => {
+    const handler = (_: unknown, job: unknown) => cb(job)
+    ipcRenderer.on('automation:run', handler)
+    return () => ipcRenderer.removeListener('automation:run', handler)
+  },
+  listHooks: () => ipcRenderer.invoke(IPC.LIST_HOOKS),
+  saveHooks: (hooks: unknown) => ipcRenderer.invoke(IPC.SAVE_HOOKS, hooks),
+  getOAuthGptMeta: () => ipcRenderer.invoke(IPC.OAUTH_GPT_META),
+  startOAuthGpt: () =>
+    ipcRenderer.invoke(IPC.OAUTH_GPT_START) as Promise<{
+      ok: boolean
+      message: string
+      email?: string
+    }>,
+  getRemoteCollab: () => ipcRenderer.invoke(IPC.REMOTE_COLLAB_GET),
+  createRemoteRoom: (name: string) => ipcRenderer.invoke(IPC.REMOTE_COLLAB_CREATE, name),
+  startLsp: (workspace: string) => ipcRenderer.invoke(IPC.LSP_START, workspace),
+  getLspStatus: () => ipcRenderer.invoke(IPC.LSP_STATUS),
+  stopLsp: () => ipcRenderer.invoke(IPC.LSP_STOP)
 })

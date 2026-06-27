@@ -25,6 +25,7 @@ interface Props {
   onNewConversation: (workspaceId: string) => void
   onDeleteConversation: (workspaceId: string, conversationId: string) => void
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
+  onOpenAutomations?: () => void
 }
 
 /** 设置齿轮图标 */
@@ -89,7 +90,13 @@ function readSidebarWidth(): number {
 const SETTINGS_NAV: { id: SettingsTab; label: string }[] = [
   { id: 'permissions', label: '权限' },
   { id: 'models', label: '模型' },
-  { id: 'skills', label: 'Skill' }
+  { id: 'skills', label: 'Skill' },
+  { id: 'computerUse', label: 'Computer Use' },
+  { id: 'browserUse', label: 'Browser Use' },
+  { id: 'mcp', label: 'MCP' },
+  { id: 'usage', label: 'Token' },
+  { id: 'pet', label: '宠物' },
+  { id: 'extensions', label: '扩展' }
 ]
 
 /** 设置 Tab 对应图标 */
@@ -137,6 +144,53 @@ function SettingsNavIcon({ tab }: { tab: SettingsTab }) {
           />
         </svg>
       )
+    case 'mcp':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="6" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="18" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="18" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M8.5 11L15.5 7M8.5 13l7 4" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+      )
+    case 'computerUse':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M8 20h8M12 16v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M7 9h4M7 12h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+      )
+    case 'browserUse':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    case 'usage':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <rect x="4" y="14" width="3" height="6" rx="0.5" fill="currentColor" opacity="0.5" />
+          <rect x="10" y="10" width="3" height="10" rx="0.5" fill="currentColor" opacity="0.7" />
+          <rect x="16" y="6" width="3" height="14" rx="0.5" fill="currentColor" />
+        </svg>
+      )
+    case 'pet':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="13" r="5" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="9" cy="8" r="1.5" fill="currentColor" />
+          <circle cx="15" cy="8" r="1.5" fill="currentColor" />
+        </svg>
+      )
+    case 'extensions':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      )
   }
 }
 
@@ -154,7 +208,8 @@ export function Sidebar({
   onTogglePinWorkspace,
   onNewConversation,
   onDeleteConversation,
-  onNavigate
+  onNavigate,
+  onOpenAutomations
 }: Props) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
@@ -288,15 +343,36 @@ export function Sidebar({
         ) : (
           <span className="sidebar-top-spacer" aria-hidden />
         )}
-        <button
-          type="button"
-          className="sidebar-toggle"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
-          title={collapsed ? '展开侧栏' : '收起侧栏'}
-        >
-          <ChevronIcon direction={collapsed ? 'right' : 'left'} />
-        </button>
+        <div className="sidebar-top-actions">
+          {!collapsed && page === 'chat' ? (
+            <button
+              type="button"
+              className="sidebar-auto-btn"
+              title="自动化"
+              aria-label="自动化"
+              onClick={() => onOpenAutomations?.()}
+            >
+              <svg className="sidebar-auto-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span>自动</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+          >
+            <ChevronIcon direction={collapsed ? 'right' : 'left'} />
+          </button>
+        </div>
       </div>
 
       {collapsed && page === 'settings' && (

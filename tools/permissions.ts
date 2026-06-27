@@ -1,5 +1,5 @@
 /**
- * 沙箱路径校验、工作区边界检测与高危工具/命令识别。
+ * 沙箱路径校验、工作区边界检测与高危命令识别。
  * @see tools/README.md
  */
 import path from 'path'
@@ -76,57 +76,6 @@ export function isHighRiskCommand(command: string): boolean {
   return HIGH_RISK_PATTERNS.some((re) => re.test(command))
 }
 
-/** 按工具名与参数判断是否需要用户审批 */
-export function isHighRiskTool(
-  toolName: string,
-  args: Record<string, unknown>
-): { highRisk: boolean; reason: string } {
-  switch (toolName) {
-    case 'delete_path': {
-      const recursive = Boolean(args.recursive)
-      if (recursive) {
-        return { highRisk: true, reason: '递归删除目录' }
-      }
-      const p = String(args.path ?? '')
-      if (isHighRiskPath(p)) {
-        return { highRisk: true, reason: '删除系统或敏感路径' }
-      }
-      return { highRisk: false, reason: '' }
-    }
-    case 'move_path': {
-      const dest = String(args.destination ?? args.to ?? '')
-      const src = String(args.path ?? args.source ?? '')
-      if (isHighRiskPath(src) || isHighRiskPath(dest)) {
-        return { highRisk: true, reason: '移动系统或敏感路径' }
-      }
-      return { highRisk: false, reason: '' }
-    }
-    case 'run_terminal_cmd': {
-      const cmd = String(args.command ?? '')
-      if (isHighRiskCommand(cmd)) {
-        return { highRisk: true, reason: '高危 shell 命令' }
-      }
-      return { highRisk: false, reason: '' }
-    }
-    case 'git_commit':
-      return { highRisk: true, reason: 'Git 提交' }
-    case 'git_push':
-      return { highRisk: true, reason: 'Git 推送到远程' }
-    case 'git_pull':
-      return { highRisk: true, reason: 'Git 拉取远程' }
-    case 'run_skill_script':
-      return { highRisk: true, reason: '执行 Skill 脚本' }
-    case 'write_file': {
-      const p = String(args.path ?? '')
-      if (isHighRiskPath(p)) {
-        return { highRisk: true, reason: '写入系统或敏感路径' }
-      }
-      return { highRisk: false, reason: '' }
-    }
-    default:
-      return { highRisk: false, reason: '' }
-  }
-}
 
 /** 提取工具参数中的路径并校验，返回拒绝原因或 null */
 export function needsPathApproval(

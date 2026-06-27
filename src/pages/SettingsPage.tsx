@@ -8,6 +8,12 @@ import type { SettingsTab } from '../types/navigation'
 import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { SkillsSettings } from '../components/settings/SkillsSettings'
+import { McpSettings } from '../components/settings/McpSettings'
+import { ComputerUseSettings } from '../components/settings/ComputerUseSettings'
+import { BrowserUseSettings } from '../components/settings/BrowserUseSettings'
+import { TokenUsageSettings } from '../components/settings/TokenUsageSettings'
+import { PetSettings } from '../components/settings/PetSettings'
+import { ExtensionsSettings } from '../components/settings/ExtensionsSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -21,7 +27,31 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   skills: {
     title: 'Skill',
-    desc: '从 GitHub 导入技能仓库，对话时按内容自动匹配注入。'
+    desc: '内置 Skill 开箱即用；市场可安装 Anthropic / Claude Code 生态合集。'
+  },
+  mcp: {
+    title: 'MCP',
+    desc: ''
+  },
+  computerUse: {
+    title: 'Computer Use',
+    desc: '开启后 Agent 可操作桌面。'
+  },
+  browserUse: {
+    title: 'Browser Use',
+    desc: '开启后 Agent 可控制浏览器。'
+  },
+  usage: {
+    title: 'Token 消耗',
+    desc: '查看每日上下文 token 估算与近一年热力图。'
+  },
+  pet: {
+    title: '小宠物',
+    desc: 'Codex 风格桌面伙伴。'
+  },
+  extensions: {
+    title: '扩展',
+    desc: 'Hooks、OAuth GPT、远程协作与 LSP。'
   }
 }
 
@@ -31,6 +61,7 @@ interface Props {
   draft: AppSettings
   setDraft: Dispatch<SetStateAction<AppSettings>>
   onSave: (next: AppSettings) => Promise<void>
+  onNavigateTab?: (tab: SettingsTab) => void
 }
 
 /** 设置页：按 Tab 渲染权限/模型/Skill 子面板 */
@@ -42,7 +73,7 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
       <div className="settings-page-inner">
         <header key={`header-${tab}`} className="settings-page-header view-enter">
           <h1>{meta.title}</h1>
-          <p>{meta.desc}</p>
+          {meta.desc ? <p>{meta.desc}</p> : null}
         </header>
 
         <div key={tab} className="settings-stack settings-panel view-enter">
@@ -55,6 +86,18 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           {tab === 'skills' && (
             <SkillsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
+          {tab === 'mcp' && <McpSettings draft={draft} />}
+          {tab === 'computerUse' && (
+            <ComputerUseSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'browserUse' && (
+            <BrowserUseSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'usage' && <TokenUsageSettings />}
+          {tab === 'pet' && (
+            <PetSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'extensions' && <ExtensionsSettings draft={draft} />}
         </div>
       </div>
     </div>

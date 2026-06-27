@@ -12,6 +12,9 @@ interface Props {
   providers: ProviderConfig[]
   activeProviderId: string
   onSelect: (id: string) => void
+  /** 与上下文环互斥：另一弹层打开时关闭本下拉 */
+  dismissWhenPeerOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -36,12 +39,26 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 /** 输入区模型下拉选择器 */
-export function ModelPicker({ providers, activeProviderId, onSelect }: Props) {
+export function ModelPicker({
+  providers,
+  activeProviderId,
+  onSelect,
+  dismissWhenPeerOpen = false,
+  onOpenChange
+}: Props) {
   const pop = usePopoverAnimation()
   const rootRef = useRef<HTMLDivElement>(null)
   const list = providers ?? []
   const active = list.find((p) => p.id === activeProviderId) ?? list[0]
   const label = active?.model?.trim() || active?.name?.trim() || '选择模型'
+
+  useEffect(() => {
+    onOpenChange?.(pop.open)
+  }, [pop.open, onOpenChange])
+
+  useEffect(() => {
+    if (dismissWhenPeerOpen && pop.open) pop.hide()
+  }, [dismissWhenPeerOpen, pop.open, pop.hide])
 
   useEffect(() => {
     if (!pop.open) return

@@ -24,13 +24,20 @@ import { DEFAULT_SETTINGS } from '../shared/types'
 import { validateActiveProvider } from '../shared/provider-validate'
 import {
   getActiveWorkspacePath,
-  HOME_WORKSPACE_ID,
   sortWorkspaces,
+  pickActiveWorkspaceId,
   withActiveWorkspace
 } from '../shared/workspace'
 import { ChatView } from './components/ChatView'
+import { ChatToolbar } from './components/ChatToolbar'
 import { ApprovalModal } from './components/ApprovalModal'
+import { PlanBuildBar } from './components/PlanBuildBar'
+import { RightPanel, type RightPanelTab } from './components/RightPanel'
+import { AutomationsPage } from './pages/AutomationsPage'
+import { PetWidget } from './components/PetWidget'
 import { Sidebar } from './components/Sidebar'
+import type { SlashCommandMeta } from '../shared/slash-commands'
+import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { TitleBar } from './components/TitleBar'
 import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
@@ -40,7 +47,7 @@ import './App.css'
 /** 根组件：全局状态、IPC 流式、工作区/对话/设置路由 */
 export default function App() {
   useEffect(() => {
-    const customChrome = window.sharker.platform !== 'darwin'
+    const customChrome = window.sharker?.platform !== 'darwin'
     document.documentElement.classList.toggle('window-rounded', customChrome)
     return () => document.documentElement.classList.remove('window-rounded')
   }, [])
@@ -64,10 +71,24 @@ export default function App() {
   const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null)
   const [turnHadThinking, setTurnHadThinking] = useState(false)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
+  const [pendingPlan, setPendingPlan] = useState<{ document: string; filePath?: string } | null>(
+    null
+  )
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
+  const [showHistoryPicker, setShowHistoryPicker] = useState(false)
+  const [gitInfo, setGitInfo] = useState<{
+    branch: string
+    isRepo: boolean
+    dirty?: boolean
+  } | null>(null)
   const sendInFlightRef = useRef(false)
   const queuedPromptsRef = useRef<QueuedPrompt[]>([])
   const dispatchTurnRef = useRef<(text: string) => Promise<void>>(async () => {})
+  const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
+    async () => {}
+  )
   const doneCommittedRef = useRef(false)
   const streamingRef = useRef('')
   const turnThinkingRef = useRef('')
@@ -76,7 +97,7 @@ export default function App() {
   const streamFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastStreamRenderAt = useRef(0)
   const thinkRafRef = useRef<number | null>(null)
-  const SEGMENT_RENDER_MS = 64
+  const SEGMENT_RENDER_MS = 16
   const settingsRef = useRef(settings)
   const messagesRef = useRef<ChatMessage[]>([])
   const activeConversationIdRef = useRef<string | null>(null)
@@ -216,6 +237,7 @@ export default function App() {
       setLiveSegments(cloneSegments(segmentsRef.current))
       // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
       const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
+      setStreaming(finalPreview)
       setTurnThinking(thinkingPreviewFromSegments(segmentsRef.current))
       const activeToolSeg = [...segmentsRef.current]
         .reverse()
@@ -328,6 +350,30 @@ export default function App() {
     settingsDraftRef.current = settingsDraft
   }, [settingsDraft])
 
+  /** 刷新当前工作区 Git 分支信息 */
+  const refreshGitInfo = useCallback(async () => {
+    const wsPath = getActiveWorkspacePath(settingsRef.current)
+    if (!wsPath || !window.sharker?.getGitBranchInfo) return
+    setGitInfo(await window.sharker.getGitBranchInfo(wsPath))
+  }, [])
+
+  useEffect(() => {
+    void refreshGitInfo()
+  }, [settings.activeWorkspaceId, refreshGitInfo])
+
+  useEffect(() => {
+    const off = window.sharker?.onAutomationRun?.((job) => {
+      const j = job as { prompt?: string }
+      if (j.prompt) void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
+    })
+    return () => off?.()
+  }, [])
+
+  /** 切换右侧 Codex 风格面板 */
+  const handleToggleRightPanel = useCallback(() => {
+    setRightPanelOpen((o) => !o)
+  }, [])
+
   /** 保存设置并同步本地 state（切换工作区时合并字段） */
   const persistSettings = useCallback(async (next: AppSettings) => {
     const targetWorkspaceId = next.activeWorkspaceId
@@ -340,12 +386,17 @@ export default function App() {
         providers: updated.providers,
         activeProviderId: updated.activeProviderId,
         skillRepoUrls: updated.skillRepoUrls,
-        permissionMode: updated.permissionMode
+        installedSkillIds: updated.installedSkillIds,
+        permissionMode: updated.permissionMode,
+        networkMode: updated.networkMode,
+        computerUseEnabled: updated.computerUseEnabled,
+        browserUseEnabled: updated.browserUseEnabled,
+        petEnabled: updated.petEnabled
       }
       settingsRef.current = merged
       setSettings(merged)
       setSettingsDraft(merged)
-      return updated
+      return merged
     }
     settingsRef.current = updated
     setSettings(updated)
@@ -388,6 +439,7 @@ export default function App() {
 
   /** 订阅主进程流式事件：思考、token、工具、压缩、完成 */
   useEffect(() => {
+    if (!window.sharker?.onStream) return
     const offStream = window.sharker.onStream((chunk) => {
       if (
         chunk.type === 'think' ||
@@ -448,6 +500,10 @@ export default function App() {
         flushSegmentsToUI()
         return
       }
+      if (chunk.type === 'plan_ready' && chunk.planDocument) {
+        setPendingPlan({ document: chunk.planDocument, filePath: chunk.planFilePath })
+        return
+      }
       if (chunk.type === 'approval_needed' && chunk.approval) {
         setApproval(chunk.approval)
       }
@@ -455,6 +511,15 @@ export default function App() {
         setMessages([])
         messagesRef.current = []
         void persistActiveConversation([])
+      }
+      if (chunk.type === 'command' && chunk.command === 'compact') {
+        void (async () => {
+          const result = await window.sharker.compressContext(messagesRef.current)
+          if (!result.compressed) return
+          setMessages(result.messages)
+          messagesRef.current = result.messages
+          await persistActiveConversation(result.messages)
+        })()
       }
       if (chunk.type === 'done') {
         if (doneCommittedRef.current) return
@@ -565,17 +630,51 @@ export default function App() {
     dispatchTurnRef.current = dispatchTurn
   }, [dispatchTurn])
 
+  /** 切换右侧面板 Tab（斜杠命令 /files 等） */
+  const handleTogglePanel = useCallback((tab: RightPanelTab) => {
+    setRightPanelTab(tab)
+    setRightPanelOpen(true)
+  }, [])
+
   /** 接待用户输入：空闲直接派发；忙时排队或插队 */
   const handlePromptSubmit = useCallback(
     async (text: string, mode: PromptSubmitMode = 'send') => {
       await flushSettingsDraftIfNeeded()
       if (!getActiveWorkspacePath(settingsRef.current)) {
-        console.error('未选择工作区，无法发送')
+        const trimmedEarly = text.trim()
+        if (!trimmedEarly) return
+        const userMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'user',
+          content: trimmedEarly
+        }
+        const errReply: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content:
+            '**提示**：请先在侧栏或 **设置 → 工作区** 中添加并选择一个工作区文件夹，然后再发送消息。'
+        }
+        const withErr = [...messagesRef.current, userMsg, errReply]
+        setMessages(withErr)
+        messagesRef.current = withErr
         return
       }
 
       const trimmed = text.trim()
       if (!trimmed) return
+
+      // UI 斜杠命令（完整匹配 name，可选 args）
+      if (trimmed.startsWith('/')) {
+        const body = trimmed.slice(1)
+        const sp = body.indexOf(' ')
+        const name = (sp >= 0 ? body.slice(0, sp) : body).toLowerCase()
+        const args = sp >= 0 ? body.slice(sp + 1) : ''
+        const meta = SLASH_COMMANDS.find((c) => c.name === name && c.scope === 'ui')
+        if (meta) {
+          await handleSlashActionRef.current(meta, args)
+          return
+        }
+      }
 
       const busy = loading || sendInFlightRef.current
       if (busy) {
@@ -610,6 +709,16 @@ export default function App() {
       return next
     })
   }, [])
+
+  /** 用户点击 Build：进入 build 阶段并按计划派发 */
+  const handleBuildPlan = useCallback(async () => {
+    if (!pendingPlan) return
+    const doc = pendingPlan.document
+    setPendingPlan(null)
+    await handlePromptSubmit(
+      `__SHARKER_BUILD__\n请严格按照以下计划逐步实施（可使用全部工具）：\n\n${doc}`
+    )
+  }, [pendingPlan, handlePromptSubmit])
 
   /** 用户点击停止：中止 IPC 并提交已流式内容 */
   const handleAbort = useCallback(async () => {
@@ -793,11 +902,11 @@ export default function App() {
     }
   }
 
-  /** 删除非 Home 工作区 */
+  /** 删除工作区 */
   const handleDeleteWorkspace = async (id: string) => {
     const current = settingsRef.current
     const item = current.workspaces.find((w) => w.id === id)
-    if (!item || item.isHome) return
+    if (!item) return
 
     if (sendInFlightRef.current || loading) {
       await window.sharker.abortChat()
@@ -806,7 +915,9 @@ export default function App() {
 
     const workspaces = current.workspaces.filter((w) => w.id !== id)
     const wasActive = current.activeWorkspaceId === id
-    const activeId = wasActive ? HOME_WORKSPACE_ID : current.activeWorkspaceId
+    const activeId = wasActive
+      ? pickActiveWorkspaceId(workspaces, '')
+      : current.activeWorkspaceId
     const next = withActiveWorkspace(
       { ...current, workspaces: sortWorkspaces(workspaces) },
       activeId
@@ -833,7 +944,7 @@ export default function App() {
       settingsRef.current = updated
       setSettings(updated)
       setSettingsDraft(updated)
-      if (wasActive) void loadWorkspaceSession(activeId)
+      if (wasActive && activeId) void loadWorkspaceSession(activeId)
     } catch (e) {
       console.error('删除工作区失败', e)
     }
@@ -859,7 +970,7 @@ export default function App() {
 
   /** 聊天 ↔ 设置页导航 */
   const handleNavigate = async (targetPage: AppPage, tab?: SettingsTab) => {
-    if (page === 'settings' && targetPage === 'chat') {
+    if (page === 'settings' && targetPage !== 'settings') {
       await persistSettings(settingsDraft)
     }
     if (targetPage === 'settings') {
@@ -876,12 +987,74 @@ export default function App() {
     setApproval(null)
   }
 
+  /** UI 斜杠命令（不经过模型） */
+  const handleSlashAction = useCallback(
+    async (cmd: SlashCommandMeta, args: string) => {
+      switch (cmd.action) {
+        case 'new_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          if (ws) await handleNewConversation(ws)
+          break
+        }
+        case 'show_history':
+          setShowHistoryPicker(true)
+          break
+        case 'resume_conversation': {
+          const prev = conversationList.filter((c) => c.id !== activeConversationIdRef.current)[0]
+          if (prev && settingsRef.current.activeWorkspaceId) {
+            await handleSelectConversation(settingsRef.current.activeWorkspaceId, prev.id)
+          }
+          break
+        }
+        case 'pick_model': {
+          const q = args.trim().toLowerCase()
+          const match = settingsRef.current.providers.find(
+            (p) =>
+              p.model.toLowerCase().includes(q) ||
+              p.name.toLowerCase().includes(q) ||
+              p.id === q
+          )
+          if (match) await handleSelectProvider(match.id)
+          break
+        }
+        case 'pick_skill':
+          await dispatchTurnRef.current(
+            `/plan 请加载并遵循 Skill：${args.trim() || '（请在 /skill 后指定名称）'}`
+          )
+          break
+        case 'git_branch':
+          await dispatchTurnRef.current('请用 git 工具查看当前分支与工作区状态，并简要汇报。')
+          break
+        case 'toggle_terminal':
+          handleTogglePanel('terminal')
+          break
+        case 'toggle_files':
+          handleTogglePanel('files')
+          break
+        case 'toggle_browser':
+          handleTogglePanel('browser')
+          break
+        case 'open_automations':
+          setPage('automations')
+          break
+        case 'open_settings':
+          void handleNavigate('settings', 'models')
+          break
+      }
+    },
+    [conversationList, handleTogglePanel]
+  )
+
+  useEffect(() => {
+    handleSlashActionRef.current = handleSlashAction
+  }, [handleSlashAction])
+
   return (
     <div className="app-shell">
       <TitleBar />
       <div className="app">
         <Sidebar
-          page={page}
+          page={page === 'automations' ? 'chat' : page}
           settingsTab={settingsTab}
           settings={settings}
           conversations={conversationList}
@@ -894,10 +1067,31 @@ export default function App() {
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           onNavigate={handleNavigate}
+          onOpenAutomations={() => setPage('automations')}
         />
         <main className="main">
           {page === 'chat' ? (
-            <div key="chat" className="main-pane view-enter">
+            <div key="chat" className="main-pane view-enter main-pane--chat">
+            <ChatToolbar
+              gitInfo={gitInfo}
+              workspacePath={getActiveWorkspacePath(settings) ?? ''}
+              rightPanelOpen={rightPanelOpen}
+              onToggleRightPanel={handleToggleRightPanel}
+              onRefreshGit={() => void refreshGitInfo()}
+              onCheckoutBranch={async (branch) => {
+                const wsPath = getActiveWorkspacePath(settingsRef.current)
+                if (!wsPath) throw new Error('未选择工作区')
+                await window.sharker.gitCheckout(wsPath, branch)
+                await refreshGitInfo()
+              }}
+            />
+            {pendingPlan && (
+              <PlanBuildBar
+                planDocument={pendingPlan.document}
+                onBuild={() => void handleBuildPlan()}
+                onDismiss={() => setPendingPlan(null)}
+              />
+            )}
             <ChatView
               workspaces={settings.workspaces}
               activeWorkspaceId={settings.activeWorkspaceId}
@@ -918,7 +1112,23 @@ export default function App() {
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}
               onAbort={handleAbort}
+              onSlashAction={(cmd, args) => void handleSlashActionRef.current(cmd, args)}
+              showHistoryPicker={showHistoryPicker}
+              onCloseHistoryPicker={() => setShowHistoryPicker(false)}
+              conversationTitles={conversationList.map((c) => ({
+                id: c.id,
+                title: c.title
+              }))}
+              onPickConversation={(id) => {
+                const ws = settings.activeWorkspaceId
+                if (ws) void handleSelectConversation(ws, id)
+                setShowHistoryPicker(false)
+              }}
             />
+            </div>
+          ) : page === 'automations' ? (
+            <div key="automations" className="main-pane view-enter">
+              <AutomationsPage onBack={() => setPage('chat')} />
             </div>
           ) : (
             <div key="settings" className="main-pane view-enter">
@@ -927,10 +1137,20 @@ export default function App() {
               draft={settingsDraft}
               setDraft={setSettingsDraft}
               onSave={handleSaveSettings}
+              onNavigateTab={(tab) => void handleNavigate('settings', tab)}
             />
             </div>
           )}
         </main>
+        <RightPanel
+          open={rightPanelOpen && page === 'chat'}
+          tab={rightPanelTab}
+          workspacePath={getActiveWorkspacePath(settings) ?? ''}
+          isHome={false}
+          onTabChange={setRightPanelTab}
+          onClose={() => setRightPanelOpen(false)}
+        />
+        <PetWidget enabled={settings.petEnabled ?? false} />
         {approval && (
           <ApprovalModal request={approval} onRespond={handleApproval} />
         )}

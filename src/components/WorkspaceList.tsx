@@ -39,20 +39,6 @@ function FolderIcon() {
   )
 }
 
-function HomeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 11l8-6 8 6v9H4v-9z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path d="M10 20v-5h4v5" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
 function PinIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -163,7 +149,7 @@ function WorkspaceRow({
           title={canToggleConv ? `${item.path}（点击展开/收起对话）` : item.path}
           aria-expanded={canToggleConv ? true : undefined}
         >
-          <span className="workspace-icon">{item.isHome ? <HomeIcon /> : <FolderIcon />}</span>
+          <span className="workspace-icon"><FolderIcon /></span>
           <span className="workspace-label">{item.label}</span>
           {active && convCount > 1 ? (
             <span className="workspace-conv-count" aria-hidden>
@@ -185,34 +171,30 @@ function WorkspaceRow({
         >
           <PlusIcon />
         </button>
-        {!item.isHome && (
-          <button
-            type="button"
-            className={`workspace-action-btn ${item.pinned ? 'pinned' : ''}`}
-            title={item.pinned ? '取消置顶' : '置顶'}
-            aria-label={item.pinned ? '取消置顶' : '置顶'}
-            onClick={(e) => {
-              e.stopPropagation()
-              onTogglePin()
-            }}
-          >
-            <PinIcon filled={Boolean(item.pinned)} />
-          </button>
-        )}
-        {!item.isHome && (
-          <button
-            type="button"
-            className="workspace-action-btn danger"
-            title="删除"
-            aria-label="删除工作区"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-          >
-            <TrashIcon />
-          </button>
-        )}
+        <button
+          type="button"
+          className={`workspace-action-btn ${item.pinned ? 'pinned' : ''}`}
+          title={item.pinned ? '取消置顶' : '置顶'}
+          aria-label={item.pinned ? '取消置顶' : '置顶'}
+          onClick={(e) => {
+            e.stopPropagation()
+            onTogglePin()
+          }}
+        >
+          <PinIcon filled={Boolean(item.pinned)} />
+        </button>
+        <button
+          type="button"
+          className="workspace-action-btn danger"
+          title="删除"
+          aria-label="删除工作区"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+        >
+          <TrashIcon />
+        </button>
       </div>
     </div>
   )

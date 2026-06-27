@@ -32,10 +32,20 @@ interface Props {
   streaming: string
   draftInput: string
   context: ResolvedContextLimit
+  /** 与模型下拉互斥：另一弹层打开时关闭本面板 */
+  dismissWhenPeerOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 /** 上下文用量圆环与详情弹层 */
-export function ContextRing({ messages, streaming, draftInput, context }: Props) {
+export function ContextRing({
+  messages,
+  streaming,
+  draftInput,
+  context,
+  dismissWhenPeerOpen = false,
+  onOpenChange
+}: Props) {
   const pop = usePopoverAnimation()
   const rootRef = useRef<HTMLButtonElement>(null)
   const [hovered, setHovered] = useState(false)
@@ -57,6 +67,17 @@ export function ContextRing({ messages, streaming, draftInput, context }: Props)
   const meterPct = Math.min(100, Math.max(ringRatio * 100, used > 0 ? 1.5 : 0))
 
   const panelVisible = hovered || pinned
+
+  useEffect(() => {
+    onOpenChange?.(panelVisible)
+  }, [panelVisible, onOpenChange])
+
+  useEffect(() => {
+    if (dismissWhenPeerOpen && panelVisible) {
+      setPinned(false)
+      setHovered(false)
+    }
+  }, [dismissWhenPeerOpen, panelVisible])
 
   useEffect(() => {
     if (panelVisible) {

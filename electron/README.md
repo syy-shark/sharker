@@ -14,7 +14,7 @@ electron/
 ├── main/index.ts       # 入口、IPC、chat:send
 ├── preload/index.ts    # contextBridge → window.sharker
 ├── settings-store.ts   # settings.json + safeStorage
-├── conversations-store.ts  # .sharker/conversations/
+├── conversations-store.ts  # 委托 agent/memory/conversations（PGlite）
 └── linux-desktop.ts    # Linux 桌面集成
 ```
 

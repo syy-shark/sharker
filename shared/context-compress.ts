@@ -135,3 +135,64 @@ export async function compressContextIfNeeded(
     limit
   }
 }
+
+/** 手动 /compact：跳过阈值检查，至少保留最近 KEEP_RECENT_MESSAGES 条 */
+export async function compressContextForce(
+  settings: AppSettings,
+  messages: ChatMessage[],
+  summarize: SummarizeFn,
+  extraText = ''
+): Promise<ContextCompressResult> {
+  const provider = pickProvider(settings)
+  const { limit } = resolveContextLimit(provider?.model ?? '', provider?.contextWindow)
+  const before = estimateContextUsage(messages, '', extraText).total
+
+  if (messages.length <= KEEP_RECENT_MESSAGES + 2) {
+    return {
+      messages,
+      compressed: false,
+      removedCount: 0,
+      beforeTokens: before,
+      afterTokens: before,
+      limit
+    }
+  }
+
+  const old = messages.slice(0, -KEEP_RECENT_MESSAGES)
+  const recent = messages.slice(-KEEP_RECENT_MESSAGES)
+  const transcript = buildTranscript(old)
+
+  let summary: string
+  try {
+    summary = await summarize(
+      settings,
+      `请将以下对话历史压缩为简洁的中文摘要，保留：用户目标、已做决策、文件路径、未完成事项。不超过 600 字。\n\n${transcript}`
+    )
+  } catch (e) {
+    const fallback = old
+      .filter((m) => m.role === 'user')
+      .slice(-3)
+      .map((m) => m.content.slice(0, 120))
+      .join('；')
+    summary = fallback || '（较早对话已省略）'
+  }
+
+  const summaryMsg: ChatMessage = {
+    id: crypto.randomUUID(),
+    role: 'assistant',
+    content: `【对话摘要】\n${summary.trim()}`
+  }
+
+  const compressed = [summaryMsg, ...recent]
+  const after = estimateContextUsage(compressed, '', extraText).total
+
+  return {
+    messages: compressed,
+    compressed: true,
+    removedCount: old.length,
+    summary: summary.trim(),
+    beforeTokens: before,
+    afterTokens: after,
+    limit
+  }
+}

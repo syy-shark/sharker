@@ -1,85 +1,113 @@
 /**
- * Skill 仓库导入与管理
- * @see src/README.md
+ * Skill 设置：内置 Skill + 可安装市场。
+ * @see skills/README.md
  */
 import { useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import '../../pages/SettingsPage.css'
+import {
+  BUNDLED_SKILL_CATALOG,
+  MARKETPLACE_SKILL_CATALOG
+} from '../../../shared/skill-catalog-data'
 import {
   SettingsCard,
   SettingsPillButton,
-  SettingsRow,
   SettingsSection
 } from './SettingsPrimitives'
+import './PluginCatalog.css'
 
-/** SkillsSettings Props：设置草稿与保存回调 */
 interface Props {
   draft: AppSettings
   setDraft: React.Dispatch<React.SetStateAction<AppSettings>>
   onSave: (next: AppSettings) => Promise<void>
 }
 
-/** Skill 仓库导入与管理面板 */
+/** Skill 插件目录设置面板 */
 export function SkillsSettings({ draft, setDraft, onSave }: Props) {
-  const [skillUrl, setSkillUrl] = useState('')
-  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const installed = new Set(draft.installedSkillIds ?? [])
 
-  const handleImport = async () => {
-    if (!skillUrl.trim()) return
-    setImportMsg('导入中…')
+  const handleInstall = async (id: string, repoUrl: string) => {
+    setBusyId(id)
+    setMsg(null)
     try {
-      const p = await window.sharker.importSkillRepo(skillUrl.trim())
-      const url = skillUrl.trim()
-      if (!draft.skillRepoUrls.includes(url)) {
-        const next = { ...draft, skillRepoUrls: [...draft.skillRepoUrls, url] }
-        setDraft(next)
-        await onSave(next)
-      }
-      setImportMsg('已导入: ' + p)
-      setSkillUrl('')
+      const p = await window.sharker.importSkillRepo(repoUrl)
+      const ids = draft.installedSkillIds ?? []
+      const urls = draft.skillRepoUrls.includes(repoUrl)
+        ? draft.skillRepoUrls
+        : [...draft.skillRepoUrls, repoUrl]
+      const nextIds = ids.includes(id) ? ids : [...ids, id]
+      const next = { ...draft, skillRepoUrls: urls, installedSkillIds: nextIds }
+      setDraft(next)
+      await onSave(next)
+      setMsg(`已安装 · ${p}`)
     } catch (e) {
-      setImportMsg('失败: ' + (e instanceof Error ? e.message : String(e)))
+      setMsg(`失败: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setBusyId(null)
     }
   }
 
   return (
     <>
-      <SettingsSection title="导入">
+      <SettingsSection title="内置 Skill">
         <SettingsCard>
-          <div className="st-skill-input-wrap">
-            <label htmlFor="skill-repo">GitHub 仓库地址</label>
-            <input
-              id="skill-repo"
-              type="url"
-              value={skillUrl}
-              onChange={(e) => setSkillUrl(e.target.value)}
-              placeholder="https://github.com/user/skills-repo"
-            />
-            {importMsg && <p className="test-result">{importMsg}</p>}
-          </div>
-          <SettingsRow
-            title="导入到本地"
-            description="安装到 ~/.sharker/skills/，对话时按内容自动匹配。"
-            last
-          >
-            <SettingsPillButton variant="primary" onClick={handleImport}>
-              导入
-            </SettingsPillButton>
-          </SettingsRow>
+          <ul className="plugin-catalog-list">
+            {BUNDLED_SKILL_CATALOG.map((skill) => (
+              <li key={skill.id} className="plugin-catalog-item">
+                <div className="plugin-catalog-copy">
+                  <div className="plugin-catalog-title">
+                    {skill.title}
+                    {skill.tags?.map((t) => (
+                      <span key={t} className="plugin-catalog-tag">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="plugin-catalog-desc">{skill.description}</p>
+                </div>
+                <span className="plugin-catalog-installed">已启用</span>
+              </li>
+            ))}
+          </ul>
         </SettingsCard>
       </SettingsSection>
 
-      {draft.skillRepoUrls.length > 0 && (
-        <SettingsSection title="已导入">
-          <SettingsCard>
-            <ul className="skill-repo-list">
-              {draft.skillRepoUrls.map((url) => (
-                <li key={url}>{url}</li>
-              ))}
-            </ul>
-          </SettingsCard>
-        </SettingsSection>
-      )}
+      <SettingsSection title="Skill 市场">
+        <SettingsCard>
+          <ul className="plugin-catalog-list">
+            {MARKETPLACE_SKILL_CATALOG.map((skill) => {
+              const isInstalled = installed.has(skill.id)
+              return (
+                <li key={skill.id} className="plugin-catalog-item">
+                  <div className="plugin-catalog-copy">
+                    <div className="plugin-catalog-title">
+                      {skill.title}
+                      {skill.tags?.map((t) => (
+                        <span key={t} className="plugin-catalog-tag">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="plugin-catalog-desc">{skill.description}</p>
+                  </div>
+                  {isInstalled ? (
+                    <span className="plugin-catalog-installed">已安装</span>
+                  ) : (
+                    <SettingsPillButton
+                      variant="primary"
+                      onClick={() => void handleInstall(skill.id, skill.repoUrl!)}
+                    >
+                      {busyId === skill.id ? '安装中…' : '安装'}
+                    </SettingsPillButton>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          {msg ? <p className="plugin-catalog-msg">{msg}</p> : null}
+        </SettingsCard>
+      </SettingsSection>
     </>
   )
 }

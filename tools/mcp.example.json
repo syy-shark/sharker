@@ -1,0 +1,43 @@
+{
+  "servers": [
+    {
+      "name": "filesystem",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/you/projects"]
+    },
+    {
+      "name": "cua-driver",
+      "command": "/home/you/.local/bin/cua-driver",
+      "args": ["mcp"],
+      "comment": "推荐：Cua Driver MCP。Windows: %LOCALAPPDATA%\\Programs\\Cua\\cua-driver\\bin\\cua-driver.exe · 安装 scripts/setup-cua-driver.ps1 -InstallMcp"
+    },
+    {
+      "name": "computer-use",
+      "command": "/home/you/codex-desktop-linux-main/target/release/codex-computer-use-linux",
+      "args": ["mcp"],
+      "transport": "ndjson",
+      "env": {},
+      "comment": "备选：codex-computer-use-linux。工具：doctor, get_app_state, screenshot, scroll。Sharker：bash scripts/setup-computer-use.sh"
+    },
+    {
+      "name": "read-aloud",
+      "command": "/home/you/codex-desktop-linux-main/target/release/codex-read-aloud-linux",
+      "args": ["mcp"],
+      "transport": "ndjson",
+      "comment": "cargo build --release -p codex-read-aloud-linux。工具：doctor, read_aloud, stop。Kokoro：bash scripts/install-kokoro-runtime.sh"
+    },
+    {
+      "name": "playwright",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "comment": "Browser 自动化 MCP（与 builtin browser_* 二选一或并存）"
+    }
+  ],
+  "_browser_use_native_host": {
+    "comment": "非 MCP：Chrome 扩展 Browser Use 需 codex-chrome-extension-host + native messaging manifest",
+    "build": "cargo build --release -p codex-computer-use-linux --bin codex-chrome-extension-host",
+    "setup": "bash scripts/setup-browser-use.sh",
+    "extension_id": "hehggadaopoacecdllhhajmbjkdcmajg",
+    "host_name": "com.openai.codexextension"
+  }
+}

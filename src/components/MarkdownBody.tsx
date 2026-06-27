@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { parseUnifiedDiff } from '../../shared/line-diff'
 import { CodeDiffBlock } from './CodeDiffBlock'
+import { CompareBlock, parseCompareRows } from './CompareBlock'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
@@ -23,6 +24,17 @@ function extractCodeText(children: ReactNode): string {
     if (props.children != null) return extractCodeText(props.children)
   }
   return String(children ?? '').replace(/\n$/, '')
+}
+
+/** 尝试渲染 旧/新 对比或显式 diff 块；普通代码块返回 null */
+function trySpecialCodeBlock(text: string, lang?: string): ReactNode | null {
+  const compareRows = parseCompareRows(text)
+  if (compareRows) return <CompareBlock rows={compareRows} />
+  if (lang === 'diff') {
+    const lines = parseUnifiedDiff(text)
+    if (lines.length > 0) return <CodeDiffBlock lines={lines} />
+  }
+  return null
 }
 
 const markdownComponents: Components = {
@@ -53,10 +65,8 @@ const markdownComponents: Components = {
     const match = /language-(\w+)/.exec(className ?? '')
     if (match?.[1] === 'diff') {
       const text = extractCodeText(children)
-      const lines = parseUnifiedDiff(text)
-      if (lines.length > 0) {
-        return <CodeDiffBlock lines={lines} />
-      }
+      const special = trySpecialCodeBlock(text, 'diff')
+      if (special) return special
     }
     return (
       <code className={className} {...rest}>
@@ -67,14 +77,10 @@ const markdownComponents: Components = {
   pre: ({ children, ...rest }) => {
     if (isValidElement(children)) {
       const childProps = children.props as { className?: string; children?: ReactNode }
-      const match = /language-(\w+)/.exec(childProps.className ?? '')
-      if (match?.[1] === 'diff') {
-        const text = extractCodeText(childProps.children)
-        const lines = parseUnifiedDiff(text)
-        if (lines.length > 0) {
-          return <CodeDiffBlock lines={lines} />
-        }
-      }
+      const lang = /language-(\w+)/.exec(childProps.className ?? '')?.[1]
+      const text = extractCodeText(childProps.children)
+      const special = trySpecialCodeBlock(text, lang)
+      if (special) return special
     }
     return <pre {...rest}>{children}</pre>
   }

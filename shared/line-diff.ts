@@ -90,8 +90,16 @@ export function buildFileDiff(
 
 /** 解析 unified diff 或 ```diff 块文本 */
 export function parseUnifiedDiff(text: string): FileDiffLine[] {
+  const rawLines = text.split('\n')
+  const looksLikeDiff =
+    rawLines.some((l) => l.startsWith('@@')) ||
+    rawLines.some((l) => l.startsWith('---')) ||
+    (rawLines.some((l) => l.startsWith('+') && !l.startsWith('+++')) &&
+      rawLines.some((l) => l.startsWith('-') && !l.startsWith('---')))
+  if (!looksLikeDiff) return []
+
   const lines: FileDiffLine[] = []
-  for (const raw of text.split('\n')) {
+  for (const raw of rawLines) {
     if (
       raw.startsWith('+++') ||
       raw.startsWith('---') ||

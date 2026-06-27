@@ -5,6 +5,9 @@
 /** 文件访问权限：沙箱（仅工作区）或完整访问 */
 export type PermissionMode = 'sandbox' | 'full'
 
+/** Agent 网络隔离模式（对标 Codex agent-workspace network.mode） */
+export type NetworkMode = 'open' | 'local_only' | 'disabled'
+
 /** OpenAI 兼容 API 提供商配置 */
 export interface ProviderConfig {
   id: string
@@ -14,6 +17,8 @@ export interface ProviderConfig {
   model: string
   /** 上下文 token 上限；不填则按模型 ID 自动识别 */
   contextWindow?: number
+  /** 是否支持视觉（Computer Use 截图回灌）；不填则按模型名启发 */
+  vision?: boolean
 }
 
 /** 侧栏工作区条目 */
@@ -32,9 +37,21 @@ export interface AppSettings {
   workspaces: WorkspaceItem[]
   activeWorkspaceId: string
   permissionMode: PermissionMode
+  /** 出站网络策略；默认 open（继承主机） */
+  networkMode?: NetworkMode
+  /** 可选工作区 profile 标签（MVP，便于多环境区分） */
+  workspaceProfile?: string
   providers: ProviderConfig[]
   activeProviderId: string
   skillRepoUrls: string[]
+  /** 桌面自动化（desktop_* + computer-use MCP）；默认开启 */
+  computerUseEnabled?: boolean
+  /** 浏览器自动化（browser_* + playwright MCP）；默认开启 */
+  browserUseEnabled?: boolean
+  /** 已从目录安装的 Skill 插件 id */
+  installedSkillIds?: string[]
+  /** 桌面小宠物 */
+  petEnabled?: boolean
 }
 
 /** 聊天消息角色 */
@@ -76,10 +93,14 @@ export interface FileDiff {
   stats: { added: number; removed: number }
 }
 
-/** 工具执行结果：文本输出 + 可选 diff 元数据 */
+/** 工具执行结果：文本输出 + 可选 diff / 计划就绪元数据 */
 export interface ToolRunResult {
   output: string
   fileDiff?: FileDiff
+  /** exit_plan_mode 后置 true，触发 UI Build 按钮 */
+  planReady?: boolean
+  planDocument?: string
+  planFilePath?: string
 }
 
 /** 一回合按时间顺序排列的片段（思考→旁白→工具→…） */
@@ -162,6 +183,8 @@ export interface StreamChunk {
     | 'approval_needed'
     | 'context_compress'
     | 'command'
+    | 'plan_ready'
+    | 'harness_mode'
   content?: string
   toolName?: string
   toolArgs?: Record<string, unknown>
@@ -173,6 +196,11 @@ export interface StreamChunk {
   contextCompress?: ContextCompressInfo
   /** 本地命令：如 clear 清空当前对话 */
   command?: string
+  /** 计划模式完成，用户可 Build */
+  planDocument?: string
+  planFilePath?: string
+  /** 当前 Harness 阶段 */
+  harnessPhase?: 'normal' | 'plan' | 'build'
 }
 
 /** 已加载 Skill 的元数据与正文 */
@@ -189,6 +217,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workspaces: [],
   activeWorkspaceId: '',
   permissionMode: 'sandbox',
+  networkMode: 'open',
+  workspaceProfile: '',
   providers: [
     {
       id: 'default',
@@ -199,5 +229,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     }
   ],
   activeProviderId: 'default',
-  skillRepoUrls: []
+  skillRepoUrls: [],
+  computerUseEnabled: true,
+  browserUseEnabled: true,
+  installedSkillIds: [],
+  petEnabled: false
 }

@@ -78,6 +78,8 @@
 }
 
 .st-row-control {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -215,6 +217,7 @@
 
 .st-toggle {
   position: relative;
+  z-index: 2;
   width: 44px;
   height: 24px;
   border-radius: 999px;
@@ -224,6 +227,11 @@
   cursor: pointer;
   transition: background 0.2s ease;
   flex-shrink: 0;
+}
+
+.st-toggle:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .st-toggle--on {
@@ -283,4 +291,29 @@
   border-radius: 8px;
   border: 1px solid var(--surface-border-soft);
   background: var(--surface-frost);
+}
+
+.st-row-badge--muted {
+  opacity: 0.72;
+}
+
+.cu-perm-tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cu-perm-tool-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.cu-perm-tool-list code {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
 }

@@ -9,7 +9,9 @@ const VERIFY_SCRIPT_ORDER = ['test', 'build', 'lint', 'check', 'typecheck'] as c
 
 /** 用户明确要求跳过时，不触发自动验证 */
 export function shouldSkipAutoVerify(userText: string): boolean {
-  return /不要运行|别运行|无需运行|skip run|no run/i.test(userText)
+  return /不要运行|别运行|无需运行|不要跑|别跑|不必运行|不要执行|别执行|不运行命令|只改|skip run|no run/i.test(
+    userText
+  )
 }
 
 /** 按优先级从 package.json scripts 选取 npm run 验证命令 */

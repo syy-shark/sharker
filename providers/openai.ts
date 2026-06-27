@@ -4,11 +4,18 @@
  */
 import type { AppSettings, ProviderConfig } from '../shared/types'
 import { TOOL_DEFINITIONS } from '../agent/tool-definitions'
+import { getToolDefinitionsForPhase } from '../tools/registry'
+import { inferProviderVision } from '../shared/provider-vision'
+
+/** OpenAI Chat Completions 多模态 content 片段 */
+export type ChatCompletionContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } }
 
 /** OpenAI Chat Completions 消息体（含 tool_calls） */
 export interface ChatCompletionMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content?: string | null
+  content?: string | ChatCompletionContentPart[] | null
   tool_calls?: Array<{
     id: string
     type: 'function'
@@ -47,6 +54,12 @@ export function resolveChatCompletionsUrl(baseUrl: string): string {
     if (host.includes('deepseek.com')) {
       return `${u.origin}/v1/chat/completions`
     }
+    if (host.includes('stepfun.com') || host.includes('step.ai')) {
+      if (base.endsWith('/v1')) {
+        return `${base}/chat/completions`
+      }
+      return `${u.origin}/v1/chat/completions`
+    }
     if (base.endsWith('/v1')) {
       return `${base}/chat/completions`
     }
@@ -54,6 +67,54 @@ export function resolveChatCompletionsUrl(baseUrl: string): string {
   } catch {
     return `${base}/chat/completions`
   }
+}
+
+/** 将 fetch 底层错误转为可读提示 */
+function formatFetchError(err: unknown, url: string): Error {
+  if (err instanceof Error && err.message === 'This operation was aborted') {
+    return err
+  }
+  const cause =
+    err instanceof Error && 'cause' in err && err.cause instanceof Error
+      ? err.cause.message
+      : err instanceof Error
+        ? err.message
+        : String(err)
+  const lower = cause.toLowerCase()
+  if (lower.includes('fetch failed') || lower.includes('econnrefused')) {
+    return new Error(
+      `无法连接 API（${url}）。请检查：1) Base URL 是否正确 2) 网络/代理 3) 设置 → 模型 → 测试连接`
+    )
+  }
+  if (lower.includes('enotfound') || lower.includes('getaddrinfo')) {
+    return new Error(`API 域名无法解析（${url}），请检查 Base URL`)
+  }
+  if (lower.includes('certificate') || lower.includes('ssl') || lower.includes('tls')) {
+    return new Error(`API TLS/证书错误（${url}），请检查 Base URL 或系统时间`)
+  }
+  if (err instanceof Error) return err
+  return new Error(String(err))
+}
+
+/** 非视觉模型请求前去掉 image_url，避免 API 报错或 fetch 异常 */
+function sanitizeMessagesForProvider(
+  messages: ChatCompletionMessage[],
+  provider: ProviderConfig
+): ChatCompletionMessage[] {
+  const allowVision = inferProviderVision(provider)
+  if (allowVision) return messages
+  return messages.map((m) => {
+    if (!Array.isArray(m.content)) return m
+    const textParts = m.content
+      .filter((p) => p.type === 'text')
+      .map((p) => (p.type === 'text' ? p.text : ''))
+      .join('\n')
+    const hadImage = m.content.some((p) => p.type === 'image_url')
+    const suffix = hadImage
+      ? '\n[系统] 截图图像已省略（当前模型未开启视觉）。请在 设置 → 模型 中开启「视觉」或换 gpt-4o 等视觉模型。'
+      : ''
+    return { ...m, content: (textParts + suffix).trim() || null }
+  })
 }
 
 /** 判断 API 响应是否因不支持 tools 而失败 */
@@ -98,7 +159,7 @@ async function postChat(
     if (controller.signal.aborted && !signal?.aborted) {
       throw new Error(`连接 API 超时（${CONNECT_MS / 1000}s），请检查 Base URL 与网络`)
     }
-    throw e
+    throw formatFetchError(e, url)
   } finally {
     signal?.removeEventListener('abort', onAbort)
   }
@@ -146,12 +207,28 @@ function extractDeltaContent(delta: Record<string, unknown> | undefined): string
   return ''
 }
 
+/** StepFun 推理模型：降低默认 reasoning 深度，避免 Agent 首轮长时间无输出 */
+function providerExtraBody(provider: ProviderConfig): Record<string, unknown> {
+  try {
+    let base = provider.baseUrl.trim()
+    if (!base.startsWith('http')) base = `https://${base}`
+    const host = new URL(base).hostname.toLowerCase()
+    if (host.includes('stepfun.com') || host.includes('step.ai')) {
+      return { reasoning_effort: 'low' }
+    }
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
+
 /** 单次流式请求：SSE 解析、推理/正文/tool_calls 分片累积、空闲超时 */
 async function* streamChatAttempt(
   settings: AppSettings,
   messages: ChatCompletionMessage[],
   signal: AbortSignal | undefined,
-  withTools: boolean
+  withTools: boolean,
+  toolDefs: typeof TOOL_DEFINITIONS = TOOL_DEFINITIONS
 ): AsyncGenerator<{
   type: 'delta' | 'reasoning' | 'tool_calls' | 'done'
   content?: string
@@ -159,15 +236,17 @@ async function* streamChatAttempt(
   finishReason?: string
 }> {
   const provider = getActiveProvider(settings)
+  const apiMessages = sanitizeMessagesForProvider(messages, provider)
   const baseBody = {
     model: provider.model,
-    messages,
-    stream: true
+    messages: apiMessages,
+    stream: true,
+    ...providerExtraBody(provider)
   }
 
   let res = await postChat(
     provider,
-    withTools ? { ...baseBody, tools: TOOL_DEFINITIONS, tool_choice: 'auto' } : baseBody,
+    withTools ? { ...baseBody, tools: toolDefs, tool_choice: 'auto' } : baseBody,
     signal
   )
 
@@ -312,7 +391,7 @@ export async function* streamChat(
   settings: AppSettings,
   messages: ChatCompletionMessage[],
   signal?: AbortSignal,
-  options?: { preferTools?: boolean }
+  options?: { preferTools?: boolean; toolDefinitions?: typeof TOOL_DEFINITIONS }
 ): AsyncGenerator<{
   type: 'delta' | 'reasoning' | 'tool_calls' | 'done'
   content?: string
@@ -320,9 +399,10 @@ export async function* streamChat(
   finishReason?: string
 }> {
   const preferTools = options?.preferTools !== false
+  const tools = options?.toolDefinitions ?? getToolDefinitionsForPhase()
 
   try {
-    yield* streamChatAttempt(settings, messages, signal, preferTools)
+    yield* streamChatAttempt(settings, messages, signal, preferTools, tools)
   } catch (e) {
     throw e instanceof Error ? e : new Error(String(e))
   }
@@ -361,19 +441,84 @@ export async function testProviderConfig(
     if (!provider.apiKey) return { ok: false, message: '请先填写 API Key' }
     if (!provider.model?.trim()) return { ok: false, message: '请先填写模型 ID' }
 
+    const extra = providerExtraBody(provider)
     const res = await postChat(
       provider,
       {
         model: provider.model,
         messages: [{ role: 'user', content: 'ping' }],
         stream: false,
-        max_tokens: 8
+        max_tokens: 8,
+        ...extra
       },
       undefined
     )
-    if (res.ok) return { ok: true, message: '对话接口连接成功' }
-    const text = await res.text()
-    return { ok: false, message: `API ${res.status}: ${text.slice(0, 240)}` }
+    if (!res.ok) {
+      const text = await res.text()
+      return { ok: false, message: `API ${res.status}: ${text.slice(0, 240)}` }
+    }
+
+    const streamRes = await postChat(
+      provider,
+      {
+        model: provider.model,
+        messages: [{ role: 'user', content: '回复 ok' }],
+        stream: true,
+        max_tokens: 16,
+        ...extra
+      },
+      undefined
+    )
+    if (!streamRes.ok) {
+      const text = await streamRes.text()
+      return {
+        ok: true,
+        message: `对话接口连接成功（流式 ${streamRes.status}，真实对话可能较慢）: ${text.slice(0, 120)}`
+      }
+    }
+
+    const reader = streamRes.body?.getReader()
+    if (!reader) {
+      return { ok: true, message: '对话接口连接成功（无流式 body）' }
+    }
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+    const started = Date.now()
+    const streamWaitMs = 20_000
+    let gotData = false
+
+    while (Date.now() - started < streamWaitMs) {
+      const { done, value } = await readWithDeadline(
+        reader,
+        streamWaitMs - (Date.now() - started),
+        '流式测试超时'
+      )
+      if (done) break
+      if (value?.length) {
+        buffer += decoder.decode(value, { stream: true })
+        if (buffer.includes('data:') && !buffer.includes('data: [DONE]')) {
+          gotData = true
+          break
+        }
+      }
+    }
+
+    try {
+      reader.releaseLock()
+    } catch {
+      /* ignore */
+    }
+
+    if (!gotData) {
+      return {
+        ok: true,
+        message:
+          '对话接口连接成功，但 20 秒内未收到流式输出。Agent 任务可能长时间显示「思考中」，可换更快模型或检查 Base URL'
+      }
+    }
+
+    return { ok: true, message: '对话接口连接成功（含流式）' }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : String(e) }
   }

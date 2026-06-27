@@ -12,8 +12,7 @@ flowchart TB
     UI[流式 / 时间线 / 审批 / 复制 / 上下文环]
   end
   subgraph L4 [L4 记忆层]
-    GlobalMem[全局记忆 ~/.sharker/memory]
-    ProjMem[项目记忆 .sharker/project]
+    MemStore[PostgreSQL 记忆库]
     Skills[Skills + 自进化]
   end
   subgraph L3 [L3 策略层]
@@ -107,36 +106,23 @@ flowchart LR
 
 ## Phase 2：记忆系统（3～4 周）
 
-> **间接式披露**：不一次塞满上下文，按需加载。
+> **间接式披露**：不一次塞满上下文，按需检索注入。存储后端为 **PostgreSQL**（含 pgvector 语义检索 + 全文索引）。
 
-### 2.1 全局记忆 `~/.sharker/memory/`
-
-| 文件 | 存什么 | 何时注入 |
+| 范围 | 存什么 | 何时注入 |
 |------|--------|----------|
-| `preferences.md` | 用户偏好（语言、是否自动跑测试、常用模型） | 每轮摘要 1 段 |
-| `facts.md` | 跨项目事实（「用户主语言中文」「桌面路径」） | 相关时 keywords 匹配 |
-| `learnings.md` | Harness 自进化写入的教训 | 同类任务失败后再注入 |
+| global | 用户偏好、跨项目事实 | 与当前消息相关的 Top-K，上限 ~500 token |
+| workspace | 项目约定、ADR、踩坑 | 当前工作区匹配时 |
+| conversation | 会话内短期摘要 | 同会话延续时 |
 
-**披露策略**：只注入与当前消息相关的条目（关键词 / 小模型路由），上限 500 token。
+实现落点：`agent/memory/` + `memory_*` 工具；对话 JSON 仍由现有 conversations store 管理，Postgres 只存**提炼后的记忆条目**。
 
-### 2.2 项目记忆 `<工作区>/.sharker/project/`
+### 2.1 与 Skill 的关系
 
-| 文件 | 存什么 |
-|------|--------|
-| `context.md` | 项目是什么、目录约定、分支策略 |
-| `decisions.md` | 架构决策记录 ADR 简版 |
-| `gotchas.md` | 踩坑：「别改 electron/main 的 X」 |
-| `workflow.md` | 什么时候该做什么：发布流程、测试命令 |
-
-对话结束时 **可选提炼** 新事实写入（需用户确认或设置自动）。
-
-### 2.3 与 Skill 的关系
-
-| | Skill | 项目记忆 |
-|---|-------|----------|
-| 形式 | SKILL.md + scripts | markdown 记忆文件 |
-| 触发 | 用户意图匹配 | 任务类型 + 项目 |
-| 进化 | 人工维护 + 导入 repo | **自动提炼 + 人工编辑** |
+| | Skill | 记忆 |
+|---|-------|------|
+| 形式 | SKILL.md + scripts | 结构化 DB 行 + embedding |
+| 触发 | 用户意图匹配 | 语义 / 关键词检索 |
+| 进化 | 人工维护 + 导入 repo | **自动提炼 + 显式写入** |
 
 ---
 
@@ -145,7 +131,7 @@ flowchart LR
 | 机制 | 说明 |
 |------|------|
 | 失败归因 | verify 失败 / 用户点踩 → 记录 tool+错误模式 |
-| 教训沉淀 | 同类失败 2 次 → 写入 `learnings.md` 或 `gotchas.md` |
+| 教训沉淀 | 同类失败 2 次 → 写入记忆库（kind=learning） |
 | Skill 提议 | 重复 3 次的工作流 → 提议生成新 SKILL 草稿 |
 | 指标面板（后期） | 成功率、平均轮次、verify 通过率 |
 
@@ -218,7 +204,7 @@ gantt
 **近期 3 个 Sprint 建议**（接下来真正开干）：
 
 1. **Sprint A**：apply_patch + 编辑快照/撤销 + 验证矩阵（pytest/cargo/…）
-2. **Sprint B**：AGENTS.md + 项目 memory 文件 + 间接披露加载器
+2. **Sprint B**：AGENTS.md + PostgreSQL Memory + 按需检索注入
 3. **Sprint C**：阶段机（探索/编辑/验证）+ 并行只读 + @ 文件引用
 
 ---
@@ -228,7 +214,7 @@ gantt
 | 议题 | 决定 |
 |------|------|
 | 看搜改跑 + 主动测试 + 读项目 + 记忆 + 自进化 | 全部认可，按路线图推进 |
-| **记忆自动写入** | 允许自动提炼进 `gotchas.md` / `learnings.md`（可设置开关） |
+| **记忆自动写入** | 允许自动提炼进 PostgreSQL 记忆库（可设置开关） |
 | **Office** | Word、PDF、PPT **都要**，同 Phase 4 一并规划 |
 | **视频** | v1 接受 ffmpeg 命令行，无时间线 UI |
 | **文档驱动** | 全局 `docs/` + 每模块 `README.md`，见 [DOC-GUIDE.md](./DOC-GUIDE.md) |

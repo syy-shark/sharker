@@ -1,0 +1,57 @@
+.token-usage-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px 18px 8px;
+}
+
+.token-usage-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.token-usage-stat-value {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.token-usage-note {
+  margin: 0;
+  padding: 0 18px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.token-heatmap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 14px 18px 16px;
+}
+
+.token-heatmap-cell {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: rgba(74, 158, 255, 0.08);
+}
+
+.token-heatmap-cell--l1 {
+  background: rgba(74, 158, 255, 0.22);
+}
+
+.token-heatmap-cell--l2 {
+  background: rgba(74, 158, 255, 0.42);
+}
+
+.token-heatmap-cell--l3 {
+  background: rgba(74, 158, 255, 0.62);
+}
+
+.token-heatmap-cell--l4 {
+  background: rgba(74, 158, 255, 0.88);
+}

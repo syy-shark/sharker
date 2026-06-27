@@ -13,6 +13,9 @@ import { MessageActions } from './MessageActions'
 import { ContextRing } from './ContextRing'
 import { ModelPicker } from './ModelPicker'
 import { WorkspacePicker } from './WorkspacePicker'
+import { SlashCommandMenu, shouldShowSlashMenu } from './SlashCommandMenu'
+import type { SlashCommandMeta } from '../../shared/slash-commands'
+import { filterSlashCommands } from '../../shared/slash-commands'
 import './ChatView.css'
 
 const STICKY_BOTTOM_PX = 80
@@ -38,6 +41,11 @@ interface Props {
   onSend: (text: string, mode?: PromptSubmitMode) => void
   onCancelQueued: (id: string) => void
   onAbort: () => void
+  onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
+  showHistoryPicker?: boolean
+  onCloseHistoryPicker?: () => void
+  conversationTitles?: Array<{ id: string; title: string }>
+  onPickConversation?: (id: string) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -60,13 +68,25 @@ export function ChatView({
   turnHadThinking,
   onSend,
   onCancelQueued,
-  onAbort
+  onAbort,
+  onSlashAction,
+  showHistoryPicker,
+  onCloseHistoryPicker,
+  conversationTitles,
+  onPickConversation
 }: Props) {
   const [input, setInput] = useState('')
+  const [slashIndex, setSlashIndex] = useState(0)
   const [stickToBottom, setStickToBottom] = useState(true)
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
+  const [contextRingOpen, setContextRingOpen] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  /** 程序触发的滚动期间，忽略 scroll 事件对 stickToBottom 的干扰 */
+  const programmaticScrollRef = useRef(false)
+  const stickToBottomRef = useRef(stickToBottom)
+  stickToBottomRef.current = stickToBottom
   const isEmpty =
     messages.length === 0 &&
     queuedPrompts.length === 0 &&
@@ -75,9 +95,12 @@ export function ChatView({
     !turnThinking &&
     !loading
   const canSend = Boolean(input.trim())
+  const slashMenu = shouldShowSlashMenu(input)
+  const filteredSlash = slashMenu.show ? filterSlashCommands(slashMenu.query) : []
   const activeWorkspace =
     sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
     sortWorkspaces(workspaces ?? [])[0]
+  const hasWorkspace = Boolean(activeWorkspace?.path?.trim())
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const modelLabel = activeProvider?.model?.trim() || activeProvider?.name
   const contextLimit = resolveContextLimit(
@@ -93,16 +116,24 @@ export function ChatView({
     return distance < STICKY_BOTTOM_PX
   }, [])
 
-  /** 滚动到底部：流式用即时，离散事件用 smooth */
+  /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesRef.current
     if (!el) return
+    programmaticScrollRef.current = true
+    el.scrollTo({ top: el.scrollHeight, behavior })
     if (behavior === 'auto') {
-      el.scrollTop = el.scrollHeight
-    } else {
-      bottomRef.current?.scrollIntoView({ behavior })
+      programmaticScrollRef.current = false
+      setStickToBottom(checkStickToBottom())
+      return
     }
-  }, [])
+    const finish = () => {
+      programmaticScrollRef.current = false
+      setStickToBottom(checkStickToBottom())
+    }
+    el.addEventListener('scroll', finish, { passive: true, once: true })
+    window.setTimeout(finish, 500)
+  }, [checkStickToBottom])
 
   /** 根据内容自动调整输入框高度（最高 200px） */
   const syncTextareaHeight = () => {
@@ -115,16 +146,37 @@ export function ChatView({
   useEffect(() => {
     const el = messagesRef.current
     if (!el) return
-    const onScroll = () => setStickToBottom(checkStickToBottom())
+    const onScroll = () => {
+      if (programmaticScrollRef.current) return
+      setStickToBottom(checkStickToBottom())
+    }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
   }, [checkStickToBottom])
 
+  /** 流式输出：每帧贴底一次，避免 smooth 动画与内容增高来回「荡」 */
   useEffect(() => {
-    if (isEmpty || !stickToBottom) return
-    const behavior = loading ? 'auto' : 'smooth'
-    scrollToBottom(behavior)
-  }, [messages, liveSegments, streaming, loading, isEmpty, stickToBottom, scrollToBottom])
+    if (isEmpty || !loading) return
+    let rafId = 0
+    const follow = () => {
+      if (stickToBottomRef.current) {
+        const el = messagesRef.current
+        if (el) {
+          programmaticScrollRef.current = true
+          el.scrollTop = el.scrollHeight
+          programmaticScrollRef.current = false
+        }
+      }
+      rafId = requestAnimationFrame(follow)
+    }
+    rafId = requestAnimationFrame(follow)
+    return () => cancelAnimationFrame(rafId)
+  }, [loading, isEmpty])
+
+  useEffect(() => {
+    if (isEmpty || !stickToBottom || loading) return
+    scrollToBottom('smooth')
+  }, [messages, isEmpty, stickToBottom, loading, scrollToBottom])
 
   useEffect(() => {
     syncTextareaHeight()
@@ -145,8 +197,25 @@ export function ChatView({
     const t = input.trim()
     if (!t) return
     setInput('')
+    setSlashIndex(0)
     setStickToBottom(true)
     onSend(t, mode)
+    requestAnimationFrame(() => {
+      syncTextareaHeight()
+      textareaRef.current?.focus()
+    })
+  }
+
+  const pickSlashCommand = (cmd: SlashCommandMeta) => {
+    if (cmd.scope === 'ui' && onSlashAction) {
+      setInput('')
+      setSlashIndex(0)
+      onSlashAction(cmd, '')
+      requestAnimationFrame(() => textareaRef.current?.focus())
+      return
+    }
+    setInput(`/${cmd.name} `)
+    setSlashIndex(0)
     requestAnimationFrame(() => {
       syncTextareaHeight()
       textareaRef.current?.focus()
@@ -156,18 +225,78 @@ export function ChatView({
   /** 输入框与底部工具栏（工作区、模型、上下文、发送） */
   const composer = (
     <div className="composer-box">
+      {(slashMenu.show && filteredSlash.length > 0) ||
+      (showHistoryPicker && conversationTitles?.length) ? (
+        <div className="composer-popover-slot">
+          {slashMenu.show && filteredSlash.length > 0 ? (
+            <SlashCommandMenu
+              query={slashMenu.query}
+              activeIndex={slashIndex}
+              onSelect={pickSlashCommand}
+              onActiveIndexChange={setSlashIndex}
+            />
+          ) : null}
+          {showHistoryPicker && conversationTitles?.length ? (
+            <div className="slash-menu history-picker" role="listbox" aria-label="历史对话">
+              <ul className="slash-menu-list">
+                {conversationTitles.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      className="slash-menu-item"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onPickConversation?.(c.id)
+                        onCloseHistoryPicker?.()
+                      }}
+                    >
+                      <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <textarea
         ref={textareaRef}
         className="composer-input"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => {
+          setInput(e.target.value)
+          setSlashIndex(0)
+        }}
         onKeyDown={(e) => {
+          if (slashMenu.show && filteredSlash.length > 0) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setSlashIndex((i) => (i + 1) % filteredSlash.length)
+              return
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setSlashIndex((i) => (i - 1 + filteredSlash.length) % filteredSlash.length)
+              return
+            }
+            if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+              e.preventDefault()
+              const cmd = filteredSlash[slashIndex]
+              if (cmd) pickSlashCommand(cmd)
+              return
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setInput('')
+              return
+            }
+          }
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             submit(loading ? 'queue' : 'send')
           }
         }}
-        placeholder={loading ? '可继续输入，Enter 排队…' : '输入消息…'}
+        placeholder={loading ? '可继续输入，Enter 排队… 输入 / 命令' : '输入消息… 输入 / 查看命令'}
         rows={1}
       />
       <div className="composer-footer">
@@ -183,12 +312,16 @@ export function ChatView({
             providers={providers}
             activeProviderId={activeProviderId}
             onSelect={onSelectProvider}
+            dismissWhenPeerOpen={contextRingOpen}
+            onOpenChange={setModelPickerOpen}
           />
           <ContextRing
             messages={messages}
             streaming={streaming}
             draftInput={input}
             context={contextLimit}
+            dismissWhenPeerOpen={modelPickerOpen}
+            onOpenChange={setContextRingOpen}
           />
           {loading && canSend ? (
             <button
@@ -237,7 +370,8 @@ export function ChatView({
   )
 
   const showLiveAssistant = loading
-  const isThinkingLive = loading && !streaming && Boolean(turnThinking.trim())
+  const isThinkingLive =
+    loading && !streaming.trim() && Boolean(turnThinking.trim()) && liveSegments.length === 0
 
   return (
     <div className={`chat ${isEmpty ? 'chat--empty' : 'chat--active'}`}>
@@ -302,27 +436,30 @@ export function ChatView({
               </div>
             </div>
           ))}
-
+          {!stickToBottom && (
+            <div className="chat-scroll-bottom-wrap">
+              <button
+                type="button"
+                className="chat-scroll-bottom"
+                onClick={() => scrollToBottom('smooth')}
+                aria-label="回到底部"
+              >
+                回到底部
+              </button>
+            </div>
+          )} 
           <div ref={bottomRef} />
         </div>
       )}
 
-      {!stickToBottom && !isEmpty && (
-        <button
-          type="button"
-          className="chat-scroll-bottom"
-          onClick={() => {
-            setStickToBottom(true)
-            scrollToBottom('smooth')
-          }}
-          aria-label="回到底部"
-        >
-          回到底部
-        </button>
-      )}
 
       <div className="composer-stage">
-        {isEmpty && activeWorkspace && (
+        {isEmpty && !hasWorkspace && (
+          <h2 className="chat-empty-prompt chat-empty-prompt--hint">
+            请先在侧栏或设置中添加一个工作区文件夹，然后开始对话。
+          </h2>
+        )}
+        {isEmpty && hasWorkspace && activeWorkspace && (
           <h2 className="chat-empty-prompt" title={activeWorkspace.path}>
             我们应该在
             <span className="chat-empty-name">{activeWorkspace.label}</span>

@@ -3,6 +3,7 @@
  * @see skills/README.md
  */
 import fs from 'fs/promises'
+import fsSync from 'fs'
 import path from 'path'
 import os from 'os'
 import matter from 'gray-matter'
@@ -12,14 +13,56 @@ import type { SkillInfo } from '../shared/types'
 
 const execFileAsync = promisify(execFile)
 
-/** 全局 Skill 安装目录 ~/.sharker/skills */
+/** 全局 Claude Code Skill 目录 ~/.claude/skills（兼容 Claude Code 生态） */
+export function getGlobalClaudeSkillsDir(): string {
+  return path.join(os.homedir(), '.claude', 'skills')
+}
+
+/** 项目级 Claude Code Skill 目录 <workspace>/.claude/skills */
+export function getProjectClaudeSkillsDir(workspace: string): string {
+  return path.join(workspace, '.claude', 'skills')
+}
+
+/** 全局 Sharker Skill 安装目录 ~/.sharker/skills */
 export function getGlobalSkillsDir(): string {
   return path.join(os.homedir(), '.sharker', 'skills')
 }
 
-/** 项目级 Skill 目录 <workspace>/.sharker/skills */
+/** Sharker 内置 Skill 目录（随应用分发） */
+export function getBundledSkillsDir(): string {
+  const candidates = [
+    path.join(__dirname, 'skills/bundled'),
+    path.join(process.cwd(), 'skills/bundled'),
+    path.resolve(__dirname, '../../skills/bundled'),
+    path.resolve(__dirname, '../../../skills/bundled')
+  ]
+  for (const dir of candidates) {
+    try {
+      fsSync.accessSync(dir)
+      return dir
+    } catch {
+      /* try next */
+    }
+  }
+  return candidates[0]
+}
+
+/** 项目级 Sharker Skill 目录 <workspace>/.sharker/skills */
 export function getProjectSkillsDir(workspace: string): string {
   return path.join(workspace, '.sharker', 'skills')
+}
+
+/**
+ * 按优先级返回 Skill 搜索目录：先 .claude，后 .sharker；同层内项目优先于全局。
+ */
+function getSkillSearchDirs(workspace: string): string[] {
+  const dirs: string[] = []
+  if (workspace) dirs.push(getProjectClaudeSkillsDir(workspace))
+  dirs.push(getGlobalClaudeSkillsDir())
+  if (workspace) dirs.push(getProjectSkillsDir(workspace))
+  dirs.push(getGlobalSkillsDir())
+  dirs.push(getBundledSkillsDir())
+  return dirs
 }
 
 /** 递归查找目录下所有 SKILL.md 文件路径 */
@@ -45,29 +88,27 @@ async function findSkillFiles(dir: string): Promise<string[]> {
   return results
 }
 
-/** 从全局与项目目录加载全部 Skill 元数据与正文 */
+/** 从 .claude 与 .sharker 目录加载全部 Skill；同名时 .claude 优先 */
 export async function loadSkills(workspace: string): Promise<SkillInfo[]> {
-  const dirs = [getGlobalSkillsDir()]
-  if (workspace) dirs.push(getProjectSkillsDir(workspace))
+  const byName = new Map<string, SkillInfo>()
 
-  const files = new Set<string>()
-  for (const d of dirs) {
-    const found = await findSkillFiles(d)
-    found.forEach((f) => files.add(f))
+  for (const dir of getSkillSearchDirs(workspace)) {
+    const files = await findSkillFiles(dir)
+    for (const file of files) {
+      const raw = await fs.readFile(file, 'utf8')
+      const { data, content } = matter(raw)
+      const name = String(data.name ?? path.basename(path.dirname(file)))
+      if (byName.has(name)) continue
+      byName.set(name, {
+        name,
+        description: String(data.description ?? ''),
+        path: path.dirname(file),
+        body: content.trim()
+      })
+    }
   }
 
-  const skills: SkillInfo[] = []
-  for (const file of files) {
-    const raw = await fs.readFile(file, 'utf8')
-    const { data, content } = matter(raw)
-    skills.push({
-      name: String(data.name ?? path.basename(path.dirname(file))),
-      description: String(data.description ?? ''),
-      path: path.dirname(file),
-      body: content.trim()
-    })
-  }
-  return skills
+  return [...byName.values()]
 }
 
 /** 按用户消息关键词匹配 Skill，最多返回 2 个 */
@@ -78,13 +119,20 @@ export function selectSkillsForMessage(skills: SkillInfo[], userMessage: string)
   const matched = skills.filter((s) => {
     const desc = s.description.toLowerCase()
     const name = s.name.toLowerCase()
-    return (
-      lower.includes(name) ||
+    if (lower.includes(name)) return true
+    // 英文长词
+    if (
       desc
         .split(/\s+/)
         .filter((w) => w.length > 4)
         .some((w) => lower.includes(w))
-    )
+    ) {
+      return true
+    }
+    // 中文描述片段（2 字及以上）
+    const cjkTokens = s.description.match(/[\u4e00-\u9fff]{2,}/g) ?? []
+    if (cjkTokens.some((t) => userMessage.includes(t))) return true
+    return false
   })
 
   return matched.slice(0, 2)
