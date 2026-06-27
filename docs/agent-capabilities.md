@@ -84,6 +84,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|------|
 | `web_fetch` | HTTP 抓取 + 粗略 HTML→文本 |
 | `web_search` | DuckDuckGo Instant Answer |
+| `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL |
 
 ### Browser（Playwright 可选）
 
@@ -93,7 +94,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `browser_click` / `browser_type` | 页面交互（需审批） |
 | `browser_screenshot` / `browser_close` | 截图 / 关闭会话 |
 
-需 `npm install playwright && npx playwright install chromium`，或使用 MCP `@playwright/mcp`。
+用户说「打开网站」「用 Chrome 打开」时应使用 `open_url`；`browser_*` 只用于无头网页检查与自动化。`browser_*` 需 `npm install playwright && npx playwright install chromium`，或使用 MCP `@playwright/mcp`。
 
 **Codex 扩展路径**（已登录 Chrome 配置）：`codex-chrome-extension-host` + native messaging — `bash scripts/setup-browser-use.sh`。设置 UI：**设置 → Browser Use**。
 

@@ -56,7 +56,7 @@ tools/
 **改**：`write_file`、`search_replace`、`apply_patch`、`delete_path`、`move_path`、`create_directory`  
 **系统**：`uninstall_application`（停进程 + pkexec 卸 apt 包 + 清用户数据 + 验证）、`verify_removal`（检查残留；Harness 在误用 rm 卸载后会自动调用）  
 **跑**：`run_terminal_cmd`（`rm -rf` 后自动验证路径是否消失）、全套 `git_*`、`run_skill_script`  
-**Web/Browser**：`web_fetch`、`web_search`、`browser_*`（Playwright 可选）  
+**Web/Browser**：`web_fetch`、`web_search`、`open_url`（系统浏览器/Chrome 可见打开）、`browser_*`（Playwright 无头自动化，可选）  
 **Desktop**：`desktop_*`（ydotool 轻量回退）；完整见 MCP **`cua-driver`**（推荐）或 `codex-computer-use-linux`  
 **MCP**：动态池 + `mcp_list_tools` / `mcp_call_tool`  
 **Voice**：`voice_read_aloud` / `voice_stop`（spd-say/espeak）；Kokoro + MCP 见 `docs/computer-use-setup.md`  

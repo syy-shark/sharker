@@ -22,6 +22,7 @@ const CODING_RULES_BASE = `# Work rules
 - Dev servers (npm run dev, vite, python -m http.server) run in background on port 3000 (not 5173); give the user http://localhost:3000 to open in their browser.
 - Only git_commit / git_push when the user explicitly asks.
 - Browser automation: browser_* tools (Playwright) or MCP @playwright/mcp; desktop automation: mcp_cua_driver__* (Cua Driver) or desktop_* fallback on Linux.
+- Visible browsing: when the user asks to open a website for them (e.g. "用 Chrome 打开哔哩哔哩"), call open_url with browser="chrome" or "default"; use browser_* only for headless page inspection/automation.
 - When Computer Use is available (see # Computer Use section below if present), follow the Computer Use workflow there — do NOT stop after list_windows/screenshot alone.
 
 # Communication style
@@ -90,10 +91,9 @@ function buildComputerUsePrompt(cu: Awaited<ReturnType<typeof gatherComputerUseS
   } else if (process.platform === 'win32') {
     lines.push(
       'Cua Driver not configured — user should install via Settings → Computer Use.',
-      'Fallback: run_terminal_cmd uses **Windows cmd** (not bash). Examples:',
-      '- Open Chrome + URL: start chrome https://www.bilibili.com',
-      '- Open app: start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"',
-      'Prefer mcp_cua_driver__* when MCP is connected; use browser_* for headless web tasks.'
+      'Fallback: run_terminal_cmd uses **Windows cmd** (not bash).',
+      'For opening websites visibly, use open_url instead of shell commands.',
+      'Prefer mcp_cua_driver__* when MCP is connected; use browser_* only for headless web tasks.'
     )
   } else {
     lines.push(
@@ -159,6 +159,7 @@ export async function buildSystemPrompt(
           '',
           '# Browser Use',
           `Playwright: ${bu.playwrightAvailable ? 'installed' : 'not installed — npm install playwright && npx playwright install chromium'}`,
+          'Visible browsing: use open_url to open URLs in the user browser/Chrome.',
           process.platform === 'win32'
             ? 'Windows: browser_* and MCP @playwright/mcp work natively; in-app Browser panel opens URLs without Playwright.'
             : 'In-app Browser panel can open URLs without Playwright.',

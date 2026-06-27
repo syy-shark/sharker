@@ -49,6 +49,7 @@ const TOOL_TITLES: Record<string, string> = {
   shell_kill: '终止 Shell',
   web_fetch: '抓取网页',
   web_search: '网页搜索',
+  open_url: '打开网页',
   list_skills: '列出技能',
   read_skill: '读取技能',
   mcp_list_tools: 'MCP 工具列表',

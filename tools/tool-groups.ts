@@ -21,6 +21,7 @@ export const PLAN_MODE_TOOL_NAMES = new Set([
   'read_skill',
   'web_fetch',
   'web_search',
+  'open_url',
   'task_list',
   'task_get',
   'task_output',

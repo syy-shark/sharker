@@ -15,6 +15,7 @@ import { grepTool } from './builtins/grep'
 import { gitTools } from './builtins/git'
 import { listDirTool } from './builtins/list-dir'
 import { movePathTool } from './builtins/move-path'
+import { openUrlTool } from './builtins/open-url'
 import { uninstallApplicationTool } from './builtins/uninstall-application'
 import { verifyRemovalTool } from './builtins/verify-removal'
 import { enterPlanModeTool, exitPlanModeTool } from './builtins/mode/plan'
@@ -75,6 +76,7 @@ function getAllToolHandlers(): ToolHandler[] {
     ...worktreeTools,
     ...taskTools,
     ...webTools,
+    openUrlTool,
     ...browserTools,
     ...voiceTools,
     ...skillDiscoveryTools,

@@ -2,7 +2,7 @@
  * 扩展 Tool Schema（Phase 2+），由 schemas.ts 合并导出。
  * @see tools/README.md
  */
-import type { OpenAIToolDefinition } from '../types'
+import type { OpenAIToolDefinition } from './types'
 
 export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
@@ -296,6 +296,25 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
         type: 'object',
         properties: { query: { type: 'string' } },
         required: ['query']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'open_url',
+      description:
+        'Open a URL for the user in the system browser. Use this when the user asks to open a website or specifically says "用 Chrome 打开"; do not use headless browser_navigate for visible browsing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'http(s) URL; https:// is added if omitted' },
+          browser: {
+            type: 'string',
+            description: 'default | chrome. Use chrome only when the user explicitly asks for Chrome.'
+          }
+        },
+        required: ['url']
       }
     }
   },
