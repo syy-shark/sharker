@@ -4,7 +4,7 @@
   "description": "Desktop AI assistant for Ubuntu",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "NO_SANDBOX=1 electron-vite dev",
+    "dev": "node scripts/dev.cjs",
     "dev:win": "scripts\\launch-sharker.cmd",
     "build": "electron-vite build",
     "preview": "electron-vite preview"
