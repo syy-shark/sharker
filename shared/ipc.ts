@@ -8,6 +8,8 @@ export const IPC = {
   SAVE_SETTINGS: 'settings:save',
   TEST_PROVIDER: 'provider:test',
   SEND_MESSAGE: 'chat:send',
+  SAVE_ATTACHMENT: 'chat:save-attachment',
+  READ_ATTACHMENT_DATA_URL: 'chat:read-attachment-data-url',
   ABORT_CHAT: 'chat:abort',
   APPROVAL_RESPONSE: 'approval:response',
   SELECT_WORKSPACE: 'workspace:select',

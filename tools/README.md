@@ -72,7 +72,7 @@ tools/
 ## 对外接口
 
 - `executeTool(name, args, settings): Promise<string>` — 仅文本输出（给模型上下文）
-- `executeToolWithMeta(...): Promise<ToolRunResult>` — 含 `fileDiff`（`write_file` / `search_replace` 行级 diff，供 UI 绿加红删）
+- `executeToolWithMeta(...): Promise<ToolRunResult>` — 含 `fileDiff` / `fileDiffs`（`write_file` / `search_replace` / `apply_patch` 行级 diff，供 UI 完成后展开绿加红删）
 
 ## 扩展指南（新增 Tool）
 

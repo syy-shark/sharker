@@ -1,64 +1,56 @@
 .thinking-indicator {
-  width: 100%;
-  margin-bottom: 20px;
-  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 26px;
+  margin: 0 0 12px;
+  padding: 2px 0;
+  animation: thinking-indicator-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
-.thinking-indicator-track {
-  position: relative;
-  height: 3px;
-  max-width: 120px;
-  border-radius: 999px;
-  background: rgba(39, 39, 42, 0.08);
-  overflow: hidden;
-  margin-bottom: 10px;
+@keyframes thinking-indicator-enter {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.thinking-indicator-sweep {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 42%;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(24, 24, 27, 0.08) 20%,
-    rgba(24, 24, 27, 0.28) 50%,
-    rgba(24, 24, 27, 0.08) 80%,
-    transparent 100%
-  );
-  animation: thinkingSweep 2s var(--motion-ease-soft) infinite;
-}
-
-@keyframes thinkingSweep {
-  0% {
-    transform: translateX(-110%);
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  100% {
-    transform: translateX(320%);
-    opacity: 0.4;
-  }
-}
-
-.thinking-indicator {
-  animation: view-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+@keyframes thinking-text-sweep {
+  from { background-position: -30% 50%; }
+  to { background-position: 130% 50%; }
 }
 
 .thinking-indicator-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
   color: var(--text-muted);
-  letter-spacing: 0.02em;
+  background: linear-gradient(
+    105deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 35%,
+    var(--text) 48%,
+    var(--accent) 52%,
+    var(--text-muted) 65%,
+    var(--text-muted) 100%
+  );
+  background-size: 260% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 22px;
+  animation: thinking-text-sweep 2s linear infinite;
+}
+
+.thinking-indicator-time {
+  min-width: 4ch;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 22px;
 }
 
 .thinking-indicator-text {
+  flex-basis: 100%;
   margin: 8px 0 0;
   font-family: var(--font);
   font-size: 13px;
@@ -68,4 +60,17 @@
   word-break: break-word;
   max-height: 140px;
   overflow-y: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-indicator,
+  .thinking-indicator-label {
+    animation: none;
+  }
+
+  .thinking-indicator-label {
+    background: none;
+    color: var(--text-secondary);
+    -webkit-text-fill-color: currentColor;
+  }
 }

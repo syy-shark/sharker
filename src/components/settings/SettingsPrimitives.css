@@ -147,6 +147,20 @@
   opacity: 0.85;
 }
 
+.st-section-title { letter-spacing: 0; text-transform: none; }
+.st-card {
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.st-card::before { display: none; }
+.st-choice-slide,
+.st-choice-card { border-radius: 8px; }
+.st-choice-card { background: #f7f8fa; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.st-choice-card::before { display: none; }
+
 .st-choice-card:hover {
   border-color: rgba(255, 255, 255, 0.42);
   background: var(--surface-nested-hover);

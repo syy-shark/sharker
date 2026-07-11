@@ -38,10 +38,10 @@ flowchart LR
 1. 用户输入 → `App.tsx` `handlePromptSubmit`（空闲直接派发；忙时排队或插队）
 2. 排队消息显示「排队中」气泡；当前 turn `done` 后自动按序派发下一条
 3. `ipc invoke` `chat:send` → `electron/main/index.ts` → `executeUserInput`
-4. `queryServe` 占坑（`turn_start`、AbortController、120s 超时）
+4. `queryServe` 占坑（`turn_start`、AbortController、普通任务 15 分钟 / 桌面自动化 20 分钟超时）
 5. `processUserInput`：斜杠命令本地处理（`shouldQuery=false`）或进入 `onQuery`
 6. `onQuery`：`loadSettings` → `compressContextIfNeeded` → 组装 system + skills
-7. `queryLoop`：`streamChat` 流式调模型；有 `tool_calls` 则审批 + `executeTool`（最多 12 轮）
+7. `queryLoop`：`streamChat` 流式调模型；有 `tool_calls` 则审批 + `executeTool`（默认最多 40 轮）
 8. `StreamChunk` 经 `chat:stream` 推回 UI（含 `token` / `think` / `tool_*` / `command`）
 9. 结束后 `persistActiveConversation` 写入 `.sharker/conversations/`
 

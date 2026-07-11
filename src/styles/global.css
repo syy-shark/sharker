@@ -229,44 +229,6 @@ button:disabled {
   cursor: default;
 }
 
-/* 全局交互过渡兜底：hover/active/focus 丝滑过渡 */
-button,
-a,
-select,
-summary,
-label[for],
-input,
-textarea,
-[role='button'],
-[role='tab'],
-[role='option'],
-[role='menuitem'],
-[role='switch'],
-[tabindex]:not([tabindex='-1']) {
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-ease-soft),
-    color var(--motion-duration-fast) var(--motion-ease-soft),
-    border-color var(--motion-duration-fast) var(--motion-ease-soft),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
-    opacity var(--motion-duration-fast) var(--motion-ease-soft),
-    transform var(--motion-duration-fast) var(--motion-ease-spring);
-}
-
-/* 按钮按下轻微回弹（不含输入框，避免文字抖动） */
-button:not(:disabled):active,
-[role='button']:not([aria-disabled='true']):active {
-  transform: scale(0.97);
-}
-
-/* 图标颜色随按钮/链接平滑过渡 */
-button svg,
-a svg,
-[role='button'] svg {
-  transition:
-    fill var(--motion-duration-fast) var(--motion-ease-soft),
-    stroke var(--motion-duration-fast) var(--motion-ease-soft);
-}
-
 input,
 textarea,
 select {
@@ -286,4 +248,75 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(15, 23, 42, 0.22);
+}
+
+/* Workbench light theme. Semantic tokens are intentionally theme-ready. */
+:root {
+  --bg-base: #f3f5f7;
+  --bg: #f3f5f7;
+  --bg-elevated: #ffffff;
+  --bg-elevated-solid: #ffffff;
+  --bg-muted: #eef1f4;
+  --bg-glass: rgba(255, 255, 255, 0.78);
+  --bg-glass-strong: rgba(255, 255, 255, 0.9);
+  --border: #dce1e7;
+  --border-subtle: #e8ebef;
+  --border-glass: rgba(255, 255, 255, 0.7);
+  --border-crystal: #dce1e7;
+  --border-crystal-dim: #e2e6eb;
+  --text: #191c20;
+  --text-secondary: #505762;
+  --text-muted: #7a838f;
+  --accent: #1769d2;
+  --accent-hover: #1058b5;
+  --accent-soft: #edf5ff;
+  --accent-soft-strong: #e1efff;
+  --accent-ring: rgba(23, 105, 210, 0.22);
+  --success: #147a4d;
+  --success-soft: #eaf7f0;
+  --warning: #9a5b08;
+  --warning-soft: #fff5df;
+  --danger: #c73535;
+  --danger-soft: #fff0f0;
+  --surface-frost: #ffffff;
+  --surface-frost-hover: #f7f8fa;
+  --surface-frost-raised: #ffffff;
+  --surface-nested: #f1f3f5;
+  --surface-nested-hover: #e9edf1;
+  --surface-border-soft: #dce1e7;
+  --surface-border-faint: #e5e8ec;
+  --sidebar-surface-hover: #e9edf2;
+  --sidebar-surface-active: #e1ebf7;
+  --sidebar-accent-ring: rgba(23, 105, 210, 0.15);
+  --sidebar-text-label: #6c7580;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --window-radius: 10px;
+  --sidebar-edge-radius: 0px;
+  --shadow-panel: 0 8px 24px rgba(24, 31, 41, 0.08);
+  --shadow-sm: 0 2px 8px rgba(24, 31, 41, 0.07);
+  --shadow: 0 10px 30px rgba(24, 31, 41, 0.1);
+  --font: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  color: var(--text);
+  background: var(--bg-base);
+  letter-spacing: 0;
+}
+
+body::before {
+  display: none;
+}
+
+button,
+input,
+textarea,
+select {
+  letter-spacing: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
 }

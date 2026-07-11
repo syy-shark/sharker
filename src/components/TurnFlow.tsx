@@ -1,15 +1,30 @@
 /**
- * 一回合有序过程流：思考块、旁白文字、工具步骤卡
+ * 一回合专业执行轨道：理解、探索、执行、验证。
  * @see src/README.md
  */
-import { useState } from 'react'
-import { MarkdownBody } from './MarkdownBody'
-import { CodeDiffBlock } from './CodeDiffBlock'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
+import {
+  BadgeCheck,
+  BrainCircuit,
+  Check,
+  ChevronDown,
+  Circle,
+  CircleAlert,
+  FilePenLine,
+  Hammer,
+  Search
+} from 'lucide-react'
 import type { TurnSegment } from '../../shared/types'
-import { processSegments } from '../../shared/turn-segments'
+import {
+  deriveProcessPhases,
+  type ProcessPhase,
+  type ProcessPhaseGroup,
+  type ProcessPhaseStep
+} from '../../shared/process-phases'
+import { CodeDiffBlock } from './CodeDiffBlock'
+import { ThinkingIndicator } from './ThinkingIndicator'
 import './TurnFlow.css'
 
-/** TurnFlow Props */
 interface Props {
   segments: TurnSegment[]
   isStreaming?: boolean
@@ -18,211 +33,353 @@ interface Props {
   includeFinalText?: boolean
 }
 
-/** 秒数 → 显示文案 */
-function formatDuration(sec: number): string {
-  if (sec < 1) return '<1s'
-  return `${sec}s`
+const PHASE_ICONS: Record<ProcessPhase, ComponentType<{ size?: number; 'aria-hidden'?: boolean }>> = {
+  understand: BrainCircuit,
+  explore: Search,
+  execute: Hammer,
+  verify: BadgeCheck
 }
 
-/** 工具步骤图标 */
-function ToolIcon({ active, done }: { active: boolean; done: boolean }) {
-  if (done) {
+const DIFF_TOOLS = new Set(['write_file', 'search_replace', 'apply_patch'])
+
+type FileChangeRow = {
+  key: string
+  path: string
+  stats: { added: number; removed: number }
+  diff?: NonNullable<TurnSegment['fileDiff']>
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 1) return '<1s'
+  return `${seconds}s`
+}
+
+function basenamePath(path: string): string {
+  const parts = path.replace(/\\/g, '/').split('/')
+  return parts[parts.length - 1] || path
+}
+
+function fileChangeRows(segment: TurnSegment): FileChangeRow[] {
+  const diffs = segment.fileDiffs?.length
+    ? segment.fileDiffs
+    : segment.fileDiff
+      ? [segment.fileDiff]
+      : []
+  if (diffs.length > 0) {
+    return diffs.map((diff, index) => ({
+      key: `${segment.id}-${diff.path}-${index}`,
+      path: diff.path,
+      stats: diff.stats,
+      diff
+    }))
+  }
+
+  if (segment.editPreview?.length) {
+    return segment.editPreview.map((preview, index) => ({
+      key: `${segment.id}-${preview.path}-${index}`,
+      path: preview.path,
+      stats: preview.stats
+    }))
+  }
+
+  const fallback = segment.toolDetail ?? segment.toolTitle ?? '文件'
+  return [{ key: `${segment.id}-pending`, path: fallback, stats: { added: 0, removed: 0 } }]
+}
+
+function useAnimatedNumber(target: number): number {
+  const [value, setValue] = useState(0)
+  const valueRef = useRef(0)
+
+  useEffect(() => {
+    const safeTarget = Math.max(0, Math.round(target))
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion || safeTarget === valueRef.current) {
+      valueRef.current = safeTarget
+      setValue(safeTarget)
+      return
+    }
+
+    const from = valueRef.current
+    const distance = Math.abs(safeTarget - from)
+    const duration = Math.min(1200, Math.max(600, distance * 3))
+    let frame = 0
+    let startedAt: number | null = null
+    const tick = (now: number) => {
+      if (startedAt == null) startedAt = now
+      const progress = Math.min(1, (now - startedAt) / duration)
+      const eased = 1 - Math.pow(1 - progress, 2)
+      const next = Math.round(from + (safeTarget - from) * eased)
+      valueRef.current = next
+      setValue(next)
+      if (progress < 1) frame = window.requestAnimationFrame(tick)
+    }
+
+    frame = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frame)
+  }, [target])
+
+  return value
+}
+
+function FileChangeItem({ row, active, done }: { row: FileChangeRow; active: boolean; done: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const canExpand = done && Boolean(row.diff)
+  const displayedAdded = useAnimatedNumber(row.stats.added)
+  const displayedRemoved = useAnimatedNumber(row.stats.removed)
+
+  return (
+    <div className="turn-flow-file-change">
+      <div className="turn-flow-file-line">
+        <FilePenLine size={14} aria-hidden />
+        <span className="turn-flow-file-name" title={row.path}>
+          {basenamePath(row.path)}
+        </span>
+        <span
+          className="turn-flow-file-stats"
+          aria-label={`新增 ${row.stats.added} 行，删除 ${row.stats.removed} 行`}
+        >
+          <span className="turn-flow-file-stat turn-flow-file-stat--add" aria-hidden>+{displayedAdded}</span>
+          <span className="turn-flow-file-stat turn-flow-file-stat--del" aria-hidden>-{displayedRemoved}</span>
+        </span>
+        {canExpand ? (
+          <button
+            type="button"
+            className="turn-flow-file-diff-button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            aria-label={`${expanded ? '收起' : '展开'} ${basenamePath(row.path)} 的 diff`}
+          >
+            <span>Diff</span>
+            <ChevronDown
+              size={13}
+              className={expanded ? 'turn-flow-file-chevron turn-flow-file-chevron--open' : 'turn-flow-file-chevron'}
+              aria-hidden
+            />
+          </button>
+        ) : (
+          <span className="turn-flow-file-status">{active ? '写入中' : '已完成'}</span>
+        )}
+      </div>
+      {expanded && row.diff ? (
+        <div className="turn-flow-file-diff">
+          <CodeDiffBlock diff={row.diff} defaultExpanded showHeader={false} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function FileChangeBlock({ segment }: { segment: TurnSegment }) {
+  const active = segment.status === 'active'
+  const done = segment.status === 'done'
+  return (
+    <div className="turn-flow-file-changes">
+      {fileChangeRows(segment).map((row) => (
+        <FileChangeItem key={row.key} row={row} active={active} done={done} />
+      ))}
+    </div>
+  )
+}
+
+function StepMarker({ status }: { status: ProcessPhaseStep['status'] }) {
+  if (status === 'error') {
     return (
-      <span className="turn-flow-tool-icon turn-flow-tool-icon--done" aria-hidden>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M5 12l4 4L19 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      <span className="turn-flow-step-marker turn-flow-step-marker--error" aria-hidden>
+        <CircleAlert size={13} />
+      </span>
+    )
+  }
+  if (status === 'active') {
+    return (
+      <span className="turn-flow-step-marker turn-flow-step-marker--active" aria-hidden>
+        <Circle size={10} fill="currentColor" />
       </span>
     )
   }
   return (
-    <span
-      className={`turn-flow-tool-icon ${active ? 'turn-flow-tool-icon--active' : ''}`}
-      aria-hidden
-    >
-      {active ? <span className="turn-flow-tool-spinner" /> : null}
-      {!active ? (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-          />
-        </svg>
-      ) : null}
+    <span className="turn-flow-step-marker turn-flow-step-marker--done" aria-hidden>
+      <Check size={13} />
     </span>
   )
 }
 
-/** 思考块 */
-function ThinkingBlock({
-  segment,
-  isStreaming,
-  elapsedSec
+function ProcessStepRow({ step }: { step: ProcessPhaseStep }) {
+  const segment = step.segment
+  const isDiffTool = Boolean(segment.toolName && DIFF_TOOLS.has(segment.toolName))
+  return (
+    <li className={`turn-flow-step turn-flow-step--${step.status}`}>
+      <StepMarker status={step.status} />
+      <div className="turn-flow-step-content">
+        <div className="turn-flow-step-copy">
+          <span className="turn-flow-step-title">{step.title}</span>
+          {step.detail && !isDiffTool ? (
+            <code className="turn-flow-step-detail" title={segment.toolDetail}>
+              {step.detail}
+            </code>
+          ) : null}
+        </div>
+        {isDiffTool ? <FileChangeBlock segment={segment} /> : null}
+      </div>
+    </li>
+  )
+}
+
+function currentPhaseSteps(group: ProcessPhaseGroup): ProcessPhaseStep[] {
+  const unique = dedupePhaseSteps(group.steps)
+  const active = unique.find((step) => step.status === 'active')
+  if (!active) {
+    return unique.slice(-3).filter((step) => !duplicatesPhaseHeader(step, group))
+  }
+  const activeIndex = unique.findIndex((step) => step.id === active.id)
+  const completed = unique
+    .slice(0, activeIndex)
+    .filter((step) => step.status === 'done')
+    .slice(-2)
+  return [...completed, active].filter((step) => !duplicatesPhaseHeader(step, group))
+}
+
+function dedupePhaseSteps(steps: ProcessPhaseStep[]): ProcessPhaseStep[] {
+  const unique: ProcessPhaseStep[] = []
+  for (const step of steps) {
+    const previous = unique[unique.length - 1]
+    const duplicate =
+      previous &&
+      previous.phase === step.phase &&
+      previous.kind === step.kind &&
+      previous.title === step.title &&
+      previous.detail === step.detail
+    if (duplicate && (step.kind === 'thinking' || step.kind === 'status')) {
+      unique[unique.length - 1] = step
+    } else {
+      unique.push(step)
+    }
+  }
+  return unique
+}
+
+const GENERIC_PHASE_META_TITLES: Record<ProcessPhase, ReadonlySet<string>> = {
+  understand: new Set([
+    '分析任务目标与约束',
+    '正在分析任务目标与约束',
+    '已完成任务分析',
+    '任务与约束已梳理'
+  ]),
+  explore: new Set(['探索项目上下文', '等待探索']),
+  execute: new Set(['执行任务修改', '等待执行']),
+  verify: new Set(['验证执行结果', '等待验证', '验证完成'])
+}
+
+function isMetaStep(step: ProcessPhaseStep): boolean {
+  return step.kind === 'thinking' || step.kind === 'status'
+}
+
+function isGenericPhaseMetaStep(step: ProcessPhaseStep, group: ProcessPhaseGroup): boolean {
+  return (
+    isMetaStep(step) &&
+    (step.title === group.summary || GENERIC_PHASE_META_TITLES[group.phase].has(step.title))
+  )
+}
+
+function completedPhaseSteps(group: ProcessPhaseGroup): ProcessPhaseStep[] {
+  const unique = dedupePhaseSteps(group.steps)
+  if (unique.length === 1 && isMetaStep(unique[0]) && unique[0].status !== 'error') return []
+  return unique.filter((step) => step.status === 'error' || !isGenericPhaseMetaStep(step, group))
+}
+
+function duplicatesPhaseHeader(step: ProcessPhaseStep, group: ProcessPhaseGroup): boolean {
+  return isGenericPhaseMetaStep(step, group)
+}
+
+function PhaseSection({
+  group,
+  expanded,
+  compact,
+  elapsed
 }: {
-  segment: TurnSegment
-  isStreaming: boolean
-  elapsedSec?: number
+  group: ProcessPhaseGroup
+  expanded: boolean
+  compact: boolean
+  elapsed?: string
 }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const active = segment.status === 'active'
-  const text = segment.content?.trim() ?? ''
-  const label = active
-    ? elapsedSec != null
-      ? `思考中 · ${formatDuration(elapsedSec)}`
-      : '思考中'
-    : '已思考'
+  const Icon = PHASE_ICONS[group.phase]
+  const steps = expanded
+    ? compact
+      ? currentPhaseSteps(group)
+      : completedPhaseSteps(group)
+    : []
 
   return (
-    <div
-      className={`turn-flow-item turn-flow-item--thinking ${active ? 'turn-flow-item--active' : ''}`}
+    <section
+      className={`turn-flow-phase turn-flow-phase--${group.state}`}
+      aria-label={`${group.label}阶段：${group.summary}`}
     >
-      <button
-        type="button"
-        className="turn-flow-thinking-head"
-        onClick={() => setCollapsed((c) => !c)}
-        aria-expanded={!collapsed}
-      >
-        {active && isStreaming ? <span className="turn-flow-live-dot" aria-hidden /> : null}
-        <span className="turn-flow-thinking-label">{label}</span>
-        {text ? (
-          <svg
-            className={`turn-flow-chevron ${collapsed ? '' : 'turn-flow-chevron--open'}`}
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            aria-hidden
-          >
-            <path
-              d="M3 4.5 6 7.5 9 4.5"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </svg>
-        ) : null}
-      </button>
-      {!collapsed && text ? (
-        <div className={`turn-flow-thinking-body ${active ? 'turn-flow-thinking-body--live' : ''}`}>
-          <p className="turn-flow-thinking-text">{text}</p>
-          {active && isStreaming ? <span className="turn-flow-caret" aria-hidden /> : null}
+      <div className="turn-flow-phase-rail" aria-hidden>
+        <span className="turn-flow-phase-icon">
+          <Icon size={15} aria-hidden />
+        </span>
+      </div>
+      <div className="turn-flow-phase-content">
+        <div className="turn-flow-phase-header">
+          <span className="turn-flow-phase-label">{group.label}</span>
+          <span className="turn-flow-phase-summary" title={group.summary}>
+            {group.summary}
+          </span>
+          {group.state === 'active' && elapsed ? (
+            <span className="turn-flow-phase-time">{elapsed}</span>
+          ) : null}
         </div>
-      ) : null}
-      {!collapsed && !text && active ? (
-        <div className="turn-flow-thinking-wait">
-          <span className="turn-flow-shimmer" aria-hidden />
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-/** 旁白文字块 */
-function NarrationBlock({ segment, isStreaming }: { segment: TurnSegment; isStreaming: boolean }) {
-  const active = segment.status === 'active'
-  const content = segment.content?.trim() ?? ''
-  if (!content) return null
-
-  return (
-    <div
-      className={`turn-flow-item turn-flow-item--narration ${active ? 'turn-flow-item--active' : ''}`}
-    >
-      <div className="turn-flow-narration message-body--assistant">
-        <MarkdownBody>{content}</MarkdownBody>
-        {active && isStreaming ? (
-          <span className="turn-flow-caret turn-flow-caret--inline" aria-hidden />
+        {expanded && steps.length > 0 ? (
+          <ol className="turn-flow-steps">
+            {steps.map((step) => (
+              <ProcessStepRow key={step.id} step={step} />
+            ))}
+          </ol>
         ) : null}
       </div>
-    </div>
+    </section>
   )
 }
 
-/** 展示行级 diff 的编辑类工具 */
-const DIFF_TOOLS = new Set(['write_file', 'search_replace'])
-
-/** 工具步骤卡 */
-function ToolBlock({ segment }: { segment: TurnSegment }) {
-  const active = segment.status === 'active'
-  const done = segment.status === 'done'
-  const title = segment.toolTitle ?? segment.toolName ?? '操作'
-  const showDiff =
-    done &&
-    segment.fileDiff &&
-    segment.toolName &&
-    DIFF_TOOLS.has(segment.toolName)
-
-  return (
-    <div
-      className={`turn-flow-item turn-flow-item--tool ${active ? 'turn-flow-item--active' : ''} ${done ? 'turn-flow-item--done' : ''}`}
-    >
-      <ToolIcon active={active} done={done} />
-      <div className="turn-flow-tool-body">
-        <span className="turn-flow-tool-title">{title}</span>
-        {segment.toolDetail ? (
-          <code className="turn-flow-tool-detail">{segment.toolDetail}</code>
-        ) : null}
-        {showDiff ? <CodeDiffBlock diff={segment.fileDiff} defaultExpanded /> : null}
-      </div>
-      {active ? <span className="turn-flow-tool-pulse" aria-hidden /> : null}
-    </div>
-  )
-}
-
-/** 按顺序渲染一回合过程流 */
+/** 按阶段渲染一回合过程；thinking 只转为高层步骤，不渲染原始内容。 */
 export function TurnFlow({
   segments,
   isStreaming = false,
   liveStartedAt,
-  includeFinalText = false
+  includeFinalText: _includeFinalText = false
 }: Props) {
-  const display = includeFinalText
-    ? segments
-    : processSegments(segments, { isStreaming })
+  const model = deriveProcessPhases(segments, { isStreaming })
+  const groups = model.groups.filter((group) => group.steps.length > 0)
+  if (groups.length === 0) return null
 
-  if (display.length === 0) return null
+  const populatedSteps = groups.flatMap((group) => group.steps)
+  const onlyThinking =
+    isStreaming &&
+    populatedSteps.length > 0 &&
+    populatedSteps.every((step) => step.kind === 'thinking') &&
+    populatedSteps.some((step) => step.status === 'active')
 
-  const elapsedSec =
-    liveStartedAt != null && isStreaming
-      ? Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000))
+  const elapsed =
+    isStreaming && liveStartedAt != null
+      ? formatDuration(Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000)))
       : undefined
 
+  if (onlyThinking) {
+    return <ThinkingIndicator elapsed={elapsed} />
+  }
+
   return (
-    <div className="turn-flow" aria-live="polite">
-      {display.map((seg, index) => {
-        if (seg.kind === 'thinking') {
-          return (
-            <ThinkingBlock
-              key={seg.id}
-              segment={seg}
-              isStreaming={isStreaming}
-              elapsedSec={elapsedSec}
-            />
-          )
-        }
-        if (seg.kind === 'text') {
-          if (seg.role === 'final' && !includeFinalText) return null
-          return <NarrationBlock key={seg.id} segment={seg} isStreaming={isStreaming} />
-        }
-        if (seg.kind === 'tool') {
-          return (
-            <div
-              key={seg.id}
-              className="turn-flow-item-wrap"
-              style={{ '--flow-index': String(index) } as Record<string, string>}
-            >
-              <ToolBlock segment={seg} />
-            </div>
-          )
-        }
-        return null
+    <div className="turn-flow turn-flow--timeline" role="region" aria-label="Agent 执行过程" aria-live="polite">
+      {groups.map((group) => {
+        const expanded = isStreaming ? group.phase === model.currentPhase : group.steps.length > 0
+        return (
+          <PhaseSection
+            key={group.phase}
+            group={group}
+            expanded={expanded}
+            compact={isStreaming}
+            elapsed={elapsed}
+          />
+        )
       })}
     </div>
   )

@@ -2,7 +2,7 @@
  * Turn 调度管线：queryServe → processUserInput → onQuery → queryLoop。
  * @see agent/README.md
  */
-import type { AppSettings, ChatMessage, StreamChunk } from '../shared/types'
+import type { AppSettings, ChatAttachment, ChatMessage, StreamChunk } from '../shared/types'
 import { needsToolCalling } from '../shared/needs-tools'
 import { getActiveWorkspacePath } from '../shared/workspace'
 import { compressContextIfNeeded } from '../shared/context-compress'
@@ -15,6 +15,7 @@ import { buildSkillsSystemPrompt, loadSkills, selectSkillsForMessage } from '../
 import { matchSlashCommand } from './commands'
 import { buildSystemPrompt, type ApprovalHandler } from './loop'
 import { expandFileReferences } from './file-refs'
+import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { killAllShellChildren } from '../tools/shell-runner'
 import { enterBuildMode } from '../tools/harness-state'
@@ -26,8 +27,8 @@ import type { TurnEventInput } from './memory/types'
 
 const BUILD_PLAN_PREFIX = '__SHARKER_BUILD__\n'
 
-const DEFAULT_TURN_TIMEOUT_MS = 120_000
-const COMPUTER_USE_TURN_TIMEOUT_MS = 600_000
+const DEFAULT_TURN_TIMEOUT_MS = 900_000
+const COMPUTER_USE_TURN_TIMEOUT_MS = 1_200_000
 
 /** 桌面自动化任务用更长超时（多步 MCP + 审批） */
 function turnTimeoutMs(userText: string): number {
@@ -52,6 +53,7 @@ export interface ExecuteUserInputContext {
   settings: AppSettings
   history: ChatMessage[]
   userText: string
+  attachments?: ChatAttachment[]
   onApproval: ApprovalHandler
   send: (chunk: StreamChunk) => void
   reloadSettings: () => Promise<AppSettings>
@@ -68,20 +70,9 @@ let activeSlot: TurnSlot | null = null
 let turnChain: Promise<void> = Promise.resolve()
 
 /** 将历史 ChatMessage 映射为 API 消息格式 */
-function mapHistoryToApiMessages(history: ChatMessage[]): ChatCompletionMessage[] {
-  return history.map((m) => {
-    if (m.role === 'tool') {
-      return {
-        role: 'tool' as const,
-        tool_call_id: m.toolCallId!,
-        content: m.content
-      }
-    }
-    if (m.role === 'assistant' && m.toolName) {
-      return { role: 'assistant' as const, content: m.content || null }
-    }
-    return { role: m.role as 'user' | 'assistant', content: m.content }
-  })
+async function mapHistoryToApiMessages(history: ChatMessage[]): Promise<ChatCompletionMessage[]> {
+  const mapped = await Promise.all(history.map((m) => mapHistoryMessageToApi(m)))
+  return mapped as ChatCompletionMessage[]
 }
 
 /**
@@ -120,7 +111,7 @@ async function* onQuery(
   processed: ProcessUserInputResult,
   signal: AbortSignal
 ): AsyncGenerator<StreamChunk> {
-  const { settings, history, userText, onApproval, send } = ctx
+  const { settings, history, userText, attachments, onApproval, send } = ctx
   const workspace = getActiveWorkspacePath(settings)
 
   const providerError = validateActiveProvider(settings)
@@ -195,8 +186,11 @@ async function* onQuery(
 
   const messages: ChatCompletionMessage[] = [
     { role: 'system', content: systemContent },
-    ...mapHistoryToApiMessages(historyForAgent),
-    { role: 'user', content: expandedUserText }
+    ...(await mapHistoryToApiMessages(historyForAgent)),
+    {
+      role: 'user',
+      content: await userMessageContentWithAttachments(expandedUserText, attachments)
+    }
   ]
 
   yield* queryLoop(settings, messages, onApproval, signal, {
@@ -294,7 +288,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       const raw = e instanceof Error ? e.message : String(e)
       const error =
         raw === 'This operation was aborted' || raw.includes('aborted')
-          ? '任务超时或被取消（桌面自动化任务最长约 10 分钟）。若卡在截图，请改用 MCP get_app_state；点击/打字需点「允许」。'
+          ? '任务超时或被取消（普通任务最长约 15 分钟，桌面自动化任务最长约 20 分钟）。若卡在截图，请改用 MCP get_app_state；点击/打字需点「允许」。'
           : raw
       turnCtx.send({ type: 'error', error })
       turnCtx.send({ type: 'done' })

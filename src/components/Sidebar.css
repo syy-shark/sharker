@@ -526,3 +526,92 @@ body.sidebar-resizing * {
   border-color: var(--accent-ring);
   box-shadow: var(--shadow-panel), 0 0 0 2px var(--accent-soft);
 }
+
+/* Professional workbench shell */
+.sidebar {
+  width: 248px;
+  padding: 12px 10px 10px;
+  color: var(--text-secondary);
+  background: #f0f2f5;
+  border-right: 1px solid var(--border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1), padding 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar::before,
+.sidebar::after { display: none; }
+
+.sidebar.collapsed {
+  width: 52px;
+  padding: 10px;
+}
+
+.sidebar-top {
+  min-height: 32px;
+  margin-bottom: 10px;
+}
+
+.sidebar-section-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sidebar-auto-btn,
+.sidebar-toggle,
+.sidebar-icon-btn {
+  border-radius: 6px;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.sidebar-auto-btn:hover,
+.sidebar-toggle:hover,
+.sidebar-icon-btn:hover { color: var(--accent); background: #e2e7ed; box-shadow: none; }
+
+.sidebar-body {
+  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-nav-slide,
+.sidebar-collapsed-slide,
+.conv-slide-indicator {
+  background: #dce9f8;
+  box-shadow: inset 2px 0 0 var(--accent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.sidebar-nav-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.sidebar-btn {
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.sidebar-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: #c9d8e9;
+  box-shadow: none;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar.resizing .sidebar-resize-handle::after {
+  background: var(--accent);
+  box-shadow: none;
+}

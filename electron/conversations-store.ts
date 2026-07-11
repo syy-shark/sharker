@@ -9,4 +9,4 @@ export {
   deleteConversation,
   setActiveConversation,
   createConversationOnDisk
-} from '../../agent/memory/conversations'
+} from '../agent/memory/conversations'

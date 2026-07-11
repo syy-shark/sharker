@@ -12,7 +12,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
   → onQuery：MCP 动态池刷新 + @file 展开 + 压缩上下文 + system + 工作区快照 + Skills + 历史
   → queryLoop：
       模型流式回复
-      → 若有 tool_calls：审批 → 执行（只读可并行）→ 结果塞回 messages → 再调模型（最多 25 轮）
+      → 若有 tool_calls：审批 → 执行（只读可并行）→ 结果塞回 messages → 再调模型（默认最多 40 轮）
       → 若本轮改过代码：自动 npm run test/build（一次）
       → 纯文本则结束
   → UI 展示思考 / 工具时间线
@@ -140,11 +140,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 2. `mcp_computer_use__screenshot` → **视觉模型看图**
 3. `mcp_computer_use__click` 点搜索框 → `type_text` 群名「先赚1M」→ Enter
 4. 点聊天输入框 → `type_text` 消息 → Enter → 再截图核对
-5. 点击/打字需用户在审批弹窗点「允许」
+5. 点击/打字需用户在当前执行轨道的审批块点「允许一次」
 
 **模型建议**：微信/桌面任务请用支持**原生工具调用 + 视觉**的模型（gpt-4o、Claude 3+、Gemini 等）。轻量纯文本模型（如 step-*-flash）易在正文输出 `<tool_call>` XML 而卡住；Harness 会尝试解析 XML，但视觉与多步稳定性仍依赖强模型。
 
-**文本工具解析**：不支持 function calling 的模型若在正文输出 `<tool_call><function=...>`，Harness 会解析并执行（含无参 MCP 工具如 `get_app_state`）。
+**文本工具解析**：不支持 function calling 的模型若在正文输出 `<tool_call><function=...>` 或 `{ "tool": "write_file", "arguments": ... }` 这类伪工具调用，Harness 会解析并执行，同时从可见回复里隐藏该参数块；若参数被包在 markdown JSON 代码围栏里，也会连同围栏一起隐藏（含无参 MCP 工具如 `get_app_state`）。
 
 ### Voice（TTS MVP）
 
@@ -173,6 +173,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 上下文压缩 | 用量超 85% 自动摘要 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |
+| 续跑提醒 | 对可执行任务，若模型停在启动服务器/打开/检查等中间话术但没有工具调用，会继续 nudging 直到完成或遇到真实阻塞 |
 
 ---
 

@@ -9,6 +9,7 @@ import type { AppPage, SettingsTab } from '../types/navigation'
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator'
 import { WorkspaceList } from './WorkspaceList'
 import './Sidebar.css'
+import { SIDEBAR_LAYOUT } from '../constants/layout'
 
 /** Sidebar Props：页面模式、工作区/对话列表与导航回调 */
 interface Props {
@@ -74,10 +75,10 @@ function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
 }
 
 const SIDEBAR_WIDTH_KEY = 'sharker-sidebar-width'
-const SIDEBAR_DEFAULT_WIDTH = 200
-const SIDEBAR_MIN_WIDTH = 168
-const SIDEBAR_MAX_WIDTH = 420
-const SIDEBAR_LAYOUT_MS = 340
+const SIDEBAR_DEFAULT_WIDTH = SIDEBAR_LAYOUT.default
+const SIDEBAR_MIN_WIDTH = SIDEBAR_LAYOUT.min
+const SIDEBAR_MAX_WIDTH = SIDEBAR_LAYOUT.max
+const SIDEBAR_LAYOUT_MS = 220
 
 /** 从 localStorage 读取侧栏宽度 */
 function readSidebarWidth(): number {

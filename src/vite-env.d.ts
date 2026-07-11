@@ -15,7 +15,13 @@ import type { OAuthGptConfig } from '../shared/oauth-gpt'
 import type { RemoteCollabRoom } from '../shared/remote-collab'
 import type { WorkspaceTreeNode } from '../shared/workspace-tree'
 import type { LspStatus } from '../tools/services/lsp-client'
-import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../shared/types'
+import type {
+  AppSettings,
+  ApprovalRequest,
+  ChatAttachment,
+  ChatMessage,
+  StreamChunk
+} from '../shared/types'
 
 /** preload 暴露的 window.sharker IPC API */
 export interface SharkerApi {
@@ -41,7 +47,17 @@ export interface SharkerApi {
     conversationId: string | null
   ) => Promise<boolean>
   importSkillRepo: (url: string) => Promise<string>
-  sendMessage: (text: string, history: ChatMessage[]) => Promise<void>
+  sendMessage: (
+    text: string,
+    history: ChatMessage[],
+    attachments?: ChatAttachment[]
+  ) => Promise<void>
+  saveAttachment: (input: {
+    name: string
+    mimeType: string
+    dataUrl: string
+  }) => Promise<ChatAttachment>
+  readAttachmentDataUrl: (filePath: string) => Promise<string>
   abortChat: () => Promise<void>
   respondApproval: (id: string, approved: boolean) => Promise<void>
   onStream: (cb: (chunk: StreamChunk) => void) => () => void
