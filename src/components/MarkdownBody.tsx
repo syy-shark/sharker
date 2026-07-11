@@ -7,6 +7,7 @@ import type { Components } from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { parseUnifiedDiff } from '../../shared/line-diff'
+import { CodeArtifactBlock } from './CodeArtifactBlock'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { CompareBlock, parseCompareRows } from './CompareBlock'
 
@@ -62,7 +63,7 @@ const markdownComponents: Components = {
     )
   },
   code: ({ className, children, ...rest }) => {
-    const match = /language-(\w+)/.exec(className ?? '')
+    const match = /language-([^\s]+)/.exec(className ?? '')
     if (match?.[1] === 'diff') {
       const text = extractCodeText(children)
       const special = trySpecialCodeBlock(text, 'diff')
@@ -77,10 +78,11 @@ const markdownComponents: Components = {
   pre: ({ children, ...rest }) => {
     if (isValidElement(children)) {
       const childProps = children.props as { className?: string; children?: ReactNode }
-      const lang = /language-(\w+)/.exec(childProps.className ?? '')?.[1]
+      const lang = /language-([^\s]+)/.exec(childProps.className ?? '')?.[1]
       const text = extractCodeText(childProps.children)
       const special = trySpecialCodeBlock(text, lang)
       if (special) return special
+      return <CodeArtifactBlock code={text} language={lang} />
     }
     return <pre {...rest}>{children}</pre>
   }

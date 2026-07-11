@@ -2,17 +2,19 @@
  * 右侧可展开面板：文件树 / 终端 / 内置浏览器；支持拖拽调宽与全屏。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Expand, Minimize2, X } from 'lucide-react'
 import { FileTree } from './panel/FileTree'
 import { EmbeddedTerminal } from './panel/EmbeddedTerminal'
 import { EmbeddedBrowser } from './panel/EmbeddedBrowser'
 import './RightPanel.css'
+import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 
 export type RightPanelTab = 'files' | 'terminal' | 'browser'
 
 const PANEL_WIDTH_KEY = 'sharker-right-panel-width'
-const PANEL_DEFAULT_WIDTH = 400
-const PANEL_MIN_WIDTH = 280
-const PANEL_MAX_WIDTH = 820
+const PANEL_DEFAULT_WIDTH = RIGHT_PANEL_LAYOUT.default
+const PANEL_MIN_WIDTH = RIGHT_PANEL_LAYOUT.min
+const PANEL_MAX_WIDTH = RIGHT_PANEL_LAYOUT.max
 
 interface Props {
   open: boolean
@@ -41,6 +43,7 @@ export function RightPanel({
   })
   const [fullscreen, setFullscreen] = useState(false)
   const [resizing, setResizing] = useState(false)
+  const [compact, setCompact] = useState(() => window.innerWidth < WORKBENCH_BREAKPOINT)
   const dragRef = useRef({ startX: 0, startWidth: width })
 
   useEffect(() => {
@@ -101,7 +104,13 @@ export function RightPanel({
   }, [open])
 
   useEffect(() => {
-    if (!fullscreen) return
+    const onResize = () => setCompact(window.innerWidth < WORKBENCH_BREAKPOINT)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    if (!fullscreen && !(compact && open)) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -110,9 +119,9 @@ export function RightPanel({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreen, returnToMain])
+  }, [compact, fullscreen, open, returnToMain])
 
-  return (
+  const panel = (
     <aside
       className={`right-panel ${open ? 'right-panel--open' : ''} ${fullscreen ? 'right-panel--fullscreen' : ''} ${resizing ? 'right-panel--resizing' : ''}`}
       style={panelWidth != null ? { width: panelWidth } : undefined}
@@ -162,15 +171,6 @@ export function RightPanel({
           ))}
         </div>
         <div className="right-panel-head-actions">
-          {open && !fullscreen ? (
-            <button
-              type="button"
-              className="right-panel-return-btn"
-              onClick={returnToMain}
-            >
-              返回主界面
-            </button>
-          ) : null}
           <button
             type="button"
             className="right-panel-icon-btn"
@@ -178,25 +178,16 @@ export function RightPanel({
             title={fullscreen ? '退出全屏' : '全屏'}
             onClick={() => (fullscreen ? exitFullscreen() : setFullscreen(true))}
           >
-            {fullscreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M9 4H4v5M20 15v5h-5M15 4h5v5M4 15v5h5"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
+            {fullscreen ? <Minimize2 size={16} aria-hidden /> : <Expand size={16} aria-hidden />}
+          </button>
+          <button
+            type="button"
+            className="right-panel-icon-btn"
+            aria-label="关闭工作区面板"
+            title="关闭"
+            onClick={returnToMain}
+          >
+            <X size={16} aria-hidden />
           </button>
         </div>
       </div>
@@ -206,5 +197,19 @@ export function RightPanel({
         {tab === 'browser' && <EmbeddedBrowser />}
       </div>
     </aside>
+  )
+
+  return (
+    <>
+      {compact && open && !fullscreen ? (
+        <button
+          type="button"
+          className="right-panel-backdrop"
+          aria-label="关闭工作区面板"
+          onClick={returnToMain}
+        />
+      ) : null}
+      {panel}
+    </>
   )
 }

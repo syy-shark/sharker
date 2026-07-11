@@ -138,6 +138,14 @@
   background: var(--surface-frost-hover);
 }
 
+/* Workbench theme inheritance */
+.settings-page::before { display: none; }
+.settings-page-inner { max-width: 680px; padding-top: 34px; }
+.settings-page-header { margin-bottom: 26px; }
+.settings-page-header h1 { font-size: 24px; font-weight: 650; letter-spacing: 0; }
+.settings-field input,
+.btn-secondary { border-radius: 6px; background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
 .btn-danger-ghost {
   padding: 6px 12px;
   font-size: 12px;

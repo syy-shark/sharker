@@ -13,7 +13,13 @@ import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
 import { IPC } from '../../shared/ipc'
 import { loadSettings, saveSettings } from '../settings-store'
-import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../../shared/types'
+import type {
+  AppSettings,
+  ApprovalRequest,
+  ChatAttachment,
+  ChatMessage,
+  StreamChunk
+} from '../../shared/types'
 import { generateTitle, type ApprovalHandler } from '../../agent/loop'
 import { executeUserInput, abortActiveTurn } from '../../agent/pipeline'
 import { initMemorySystem, onSettingsChanged } from '../../agent/memory/init'
@@ -74,6 +80,79 @@ const pendingApprovals = new Map<
 
 let cachedAppIcon: Electron.NativeImage | undefined
 let cachedAppIconPath: string | undefined
+
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const IMAGE_MIME_TO_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif'
+}
+
+function sanitizeAttachmentName(name: string): string {
+  return (name || 'image')
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80) || 'image'
+}
+
+function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
+  const m = dataUrl.match(/^data:([^;,]+);base64,(.+)$/)
+  if (!m) throw new Error('附件数据格式无效')
+  const mimeType = m[1].toLowerCase()
+  if (!IMAGE_MIME_TO_EXT[mimeType]) throw new Error(`不支持的图片类型: ${mimeType}`)
+  const buffer = Buffer.from(m[2], 'base64')
+  if (buffer.length > MAX_ATTACHMENT_BYTES) {
+    throw new Error(`图片过大（>${Math.round(MAX_ATTACHMENT_BYTES / 1024 / 1024)}MB）`)
+  }
+  return { mimeType, buffer }
+}
+
+async function saveChatAttachment(input: {
+  name: string
+  mimeType: string
+  dataUrl: string
+}): Promise<ChatAttachment> {
+  const parsed = parseDataUrl(input.dataUrl)
+  if (input.mimeType && input.mimeType.toLowerCase() !== parsed.mimeType) {
+    throw new Error('附件 MIME 类型不一致')
+  }
+  const id = crypto.randomUUID()
+  const ext = IMAGE_MIME_TO_EXT[parsed.mimeType]
+  const safeName = sanitizeAttachmentName(input.name)
+  const dir = path.join(app.getPath('userData'), 'attachments')
+  await fs.promises.mkdir(dir, { recursive: true })
+  const filePath = path.join(dir, `${Date.now()}-${id}-${safeName}.${ext}`)
+  await fs.promises.writeFile(filePath, parsed.buffer)
+  return {
+    id,
+    name: safeName,
+    mimeType: parsed.mimeType,
+    path: filePath,
+    size: parsed.buffer.length,
+    kind: 'image'
+  }
+}
+
+async function readAttachmentDataUrl(filePath: string): Promise<string> {
+  const attachmentsDir = path.join(app.getPath('userData'), 'attachments')
+  const resolved = path.resolve(filePath)
+  if (!resolved.startsWith(path.resolve(attachmentsDir) + path.sep)) {
+    throw new Error('附件路径无效')
+  }
+  const ext = path.extname(resolved).toLowerCase()
+  const mimeType =
+    ext === '.jpg' || ext === '.jpeg'
+      ? 'image/jpeg'
+      : ext === '.webp'
+        ? 'image/webp'
+        : ext === '.gif'
+          ? 'image/gif'
+          : 'image/png'
+  const buf = await fs.promises.readFile(resolved)
+  return `data:${mimeType};base64,${buf.toString('base64')}`
+}
 
 /** 从磁盘路径加载 NativeImage，Linux 下自动放大 */
 function loadIconFromPath(filePath: string): Electron.NativeImage | undefined {
@@ -360,6 +439,16 @@ function registerIpc(): void {
     abortActiveTurn()
   })
 
+  ipcMain.handle(
+    IPC.SAVE_ATTACHMENT,
+    async (_e, input: { name: string; mimeType: string; dataUrl: string }) =>
+      saveChatAttachment(input)
+  )
+
+  ipcMain.handle(IPC.READ_ATTACHMENT_DATA_URL, async (_e, filePath: string) =>
+    readAttachmentDataUrl(filePath)
+  )
+
   ipcMain.handle(IPC.WINDOW_MINIMIZE, () => mainWindow?.minimize())
   ipcMain.handle(IPC.WINDOW_MAXIMIZE, () => {
     if (!mainWindow) return
@@ -569,7 +658,12 @@ function registerIpc(): void {
   /** chat:send — 转发至 Turn 管线 executeUserInput，流式推送 chunk。 */
   ipcMain.handle(
     IPC.SEND_MESSAGE,
-    async (event, userText: string, history: ChatMessage[]) => {
+    async (
+      event,
+      userText: string,
+      history: ChatMessage[],
+      attachments: ChatAttachment[] = []
+    ) => {
       const send = (chunk: StreamChunk) => {
         event.sender.send('chat:stream', chunk)
       }
@@ -577,6 +671,7 @@ function registerIpc(): void {
         settings,
         history,
         userText,
+        attachments,
         onApproval: approvalHandler,
         send,
         reloadSettings: async () => {
@@ -602,9 +697,12 @@ app.whenReady().then(async () => {
   settings = await loadSettings()
   settings = normalizeSettings(settings, app.getPath('home'))
   await saveSettings(settings)
-  await initMemorySystem(app.getPath('home'), settings)
   registerIpc()
   createWindow()
+
+  void initMemorySystem(app.getPath('home'), settings).catch((e) =>
+    console.warn('[memory] boot init failed', e)
+  )
 
   const bootWorkspace = getActiveWorkspacePath(settings) ?? ''
   if (settings.computerUseEnabled) {

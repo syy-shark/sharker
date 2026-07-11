@@ -1,6 +1,7 @@
 /**
- * 部分模型不支持 function calling，会在正文里输出 <read_file> 等伪 XML。
- * 解析后转成标准 tool_calls，由 loop 实际执行。
+ * Some weaker providers print pseudo tool calls in normal assistant text instead
+ * of emitting native tool_calls. This module parses those fallback formats,
+ * executes them through the normal loop, and strips them from the visible UI.
  */
 import { randomUUID } from 'crypto'
 import { KNOWN_TOOL_NAMES } from './tool-definitions'
@@ -8,7 +9,6 @@ import { isMcpDynamicToolName } from '../tools/services/mcp-tool-pool'
 
 const KNOWN_TOOLS = KNOWN_TOOL_NAMES
 
-/** 无参数也可执行的工具（宽松 tag 启发式） */
 const ZERO_ARG_TOOLS = new Set([
   'desktop_doctor',
   'desktop_screenshot',
@@ -22,9 +22,8 @@ const ZERO_ARG_TOOLS = new Set([
   'git_status'
 ])
 
-/** 解析到文本工具后注入对话，避免模型重复输出 XML */
 export const TEXT_TOOL_EXECUTED_HINT =
-  '[系统提示] 已从正文解析并执行工具调用。请根据 tool 结果继续，勿再输出 <tool_call> 或 <function=...> XML。'
+  '[System reminder] A tool call was parsed and executed from assistant text. Continue from the tool result, and do not print pseudo tool calls as XML or JSON objects.'
 
 type ParsedToolCall = {
   id: string
@@ -32,12 +31,180 @@ type ParsedToolCall = {
   function: { name: string; arguments: string }
 }
 
-/** 工具名是否可解析执行 */
+type ParsedJsonToolBlock = {
+  start: number
+  end: number
+  calls: Array<{ name: string; args: Record<string, unknown> }>
+}
+
 function isKnownToolName(name: string): boolean {
   return KNOWN_TOOLS.has(name) || isMcpDynamicToolName(name)
 }
 
-/** 从 <tag>value</tag> 块提取工具参数 */
+function normalizeArgs(value: unknown): Record<string, unknown> {
+  if (typeof value === 'string') {
+    try {
+      return normalizeArgs(JSON.parse(value) as unknown)
+    } catch {
+      return {}
+    }
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
+}
+
+function jsonValueToToolCalls(value: unknown): Array<{ name: string; args: Record<string, unknown> }> {
+  if (!value || typeof value !== 'object') return []
+  if (Array.isArray(value)) return value.flatMap(jsonValueToToolCalls)
+
+  const obj = value as Record<string, unknown>
+  const nested = obj.tool_calls ?? obj.toolCalls
+  if (Array.isArray(nested)) return nested.flatMap(jsonValueToToolCalls)
+
+  const fn = obj.function
+  if (fn && typeof fn === 'object' && !Array.isArray(fn)) {
+    const fnObj = fn as Record<string, unknown>
+    const fnName = typeof fnObj.name === 'string' ? fnObj.name : ''
+    if (fnName) {
+      return [{ name: fnName, args: normalizeArgs(fnObj.arguments ?? obj.arguments ?? obj.args) }]
+    }
+  }
+
+  const name =
+    typeof obj.tool === 'string'
+      ? obj.tool
+      : typeof obj.name === 'string'
+        ? obj.name
+        : typeof obj.function === 'string'
+          ? obj.function
+          : ''
+  if (!name) return []
+  return [{ name, args: normalizeArgs(obj.arguments ?? obj.args ?? obj.parameters ?? {}) }]
+}
+
+function findJsonObjectEnd(text: string, start: number): number | null {
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') {
+      inString = true
+      continue
+    }
+    if (ch === '{') depth++
+    if (ch === '}') {
+      depth--
+      if (depth === 0) return i + 1
+    }
+  }
+  return null
+}
+
+function looksLikeJsonToolPrefix(text: string): boolean {
+  return /"tool"\s*:|"tool_calls"\s*:|"toolCalls"\s*:|"function"\s*:|"arguments"\s*:/i.test(text)
+}
+
+function extractJsonToolBlocks(text: string, includePartial = false): ParsedJsonToolBlock[] {
+  const blocks: ParsedJsonToolBlock[] = []
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '{') continue
+    const end = findJsonObjectEnd(text, i)
+    if (end == null) {
+      const startsAtLine = i === 0 || /\n\s*$/.test(text.slice(0, i))
+      if (includePartial && (looksLikeJsonToolPrefix(text.slice(i)) || startsAtLine)) {
+        blocks.push({ start: i, end: text.length, calls: [] })
+      }
+      break
+    }
+
+    try {
+      const parsed = JSON.parse(text.slice(i, end)) as unknown
+      const calls = jsonValueToToolCalls(parsed).filter((c) => isKnownToolName(c.name))
+      if (calls.length > 0) {
+        blocks.push({ start: i, end, calls })
+        i = end - 1
+      }
+    } catch {
+      /* not a JSON tool object */
+    }
+  }
+  return blocks
+}
+
+function stripJsonToolBlocks(text: string, includePartial = false): string {
+  const blocks = extractJsonToolBlocks(text, includePartial)
+  if (blocks.length === 0) return text
+
+  let out = ''
+  let cursor = 0
+  for (const block of blocks) {
+    out += text.slice(cursor, block.start)
+    cursor = block.end
+  }
+  out += text.slice(cursor)
+  return out
+}
+
+function mentionsKnownToolName(text: string): boolean {
+  const nameRe = /["']([a-z0-9_:.\/-]+)["']/gi
+  let m: RegExpExecArray | null
+  while ((m = nameRe.exec(text)) !== null) {
+    if (isKnownToolName(m[1])) return true
+  }
+  return false
+}
+
+function containsJsonToolSyntax(text: string, includePartial = false): boolean {
+  if (extractJsonToolBlocks(text).some((block) => block.calls.length > 0)) {
+    return true
+  }
+  if (!includePartial) return false
+  return looksLikeJsonToolPrefix(text) && mentionsKnownToolName(text)
+}
+
+function findOpenMarkdownFenceStart(text: string): number | null {
+  const fenceRe = /(^|\n)[ \t]*```/g
+  let openStart: number | null = null
+  let m: RegExpExecArray | null
+  while ((m = fenceRe.exec(text)) !== null) {
+    const markerStart = m.index + (m[1] ? m[1].length : 0)
+    openStart = openStart == null ? markerStart : null
+  }
+  return openStart
+}
+
+function stripJsonToolFences(text: string, includePartial = false): string {
+  const completeFenceRe = /(^|\n)([ \t]*```[^\n]*\n[\s\S]*?\n[ \t]*```[^\n]*(?=\n|$))/g
+  let out = text.replace(completeFenceRe, (match, leading: string, block: string) => {
+    return containsJsonToolSyntax(block) ? leading : match
+  })
+
+  if (!includePartial) return out
+
+  const openFenceStart = findOpenMarkdownFenceStart(out)
+  if (openFenceStart == null) return out
+
+  const partialFence = out.slice(openFenceStart)
+  if (containsJsonToolSyntax(partialFence, true)) {
+    out = out.slice(0, openFenceStart)
+  }
+  return out
+}
+
+function stripJsonToolSyntax(text: string, includePartial = false): string {
+  return stripJsonToolBlocks(stripJsonToolFences(text, includePartial), includePartial)
+}
+
 function extractChildTags(inner: string): Record<string, unknown> {
   const args: Record<string, unknown> = {}
   const tagRe = /<([a-z_]+)>([\s\S]*?)<\/\1>/gi
@@ -74,7 +241,6 @@ function extractChildTags(inner: string): Record<string, unknown> {
   return args
 }
 
-/** GLM/Qwen 风格：<parameter=key>value</parameter> */
 function extractParameterTags(inner: string): Record<string, unknown> {
   const args: Record<string, unknown> = {}
   const paramRe = /<parameter=([a-z0-9_]+)>([\s\S]*?)<\/parameter>/gi
@@ -93,19 +259,16 @@ function extractParameterTags(inner: string): Record<string, unknown> {
   return args
 }
 
-/** 尝试从内联 JSON 提取参数 */
 function extractInlineJson(inner: string): Record<string, unknown> {
   const jsonMatch = inner.match(/\{[\s\S]*\}/)
   if (!jsonMatch) return {}
   try {
-    const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>
-    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+    return normalizeArgs(JSON.parse(jsonMatch[0]) as unknown)
   } catch {
     return {}
   }
 }
 
-/** 合并多种参数来源 */
 function extractToolArgs(inner: string): Record<string, unknown> {
   return {
     ...extractChildTags(inner),
@@ -114,7 +277,6 @@ function extractToolArgs(inner: string): Record<string, unknown> {
   }
 }
 
-/** 追加一条解析结果（去重同名） */
 function pushToolCall(
   results: ParsedToolCall[],
   name: string,
@@ -124,19 +286,26 @@ function pushToolCall(
   if (!isKnownToolName(name)) return
   const hasArgs = Object.keys(args).length > 0
   if (!hasArgs && !explicit && !ZERO_ARG_TOOLS.has(name)) return
-  if (results.some((r) => r.function.name === name)) return
+  const serializedArgs = JSON.stringify(args)
+  if (results.some((r) => r.function.name === name && r.function.arguments === serializedArgs)) {
+    return
+  }
   results.push({
     id: `text-${randomUUID()}`,
     type: 'function',
-    function: { name, arguments: JSON.stringify(args) }
+    function: { name, arguments: serializedArgs }
   })
 }
 
-/** 从助手正文中解析可执行的伪 XML / tool_call 块 */
 export function parseTextToolCalls(text: string): ParsedToolCall[] {
   const results: ParsedToolCall[] = []
 
-  // 格式：<tool_call> ... <function=desktop_screenshot> ... </tool_call>
+  for (const block of extractJsonToolBlocks(text)) {
+    for (const call of block.calls) {
+      pushToolCall(results, call.name, call.args, true)
+    }
+  }
+
   const toolCallBlockRe = /<tool_call>([\s\S]*?)<\/tool_call>/gi
   let block: RegExpExecArray | null
   while ((block = toolCallBlockRe.exec(text)) !== null) {
@@ -147,7 +316,6 @@ export function parseTextToolCalls(text: string): ParsedToolCall[] {
     }
   }
 
-  // 格式：裸 <function=tool_name> 或 <function name="tool_name">
   const bareFnRe = /<function(?:=|\s+name=["'])([a-z0-9_]+)["']?\s*\/?>/gi
   let fn: RegExpExecArray | null
   while ((fn = bareFnRe.exec(text)) !== null) {
@@ -155,7 +323,6 @@ export function parseTextToolCalls(text: string): ParsedToolCall[] {
     pushToolCall(results, fn[1], extractToolArgs(after), true)
   }
 
-  // 格式：<desktop_screenshot></desktop_screenshot>（启发式，非 explicit）
   const blockRe = /<([a-z_]+)>\s*([\s\S]*?)\s*<\/\1>/gi
   let m: RegExpExecArray | null
   while ((m = blockRe.exec(text)) !== null) {
@@ -167,18 +334,15 @@ export function parseTextToolCalls(text: string): ParsedToolCall[] {
   return results
 }
 
-/** 正文是否含可解析的文本工具调用 */
 export function hasTextToolCalls(text: string): boolean {
   return parseTextToolCalls(text).length > 0
 }
 
-/** 流式展示用：去掉完整与尾部未闭合的 tool XML */
 export function stripPartialToolXmlForDisplay(text: string): string {
-  return stripTextToolCalls(text.replace(/<tool_call>[\s\S]*$/gi, ''))
+  return stripXmlToolCalls(stripJsonToolSyntax(text.replace(/<tool_call>[\s\S]*$/gi, ''), true))
 }
 
-/** 去掉正文中的伪 XML 工具块，避免展示给用户 */
-export function stripTextToolCalls(text: string): string {
+function stripXmlToolCalls(text: string): string {
   return text
     .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
     .replace(/<function=[^>]+>\s*<\/function>/gi, '')
@@ -187,4 +351,8 @@ export function stripTextToolCalls(text: string): string {
     .replace(/<([a-z_]+)>\s*[\s\S]*?\s*<\/\1>/gi, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+export function stripTextToolCalls(text: string): string {
+  return stripXmlToolCalls(stripJsonToolSyntax(text))
 }

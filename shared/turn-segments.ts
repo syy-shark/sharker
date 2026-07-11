@@ -2,7 +2,7 @@
  * 将流式 chunk 归并为有序 TurnSegment[]，供直播式过程流渲染。
  * @see shared/README.md
  */
-import type { StreamChunk, TurnSegment } from './types'
+import type { FileDiff, FileEditPreview, StreamChunk, TurnSegment } from './types'
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
 
@@ -12,14 +12,101 @@ export function cloneSegments(segments: TurnSegment[]): TurnSegment[] {
     ...s,
     fileDiff: s.fileDiff
       ? { ...s.fileDiff, lines: [...s.fileDiff.lines], stats: { ...s.fileDiff.stats } }
-      : undefined
+      : undefined,
+    fileDiffs: s.fileDiffs?.map(cloneFileDiff),
+    editPreview: s.editPreview?.map((p) => ({ path: p.path, stats: { ...p.stats } }))
   }))
+}
+
+function cloneFileDiff(diff: FileDiff): FileDiff {
+  return { ...diff, lines: [...diff.lines], stats: { ...diff.stats } }
 }
 
 /** 从工具活动 label 解析详情（· 后部分） */
 function detailFromToolLabel(label: string): string | undefined {
   const dot = label.indexOf(' · ')
   return dot === -1 ? undefined : label.slice(dot + 3) || undefined
+}
+
+function splitLines(text: string): string[] {
+  if (!text) return []
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  if (lines[lines.length - 1] === '') lines.pop()
+  return lines
+}
+
+function editPreviewFromPatch(patch: string): FileEditPreview[] {
+  const previews: FileEditPreview[] = []
+  let current: FileEditPreview | null = null
+
+  const flush = () => {
+    if (!current) return
+    if (current.stats.added > 0 || current.stats.removed > 0) previews.push(current)
+    current = null
+  }
+
+  for (const line of patch.replace(/\r\n/g, '\n').split('\n')) {
+    if (line.startsWith('*** Update File: ') || line.startsWith('*** Add File: ')) {
+      flush()
+      current = {
+        path: line.slice(line.indexOf(':') + 1).trim(),
+        stats: { added: 0, removed: 0 }
+      }
+      continue
+    }
+    if (!current) continue
+    if (line.startsWith('+') && !line.startsWith('+++')) current.stats.added++
+    if (line.startsWith('-') && !line.startsWith('---')) current.stats.removed++
+  }
+  flush()
+  return previews
+}
+
+function editPreviewFromToolArgs(
+  toolName: string,
+  toolArgs?: Record<string, unknown>
+): FileEditPreview[] | undefined {
+  if (!toolArgs) return undefined
+
+  if (toolName === 'write_file') {
+    const path = typeof toolArgs.path === 'string' ? toolArgs.path.trim() : ''
+    const content = typeof toolArgs.content === 'string' ? toolArgs.content : ''
+    if (!path) return undefined
+    return [{ path, stats: { added: splitLines(content).length, removed: 0 } }]
+  }
+
+  if (toolName === 'search_replace') {
+    const path = typeof toolArgs.path === 'string' ? toolArgs.path.trim() : ''
+    const oldString = typeof toolArgs.old_string === 'string' ? toolArgs.old_string : ''
+    const newString = typeof toolArgs.new_string === 'string' ? toolArgs.new_string : ''
+    if (!path) return undefined
+    return [
+      {
+        path,
+        stats: {
+          added: splitLines(newString).length,
+          removed: splitLines(oldString).length
+        }
+      }
+    ]
+  }
+
+  if (toolName === 'apply_patch' && typeof toolArgs.patch === 'string') {
+    const previews = editPreviewFromPatch(toolArgs.patch)
+    return previews.length ? previews : undefined
+  }
+
+  return undefined
+}
+
+function diffsFromChunk(chunk: StreamChunk): FileDiff[] | undefined {
+  if (chunk.fileDiffs?.length) return chunk.fileDiffs
+  if (chunk.fileDiff) return [chunk.fileDiff]
+  return undefined
+}
+
+function previewFromDiffs(diffs: FileDiff[]): FileEditPreview[] {
+  return diffs.map((d) => ({ path: d.path, stats: { ...d.stats } }))
 }
 
 /** 构建工具片段 */
@@ -29,13 +116,15 @@ function makeToolSegment(
   toolCallId?: string
 ): TurnSegment {
   const label = formatToolActivity(toolName, toolArgs)
+  const editPreview = editPreviewFromToolArgs(toolName, toolArgs)
   return {
     id: `tool-${crypto.randomUUID()}`,
     kind: 'tool',
     toolName,
     toolCallId,
     toolTitle: toolTitle(toolName),
-    toolDetail: detailFromToolLabel(label),
+    toolDetail: detailFromToolLabel(label) ?? editPreview?.[0]?.path,
+    editPreview,
     status: 'active'
   }
 }
@@ -43,6 +132,25 @@ function makeToolSegment(
 /** 将单个 StreamChunk 增量应用到片段列表，返回新数组 */
 export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): TurnSegment[] {
   const next = cloneSegments(segments)
+
+  if (chunk.type === 'status' && chunk.content) {
+    const last = next[next.length - 1]
+    if (last?.kind === 'status' && last.status === 'active') {
+      last.content = chunk.content
+      last.toolName = chunk.toolName ?? last.toolName
+      last.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : last.toolTitle
+      return next
+    }
+    next.push({
+      id: `status-${crypto.randomUUID()}`,
+      kind: 'status',
+      content: chunk.content,
+      toolName: chunk.toolName,
+      toolTitle: chunk.toolName ? toolTitle(chunk.toolName) : undefined,
+      status: 'active'
+    })
+    return next
+  }
 
   if (chunk.type === 'think' && chunk.content) {
     let lastThink: TurnSegment | undefined
@@ -68,7 +176,10 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   if (chunk.type === 'token' && chunk.content) {
     // 结束进行中的思考段
     for (let i = next.length - 1; i >= 0; i--) {
-      if (next[i].kind === 'thinking' && next[i].status === 'active') {
+      if (
+        (next[i].kind === 'thinking' || next[i].kind === 'status') &&
+        next[i].status === 'active'
+      ) {
         next[i].status = 'done'
         break
       }
@@ -91,7 +202,10 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   if (chunk.type === 'tool_start' && chunk.toolName) {
     // 结束进行中的思考/文字段
     for (const s of next) {
-      if (s.status === 'active' && (s.kind === 'thinking' || s.kind === 'text')) {
+      if (
+        s.status === 'active' &&
+        (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text')
+      ) {
         s.status = 'done'
       }
     }
@@ -100,13 +214,18 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'tool_done' && (chunk.toolCallId || chunk.toolName)) {
+    const diffs = diffsFromChunk(chunk)
     let matched = false
     for (let i = next.length - 1; i >= 0; i--) {
       const s = next[i]
       if (s.kind !== 'tool' || s.status !== 'active') continue
       if (chunk.toolCallId && s.toolCallId === chunk.toolCallId) {
         s.status = 'done'
-        if (chunk.fileDiff) s.fileDiff = chunk.fileDiff
+        if (diffs) {
+          s.fileDiffs = diffs
+          s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
+          s.editPreview = previewFromDiffs(diffs)
+        }
         matched = true
         break
       }
@@ -116,7 +235,11 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         const s = next[i]
         if (s.kind === 'tool' && s.toolName === chunk.toolName && s.status === 'active') {
           s.status = 'done'
-          if (chunk.fileDiff) s.fileDiff = chunk.fileDiff
+          if (diffs) {
+            s.fileDiffs = diffs
+            s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
+            s.editPreview = previewFromDiffs(diffs)
+          }
           break
         }
       }
@@ -157,6 +280,15 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     if (last?.kind === 'text' && last.status === 'active') {
       last.content = `${last.content ?? ''}\n\n**错误**: ${chunk.error}`
       last.status = 'done'
+    } else if (last?.kind === 'status' && last.status === 'active') {
+      last.status = 'done'
+      next.push({
+        id: `error-${crypto.randomUUID()}`,
+        kind: 'text',
+        content: `**错误**: ${chunk.error}`,
+        status: 'done',
+        role: 'final'
+      })
     } else {
       next.push({
         id: `error-${crypto.randomUUID()}`,
@@ -178,7 +310,7 @@ export function finalizeSegments(segments: TurnSegment[]): TurnSegment[] {
 
   for (const s of next) {
     if (s.status === 'active') {
-      if (s.kind === 'thinking' || s.kind === 'text') s.status = 'done'
+      if (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text') s.status = 'done'
       if (s.kind === 'tool') s.status = 'done'
     }
   }
@@ -219,7 +351,7 @@ export function extractFinalContent(
   return lastText?.content?.trim() ?? ''
 }
 
-/** 过程流展示用片段（不含 final 正文；直播时排除进行中的末段文字） */
+/** 过程流展示用片段（含高层 thinking 阶段，不含 final 正文） */
 export function processSegments(
   segments: TurnSegment[],
   opts?: { isStreaming?: boolean }
@@ -252,8 +384,24 @@ function countThinking(segments: TurnSegment[]): { count: number; hasContent: bo
 }
 
 const READ_TOOLS = new Set(['read_file', 'grep', 'glob_file_search', 'list_dir'])
-const EDIT_TOOLS = new Set(['write_file', 'search_replace', 'delete_path', 'move_path', 'create_directory'])
+const EDIT_TOOLS = new Set([
+  'write_file',
+  'search_replace',
+  'apply_patch',
+  'delete_path',
+  'move_path',
+  'create_directory'
+])
 const RUN_TOOLS = new Set(['run_terminal_cmd', 'run_skill_script'])
+
+function formatDuration(sec: number): string {
+  if (sec < 1) return '<1s'
+  return `${sec}s`
+}
+
+function shortPath(path: string): string {
+  return path.split(/[\\/]/).pop() || path
+}
 
 /** 生成结束后摘要 chip 文案 */
 export function summarizeSegments(segments: TurnSegment[], durationSec?: number): string {
@@ -288,13 +436,62 @@ export function summarizeSegments(segments: TurnSegment[], durationSec?: number)
   return parts.length > 0 ? parts.join(' · ') : '已处理'
 }
 
+/** 直播阶段的高层进度摘要：隐藏推理细节，只描述已做与正在做 */
+export function summarizeLiveSegments(segments: TurnSegment[], durationSec?: number): string {
+  const parts: string[] = []
+  if (durationSec != null) parts.push(`处理中 ${formatDuration(durationSec)}`)
+
+  let readCount = 0
+  let editCount = 0
+  let runCount = 0
+  let otherCount = 0
+
+  for (const s of segments) {
+    if (s.kind !== 'tool' || s.status !== 'done') continue
+    const name = s.toolName ?? ''
+    if (READ_TOOLS.has(name)) readCount++
+    else if (EDIT_TOOLS.has(name) || name === 'apply_patch') {
+      editCount += s.fileDiffs?.length ?? (s.fileDiff ? 1 : 1)
+    } else if (RUN_TOOLS.has(name)) runCount++
+    else if (name !== 'skill' && name !== 'compress') otherCount++
+  }
+
+  if (readCount > 0) parts.push(`已读 ${readCount} 个文件`)
+  if (editCount > 0) parts.push(`已改 ${editCount} 个文件`)
+  if (runCount > 0) parts.push(`已运行 ${runCount} 个命令`)
+  if (otherCount > 0) parts.push(`已完成 ${otherCount} 步`)
+
+  const activeStatus = [...segments].reverse().find(
+    (s) => s.kind === 'status' && s.status === 'active' && s.content?.trim()
+  )
+  const active = [...segments].reverse().find((s) => s.kind === 'tool' && s.status === 'active')
+  if (activeStatus?.content) {
+    parts.push(activeStatus.content)
+  } else if (active) {
+    const previewPath = active.editPreview?.[0]?.path
+    const detail = active.fileDiff?.path ?? previewPath ?? active.toolDetail
+    const suffix = detail ? ` ${shortPath(detail)}` : ''
+    parts.push(`正在${active.toolTitle ?? '处理'}${suffix}`)
+  } else if (segments.some((s) => s.kind === 'thinking' && s.status === 'active')) {
+    parts.push('正在梳理下一步')
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : '处理中'
+}
+
 /** 从片段提取浏览文件名列表（去重） */
 export function browsedFilesFromSegments(segments: TurnSegment[]): string[] {
   const files: string[] = []
   for (const s of segments) {
-    if (s.kind !== 'tool' || !s.toolName || !s.toolDetail) continue
+    if (s.kind !== 'tool' || !s.toolName) continue
+    const diffs = s.fileDiffs ?? (s.fileDiff ? [s.fileDiff] : [])
+    for (const diff of diffs) {
+      const name = shortPath(diff.path)
+      if (!files.includes(name)) files.push(name)
+    }
+    if (!s.toolDetail) continue
     if (READ_TOOLS.has(s.toolName) || EDIT_TOOLS.has(s.toolName)) {
-      const name = s.toolDetail.split('/').pop() ?? s.toolDetail
+      const name = shortPath(s.toolDetail)
       if (!files.includes(name)) files.push(name)
     }
   }

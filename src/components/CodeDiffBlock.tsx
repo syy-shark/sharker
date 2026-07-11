@@ -1,53 +1,98 @@
 /**
- * 行级代码 diff 展示：绿加红删，供过程流与 Markdown diff 块复用
+ * 行级代码 diff 展示：复用紧凑编辑器外壳，供过程流与 Markdown diff 块使用。
  * @see src/README.md
  */
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
 import { statsFromLines } from '../../shared/line-diff'
+import { CodeArtifactShell } from './CodeArtifactBlock'
 import './CodeDiffBlock.css'
 
 const DEFAULT_MAX_LINES = 40
+
+function DiffStat({ kind, value }: { kind: 'add' | 'del'; value: number }) {
+  if (value <= 0) return null
+  return (
+    <span className={`code-diff-stat code-diff-stat-${kind}`}>
+      {kind === 'add' ? '+' : '-'}
+      {value}
+    </span>
+  )
+}
 
 /** CodeDiffBlock Props */
 interface Props {
   diff?: FileDiff
   lines?: FileDiffLine[]
   path?: string
+  maxPreviewLines?: number
   /** 过程流内默认展开全部 */
   defaultExpanded?: boolean
+  /** 父组件已经展示文件名/统计时可隐藏头部 */
+  showHeader?: boolean
 }
 
-/** 从路径取 basename */
-function basename(path: string): string {
-  const parts = path.replace(/\\/g, '/').split('/')
-  return parts[parts.length - 1] || path
+function serializeDiff(lines: FileDiffLine[]): string {
+  return lines
+    .map((line) => `${line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}${line.content}`)
+    .join('\n')
 }
 
 /** 行级 diff 块 */
-export function CodeDiffBlock({ diff, lines, path, defaultExpanded = false }: Props) {
+export function CodeDiffBlock({
+  diff,
+  lines,
+  path,
+  maxPreviewLines = DEFAULT_MAX_LINES,
+  defaultExpanded = false,
+  showHeader = true
+}: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const displayLines = diff?.lines ?? lines ?? []
   if (displayLines.length === 0) return null
 
   const stats = diff?.stats ?? statsFromLines(displayLines)
   const filePath = diff?.path ?? path ?? ''
-  const label = filePath ? basename(filePath) : 'diff'
-  const needsCollapse = displayLines.length > DEFAULT_MAX_LINES
-  const visible = expanded || !needsCollapse ? displayLines : displayLines.slice(0, DEFAULT_MAX_LINES)
+  const label = filePath || 'diff'
+  const previewLimit = Math.max(1, maxPreviewLines)
+  const needsCollapse = displayLines.length > previewLimit
+  const visible = expanded || !needsCollapse ? displayLines : displayLines.slice(0, previewLimit)
+
+  const detail = (
+    <>
+      {diff?.language ? <span className="code-diff-language">{diff.language}</span> : null}
+      <span className="code-diff-stats" aria-label="变更行数">
+        <DiffStat kind="add" value={stats.added} />
+        <DiffStat kind="del" value={stats.removed} />
+      </span>
+    </>
+  )
+
+  const footer = needsCollapse ? (
+    <button
+      type="button"
+      className="code-diff-expand"
+      onClick={() => setExpanded((value) => !value)}
+      aria-expanded={expanded}
+    >
+      {expanded ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+      {expanded ? '收起变更' : `展开全部 ${displayLines.length} 行`}
+    </button>
+  ) : undefined
 
   return (
-    <div className="code-diff-block">
-      <div className="code-diff-head">
-        {filePath ? <span className="code-diff-path">{label}</span> : null}
-        <span className="code-diff-stats">
-          {stats.added > 0 ? <span className="code-diff-stat-add">+{stats.added}</span> : null}
-          {stats.removed > 0 ? (
-            <span className="code-diff-stat-del">-{stats.removed}</span>
-          ) : null}
-        </span>
-      </div>
-      <div className="code-diff-body">
+    <CodeArtifactShell
+      label={label}
+      detail={detail}
+      copyText={serializeDiff(displayLines)}
+      className="code-diff-block"
+      bodyClassName="code-diff-body"
+      footer={footer}
+      showHeader={showHeader}
+      ariaLabel={filePath ? `${filePath} 文件差异` : '代码差异'}
+    >
+      <div className="code-diff-code">
         {visible.map((line, index) => (
           <div
             key={`${line.kind}-${index}-${line.oldLine ?? ''}-${line.newLine ?? ''}`}
@@ -57,27 +102,13 @@ export function CodeDiffBlock({ diff, lines, path, defaultExpanded = false }: Pr
               <span className="code-diff-sign">
                 {line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}
               </span>
-              <span className="code-diff-ln">
-                {line.kind === 'del'
-                  ? (line.oldLine ?? '')
-                  : line.kind === 'add'
-                    ? (line.newLine ?? '')
-                    : (line.newLine ?? line.oldLine ?? '')}
-              </span>
+              <span className="code-diff-ln">{line.oldLine ?? ''}</span>
+              <span className="code-diff-ln">{line.newLine ?? ''}</span>
             </span>
             <code className="code-diff-text">{line.content || ' '}</code>
           </div>
         ))}
       </div>
-      {needsCollapse && !expanded ? (
-        <button
-          type="button"
-          className="code-diff-expand"
-          onClick={() => setExpanded(true)}
-        >
-          展开全部 {displayLines.length} 行
-        </button>
-      ) : null}
-    </div>
+    </CodeArtifactShell>
   )
 }

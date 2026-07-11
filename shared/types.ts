@@ -57,14 +57,24 @@ export interface AppSettings {
 /** 聊天消息角色 */
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
+/** 用户消息附件（粘贴/拖拽图片会先复制到 Sharker 稳定目录） */
+export interface ChatAttachment {
+  id: string
+  name: string
+  mimeType: string
+  path: string
+  size: number
+  kind: 'image'
+}
+
 /** 单轮助手活动记录（技能/工具/压缩） */
 export interface TurnActivity {
   kind: 'skill' | 'tool' | 'compress'
   label: string
 }
 
-/** 一回合有序片段类型：思考 / 旁白文字 / 工具步骤 */
-export type TurnSegmentKind = 'thinking' | 'text' | 'tool'
+/** 一回合有序片段类型：思考 / 状态过渡 / 旁白文字 / 工具步骤 */
+export type TurnSegmentKind = 'thinking' | 'status' | 'text' | 'tool'
 
 /** 片段状态（工具步骤进行中/完成/失败） */
 export type TurnSegmentStatus = 'active' | 'done' | 'error'
@@ -93,10 +103,17 @@ export interface FileDiff {
   stats: { added: number; removed: number }
 }
 
+/** 文件编辑进行中的安全预览：只存路径与统计，不保存完整内容 */
+export interface FileEditPreview {
+  path: string
+  stats: { added: number; removed: number }
+}
+
 /** 工具执行结果：文本输出 + 可选 diff / 计划就绪元数据 */
 export interface ToolRunResult {
   output: string
   fileDiff?: FileDiff
+  fileDiffs?: FileDiff[]
   /** exit_plan_mode 后置 true，触发 UI Build 按钮 */
   planReady?: boolean
   planDocument?: string
@@ -124,10 +141,18 @@ export interface TurnSegment {
   metaTitle?: string
   /** 编辑类工具完成后的行级 diff */
   fileDiff?: FileDiff
+  /** 编辑类工具完成后的多文件 diff */
+  fileDiffs?: FileDiff[]
+  /** 编辑类工具执行中可展示的文件名和估算行数 */
+  editPreview?: FileEditPreview[]
 }
 
 /** 助手消息的元信息（耗时、浏览文件、活动列表） */
 export interface AssistantMeta {
+  /** Turn completion state used by the renderer for semantic feedback. */
+  outcome?: 'success' | 'error' | 'aborted'
+  /** User message that may be replayed when this turn failed. */
+  retryOfUserMessageId?: string
   durationSec?: number
   browsedFiles: string[]
   activities: TurnActivity[]
@@ -146,6 +171,7 @@ export interface ChatMessage {
   id: string
   role: MessageRole
   content: string
+  attachments?: ChatAttachment[]
   toolCallId?: string
   toolName?: string
   meta?: AssistantMeta
@@ -190,6 +216,7 @@ export interface StreamChunk {
   toolArgs?: Record<string, unknown>
   toolCallId?: string
   fileDiff?: FileDiff
+  fileDiffs?: FileDiff[]
   skillNames?: string[]
   error?: string
   approval?: ApprovalRequest

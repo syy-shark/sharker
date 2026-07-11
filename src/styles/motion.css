@@ -3,9 +3,9 @@
   --motion-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
-  --motion-duration-fast: 0.18s;
-  --motion-duration-normal: 0.32s;
-  --motion-duration-slow: 0.42s;
+  --motion-duration-fast: 0.12s;
+  --motion-duration-normal: 0.18s;
+  --motion-duration-slow: 0.22s;
 }
 
 @media (prefers-reduced-motion: reduce) {

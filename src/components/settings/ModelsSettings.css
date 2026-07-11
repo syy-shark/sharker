@@ -156,3 +156,17 @@
   background: var(--surface-frost-hover);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
+
+.provider-card {
+  padding: 15px 16px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.provider-active-tag,
+.provider-fields input,
+.btn-add-provider,
+.st-skill-input-wrap input { border-radius: 6px; background: #fff; }
+.provider-fields label span { letter-spacing: 0; }

@@ -24,6 +24,7 @@ export const applyPatchTool: ToolHandler = {
     if (!hunks.length) throw new Error('No valid patch hunks found')
     const summaries: string[] = []
     let lastDiff: ReturnType<typeof buildFileDiff> | undefined
+    const fileDiffs: ReturnType<typeof buildFileDiff>[] = []
     for (const hunk of hunks) {
       const p = normalizePath(hunk.path)
       assertAccess(ctx, p)
@@ -33,10 +34,11 @@ export const applyPatchTool: ToolHandler = {
       await fs.writeFile(p, next, 'utf8')
       const fileDiff = buildFileDiff(p, oldText, next)
       lastDiff = fileDiff
+      fileDiffs.push(fileDiff)
       summaries.push(
         created ? `Created ${p}` : formatEditSummary(p, fileDiff.stats)
       )
     }
-    return ok(summaries.join('\n'), lastDiff)
+    return { ...ok(summaries.join('\n'), lastDiff), fileDiffs }
   }
 }

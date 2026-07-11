@@ -1,5 +1,7 @@
 # agent/memory — PostgreSQL 记忆系统
 
+Startup note: the desktop window is created before PGlite initialization. Memory startup runs in the background so a PGlite lock or startup failure cannot block the main UI window.
+
 嵌入式 **PGlite**（`~/.sharker/memory-db`），会话与长期记忆的唯一数据源。
 
 ## 四段架构

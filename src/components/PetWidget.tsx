@@ -3,20 +3,32 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
+import sharkLogo from '../assets/logo-shark.png'
 import './PetWidget.css'
 
 interface Props {
   enabled: boolean
 }
 
-const MOODS = ['(◕‿◕)', '(•̀ᴗ•́)', '(≧▽≦)', '(￣▽￣)', '(⌐■_■)']
 const POS_KEY = 'sharker-pet-pos'
+const PET_SIZE = 52
+const SAFE_X = 10
+const SAFE_TOP = 52
+const SAFE_BOTTOM = 132
+
+function clampPos(p: { x: number; y: number }): { x: number; y: number } {
+  return {
+    x: Math.max(SAFE_X, Math.min(window.innerWidth - PET_SIZE - SAFE_X, p.x)),
+    y: Math.max(SAFE_TOP, Math.min(window.innerHeight - PET_SIZE - SAFE_BOTTOM, p.y))
+  }
+}
 
 /** 默认位置：右下角，避开输入框 */
 function defaultPos(): { x: number; y: number } {
   return {
-    x: Math.max(8, window.innerWidth - 100),
-    y: Math.max(48, window.innerHeight - 160)
+    x: Math.max(SAFE_X, window.innerWidth - PET_SIZE - SAFE_X),
+    y: Math.max(SAFE_TOP, window.innerHeight - PET_SIZE - SAFE_BOTTOM)
   }
 }
 
@@ -26,10 +38,7 @@ function loadPos(): { x: number; y: number } {
     const raw = localStorage.getItem(POS_KEY)
     if (raw) {
       const p = JSON.parse(raw) as { x: number; y: number }
-      return {
-        x: Math.max(8, Math.min(window.innerWidth - 88, p.x)),
-        y: Math.max(48, Math.min(window.innerHeight - 88, p.y))
-      }
+      return clampPos(p)
     }
   } catch {
     /* ignore */
@@ -39,7 +48,6 @@ function loadPos(): { x: number; y: number } {
 
 /** 右下角浮动宠物 */
 export function PetWidget({ enabled }: Props) {
-  const [mood, setMood] = useState(0)
   const [bounce, setBounce] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [pos, setPos] = useState(loadPos)
@@ -61,10 +69,9 @@ export function PetWidget({ enabled }: Props) {
 
   useEffect(() => {
     if (!enabled) return
-    const t = window.setInterval(() => {
-      setMood((m) => (m + 1) % MOODS.length)
-    }, 4000)
-    return () => window.clearInterval(t)
+    const onResize = () => setPos((current) => clampPos(current))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [enabled])
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -73,10 +80,7 @@ export function PetWidget({ enabled }: Props) {
     const dx = e.clientX - d.ox
     const dy = e.clientY - d.oy
     if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.moved = true
-    const next = {
-      x: Math.max(8, Math.min(window.innerWidth - 88, d.px + dx)),
-      y: Math.max(48, Math.min(window.innerHeight - 88, d.py + dy))
-    }
+    const next = clampPos({ x: d.px + dx, y: d.py + dy })
     setPos(next)
   }, [])
 
@@ -85,7 +89,14 @@ export function PetWidget({ enabled }: Props) {
     if (!d.active) return
     d.active = false
     if (d.moved) {
-      localStorage.setItem(POS_KEY, JSON.stringify(posRef.current))
+      const snapped = clampPos({
+        x: posRef.current.x + PET_SIZE / 2 < window.innerWidth / 2
+          ? SAFE_X
+          : window.innerWidth - PET_SIZE - SAFE_X,
+        y: posRef.current.y
+      })
+      setPos(snapped)
+      localStorage.setItem(POS_KEY, JSON.stringify(snapped))
     }
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
@@ -123,7 +134,7 @@ export function PetWidget({ enabled }: Props) {
           setDismissed(true)
         }}
       >
-        ×
+        <X size={12} aria-hidden />
       </button>
       <button
         type="button"
@@ -132,12 +143,11 @@ export function PetWidget({ enabled }: Props) {
         onClick={() => {
           if (dragRef.current.moved) return
           setBounce(true)
-          setMood((m) => (m + 1) % MOODS.length)
-          window.setTimeout(() => setBounce(false), 400)
+          window.setTimeout(() => setBounce(false), 220)
         }}
       >
-        <span className="pet-face">{MOODS[mood]}</span>
-        <span className="pet-label">Shark</span>
+        <img className="pet-logo" src={sharkLogo} alt="" draggable={false} />
+        <span className="pet-status" aria-hidden />
       </button>
     </div>,
     document.body

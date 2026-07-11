@@ -5,7 +5,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConversationSummary } from '../shared/conversation'
 import { deriveConversationTitle } from '../shared/conversation'
-import type { AppSettings, ApprovalRequest, AssistantMeta, ChatMessage, TurnSegment } from '../shared/types'
+import type {
+  AppSettings,
+  ApprovalRequest,
+  AssistantMeta,
+  ChatAttachment,
+  ChatMessage,
+  TurnSegment
+} from '../shared/types'
 import {
   activitiesFromSkills,
   extractBrowsedPaths,
@@ -30,7 +37,6 @@ import {
 } from '../shared/workspace'
 import { ChatView } from './components/ChatView'
 import { ChatToolbar } from './components/ChatToolbar'
-import { ApprovalModal } from './components/ApprovalModal'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
@@ -71,6 +77,7 @@ export default function App() {
   const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null)
   const [turnHadThinking, setTurnHadThinking] = useState(false)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
+  const [approvalResponding, setApprovalResponding] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<{ document: string; filePath?: string } | null>(
     null
   )
@@ -85,7 +92,9 @@ export default function App() {
   } | null>(null)
   const sendInFlightRef = useRef(false)
   const queuedPromptsRef = useRef<QueuedPrompt[]>([])
-  const dispatchTurnRef = useRef<(text: string) => Promise<void>>(async () => {})
+  const dispatchTurnRef = useRef<
+    (text: string, attachments?: ChatAttachment[]) => Promise<void>
+  >(async () => {})
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
@@ -104,6 +113,8 @@ export default function App() {
   const turnStartedAtRef = useRef(0)
   const turnMetaRef = useRef<AssistantMeta>({ browsedFiles: [], activities: [] })
   const turnHadThinkingRef = useRef(false)
+  const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
+  const activeUserMessageIdRef = useRef<string | undefined>(undefined)
 
   const activeWorkspaceId = settings.activeWorkspaceId
 
@@ -205,6 +216,10 @@ export default function App() {
     const now = Date.now()
     turnStartedAtRef.current = now
     turnHadThinkingRef.current = false
+    turnOutcomeRef.current = 'success'
+    activeUserMessageIdRef.current = undefined
+    setApproval(null)
+    setApprovalResponding(false)
     setTurnHadThinking(false)
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     setTurnStartedAt(now)
@@ -223,6 +238,8 @@ export default function App() {
     setTurnThinking('')
     setLoading(false)
     setActiveTool(null)
+    setApproval(null)
+    setApprovalResponding(false)
     setQueuedPrompts([])
     queuedPromptsRef.current = []
     resetTurnMeta()
@@ -281,7 +298,7 @@ export default function App() {
 
   /** 流式结束后将助手回复写入消息列表 */
   const commitAssistantReply = useCallback(
-    (content: string, suffix = '') => {
+    (content: string, suffix = '', outcome = turnOutcomeRef.current) => {
       const finalized = finalizeSegments(segmentsRef.current)
       segmentsRef.current = finalized
       let text = (extractFinalContent(finalized) || content).trim()
@@ -296,6 +313,9 @@ export default function App() {
       const thinkingPreview = thinkingPreviewFromSegments(finalized)
       const hadThinking = finalized.some((s) => s.kind === 'thinking')
       const meta: AssistantMeta = {
+        outcome,
+        retryOfUserMessageId:
+          outcome === 'error' ? activeUserMessageIdRef.current : undefined,
         browsedFiles: browsedFilesFromSegments(finalized),
         activities: activitiesFromSegments(finalized),
         segments: finalized,
@@ -443,6 +463,7 @@ export default function App() {
     const offStream = window.sharker.onStream((chunk) => {
       if (
         chunk.type === 'think' ||
+        chunk.type === 'status' ||
         chunk.type === 'token' ||
         chunk.type === 'tool_start' ||
         chunk.type === 'tool_done' ||
@@ -455,6 +476,7 @@ export default function App() {
           setTurnHadThinking(true)
           turnThinkingRef.current += chunk.content
         }
+        if (chunk.type === 'error') turnOutcomeRef.current = 'error'
         if (chunk.type === 'token' && chunk.content) {
           streamingRef.current += chunk.content
         }
@@ -551,7 +573,7 @@ export default function App() {
           const [next, ...rest] = queue
           setQueuedPrompts(rest)
           queuedPromptsRef.current = rest
-          void dispatchTurnRef.current(next.text)
+          void dispatchTurnRef.current(next.text, next.attachments)
         }
       }
     })
@@ -567,15 +589,17 @@ export default function App() {
 
   /** 派发单条 turn：写入用户消息并触发 IPC */
   const dispatchTurn = useCallback(
-    async (text: string) => {
+    async (text: string, attachments: ChatAttachment[] = []) => {
       const current = settingsRef.current
       const providerErr = validateActiveProvider(current)
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'user',
-        content: text
+        content: text,
+        attachments: attachments.length ? attachments : undefined
       }
+      activeUserMessageIdRef.current = userMsg.id
       const history = messagesRef.current
       const nextMessages = [...history, userMsg]
 
@@ -584,7 +608,13 @@ export default function App() {
         const errReply: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `**错误**: ${providerErr}`
+          content: `**错误**: ${providerErr}`,
+          meta: {
+            browsedFiles: [],
+            activities: [],
+            outcome: 'error',
+            retryOfUserMessageId: userMsg.id
+          }
         }
         const withErr = [...nextMessages, errReply]
         setMessages(withErr)
@@ -597,6 +627,7 @@ export default function App() {
       doneCommittedRef.current = false
       setLoading(true)
       beginTurnMeta()
+      activeUserMessageIdRef.current = userMsg.id
       streamingRef.current = ''
       turnThinkingRef.current = ''
       segmentsRef.current = []
@@ -612,7 +643,7 @@ export default function App() {
         setMessages(nextMessages)
         messagesRef.current = nextMessages
         void persistActiveConversation(nextMessages)
-        await window.sharker.sendMessage(text, history)
+        await window.sharker.sendMessage(text, history, attachments)
       } catch (e) {
         console.error('发送失败', e)
         doneCommittedRef.current = true
@@ -620,7 +651,8 @@ export default function App() {
         setLoading(false)
         setActiveTool(null)
         const msg = e instanceof Error ? e.message : String(e)
-        commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`)
+        turnOutcomeRef.current = 'error'
+        commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`, 'error')
       }
     },
     [beginTurnMeta, commitAssistantReply, ensureActiveConversation, persistActiveConversation]
@@ -638,7 +670,11 @@ export default function App() {
 
   /** 接待用户输入：空闲直接派发；忙时排队或插队 */
   const handlePromptSubmit = useCallback(
-    async (text: string, mode: PromptSubmitMode = 'send') => {
+    async (
+      text: string,
+      mode: PromptSubmitMode = 'send',
+      attachments: ChatAttachment[] = []
+    ) => {
       await flushSettingsDraftIfNeeded()
       if (!getActiveWorkspacePath(settingsRef.current)) {
         const trimmedEarly = text.trim()
@@ -646,7 +682,8 @@ export default function App() {
         const userMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'user',
-          content: trimmedEarly
+          content: trimmedEarly,
+          attachments: attachments.length ? attachments : undefined
         }
         const errReply: ChatMessage = {
           id: crypto.randomUUID(),
@@ -678,7 +715,11 @@ export default function App() {
 
       const busy = loading || sendInFlightRef.current
       if (busy) {
-        const item: QueuedPrompt = { id: crypto.randomUUID(), text: trimmed }
+        const item: QueuedPrompt = {
+          id: crypto.randomUUID(),
+          text: trimmed,
+          attachments: attachments.length ? attachments : undefined
+        }
         if (mode === 'jump') {
           setQueuedPrompts((prev) => {
             const next = [item, ...prev]
@@ -696,7 +737,7 @@ export default function App() {
         return
       }
 
-      await dispatchTurn(trimmed)
+      await dispatchTurn(trimmed, attachments)
     },
     [dispatchTurn, flushSettingsDraftIfNeeded, loading]
   )
@@ -709,6 +750,22 @@ export default function App() {
       return next
     })
   }, [])
+
+  /** Replay the latest failed turn without duplicating its user message. */
+  const handleRetry = useCallback(
+    async (userMessageId: string) => {
+      const current = messagesRef.current
+      const index = current.findIndex((message) => message.id === userMessageId && message.role === 'user')
+      const original = current[index]
+      if (index < 0 || !original) return
+      const history = current.slice(0, index)
+      setMessages(history)
+      messagesRef.current = history
+      await persistActiveConversation(history)
+      await dispatchTurn(original.content, original.attachments ?? [])
+    },
+    [dispatchTurn, persistActiveConversation]
+  )
 
   /** 用户点击 Build：进入 build 阶段并按计划派发 */
   const handleBuildPlan = useCallback(async () => {
@@ -727,8 +784,11 @@ export default function App() {
     doneCommittedRef.current = true
     setLoading(false)
     setActiveTool(null)
+    setApproval(null)
+    setApprovalResponding(false)
     setTurnThinking(turnThinkingRef.current)
-    commitAssistantReply(streamingRef.current, '\n\n_(已停止)_')
+    turnOutcomeRef.current = 'aborted'
+    commitAssistantReply(streamingRef.current, '\n\n_(已停止)_', 'aborted')
   }, [commitAssistantReply])
 
   /** 设置页保存回调 */
@@ -980,11 +1040,16 @@ export default function App() {
     setPage(targetPage)
   }
 
-  /** 审批弹窗用户响应 */
+  /** 执行轨道内审批响应 */
   const handleApproval = async (approved: boolean) => {
-    if (!approval) return
-    await window.sharker.respondApproval(approval.id, approved)
-    setApproval(null)
+    if (!approval || approvalResponding) return
+    setApprovalResponding(true)
+    try {
+      await window.sharker.respondApproval(approval.id, approved)
+      setApproval(null)
+    } finally {
+      setApprovalResponding(false)
+    }
   }
 
   /** UI 斜杠命令（不经过模型） */
@@ -1075,6 +1140,8 @@ export default function App() {
             <ChatToolbar
               gitInfo={gitInfo}
               workspacePath={getActiveWorkspacePath(settings) ?? ''}
+              workspaceLabel={settings.workspaces.find((w) => w.id === settings.activeWorkspaceId)?.label ?? ''}
+              conversationTitle={conversationList.find((c) => c.id === activeConversationId)?.title ?? '新对话'}
               rightPanelOpen={rightPanelOpen}
               onToggleRightPanel={handleToggleRightPanel}
               onRefreshGit={() => void refreshGitInfo()}
@@ -1095,7 +1162,6 @@ export default function App() {
             <ChatView
               workspaces={settings.workspaces}
               activeWorkspaceId={settings.activeWorkspaceId}
-              onSelectWorkspace={handleSelectWorkspace}
               providers={settings.providers}
               activeProviderId={settings.activeProviderId}
               onSelectProvider={handleSelectProvider}
@@ -1124,6 +1190,10 @@ export default function App() {
                 if (ws) void handleSelectConversation(ws, id)
                 setShowHistoryPicker(false)
               }}
+              onRetry={(userMessageId) => void handleRetry(userMessageId)}
+              approval={approval}
+              approvalResponding={approvalResponding}
+              onApproval={handleApproval}
             />
             </div>
           ) : page === 'automations' ? (
@@ -1151,9 +1221,6 @@ export default function App() {
           onClose={() => setRightPanelOpen(false)}
         />
         <PetWidget enabled={settings.petEnabled ?? false} />
-        {approval && (
-          <ApprovalModal request={approval} onRespond={handleApproval} />
-        )}
       </div>
     </div>
   )

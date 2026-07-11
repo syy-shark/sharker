@@ -128,8 +128,8 @@ export function buildProcessSteps(options: {
     steps.push({
       id: 'think',
       kind: 'think',
-      title: thinkActive ? '思考中' : '思考',
-      thinkingText: thinking || undefined,
+      title: thinkActive ? '思考中' : '已思考',
+      detail: thinkActive ? '梳理下一步' : undefined,
       status: thinkActive ? 'active' : 'done'
     })
   } else if (options.isStreaming && !options.activeTool) {

@@ -13,6 +13,7 @@
 | 文件 | 说明 |
 |------|------|
 | `pipeline.ts` | `executeUserInput`、`processUserInput`、`onQuery`（MCP 池 + @file）、`abortActiveTurn` |
+| `message-attachments.ts` | 将用户图片附件稳定路径读取为 OpenAI 兼容多模态 content |
 | `query-loop.ts` | `queryLoop` — 流式问模型 ↔ 工具（只读并行）↔ 审批 ↔ verify |
 | `file-refs.ts` | 解析 `@path` 并注入文件内容 |
 | `loop.ts` | `buildSystemPrompt`、`generateTitle` |
@@ -26,11 +27,11 @@
 
 ```
 executeUserInput
-  → queryServe（占坑：turn_start + AbortController + 120s 超时）
+  → queryServe（占坑：turn_start + AbortController + 普通任务 15 分钟 / 桌面自动化 20 分钟超时）
   → processUserInput（斜杠命令 or 普通文本 → shouldQuery）
   → shouldQuery=false：本地回复 / command chunk → done
-  → onQuery：校验提供商、MCP 动态池、@file 展开、压缩上下文、组装 system + skills
-  → queryLoop：流式模型 ↔ 工具（只读可并行，默认最多 25 轮）→ done
+  → onQuery：校验提供商、MCP 动态池、@file 展开、图片附件转多模态 content、压缩上下文、组装 system + skills
+  → queryLoop：流式模型 ↔ 工具（只读可并行，默认最多 40 轮）→ done
 ```
 
 ## 对外接口
@@ -62,3 +63,11 @@ executeUserInput
 - [docs/computer-use-setup.md](../docs/computer-use-setup.md) — Codex Computer/Browser/Voice 安装
 - [docs/codex-port-gap-matrix.md](../docs/codex-port-gap-matrix.md) — 移植对照
 - [docs/roadmap-harness.md](../docs/roadmap-harness.md)
+
+## Continuation behavior
+
+- Parallel read-only tool calls are isolated from one another: a recoverable failure such as `git_log` in a non-Git directory is returned to the model as that tool's result and does not abort the whole turn.
+- Starting a dev/local server is an intermediate step, not task completion. After server startup the loop should keep working: open or load the page, inspect/screenshot, fix visible errors, and summarize only when the requested job is complete or truly blocked.
+- `query-loop.ts` nudges the model to continue when an actionable request ends with "let me update/add/check..." or "接下来/现在..." style text but no tool call.
+- Short continuation prompts such as "继续" / "接着" are treated as resuming the previous actionable task: tools stay enabled and the loop injects a reminder not to stop at "Let me check..." narration.
+- `text-tool-fallback.ts` parses pseudo XML/JSON tool calls from weaker providers and hides the full parameter payload from visible chat, including markdown JSON code fences that contain tool-call snippets.
