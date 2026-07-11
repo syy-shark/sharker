@@ -25,6 +25,21 @@ export interface ChatCompletionMessage {
   name?: string
 }
 
+export interface ToolCallStatus {
+  content: string
+  toolName?: string
+  targetPath?: string
+  argumentsLength: number
+}
+
+type StreamChatChunk = {
+  type: 'delta' | 'reasoning' | 'tool_calls' | 'tool_status' | 'done'
+  content?: string
+  toolCalls?: ChatCompletionMessage['tool_calls']
+  toolStatus?: ToolCallStatus
+  finishReason?: string
+}
+
 /** 等待流式响应首包 */
 const FIRST_CHUNK_MS = 45_000
 /** 首包之后两包之间的最长间隔 */
@@ -32,6 +47,7 @@ const STREAM_IDLE_MS = 60_000
 /** 连接建立超时（仅 TCP/握手） */
 const CONNECT_MS = 30_000
 const STREAM_TOTAL_MS = 600_000
+const TOOL_STATUS_THROTTLE_MS = 700
 
 /** 从设置中解析当前激活的 API 配置，缺失时抛错 */
 export function getActiveProvider(settings: AppSettings): ProviderConfig {
@@ -222,6 +238,61 @@ function providerExtraBody(provider: ProviderConfig): Record<string, unknown> {
   return {}
 }
 
+function basenamePath(path: string): string {
+  const normalized = path.replace(/\\/g, '/')
+  return normalized.split('/').filter(Boolean).pop() || path
+}
+
+function unescapeJsonStringFragment(value: string): string {
+  return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+}
+
+function extractPartialJsonString(args: string, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const match = args.match(new RegExp(`"${key}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)`))
+    const value = match?.[1]
+    if (value) return unescapeJsonStringFragment(value)
+  }
+  return undefined
+}
+
+function extractToolTargetPath(toolName: string | undefined, args: string): string | undefined {
+  if (!args) return undefined
+  const fromJson = extractPartialJsonString(args, ['path', 'file_path', 'target_path'])
+  if (fromJson) return fromJson
+  if (toolName === 'apply_patch') {
+    const match = args.match(/\*\*\* (?:Add|Update) File:\s*([^\n\r*]+)/)
+    return match?.[1]?.trim()
+  }
+  return undefined
+}
+
+function toolStatusFromAccum(
+  toolCallsAccum: Record<number, { id: string; name: string; arguments: string }>
+): ToolCallStatus | undefined {
+  const calls = Object.values(toolCallsAccum)
+  if (calls.length === 0) return undefined
+  const active = calls[calls.length - 1]
+  const toolName = active.name || undefined
+  const args = active.arguments
+  const targetPath = extractToolTargetPath(toolName, args)
+  const target = targetPath ? basenamePath(targetPath) : ''
+  const argumentsLength = calls.reduce((sum, call) => sum + call.arguments.length, 0)
+
+  let content = '正在准备下一步'
+  if (toolName === 'write_file') {
+    content = target ? `正在生成 ${target} 的写入内容` : '正在生成写入内容'
+  } else if (toolName === 'apply_patch' || toolName === 'search_replace') {
+    content = target ? `正在整理 ${target} 的修改` : '正在整理文件修改'
+  } else if (toolName === 'run_terminal_cmd') {
+    content = '正在准备运行命令'
+  } else if (toolName) {
+    content = `正在准备 ${toolName}`
+  }
+
+  return { content, toolName, targetPath, argumentsLength }
+}
+
 /** 单次流式请求：SSE 解析、推理/正文/tool_calls 分片累积、空闲超时 */
 async function* streamChatAttempt(
   settings: AppSettings,
@@ -229,12 +300,7 @@ async function* streamChatAttempt(
   signal: AbortSignal | undefined,
   withTools: boolean,
   toolDefs: typeof TOOL_DEFINITIONS = TOOL_DEFINITIONS
-): AsyncGenerator<{
-  type: 'delta' | 'reasoning' | 'tool_calls' | 'done'
-  content?: string
-  toolCalls?: ChatCompletionMessage['tool_calls']
-  finishReason?: string
-}> {
+): AsyncGenerator<StreamChatChunk> {
   const provider = getActiveProvider(settings)
   const apiMessages = sanitizeMessagesForProvider(messages, provider)
   const baseBody = {
@@ -273,6 +339,7 @@ async function* streamChatAttempt(
   const requestStartedAt = Date.now()
   let lastChunkAt = requestStartedAt
   let receivedChunk = false
+  let lastToolStatusAt = 0
 
   try {
     // 读 SSE 流：首包与空闲分别计时，解析 data: 行并累积 tool_calls 片段
@@ -360,6 +427,19 @@ async function* streamChatAttempt(
               if (tc.function?.name) toolCallsAccum[idx].name = tc.function.name
               if (tc.function?.arguments) toolCallsAccum[idx].arguments += tc.function.arguments
             }
+            const status = toolStatusFromAccum(toolCallsAccum)
+            const now = Date.now()
+            if (
+              status &&
+              (lastToolStatusAt === 0 || now - lastToolStatusAt >= TOOL_STATUS_THROTTLE_MS)
+            ) {
+              lastToolStatusAt = now
+              yield {
+                type: 'tool_status',
+                content: status.content,
+                toolStatus: status
+              }
+            }
           }
           if (choice.finish_reason === 'tool_calls') {
             const toolCalls = Object.values(toolCallsAccum).map((t) => ({
@@ -392,12 +472,7 @@ export async function* streamChat(
   messages: ChatCompletionMessage[],
   signal?: AbortSignal,
   options?: { preferTools?: boolean; toolDefinitions?: typeof TOOL_DEFINITIONS }
-): AsyncGenerator<{
-  type: 'delta' | 'reasoning' | 'tool_calls' | 'done'
-  content?: string
-  toolCalls?: ChatCompletionMessage['tool_calls']
-  finishReason?: string
-}> {
+): AsyncGenerator<StreamChatChunk> {
   const preferTools = options?.preferTools !== false
   const tools = options?.toolDefinitions ?? getToolDefinitionsForPhase()
 

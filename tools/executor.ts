@@ -17,6 +17,7 @@ export async function executeToolWithMeta(
   return {
     output: truncateToolOutput(result.output, undefined, name),
     fileDiff: result.fileDiff,
+    fileDiffs: result.fileDiffs,
     planReady: result.planReady,
     planDocument: result.planDocument,
     planFilePath: result.planFilePath

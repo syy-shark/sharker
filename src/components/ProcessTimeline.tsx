@@ -93,16 +93,6 @@ export function ProcessTimeline({ steps }: Props) {
                 <span className="process-timeline-pulse" aria-hidden />
               )}
             </div>
-            {step.kind === 'think' && step.thinkingText ? (
-              <div
-                className={`process-thinking ${
-                  step.status === 'active' ? 'process-thinking--live' : ''
-                }`}
-              >
-                <p className="process-thinking-text">{step.thinkingText}</p>
-                {step.status === 'active' && <span className="process-thinking-caret" aria-hidden />}
-              </div>
-            ) : null}
             {step.detail ? (
               <code className="process-timeline-detail">{step.detail}</code>
             ) : null}

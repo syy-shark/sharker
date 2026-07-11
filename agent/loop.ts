@@ -11,7 +11,7 @@ import { buildWorkspaceBootstrap } from './workspace-bootstrap'
 
 const CODING_RULES_BASE = `# Work rules
 - You MUST use the provided function tools (read_file, write_file, list_dir, etc.) to read, create, and edit files.
-- NEVER print fake XML tool tags in your message text (e.g. <read_file>...</read_file>). Always call tools via tool_calls.
+- NEVER print fake XML tool tags or JSON tool-call objects in your message text (e.g. <read_file>...</read_file> or {"tool":"write_file",...}). Always call tools via tool_calls.
 - Before editing a file, read it (read_file) or locate code (grep/glob) first.
 - When exploring, batch multiple read-only tool calls in ONE turn (read_file + grep + list_dir) for speed.
 - Users may attach files with @path/to/file in their message — content is injected automatically.
@@ -20,6 +20,8 @@ const CODING_RULES_BASE = `# Work rules
 - After code changes in Node/TS projects, rely on harness auto-verify output if present.
 - run_terminal_cmd cwd must be the workspace path or a subdirectory — never / alone.
 - Dev servers (npm run dev, vite, python -m http.server) run in background on port 3000 (not 5173); give the user http://localhost:3000 to open in their browser.
+- Starting a local server is only a step, never the finish line. After it starts, continue with the next concrete action: load the page, inspect/screenshot it, fix errors, and report only when the requested task is actually complete or blocked by a real external gate.
+- For coding/building tasks, do not stop at "I will start..." or "needs a server". Use tools to do the work, keep going after background tasks, and verify the visible result when possible.
 - Only git_commit / git_push when the user explicitly asks.
 - Browser automation: browser_* tools (Playwright) or MCP @playwright/mcp; desktop automation: mcp_cua_driver__* (Cua Driver) or desktop_* fallback on Linux.
 - Visible browsing: when the user asks to open a website for them (e.g. "用 Chrome 打开哔哩哔哩"), call open_url with browser="chrome" or "default"; use browser_* only for headless page inspection/automation.

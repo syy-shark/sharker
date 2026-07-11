@@ -6,19 +6,18 @@ import './ThinkingIndicator.css'
 
 /** ThinkingIndicator Props：思考预览文本 */
 interface Props {
-  text: string
+  text?: string
+  elapsed?: string
 }
 
 /** 流式思考中的流光指示器 */
-export function ThinkingIndicator({ text }: Props) {
+export function ThinkingIndicator({ text = '', elapsed }: Props) {
   const preview = text.trim()
 
   return (
     <div className="thinking-indicator" aria-live="polite">
-      <div className="thinking-indicator-track" aria-hidden>
-        <div className="thinking-indicator-sweep" />
-      </div>
       <span className="thinking-indicator-label">思考中</span>
+      {elapsed ? <span className="thinking-indicator-time">{elapsed}</span> : null}
       {preview ? <pre className="thinking-indicator-text">{preview}</pre> : null}
     </div>
   )

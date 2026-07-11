@@ -3,6 +3,7 @@
  * @see src/README.md
  */
 import { useState } from 'react'
+import { Maximize2, Minus, X } from 'lucide-react'
 import logoUrl from '../assets/logo-shark.png'
 import './TitleBar.css'
 
@@ -26,11 +27,9 @@ export function TitleBar() {
             }}
           />
         </div>
+        <span className="titlebar-brand">Sharker</span>
         <div className="titlebar-drag" />
       </div>
-      <span className="titlebar-title">
-        Shar<span className="titlebar-title-accent">K</span>er
-      </span>
       <div className="titlebar-controls">
         <button
           type="button"
@@ -38,9 +37,7 @@ export function TitleBar() {
           aria-label="最小化"
           onClick={() => window.sharker.windowMinimize()}
         >
-          <svg width="10" height="1" viewBox="0 0 10 1">
-            <rect width="10" height="1" fill="currentColor" />
-          </svg>
+          <Minus size={15} aria-hidden />
         </button>
         <button
           type="button"
@@ -48,17 +45,7 @@ export function TitleBar() {
           aria-label="最大化"
           onClick={() => window.sharker.windowMaximize()}
         >
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <rect
-              x="0.5"
-              y="0.5"
-              width="9"
-              height="9"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-            />
-          </svg>
+          <Maximize2 size={13} aria-hidden />
         </button>
         <button
           type="button"
@@ -66,14 +53,7 @@ export function TitleBar() {
           aria-label="关闭"
           onClick={() => window.sharker.windowClose()}
         >
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path
-              d="M1 1 L9 9 M9 1 L1 9"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <X size={15} aria-hidden />
         </button>
       </div>
     </header>

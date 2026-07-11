@@ -126,6 +126,26 @@
   color: var(--accent);
 }
 
+/* Workbench list density */
+.workspace-list { gap: 2px; padding: 0; }
+.workspace-row { border-radius: 6px; }
+.workspace-row:has(.workspace-row-select:hover) { background: #e4e8ed; box-shadow: none; }
+.workspace-row-main { padding: 4px 2px 4px 4px; }
+.workspace-row-select { gap: 7px; padding: 3px 5px; }
+.workspace-label { font-size: 13px; }
+.workspace-conv-count { color: var(--text-muted); background: #e2e6eb; box-shadow: none; }
+.conversation-list { border-left-color: #d4d9df; box-shadow: none; }
+.conv-slide-indicator { background: #dce9f8; box-shadow: inset 2px 0 0 var(--accent); backdrop-filter: none; }
+.workspace-add-btn {
+  border-color: #cfd8e2;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.workspace-add-btn:hover { color: var(--accent); background: var(--accent-soft); border-color: #aac4e2; box-shadow: none; }
+
 .workspace-actions {
   position: relative;
   z-index: 2;

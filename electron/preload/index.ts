@@ -5,7 +5,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../../shared/ipc'
 import type { Conversation } from '../../shared/conversation'
-import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../../shared/types'
+import type {
+  AppSettings,
+  ApprovalRequest,
+  ChatAttachment,
+  ChatMessage,
+  StreamChunk
+} from '../../shared/types'
 
 /** 向渲染进程暴露类型安全的 IPC 桥接 API。 */
 contextBridge.exposeInMainWorld('sharker', {
@@ -35,8 +41,18 @@ contextBridge.exposeInMainWorld('sharker', {
   importSkillRepo: (url: string): Promise<string> => ipcRenderer.invoke(IPC.IMPORT_SKILL_REPO, url),
   generateTitle: (messages: ChatMessage[]): Promise<string> =>
     ipcRenderer.invoke(IPC.GENERATE_TITLE, messages),
-  sendMessage: (text: string, history: ChatMessage[]): Promise<void> =>
-    ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history),
+  sendMessage: (
+    text: string,
+    history: ChatMessage[],
+    attachments?: ChatAttachment[]
+  ): Promise<void> => ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments),
+  saveAttachment: (input: {
+    name: string
+    mimeType: string
+    dataUrl: string
+  }): Promise<ChatAttachment> => ipcRenderer.invoke(IPC.SAVE_ATTACHMENT, input),
+  readAttachmentDataUrl: (filePath: string): Promise<string> =>
+    ipcRenderer.invoke(IPC.READ_ATTACHMENT_DATA_URL, filePath),
   abortChat: (): Promise<void> => ipcRenderer.invoke(IPC.ABORT_CHAT),
   respondApproval: (id: string, approved: boolean): Promise<void> =>
     ipcRenderer.invoke(IPC.APPROVAL_RESPONSE, id, approved),

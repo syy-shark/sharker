@@ -22,8 +22,8 @@ import {
 } from './vision-feedback'
 import type { ApprovalHandler } from './loop'
 
-/** 默认工具循环上限（读/改/跑命令累加，12 轮对续改任务偏紧） */
-const DEFAULT_MAX_ITERATIONS = 25
+/** 默认工具循环上限（读/改/跑命令累加，多文件项目生成需要更长续跑空间） */
+const DEFAULT_MAX_ITERATIONS = 40
 
 /** 桌面自动化任务关键词（用于中途续跑） */
 const COMPUTER_USE_TASK_PATTERN =
@@ -61,7 +61,34 @@ function assistantClaimsDone(text: string): boolean {
   return /已完成|已经发送|发送成功|任务完成|搞定了|done/i.test(text)
 }
 
-/** 是否删除/卸载类工具调用 */
+function isContinuationRequest(text: string): boolean {
+  return /^(继续|接着|接着做|继续做|继续处理|继续执行|continue|go on|keep going)[!.?~，,\s]*$/i.test(
+    text.trim()
+  )
+}
+
+/** 助手是否停在“接下来要做”的中间态 */
+function assistantIsStoppingMidTask(text: string): boolean {
+  const tail = text.trim().slice(-700)
+  return /(?:need|needs|should|will|let me|now\s+let\s+me|i'?ll|i\s+will|first|next|then)\s+.{0,40}(?:start|run|open|load|check|create|write|update|add|modify|fix|verify|inspect|build|implement|continue)|(?:start|run|open|load)\s+(?:a\s+)?(?:local\s+)?server|(?:http|local)\s+server|(?:需要|我先|让我|现在|接下来|下一步|然后).{0,30}(?:启动|运行|打开|加载|检查|修复|验证|创建|写入|修改|更新|添加|继续|服务器)|(?:let me|now|next|接下来|下一步|现在).{0,80}:\s*$/i.test(
+    tail
+  )
+}
+
+function isActionableWorkRequest(text: string): boolean {
+  return /(?:continue|keep\s+going|go\s+on|create|build|make|implement|fix|run|start|open|test|verify|inspect|screenshot|server|website|three\.?js|vite|npm|html|css|js|ts|react|electron)|(?:继续|接着|做|写|实现|修|运行|启动|打开|检查|验证|网站|页面|服务器)/i.test(
+    text
+  )
+}
+
+function historySuggestsActionableWork(history: ChatMessage[]): boolean {
+  return history.slice(-10).some((m) => {
+    if (m.meta?.activities?.length || m.meta?.segments?.some((s) => s.kind === 'tool')) return true
+    if (m.role === 'tool' || m.toolName) return true
+    return isActionableWorkRequest(m.content)
+  })
+}
+
 function isDestructiveOperation(toolName: string, args: Record<string, unknown>): boolean {
   if (toolName === 'uninstall_application') return true
   if (toolName === 'delete_path') {
@@ -232,8 +259,19 @@ export async function* queryLoop(
   let computerUseNudges = 0
   let destructiveVerifyNudges = 0
   let finalTextNudges = 0
+  let emptyTextNudges = 0
+  let continuationNudges = 0
   let ranToolsThisTurn = false
+  const resumeLikely = isContinuationRequest(userText) && historySuggestsActionableWork(history)
   const skipVerify = shouldSkipAutoVerify(userText)
+
+  if (resumeLikely) {
+    messages.push({
+      role: 'user',
+      content:
+        '[系统提示] 用户只说“继续”，意思是继续上一项未完成的实际任务。请根据历史上下文直接推进：需要检查文件/页面/命令时必须调用工具，不要只回复“我来检查/Let me check”。只有任务完成或确实受阻时才总结。'
+    })
+  }
 
   const uninstallKeyword = extractUninstallKeyword(userText)
   if (isUninstallRequest(userText) && uninstallKeyword && !usedUninstallApplicationInTurn(messages)) {
@@ -265,11 +303,11 @@ export async function* queryLoop(
         role: 'user',
         content:
           `[系统提示] 本轮工具调用即将用尽（剩余约 ${remaining + 1} 轮）。` +
-          '请优先用文字给出结论或下一步，避免不必要的读文件/跑命令。'
+          '请优先完成剩余必要工具调用；只有任务真正完成或明确受阻时才用文字总结。'
       })
     }
 
-    const preferTools = needsToolCalling(userText, history)
+    const preferTools = resumeLikely || needsToolCalling(userText, history)
     const toolDefs = getToolDefinitionsForPhase(undefined, settings)
     for await (const chunk of streamChat(settings, messages, signal, {
       preferTools,
@@ -285,6 +323,13 @@ export async function* queryLoop(
         displayedAssistantText = cleaned
         if (displayDelta) {
           yield { type: 'token', content: displayDelta }
+        }
+      }
+      if (chunk.type === 'tool_status' && chunk.content) {
+        yield {
+          type: 'status',
+          content: chunk.content,
+          toolName: chunk.toolStatus?.toolName
         }
       }
       if (chunk.type === 'tool_calls' && chunk.toolCalls) {
@@ -330,6 +375,23 @@ export async function* queryLoop(
         continue
       }
 
+      const shouldContinueActionableWork =
+        (resumeLikely || isActionableWorkRequest(userText)) &&
+        assistantIsStoppingMidTask(assistantText) &&
+        !assistantClaimsDone(assistantText) &&
+        continuationNudges < 6 &&
+        iterations < maxIterations - 1
+
+      if (shouldContinueActionableWork) {
+        continuationNudges++
+        messages.push({
+          role: 'user',
+          content:
+            '[System reminder] The user asked for an actionable task, and your last message stopped at an intermediate step. Do not finish yet. Continue by calling the appropriate tools now. If you started or need a local server, keep going: start it in the background, open/load the page, inspect or screenshot it, fix visible errors, and only summarize after the task is complete or truly blocked.'
+        })
+        continue
+      }
+
       if (textEmpty && ranToolsThisTurn && finalTextNudges < 1) {
         finalTextNudges++
         messages.push({
@@ -348,9 +410,26 @@ export async function* queryLoop(
           if (chunk.type === 'delta' && chunk.content) {
             yield { type: 'token', content: chunk.content }
           }
+          if (chunk.type === 'tool_status' && chunk.content) {
+            yield {
+              type: 'status',
+              content: chunk.content,
+              toolName: chunk.toolStatus?.toolName
+            }
+          }
         }
         yield { type: 'done' }
         return
+      }
+
+      if (textEmpty && !ranToolsThisTurn && emptyTextNudges < 1 && iterations < maxIterations - 1) {
+        emptyTextNudges++
+        messages.push({
+          role: 'user',
+          content:
+            '[System reminder] Your previous response produced no user-visible text and no tool call. Reply again with a concise plain-text answer for the user. Do not call tools unless absolutely necessary.'
+        })
+        continue
       }
 
       const shouldNudgeComputerUse =
@@ -372,6 +451,13 @@ export async function* queryLoop(
         continue
       }
 
+      if (textEmpty) {
+        yield {
+          type: 'error',
+          error:
+            '模型本轮没有返回可显示的文字。Sharker 已避免静默结束；请检查当前模型是否支持 Chat Completions 流式正文输出，或换用更兼容的模型/Base URL。'
+        }
+      }
       yield { type: 'done' }
       return
     }
@@ -430,13 +516,25 @@ export async function* queryLoop(
       const results = await Promise.all(
         toolCalls.map(async (tc) => {
           const args = parseToolArgs(tc)
-          return executeToolWithMeta(tc.function.name, args, settings, signal)
+          try {
+            const result = await executeToolWithMeta(tc.function.name, args, settings, signal)
+            return { ok: true as const, result }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            return { ok: false as const, message }
+          }
         })
       )
 
       for (let i = 0; i < toolCalls.length; i++) {
         const tc = toolCalls[i]
-        const result = results[i]
+        const outcome = results[i]
+        if (!outcome.ok) {
+          messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${outcome.message}` })
+          yield { type: 'tool_done', toolName: tc.function.name, toolCallId: tc.id }
+          continue
+        }
+        const result = outcome.result
         messages.push({ role: 'tool', tool_call_id: tc.id, content: result.output })
         collectScreenshotPath(tc.function.name, result.output)
         if (isEditTool(tc.function.name)) editedThisIteration = true
@@ -444,7 +542,8 @@ export async function* queryLoop(
           type: 'tool_done',
           toolName: tc.function.name,
           toolCallId: tc.id,
-          fileDiff: result.fileDiff
+          fileDiff: result.fileDiff,
+          fileDiffs: result.fileDiffs
         }
       }
     } else {
@@ -513,7 +612,8 @@ export async function* queryLoop(
             type: 'tool_done',
             toolName,
             toolCallId: tc.id,
-            fileDiff: result.fileDiff
+            fileDiff: result.fileDiff,
+            fileDiffs: result.fileDiffs
           }
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
@@ -590,6 +690,13 @@ export async function* queryLoop(
     if (chunk.type === 'delta' && chunk.content) {
       summaryText += chunk.content
       yield { type: 'token', content: chunk.content }
+    }
+    if (chunk.type === 'tool_status' && chunk.content) {
+      yield {
+        type: 'status',
+        content: chunk.content,
+        toolName: chunk.toolStatus?.toolName
+      }
     }
   }
 

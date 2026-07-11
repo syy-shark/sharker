@@ -2,6 +2,7 @@
  * 聊天区顶栏：Git 分支切换 + 右上角面板展开按钮（Codex 风格）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GitBranch, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import './ChatToolbar.css'
 
 interface GitInfo {
@@ -13,6 +14,8 @@ interface GitInfo {
 interface Props {
   gitInfo: GitInfo | null
   workspacePath: string
+  workspaceLabel: string
+  conversationTitle: string
   rightPanelOpen: boolean
   onToggleRightPanel: () => void
   onRefreshGit?: () => void
@@ -23,6 +26,8 @@ interface Props {
 export function ChatToolbar({
   gitInfo,
   workspacePath,
+  workspaceLabel,
+  conversationTitle,
   rightPanelOpen,
   onToggleRightPanel,
   onRefreshGit,
@@ -77,6 +82,10 @@ export function ChatToolbar({
   return (
     <div className="chat-toolbar">
       <div className="chat-toolbar-left">
+        <div className="chat-toolbar-context">
+          <strong title={conversationTitle}>{conversationTitle || '新对话'}</strong>
+          <span title={workspacePath}>{workspaceLabel || '未选择工作区'}</span>
+        </div>
         {gitInfo?.isRepo ? (
           <div className="git-branch-wrap" ref={popoverRef}>
             <button
@@ -87,9 +96,7 @@ export function ChatToolbar({
               aria-haspopup="listbox"
               title="切换 Git 分支"
             >
-              <span className="git-branch-icon" aria-hidden>
-                ⎇
-              </span>
+              <GitBranch className="git-branch-icon" size={14} aria-hidden />
               {gitInfo.branch}
               {gitInfo.dirty ? <span className="git-branch-dirty">*</span> : null}
             </button>
@@ -127,15 +134,7 @@ export function ChatToolbar({
         aria-label={rightPanelOpen ? '收起右侧面板' : '展开右侧面板'}
         title={rightPanelOpen ? '收起面板' : '展开：文件 / 终端 / 浏览器'}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M15 4v16" stroke="currentColor" strokeWidth="1.5" />
-          {rightPanelOpen ? (
-            <path d="M17 12h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          ) : (
-            <path d="M17 10h3M17 14h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          )}
-        </svg>
+        {rightPanelOpen ? <PanelRightClose size={18} aria-hidden /> : <PanelRightOpen size={18} aria-hidden />}
       </button>
     </div>
   )

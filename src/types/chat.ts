@@ -2,6 +2,7 @@
  * 聊天相关 UI 类型
  * @see src/README.md
  */
+import type { ChatAttachment } from '../../shared/types'
 
 /** 发送模式：直接发送、排队、插队 */
 export type PromptSubmitMode = 'send' | 'queue' | 'jump'
@@ -10,4 +11,5 @@ export type PromptSubmitMode = 'send' | 'queue' | 'jump'
 export interface QueuedPrompt {
   id: string
   text: string
+  attachments?: ChatAttachment[]
 }
