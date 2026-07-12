@@ -10,10 +10,11 @@ import './MessageActions.css'
 interface Props {
   content: string
   messageId: string
+  onRetry?: () => void
 }
 
 /** 消息操作区（复制等） */
-export function MessageActions({ content, messageId }: Props) {
+export function MessageActions({ content, messageId, onRetry }: Props) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -37,6 +38,20 @@ export function MessageActions({ content, messageId }: Props) {
       >
         {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       </button>
+      {onRetry ? (
+        <button
+          type="button"
+          className="message-actions-btn"
+          title="重新运行"
+          aria-label="重新运行"
+          onClick={onRetry}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M13 7a5 5 0 1 0-1.25 4.25" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+            <path d="M10.5 4.5H13V2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   )
 }

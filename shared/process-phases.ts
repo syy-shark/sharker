@@ -126,6 +126,7 @@ function classifyTool(segment: TurnSegment): ProcessPhase {
   const name = segment.toolName ?? ''
   const detail = segment.toolDetail ?? ''
 
+  if (segment.isVerification) return 'verify'
   if (UNDERSTAND_TOOLS.has(name)) return 'understand'
   if (name === 'verify_removal' || /(?:verify|validate|test|check)/i.test(name)) return 'verify'
   if (COMMAND_TOOLS.has(name) && VERIFY_COMMAND.test(detail)) return 'verify'

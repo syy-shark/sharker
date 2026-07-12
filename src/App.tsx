@@ -469,6 +469,9 @@ export default function App() {
         chunk.type === 'tool_done' ||
         chunk.type === 'turn_start' ||
         chunk.type === 'context_compress' ||
+        chunk.type === 'approval_needed' ||
+        chunk.type === 'approval_resolved' ||
+        chunk.type === 'turn_cancelled' ||
         chunk.type === 'error'
       ) {
         if (chunk.type === 'think' && chunk.content) {
@@ -518,6 +521,9 @@ export default function App() {
             label: `compress · ${removedCount} 条 → ${beforeTokens}→${afterTokens} tokens`
           })
           syncLiveTurnMeta()
+        }
+        if (chunk.type === 'approval_needed' && chunk.approval) {
+          setApproval(chunk.approval)
         }
         flushSegmentsToUI()
         return

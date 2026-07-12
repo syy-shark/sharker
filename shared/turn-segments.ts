@@ -113,7 +113,9 @@ function previewFromDiffs(diffs: FileDiff[]): FileEditPreview[] {
 function makeToolSegment(
   toolName: string,
   toolArgs?: Record<string, unknown>,
-  toolCallId?: string
+  toolCallId?: string,
+  timestamp = Date.now(),
+  isVerification = false
 ): TurnSegment {
   const label = formatToolActivity(toolName, toolArgs)
   const editPreview = editPreviewFromToolArgs(toolName, toolArgs)
@@ -125,13 +127,16 @@ function makeToolSegment(
     toolTitle: toolTitle(toolName),
     toolDetail: detailFromToolLabel(label) ?? editPreview?.[0]?.path,
     editPreview,
-    status: 'active'
+    status: 'active',
+    startedAt: timestamp,
+    isVerification
   }
 }
 
 /** 将单个 StreamChunk 增量应用到片段列表，返回新数组 */
 export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): TurnSegment[] {
   const next = cloneSegments(segments)
+  const timestamp = chunk.timestamp ?? Date.now()
 
   if (chunk.type === 'status' && chunk.content) {
     const last = next[next.length - 1]
@@ -148,6 +153,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       toolName: chunk.toolName,
       toolTitle: chunk.toolName ? toolTitle(chunk.toolName) : undefined,
       status: 'active'
+      ,startedAt: timestamp
     })
     return next
   }
@@ -169,6 +175,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       kind: 'thinking',
       content: chunk.content,
       status: 'active'
+      ,startedAt: timestamp
     })
     return next
   }
@@ -181,6 +188,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         next[i].status === 'active'
       ) {
         next[i].status = 'done'
+        next[i].endedAt = timestamp
         break
       }
     }
@@ -194,6 +202,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         kind: 'text',
         content: chunk.content,
         status: 'active'
+        ,startedAt: timestamp
       })
     }
     return next
@@ -207,9 +216,16 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text')
       ) {
         s.status = 'done'
+        s.endedAt = timestamp
       }
     }
-    next.push(makeToolSegment(chunk.toolName, chunk.toolArgs, chunk.toolCallId))
+    next.push(makeToolSegment(
+      chunk.toolName,
+      chunk.toolArgs,
+      chunk.toolCallId,
+      timestamp,
+      chunk.isVerification
+    ))
     return next
   }
 
@@ -220,7 +236,12 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       const s = next[i]
       if (s.kind !== 'tool' || s.status !== 'active') continue
       if (chunk.toolCallId && s.toolCallId === chunk.toolCallId) {
-        s.status = 'done'
+        s.status = chunk.toolStatus === 'error' ? 'error' : 'done'
+        s.endedAt = timestamp
+        s.resultSummary = chunk.resultSummary
+        s.resultOutput = chunk.resultOutput
+        s.errorMessage = chunk.error
+        s.exitCode = chunk.exitCode
         if (diffs) {
           s.fileDiffs = diffs
           s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
@@ -234,7 +255,12 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       for (let i = next.length - 1; i >= 0; i--) {
         const s = next[i]
         if (s.kind === 'tool' && s.toolName === chunk.toolName && s.status === 'active') {
-          s.status = 'done'
+          s.status = chunk.toolStatus === 'error' ? 'error' : 'done'
+          s.endedAt = timestamp
+          s.resultSummary = chunk.resultSummary
+          s.resultOutput = chunk.resultOutput
+          s.errorMessage = chunk.error
+          s.exitCode = chunk.exitCode
           if (diffs) {
             s.fileDiffs = diffs
             s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
@@ -242,6 +268,46 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
           }
           break
         }
+      }
+    }
+    return next
+  }
+
+  if (chunk.type === 'approval_needed' && chunk.approval) {
+    const active = [...next].reverse().find(
+      (segment) => segment.kind === 'tool' && segment.status === 'active' &&
+        segment.toolName === chunk.approval?.toolName
+    )
+    if (active) active.approval = chunk.approval
+    return next
+  }
+
+  if (chunk.type === 'approval_resolved' && chunk.toolName) {
+    const active = [...next].reverse().find(
+      (segment) => segment.kind === 'tool' && segment.status === 'active' &&
+        segment.toolName === chunk.toolName
+    )
+    if (active && chunk.approved) active.approval = undefined
+    return next
+  }
+
+  if (chunk.type === 'turn_cancelled') {
+    let marked = false
+    for (const segment of next) {
+      if (segment.status !== 'active') continue
+      segment.status = 'cancelled'
+      segment.endedAt = timestamp
+      if (segment.kind === 'tool') segment.errorMessage = '任务已停止'
+      marked = true
+    }
+    if (!marked) {
+      const latestTool = [...next].reverse().find(
+        (segment) => segment.kind === 'tool' && segment.status === 'error'
+      )
+      if (latestTool) {
+        latestTool.status = 'cancelled'
+        latestTool.endedAt = timestamp
+        latestTool.errorMessage = '任务已停止'
       }
     }
     return next
@@ -256,6 +322,8 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         toolTitle: '载入技能',
         toolDetail: name,
         status: 'done',
+        startedAt: timestamp,
+        endedAt: timestamp,
         metaTitle: '载入技能'
       })
     }
@@ -271,6 +339,8 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       toolTitle: '压缩上下文',
       toolDetail: `${removedCount} 条 → ${beforeTokens}→${afterTokens} tokens`,
       status: 'done'
+      ,startedAt: timestamp
+      ,endedAt: timestamp
     })
     return next
   }
@@ -305,13 +375,14 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 }
 
 /** 回合结束：标记 final 文字、收尾 active 段 */
-export function finalizeSegments(segments: TurnSegment[]): TurnSegment[] {
+export function finalizeSegments(segments: TurnSegment[], endedAt = Date.now()): TurnSegment[] {
   const next = cloneSegments(segments)
 
   for (const s of next) {
     if (s.status === 'active') {
       if (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text') s.status = 'done'
       if (s.kind === 'tool') s.status = 'done'
+      s.endedAt = endedAt
     }
   }
 
