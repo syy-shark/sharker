@@ -77,7 +77,7 @@ export interface TurnActivity {
 export type TurnSegmentKind = 'thinking' | 'status' | 'text' | 'tool'
 
 /** 片段状态（工具步骤进行中/完成/失败） */
-export type TurnSegmentStatus = 'active' | 'done' | 'error'
+export type TurnSegmentStatus = 'active' | 'done' | 'error' | 'cancelled'
 
 /** 文字片段角色：中途旁白 vs 最终回答 */
 export type TurnTextRole = 'narration' | 'final'
@@ -114,6 +114,8 @@ export interface ToolRunResult {
   output: string
   fileDiff?: FileDiff
   fileDiffs?: FileDiff[]
+  /** 命令类工具真实退出码；后台化时未知。 */
+  exitCode?: number
   /** exit_plan_mode 后置 true，触发 UI Build 按钮 */
   planReady?: boolean
   planDocument?: string
@@ -135,6 +137,15 @@ export interface TurnSegment {
   /** tool: 文件名 / 命令摘要 */
   toolDetail?: string
   status?: TurnSegmentStatus
+  startedAt?: number
+  endedAt?: number
+  resultSummary?: string
+  /** 按需展开的截断工具输出。 */
+  resultOutput?: string
+  errorMessage?: string
+  exitCode?: number
+  isVerification?: boolean
+  approval?: ApprovalRequest
   /** text: 中途旁白 vs 最终回答 */
   role?: TurnTextRole
   /** skill / compress 等元片段标题 */
@@ -207,6 +218,8 @@ export interface StreamChunk {
     | 'done'
     | 'error'
     | 'approval_needed'
+    | 'approval_resolved'
+    | 'turn_cancelled'
     | 'context_compress'
     | 'command'
     | 'plan_ready'
@@ -217,6 +230,13 @@ export interface StreamChunk {
   toolCallId?: string
   fileDiff?: FileDiff
   fileDiffs?: FileDiff[]
+  timestamp?: number
+  resultSummary?: string
+  resultOutput?: string
+  exitCode?: number
+  toolStatus?: 'done' | 'error'
+  isVerification?: boolean
+  approved?: boolean
   skillNames?: string[]
   error?: string
   approval?: ApprovalRequest

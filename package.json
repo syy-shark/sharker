@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.cjs",
     "dev:win": "scripts\\launch-sharker.cmd",
+    "test": "vitest run",
     "build": "electron-vite build",
     "preview": "electron-vite preview"
   },
@@ -29,6 +30,7 @@
     "electron": "^36.4.0",
     "electron-vite": "^3.1.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.10"
   }
 }

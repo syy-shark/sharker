@@ -25,6 +25,18 @@ import type { ApprovalHandler } from './loop'
 /** 默认工具循环上限（读/改/跑命令累加，多文件项目生成需要更长续跑空间） */
 const DEFAULT_MAX_ITERATIONS = 40
 
+function summarizeToolOutput(output: string): string | undefined {
+  const first = output.split(/\r?\n/).map((line) => line.trim()).find(Boolean)
+  if (!first) return undefined
+  return first.length > 120 ? `${first.slice(0, 117)}...` : first
+}
+
+function expandableToolOutput(output: string): string | undefined {
+  const trimmed = output.trim()
+  if (!trimmed) return undefined
+  return trimmed.length > 4000 ? `${trimmed.slice(0, 4000)}\n...（输出已截断）` : trimmed
+}
+
 /** 桌面自动化任务关键词（用于中途续跑） */
 const COMPUTER_USE_TASK_PATTERN =
   /微信|wechat|桌面|打开|点击|操作|computer\s*use|发消息|群发|窗口|截图|输入|继续/i
@@ -357,21 +369,27 @@ export async function* queryLoop(
       if (needsAutoVerify) {
         destructiveVerifyNudges++
         const verifyArgs = { name: verifyKeyword }
-        yield { type: 'tool_start', toolName: 'verify_removal', toolArgs: verifyArgs }
+        const verifyCallId = randomUUID()
+        yield { type: 'tool_start', toolName: 'verify_removal', toolArgs: verifyArgs, toolCallId: verifyCallId, isVerification: true }
         try {
           const result = await executeToolWithMeta('verify_removal', verifyArgs, settings, signal)
           messages.push({
             role: 'user',
             content: `[Harness 自动验证]\n${result.output}`
           })
+          yield {
+            type: 'tool_done', toolName: 'verify_removal', toolCallId: verifyCallId,
+            isVerification: true, resultSummary: summarizeToolOutput(result.output),
+            resultOutput: expandableToolOutput(result.output)
+          }
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
           messages.push({
             role: 'user',
             content: `[Harness 自动验证] 失败：${err}`
           })
+          yield { type: 'tool_done', toolName: 'verify_removal', toolCallId: verifyCallId, isVerification: true, toolStatus: 'error', error: err }
         }
-        yield { type: 'tool_done', toolName: 'verify_removal' }
         continue
       }
 
@@ -531,7 +549,7 @@ export async function* queryLoop(
         const outcome = results[i]
         if (!outcome.ok) {
           messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${outcome.message}` })
-          yield { type: 'tool_done', toolName: tc.function.name, toolCallId: tc.id }
+          yield { type: 'tool_done', toolName: tc.function.name, toolCallId: tc.id, toolStatus: 'error', error: outcome.message }
           continue
         }
         const result = outcome.result
@@ -543,12 +561,18 @@ export async function* queryLoop(
           toolName: tc.function.name,
           toolCallId: tc.id,
           fileDiff: result.fileDiff,
-          fileDiffs: result.fileDiffs
+          fileDiffs: result.fileDiffs,
+          resultSummary: summarizeToolOutput(result.output),
+          resultOutput: expandableToolOutput(result.output),
+          exitCode: result.exitCode,
+          toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
+          error: result.exitCode != null && result.exitCode !== 0 ? `命令退出码 ${result.exitCode}` : undefined
         }
       }
     } else {
       for (const tc of toolCalls) {
         if (signal?.aborted) {
+          yield { type: 'turn_cancelled' }
           yield { type: 'done' }
           return
         }
@@ -567,7 +591,7 @@ export async function* queryLoop(
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
           messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${err}` })
-          yield { type: 'tool_done', toolName, toolCallId: tc.id }
+          yield { type: 'tool_done', toolName, toolCallId: tc.id, toolStatus: 'error', error: err }
           continue
         }
 
@@ -584,13 +608,14 @@ export async function* queryLoop(
           }
           yield { type: 'approval_needed', approval: req }
           const approved = await onApproval(req)
+          yield { type: 'approval_resolved', toolName, toolCallId: tc.id, approved }
           if (!approved) {
             messages.push({
               role: 'tool',
               tool_call_id: tc.id,
               content: `User denied: ${req.description}`
             })
-            yield { type: 'tool_done', toolName, toolCallId: tc.id }
+            yield { type: 'tool_done', toolName, toolCallId: tc.id, toolStatus: 'error', error: '用户拒绝了此操作' }
             continue
           }
         }
@@ -613,14 +638,20 @@ export async function* queryLoop(
             toolName,
             toolCallId: tc.id,
             fileDiff: result.fileDiff,
-            fileDiffs: result.fileDiffs
+            fileDiffs: result.fileDiffs,
+            resultSummary: summarizeToolOutput(result.output),
+            resultOutput: expandableToolOutput(result.output),
+            exitCode: result.exitCode,
+            toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
+            error: result.exitCode != null && result.exitCode !== 0 ? `命令退出码 ${result.exitCode}` : undefined
           }
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
           messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${err}` })
-          yield { type: 'tool_done', toolName, toolCallId: tc.id }
+          yield { type: 'tool_done', toolName, toolCallId: tc.id, toolStatus: 'error', error: err }
         }
         if (signal?.aborted) {
+          yield { type: 'turn_cancelled' }
           yield { type: 'done' }
           return
         }
@@ -647,21 +678,29 @@ export async function* queryLoop(
       if (cmd) {
         verifyDoneForTurn = true
         const verifyArgs = { command: cmd, cwd: workspace }
-        yield { type: 'tool_start', toolName: 'run_terminal_cmd', toolArgs: verifyArgs }
+        const verifyCallId = randomUUID()
+        yield { type: 'tool_start', toolName: 'run_terminal_cmd', toolArgs: verifyArgs, toolCallId: verifyCallId, isVerification: true }
         try {
           const result = await executeToolWithMeta('run_terminal_cmd', verifyArgs, settings, signal)
           messages.push({
             role: 'user',
             content: `[自动验证] 已运行 \`${cmd}\`：\n${result.output}`
           })
+          yield {
+            type: 'tool_done', toolName: 'run_terminal_cmd', toolCallId: verifyCallId,
+            isVerification: true, resultSummary: summarizeToolOutput(result.output),
+            resultOutput: expandableToolOutput(result.output), exitCode: result.exitCode,
+            toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
+            error: result.exitCode != null && result.exitCode !== 0 ? `验证命令退出码 ${result.exitCode}` : undefined
+          }
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
           messages.push({
             role: 'user',
             content: `[自动验证] \`${cmd}\` 失败：\n${err}`
           })
+          yield { type: 'tool_done', toolName: 'run_terminal_cmd', toolCallId: verifyCallId, isVerification: true, toolStatus: 'error', error: err }
         }
-        yield { type: 'tool_done', toolName: 'run_terminal_cmd' }
       }
     }
   }
