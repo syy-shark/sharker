@@ -20,7 +20,7 @@
 | `token-estimate.ts` | token 用量估算 |
 | `process-steps.ts` | 过程时间线步骤构建（旧消息回退） |
 | `process-phases.ts` | 从 `TurnSegment[]` 纯派生理解 / 探索 / 执行 / 验证阶段、统计与摘要 |
-| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 归并（含 `status` 过渡状态、`toolCallId` / `fileDiff(s)` / 文件编辑预览统计） |
+| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机（含时间戳、审批、失败、中止、`toolCallId` / `fileDiff(s)` / 文件编辑预览统计） |
 | `line-diff.ts` | 行级 diff 计算、`buildFileDiff`、`parseUnifiedDiff`（Markdown diff 块） |
 | `turn-meta.ts` | 工具活动 label 格式化 |
 | `provider-validate.ts` | API 配置校验 |
@@ -35,6 +35,7 @@
 ## 扩展指南
 
 - 新 `StreamChunk` 类型：改 `types.ts` + `App.tsx` stream handler + UI（`status` 用于模型/工具参数准备阶段的可见过渡，不代表工具已执行；`command` 供 `/clear` 等本地命令）
+- 过程 UI 不猜测后台进度；`tool_done` 可携带结果摘要、截断输出、退出码与失败原因，事件尚未到达时只显示中性处理状态
 - 新 IPC：改 `ipc.ts` + `preload` + `main/index.ts`
 
 ## 文档

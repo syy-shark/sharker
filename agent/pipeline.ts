@@ -240,6 +240,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       const turnEvents: TurnEventInput[] = []
       let assistantText = ''
       const captureSend = (chunk: StreamChunk) => {
+        const stamped = chunk.timestamp == null ? { ...chunk, timestamp: Date.now() } : chunk
         if (chunk.type === 'tool_start') {
           turnEvents.push({
             kind: 'tool_start',
@@ -253,7 +254,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
         } else if (chunk.type === 'token' && chunk.content) {
           assistantText += chunk.content
         }
-        turnCtx.send(chunk)
+        turnCtx.send(stamped)
       }
       const turnCtxWithCapture = { ...turnCtx, send: captureSend }
 

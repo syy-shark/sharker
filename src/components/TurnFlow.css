@@ -176,6 +176,41 @@
   padding: 1px 0 4px;
 }
 
+.turn-flow-step-result,
+.turn-flow-step-exit,
+.turn-flow-step-error {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.turn-flow-step-exit--ok { color: #15803d; }
+.turn-flow-step-exit--error,
+.turn-flow-step-error { color: #b91c1c; }
+
+.turn-flow-step-output summary {
+  width: fit-content;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.turn-flow-step-output pre {
+  max-height: 180px;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 6px;
+  background: rgba(39, 39, 42, 0.04);
+  font: 11px/1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .turn-flow-step-copy {
   display: flex;
   align-items: baseline;

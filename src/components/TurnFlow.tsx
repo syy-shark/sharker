@@ -219,6 +219,23 @@ function ProcessStepRow({ step }: { step: ProcessPhaseStep }) {
           ) : null}
         </div>
         {isDiffTool ? <FileChangeBlock segment={segment} /> : null}
+        {segment.resultSummary && step.status !== 'error' ? (
+          <span className="turn-flow-step-result">{segment.resultSummary}</span>
+        ) : null}
+        {segment.exitCode != null ? (
+          <span className={`turn-flow-step-exit ${segment.exitCode === 0 ? 'turn-flow-step-exit--ok' : 'turn-flow-step-exit--error'}`}>
+            退出码 {segment.exitCode}
+          </span>
+        ) : null}
+        {step.status === 'error' ? (
+          <span className="turn-flow-step-error">{segment.errorMessage || '操作失败'}</span>
+        ) : null}
+        {segment.resultOutput && segment.resultOutput !== segment.resultSummary ? (
+          <details className="turn-flow-step-output">
+            <summary>查看输出</summary>
+            <pre>{segment.resultOutput}</pre>
+          </details>
+        ) : null}
       </div>
     </li>
   )

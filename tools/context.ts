@@ -24,6 +24,10 @@ export function toolCwd(ctx: ToolContext, cwd: unknown): string {
 }
 
 /** 构造 ToolRunResult */
-export function ok(output: string, fileDiff?: ToolRunResult['fileDiff']): ToolRunResult {
-  return { output, fileDiff }
+export function ok(
+  output: string,
+  fileDiff?: ToolRunResult['fileDiff'],
+  meta?: Pick<ToolRunResult, 'exitCode'>
+): ToolRunResult {
+  return { output, fileDiff, ...meta }
 }

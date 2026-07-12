@@ -35,6 +35,9 @@ export const runTerminalCmdTool: ToolHandler = {
       const verify = await verifyPathsGone(targets)
       if (verify) output = `${output}\n\n${verify}`
     }
-    return ok(output)
+    const exitMatch = output.match(/\(exit code (\d+)\)\s*$/)
+    const backgrounded = /进程继续在后台执行|开发服务器已在后台运行/.test(output)
+    const exitCode = exitMatch ? Number(exitMatch[1]) : backgrounded ? undefined : 0
+    return ok(output, undefined, { exitCode })
   }
 }

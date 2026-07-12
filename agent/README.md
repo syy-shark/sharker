@@ -45,6 +45,8 @@ executeUserInput
 ## 依赖
 
 - `providers/openai` — 流式聊天
+- `pipeline.ts` 为每个事件补充真实时间戳；工具结果、失败、审批恢复和用户中止均作为显式事件交给 UI，不由界面猜测进度
+- 并行工具与自动验证都有稳定 `toolCallId`；命令结果携带真实退出码，失败工具不会影响同批其他工具结算
 - `tools/executor` — 执行工具
 - `tools/registry` — 高危审批（`isHighRiskTool`）
 - `skills/loader` — Skill 注入
