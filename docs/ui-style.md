@@ -74,7 +74,7 @@
 3. **背景**：页面/面板背景是否透明或半透，让最后面玻璃露出来？
 4. **边与高光**：是否有细边 + 顶沿高光，而不是粗描边/无边色块？
 5. **文字对比**：半透底上文字是否仍清晰（优先 `--text` / `--text-secondary`）？
-6. **动效**：复用 `styles/motion.css` 时长与曲线；直播过程用 `.live-text-shimmer` 表示存活，不要呼吸灯；尊重 `prefers-reduced-motion`。
+6. **动效**：复用 `styles/motion.css` 时长与曲线；直播过程用 `.live-text-shimmer` 表示存活，思考用可折叠旁白而不是灰卡片；尊重 `prefers-reduced-motion`。
 7. **硬编码**：是否避免写死仅浅色可用的颜色？
 
 ### 推荐写法
@@ -128,6 +128,8 @@ html.theme-dark .my-panel { /* 金属面，无 blur */ }
 
 ## 直播过程动效
 
-- 闲聊/思考：一行状态字 + 耗时（`.live-text-shimmer`），不要呼吸灯
+- 闲聊/连接：一行状态字 + 耗时（`.live-text-shimmer`），不要呼吸灯
+- 思考：Cursor 式可折叠 Thought（chevron + 弱对比旁白 + 左细轨），**不要**灰底卡片倾倒 CoT / CSS
+- 半截 CSS 不当演示；有真实 HTML 结构后再上屏
 - 工具间隙显示「规划下一步」；仅在已有回答流时显示「生成回答」
 - 主题色统一使用 CSS 变量（`--accent` / `--on-accent` 等），避免硬编码蓝/白

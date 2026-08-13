@@ -93,11 +93,20 @@ html.theme-dark .assistant-process-below--separated {
   border-top-color: color-mix(in srgb, var(--text-muted) 22%, transparent);
 }
 
+/* 完成后过程行：贴在正文下，无粗分隔、不抢阅读流 */
+.assistant-process-below--quiet {
+  margin-top: 6px;
+}
+
 .turn-flow-live-panel {
   width: 100%;
   margin: 0 0 4px;
   min-height: 28px;
   transition: opacity var(--motion-duration-normal) var(--motion-ease-soft);
+}
+
+.assistant-message > .turn-flow-thought {
+  margin: 0 0 10px;
 }
 
 /* 流式交互演示：紧贴「处理中」上方，边生成边长高 */

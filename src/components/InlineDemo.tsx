@@ -1,8 +1,10 @@
 /**
- * 对话原生内联演示：无浏览器外壳、透明背景、吃宿主主题变量。
- * 假终端统一包成 macOS 三色灯 + 水滴玻璃/金属托盘，避免纯黑块与文字错乱。
+ * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
+ * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
+ * @see ./ARCH.md
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { isInlineDemoPaintable } from '../../shared/live-display'
 import './InlineDemo.css'
 
 export interface InlineDemoProps {
@@ -45,6 +47,7 @@ function readHostTheme(): ThemeVars {
   }
 }
 
+/** 把演示 HTML 打成透明 srcDoc：注入主题、解开根裁切、按内容底边 postMessage 高度。 */
 function buildSrcDoc(html: string, theme: ThemeVars, demoId: string): string {
   const isDark = theme.isDark === '1'
 
@@ -76,30 +79,31 @@ function buildSrcDoc(html: string, theme: ThemeVars, demoId: string): string {
   --mono: ${theme.mono};
 }
 *, *::before, *::after { box-sizing: border-box; }
-html {
-  margin: 0;
-  padding: 0;
-  background: transparent !important;
-  /* 可见溢出才能量到真实高度；滚动条另外藏掉 */
-  overflow: visible !important;
-}
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  max-width: 100%;
+  /* max-content：高度跟内容，不跟 iframe 视口（否则 flex 子项被压矮，量到的还是裁切高度） */
+  height: max-content !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
   background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-}
-body {
-  padding: 0 0 4px;
-  min-height: 0 !important;
-  max-width: 100%;
-  overflow: visible !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+body {
+  padding: 0;
 }
 body::-webkit-scrollbar,
 html::-webkit-scrollbar,
@@ -122,13 +126,21 @@ button:disabled, [aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.55;
 }
+/* 外层根：高度跟内容、不裁切。背景/边框由 harmonizeSurfaces 判断是否整页壳。 */
+body > *:not(canvas):not(svg):not(script):not(style):not(link) {
+  height: max-content !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
 .demo-card, .card, .panel, .box,
 [class*="zone"], [class*="Zone"], [class*="card"], [class*="Card"] {
   max-width: 100%;
   min-width: 0;
+  height: auto !important;
   max-height: none !important;
-  overflow-x: hidden;
-  overflow-y: visible;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -736,37 +748,134 @@ button:disabled, [aria-disabled="true"] {
     return Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) < 32;
   }
 
-  /** 把模型写死的灰/黑底换成宿主 token，避免和聊天金属/玻璃色域打架 */
+  function isPaintSurface(el) {
+    return el && /^(CANVAS|SVG|IMG|VIDEO|PATH|SCRIPT|STYLE|SOURCE|LINK|META)$/i.test(el.tagName);
+  }
+
+  /** 去掉整页灰壳的底/边/影，让演示贴进聊天正文 */
+  function stripOuterShell(el) {
+    if (!el || el.nodeType !== 1 || isPaintSurface(el)) return;
+    el.style.setProperty('background', 'transparent', 'important');
+    el.style.setProperty('background-color', 'transparent', 'important');
+    el.style.setProperty('background-image', 'none', 'important');
+    el.style.setProperty('border-color', 'transparent', 'important');
+    el.style.setProperty('box-shadow', 'none', 'important');
+    el.style.setProperty('outline', 'none', 'important');
+  }
+
+  /**
+   * 根包装：解开 overflow:hidden + 固定高度，避免 flex 子项被 iframe 视口压矮。
+   * 只动 html/body 和整页壳，不动 canvas、也不动四区那种内层卡片。
+   */
+  function unlockClip() {
+    var html = document.documentElement;
+    var body = document.body;
+    if (!html || !body) return;
+    ;[html, body].forEach(function (el) {
+      el.style.setProperty('height', 'max-content', 'important');
+      el.style.setProperty('max-height', 'none', 'important');
+      el.style.setProperty('min-height', '0', 'important');
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('overflow-x', 'visible', 'important');
+      el.style.setProperty('overflow-y', 'visible', 'important');
+      el.style.setProperty('background', 'transparent', 'important');
+      el.style.setProperty('background-image', 'none', 'important');
+    });
+    var bodyW = Math.max(body.getBoundingClientRect().width, body.clientWidth || 0, 1);
+    function unlockWrapper(el) {
+      if (!el || el.nodeType !== 1 || isPaintSurface(el)) return;
+      if (el.closest && el.closest('canvas, svg, img, video, .sharker-term')) return;
+      el.style.setProperty('height', 'auto', 'important');
+      el.style.setProperty('max-height', 'none', 'important');
+      el.style.setProperty('min-height', '0', 'important');
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('overflow-x', 'visible', 'important');
+      el.style.setProperty('overflow-y', 'visible', 'important');
+    }
+    var kids = body.children;
+    for (var i = 0; i < kids.length; i++) unlockWrapper(kids[i]);
+    var blocks = body.querySelectorAll('div, section, article, main, aside');
+    for (var j = 0; j < blocks.length; j++) {
+      var el = blocks[j];
+      if (isPaintSurface(el)) continue;
+      if (el.closest && el.closest('canvas, svg, img, video, .sharker-term')) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width < bodyW * 0.88) continue;
+      var st = window.getComputedStyle(el);
+      var clips =
+        st.overflow === 'hidden' ||
+        st.overflow === 'auto' ||
+        st.overflow === 'scroll' ||
+        st.overflowY === 'hidden' ||
+        st.overflowY === 'auto' ||
+        st.overflowY === 'scroll';
+      var maxH = parseFloat(st.maxHeight);
+      var hasCap = st.maxHeight && st.maxHeight !== 'none' && isFinite(maxH) && maxH < 8000;
+      var hasFixed = st.height && st.height.indexOf('px') !== -1 && parseFloat(st.height) > 0 && parseFloat(st.height) < 8000;
+      if (clips || hasCap || hasFixed || el.parentElement === body) unlockWrapper(el);
+    }
+  }
+
+  /** 是否整页外壳（满宽且里面还有多张卡片/列）。四区小卡本身不是壳。 */
+  function isOuterShell(el, bodyW, bodyH) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < bodyW * 0.88) return false;
+    var kids = 0;
+    var named = 0;
+    var ch = el.children || [];
+    for (var i = 0; i < ch.length; i++) {
+      if (ch[i].nodeType !== 1) continue;
+      if (/^(SCRIPT|STYLE|LINK|BR)$/i.test(ch[i].tagName)) continue;
+      kids++;
+      var cls = String(ch[i].className || '');
+      if (/zone|card|panel|col|column/i.test(cls)) named++;
+    }
+    if (kids >= 2 || named >= 2) return true;
+    var selfCls = String(el.className || '');
+    if (/zone/i.test(selfCls) && kids < 2) return false;
+    if (el.parentElement === document.body && r.height > Math.max(bodyH * 0.5, 72)) return true;
+    return false;
+  }
+
+  /** 把模型写死的灰/黑底换成宿主 token；整页壳直接透明，内层控件保留表面 */
   function harmonizeSurfaces() {
     var root = document.body;
     if (!root) return;
-    root.style.setProperty('background', 'transparent', 'important');
-    root.style.setProperty('background-color', 'transparent', 'important');
-    root.style.setProperty('background-image', 'none', 'important');
+    stripOuterShell(document.documentElement);
+    stripOuterShell(root);
     var bodyRect = root.getBoundingClientRect();
     var bodyW = Math.max(bodyRect.width, 1);
     var bodyH = Math.max(bodyRect.height, 1);
+    var kids = root.children;
+    for (var k = 0; k < kids.length; k++) {
+      if (isPaintSurface(kids[k])) continue;
+      if (isOuterShell(kids[k], bodyW, bodyH)) stripOuterShell(kids[k]);
+    }
     var nodes = root.querySelectorAll('*');
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
       if (!el || el.nodeType !== 1) continue;
-      if (/^(CANVAS|SVG|IMG|VIDEO|PATH|SCRIPT|STYLE|SOURCE)$/i.test(el.tagName)) continue;
+      if (isPaintSurface(el)) continue;
       if (el.closest && el.closest('.sharker-term, canvas, svg, img, video')) continue;
       var st = window.getComputedStyle(el);
+      var r = el.getBoundingClientRect();
+      var coversRoot = r.width > bodyW * 0.88 && r.height > Math.max(bodyH * 0.5, 72);
+      if (coversRoot && isOuterShell(el, bodyW, bodyH)) {
+        stripOuterShell(el);
+        continue;
+      }
       var bg = parseRgb(st.backgroundColor);
       if (!bg || !isNeutralGrey(bg)) continue;
       var alphaMatch = (st.backgroundColor || '').match(/rgba\\([^,]+,[^,]+,[^,]+,\\s*([0-9.]+)/);
       var alpha = alphaMatch ? parseFloat(alphaMatch[1]) : 1;
       if (alpha < 0.08) continue;
       var lum = luminance(bg);
-      var r = el.getBoundingClientRect();
-      var coversRoot = r.width > bodyW * 0.9 && r.height > Math.max(bodyH * 0.62, 120);
+      if (coversRoot) {
+        stripOuterShell(el);
+        continue;
+      }
       if (isDark) {
-        if (coversRoot) {
-          el.style.setProperty('background', 'transparent', 'important');
-          el.style.setProperty('background-image', 'none', 'important');
-          continue;
-        }
         if (lum < 0.08) {
           el.style.setProperty('background', 'var(--surface-nested)', 'important');
         } else if (lum < 0.3) {
@@ -779,9 +888,8 @@ button:disabled, [aria-disabled="true"] {
           el.style.setProperty('border-color', 'var(--border-soft)', 'important');
         }
       } else {
-        if (coversRoot || lum > 0.93) {
-          el.style.setProperty('background', 'transparent', 'important');
-          el.style.setProperty('background-image', 'none', 'important');
+        if (lum > 0.93) {
+          stripOuterShell(el);
           continue;
         }
         if (lum > 0.78) {
@@ -795,28 +903,67 @@ button:disabled, [aria-disabled="true"] {
     }
   }
 
+  var lastReported = 0;
+
+  /** 内容真实底边：含嵌套 flex/grid 卡片，不含 iframe 视口 clientHeight */
+  function measureContentHeight() {
+    var body = document.body;
+    var html = document.documentElement;
+    if (!body) return 48;
+    var y = window.pageYOffset || (html && html.scrollTop) || body.scrollTop || 0;
+    var maxBottom = 0;
+    function considerRect(r, extra) {
+      if (!r || !isFinite(r.bottom)) return;
+      var bottom = r.bottom + y + (extra || 0);
+      if (bottom > maxBottom) maxBottom = bottom;
+    }
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(body);
+      considerRect(range.getBoundingClientRect(), 0);
+      var recs = range.getClientRects();
+      for (var i = 0; i < recs.length; i++) considerRect(recs[i], 0);
+    } catch (e) {}
+    considerRect(body.getBoundingClientRect(), 0);
+    if (html) considerRect(html.getBoundingClientRect(), 0);
+    var nodes = body.querySelectorAll('*');
+    for (var n = 0; n < nodes.length; n++) {
+      var el = nodes[n];
+      if (el.getAttribute && el.getAttribute('data-sharker-ignore-height')) continue;
+      if (/^(SCRIPT|STYLE|LINK|META)$/i.test(el.tagName)) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      var mb = 0;
+      try { mb = parseFloat(window.getComputedStyle(el).marginBottom) || 0; } catch (e2) {}
+      considerRect(r, mb);
+    }
+    var kids = body.children;
+    for (var k = 0; k < kids.length; k++) {
+      var c = kids[k];
+      if (/^(SCRIPT|STYLE|LINK|META)$/i.test(c.tagName)) continue;
+      var cs = window.getComputedStyle(c);
+      var mt = parseFloat(cs.marginTop) || 0;
+      var cmb = parseFloat(cs.marginBottom) || 0;
+      maxBottom = Math.max(maxBottom, (c.offsetTop || 0) + (c.offsetHeight || 0) + cmb);
+      maxBottom = Math.max(maxBottom, (c.scrollHeight || 0) + mt + cmb);
+    }
+    return Math.max(Math.ceil(maxBottom + 10), 48);
+  }
+
   function report() {
     try {
-      var root = document.body;
-      if (!root) return;
-      var maxBottom = 0;
-      var nodes = root.querySelectorAll('*');
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i];
-        if (el.getAttribute && el.getAttribute('data-sharker-ignore-height')) continue;
-        var r = el.getBoundingClientRect();
-        if (r.bottom > maxBottom) maxBottom = r.bottom;
-      }
-      var bodyRect = root.getBoundingClientRect();
-      if (bodyRect.bottom > maxBottom) maxBottom = bodyRect.bottom;
-      var scrollH = Math.max(
-        document.documentElement ? document.documentElement.scrollHeight : 0,
-        root.scrollHeight || 0
-      );
-      var h = Math.max(maxBottom, scrollH);
-      h = Math.max(Math.ceil(h + 16), 48);
+      unlockClip();
+      var h = measureContentHeight();
+      if (h < lastReported) h = lastReported;
+      else lastReported = h;
       parent.postMessage({ type: 'sharker-inline-demo-height', id: id, height: h }, '*');
     } catch (e) {}
+  }
+
+  function reportSoon() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { report(); });
+    });
   }
 
   /* —— 公式：KaTeX 优先；裸 LaTeX（G_{\\\\mu\\\\nu}）回退 Unicode —— */
@@ -934,6 +1081,7 @@ button:disabled, [aria-disabled="true"] {
     enhancing = true;
     var onlyNew = opts && opts.onlyNew;
     try {
+      unlockClip();
       // 只给尚未套壳的假终端加壳；禁止反复 densify 破坏按钮/状态机
       candidates().forEach(wrapTerminal);
       if (!historyFixed) {
@@ -942,42 +1090,63 @@ button:disabled, [aria-disabled="true"] {
       }
       renderMath();
       harmonizeSurfaces();
+      unlockClip();
     } catch (e) {}
     enhancing = false;
-    report();
+    reportSoon();
+  }
+
+  function watchImages() {
+    if (!document.body) return;
+    var imgs = document.body.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].complete) continue;
+      imgs[i].addEventListener('load', reportSoon);
+      imgs[i].addEventListener('error', reportSoon);
+    }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { enhance(); });
+    document.addEventListener('DOMContentLoaded', function () { enhance(); watchImages(); });
   } else {
     enhance();
+    watchImages();
   }
   window.addEventListener('load', function () {
     enhance();
-    report();
+    watchImages();
+    reportSoon();
   });
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function () { report(); }).catch(function () {});
+    document.fonts.ready.then(function () { reportSoon(); }).catch(function () {});
   }
   try {
-    new ResizeObserver(function () { report(); }).observe(document.documentElement);
-    if (document.body) new ResizeObserver(function () { report(); }).observe(document.body);
+    var ro = new ResizeObserver(function () { reportSoon(); });
+    ro.observe(document.documentElement);
+    if (document.body) {
+      ro.observe(document.body);
+      var rootWidget = document.body.firstElementChild;
+      while (rootWidget && /^(SCRIPT|STYLE|LINK)$/i.test(rootWidget.tagName)) {
+        rootWidget = rootWidget.nextElementSibling;
+      }
+      if (rootWidget) ro.observe(rootWidget);
+    }
   } catch (e) {}
   // 仅在新增节点时尝试套新终端壳，绝不重写已有交互 DOM
   try {
     var moTimer = null;
     new MutationObserver(function () {
       if (moTimer) clearTimeout(moTimer);
-      moTimer = setTimeout(function () { enhance({ onlyNew: true }); }, 80);
+      moTimer = setTimeout(function () { watchImages(); enhance({ onlyNew: true }); }, 80);
     }).observe(document.body, { childList: true, subtree: true });
   } catch (e) {}
+  setTimeout(function () { enhance(); }, 0);
   setTimeout(function () { enhance(); }, 30);
-  setTimeout(function () { renderMath(); report(); }, 100);
-  setTimeout(function () { renderMath(); report(); }, 350);
-  setTimeout(function () { renderMath(); report(); }, 900);
-  // KaTeX defer 加载完成后补渲一次
+  setTimeout(function () { renderMath(); reportSoon(); }, 100);
+  setTimeout(function () { renderMath(); reportSoon(); }, 350);
+  setTimeout(function () { renderMath(); reportSoon(); }, 900);
   window.addEventListener('load', function () {
-    setTimeout(function () { renderMath(); report(); }, 50);
+    setTimeout(function () { renderMath(); reportSoon(); }, 50);
   });
 })();
 <\/script>
@@ -1014,17 +1183,31 @@ button:disabled, [aria-disabled="true"] {
   return `<!DOCTYPE html><html><head>${headInject}</head><body>${trimmed}${enhanceScript}</body></html>`
 }
 
-/** 对话流内无缝演示块：完整展开、无内滚；整块可收起/展开；支持流式渐进 HTML */
+/**
+ * 对话流内无缝演示：默认展开、无外框/标题栏；iframe 高度只升不降。
+ * 可选「收起演示」是演示后的一行小字，不包一层卡片。
+ */
 export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps) {
   const reactId = useId()
   const demoId = useMemo(() => `demo-${reactId.replace(/:/g, '')}`, [reactId])
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [height, setHeight] = useState(120)
+  const [height, setHeight] = useState(48)
   const [expanded, setExpanded] = useState(true)
   const [theme, setTheme] = useState<ThemeVars>(() => readHostTheme())
   /** 流式时节流刷新，避免每个字符都 reload iframe */
   const [paintHtml, setPaintHtml] = useState(html)
   const lastPaintLen = useRef(0)
+  /** 本轮 srcDoc 内高度只升不降，避免 parent scrollHeight 把标签裁回去 */
+  const highWaterRef = useRef(0)
+
+  /** iframe 报的内容高度：只抬高，永不压低 */
+  const raiseHeight = (next: number) => {
+    const h = Math.round(next)
+    if (!Number.isFinite(h) || h < 48) return
+    if (h <= highWaterRef.current) return
+    highWaterRef.current = h
+    setHeight(h)
+  }
 
   useEffect(() => {
     if (!streaming) {
@@ -1053,7 +1236,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
     return () => mo.disconnect()
   }, [])
 
-  const paintable = Boolean(paintHtml.trim() && paintHtml !== '<!-- streaming -->')
+  const paintable = isInlineDemoPaintable(paintHtml)
   const srcDoc = useMemo(
     () => (paintable ? buildSrcDoc(paintHtml, theme, demoId) : ''),
     [paintHtml, theme, demoId, paintable]
@@ -1065,13 +1248,12 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       if (!data || data.type !== 'sharker-inline-demo-height') return
       if (data.id !== demoId) return
       if (typeof data.height === 'number' && Number.isFinite(data.height)) {
-        const next = Math.round(data.height)
-        setHeight((prev) => (streaming ? Math.max(prev, next) : next))
+        raiseHeight(data.height)
       }
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)
-  }, [demoId, streaming])
+  }, [demoId])
 
   useEffect(() => {
     const frame = frameRef.current
@@ -1082,12 +1264,29 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         const doc = frame.contentDocument
         const body = doc?.body
         if (!doc || !body) return
-        const h = Math.ceil(
-          Math.max(body.scrollHeight, doc.documentElement.scrollHeight, body.getBoundingClientRect().height) + 16
-        )
-        if (h >= 48) setHeight((prev) => (Math.abs(prev - h) > 2 ? (streaming ? Math.max(prev, h) : h) : prev))
+        let maxBottom = 0
+        const nodes = body.querySelectorAll('*')
+        for (let i = 0; i < nodes.length; i++) {
+          const el = nodes[i]
+          if (el.getAttribute('data-sharker-ignore-height')) continue
+          if (/^(SCRIPT|STYLE|LINK|META)$/i.test(el.tagName)) continue
+          const r = el.getBoundingClientRect()
+          if (r.width === 0 && r.height === 0) continue
+          if (r.bottom > maxBottom) maxBottom = r.bottom
+        }
+        const bodyRect = body.getBoundingClientRect()
+        if (bodyRect.bottom > maxBottom) maxBottom = bodyRect.bottom
+        try {
+          const range = doc.createRange()
+          range.selectNodeContents(body)
+          const rr = range.getBoundingClientRect()
+          if (rr.bottom > maxBottom) maxBottom = rr.bottom
+        } catch {
+          /* ignore */
+        }
+        raiseHeight(Math.max(Math.ceil(maxBottom + 10), 48))
       } catch {
-        /* srcDoc 同源；读失败时仍走 postMessage */
+        /* sandbox 无 same-origin 时走 postMessage */
       }
     }
     const attach = () => {
@@ -1099,6 +1298,8 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         ro = new ResizeObserver(measure)
         ro.observe(doc.body)
         ro.observe(doc.documentElement)
+        const rootWidget = doc.body.firstElementChild
+        if (rootWidget) ro.observe(rootWidget)
       } catch {
         /* ignore */
       }
@@ -1109,15 +1310,13 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       frame.removeEventListener('load', attach)
       ro?.disconnect()
     }
-  }, [srcDoc, paintable, streaming])
-  const label = caption?.trim() || (streaming ? '交互演示' : '内联演示')
-  const charHint =
-    streaming && paintHtml.length > 0 && paintable
-      ? `${paintHtml.length.toLocaleString()} 字符`
-      : null
+  }, [srcDoc, paintable])
+
+  const label = caption?.trim() || '内联演示'
+  const frameH = expanded ? Math.max(height, streaming ? 96 : 48) : 0
 
   return (
-    <figure
+    <div
       className={[
         'inline-demo',
         expanded ? 'inline-demo--expanded' : 'inline-demo--collapsed',
@@ -1127,45 +1326,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         .join(' ')}
       data-inline-demo
     >
-      <button
-        type="button"
-        className="inline-demo-toggle"
-        aria-expanded={expanded}
-        onClick={() => {
-          if (streaming) return
-          setExpanded((v) => !v)
-        }}
-      >
-        <span className="inline-demo-toggle-label">{label}</span>
-        <span className="inline-demo-toggle-meta">
-          {streaming ? (
-            <>
-              <span className="inline-demo-live-dot" aria-hidden />
-              {paintable ? '生成中' : '准备演示…'}
-              {charHint ? ` · ${charHint}` : ''}
-            </>
-          ) : expanded ? (
-            '收起'
-          ) : (
-            '展开'
-          )}
-        </span>
-        {!streaming ? (
-          <span
-            className={`inline-demo-toggle-chevron ${expanded ? 'inline-demo-toggle-chevron--open' : ''}`}
-            aria-hidden
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </span>
-        ) : null}
-      </button>
-      <div
-        className="inline-demo-body"
-        hidden={!expanded}
-        aria-hidden={!expanded}
-      >
+      <div className="inline-demo-body" hidden={!expanded} aria-hidden={!expanded}>
         {paintable ? (
           <iframe
             ref={frameRef}
@@ -1174,7 +1335,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
             sandbox="allow-scripts"
             srcDoc={srcDoc}
             scrolling="no"
-            style={{ height: expanded ? Math.max(height, streaming ? 96 : 0) : 0 }}
+            style={{ height: frameH }}
           />
         ) : streaming ? (
           <div className="inline-demo-skeleton" aria-hidden>
@@ -1184,7 +1345,24 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
           </div>
         ) : null}
       </div>
-    </figure>
+      {caption?.trim() && expanded ? <p className="inline-demo-caption">{caption.trim()}</p> : null}
+      {streaming && expanded ? (
+        <p className="inline-demo-live" aria-live="polite">
+          <span className="inline-demo-live-dot" aria-hidden />
+          {paintable ? '生成中' : '准备演示…'}
+        </p>
+      ) : null}
+      {!streaming ? (
+        <button
+          type="button"
+          className="inline-demo-fold"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? '收起演示' : '展开演示'}
+        </button>
+      ) : null}
+    </div>
   )
 }
 

@@ -1,17 +1,24 @@
 /**
- * 一回合过程时间线（安静直播）：
- * - 闲聊/思考：一行状态字 + 耗时，无呼吸灯
+ * 一回合过程时间线（Cursor 式安静直播）：
+ * - 思考：可折叠 Thought（chevron + 弱对比旁白），无灰卡片倾倒
+ * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
- * - thinking 原文永不作为时间线标题
+ * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import type { TurnSegment } from '../../shared/types'
 import {
   deriveChronologicalSteps,
   type ProcessPhaseStep
 } from '../../shared/process-phases'
-import { buildLiveHead, shouldSynthesizePlanning } from '../../shared/live-display'
+import {
+  buildLiveHead,
+  liveThoughtBody,
+  liveThinkingText,
+  shouldSynthesizePlanning
+} from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
 import './TurnFlow.css'
 
@@ -28,6 +35,12 @@ interface Props {
    * 用于区分「工具间隙规划下一步」与「真正生成回答」，避免过程区误跳到“生成回答中”像停住。
    */
   answerStreaming?: boolean
+  /** 完整 thinking 原文（可来自未过滤的 live segments） */
+  thinkText?: string
+  /** 正文或内联演示已开始上屏：收起思考，避免和真内容抢位置 */
+  contentStreaming?: boolean
+  /** 正在生成内联演示（工具已启动，即使尚未可绘） */
+  generatingDemo?: boolean
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -237,6 +250,70 @@ function buildDisplaySteps(options: {
   return display
 }
 
+export function ThoughtDisclosure({
+  text,
+  open,
+  onToggle,
+  label,
+  elapsed,
+  streaming = false
+}: {
+  text: string
+  open: boolean
+  onToggle: () => void
+  label: string
+  elapsed?: string
+  streaming?: boolean
+}) {
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const body = liveThoughtBody(text)
+  useLayoutEffect(() => {
+    if (!open || !streaming) return
+    const el = bodyRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [open, streaming, body])
+
+  if (!text.trim() && !streaming) return null
+
+  return (
+    <div
+      className={[
+        'turn-flow-thought',
+        open ? 'turn-flow-thought--open' : '',
+        streaming ? 'turn-flow-thought--live' : ''
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <button
+        type="button"
+        className="turn-flow-thought-toggle"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <ChevronDown
+          size={13}
+          className={`turn-flow-thought-chevron ${open ? 'is-open' : ''}`}
+          aria-hidden
+        />
+        <span
+          className={
+            streaming && (open || !body) ? 'turn-flow-thought-label live-text-shimmer' : 'turn-flow-thought-label'
+          }
+        >
+          {label}
+        </span>
+        {elapsed ? <span className="turn-flow-thought-time">{elapsed}</span> : null}
+      </button>
+      {open && body ? (
+        <div ref={bodyRef} className="turn-flow-thought-body" aria-label="思考过程">
+          <div className="turn-flow-thought-text">{body}</div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function ProcessStepRow({
   step,
   isLast
@@ -328,7 +405,10 @@ export function TurnFlow({
   liveStartedAt,
   includeFinalText: _includeFinalText = false,
   approvalWaiting = false,
-  answerStreaming = false
+  answerStreaming = false,
+  thinkText,
+  contentStreaming = false,
+  generatingDemo = false
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -337,6 +417,8 @@ export function TurnFlow({
   })
   const stickyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSwapAtRef = useRef(0)
+  const [thoughtOpen, setThoughtOpen] = useState(false)
+  const userThoughtRef = useRef(false)
   useEffect(() => {
     if (!isStreaming) return
     const id = window.setInterval(() => setNow(Date.now()), 500)
@@ -401,10 +483,27 @@ export function TurnFlow({
     isStreaming &&
       !approvalWaiting &&
       !generatingAnswer &&
+      !generatingDemo &&
+      !contentStreaming &&
       !planningNext &&
       steps.length === 0 &&
       (chronological.length === 0 || onlyMeta)
   )
+
+  const rawThinkText = thinkText ?? liveThinkingText(segments)
+  const thoughtBody = liveThoughtBody(rawThinkText)
+  const hasThought = Boolean(thoughtBody)
+  const thoughtBusy = Boolean(
+    isStreaming &&
+      !approvalWaiting &&
+      !generatingAnswer &&
+      !generatingDemo &&
+      !hasToolOrNarration &&
+      !contentStreaming &&
+      !planningNext
+  )
+  const shouldAutoOpenThought = Boolean(thoughtBusy && hasThought)
+  const thoughtExpanded = userThoughtRef.current ? thoughtOpen : shouldAutoOpenThought
 
   const displaySteps = buildDisplaySteps({
     steps,
@@ -422,9 +521,11 @@ export function TurnFlow({
       ? '等待确认'
       : generatingAnswer
         ? '生成回答中'
-        : planningNext
-          ? '规划下一步'
-          : '思考中'
+        : generatingDemo
+          ? '生成演示'
+          : planningNext
+            ? '规划下一步'
+            : '思考中'
   })
   const headStep = liveHead.step
 
@@ -504,6 +605,13 @@ export function TurnFlow({
       s.status === 'error' ||
       Boolean(s.source?.segment.approval)
   )
+  const thoughtAsLiveHead = Boolean(isStreaming && thoughtBusy && hasThought)
+  const showLiveHead = Boolean(
+    isStreaming &&
+      !thoughtAsLiveHead &&
+      (!contentStreaming || listSteps.length > 0 || approvalWaiting)
+  )
+  const showThought = Boolean(hasThought && isStreaming)
 
   return (
     <div
@@ -516,7 +624,20 @@ export function TurnFlow({
       aria-live="polite"
       aria-busy={isStreaming || undefined}
     >
-      {isStreaming ? (
+      {showThought ? (
+        <ThoughtDisclosure
+          text={rawThinkText}
+          open={thoughtExpanded}
+          onToggle={() => {
+            userThoughtRef.current = true
+            setThoughtOpen(!thoughtExpanded)
+          }}
+          label={thoughtAsLiveHead ? '思考中' : '已思考'}
+          elapsed={thoughtAsLiveHead ? elapsed : undefined}
+          streaming={thoughtAsLiveHead}
+        />
+      ) : null}
+      {showLiveHead ? (
         <div className="turn-flow-live-head">
           <div className="turn-flow-live-copy">
             <span

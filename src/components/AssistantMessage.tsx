@@ -16,9 +16,10 @@ import {
   shouldDisplayFinalBody
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
+import { liveThinkingText, isInlineDemoPaintable } from '../../shared/live-display'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
-import { TurnFlow } from './TurnFlow'
+import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
 import './AssistantMessage.css'
@@ -71,6 +72,7 @@ export function AssistantMessage({
   const [flowOpen, setFlowOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
   const [liveSec, setLiveSec] = useState(0)
+  const [thoughtOpen, setThoughtOpen] = useState(false)
   const userToggledFlow = useRef(false)
 
   const segments = liveSegments ?? meta?.segments
@@ -169,19 +171,36 @@ export function AssistantMessage({
     [processOnly, answerTextIds]
   )
   const showFlowPanel = useSegmentFlow && (isStreaming ? true : flowOpen)
+  /** 完成后可展开：真实工具 / 未进正文的旁白 / 错误。演示与闲聊不占按钮。 */
+  const hasExpandableProcess = processForFlow.some(
+    (s) =>
+      (s.kind === 'tool' && s.toolName !== 'present_inline_demo') ||
+      s.kind === 'text' ||
+      s.status === 'error'
+  )
   const hasAnswerStream = answerParts.length > 0
+  const hasLiveProse = answerParts.some((p) => p.type === 'text' && p.content.trim())
+  const hasPaintableDemo = answerParts.some(
+    (p) => p.type === 'demo' && isInlineDemoPaintable(p.html)
+  )
+  const generatingDemo = Boolean(
+    isStreaming && answerParts.some((p) => p.type === 'demo') && !hasPaintableDemo
+  )
+  const liveThinkText = useSegmentFlow ? liveThinkingText(segments!) : ''
   const showFinalBody =
     Boolean(children) ||
-    hasAnswerStream ||
+    (isStreaming ? hasLiveProse || hasPaintableDemo : hasAnswerStream) ||
     (Boolean(displayContent) &&
       (isError || isAborted || finalDecision.show) &&
       !useSegmentFlow)
   // 正文在上、过程在下：分隔线画在过程区顶部
   const showLiveProcess = Boolean(isStreaming) // 直播时始终有呼吸过程区
+  const showCompletedProcess =
+    !isStreaming && (hasExpandableProcess || (!useSegmentFlow && legacyExpandable))
   const showProcessBelowAnswer =
     showFinalBody &&
     (showLiveProcess ||
-      (useSegmentFlow && processForFlow.length > 0) ||
+      hasExpandableProcess ||
       (!useSegmentFlow && legacyExpandable && flowOpen))
   const phaseModel = useMemo(
     () => (useSegmentFlow ? deriveProcessPhases(segments!, { isStreaming }) : null),
@@ -276,27 +295,13 @@ export function AssistantMessage({
       )}
 
 
-      {/* 直播：过程在上，始终可见当前步骤与呼吸反馈 */}
+      {/* 直播：思考/工具在上，正文与演示在下（对齐 Cursor） */}
       {isStreaming ? (
         <div
           className={`assistant-process-below assistant-process-below--live-top ${
             showFinalBody ? 'assistant-process-below--live-top-gap' : ''
           }`}
         >
-          {useSegmentFlow && answerParts.some((p) => p.type === 'demo')
-            ? answerParts
-                .filter((p): p is Extract<typeof p, { type: 'demo' }> => p.type === 'demo')
-                .map((part) => (
-                  <div key={`live-demo-${part.id}`} className="assistant-live-demo">
-                    <InlineDemo
-                      html={part.html}
-                      caption={part.caption}
-                      streaming={Boolean(part.streaming)}
-                    />
-                  </div>
-                ))
-            : null}
-
           {useSegmentFlow ? (
             <div className="turn-flow-live-panel">
               <TurnFlow
@@ -304,10 +309,10 @@ export function AssistantMessage({
                 isStreaming
                 liveStartedAt={liveStartedAt}
                 approvalWaiting={Boolean(approval)}
-                answerStreaming={Boolean(
-                  finalContentRaw.trim() ||
-                    answerParts.some((p) => p.type === 'text' && p.content.trim())
-                )}
+                thinkText={liveThinkText}
+                contentStreaming={hasLiveProse || hasPaintableDemo}
+                generatingDemo={generatingDemo}
+                answerStreaming={Boolean(finalContentRaw.trim() || hasLiveProse)}
               />
             </div>
           ) : (
@@ -317,11 +322,23 @@ export function AssistantMessage({
                 isStreaming
                 liveStartedAt={liveStartedAt}
                 approvalWaiting={Boolean(approval)}
+                thinkText={liveThinkText}
+                contentStreaming={Boolean(finalContentRaw.trim())}
+                generatingDemo={false}
                 answerStreaming={Boolean(finalContentRaw.trim())}
               />
             </div>
           )}
         </div>
+      ) : liveThinkText.trim() ? (
+        <ThoughtDisclosure
+          text={liveThinkText}
+          open={thoughtOpen}
+          onToggle={() => setThoughtOpen((o) => !o)}
+          label={
+            shownDuration != null ? `已思考 · ${formatDuration(shownDuration)}` : '已思考'
+          }
+        />
       ) : null}
 
       {/* 正文 / 错误 / 中止 */}
@@ -372,13 +389,13 @@ export function AssistantMessage({
             (hasAnswerStream ? (
               answerParts.map((part) => {
                 if (part.type === 'demo') {
-                  if (isStreaming) return null
+                  if (!isInlineDemoPaintable(part.html)) return null
                   return (
                     <InlineDemo
                       key={part.id}
                       html={part.html}
                       caption={part.caption}
-                      streaming={false}
+                      streaming={Boolean(isStreaming && part.streaming)}
                     />
                   )
                 }
@@ -398,14 +415,14 @@ export function AssistantMessage({
         />
       ) : null}
 
-      {/* 结束后：过程摘要与可展开时间线在正文下方 */}
-      {!isStreaming ? (
+      {/* 结束后：有真实工具步骤才给可展开摘要；闲聊/演示不占位 */}
+      {showCompletedProcess ? (
         <div
           className={`assistant-process-below ${
-            showProcessBelowAnswer ? 'assistant-process-below--separated' : ''
+            showProcessBelowAnswer ? 'assistant-process-below--quiet' : ''
           }`}
         >
-          {useSegmentFlow && hasProcessFlow(segments!) && summary ? (
+          {useSegmentFlow && hasExpandableProcess && summary ? (
             <button
               type="button"
               className={`turn-flow-summary-chip turn-flow-summary-chip--${
@@ -416,17 +433,18 @@ export function AssistantMessage({
                 setFlowOpen((o) => !o)
               }}
               aria-expanded={flowOpen}
+              aria-label={`展开过程，${summary}`}
             >
               <span>{summary}</span>
               <ChevronDown
-                size={12}
+                size={11}
                 className={`assistant-meta-chevron ${flowOpen ? 'assistant-meta-chevron--open' : ''}`}
                 aria-hidden
               />
             </button>
           ) : null}
 
-          {useSegmentFlow && processForFlow.length > 0 ? (
+          {useSegmentFlow && hasExpandableProcess ? (
             <div
               className={`turn-flow-collapse ${showFlowPanel ? 'turn-flow-collapse--open' : ''}`}
               aria-hidden={!showFlowPanel}
