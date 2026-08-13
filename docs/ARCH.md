@@ -7,7 +7,9 @@
 
 ## 同级目录
 
-（无子目录）
+| 目录 | 说明 |
+|------|------|
+| [github/](./github/ARCH.md) | GitHub README 英雄图与能力条 |
 
 ## 同级文件
 
@@ -28,7 +30,7 @@
 
 | 层级 | 作用 |
 |------|------|
-| 根 [README.md](../README.md) | 产品说明、快速开始、顶层目录一览 |
+| 根 [README.md](../README.md) | GitHub 产品页：英雄图、能力条、启动 |
 | **本目录** | 跨模块专题 |
 | **各目录 `ARCH.md`** | 逐层架构说明：只写同级文件夹与文件 |
 
@@ -46,7 +48,6 @@
 | 共享类型/逻辑 | [../shared/ARCH.md](../shared/ARCH.md) | 类型、IPC、上下文 |
 | Electron 主进程 | [../electron/ARCH.md](../electron/ARCH.md) | IPC、存储、窗口 |
 | 前端 UI | [../src/ARCH.md](../src/ARCH.md) | React 界面 |
-| Skills | [../skills/ARCH.md](../skills/ARCH.md) | 技能加载与内置 Skill |
 | 脚本 | [../scripts/ARCH.md](../scripts/ARCH.md) | 开发启动与环境安装 |
 
 ## 阅读顺序（新人 / AI）

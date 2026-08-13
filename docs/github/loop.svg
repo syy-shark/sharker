@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="200" viewBox="0 0 1200 200" role="img" aria-label="? ? ? ? ?? ??">
+  <rect width="1200" height="200" rx="18" fill="#0a0c10"/>
+  <rect x="0.75" y="0.75" width="1198.5" height="198.5" rx="18" fill="none" stroke="#2a3038"/>
+  <path d="M18 1.5 H1182" stroke="#4b5563" stroke-opacity="0.45" stroke-width="1"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif" text-anchor="middle">
+    <g transform="translate(110,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">SEE</text>
+    </g>
+    <g transform="translate(310,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">SEARCH</text>
+    </g>
+    <g transform="translate(510,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">EDIT</text>
+    </g>
+    <g transform="translate(710,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">RUN</text>
+    </g>
+    <g transform="translate(910,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">VERIFY</text>
+    </g>
+    <g transform="translate(1090,100)">
+      <circle r="30" fill="#12151b" stroke="#4a5d78"/>
+      <text y="6" fill="#e8eef6" font-size="16" font-weight="650">?</text>
+      <text y="62" fill="#8b939e" font-size="11" letter-spacing="2.4">COMMIT</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#5b7190" stroke-width="1.2">
+    <path d="M142 100 H278"/>
+    <path d="M342 100 H478"/>
+    <path d="M542 100 H678"/>
+    <path d="M742 100 H878"/>
+    <path d="M942 100 H1058"/>
+  </g>
+</svg>
