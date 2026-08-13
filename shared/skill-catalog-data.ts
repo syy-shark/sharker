@@ -1,6 +1,6 @@
 /**
  * Skill 目录纯数据：内置（随应用分发）+ 可安装市场项。
- * @see skills/README.md
+ * @see skills/ARCH.md
  */
 
 /** Skill 目录项 */

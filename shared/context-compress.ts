@@ -1,6 +1,6 @@
 /**
  * 上下文达 85% 阈值时自动压缩历史。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 import type { AppSettings, ChatMessage } from './types'
 import { resolveContextLimit } from './context-limit'

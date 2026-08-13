@@ -69,7 +69,12 @@ ${input.events.map((e) => `${e.kind} ${e.toolName ?? ''}`).join('\n').slice(0, 8
       'You extract durable user/project memories. Reply JSON only.',
       prompt
     )
-    const json = JSON.parse(raw.replace(/^```json?\s*|\s*```$/g, '')) as {
+    const cleaned = raw.replace(/^```json?\s*|\s*```$/g, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    const payload =
+      start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned
+    const json = JSON.parse(payload) as {
       memories?: Array<{ scope?: string; kind?: string; content?: string }>
     }
     const scopes: MemoryScope[] = ['global', 'project', 'workspace', 'session']

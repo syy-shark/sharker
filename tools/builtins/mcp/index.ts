@@ -1,6 +1,6 @@
 /**
  * MCP 基础 Tool：list / call。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { callMcpTool, listMcpTools } from '../../services/mcp-registry'
 import { getActiveWorkspacePath } from '../../../shared/workspace'

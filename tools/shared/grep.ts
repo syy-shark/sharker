@@ -1,6 +1,6 @@
 /**
  * 目录内正则文本搜索。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

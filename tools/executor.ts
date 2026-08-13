@@ -1,6 +1,6 @@
 /**
  * 工具执行入口：经注册表分发到各 Tool 模块。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import type { AppSettings, ToolRunResult } from '../shared/types'
 import { executeRegisteredTool } from './registry'
@@ -11,9 +11,10 @@ export async function executeToolWithMeta(
   name: string,
   args: Record<string, unknown>,
   settings: AppSettings,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onStatus?: (content: string) => void
 ): Promise<ToolRunResult> {
-  const result = await executeRegisteredTool(name, args, settings, signal)
+  const result = await executeRegisteredTool(name, args, settings, signal, onStatus)
   return {
     output: truncateToolOutput(result.output, undefined, name),
     fileDiff: result.fileDiff,
@@ -29,7 +30,8 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   settings: AppSettings,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onStatus?: (content: string) => void
 ): Promise<string> {
-  return (await executeToolWithMeta(name, args, settings, signal)).output
+  return (await executeToolWithMeta(name, args, settings, signal, onStatus)).output
 }

@@ -1,8 +1,59 @@
 /**
  * 工作区列表、排序与设置归一化。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 import type { AppSettings, WorkspaceItem } from './types'
+import { ensureBuiltinProviders } from './provider-catalog'
+
+/** 全局聊天工作区（不绑定具体项目目录） */
+export const GLOBAL_WORKSPACE_ID = 'sharker-global'
+
+/** 全局工作区默认显示名 */
+export const GLOBAL_WORKSPACE_LABEL = '对话'
+
+/** 全局对话目录：`<home>/.sharker/global`（无 Node path，主进程传入 homeDir） */
+export function globalWorkspacePath(homeDir: string): string {
+  const base = homeDir.replace(/[\\/]+$/, '')
+  const sep = base.includes('\\') ? '\\' : '/'
+  return `${base}${sep}.sharker${sep}global`
+}
+
+/** 旧版显示名 → 统一为「对话」 */
+function isLegacyGlobalLabel(label: string | undefined): boolean {
+  const t = (label ?? '').trim()
+  return !t || t === 'Home' || t === '空对话' || t === 'home'
+}
+
+/** 保证存在全局「对话」工作区条目 */
+export function ensureGlobalWorkspace(
+  workspaces: WorkspaceItem[],
+  homeDir: string
+): WorkspaceItem[] {
+  const globalPath = globalWorkspacePath(homeDir)
+  const existing = workspaces.find((w) => w.id === GLOBAL_WORKSPACE_ID || w.isHome)
+  if (existing) {
+    return workspaces.map((w) =>
+      w.id === existing.id
+        ? {
+            ...w,
+            id: GLOBAL_WORKSPACE_ID,
+            path: w.path || globalPath,
+            label: isLegacyGlobalLabel(w.label) ? GLOBAL_WORKSPACE_LABEL : w.label,
+            isHome: true
+          }
+        : w
+    )
+  }
+  return [
+    {
+      id: GLOBAL_WORKSPACE_ID,
+      path: globalPath,
+      label: GLOBAL_WORKSPACE_LABEL,
+      isHome: true
+    },
+    ...workspaces
+  ]
+}
 
 /** @deprecated 旧版 Home 工作区 ID；新安装不再注入 Home */
 export const HOME_WORKSPACE_ID = 'home'
@@ -19,11 +70,13 @@ export function getActiveWorkspace(settings: AppSettings): WorkspaceItem | undef
   return settings.workspaces.find((w) => w.id === settings.activeWorkspaceId)
 }
 
-/** 排序：置顶 → 普通 */
+/** 排序：全局对话(Home) → 置顶 → 普通 */
 export function sortWorkspaces(workspaces: WorkspaceItem[]): WorkspaceItem[] {
-  const pinned = workspaces.filter((w) => w.pinned)
-  const normal = workspaces.filter((w) => !w.pinned)
-  return [...pinned, ...normal]
+  const home = workspaces.filter((w) => w.isHome || w.id === GLOBAL_WORKSPACE_ID)
+  const rest = workspaces.filter((w) => !w.isHome && w.id !== GLOBAL_WORKSPACE_ID)
+  const pinned = rest.filter((w) => w.pinned)
+  const normal = rest.filter((w) => !w.pinned)
+  return [...home, ...pinned, ...normal]
 }
 
 /** 解析有效 activeWorkspaceId（无工作区时为空） */
@@ -35,15 +88,29 @@ export function pickActiveWorkspaceId(
   return workspaces[0]?.id ?? ''
 }
 
-/** 迁移旧版 workspacePath；不再自动注入 Home（Windows / 桌面通用） */
+/** 迁移旧版 workspacePath；不再自动注入 Home */
 export function normalizeSettings(
   raw: Partial<AppSettings> & { workspacePath?: string },
-  _homeDir?: string
+  homeDir?: string
 ): AppSettings {
-  const providers = Array.isArray(raw.providers) ? raw.providers : []
+  const home = homeDir || ''
+  // 去掉从未配置过的工厂占位（空 Key 的默认 gpt-4o-mini），避免顶栏显示假模型名
+  let providers = (Array.isArray(raw.providers) ? raw.providers : []).filter((p) => {
+    const noKey = !p.apiKey?.trim()
+    const factoryModel = (p.model ?? '').trim() === 'gpt-4o-mini'
+    const factoryName =
+      !p.name?.trim() ||
+      p.name === 'OpenAI Compatible' ||
+      p.name === '新 API'
+    const factoryId = p.id === 'default'
+    if (noKey && factoryModel && (factoryId || factoryName)) return false
+    return true
+  })
+  // 补齐内置接入（DeepSeek / xAI / OpenAI·ChatGPT / Kimi / 智谱 Coding Plan）
+  providers = ensureBuiltinProviders(providers).map(migrateRetiredModelIds)
   let activeProviderId = raw.activeProviderId ?? ''
   if (activeProviderId && !providers.some((p) => p.id === activeProviderId)) {
-    activeProviderId = providers[0]?.id ?? ''
+    activeProviderId = ''
   }
 
   const merged: AppSettings = {
@@ -53,26 +120,37 @@ export function normalizeSettings(
     workspaceProfile: raw.workspaceProfile ?? '',
     providers,
     activeProviderId,
-    skillRepoUrls: raw.skillRepoUrls ?? [],
     computerUseEnabled: raw.computerUseEnabled ?? true,
     browserUseEnabled: raw.browserUseEnabled ?? true,
-    installedSkillIds: raw.installedSkillIds ?? [],
-    petEnabled: raw.petEnabled ?? false,
+
+    uiGlass: migrateUiGlass(raw),
+    uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }
 
-  let workspaces = [...merged.workspaces].filter((w) => !w.isHome)
+  // 保留非 Home 项目工作区；全局「对话」工作区单独注入
+  let workspaces = [...merged.workspaces].filter(
+    (w) => !w.isHome && w.id !== GLOBAL_WORKSPACE_ID
+  )
 
   if (workspaces.length === 0 && raw.workspacePath) {
-    workspaces.push({
-      id: crypto.randomUUID(),
-      path: raw.workspacePath,
-      label: basename(raw.workspacePath) || '工作区'
-    })
+    const p = raw.workspacePath
+    // 旧版把 home 写进 workspacePath 时不重复当项目
+    if (p && !/[\\/]\.sharker[\\/]global$/.test(p)) {
+      workspaces.push({
+        id: crypto.randomUUID(),
+        path: p,
+        label: basename(p) || '工作区'
+      })
+    }
   }
 
   workspaces = dedupeByPath(workspaces)
+  // 全局对话固定落在 ~/.sharker/global（会话进 memory-db，按 workspaceId 隔离）
+  if (home) {
+    workspaces = ensureGlobalWorkspace(workspaces, home)
+  }
 
   merged.workspaces = sortWorkspaces(workspaces)
   merged.activeWorkspaceId = pickActiveWorkspaceId(workspaces, merged.activeWorkspaceId)
@@ -85,6 +163,67 @@ export function normalizeSettings(
 function basename(p: string): string {
   const parts = p.replace(/\/$/, '').split(/[/\\]/)
   return parts[parts.length - 1] ?? p
+}
+
+/**
+ * 迁移已下线/更名的默认模型 id。
+ * DeepSeek：deepseek-chat / deepseek-reasoner 已退役，改到 V4。
+ */
+function migrateRetiredModelIds(
+  p: import('./types').ProviderConfig
+): import('./types').ProviderConfig {
+  const model = (p.model ?? '').trim().toLowerCase()
+  const base = (p.baseUrl ?? '').toLowerCase()
+  const isDeepseek =
+    p.id === 'deepseek' || base.includes('deepseek.com') || model.startsWith('deepseek-')
+  if (isDeepseek) {
+    if (model === 'deepseek-chat') {
+      return { ...p, model: 'deepseek-v4-flash', contextWindow: p.contextWindow ?? 1_000_000 }
+    }
+    if (model === 'deepseek-reasoner') {
+      return { ...p, model: 'deepseek-v4-pro', contextWindow: p.contextWindow ?? 1_000_000 }
+    }
+    return p
+  }
+  // OpenAI / ChatGPT 订阅：淘汰 gpt-4o 系默认，迁到当前主力模型
+  const isOpenAI =
+    p.id === 'openai-chatgpt' ||
+    base.includes('openai.com') ||
+    base.includes('chatgpt.com') ||
+    model.startsWith('gpt-') ||
+    /^o[1-9]/.test(model)
+  if (isOpenAI) {
+    if (model === 'gpt-4o' || model === 'gpt-4o-2024-08-06' || model === 'gpt-4o-2024-11-20') {
+      return { ...p, model: 'gpt-5.2', contextWindow: p.contextWindow ?? 256_000 }
+    }
+    if (model === 'gpt-4o-mini') {
+      return { ...p, model: 'gpt-5-mini', contextWindow: p.contextWindow ?? 256_000 }
+    }
+  }
+  return p
+}
+
+/** 夹紧玻璃透明度 0–1 */
+function clampGlass(v: unknown): number {
+  const n = typeof v === 'number' ? v : Number(v)
+  if (!Number.isFinite(n)) return 0.72
+  return Math.min(1, Math.max(0, Math.round(n * 100) / 100))
+}
+
+/** 兼容旧字段 uiTransparency / uiOpacity → uiGlass */
+function migrateUiGlass(raw: {
+  uiGlass?: number
+  uiTransparency?: boolean
+  uiOpacity?: number
+}): number {
+  if (typeof raw.uiGlass === 'number' && Number.isFinite(raw.uiGlass)) {
+    return clampGlass(raw.uiGlass)
+  }
+  if (raw.uiTransparency === false) return 0
+  if (typeof raw.uiOpacity === 'number' && Number.isFinite(raw.uiOpacity)) {
+    return clampGlass(1 - raw.uiOpacity)
+  }
+  return 0.72
 }
 
 /** 按路径去重，保留首次出现 */

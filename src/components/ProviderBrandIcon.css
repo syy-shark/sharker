@@ -1,0 +1,60 @@
+/**
+ * 厂商品牌色：只给图标本身着色，不额外铺底，
+ * 让它直接嵌在卡片 / 选择器的背景上。
+ */
+.provider-brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.provider-brand-icon svg {
+  display: block;
+}
+
+/* DeepSeek 官方蓝 */
+.provider-brand-icon--deepseek {
+  color: #4d6bfe;
+}
+
+/* xAI 黑白几何 X */
+.provider-brand-icon--xai {
+  color: #111111;
+}
+
+html.theme-dark .provider-brand-icon--xai {
+  color: #f5f5f5;
+}
+
+/* OpenAI 绿 */
+.provider-brand-icon--openai {
+  color: #10a37f;
+}
+
+/* Kimi / Moonshot 官方蓝 */
+.provider-brand-icon--kimi {
+  color: #1783ff;
+}
+
+html.theme-dark .provider-brand-icon--kimi {
+  color: #5aa8ff;
+}
+
+/* 智谱蓝 */
+.provider-brand-icon--zhipu {
+  color: #3859ff;
+}
+
+.provider-brand-icon--generic {
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .provider-brand-icon {
+    transition-duration: 0.01ms !important;
+  }
+}

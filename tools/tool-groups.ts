@@ -1,6 +1,6 @@
 /**
  * 工具分组与计划模式白名单。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 
 /** 计划模式允许的只读 / 规划类工具 */
@@ -17,17 +17,15 @@ export const PLAN_MODE_TOOL_NAMES = new Set([
   'git_diff',
   'git_log',
   'git_show',
-  'list_skills',
-  'read_skill',
   'web_fetch',
   'web_search',
   'open_url',
+  'present_inline_demo',
   'task_list',
   'task_get',
   'task_output',
   'agent_list',
   'agent_get_result',
-  'mcp_list_tools',
   'desktop_doctor',
   'desktop_screenshot',
   'desktop_list_windows',
@@ -60,7 +58,6 @@ export const WRITE_TOOL_NAMES = new Set([
   'git_push',
   'git_worktree_add',
   'git_worktree_remove',
-  'run_skill_script',
   'task_create',
   'task_update',
   'task_stop',
@@ -68,7 +65,6 @@ export const WRITE_TOOL_NAMES = new Set([
   'shell_kill',
   'agent_spawn',
   'agent_send_message',
-  'mcp_call_tool',
   'desktop_click',
   'desktop_type',
   'desktop_key',
@@ -101,8 +97,7 @@ export const COMPUTER_USE_WRITE_TOOLS = new Set([
 export const COMPUTER_USE_GROUP = {
   id: 'computerUse',
   title: 'Computer Use（桌面自动化）',
-  description:
-    '内置 desktop_* 工具始终并入 Agent；完整 AT-SPI / portal 能力需配置 codex-computer-use-linux MCP。'
+  description: '内置 desktop_* 工具（screencapture / osascript / cliclick）。'
 } as const
 
 /** 判断工具在计划模式下是否可用 */

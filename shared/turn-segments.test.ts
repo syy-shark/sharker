@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { applyStreamChunk, finalizeSegments } from './turn-segments'
-import { deriveProcessPhases } from './process-phases'
 import type { TurnSegment } from './types'
+import {
+  applyStreamChunk,
+  finalizeSegments,
+  hasProcessFlow,
+  processSegments
+} from './turn-segments'
+import { deriveProcessPhases } from './process-phases'
 
 describe('turn segment event state machine', () => {
   it('keeps event order, timestamps and real derived phases', () => {
@@ -49,7 +54,7 @@ describe('turn segment event state machine', () => {
     })
     expect(deriveProcessPhases(segments).groups.find((group) => group.phase === 'verify')?.steps).toHaveLength(1)
     segments = applyStreamChunk(segments, { type: 'turn_cancelled', timestamp: 31 })
-    expect(segments[1].status).toBe('cancelled')
+    expect(segments.some((s) => s.toolCallId === 'verify-1' && s.status === 'cancelled')).toBe(true)
   })
 
   it('correlates parallel tools and preserves output metadata', () => {
@@ -66,5 +71,71 @@ describe('turn segment event state machine', () => {
     })
     expect(segments[2]).toMatchObject({ status: 'error', exitCode: 2, resultOutput: 'failed' })
     expect(finalizeSegments(segments, 6)[1].endedAt).toBe(6)
+  })
+
+
+  it('turn_start seeds a waiting status so live UI is never blank', () => {
+    let segments: TurnSegment[] = []
+    segments = applyStreamChunk(segments, { type: 'turn_start', timestamp: 1 })
+    expect(segments).toHaveLength(1)
+    expect(segments[0]).toMatchObject({ kind: 'status', status: 'active' })
+    segments = applyStreamChunk(segments, { type: 'think', content: '分析', timestamp: 2 })
+    expect(segments[0].status).toBe('done')
+    expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)
+  })
+})
+
+describe('process flow visibility', () => {
+  it('hasProcessFlow hides thinking-only completed turns', () => {
+    const segments: TurnSegment[] = [
+      {
+        id: 's1',
+        kind: 'status',
+        content: '连接模型并准备任务…',
+        status: 'done'
+      },
+      {
+        id: 't1',
+        kind: 'thinking',
+        content: 'The user wants me to do secret things',
+        status: 'done'
+      },
+      {
+        id: 'f1',
+        kind: 'text',
+        role: 'final',
+        content: '完成了',
+        status: 'done'
+      }
+    ]
+    expect(hasProcessFlow(segments, { isStreaming: false })).toBe(false)
+    expect(processSegments(segments, { isStreaming: false }).some((s) => s.kind === 'thinking')).toBe(
+      false
+    )
+  })
+
+  it('keeps tool steps for completed process flow', () => {
+    const segments: TurnSegment[] = [
+      {
+        id: 'tool1',
+        kind: 'tool',
+        toolName: 'read_file',
+        toolTitle: '读取文件',
+        toolDetail: 'package.json',
+        content: '读取文件 · package.json',
+        status: 'done'
+      },
+      {
+        id: 'f1',
+        kind: 'text',
+        role: 'final',
+        content: '好了',
+        status: 'done'
+      }
+    ]
+    expect(hasProcessFlow(segments, { isStreaming: false })).toBe(true)
+    expect(processSegments(segments, { isStreaming: false }).some((s) => s.kind === 'tool')).toBe(
+      true
+    )
   })
 })

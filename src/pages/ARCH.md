@@ -1,0 +1,17 @@
+# src/pages — 整页路由
+
+## 职责
+
+- 设置、自动化等整页壳（聊天主界面在 `App` + `ChatView`，不在此）
+
+## 同级目录
+
+（无子目录）
+
+## 同级文件
+
+| 文件 | 说明 |
+|------|------|
+| `SettingsPage.tsx` / `.css` | 设置页壳：Tab 切换与各设置面板挂载（无彩色氛围光） |
+| `AutomationsPage.tsx` / `.css` | 自动化任务列表与编辑（卡片 list-item 入场、hover/focus 过渡；开关/删除即时持久化） |
+| `ARCH.md` | 本层架构说明 |

@@ -1,5 +1,5 @@
 /**
- * Linux 应用卸载：检测安装方式、清理用户数据、验证残留。
+ * macOS 应用卸载：检测安装方式、清理用户数据、验证残留。
  * @see tools/builtins/uninstall-application.ts
  */
 import { execFile } from 'child_process'
@@ -16,31 +16,19 @@ export interface AppUninstallProfile {
   processPatterns: string[]
   /** 相对 $HOME 的用户数据路径 */
   dataPaths: string[]
-  /** apt 包名（精确或前缀） */
-  aptPackages?: string[]
-  /** 桌面/菜单文件名 glob 片段（小写匹配） */
-  desktopHints: string[]
+  /** Homebrew cask 名 */
+  brewCasks?: string[]
+  /** /Applications 下的 .app 名片段（小写匹配） */
+  appHints: string[]
 }
 
 /** 常见应用卸载配置 */
 export const APP_PROFILES: Record<string, AppUninstallProfile> = {
   steam: {
-    processPatterns: ['steam', 'steamwebhelper'],
-    dataPaths: [
-      '.local/share/Steam',
-      '.steam',
-      '.steampath',
-      '.steampid',
-      '.local/share/Steam++',
-      '.cache/Steam++'
-    ],
-    aptPackages: ['steam-launcher', 'steam-libs', 'steam-libs-i386', 'steam-devices'],
-    desktopHints: ['steam']
-  },
-  watt: {
-    processPatterns: ['WattToolkit', 'Steam++'],
-    dataPaths: ['.local/share/Steam++', '.cache/Steam++'],
-    desktopHints: ['watt-toolkit', 'steam++']
+    processPatterns: ['steam', 'steam_osx'],
+    dataPaths: ['Library/Application Support/Steam', 'Library/Caches/Steam'],
+    brewCasks: ['steam'],
+    appHints: ['steam']
   }
 }
 
@@ -60,7 +48,7 @@ export function resolveAppProfile(keyword: string): AppUninstallProfile & { key:
     key,
     processPatterns: [keyword],
     dataPaths: [],
-    desktopHints: [key]
+    appHints: [key]
   }
 }
 
@@ -69,12 +57,6 @@ export function expandHome(relPath: string): string {
   if (relPath.startsWith('~')) return path.join(os.homedir(), relPath.slice(1).replace(/^\//, ''))
   if (path.isAbsolute(relPath)) return path.normalize(relPath)
   return path.join(os.homedir(), relPath)
-}
-
-/** 用户桌面目录（中文/英文） */
-export function desktopDirs(): string[] {
-  const home = os.homedir()
-  return [path.join(home, '桌面'), path.join(home, 'Desktop')]
 }
 
 /** 执行 shell 命令并返回 stdout（失败时返回 stderr 或错误信息） */
@@ -102,58 +84,72 @@ export async function killAppProcesses(patterns: string[]): Promise<string> {
   return parts.length ? parts.join('\n') : 'processes signaled'
 }
 
-/** 查询 apt 已安装包（grep 关键词） */
-export async function findAptPackages(keyword: string): Promise<string[]> {
-  const out = await runShell(`dpkg -l 2>/dev/null | awk '{print $2}' | grep -i '${keyword.replace(/'/g, '')}' || true`)
-  return out
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-}
-
-/** 合并 profile 包名与 dpkg 搜索结果 */
-export async function collectAptPackages(
+/** 查询已安装 brew cask */
+export async function collectBrewCasks(
   profile: AppUninstallProfile,
   keyword: string
 ): Promise<string[]> {
   const found = new Set<string>()
-  for (const pkg of profile.aptPackages ?? []) {
-    const status = await runShell(`dpkg -s '${pkg.replace(/'/g, '')}' 2>/dev/null | head -1 || true`)
-    if (/^Status: install/.test(status)) found.add(pkg)
+  for (const cask of profile.brewCasks ?? []) {
+    const status = await runShell(`brew list --cask '${cask.replace(/'/g, '')}' 2>/dev/null || true`)
+    if (status && !/Error|No available/i.test(status)) found.add(cask)
   }
-  for (const pkg of await findAptPackages(keyword)) {
-    found.add(pkg)
+  const listed = await runShell(`brew list --cask 2>/dev/null | grep -i '${keyword.replace(/'/g, '')}' || true`)
+  for (const line of listed.split('\n')) {
+    const c = line.trim()
+    if (c) found.add(c)
   }
   return [...found]
 }
 
-/** 用 pkexec 卸载 apt 包；失败则返回需用户手动执行的命令 */
-export async function removeAptPackages(packages: string[]): Promise<{
+/** brew uninstall --cask */
+export async function removeBrewCasks(casks: string[]): Promise<{
   ok: boolean
   output: string
   manualCommand?: string
 }> {
-  if (packages.length === 0) return { ok: true, output: 'no apt packages to remove' }
-  const pkgList = packages.join(' ')
-  const manual = `sudo apt remove -y --purge ${pkgList} && sudo apt autoremove -y`
-  const cmd = `pkexec apt remove -y --purge ${pkgList} && pkexec apt autoremove -y`
-  const out = await runShell(cmd, 300_000)
-  const stillInstalled = (
+  if (casks.length === 0) return { ok: true, output: 'no brew casks to remove' }
+  const list = casks.join(' ')
+  const manual = `brew uninstall --cask ${list}`
+  const out = await runShell(manual, 300_000)
+  const still = (
     await Promise.all(
-      packages.map(async (p) => {
-        const s = await runShell(`dpkg -s '${p.replace(/'/g, '')}' 2>/dev/null | head -1 || true`)
-        return /^Status: install/.test(s) ? p : null
+      casks.map(async (c) => {
+        const s = await runShell(`brew list --cask '${c.replace(/'/g, '')}' 2>/dev/null || true`)
+        return s && !/Error|No available/i.test(s) ? c : null
       })
     )
   ).filter(Boolean) as string[]
-  if (stillInstalled.length === 0) {
-    return { ok: true, output: out || `removed: ${pkgList}` }
+  if (still.length === 0) {
+    return { ok: true, output: out || `removed: ${list}` }
   }
   return {
     ok: false,
-    output: `${out}\nStill installed: ${stillInstalled.join(', ')}`,
+    output: `${out}\nStill installed: ${still.join(', ')}`,
     manualCommand: manual
   }
+}
+
+/** 在 /Applications 与 ~/Applications 查找 .app */
+export async function findAppBundles(hints: string[]): Promise<string[]> {
+  const roots = ['/Applications', path.join(os.homedir(), 'Applications')]
+  const found: string[] = []
+  for (const root of roots) {
+    let entries: string[] = []
+    try {
+      entries = await fs.readdir(root)
+    } catch {
+      continue
+    }
+    for (const name of entries) {
+      if (!name.endsWith('.app')) continue
+      const lower = name.toLowerCase()
+      if (hints.some((h) => lower.includes(h.toLowerCase()))) {
+        found.push(path.join(root, name))
+      }
+    }
+  }
+  return found
 }
 
 /** 递归删除路径（忽略不存在） */
@@ -179,8 +175,9 @@ export async function collectUserDataPaths(
   const paths = new Set<string>()
   for (const rel of profile.dataPaths) paths.add(expandHome(rel))
   for (const p of extraPaths) paths.add(expandHome(p))
+  const library = path.join(home, 'Library')
   const findOut = await runShell(
-    `find '${home.replace(/'/g, "'\\''")}' -maxdepth 4 \\( -type d -o -type f \\) -iname '*${keyword.replace(/'/g, '')}*' 2>/dev/null | head -40`
+    `find '${library.replace(/'/g, "'\\''")}' -maxdepth 3 \\( -type d -o -type f \\) -iname '*${keyword.replace(/'/g, '')}*' 2>/dev/null | head -40`
   )
   for (const line of findOut.split('\n')) {
     const p = line.trim()
@@ -190,30 +187,26 @@ export async function collectUserDataPaths(
   return [...paths]
 }
 
-/** 删除桌面与菜单中的相关 .desktop */
-export async function removeDesktopEntries(hints: string[]): Promise<string[]> {
-  const removed: string[] = []
-  const dirs = [
-    ...desktopDirs(),
-    path.join(os.homedir(), '.local/share/applications')
-  ]
-  for (const dir of dirs) {
-    let entries: string[] = []
-    try {
-      entries = await fs.readdir(dir)
-    } catch {
-      continue
-    }
-    for (const name of entries) {
-      const lower = name.toLowerCase()
-      if (!lower.endsWith('.desktop') && name !== '.desktop') continue
-      if (!hints.some((h) => lower.includes(h.toLowerCase()))) continue
-      const full = path.join(dir, name)
-      const r = await removePathIfExists(full)
-      if (r === 'removed') removed.push(full)
-    }
-  }
-  return removed
+/** 兼容旧名：删除应用快捷方式（macOS 无 .desktop，返回空） */
+export async function removeDesktopEntries(_hints: string[]): Promise<string[]> {
+  return []
+}
+
+/** @deprecated 兼容旧 API */
+export async function collectAptPackages(
+  profile: AppUninstallProfile,
+  keyword: string
+): Promise<string[]> {
+  return collectBrewCasks(profile, keyword)
+}
+
+/** @deprecated 兼容旧 API */
+export async function removeAptPackages(packages: string[]): Promise<{
+  ok: boolean
+  output: string
+  manualCommand?: string
+}> {
+  return removeBrewCasks(packages)
 }
 
 /** 检查路径是否仍存在 */
@@ -228,8 +221,12 @@ export async function pathExists(absPath: string): Promise<boolean> {
 
 export interface RemovalVerifyReport {
   pathsStillExist: string[]
+  brewCasksStillInstalled: string[]
+  /** @deprecated 同 brewCasksStillInstalled */
   aptPackagesStillInstalled: string[]
   runningProcesses: string[]
+  appBundlesRemaining: string[]
+  /** @deprecated */
   desktopEntriesRemaining: string[]
   clean: boolean
 }
@@ -244,35 +241,23 @@ export async function verifyRemoval(
   for (const p of checkedPaths) {
     if (await pathExists(p)) pathsStillExist.push(p)
   }
-  const aptPackagesStillInstalled = await collectAptPackages(profile, keyword)
+  const brewCasksStillInstalled = await collectBrewCasks(profile, keyword)
   let runningProcesses: string[] = []
   const psOut = await runShell(`ps aux | grep -i '${keyword.replace(/'/g, '')}' | grep -v grep || true`)
   if (psOut) runningProcesses = psOut.split('\n').map((l) => l.trim()).filter(Boolean)
-  const desktopEntriesRemaining: string[] = []
-  for (const dir of [...desktopDirs(), path.join(os.homedir(), '.local/share/applications')]) {
-    try {
-      const entries = await fs.readdir(dir)
-      for (const name of entries) {
-        const lower = name.toLowerCase()
-        if (!lower.endsWith('.desktop') && name !== '.desktop') continue
-        if (profile.desktopHints.some((h) => lower.includes(h.toLowerCase()))) {
-          desktopEntriesRemaining.push(path.join(dir, name))
-        }
-      }
-    } catch {
-      /* missing dir */
-    }
-  }
+  const appBundlesRemaining = await findAppBundles(profile.appHints)
   const clean =
     pathsStillExist.length === 0 &&
-    aptPackagesStillInstalled.length === 0 &&
+    brewCasksStillInstalled.length === 0 &&
     runningProcesses.length === 0 &&
-    desktopEntriesRemaining.length === 0
+    appBundlesRemaining.length === 0
   return {
     pathsStillExist,
-    aptPackagesStillInstalled,
+    brewCasksStillInstalled,
+    aptPackagesStillInstalled: brewCasksStillInstalled,
     runningProcesses,
-    desktopEntriesRemaining,
+    appBundlesRemaining,
+    desktopEntriesRemaining: appBundlesRemaining,
     clean
   }
 }
@@ -283,14 +268,14 @@ export function formatVerifyReport(keyword: string, report: RemovalVerifyReport)
   if (report.pathsStillExist.length) {
     lines.push('paths still exist:', ...report.pathsStillExist.map((p) => `  - ${p}`))
   }
-  if (report.aptPackagesStillInstalled.length) {
-    lines.push('apt packages still installed:', ...report.aptPackagesStillInstalled.map((p) => `  - ${p}`))
+  if (report.brewCasksStillInstalled.length) {
+    lines.push('brew casks still installed:', ...report.brewCasksStillInstalled.map((p) => `  - ${p}`))
   }
   if (report.runningProcesses.length) {
     lines.push('running processes:', ...report.runningProcesses.map((p) => `  - ${p}`))
   }
-  if (report.desktopEntriesRemaining.length) {
-    lines.push('desktop/menu entries remaining:', ...report.desktopEntriesRemaining.map((p) => `  - ${p}`))
+  if (report.appBundlesRemaining.length) {
+    lines.push('app bundles remaining:', ...report.appBundlesRemaining.map((p) => `  - ${p}`))
   }
   if (report.clean) lines.push('All checks passed — removal appears complete.')
   return lines.join('\n')

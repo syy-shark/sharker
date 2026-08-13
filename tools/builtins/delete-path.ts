@@ -1,6 +1,6 @@
 /**
  * delete_path：删除文件或目录；递归删除后 Harness 自动验证路径是否消失。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import { assertAccess, ok } from '../context'

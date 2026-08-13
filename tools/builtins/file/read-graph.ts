@@ -1,6 +1,6 @@
 /**
  * read_graph：读取 mermaid / dot / 图结构 JSON。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

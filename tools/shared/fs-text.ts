@@ -1,6 +1,6 @@
 /**
  * 文本文件读写辅助。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 

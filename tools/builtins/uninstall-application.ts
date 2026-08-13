@@ -1,16 +1,16 @@
 /**
- * uninstall_application：检测安装方式、停进程、卸 apt 包、清用户数据并验证。
- * @see tools/README.md
+ * uninstall_application：停进程、卸 brew cask、删 .app、清用户数据并验证（macOS）。
+ * @see tools/ARCH.md
  */
 import os from 'os'
 import { ok } from '../context'
 import {
-  collectAptPackages,
+  collectBrewCasks,
   collectUserDataPaths,
+  findAppBundles,
   formatVerifyReport,
   killAppProcesses,
-  removeAptPackages,
-  removeDesktopEntries,
+  removeBrewCasks,
   removePathIfExists,
   resolveAppProfile,
   verifyRemoval
@@ -39,18 +39,27 @@ export const uninstallApplicationTool: ToolHandler = {
     lines.push('', '## 1. Stop processes')
     lines.push(await killAppProcesses(profile.processPatterns))
 
-    const aptPackages = await collectAptPackages(profile, keyword)
-    lines.push('', '## 2. Apt packages found', aptPackages.length ? aptPackages.join(', ') : '(none)')
+    const brewCasks = await collectBrewCasks(profile, keyword)
+    lines.push('', '## 2. Homebrew casks found', brewCasks.length ? brewCasks.join(', ') : '(none)')
 
-    if (removePackages && aptPackages.length > 0) {
-      lines.push('', '## 3. Remove apt packages (pkexec — GUI password prompt)')
-      const aptResult = await removeAptPackages(aptPackages)
-      lines.push(aptResult.output)
-      if (!aptResult.ok && aptResult.manualCommand) {
-        lines.push('', 'Manual command (needs password):', aptResult.manualCommand)
+    if (removePackages && brewCasks.length > 0) {
+      lines.push('', '## 3. Remove brew casks')
+      const brewResult = await removeBrewCasks(brewCasks)
+      lines.push(brewResult.output)
+      if (!brewResult.ok && brewResult.manualCommand) {
+        lines.push('', 'Manual command:', brewResult.manualCommand)
       }
     } else if (removePackages) {
-      lines.push('', '## 3. No apt packages to remove')
+      lines.push('', '## 3. No brew casks to remove')
+    }
+
+    const appBundles = await findAppBundles(profile.appHints)
+    if (appBundles.length > 0) {
+      lines.push('', '## 4. Remove .app bundles')
+      for (const p of appBundles) {
+        const r = await removePathIfExists(p)
+        lines.push(`  ${r}: ${p}`)
+      }
     }
 
     const dataPaths = removeUserData
@@ -58,21 +67,15 @@ export const uninstallApplicationTool: ToolHandler = {
       : extraPaths.map((p) => (p.startsWith('/') || p.startsWith('~') ? p : `${os.homedir()}/${p}`))
 
     if (removeUserData && dataPaths.length > 0) {
-      lines.push('', '## 4. Remove user data')
+      lines.push('', '## 5. Remove user data')
       for (const p of dataPaths) {
         const r = await removePathIfExists(p)
         lines.push(`  ${r}: ${p}`)
       }
     }
 
-    lines.push('', '## 5. Remove desktop/menu shortcuts')
-    const removedDesktop = await removeDesktopEntries(profile.desktopHints)
-    lines.push(
-      removedDesktop.length ? removedDesktop.map((p) => `  removed ${p}`).join('\n') : '  (none found)'
-    )
-
     lines.push('', '## 6. Verification')
-    const report = await verifyRemoval(keyword, profile, dataPaths)
+    const report = await verifyRemoval(keyword, profile, [...dataPaths, ...appBundles])
     lines.push(formatVerifyReport(keyword, report))
 
     if (!report.clean) {

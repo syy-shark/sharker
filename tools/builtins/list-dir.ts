@@ -1,6 +1,6 @@
 /**
  * list_dir：列出目录内容。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok } from '../context'
 import { listDirRecursive } from '../shared/list-dir'

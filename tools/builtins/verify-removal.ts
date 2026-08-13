@@ -1,6 +1,6 @@
 /**
  * verify_removal：检查应用/路径是否已从系统中清除（Harness 也会自动调用）。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { ok } from '../context'
 import {

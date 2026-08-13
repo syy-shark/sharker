@@ -1,6 +1,6 @@
 /**
  * Turn 调度管线：queryServe → processUserInput → onQuery → queryLoop。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import type { AppSettings, ChatAttachment, ChatMessage, StreamChunk } from '../shared/types'
 import { needsToolCalling } from '../shared/needs-tools'
@@ -8,10 +8,8 @@ import { getActiveWorkspacePath } from '../shared/workspace'
 import { compressContextIfNeeded } from '../shared/context-compress'
 import { estimateContextUsage } from '../shared/token-estimate'
 import { recordTokenUsage } from '../shared/token-usage-store'
-import { runHooks } from './hooks/runner'
 import { validateActiveProvider } from '../shared/provider-validate'
 import { simpleCompletion, type ChatCompletionMessage } from '../providers/openai'
-import { buildSkillsSystemPrompt, loadSkills, selectSkillsForMessage } from '../skills/loader'
 import { matchSlashCommand } from './commands'
 import { buildSystemPrompt, type ApprovalHandler } from './loop'
 import { expandFileReferences } from './file-refs'
@@ -19,7 +17,6 @@ import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './mes
 import { queryLoop } from './query-loop'
 import { killAllShellChildren } from '../tools/shell-runner'
 import { enterBuildMode } from '../tools/harness-state'
-import { prepareMcpToolPool } from '../tools/registry'
 import { assembleMemoryContext } from './memory/assembler'
 import { writeMemoriesFromTurn } from './memory/writer'
 import { getActiveSessionId, getWorkspaceProjectId } from './memory/workspaces-sync'
@@ -30,7 +27,7 @@ const BUILD_PLAN_PREFIX = '__SHARKER_BUILD__\n'
 const DEFAULT_TURN_TIMEOUT_MS = 900_000
 const COMPUTER_USE_TURN_TIMEOUT_MS = 1_200_000
 
-/** 桌面自动化任务用更长超时（多步 MCP + 审批） */
+/** 桌面自动化任务用更长超时（多步操作 + 审批） */
 function turnTimeoutMs(userText: string): number {
   if (/微信|wechat|桌面|打开|点击|发消息|computer\s*use|继续/i.test(userText)) {
     return COMPUTER_USE_TURN_TIMEOUT_MS
@@ -57,17 +54,48 @@ export interface ExecuteUserInputContext {
   onApproval: ApprovalHandler
   send: (chunk: StreamChunk) => void
   reloadSettings: () => Promise<AppSettings>
+  /** 多会话隔离：本轮流式事件归属 */
+  conversationId?: string
+  /** 会话级 once/session 审批表 */
+  sessionApprovals?: import('../shared/approval-session').SessionApprovalStore
 }
 
 type TurnSlot = {
+  conversationId?: string
   abortController: AbortController
   turnTimer: ReturnType<typeof setTimeout>
   release: () => void
 }
 
-let activeTurn: Promise<void> | null = null
-let activeSlot: TurnSlot | null = null
-let turnChain: Promise<void> = Promise.resolve()
+/**
+ * 按会话隔离的 turn 队列：不同 conversation 可并行，
+ * 同一 conversation 内仍串行，避免历史/工具状态交错。
+ * 无 conversationId 的遗留路径走 default 队列。
+ */
+const turnChains = new Map<string, Promise<void>>()
+const activeSlots = new Map<string, TurnSlot>()
+/** 在排队、尚未 runTurn 时被 Stop 的会话 */
+const cancelledBeforeStart = new Set<string>()
+
+const DEFAULT_CHAIN_KEY = '__default__'
+
+function chainKey(conversationId?: string): string {
+  return conversationId?.trim() || DEFAULT_CHAIN_KEY
+}
+
+function enqueueTurn(conversationId: string | undefined, run: () => Promise<void>): Promise<void> {
+  const key = chainKey(conversationId)
+  const prev = turnChains.get(key) ?? Promise.resolve()
+  const next = prev.then(run).catch(() => {})
+  // 保留链尾，避免同会话并发；不 await 其它会话
+  turnChains.set(
+    key,
+    next.finally(() => {
+      if (turnChains.get(key) === next) turnChains.delete(key)
+    })
+  )
+  return next
+}
 
 /** 将历史 ChatMessage 映射为 API 消息格式 */
 async function mapHistoryToApiMessages(history: ChatMessage[]): Promise<ChatCompletionMessage[]> {
@@ -101,8 +129,10 @@ export function processUserInput(userText: string): ProcessUserInputResult {
 }
 
 /** 占坑：发 turn_start 信号，标记本轮开始 */
-function queryServe(send: (chunk: StreamChunk) => void): void {
-  send({ type: 'turn_start', skillNames: [] })
+function queryServe(send: (chunk: StreamChunk) => void, conversationId?: string): void {
+  send({ type: 'turn_start', conversationId })
+  // 立即给前端一个可见状态，避免「只有 loading 没有步骤」的空窗
+  send({ type: 'status', content: '连接模型并准备任务…', conversationId })
 }
 
 /** 组装上下文并驱动 queryLoop */
@@ -144,10 +174,8 @@ async function* onQuery(
   }
 
   const useTools = needsToolCalling(userText, historyForAgent)
-  const [, expandedUserText, skills, projectId, sessionId, systemBaseRaw] = await Promise.all([
-    prepareMcpToolPool(workspace),
+  const [expandedUserText, projectId, sessionId, systemBaseRaw] = await Promise.all([
     expandFileReferences(userText, workspace),
-    loadSkills(workspace),
     getWorkspaceProjectId(settings.activeWorkspaceId),
     getActiveSessionId(settings.activeWorkspaceId),
     buildSystemPrompt(settings, { includeBootstrap: useTools })
@@ -160,29 +188,17 @@ async function* onQuery(
     userMessage: userText,
     recentMessages: historyForAgent.slice(-4).map((m) => m.content)
   })
-  const activeSkills = selectSkillsForMessage(skills, userText)
-  if (activeSkills.length > 0) {
-    send({
-      type: 'turn_start',
-      skillNames: activeSkills.map((s) => s.name)
-    })
-  }
 
-  const skillBlock = buildSkillsSystemPrompt(skills, userText)
-  let systemBase = systemBaseRaw
+  let systemContent = systemBaseRaw
 
   try {
     const memoryCtx = await memoryPromise
     if (memoryCtx?.block) {
-      systemBase = `${systemBase}\n\n${memoryCtx.block}`
+      systemContent = `${systemContent}\n\n${memoryCtx.block}`
     }
   } catch (e) {
     console.warn('[memory] assemble failed', e)
   }
-
-  const systemContent = skillBlock
-    ? `${systemBase}\n\n# Active Skills\n\n${skillBlock}`
-    : systemBase
 
   const messages: ChatCompletionMessage[] = [
     { role: 'system', content: systemContent },
@@ -195,7 +211,9 @@ async function* onQuery(
 
   yield* queryLoop(settings, messages, onApproval, signal, {
     userText,
-    history: historyForAgent
+    history: historyForAgent,
+    sessionApprovals: ctx.sessionApprovals,
+    conversationId: ctx.conversationId
   })
 }
 
@@ -217,30 +235,49 @@ async function* runLocalCommand(
  * 主进程 chat:send 的唯一入口。
  */
 export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<void> {
+  const conversationId = ctx.conversationId
+  // 新的用户输入表示“要跑这一轮”。清掉先前 Stop/插队留下的 before-start 取消标记，
+  // 否则 abort 后立即 dispatch 的新 turn 会被 runTurn 入口直接短路取消。
+  if (conversationId) cancelledBeforeStart.delete(conversationId)
   const runTurn = async () => {
     const settings = await ctx.reloadSettings()
+    const key = chainKey(conversationId)
     const slot: TurnSlot = {
+      conversationId,
       abortController: new AbortController(),
       turnTimer: setTimeout(() => slot.abortController.abort(), turnTimeoutMs(ctx.userText)),
       release: () => {
         clearTimeout(slot.turnTimer)
-        if (activeSlot === slot) activeSlot = null
+        if (activeSlots.get(key) === slot) activeSlots.delete(key)
       }
     }
-    activeSlot = slot
+    activeSlots.set(key, slot)
     const signal = slot.abortController.signal
-    const turnCtx = { ...ctx, settings }
+    const stamp = (chunk: StreamChunk): StreamChunk => ({
+      ...chunk,
+      conversationId: chunk.conversationId ?? conversationId,
+      timestamp: chunk.timestamp ?? Date.now()
+    })
+    const baseSend = (chunk: StreamChunk) => ctx.send(stamp(chunk))
+    const turnCtx = { ...ctx, settings, send: baseSend }
 
     try {
-      queryServe(turnCtx.send)
+      // Stop 在排队阶段已点过：本会话直接取消，不影响其他会话并行 turn
+      if (conversationId && cancelledBeforeStart.has(conversationId)) {
+        cancelledBeforeStart.delete(conversationId)
+        turnCtx.send({ type: 'turn_cancelled', conversationId })
+        turnCtx.send({ type: 'done', conversationId })
+        return
+      }
+
+      queryServe(turnCtx.send, conversationId)
 
       const processed = processUserInput(ctx.userText)
-      void runHooks('turn_start', { userText: ctx.userText.slice(0, 120) })
 
       const turnEvents: TurnEventInput[] = []
       let assistantText = ''
       const captureSend = (chunk: StreamChunk) => {
-        const stamped = chunk.timestamp == null ? { ...chunk, timestamp: Date.now() } : chunk
+        const stamped = stamp(chunk)
         if (chunk.type === 'tool_start') {
           turnEvents.push({
             kind: 'tool_start',
@@ -261,7 +298,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       if (!processed.shouldQuery) {
         for await (const chunk of runLocalCommand(processed)) {
           if (signal.aborted) {
-            turnCtx.send({ type: 'done' })
+            turnCtx.send({ type: 'done', conversationId })
             return
           }
           captureSend(chunk)
@@ -272,7 +309,6 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       for await (const chunk of onQuery(turnCtxWithCapture, processed, signal)) {
         captureSend(chunk)
       }
-      void runHooks('turn_done', { userText: processed.userText.slice(0, 120) })
       const tokens = estimateContextUsage(ctx.history, processed.userText, '').total
       void recordTokenUsage(tokens)
 
@@ -287,25 +323,70 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       }).catch((e) => console.warn('[memory] writer failed', e))
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e)
-      const error =
-        raw === 'This operation was aborted' || raw.includes('aborted')
-          ? '任务超时或被取消（普通任务最长约 15 分钟，桌面自动化任务最长约 20 分钟）。若卡在截图，请改用 MCP get_app_state；点击/打字需点「允许」。'
-          : raw
-      turnCtx.send({ type: 'error', error })
-      turnCtx.send({ type: 'done' })
+      const aborted =
+        signal.aborted ||
+        (e instanceof Error && e.name === 'AbortError') ||
+        raw === 'This operation was aborted' ||
+        raw.includes('aborted')
+      if (aborted) {
+        // Stop / 超时：统一 cancelled，避免再挂 error 文案干扰直播收尾
+        turnCtx.send({ type: 'turn_cancelled', conversationId })
+        turnCtx.send({ type: 'done', conversationId })
+      } else {
+        turnCtx.send({ type: 'error', error: raw, conversationId })
+        turnCtx.send({ type: 'done', conversationId })
+      }
     } finally {
       slot.release()
     }
   }
 
-  const turnPromise = turnChain.then(runTurn)
-  activeTurn = turnPromise
-  turnChain = turnPromise.catch(() => {})
-  await turnPromise
+  // 仅同会话串行；不同会话并行
+  await enqueueTurn(conversationId, runTurn)
 }
 
-/** 中止当前 turn（供 chat:abort 与插队使用），并结束后台 shell */
-export function abortActiveTurn(): void {
-  activeSlot?.abortController.abort()
+/**
+ * 中止 turn（供 chat:abort 与插队使用）。
+ * @param conversationId 若指定：只取消该会话（含 turnChain 排队未开跑）；不匹配则不动当前 activeSlot。
+ *   省略时：全局中止当前 activeSlot（工作区切换等）。
+ * @returns 被请求中止的 conversationId（若有）
+ */
+export function abortActiveTurn(conversationId?: string): string | null {
+  if (conversationId) {
+    cancelledBeforeStart.add(conversationId)
+    const slot = activeSlots.get(chainKey(conversationId))
+    if (slot) {
+      // 只 abort 本会话：shell 经 AbortSignal 自行 killChildTree，
+      // 绝不能 killAllShellChildren，否则会误杀其它并行会话的命令。
+      slot.abortController.abort()
+    }
+    return conversationId
+  }
+  // 全局中止：所有会话（工作区切换等）
+  const ids = [...activeSlots.values()].map((s) => s.conversationId).filter(Boolean) as string[]
+  for (const id of ids) cancelledBeforeStart.add(id)
+  for (const slot of activeSlots.values()) slot.abortController.abort()
   killAllShellChildren()
+  // 兼容旧诊断：返回其中一个正在跑的 id
+  return ids[0] ?? null
+}
+
+/** 当前主进程正在跑的 turn 所属会话（测试 / 诊断；多会话时返回其中一个） */
+export function getActiveTurnConversationId(): string | null {
+  for (const slot of activeSlots.values()) {
+    if (slot.conversationId) return slot.conversationId
+  }
+  return null
+}
+
+/** 测试 / 诊断：是否有任一会话 turn 在跑 */
+export function hasActiveTurn(): boolean {
+  return activeSlots.size > 0
+}
+
+/** 测试用：清空排队取消标记与 chain 状态敏感字段 */
+export function __resetTurnPipelineForTests(): void {
+  cancelledBeforeStart.clear()
+  turnChains.clear()
+  activeSlots.clear()
 }

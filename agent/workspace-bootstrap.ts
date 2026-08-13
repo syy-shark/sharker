@@ -1,6 +1,6 @@
 /**
  * 为 Agent 注入工作区快照（顶层目录、README 摘要、package.json 概要）。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'
@@ -19,7 +19,7 @@ async function listTopLevel(workspace: string): Promise<string[]> {
   } catch {
     return []
   }
-  return lines.sort()
+  return lines.sort((a, b) => a.localeCompare(b))
 }
 
 /** 读取文件前 N 行作为摘要 */
@@ -53,12 +53,25 @@ async function summarizePackageJson(workspace: string): Promise<string | null> {
     }
     if (pkg.dependencies) {
       const deps = Object.keys(pkg.dependencies).slice(0, 10)
-      parts.push(`deps: ${deps.join(', ')}${Object.keys(pkg.dependencies).length > 10 ? '…' : ''}`)
+      parts.push(
+        `deps: ${deps.join(', ')}${Object.keys(pkg.dependencies).length > 10 ? '…' : ''}`
+      )
     }
     return parts.length ? parts.join('\n') : null
   } catch {
     return null
   }
+}
+
+async function readProjectIntro(workspace: string): Promise<string | null> {
+  const candidates = ['README.md', 'README.MD', 'readme.md', 'ARCH.md', 'docs/ARCH.md']
+  for (const rel of candidates) {
+    const text = await readHead(path.join(workspace, rel), 35)
+    if (!text) continue
+    const label = rel.toLowerCase().includes('readme') ? 'README' : rel
+    return `${label} (excerpt):\n${text}`
+  }
+  return null
 }
 
 /** 为 Agent 注入的工作区快照，控制在约 1.5k 字符内 */
@@ -71,8 +84,8 @@ export async function buildWorkspaceBootstrap(workspace: string): Promise<string
     blocks.push(`Top-level:\n${top.join('\n')}`)
   }
 
-  const readme = await readHead(path.join(workspace, 'README.md'), 35)
-  if (readme) blocks.push(`README (excerpt):\n${readme}`)
+  const intro = await readProjectIntro(workspace)
+  if (intro) blocks.push(intro)
 
   const pkg = await summarizePackageJson(workspace)
   if (pkg) blocks.push(`package.json:\n${pkg}`)

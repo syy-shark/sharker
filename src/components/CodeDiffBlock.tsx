@@ -1,6 +1,6 @@
 /**
  * 行级代码 diff 展示：复用紧凑编辑器外壳，供过程流与 Markdown diff 块使用。
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'

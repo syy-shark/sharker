@@ -5,7 +5,6 @@
 import fs from 'fs/promises'
 import os from 'os'
 import {
-  defaultCodexBinaryCandidates,
   defaultCuaDriverBinaryCandidates,
   resolveMcpCatalogTemplate,
   type McpPluginBuildContext
@@ -26,11 +25,10 @@ export interface McpPluginState {
 
 /** 解析可执行路径（首个存在；Windows 不要求 X_OK） */
 async function resolveBinary(candidates: string[], fallback: string): Promise<string> {
-  const mode = process.platform === 'win32' ? fs.constants.F_OK : fs.constants.X_OK
   for (const p of candidates) {
     if (!p) continue
     try {
-      await fs.access(p, mode)
+      await fs.access(p, fs.constants.X_OK)
       return p
     } catch {
       /* next */
@@ -42,14 +40,11 @@ async function resolveBinary(candidates: string[], fallback: string): Promise<st
 /** 构建插件上下文 */
 async function buildContext(workspace: string): Promise<McpPluginBuildContext> {
   const homeDir = os.homedir()
-  const codexCandidates = defaultCodexBinaryCandidates(homeDir)
   const cuaCandidates = defaultCuaDriverBinaryCandidates(homeDir)
-  const resolvedCodex = await resolveBinary(codexCandidates, 'codex-computer-use-linux')
   const resolvedCua = await resolveBinary(cuaCandidates, 'cua-driver')
   return {
     homeDir,
     workspace,
-    codexBinaryCandidates: [resolvedCodex, ...codexCandidates.filter((c) => c !== resolvedCodex)],
     cuaDriverBinaryCandidates: [resolvedCua, ...cuaCandidates.filter((c) => c !== resolvedCua)]
   }
 }

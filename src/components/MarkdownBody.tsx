@@ -1,6 +1,7 @@
 /**
  * 聊天 Markdown 渲染：http(s) 链接在系统浏览器打开，避免在 Electron 窗口内跳转。
- * @see src/README.md
+ * 支持 ```demo 对话原生内联演示（无浏览器外壳）。
+ * @see src/ARCH.md
  */
 import { memo, isValidElement, type ReactNode } from 'react'
 import type { Components } from 'react-markdown'
@@ -10,6 +11,7 @@ import { parseUnifiedDiff } from '../../shared/line-diff'
 import { CodeArtifactBlock } from './CodeArtifactBlock'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { CompareBlock, parseCompareRows } from './CompareBlock'
+import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
@@ -27,8 +29,16 @@ function extractCodeText(children: ReactNode): string {
   return String(children ?? '').replace(/\n$/, '')
 }
 
-/** 尝试渲染 旧/新 对比或显式 diff 块；普通代码块返回 null */
-function trySpecialCodeBlock(text: string, lang?: string): ReactNode | null {
+/** 尝试渲染 演示 / 对比 / diff；普通代码块返回 null */
+function trySpecialCodeBlock(
+  text: string,
+  lang?: string,
+  className?: string
+): ReactNode | null {
+  if (isInlineDemoLang(lang)) {
+    const { caption } = parseDemoMeta(className)
+    return <InlineDemo html={text} caption={caption} />
+  }
   const compareRows = parseCompareRows(text)
   if (compareRows) return <CompareBlock rows={compareRows} />
   if (lang === 'diff') {
@@ -64,9 +74,10 @@ const markdownComponents: Components = {
   },
   code: ({ className, children, ...rest }) => {
     const match = /language-([^\s]+)/.exec(className ?? '')
-    if (match?.[1] === 'diff') {
+    const lang = match?.[1]
+    if (lang === 'diff' || isInlineDemoLang(lang)) {
       const text = extractCodeText(children)
-      const special = trySpecialCodeBlock(text, 'diff')
+      const special = trySpecialCodeBlock(text, lang, className)
       if (special) return special
     }
     return (
@@ -78,9 +89,10 @@ const markdownComponents: Components = {
   pre: ({ children, ...rest }) => {
     if (isValidElement(children)) {
       const childProps = children.props as { className?: string; children?: ReactNode }
-      const lang = /language-([^\s]+)/.exec(childProps.className ?? '')?.[1]
+      const className = childProps.className ?? ''
+      const lang = /language-([^\s]+)/.exec(className)?.[1]
       const text = extractCodeText(childProps.children)
-      const special = trySpecialCodeBlock(text, lang)
+      const special = trySpecialCodeBlock(text, lang, className)
       if (special) return special
       return <CodeArtifactBlock code={text} language={lang} />
     }

@@ -1,6 +1,6 @@
 /**
  * 内置 Tool 注册表：汇总 handler + schema，供 executor 与 agent 消费。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { agentTools } from './builtins/agent'
 import { applyPatchTool } from './builtins/file/apply-patch'
@@ -16,6 +16,7 @@ import { gitTools } from './builtins/git'
 import { listDirTool } from './builtins/list-dir'
 import { movePathTool } from './builtins/move-path'
 import { openUrlTool } from './builtins/open-url'
+import { presentInlineDemoTool } from './builtins/present-inline-demo'
 import { uninstallApplicationTool } from './builtins/uninstall-application'
 import { verifyRemovalTool } from './builtins/verify-removal'
 import { enterPlanModeTool, exitPlanModeTool } from './builtins/mode/plan'
@@ -77,6 +78,7 @@ function getAllToolHandlers(): ToolHandler[] {
     ...taskTools,
     ...webTools,
     openUrlTool,
+    presentInlineDemoTool,
     ...browserTools,
     ...voiceTools,
     ...skillDiscoveryTools,
@@ -198,7 +200,8 @@ export async function executeRegisteredTool(
   name: string,
   args: Record<string, unknown>,
   settings: AppSettings,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onStatus?: (content: string) => void
 ): Promise<ToolRunResult> {
   assertToolAllowed(name, settings)
   if (isMcpDynamicToolName(name)) {
@@ -208,7 +211,7 @@ export async function executeRegisteredTool(
   }
   const tool = TOOL_MAP.get(name)
   if (!tool) throw new Error(`Unknown tool: ${name}`)
-  const ctx: ToolContext = { settings, signal }
+  const ctx: ToolContext = { settings, signal, onStatus }
   return tool.execute(args, ctx)
 }
 

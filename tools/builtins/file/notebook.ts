@@ -1,6 +1,6 @@
 /**
  * read_notebook / edit_notebook：Jupyter .ipynb 读写。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import {

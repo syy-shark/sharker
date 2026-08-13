@@ -1,7 +1,7 @@
 /**
  * 模块化 Tool 的类型契约：Schema、执行、权限钩子。
  * 参考 Claude Code 的 Tool 接口，适配 Sharker OpenAI function calling。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import type { AppSettings, PermissionMode, ToolRunResult } from '../shared/types'
 
@@ -23,6 +23,8 @@ export type OpenAIToolDefinition = {
 export interface ToolContext {
   settings: AppSettings
   signal?: AbortSignal
+  /** 长耗时工具进度文案（写回直播步骤详情，避免 UI 像停住） */
+  onStatus?: (content: string) => void
 }
 
 /** 高危审批评估结果 */

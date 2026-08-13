@@ -1,6 +1,6 @@
 /**
  * 行级 diff 计算与 unified / ```diff 文本解析，供 UI 绿加红删展示。
- * @see shared/README.md
+ * @see shared/ARCH.md
  */
 import type { DiffLineKind, FileDiff, FileDiffLine } from './types'
 

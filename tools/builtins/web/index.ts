@@ -1,6 +1,6 @@
 /**
  * web_fetch / web_search。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { ok } from '../../context'
 import { assertWebAccessAllowed } from '../../network-policy'

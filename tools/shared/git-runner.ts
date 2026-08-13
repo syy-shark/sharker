@@ -1,6 +1,6 @@
 /**
  * Git 子进程执行封装。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { execFile } from 'child_process'
 import { promisify } from 'util'

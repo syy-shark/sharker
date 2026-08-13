@@ -1,6 +1,6 @@
 /**
  * 渲染错误捕获与降级展示
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
@@ -33,22 +33,25 @@ export class ErrorBoundary extends Component<Props, State> {
           style={{
             padding: 32,
             fontFamily: 'system-ui, sans-serif',
-            color: '#18181b'
+            color: 'var(--text, #18181b)',
+            background: 'var(--bg-base, transparent)'
           }}
         >
           <h2 style={{ marginBottom: 12 }}>界面加载出错</h2>
           <pre
             style={{
-              background: '#fef2f2',
+              background: 'var(--danger-soft, #fef2f2)',
+              color: 'var(--danger, #b91c1c)',
               padding: 16,
               borderRadius: 8,
               fontSize: 13,
-              overflow: 'auto'
+              overflow: 'auto',
+              border: '0.5px solid color-mix(in srgb, var(--danger, #ff3b30) 22%, transparent)'
             }}
           >
             {this.state.error.message}
           </pre>
-          <p style={{ marginTop: 16, color: '#71717a', fontSize: 14 }}>
+          <p style={{ marginTop: 16, color: 'var(--text-muted, #71717a)', fontSize: 14 }}>
             请关闭窗口后重新运行 npm run dev
           </p>
         </div>

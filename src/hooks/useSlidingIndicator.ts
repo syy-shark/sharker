@@ -1,6 +1,6 @@
 /**
  * 滑动高亮指示器定位 Hook（侧栏导航、对话列表）
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import {
   useCallback,
@@ -28,6 +28,18 @@ type SlidingIndicatorOptions = {
   enabled?: boolean
 }
 
+const NEAR = 0.5
+
+function sameRect(a: SlideRect, b: Omit<SlideRect, 'ready'> & { ready: boolean }): boolean {
+  return (
+    a.ready === b.ready &&
+    Math.abs(a.top - b.top) < NEAR &&
+    Math.abs(a.left - b.left) < NEAR &&
+    Math.abs(a.width - b.width) < NEAR &&
+    Math.abs(a.height - b.height) < NEAR
+  )
+}
+
 /** 跟踪 activeKey 对应元素位置，供滑动高亮指示器使用 */
 export function useSlidingIndicator(
   activeKey: string,
@@ -45,6 +57,8 @@ export function useSlidingIndicator(
     ready: false
   })
   const rafRef = useRef<number | null>(null)
+  const rectRef = useRef(rect)
+  rectRef.current = rect
 
   const measure = useCallback(() => {
     if (!enabled) return
@@ -56,13 +70,16 @@ export function useSlidingIndicator(
     }
     const c = container.getBoundingClientRect()
     const e = el.getBoundingClientRect()
-    setRect({
+    const next: SlideRect = {
       top: e.top - c.top + container.scrollTop,
       left: e.left - c.left + container.scrollLeft,
       width: e.width,
       height: e.height,
       ready: true
-    })
+    }
+    if (!sameRect(rectRef.current, next)) {
+      setRect(next)
+    }
   }, [activeKey, containerRef, getItemEl, enabled])
 
   const scheduleMeasure = useCallback(() => {

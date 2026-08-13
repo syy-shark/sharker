@@ -1,6 +1,6 @@
 /**
  * 思考与工具步骤时间线 UI
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import type { ProcessStep } from '../../shared/process-steps'
 import './ProcessTimeline.css'
@@ -37,20 +37,6 @@ function StepIcon({ kind, active }: { kind: ProcessStep['kind']; active: boolean
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
-          />
-        </svg>
-      </span>
-    )
-  }
-  if (kind === 'skill') {
-    return (
-      <span className={cls} aria-hidden>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L12 14.8 7.2 16.8l.9-5.3L4.2 7.7l5.4-.8L12 2z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
           />
         </svg>
       </span>

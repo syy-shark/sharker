@@ -1,6 +1,6 @@
 /**
  * 子 Agent 编排：spawn、发消息、取结果。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import { randomUUID } from 'crypto'
 import type { AppSettings, ChatMessage } from '../shared/types'

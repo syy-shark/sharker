@@ -1,6 +1,6 @@
 /**
  * run_terminal_cmd：在工作区执行 shell 命令；rm -rf 后自动验证目标路径。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok, toolCwd } from '../context'
 import { isHighRiskCommand, resolveCommandCwd } from '../permissions'
@@ -29,7 +29,11 @@ export const runTerminalCmdTool: ToolHandler = {
     const command = String(args.command)
     assertShellNetworkAllowed(command, ctx.settings)
     const blockUntilMs = args.block_until_ms != null ? Number(args.block_until_ms) : undefined
-    let output = await runShellCommand(command, cwd, { blockUntilMs, signal: ctx.signal })
+    let output = await runShellCommand(command, cwd, {
+      blockUntilMs,
+      signal: ctx.signal,
+      onStatus: ctx.onStatus
+    })
     if (/\brm\s+/.test(command)) {
       const targets = extractRmTargets(command)
       const verify = await verifyPathsGone(targets)

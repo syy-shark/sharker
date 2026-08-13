@@ -1,6 +1,6 @@
 /**
  * grep：目录内文本搜索。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok } from '../context'
 import { normalizePath } from '../permissions'

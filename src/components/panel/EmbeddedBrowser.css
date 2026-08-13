@@ -1,86 +1,262 @@
+/**
+ * 内置浏览器 — Chrome 式简洁
+ * 单行工具栏 + 全幅网页，无缩放条 / 无蒙层 / 无啰嗦装饰
+ */
+
 .embedded-browser {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 280px;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
-.embedded-browser-bar {
+/* —— 单行工具栏 —— */
+.embedded-browser-toolbar {
   display: flex;
-  gap: 6px;
-  padding-bottom: 8px;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--glass-edge-soft);
+  background: transparent;
+  box-shadow: var(--glass-rim-soft);
+}
+
+.embedded-browser-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.embedded-browser-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.embedded-browser-icon-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-browser-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.embedded-browser-icon-btn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.embedded-browser-spin {
+  animation: ui-spin 0.8s linear infinite;
+}
+
+/* 地址栏：一条 omnibox，Enter 即前往 */
+.embedded-browser-omnibox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-nested);
+  box-shadow: var(--glass-rim-soft);
+  overflow: hidden;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    background var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.embedded-browser-omnibox:focus-within {
+  border-color: var(--accent-ring);
+  background: var(--glass-fill-raised);
+  box-shadow:
+    var(--glass-rim-soft),
+    0 0 0 2px var(--accent-soft);
+}
+
+.embedded-browser-omnibox.is-loading {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.embedded-browser-omnibox-pulse {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0.75;
+  animation: live-soft-pulse 1.2s var(--motion-ease-in-out) infinite;
 }
 
 .embedded-browser-url {
   flex: 1;
   min-width: 0;
-  padding: 6px 10px;
-  border: 1px solid var(--surface-border-faint);
-  border-radius: 8px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  color: var(--text);
-}
-
-.embedded-browser-go {
-  padding: 6px 12px;
+  height: 100%;
+  padding: 0 14px;
   border: none;
-  border-radius: 8px;
-  background: var(--accent, #4a9eff);
-  color: #fff;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.embedded-browser-zoom {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.embedded-browser-zoom-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--surface-border-faint);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.embedded-browser-zoom-label {
-  min-width: 44px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.embedded-browser-zoom-reset {
-  margin-left: auto;
-  padding: 4px 8px;
-  border: 1px solid var(--surface-border-faint);
-  border-radius: 6px;
   background: transparent;
-  font-size: 11px;
-  color: var(--text-muted);
-  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 450;
+  outline: none;
 }
 
-.embedded-browser-zoom-reset:hover {
+.embedded-browser-url::placeholder {
+  color: var(--text-muted);
+}
+
+.embedded-browser-home-btn {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.embedded-browser-home-btn:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-browser-home-btn:active {
+  transform: scale(0.98);
+}
+
+/*
+ * 网页区：Electron <webview> 对 height:100% 支持差，
+ * 必须 absolute 铺满，否则会出现裁切 / 页面「悬空」半截。
+ */
+/* 视口透明：起始页/注入玻璃才能透出面板水滴底 */
+.embedded-browser-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  background: transparent;
+  /* 背后一层与主 UI 同系的淡玻璃盘 */
+  background-image:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, white 18%, transparent) 0%,
+      color-mix(in srgb, white 6%, transparent) 50%,
+      color-mix(in srgb, var(--bg) 88%, white) 100%
+    );
 }
 
 .embedded-browser-view {
-  flex: 1;
-  min-height: 0;
-  border: 1px solid var(--surface-border-faint);
-  border-radius: 8px;
-  background: #fff;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  border: none;
+  background: transparent !important;
+}
+
+.right-panel--fullscreen .embedded-browser-toolbar {
+  padding: 8px 14px;
+  padding-left: 12px;
+}
+
+/* 浅色：与主 UI 玻璃 token 对齐 */
+html.theme-light .embedded-browser-toolbar {
+  border-bottom-color: var(--glass-edge-soft) !important;
+  box-shadow: var(--glass-rim-soft) !important;
+}
+
+html.theme-light .embedded-browser-omnibox {
+  background: var(--glass-fill-nested) !important;
+  border-color: var(--glass-edge) !important;
+  box-shadow: var(--glass-rim-soft) !important;
+}
+
+html.theme-light .embedded-browser-omnibox:focus-within {
+  background: var(--glass-fill-raised) !important;
+}
+
+html.theme-light .embedded-browser-icon-btn:hover:not(:disabled) {
+  background: var(--glass-fill-nested-hover) !important;
+}
+
+html.theme-light .embedded-browser-viewport {
+  background-image:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, white 20%, transparent) 0%,
+      color-mix(in srgb, white 6%, transparent) 55%,
+      rgba(232, 236, 244, 0.1) 100%
+    ) !important;
+  background-color: transparent !important;
+}
+
+html.theme-light .embedded-browser-view {
+  background: transparent !important;
+}
+
+/* 深色 */
+html.theme-dark .embedded-browser-toolbar {
+  background: transparent;
+  border-bottom-color: var(--glass-edge-soft);
+  box-shadow: var(--glass-rim-soft);
+}
+
+html.theme-dark .embedded-browser-omnibox {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border-color: var(--glass-edge-soft);
+}
+
+html.theme-dark .embedded-browser-viewport {
+  background: linear-gradient(180deg, var(--layer-main-fill-top) 0%, var(--layer-main-fill-bottom) 100%) !important;
+}
+
+html.theme-dark .embedded-browser-view {
+  background: transparent !important;
+}
+
+.browser-nav-btn:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .browser-nav-btn,
+  .embedded-browser-omnibox,
+  .embedded-browser-toolbar {
+    transition-duration: 0.01ms !important;
+  }
 }

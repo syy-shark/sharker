@@ -1,6 +1,6 @@
 /**
  * 对话上下文 token 用量粗估。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 import { TOOL_DEFINITIONS } from '../agent/tool-definitions'
 import type { ChatMessage } from './types'

@@ -1,6 +1,6 @@
 /**
  * 设置页通用布局与单选组件
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import type { ReactNode } from 'react'
 import { useCallback, useRef } from 'react'

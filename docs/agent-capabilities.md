@@ -9,7 +9,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
   → executeUserInput（主进程调度）
   → queryServe（占坑 turn_start）
   → processUserInput（斜杠命令 or 进入模型）
-  → onQuery：MCP 动态池刷新 + @file 展开 + 压缩上下文 + system + 工作区快照 + Skills + 历史
+  → onQuery：@file 展开 + 压缩上下文 + system + 工作区快照 + 历史
   → queryLoop：
       模型流式回复
       → 若有 tool_calls：审批 → 执行（只读可并行）→ 结果塞回 messages → 再调模型（默认最多 40 轮）
@@ -65,8 +65,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 工具 | 能做什么 |
 |------|----------|
-| `uninstall_application` | 完整卸载：停进程、pkexec 卸 apt 包、清用户数据、删快捷方式、验证（需审批） |
-| `verify_removal` | 检查目录/apt 包/进程/快捷方式是否仍有残留；Harness 在误用 rm 卸载后会自动调用 |
+| `uninstall_application` | 完整卸载：停进程、brew cask、.app、~/Library 用户数据、验证（需审批） |
+| `verify_removal` | 检查目录/cask/进程/.app 是否仍有残留；Harness 在误用 rm 卸载后会自动调用 |
 
 ### 跑 · 命令
 
@@ -74,9 +74,9 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|----------|
 | `run_terminal_cmd` | bash 执行命令（`rm` 后自动验证路径；cwd 锁在工作区） |
 
-### Git / Skills / Tasks / Sub-agents
+### Git / Tasks / Sub-agents
 
-见 `tools/README.md` 完整列表。
+见 `tools/ARCH.md` 完整列表。
 
 ### Web
 
@@ -84,7 +84,18 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|------|
 | `web_fetch` | HTTP 抓取 + 粗略 HTML→文本 |
 | `web_search` | DuckDuckGo Instant Answer |
-| `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL |
+| `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
+| `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；教学/可视化请用此工具，不要写文件再开浏览器 |
+
+### 内联可视化规范（强制）
+
+完整规范见 **[inline-demo-spec.md](./inline-demo-spec.md)**。摘要：
+
+- 嵌在聊天里，禁止写 html + 开浏览器当「演示」
+- **无**超大空白、文字不溢出卡片、多栏不重叠
+- 步骤按钮必须可点且有效
+- 假终端只包日志块（三色灯由宿主加）；日志连续无空槽
+- 提交历史用紧凑列表，不要空高 graph
 
 ### Browser（Playwright 可选）
 
@@ -94,68 +105,47 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `browser_click` / `browser_type` | 页面交互（需审批） |
 | `browser_screenshot` / `browser_close` | 截图 / 关闭会话 |
 
-用户说「打开网站」「用 Chrome 打开」时应使用 `open_url`；`browser_*` 只用于无头网页检查与自动化。`browser_*` 需 `npm install playwright && npx playwright install chromium`，或使用 MCP `@playwright/mcp`。
+用户说「打开网站」「用 Chrome 打开」时应使用 `open_url`；`browser_*` 只用于无头网页检查与自动化。`browser_*` 需 `npm install playwright && npx playwright install chromium`。
 
-**Codex 扩展路径**（已登录 Chrome 配置）：`codex-chrome-extension-host` + native messaging — `bash scripts/setup-browser-use.sh`。设置 UI：**设置 → Browser Use**。
+可选 Chrome native host：`bash scripts/setup-browser-use.sh`。设置 UI：**设置 → Browser Use**。
 
-### MCP
-
-| 能力 | 说明 |
-|------|------|
-| **动态 Tool 池** | `~/.sharker/mcp.json` 中 Server 的 tools/list 自动并入模型，命名 `mcp_<server>__<tool>` |
-| `mcp_list_tools` / `mcp_call_tool` | 手动列出/调用（兼容旧流程） |
-| 设置 UI | 设置 → MCP Tab 编辑 JSON、测试连接 |
-| Computer Use 设置 UI | **设置 → Computer Use** / **Browser Use** / **Voice** |
-
-配置：工作区 `.sharker/mcp.json` 优先于 `~/.sharker/mcp.json`。示例见 `tools/mcp.example.json`。Codex `codex-computer-use-linux` 需 `"transport": "ndjson"`。
-
-### Computer Use（桌面）
-
-两种路径：
-
-| 路径 | 工具 | 能力 |
-|------|------|------|
-| **(A) 内置** | `desktop_*` | ydotool 虚拟点击/打字/按键/滚动（按键回退）、本地 CLI 截图、wmctrl 列窗口 |
-| **(B) MCP** | `mcp_computer_use__*` | Codex `codex-computer-use-linux`：AT-SPI 树、portal 截图、绝对坐标指针、窗口聚焦、scroll/drag |
+### Computer Use（桌面 · macOS）
 
 | 工具 | 说明 |
 |------|------|
-| `desktop_doctor` | 检查 ydotool、socket、截图、uinput、AT-SPI、MCP 配置 |
-| `desktop_screenshot` | 全屏截图 → `.sharker/desktop/`（无 CLI 时提示走 MCP） |
-| `desktop_list_windows` | wmctrl / hyprctl 列窗口 |
-| `desktop_get_ui_tree` | AT-SPI 占位；指向 MCP `get_app_state` |
-| `desktop_click` / `desktop_type` / `desktop_key` / `desktop_scroll` | ydotool 虚拟输入（需审批） |
+| `desktop_doctor` | 检查 screencapture、cliclick、可选 cua-driver |
+| `desktop_screenshot` | 全屏截图 → `.sharker/desktop/` |
+| `desktop_list_windows` | osascript System Events 列窗口 |
+| `desktop_get_ui_tree` | 窗口列表 + 工作流指引 |
+| `desktop_click` / `desktop_type` / `desktop_key` / `desktop_scroll` | cliclick / osascript（需审批） |
 
-**完整 Codex 级**：编译 `codex-computer-use-linux` 写入 `~/.sharker/mcp.json`（见 `tools/mcp.example.json`）。MCP 工具名形如 `mcp_computer_use__doctor`、`mcp_computer_use__get_app_state`。
+需授权 **辅助功能** 与 **屏幕录制**。可选：`bash scripts/setup-cua-driver.sh`、`brew install cliclick`。
 
 #### 视觉截图回灌
 
-截图类工具（`mcp_computer_use__screenshot`、`get_app_state`、`desktop_screenshot`）执行后，若当前模型**支持视觉**（设置 → 模型 →「视觉」开启或自动识别 gpt-4o 等），Harness 将 PNG 作为多模态 `user` 消息回灌，模型可「看到」屏幕再决定 `click(x,y)` 坐标。
+`desktop_screenshot` 执行后，若当前模型**支持视觉**（设置 → 模型 →「视觉」开启或自动识别 gpt-4o 等），Harness 将 PNG 作为多模态 `user` 消息回灌，模型可「看到」屏幕再决定坐标点击。
 
-#### 微信 / 无 AT-SPI 应用（Linux 实测）
+#### 推荐流程
 
-国产 Linux 微信（`/opt/wechat`，RadiumWMPF/XWeb 内核）**主界面 AT-SPI 树为空**，无法靠 `get_app_state` 树导航。推荐流程：
+1. 确保应用窗口在前台
+2. 截图 → **视觉模型看图**
+3. 坐标 `desktop_click` → 输入 → 再截图核对
+4. 点击/打字需用户在审批块点「允许一次」
 
-1. 若微信在托盘未映射窗口：先 `/usr/bin/wechat` 或手动点开，再 `mcp_computer_use__activate_window`（title 含「微信」）
-2. `mcp_computer_use__screenshot` → **视觉模型看图**
-3. `mcp_computer_use__click` 点搜索框 → `type_text` 群名「先赚1M」→ Enter
-4. 点聊天输入框 → `type_text` 消息 → Enter → 再截图核对
-5. 点击/打字需用户在当前执行轨道的审批块点「允许一次」
+**模型建议**：桌面任务请用支持**原生工具调用 + 视觉**的模型（gpt-4o、Claude 3+、Gemini 等）。
 
-**模型建议**：微信/桌面任务请用支持**原生工具调用 + 视觉**的模型（gpt-4o、Claude 3+、Gemini 等）。轻量纯文本模型（如 step-*-flash）易在正文输出 `<tool_call>` XML 而卡住；Harness 会尝试解析 XML，但视觉与多步稳定性仍依赖强模型。
-
-**文本工具解析**：不支持 function calling 的模型若在正文输出 `<tool_call><function=...>` 或 `{ "tool": "write_file", "arguments": ... }` 这类伪工具调用，Harness 会解析并执行，同时从可见回复里隐藏该参数块；若参数被包在 markdown JSON 代码围栏里，也会连同围栏一起隐藏（含无参 MCP 工具如 `get_app_state`）。
+**文本工具解析**：不支持 function calling 的模型若在正文输出伪工具调用，Harness 会解析并执行，同时从可见回复里隐藏该参数块。
 
 ### Voice（TTS MVP）
 
 | 工具 | 说明 |
 |------|------|
-| `voice_read_aloud` | spd-say / espeak-ng 朗读 |
+| `voice_read_aloud` | macOS `say` 朗读 |
 | `voice_stop` | 停止朗读 |
 
-完整 Kokoro TTS：配置 `codex-read-aloud-linux` MCP（Codex read-aloud-linux 特性）。
+可选 Kokoro TTS：`bash scripts/install-kokoro-runtime.sh`。
 
-设置 UI：**设置 → Voice**；安装见 `docs/computer-use-setup.md`、`bash scripts/install-kokoro-runtime.sh`。
+设置 UI：**设置 → Voice**；安装见 `docs/computer-use-setup.md`。
 
 ---
 
@@ -163,7 +153,6 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 策略 | 作用 |
 |------|------|
-| MCP 动态池 | 每轮 query 前 tools/list 合并进 tool definitions |
 | @file 注入 | 用户 @path 自动附文件内容 |
 | 并行只读 | 同轮多个只读 tool_calls 用 Promise.all |
 | 视觉截图回灌 | 截图工具后向视觉模型注入 PNG（需 Provider 开启视觉） |
@@ -185,24 +174,20 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Plan 模式 | **done** | enter_plan_mode + PlanBuildBar |
 | @file 引用 | **done** | `@path` 注入 |
 | 并行只读工具 | **done** | query-loop Promise.all |
-| MCP stdio 客户端 | **done** | mcp-client.ts |
-| MCP 动态 Tool 池 | **done** | mcp-tool-pool.ts |
-| MCP 设置 UI | **done** | 设置 → MCP |
-| Computer Use 设置 UI | **done** | 设置 → Computer Use（环境检查 + MCP 状态） |
-| Browser Use 插件 | **partial** | builtin browser_* + MCP @playwright/mcp；无 Chrome 扩展 + node_repl |
-| Computer Use Windows | **partial** | Cua Driver MCP（UIA 后台）；设置 → Computer Use 安装检测 |
-| Computer Use Linux | **partial** | Cua Driver MCP + ydotool `desktop_*` 回退 |
+| Computer Use 设置 UI | **done** | 设置 → Computer Use（环境检查） |
+| Browser Use | **partial** | builtin browser_*（Playwright）；可选 native host |
+| Computer Use macOS | **partial** | screencapture/cliclick `desktop_*` |
 | 视觉截图回灌 | **done** | agent/vision-feedback.ts + Provider vision 开关 |
-| AT-SPI 窗口树 | **partial** | `desktop_get_ui_tree` 占位 + MCP `get_app_state` |
-| Agent Workspace 隔离 | **partial** | networkMode MVP；无 GPUI viewer / 独立 profile VM |
-| Voice STT/TTS | **partial** | voice_* 本地 TTS；无 conversation-mode STT 循环 |
-| Read Aloud MCP | **deferred** | 配置模板在 mcp.example.json；需编译 read-aloud-linux |
-| Chrome 扩展 + native host | **deferred** | 需 codex-chrome-extension-host + 上游插件 |
+| Accessibility 窗口树 | **partial** | `desktop_get_ui_tree` / `desktop_list_windows` |
+| Agent Workspace 隔离 | **partial** | networkMode MVP |
+| Voice STT/TTS | **partial** | voice_* 本地 say；无 conversation-mode STT 循环 |
+| Read Aloud / Kokoro | **deferred** | 可选 install-kokoro-runtime.sh |
+| Chrome 扩展 + native host | **deferred** | 可选 scripts/setup-browser-use.sh |
 | Remote Control / Mobile | **deferred** | 需 Secure Enclave 替代 + app-server 守护 |
 | 编辑快照/撤销 | **missing** | 路线图 |
 | `.sharker/AGENTS.md` | **missing** | 路线图 |
 
-**Sharker 优势**：Harness 源码可控、自定义 API、git worktree、sub-agents、plan 模式、本地 Skills。
+**Sharker 优势**：Harness 源码可控、自定义 API、git worktree、sub-agents、plan 模式。
 
 ---
 
@@ -210,15 +195,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 用途 | 包/二进制 |
 |------|-----------|
-| **Windows 桌面自动化（推荐）** | [Cua Driver](https://github.com/trycua/cua) — `irm …/cua-driver/scripts/install.ps1 \| iex` |
-| Linux 桌面虚拟输入（回退） | `ydotool` + `ydotoold` |
-| 截图（Linux 回退） | `grim` / `scrot` / `gnome-screenshot` |
-| 窗口列表（Linux 回退） | `wmctrl` 或 Hyprland `hyprctl` |
-| Codex Computer Use（备选） | 自编译 `codex-computer-use-linux`（Rust） |
-| 浏览器自动化 | `npm install playwright` + `npx playwright install chromium`，或 MCP `@playwright/mcp` |
-| TTS（本地） | `speech-dispatcher` / `espeak-ng` |
-| TTS（高质量） | `codex-read-aloud-linux` + Kokoro 模型 |
-| MCP filesystem 示例 | `npx @modelcontextprotocol/server-filesystem` |
+| 截图 | macOS `screencapture` |
+| 坐标输入（可选） | `brew install cliclick` |
+| 浏览器自动化 | `npm install playwright` + `npx playwright install chromium` |
+| TTS（本地） | macOS `say` |
+| TTS（高质量） | Kokoro — `bash scripts/install-kokoro-runtime.sh` |
 
 ---
 
@@ -226,8 +207,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 1. **工作区选对**：写代码指到仓库根；整理桌面指到桌面或子文件夹。
 2. **权限**：默认 sandbox + open 网络；敏感环境可 Closed 网络。
-3. **MCP**：设置 → MCP 粘贴 `tools/mcp.example.json`，改 computer-use 路径，点测试连接。
-4. **Computer Use**：设置 → Computer Use 查看环境与模型建议；微信任务需视觉模型 + MCP computer-use。
-5. **说清楚目标**：「修 X 文件的 Y bug」比「看看」更省轮次。
-6. **卸载软件**：说「删掉 Steam / 卸载 XX」时 Harness 会注入提示并优先走 `uninstall_application`；误用 `rm -rf` 时会自动跑 `verify_removal`，且删除后工具输出会标注 STILL EXISTS。
-7. **提交/推送**：口头说清楚，否则会拦。
+3. **Computer Use**：设置 → Computer Use 查看环境；桌面任务需视觉模型。
+4. **说清楚目标**：「修 X 文件的 Y bug」比「看看」更省轮次。
+5. **卸载软件**：说「删掉 Steam / 卸载 XX」时 Harness 会注入提示并优先走 `uninstall_application`；误用 `rm -rf` 时会自动跑 `verify_removal`，且删除后工具输出会标注 STILL EXISTS。
+6. **提交/推送**：口头说清楚，否则会拦。

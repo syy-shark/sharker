@@ -1,6 +1,6 @@
 /**
  * write_file：创建或覆盖文件。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

@@ -1,6 +1,6 @@
 /**
  * Harness 运行时状态：计划模式、Build 阶段、Worktree 路径覆盖。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 export type HarnessPhase = 'normal' | 'plan' | 'build'
 

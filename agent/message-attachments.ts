@@ -1,6 +1,6 @@
 /**
  * 用户消息附件 → OpenAI 兼容多模态 content。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import fs from 'fs/promises'
 import type { ChatAttachment, ChatMessage } from '../shared/types'

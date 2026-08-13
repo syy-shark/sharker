@@ -16,7 +16,6 @@
     "shared/**/*",
     "agent/**/*",
     "tools/**/*",
-    "skills/**/*",
     "providers/**/*"
   ]
 }

@@ -2,10 +2,16 @@
   margin: 10px 0;
   padding: 12px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-crystal-dim);
-  background: rgba(255, 255, 255, 0.5);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-raised);
+  box-shadow: var(--glass-rim-soft);
   font-size: 12px;
   line-height: 1.5;
+  animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
+}
+
+html.theme-dark .compare-block {
+  background: var(--glass-fill-raised);
 }
 
 .compare-block-row {
@@ -40,4 +46,14 @@
 .message-body--assistant .compare-block-body {
   background: none;
   padding: 0;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .compare-block,
+  .compare-block * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

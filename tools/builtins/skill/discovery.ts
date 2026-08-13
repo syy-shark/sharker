@@ -1,6 +1,6 @@
 /**
  * Skill 发现：list_skills / read_skill。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

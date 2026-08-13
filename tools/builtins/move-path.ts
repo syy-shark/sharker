@@ -1,6 +1,6 @@
 /**
  * move_path：移动或重命名文件/目录。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

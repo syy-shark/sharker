@@ -1,6 +1,6 @@
 /**
  * Query 核心循环：流式问模型 → 工具调用 → 审批 → 自动验证，直至纯文本结束。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import { randomUUID } from 'crypto'
 import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../shared/types'
@@ -10,7 +10,6 @@ import { streamChat, type ChatCompletionMessage } from '../providers/openai'
 import { executeToolWithMeta } from '../tools/executor'
 import { needsPathApproval } from '../tools/permissions'
 import { assertToolAllowed, getToolDefinitionsForPhase, isHighRiskTool } from '../tools/registry'
-import { isMcpDynamicToolName, resolveMcpDynamicTool } from '../tools/services/mcp-tool-pool'
 import { getHarnessPhase, enterPlanMode, finishBuildMode } from '../tools/harness-state'
 import { pickVerifyCommand, shouldSkipAutoVerify } from './verify'
 import { parseTextToolCalls, stripPartialToolXmlForDisplay, stripTextToolCalls, TEXT_TOOL_EXECUTED_HINT } from './text-tool-fallback'
@@ -21,20 +20,82 @@ import {
   providerSupportsVision
 } from './vision-feedback'
 import type { ApprovalHandler } from './loop'
+import {
+  isApprovalGranted,
+  normalizeApprovalDecision,
+  resolveSessionGrant,
+  type SessionApprovalStore
+} from '../shared/approval-session'
 
 /** 默认工具循环上限（读/改/跑命令累加，多文件项目生成需要更长续跑空间） */
 const DEFAULT_MAX_ITERATIONS = 40
 
-function summarizeToolOutput(output: string): string | undefined {
-  const first = output.split(/\r?\n/).map((line) => line.trim()).find(Boolean)
-  if (!first) return undefined
-  return first.length > 120 ? `${first.slice(0, 117)}...` : first
+function summarizeToolOutput(output: string, toolName?: string): string | undefined {
+  const lines = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+  if (!lines.length) return undefined
+
+  // 文件读取：用“行数/路径感”摘要，不要把 L1 源码原文塞进直播步骤
+  if (toolName === 'read_file') {
+    const numbered = lines.filter((line) => /^L\d+:\s/.test(line)).length
+    if (numbered > 0) return `读取 ${numbered} 行`
+    return `读取 ${lines.length} 行`
+  }
+
+  // 跳过 JSON/代码起始行这类噪音，优先找自然语言或命令结果
+  const preferred =
+    lines.find((line) => !/^(L\d+:|[{}\[\]|]|```|diff --git|index |@@)/.test(line)) || lines[0]
+  return preferred.length > 120 ? `${preferred.slice(0, 117)}...` : preferred
 }
 
 function expandableToolOutput(output: string): string | undefined {
   const trimmed = output.trim()
   if (!trimmed) return undefined
   return trimmed.length > 4000 ? `${trimmed.slice(0, 4000)}\n...（输出已截断）` : trimmed
+}
+
+/** 从助手正文（含伪工具 JSON / demo 围栏）抠出正在生成的 html */
+function extractDemoHtmlFromAssistantText(text: string): string | undefined {
+  // ```demo ... 未闭合
+  const fence = text.match(
+    /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)[^\n]*\n([\s\S]*)$/i
+  )
+  if (fence?.[1] != null && !/```/.test(fence[1])) {
+    const body = fence[1].trim()
+    if (body.length >= 24) return body
+  }
+  // "html": "...." 未闭合 JSON 字段
+  const marker = '"html"'
+  const keyAt = text.lastIndexOf(marker)
+  if (keyAt < 0) return undefined
+  let i = keyAt + marker.length
+  while (i < text.length && /\s/.test(text[i]!)) i++
+  if (text[i] !== ':') return undefined
+  i++
+  while (i < text.length && /\s/.test(text[i]!)) i++
+  if (text[i] !== '"') return undefined
+  i++
+  let raw = ''
+  while (i < text.length) {
+    const c = text[i]!
+    if (c === '\\') {
+      if (i + 1 >= text.length) break
+      const n = text[i + 1]!
+      if (n === 'n') raw += '\n'
+      else if (n === 't') raw += '\t'
+      else if (n === 'r') raw += '\r'
+      else if (n === '"' || n === '\\' || n === '/') raw += n
+      else raw += n
+      i += 2
+      continue
+    }
+    if (c === '"') break
+    raw += c
+    i++
+  }
+  return raw.length >= 24 ? raw : undefined
 }
 
 /** 桌面自动化任务关键词（用于中途续跑） */
@@ -54,15 +115,7 @@ function hadComputerUseToolsInTurn(messages: ChatCompletionMessage[]): boolean {
       break
     }
     if (m.role === 'assistant' && m.tool_calls?.length) {
-      return m.tool_calls.some((tc) => {
-        const n = tc.function.name
-        return (
-          n.startsWith('desktop_') ||
-          n.startsWith('mcp_cua_driver__') ||
-          n.startsWith('mcp_computer_use__') ||
-          n.includes('computer_use')
-        )
-      })
+      return m.tool_calls.some((tc) => tc.function.name.startsWith('desktop_'))
     }
   }
   return false
@@ -210,7 +263,6 @@ const PARALLEL_READ_TOOLS = new Set([
   'git_show',
   'web_fetch',
   'web_search',
-  'mcp_list_tools',
   'desktop_doctor',
   'desktop_screenshot',
   'desktop_list_windows',
@@ -221,18 +273,12 @@ const PARALLEL_READ_TOOLS = new Set([
   'task_get',
   'task_output',
   'agent_list',
-  'agent_get_result',
-  'list_skills',
-  'read_skill'
+  'agent_get_result'
 ])
 
 /** 判断工具是否可与其他只读工具并行 */
 function canParallelizeTool(name: string): boolean {
-  if (PARALLEL_READ_TOOLS.has(name)) return true
-  if (isMcpDynamicToolName(name)) {
-    return resolveMcpDynamicTool(name)?.readOnly === true
-  }
-  return false
+  return PARALLEL_READ_TOOLS.has(name)
 }
 
 /** queryLoop 可选参数 */
@@ -240,6 +286,10 @@ export interface QueryLoopOptions {
   userText: string
   history: ChatMessage[]
   maxIterations?: number
+  /** 会话级「允许本会话」授权表；与 conversation 绑定由调用方注入 */
+  sessionApprovals?: SessionApprovalStore
+  /** 流式 chunk 归属会话（多会话隔离） */
+  conversationId?: string
 }
 
 /** 判断工具是否修改了文件内容 */
@@ -256,6 +306,54 @@ function isEditTool(name: string): boolean {
  * Agent 核心干活循环：模型流式回复 → tool_calls → 审批 → 执行 → 再问，直至无工具或达上限。
  * @param messages 已含 system 与历史的完整消息列表
  */
+
+/** 执行工具并在等待期间刷出 onStatus 进度，避免直播过程长时间静止 */
+async function* runToolWithLiveStatus(
+  toolName: string,
+  args: Record<string, unknown>,
+  settings: Parameters<typeof executeToolWithMeta>[2],
+  signal: AbortSignal | undefined,
+  conversationId?: string
+): AsyncGenerator<StreamChunk, Awaited<ReturnType<typeof executeToolWithMeta>>> {
+  const pending: string[] = []
+  let last = ''
+  const job = executeToolWithMeta(toolName, args, settings, signal, (content) => {
+    const clean = (content || '').trim()
+    if (!clean || clean === last) return
+    last = clean
+    pending.push(clean)
+  })
+  // 挂上 catch 避免未处理 rejection；结果仍由 await job 获取
+  void job.catch(() => {})
+  while (true) {
+    while (pending.length) {
+      const content = pending.shift()!
+      yield {
+        type: 'status',
+        content,
+        toolName,
+        conversationId
+      }
+    }
+    const done = await Promise.race([
+      job.then(() => true),
+      new Promise<false>((r) => setTimeout(() => r(false), 120))
+    ])
+    if (done) break
+  }
+  while (pending.length) {
+    const content = pending.shift()!
+    yield {
+      type: 'status',
+      content,
+      toolName,
+      conversationId
+    }
+  }
+  return await job
+}
+
+
 export async function* queryLoop(
   settings: AppSettings,
   messages: ChatCompletionMessage[],
@@ -264,7 +362,13 @@ export async function* queryLoop(
   opts: QueryLoopOptions
 ): AsyncGenerator<StreamChunk> {
   const workspace = getActiveWorkspacePath(settings)
-  const { userText, history, maxIterations = DEFAULT_MAX_ITERATIONS } = opts
+  const {
+    userText,
+    history,
+    maxIterations = DEFAULT_MAX_ITERATIONS,
+    sessionApprovals,
+    conversationId
+  } = opts
   let iterations = 0
   let verifyDoneForTurn = false
   let warnedNearLimit = false
@@ -291,7 +395,7 @@ export async function* queryLoop(
       role: 'user',
       content:
         `[系统提示] 用户要求卸载「${uninstallKeyword}」。` +
-        '必须调用 uninstall_application 工具（停进程、pkexec 卸 apt 包、清用户数据、验证）。' +
+        '必须调用 uninstall_application 工具（停进程、brew cask、.app、~/Library 用户数据、验证）。' +
         '不要仅用 rm -rf 删目录。'
     })
   }
@@ -321,6 +425,7 @@ export async function* queryLoop(
 
     const preferTools = resumeLikely || needsToolCalling(userText, history)
     const toolDefs = getToolDefinitionsForPhase(undefined, settings)
+    let lastTextDemoLen = 0
     for await (const chunk of streamChat(settings, messages, signal, {
       preferTools,
       toolDefinitions: toolDefs
@@ -336,12 +441,34 @@ export async function* queryLoop(
         if (displayDelta) {
           yield { type: 'token', content: displayDelta }
         }
+        // 弱模型把工具 JSON / ```demo 打在正文里：边写边预览
+        const fromText = extractDemoHtmlFromAssistantText(assistantText)
+        if (fromText && fromText.length - lastTextDemoLen >= 40) {
+          lastTextDemoLen = fromText.length
+          yield {
+            type: 'tool_preview',
+            toolName: 'present_inline_demo',
+            content: fromText
+          }
+        }
       }
       if (chunk.type === 'tool_status' && chunk.content) {
         yield {
           type: 'status',
           content: chunk.content,
           toolName: chunk.toolStatus?.toolName
+        }
+        // 原生 tool_calls：参数尚在拼接就预览（html 可为空先占位）
+        if (chunk.toolStatus?.toolName === 'present_inline_demo') {
+          yield {
+            type: 'tool_preview',
+            toolName: 'present_inline_demo',
+            toolCallId: chunk.toolStatus.toolCallId,
+            content: chunk.toolStatus.partialHtml ?? '',
+            toolArgs: chunk.toolStatus.partialCaption
+              ? { caption: chunk.toolStatus.partialCaption }
+              : undefined
+          }
         }
       }
       if (chunk.type === 'tool_calls' && chunk.toolCalls) {
@@ -372,14 +499,23 @@ export async function* queryLoop(
         const verifyCallId = randomUUID()
         yield { type: 'tool_start', toolName: 'verify_removal', toolArgs: verifyArgs, toolCallId: verifyCallId, isVerification: true }
         try {
-          const result = await executeToolWithMeta('verify_removal', verifyArgs, settings, signal)
+          const toolRun = runToolWithLiveStatus('verify_removal', verifyArgs, settings, signal, conversationId)
+          let result: Awaited<ReturnType<typeof executeToolWithMeta>>
+          while (true) {
+            const step = await toolRun.next()
+            if (step.done) {
+              result = step.value
+              break
+            }
+            yield step.value
+          }
           messages.push({
             role: 'user',
             content: `[Harness 自动验证]\n${result.output}`
           })
           yield {
             type: 'tool_done', toolName: 'verify_removal', toolCallId: verifyCallId,
-            isVerification: true, resultSummary: summarizeToolOutput(result.output),
+            isVerification: true, resultSummary: summarizeToolOutput(result.output, 'verify_removal'),
             resultOutput: expandableToolOutput(result.output)
           }
         } catch (e) {
@@ -462,8 +598,8 @@ export async function* queryLoop(
         messages.push({
           role: 'user',
           content:
-            '[系统提示] 桌面任务尚未完成。请继续调用 Cua Driver / Computer Use 工具：优先 mcp_cua_driver__get_window_state，' +
-            '再 click / type_text / scroll，直到用户请求做完。若 background_unavailable 可改用 dispatch foreground。' +
+            '[系统提示] 桌面任务尚未完成。请继续调用 Computer Use 工具：desktop_screenshot / desktop_list_windows，' +
+            '再 desktop_click / desktop_type / desktop_scroll，直到用户请求做完。' +
             '不要只描述计划。点击/打字会弹出审批，用户点「允许」后继续。'
         })
         continue
@@ -562,7 +698,7 @@ export async function* queryLoop(
           toolCallId: tc.id,
           fileDiff: result.fileDiff,
           fileDiffs: result.fileDiffs,
-          resultSummary: summarizeToolOutput(result.output),
+          resultSummary: summarizeToolOutput(result.output, tc.function.name),
           resultOutput: expandableToolOutput(result.output),
           exitCode: result.exitCode,
           toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
@@ -604,24 +740,66 @@ export async function* queryLoop(
             title: pathErr ? '路径访问确认' : '高危操作确认',
             description: pathErr ?? risk.reason,
             toolName,
-            args
+            args,
+            conversationId
           }
-          yield { type: 'approval_needed', approval: req }
-          const approved = await onApproval(req)
-          yield { type: 'approval_resolved', toolName, toolCallId: tc.id, approved }
+          // 已「允许本会话」则跳过 UI，仍走真实授权表（非 UI 标签）
+          const auto = sessionApprovals
+            ? resolveSessionGrant(sessionApprovals, toolName, args)
+            : null
+          let approved: boolean
+          if (auto != null) {
+            approved = isApprovalGranted(auto)
+            yield {
+              type: 'approval_resolved',
+              toolName,
+              toolCallId: tc.id,
+              approved,
+              conversationId
+            }
+          } else {
+            yield { type: 'approval_needed', approval: req, conversationId }
+            const decision = normalizeApprovalDecision(await onApproval(req))
+            approved = sessionApprovals
+              ? sessionApprovals.applyDecision(decision, toolName, args)
+              : isApprovalGranted(decision)
+            yield {
+              type: 'approval_resolved',
+              toolName,
+              toolCallId: tc.id,
+              approved,
+              conversationId
+            }
+          }
           if (!approved) {
             messages.push({
               role: 'tool',
               tool_call_id: tc.id,
               content: `User denied: ${req.description}`
             })
-            yield { type: 'tool_done', toolName, toolCallId: tc.id, toolStatus: 'error', error: '用户拒绝了此操作' }
+            yield {
+              type: 'tool_done',
+              toolName,
+              toolCallId: tc.id,
+              toolStatus: 'error',
+              error: '用户拒绝了此操作',
+              conversationId
+            }
             continue
           }
         }
 
         try {
-          const result = await executeToolWithMeta(toolName, args, settings, signal)
+          const toolRun = runToolWithLiveStatus(toolName, args, settings, signal, conversationId)
+          let result: Awaited<ReturnType<typeof executeToolWithMeta>>
+          while (true) {
+            const step = await toolRun.next()
+            if (step.done) {
+              result = step.value
+              break
+            }
+            yield step.value
+          }
           messages.push({ role: 'tool', tool_call_id: tc.id, content: result.output })
           collectScreenshotPath(toolName, result.output)
           if (isEditTool(toolName)) editedThisIteration = true
@@ -639,7 +817,7 @@ export async function* queryLoop(
             toolCallId: tc.id,
             fileDiff: result.fileDiff,
             fileDiffs: result.fileDiffs,
-            resultSummary: summarizeToolOutput(result.output),
+            resultSummary: summarizeToolOutput(result.output, toolName),
             resultOutput: expandableToolOutput(result.output),
             exitCode: result.exitCode,
             toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
@@ -656,6 +834,13 @@ export async function* queryLoop(
           return
         }
       }
+    }
+
+    // 工具批次结束、等待模型下一步时给出明确直播状态，避免过程区“像停住”
+    yield {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      conversationId
     }
 
     if (parsedToolsFromText) {
@@ -681,14 +866,23 @@ export async function* queryLoop(
         const verifyCallId = randomUUID()
         yield { type: 'tool_start', toolName: 'run_terminal_cmd', toolArgs: verifyArgs, toolCallId: verifyCallId, isVerification: true }
         try {
-          const result = await executeToolWithMeta('run_terminal_cmd', verifyArgs, settings, signal)
+          const toolRun = runToolWithLiveStatus('run_terminal_cmd', verifyArgs, settings, signal, conversationId)
+          let result: Awaited<ReturnType<typeof executeToolWithMeta>>
+          while (true) {
+            const step = await toolRun.next()
+            if (step.done) {
+              result = step.value
+              break
+            }
+            yield step.value
+          }
           messages.push({
             role: 'user',
             content: `[自动验证] 已运行 \`${cmd}\`：\n${result.output}`
           })
           yield {
             type: 'tool_done', toolName: 'run_terminal_cmd', toolCallId: verifyCallId,
-            isVerification: true, resultSummary: summarizeToolOutput(result.output),
+            isVerification: true, resultSummary: summarizeToolOutput(result.output, 'run_terminal_cmd'),
             resultOutput: expandableToolOutput(result.output), exitCode: result.exitCode,
             toolStatus: result.exitCode != null && result.exitCode !== 0 ? 'error' : 'done',
             error: result.exitCode != null && result.exitCode !== 0 ? `验证命令退出码 ${result.exitCode}` : undefined

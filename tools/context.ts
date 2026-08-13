@@ -1,6 +1,6 @@
 /**
  * 工具执行共享上下文：路径校验、cwd 解析、结果包装。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import type { ToolRunResult } from '../shared/types'
 import { getActiveWorkspacePath } from '../shared/workspace'

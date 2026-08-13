@@ -1,6 +1,6 @@
 /**
  * 对话模型、标题推导与侧栏排序。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 import type { ChatMessage } from './types'
 
@@ -12,6 +12,9 @@ export const DEFAULT_CONVERSATION_TITLE = '新对话'
 /** 旧版误把「AI总结」当作对话标题落盘时的标记 */
 const LEGACY_TITLE_AS_NOUN = 'AI总结'
 
+/** 对话状态：active 主列表；archived 设置 → 已归档 */
+export type ConversationStatus = 'active' | 'archived'
+
 /** 完整对话（含消息列表） */
 export interface Conversation {
   id: string
@@ -21,6 +24,7 @@ export interface Conversation {
   messages: ChatMessage[]
   createdAt: number
   updatedAt: number
+  status?: ConversationStatus
 }
 
 /** 侧栏展示的对话摘要（无消息体） */
@@ -32,6 +36,9 @@ export interface ConversationSummary {
   createdAt: number
   updatedAt: number
   messageCount: number
+  status?: ConversationStatus
+  /** 归档列表展示用工作区名 */
+  workspaceLabel?: string
 }
 
 /** 侧栏顺序：上面是老对话，下面是新对话 */
@@ -88,6 +95,7 @@ export function toConversationSummary(c: Conversation): ConversationSummary {
     customTitle: c.customTitle,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
-    messageCount: c.messages.length
+    messageCount: c.messages.length,
+    status: c.status ?? 'active'
   }
 }

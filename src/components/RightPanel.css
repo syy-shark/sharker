@@ -1,21 +1,83 @@
+/**
+ * 右侧面板动效：固定宽度 + translate3d 滑入（避免 width 动画触发布局重排）。
+ * 60Hz 下优先 GPU 合成；动画期间关掉 backdrop-filter 减负。
+ */
+
 .right-panel {
+  --right-panel-w: 320px;
+  /* iOS / 系统侧栏感：快起步、末端软着陆，60Hz 帧间更顺 */
+  --right-panel-ease: var(--motion-ease-spring);
+  --right-panel-duration: var(--motion-duration-slow);
+
   position: relative;
   z-index: 35;
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
-  width: 0;
+  width: var(--right-panel-w);
+  min-width: var(--right-panel-w);
+  max-width: var(--right-panel-w);
+  flex: 0 0 var(--right-panel-w);
   min-height: 0;
+  margin-right: calc(-1 * var(--right-panel-w));
   overflow: hidden;
-  border-left: 1px solid transparent;
-  background: #f8f9fb;
-  transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease;
+  isolation: isolate;
+  border-left: 0.5px solid transparent;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-inset-sidebar);
+  /* 合成层：滑入用 transform，占位用 margin（比 width 动画更少重绘内容） */
+  transform: translate3d(100%, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: layout style;
+  pointer-events: none;
+  transition:
+    transform var(--right-panel-duration) var(--right-panel-ease),
+    margin-right var(--right-panel-duration) var(--right-panel-ease),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft);
+  will-change: transform, margin-right;
 }
 
-.right-panel--open { border-left-color: var(--border); }
-.right-panel--resizing { transition: none; }
+.right-panel--open {
+  margin-right: 0;
+  border-left-color: var(--glass-edge-soft);
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
 
-.right-panel-backdrop { display: none; }
+/* 动画中：去掉重模糊，只保留半透明底，显著降低 60Hz 掉帧 */
+.right-panel--animating {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.right-panel--animating .right-panel-head {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.right-panel--resizing {
+  transition: none !important;
+  will-change: auto;
+}
+
+/* 默认不占位；JS 仅在 compact 打开时挂载该节点 */
+.right-panel-backdrop {
+  /* 遮罩是 panel 兄弟节点，不能依赖 .right-panel 上的 --right-panel-* 变量 */
+  --right-panel-duration: var(--motion-duration-slow);
+  --right-panel-ease: var(--motion-ease-spring);
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  display: block;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  animation: panel-backdrop-in var(--right-panel-duration) var(--right-panel-ease) forwards;
+}
 
 .right-panel-resize-handle {
   position: absolute;
@@ -25,6 +87,7 @@
   z-index: 30;
   width: 6px;
   cursor: col-resize;
+  touch-action: none;
 }
 
 .right-panel-resize-handle::after {
@@ -35,10 +98,13 @@
   width: 1px;
   content: '';
   background: transparent;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .right-panel-resize-handle:hover::after,
-.right-panel--resizing .right-panel-resize-handle::after { background: var(--accent); }
+.right-panel--resizing .right-panel-resize-handle::after {
+  background: var(--accent);
+}
 
 .right-panel-head {
   display: flex;
@@ -48,24 +114,68 @@
   gap: 8px;
   min-height: 48px;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  background: #fff;
+  /* 与侧栏顶栏同款：极薄玻璃，不吃实色灰白 */
+  border-bottom: 0.5px solid var(--glass-edge-soft);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--glass-rim-soft);
+  overflow: hidden;
+  isolation: isolate;
+  position: relative;
+  z-index: 5;
 }
 
-.right-panel-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; }
-.right-panel-head-actions { display: flex; align-items: center; gap: 4px; }
+.right-panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.right-panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .right-panel-tab {
   height: 30px;
-  padding: 0 10px;
+  padding: 0 12px;
   color: var(--text-muted);
   font-size: 12px;
-  border-radius: 6px;
-  transition: color 120ms ease, background-color 120ms ease;
+  border-radius: var(--radius-pill);
+  border: 0.5px solid transparent;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
-.right-panel-tab:hover { color: var(--text); background: var(--bg-muted); }
-.right-panel-tab.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.right-panel-tab:hover {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.right-panel-tab:active {
+  transform: scale(0.98);
+}
+
+.right-panel-tab:focus-visible,
+.right-panel-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+
+.right-panel-tab.active {
+  color: var(--accent);
+  background: var(--glass-fill-raised);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim-soft);
+  font-weight: 600;
+}
 
 .right-panel-icon-btn {
   display: inline-flex;
@@ -74,56 +184,308 @@
   width: 28px;
   height: 28px;
   color: var(--text-secondary);
-  border-radius: 6px;
-  transition: color 120ms ease, background-color 120ms ease;
+  border-radius: 50%;
+  border: 0.5px solid transparent;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
-.right-panel-icon-btn:hover { color: var(--accent); background: var(--accent-soft); }
-.right-panel-body { flex: 1; min-height: 0; padding: 8px; overflow: auto; }
-.right-panel-return-bar { display: none; }
+.right-panel-icon-btn:hover {
+  color: var(--accent);
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+}
 
+.right-panel-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.right-panel-body {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  /* 透明，让面板本身玻璃透出 */
+  background: transparent;
+  /* 滚动与侧栏动画解耦，减少合成抖动 */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 浏览器：整列 flex 链打通，webview 才能拿到确定高度 */
+.right-panel-body:has(.embedded-browser) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.right-panel-body:has(.embedded-browser) > .embedded-browser {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.right-panel-return-bar {
+  display: none;
+}
+
+/*
+ * 全屏：下层侧栏/主区已 visibility:hidden，壳层可走与左侧相同的水滴玻璃，
+ * 不必再铺实色灰白。
+ */
 .right-panel--fullscreen {
   position: fixed;
-  inset: 42px 0 0;
+  inset: 0;
   z-index: 9000;
   width: 100vw !important;
-  max-width: none;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+  margin-right: 0 !important;
+  transform: none !important;
   border-left: none;
-  background: #f8f9fb;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: auto;
+  will-change: auto;
+  transition: none;
+  isolation: isolate;
+  overflow: hidden;
 }
 
-body.right-panel-resizing { cursor: col-resize; user-select: none; }
+.right-panel--fullscreen .right-panel-return-bar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: var(--chrome-top, 52px);
+  padding: 0 16px;
+  padding-left: 78px;
+  border-bottom: 0.5px solid var(--glass-edge-soft);
+  background: transparent;
+  box-shadow: var(--glass-rim-soft);
+  -webkit-app-region: drag;
+  position: relative;
+  z-index: 4;
+}
 
+.right-panel--fullscreen .right-panel-head {
+  position: relative;
+  z-index: 4;
+  background: transparent;
+  border-bottom-color: var(--glass-edge-soft);
+  box-shadow: var(--glass-rim-soft);
+}
+
+.right-panel--fullscreen .right-panel-body {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  padding: 0;
+}
+
+/* 全屏时彻底藏下层，防叠字；壳层因此可保持透明玻璃 */
+body.right-panel-fullscreen .sidebar,
+body.right-panel-fullscreen .main {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.theme-dark .right-panel--fullscreen {
+  background: linear-gradient(180deg, var(--layer-titlebar-fill-top) 0%, var(--layer-main-fill-bottom) 100%);
+}
+
+html.theme-dark .right-panel--fullscreen .right-panel-return-bar,
+html.theme-dark .right-panel--fullscreen .right-panel-head {
+  background: transparent;
+  border-bottom-color: var(--glass-edge-soft);
+  box-shadow: var(--glass-rim-soft);
+}
+
+html.theme-dark .right-panel--fullscreen .right-panel-body {
+  background: transparent;
+}
+
+html.theme-dark .right-panel-head {
+  background: transparent;
+  box-shadow: var(--glass-rim-soft);
+}
+
+.right-panel-return-btn {
+  -webkit-app-region: no-drag;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.right-panel-return-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.right-panel-return-btn:active {
+  transform: scale(0.98);
+}
+
+body.right-panel-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* 窄屏：抽屉覆盖，纯 transform（已是最佳路径） */
 @media (max-width: 1119px) {
-  .right-panel-backdrop {
-    position: fixed;
-    inset: 42px 0 0;
-    z-index: 32;
-    display: block;
-    background: rgba(23, 28, 35, 0.24);
-    animation: panel-backdrop-in 180ms ease both;
-  }
-
   .right-panel {
     position: fixed;
-    top: 42px;
+    top: 0;
     right: 0;
     bottom: 0;
     width: min(440px, calc(100vw - 64px)) !important;
-    max-width: calc(100vw - 64px);
-    border-left-color: var(--border);
-    box-shadow: -12px 0 32px rgba(24, 31, 41, 0.14);
-    transform: translateX(100%);
-    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 0 !important;
+    max-width: calc(100vw - 64px) !important;
+    flex: none !important;
+    margin-right: 0 !important;
+    border-left-color: var(--glass-edge-soft);
+    box-shadow: var(--glass-shadow-popover);
+    transform: translate3d(100%, 0, 0);
+    transition:
+      transform var(--right-panel-duration) var(--right-panel-ease),
+      border-color var(--motion-duration-fast) var(--motion-ease-soft) !important;
+    will-change: transform;
   }
 
-  .right-panel--open { transform: translateX(0); }
-  .right-panel-resize-handle { display: none; }
+  .right-panel--open {
+    margin-right: 0 !important;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .right-panel-resize-handle {
+    display: none;
+  }
 }
 
-@keyframes panel-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+/* JS compact 类：CDP/Emulation 或漏 resize 时也能稳定进入抽屉+遮罩模式 */
+.right-panel.right-panel--compact {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, calc(100vw - 64px)) !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 64px) !important;
+  flex: none !important;
+  /* 覆盖桌面态负 margin，否则 transform 会和 margin 叠成“半开/卡半截” */
+  margin-right: 0 !important;
+  border-left-color: var(--glass-edge-soft);
+  box-shadow: var(--glass-shadow-popover);
+  transform: translate3d(100%, 0, 0);
+  transition:
+    transform var(--right-panel-duration) var(--right-panel-ease),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft) !important;
+  will-change: transform;
+}
+
+.right-panel.right-panel--compact.right-panel--open {
+  margin-right: 0 !important;
+  transform: translate3d(0, 0, 0);
+}
+
+.right-panel.right-panel--compact .right-panel-resize-handle {
+  display: none;
+}
+
+/* 遮罩：进入/退出都走独立动画名，避免采样到 none */
+.right-panel-backdrop:not(.right-panel-backdrop--exit) {
+  animation-name: panel-backdrop-in;
+}
+
+.right-panel-backdrop.right-panel-backdrop--exit {
+  animation-name: panel-backdrop-out;
+}
+
+@keyframes panel-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panel-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.right-panel-backdrop--exit {
+  pointer-events: none;
+  animation: panel-backdrop-out var(--motion-duration-slow) var(--motion-ease-spring) forwards;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .right-panel,
-  .right-panel-backdrop { transition: none; animation: none; }
+  .right-panel-backdrop {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .right-panel {
+    will-change: auto;
+  }
+}
+
+html.theme-dark .right-panel {
+  background: var(--glass-fill);
+  border-color: var(--glass-edge-soft);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--glass-shadow-card), var(--glass-rim);
+}
+
+html.theme-dark .right-panel-tab,
+html.theme-dark .right-panel-btn,
+html.theme-dark .right-panel-url input,
+html.theme-dark .right-panel-toolbar button {
+  background: var(--glass-fill-raised);
+  border-color: var(--glass-edge-soft);
+  color: var(--text-secondary);
+  box-shadow: var(--glass-rim-soft);
+}
+
+html.theme-light .right-panel-tab,
+html.theme-light .right-panel-toolbar button,
+html.theme-light .right-panel-url input {
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim-soft);
+}
+
+/* 浅色动画中：用略不透明底替代 blur，避免每帧磨砂 */
+html.theme-light .right-panel--animating {
+  background: color-mix(in srgb, var(--glass-fill-raised) 88%, white);
+}
+
+html.theme-light .right-panel--animating .right-panel-head {
+  background: color-mix(in srgb, var(--glass-fill) 80%, white);
 }

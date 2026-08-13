@@ -1,6 +1,6 @@
 /**
  * 各模型 context 上限解析与 token 格式化。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 
 /** 已知模型 ID → 上下文 token 上限（对照各厂商官方文档，2025–2026） */
@@ -15,6 +15,10 @@ const EXACT_MODEL_LIMITS: Record<string, number> = {
   'gpt-3.5-turbo': 16_385,
   'gpt-4.1': 128_000,
   'gpt-4.1-mini': 128_000,
+  'gpt-5': 256_000,
+  'gpt-5.1': 256_000,
+  'gpt-5.2': 256_000,
+  'gpt-5-mini': 256_000,
   'o1': 200_000,
   'o1-mini': 128_000,
   'o1-preview': 128_000,
@@ -32,6 +36,15 @@ const EXACT_MODEL_LIMITS: Record<string, number> = {
   'claude-opus-4-20250514': 200_000,
   'claude-opus-4-6': 1_000_000,
   'claude-haiku-4-5': 200_000,
+  // xAI Grok
+  'grok-4': 256_000,
+  'grok-4.5': 256_000,
+  'grok-4-1-fast-reasoning': 2_000_000,
+  'grok-4-1-fast': 2_000_000,
+  'grok-3': 131_072,
+  'grok-3-mini': 131_072,
+  'grok-2': 131_072,
+  'grok-2-vision-1212': 32_768,
   // DeepSeek
   'deepseek-chat': 1_000_000,
   'deepseek-reasoner': 1_000_000,
@@ -90,8 +103,10 @@ const PATTERN_LIMITS: { pattern: RegExp; limit: number }[] = [
   { pattern: /claude[-_]?opus[-_]?4[-_.]6|claude[-_]?sonnet[-_]?4[-_.]6/i, limit: 1_000_000 },
   { pattern: /minimax[-_]?m3/i, limit: 1_000_000 },
   { pattern: /deepseek[-_]?v4|deepseek[-_]?chat|deepseek[-_]?reasoner/i, limit: 1_000_000 },
+  { pattern: /grok[-_]?4[-_.]?1[-_]?fast/i, limit: 2_000_000 },
+  { pattern: /grok[-_]?4|grok[-_]?3/i, limit: 256_000 },
   { pattern: /glm[-_]?4[-_.]long/i, limit: 1_000_000 },
-  { pattern: /kimi[-_]?k2/i, limit: 256_000 },
+  { pattern: /kimi[-_]?k2|kimi[-_]?k3/i, limit: 256_000 },
   { pattern: /[-_/]1m\b|1[-_]?million|1000000/i, limit: 1_000_000 },
   { pattern: /[-_/]256k\b|256000/i, limit: 256_000 },
   { pattern: /[-_/]200k\b|200000/i, limit: 200_000 },

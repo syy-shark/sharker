@@ -3,29 +3,33 @@
 }
 
 .st-section-title {
-  margin: 0 0 10px;
-  padding: 0 2px;
+  margin: 0 0 8px;
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 510;
+  letter-spacing: -0.01em;
+  text-transform: none;
   color: var(--text-muted);
 }
 
 .st-card {
   position: relative;
-  border-radius: 16px;
-  border: 1px solid var(--surface-border-soft);
-  background: linear-gradient(
-    168deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(241, 245, 249, 0.14) 42%,
-    rgba(228, 233, 240, 0.1) 100%
-  );
-  backdrop-filter: blur(28px) saturate(1.45);
-  -webkit-backdrop-filter: blur(28px) saturate(1.45);
-  box-shadow: var(--shadow-panel);
-  overflow: visible;
+  isolation: isolate;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-raised);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow-card), var(--glass-rim);
+  /*
+   * 必须 hidden：overflow:visible 时 Chromium/Electron 的 backdrop-filter
+   * 会在圆角外留一层矩形（尖角）合成层。下拉菜单改用 fixed 弹出，不依赖可见溢出。
+   */
+  overflow: hidden;
 }
 
 .st-card::before {
@@ -33,13 +37,9 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    transparent 28%,
-    transparent 100%
-  );
+  background: var(--glass-facet);
   pointer-events: none;
+  z-index: 0;
 }
 
 .st-row {
@@ -49,8 +49,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--surface-border-faint);
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.st-row:hover {
+  background: color-mix(in srgb, var(--text) 2.5%, transparent);
 }
 
 .st-row--last {
@@ -84,6 +89,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
 }
 
 .st-choice-grid {
@@ -101,14 +108,14 @@
   border-radius: 12px;
   background: var(--surface-frost-raised);
   box-shadow:
-    inset 0 0 0 1px rgba(37, 99, 235, 0.22),
-    0 4px 20px rgba(15, 23, 42, 0.05);
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 4px 20px color-mix(in srgb, var(--text) 5%, transparent);
   pointer-events: none;
   transition:
     transform var(--motion-duration-normal) var(--motion-ease-spring),
     width var(--motion-duration-normal) var(--motion-ease-spring),
     height var(--motion-duration-normal) var(--motion-ease-spring);
-  will-change: transform, width, height;
+  contain: layout style;
 }
 
 .st-choice-card {
@@ -140,7 +147,7 @@
   border-radius: inherit;
   background: linear-gradient(
     165deg,
-    rgba(255, 255, 255, 0.28) 0%,
+    color-mix(in srgb, white 28%, transparent) 0%,
     transparent 42%
   );
   pointer-events: none;
@@ -148,22 +155,48 @@
 }
 
 .st-section-title { letter-spacing: 0; text-transform: none; }
-.st-card {
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-.st-card::before { display: none; }
 .st-choice-slide,
-.st-choice-card { border-radius: 8px; }
-.st-choice-card { background: #f7f8fa; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.st-choice-card::before { display: none; }
+.st-choice-card { border-radius: var(--radius-sm); }
+.st-choice-card {
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: var(--glass-rim-soft);
+}
+.st-choice-card::before {
+  display: block;
+  background: var(--glass-facet);
+  opacity: 0.7;
+}
+.st-choice-slide {
+  background: var(--glass-fill-raised);
+  box-shadow:
+    inset 0 0 0 0.5px var(--accent-ring),
+    var(--glass-rim-soft);
+}
+
+html.theme-dark .st-choice-slide {
+  background: var(--accent-soft-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+html.theme-dark .st-choice-card-radio {
+  border-color: var(--glass-edge-soft);
+  background: color-mix(in srgb, white 6%, transparent);
+}
+
+html.theme-dark .st-choice-card-radio-dot {
+  background: var(--accent);
+}
 
 .st-choice-card:hover {
-  border-color: rgba(255, 255, 255, 0.42);
-  background: var(--surface-nested-hover);
+  border-color: var(--glass-edge);
+  background: var(--glass-fill-nested-hover);
+}
+
+.st-choice-card:active {
+  transform: scale(0.985);
 }
 
 .st-choice-card--selected {
@@ -181,17 +214,33 @@
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 1.5px solid rgba(15, 23, 42, 0.16);
-  background: rgba(255, 255, 255, 0.35);
+  border: 1.5px solid color-mix(in srgb, var(--text) 16%, transparent);
+  background: var(--glass-fill-nested);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color var(--motion-duration-normal) var(--motion-ease-soft),
+    background var(--motion-duration-normal) var(--motion-ease-soft);
 }
 
 .st-choice-card--selected .st-choice-card-radio {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, white 92%, transparent);
+}
+
+html.theme-dark .st-choice-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.theme-dark .st-choice-card:hover {
+  background: var(--glass-fill-nested-hover);
+  border-color: var(--glass-edge);
+}
+
+html.theme-dark .st-choice-card--selected .st-choice-card-radio {
+  background: color-mix(in srgb, var(--accent) 18%, var(--glass-fill-raised));
 }
 
 .st-choice-card-radio-dot {
@@ -236,10 +285,12 @@
   height: 24px;
   border-radius: 999px;
   border: none;
-  background: rgba(15, 23, 42, 0.1);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   padding: 0;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition:
+    background var(--motion-duration-normal) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
   flex-shrink: 0;
 }
 
@@ -248,8 +299,19 @@
   cursor: wait;
 }
 
+.st-toggle:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.st-toggle:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 .st-toggle--on {
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+  box-shadow: inset 0 0.5px 0 color-mix(in srgb, white 30%, transparent);
 }
 
 .st-toggle-knob {
@@ -259,9 +321,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14);
-  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  background: color-mix(in srgb, white 96%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 14%, transparent);
+  transition: transform var(--motion-duration-normal) var(--motion-ease-spring);
 }
 
 .st-toggle--on .st-toggle-knob {
@@ -269,28 +331,38 @@
 }
 
 .st-pill-btn {
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text);
-  border-radius: 8px;
-  border: 1px solid var(--surface-border-soft);
-  background: var(--surface-frost);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: background 0.12s, border-color 0.12s;
+  border-radius: var(--radius-pill);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: var(--glass-rim-soft);
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .st-pill-btn:hover {
-  background: var(--surface-frost-hover);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--glass-fill-nested-hover);
+  border-color: var(--glass-edge-strong);
+}
+
+.st-pill-btn:active {
+  transform: scale(0.98);
 }
 
 .st-pill-btn--primary {
-  color: #fff;
-  border-color: rgba(29, 78, 216, 0.3);
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  color: var(--on-accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+  box-shadow:
+    inset 0 0.5px 0 color-mix(in srgb, white 35%, transparent),
+    0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .st-pill-btn--primary:hover {
@@ -330,4 +402,47 @@
 .cu-perm-tool-list code {
   font-family: ui-monospace, monospace;
   font-size: 12px;
+}
+
+
+html.theme-dark .st-card {
+  background: var(--glass-fill-raised);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shadow-card), var(--glass-rim);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.theme-light .st-card {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, white 40%, transparent) 0%,
+      color-mix(in srgb, white 10%, transparent) 100%
+    ),
+    var(--glass-fill-nested);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow-card);
+  border-radius: 18px;
+}
+
+html.theme-light .st-row,
+html.theme-light .st-choice-card,
+html.theme-light .st-pill-btn {
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  box-shadow: var(--glass-rim-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-card,
+  .st-row,
+  .st-toggle,
+  .st-toggle-knob,
+  .st-pill-btn,
+  .st-choice-card {
+    transition-duration: 0.01ms !important;
+  }
 }

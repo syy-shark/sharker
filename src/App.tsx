@@ -1,10 +1,14 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConversationSummary } from '../shared/conversation'
-import { deriveConversationTitle } from '../shared/conversation'
+import {
+  DEFAULT_CONVERSATION_TITLE,
+  deriveConversationTitle,
+  sortConversationsByCreatedAt
+} from '../shared/conversation'
 import type {
   AppSettings,
   ApprovalRequest,
@@ -14,7 +18,6 @@ import type {
   TurnSegment
 } from '../shared/types'
 import {
-  activitiesFromSkills,
   extractBrowsedPaths,
   formatToolActivity
 } from '../shared/turn-meta'
@@ -28,7 +31,6 @@ import {
   thinkingPreviewFromSegments
 } from '../shared/turn-segments'
 import { DEFAULT_SETTINGS } from '../shared/types'
-import { validateActiveProvider } from '../shared/provider-validate'
 import {
   getActiveWorkspacePath,
   sortWorkspaces,
@@ -40,15 +42,107 @@ import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
-import { PetWidget } from './components/PetWidget'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
-import { TitleBar } from './components/TitleBar'
 import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
+import type { ApprovalDecision } from '../shared/approval-session'
+import {
+  appendAssistantMessage,
+  cancelQueuedPrompt,
+  clearDoneCommitted,
+  createQueuedPrompt,
+  enqueueForConversation,
+  listQueuedForConversation,
+  markDoneCommitted,
+  nextFollowUpAfterTurn,
+  resolveCommitConversationId,
+  resolveStopAction,
+  shouldAcceptDoneEvent,
+  shouldApplyStreamToActive,
+  shouldCommitToActiveUi,
+  type DoneCommittedMap,
+  type SessionQueueMap
+} from '../shared/session-runtime'
 import './App.css'
+
+/** 非当前可见会话的流式缓冲（切换会话不丢 in-flight） */
+interface SessionLiveBuffer {
+  messages: ChatMessage[]
+  loading: boolean
+  segments: TurnSegment[]
+  streaming: string
+  turnThinking: string
+  approval: ApprovalRequest | null
+  liveTurnMeta: AssistantMeta | null
+  turnStartedAt: number | null
+  turnHadThinking: boolean
+  activeTool: string | null
+  sendInFlight: boolean
+  doneCommitted: boolean
+  turnOutcome: 'success' | 'error' | 'aborted'
+  activeUserMessageId?: string
+  turnMeta: AssistantMeta
+}
+
+/** DEV 专用：把审批/错误/直播态注入真实 React 树，供 CDP 与本地验收 */
+export interface SharkerDevDebugApi {
+  injectApproval: (partial?: Partial<ApprovalRequest>) => ApprovalRequest
+  clearApproval: () => void
+  injectError: (message?: string | { message?: string }) => ChatMessage
+  injectAborted: (message?: string | { message?: string }) => ChatMessage
+  seedLiveProcess: (mode?: 'preparing' | 'tool' | 'chain' | 'planning' | 'answer' | 'approval') => TurnSegment[]
+  /** 渐进播一段工具链，便于验收直播头连续推进与呼吸不中断 */
+  playLiveSequence: () => Promise<string[]>
+  clearLiveProcess: () => void
+  resetChatVisual: () => void
+  getSnapshot: () => {
+    page: AppPage
+    loading: boolean
+    approval: ApprovalRequest | null
+    liveSegmentCount: number
+    messageCount: number
+    messageRoles?: Array<ChatMessage['role']>
+    activeConversationId: string | null
+    hasLiveSegments?: boolean
+    streamingLen?: number
+    streamOwner?: string | null
+    bufferCount?: number
+    bufferIds?: string[]
+  }
+  navigateTo: (page: AppPage, tab?: SettingsTab) => void
+  setSidebarCollapsed: (collapsed: boolean) => void
+  openHistoryPicker: () => void
+  openRightPanel: (tab?: RightPanelTab) => void
+  closeRightPanel: () => void
+  selectConversation: (conversationId: string) => Promise<boolean>
+  /** 多会话调试：列出内存 buffer 概况 */
+  listSessionBuffers: () => Array<{
+    id: string
+    loading: boolean
+    sendInFlight: boolean
+    doneCommitted: boolean
+    messageCount: number
+    liveSegmentCount: number
+    streamingLen: number
+    approval: boolean
+  }>
+  /** 读取某会话 buffer 消息摘要（内存优先） */
+  peekSession: (conversationId: string) => {
+    source: 'buffer' | 'none'
+    loading: boolean
+    messages: Array<{ role: string; content: string }>
+    liveHead?: string
+  } | null
+}
+
+declare global {
+  interface Window {
+    __sharkerDebug?: SharkerDevDebugApi
+  }
+}
 
 /** 根组件：全局状态、IPC 流式、工作区/对话/设置路由 */
 export default function App() {
@@ -60,6 +154,22 @@ export default function App() {
 
   /** 全局状态与 ref 镜像，供 IPC 回调与节流刷新读取 */
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
+
+  /** 外观：仅浅色玻璃 / 深色金属两套固定材质 */
+  useEffect(() => {
+    const root = document.documentElement
+    const theme = settings.uiTheme === 'dark' ? 'dark' : 'light'
+    root.dataset.theme = theme
+    root.classList.toggle('theme-dark', theme === 'dark')
+    root.classList.toggle('theme-light', theme === 'light')
+    root.classList.toggle('ui-glass', theme === 'light')
+    root.classList.toggle('ui-solid', theme === 'dark')
+    root.classList.remove('ui-full-glass')
+    root.style.setProperty('--ui-glass', theme === 'light' ? '0.82' : '0')
+    root.style.setProperty('--ui-opacity', theme === 'light' ? '0.11' : '1')
+    root.style.setProperty('--ui-opacity-strong', theme === 'light' ? '0.18' : '1')
+    root.style.setProperty('--ui-opacity-soft', theme === 'light' ? '0.08' : '1')
+  }, [settings.uiTheme])
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [page, setPage] = useState<AppPage>('chat')
   const pageRef = useRef<AppPage>('chat')
@@ -84,20 +194,43 @@ export default function App() {
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
+  )
+  /** 侧栏收起后的悬停 peek；peek 时侧栏可见，顶栏不必再显示新对话 */
+  const [sidebarPeeking, setSidebarPeeking] = useState(false)
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((c) => {
+      const next = !c
+      localStorage.setItem('sharker-sidebar-collapsed', next ? '1' : '0')
+      return next
+    })
+    // 展开时清 peek，避免收起态残留
+    setSidebarPeeking(false)
+  }, [])
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
-  const [gitInfo, setGitInfo] = useState<{
-    branch: string
-    isRepo: boolean
-    dirty?: boolean
-  } | null>(null)
   const sendInFlightRef = useRef(false)
+  /** 回合序号：finally 只清理自己这一轮，避免排队续跑被误清 loading */
+  const turnGenRef = useRef(0)
+  /** 按会话隔离的 follow-up 队列 */
+  const sessionQueuesRef = useRef<SessionQueueMap>({})
   const queuedPromptsRef = useRef<QueuedPrompt[]>([])
+  /** 后台会话 live 状态（切换离开后继续收流） */
+  const sessionBuffersRef = useRef<Map<string, SessionLiveBuffer>>(new Map())
+  /** 当前 IPC 回合归属的 conversationId */
+  const streamOwnerRef = useRef<string | null>(null)
+  /** conversationId → 当前活跃 turn 代数；用于丢弃 abort/插队后迟到的旧 done/chunk */
+  const streamTurnGenByConvRef = useRef<Record<string, number>>({})
+  /** conversationId → 已派发但尚未收到 turn_start 的 turn 代数；期间忽略旧 abort 的 done */
+  const awaitingTurnStartByConvRef = useRef<Record<string, number>>({})
   const dispatchTurnRef = useRef<
-    (text: string, attachments?: ChatAttachment[]) => Promise<void>
+    (text: string, attachments?: ChatAttachment[], conversationId?: string) => Promise<void>
   >(async () => {})
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
+  /** 按会话的 done/stop 门闩 — 禁止全局 doneCommitted 误杀其他会话 */
+  const doneCommittedMapRef = useRef<DoneCommittedMap>({})
   const doneCommittedRef = useRef(false)
   const streamingRef = useRef('')
   const turnThinkingRef = useRef('')
@@ -115,6 +248,46 @@ export default function App() {
   const turnHadThinkingRef = useRef(false)
   const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
   const activeUserMessageIdRef = useRef<string | undefined>(undefined)
+
+  const syncActiveQueueUi = useCallback((queues: SessionQueueMap, convId: string | null) => {
+    sessionQueuesRef.current = queues
+    const list = listQueuedForConversation(queues, convId)
+    queuedPromptsRef.current = list
+    setQueuedPrompts(list)
+  }, [])
+
+  const applyBufferToUi = useCallback((buf: SessionLiveBuffer) => {
+    messagesRef.current = buf.messages
+    setMessages(buf.messages)
+    sendInFlightRef.current = buf.sendInFlight
+    doneCommittedRef.current = buf.doneCommitted
+    streamingRef.current = buf.streaming
+    turnThinkingRef.current = buf.turnThinking
+    segmentsRef.current = cloneSegments(buf.segments)
+    setLiveSegments(cloneSegments(buf.segments))
+    setStreaming(buf.streaming)
+    setTurnThinking(buf.turnThinking)
+    setLoading(buf.loading || buf.sendInFlight)
+    setActiveTool(buf.activeTool)
+    setApproval(buf.approval)
+    setApprovalResponding(false)
+    setTurnHadThinking(buf.turnHadThinking)
+    turnHadThinkingRef.current = buf.turnHadThinking
+    turnOutcomeRef.current = buf.turnOutcome
+    activeUserMessageIdRef.current = buf.activeUserMessageId
+    turnMetaRef.current = {
+      browsedFiles: [...buf.turnMeta.browsedFiles],
+      activities: [...buf.turnMeta.activities]
+    }
+    setLiveTurnMeta(
+      buf.liveTurnMeta ?? {
+        browsedFiles: [...buf.turnMeta.browsedFiles],
+        activities: [...buf.turnMeta.activities]
+      }
+    )
+    setTurnStartedAt(buf.turnStartedAt)
+    if (buf.turnStartedAt) turnStartedAtRef.current = buf.turnStartedAt
+  }, [])
 
   const activeWorkspaceId = settings.activeWorkspaceId
 
@@ -134,46 +307,95 @@ export default function App() {
     queuedPromptsRef.current = queuedPrompts
   }, [queuedPrompts])
 
+  const approvalRef = useRef<ApprovalRequest | null>(null)
+  useEffect(() => {
+    approvalRef.current = approval
+  }, [approval])
+
   /** 刷新指定工作区的侧栏对话列表 */
   const refreshConversationList = useCallback(async (workspaceId: string) => {
-    const state = await window.sharker.listConversations(workspaceId)
-    if (settingsRef.current.activeWorkspaceId === workspaceId) {
-      setConversationList(state.conversations)
+    try {
+      const state = await window.sharker.listConversations(workspaceId)
+      if (settingsRef.current.activeWorkspaceId === workspaceId) {
+        setConversationList(state.conversations)
+      }
+      return state
+    } catch (e) {
+      console.error('刷新对话列表失败', e)
+      return { conversations: [], activeConversationId: null }
     }
-    return state
   }, [])
+
+  /**
+   * 乐观更新侧栏标题/消息数（后台完成或首条用户消息发送后立即可见，
+   * 不必等 listConversations 往返）。
+   */
+  const patchConversationSummary = useCallback((conversationId: string, msgs: ChatMessage[]) => {
+    if (!conversationId) return
+    const title = deriveConversationTitle(msgs)
+    const now = Date.now()
+    setConversationList((list) => {
+      let found = false
+      const next = list.map((c) => {
+        if (c.id !== conversationId) return c
+        found = true
+        return {
+          ...c,
+          title: c.customTitle?.trim() ? c.title : title,
+          messageCount: msgs.length,
+          updatedAt: now
+        }
+      })
+      return found ? next : list
+    })
+  }, [])
+
+  /** 触发侧栏“进行中”标记重算（buffer 在 ref 里，需强制渲染） */
+  const [sessionLiveVersion, setSessionLiveVersion] = useState(0)
+  const bumpSessionLive = useCallback(() => {
+    setSessionLiveVersion((v) => v + 1)
+  }, [])
+
+  // loading 边沿同步侧栏进行中点（极短回合也不会漏掉点亮/熄灭）
+  useEffect(() => {
+    bumpSessionLive()
+  }, [loading, activeConversationId, bumpSessionLive])
 
   /** 加载工作区的活跃对话与消息 */
   const loadWorkspaceSession = useCallback(
     async (workspaceId: string) => {
-      const state = await refreshConversationList(workspaceId)
-      if (settingsRef.current.activeWorkspaceId !== workspaceId) return
+      try {
+        const state = await refreshConversationList(workspaceId)
+        if (settingsRef.current.activeWorkspaceId !== workspaceId) return
 
-      const convId = state.activeConversationId
-      if (!convId) {
-        setActiveConversationId(null)
-        activeConversationIdRef.current = null
-        setMessages([])
-        messagesRef.current = []
-        return
+        const convId = state.activeConversationId
+        if (!convId) {
+          setActiveConversationId(null)
+          activeConversationIdRef.current = null
+          setMessages([])
+          messagesRef.current = []
+          return
+        }
+
+        const conv = await window.sharker.loadConversation(workspaceId, convId)
+        if (settingsRef.current.activeWorkspaceId !== workspaceId) return
+
+        if (!conv) {
+          setActiveConversationId(null)
+          activeConversationIdRef.current = null
+          setMessages([])
+          messagesRef.current = []
+          await window.sharker.setActiveConversation(workspaceId, null)
+          return
+        }
+
+        setActiveConversationId(conv.id)
+        activeConversationIdRef.current = conv.id
+        setMessages(conv.messages)
+        messagesRef.current = conv.messages
+      } catch (e) {
+        console.error('加载工作区会话失败', e)
       }
-
-      const conv = await window.sharker.loadConversation(workspaceId, convId)
-      if (settingsRef.current.activeWorkspaceId !== workspaceId) return
-
-      if (!conv) {
-        setActiveConversationId(null)
-        activeConversationIdRef.current = null
-        setMessages([])
-        messagesRef.current = []
-        await window.sharker.setActiveConversation(workspaceId, null)
-        return
-      }
-
-      setActiveConversationId(conv.id)
-      activeConversationIdRef.current = conv.id
-      setMessages(conv.messages)
-      messagesRef.current = conv.messages
     },
     [refreshConversationList]
   )
@@ -226,8 +448,67 @@ export default function App() {
     setLiveTurnMeta({ browsedFiles: [], activities: [] })
   }, [])
 
-  /** 中止或切换时重置聊天 UI 状态 */
-  const clearChatUiState = useCallback(() => {
+  /** 快照当前可见会话的 live 状态，供切走后再回来恢复 */
+  const snapshotActiveSessionBuffer = useCallback(() => {
+    const prevId = activeConversationIdRef.current
+    if (!prevId) return null
+    sessionBuffersRef.current.set(prevId, {
+      messages: [...messagesRef.current],
+      loading:
+        sendInFlightRef.current ||
+        segmentsRef.current.length > 0 ||
+        Boolean(streamingRef.current.trim()),
+      segments: cloneSegments(segmentsRef.current),
+      streaming: streamingRef.current,
+      turnThinking: turnThinkingRef.current,
+      approval: approvalRef.current,
+      liveTurnMeta: {
+        browsedFiles: [...turnMetaRef.current.browsedFiles],
+        activities: [...turnMetaRef.current.activities]
+      },
+      turnStartedAt: turnStartedAtRef.current || null,
+      turnHadThinking: turnHadThinkingRef.current,
+      activeTool: (() => {
+        const active = [...segmentsRef.current]
+          .reverse()
+          .find((s) => s.kind === 'tool' && s.status === 'active')
+        return active?.toolName ?? null
+      })(),
+      sendInFlight: sendInFlightRef.current,
+      doneCommitted: doneCommittedRef.current,
+      turnOutcome: turnOutcomeRef.current,
+      activeUserMessageId: activeUserMessageIdRef.current,
+      turnMeta: {
+        browsedFiles: [...turnMetaRef.current.browsedFiles],
+        activities: [...turnMetaRef.current.activities]
+      }
+    })
+    return prevId
+  }, [])
+
+  /** 取消节流中的直播刷帧，避免切会话后把空 segments 写回旧 buffer */
+  const cancelScheduledStreamPaint = useCallback(() => {
+    if (streamRafRef.current != null) {
+      cancelAnimationFrame(streamRafRef.current)
+      streamRafRef.current = null
+    }
+    if (streamFlushTimerRef.current != null) {
+      clearTimeout(streamFlushTimerRef.current)
+      streamFlushTimerRef.current = null
+    }
+    if (thinkRafRef.current != null) {
+      cancelAnimationFrame(thinkRafRef.current)
+      thinkRafRef.current = null
+    }
+  }, [])
+
+  /**
+   * 仅清空当前可见聊天 UI。
+   * - 默认保留其他会话 buffer/队列（多会话并行）
+   * - dropActiveBuffer：删除当前会话 buffer（工作区切换 / 删除对话等）
+   */
+  const clearChatUiState = useCallback((opts?: { dropActiveBuffer?: boolean }) => {
+    cancelScheduledStreamPaint()
     sendInFlightRef.current = false
     doneCommittedRef.current = true
     streamingRef.current = ''
@@ -240,10 +521,23 @@ export default function App() {
     setActiveTool(null)
     setApproval(null)
     setApprovalResponding(false)
-    setQueuedPrompts([])
-    queuedPromptsRef.current = []
+    const convId = activeConversationIdRef.current
+    if (convId && opts?.dropActiveBuffer) {
+      const nextQueues = { ...sessionQueuesRef.current }
+      delete nextQueues[convId]
+      syncActiveQueueUi(nextQueues, convId)
+      sessionBuffersRef.current.delete(convId)
+      if (streamOwnerRef.current === convId) streamOwnerRef.current = null
+    } else if (!convId) {
+      queuedPromptsRef.current = []
+      setQueuedPrompts([])
+      streamOwnerRef.current = null
+    } else {
+      // 切到空会话时只清可见队列视图，不丢弃原会话队列
+      syncActiveQueueUi(sessionQueuesRef.current, null)
+    }
     resetTurnMeta()
-  }, [resetTurnMeta])
+  }, [cancelScheduledStreamPaint, resetTurnMeta, syncActiveQueueUi])
 
   /** 节流将有序片段 ref 刷到 UI */
   const flushSegmentsToUI = useCallback(() => {
@@ -260,6 +554,57 @@ export default function App() {
         .reverse()
         .find((s) => s.kind === 'tool' && s.status === 'active')
       setActiveTool(activeToolSeg?.toolName ?? null)
+      // 当前可见会话也持续写 buffer，切换对话返回时不会丢 live 步骤
+      const activeId = activeConversationIdRef.current
+      const stillLive =
+        sendInFlightRef.current ||
+        segmentsRef.current.length > 0 ||
+        Boolean(streamingRef.current.trim())
+      if (activeId && stillLive) {
+        let buf = sessionBuffersRef.current.get(activeId)
+        if (!buf || !buf.doneCommitted) {
+          if (!buf) {
+            buf = {
+              messages: [...messagesRef.current],
+              loading: true,
+              segments: [],
+              streaming: '',
+              turnThinking: '',
+              approval: null,
+              liveTurnMeta: null,
+              turnStartedAt: turnStartedAtRef.current || Date.now(),
+              turnHadThinking: turnHadThinkingRef.current,
+              activeTool: null,
+              sendInFlight: sendInFlightRef.current,
+              doneCommitted: false,
+              turnOutcome: turnOutcomeRef.current,
+              activeUserMessageId: activeUserMessageIdRef.current,
+              turnMeta: { browsedFiles: [], activities: [] }
+            }
+          }
+          buf.messages = [...messagesRef.current]
+          buf.segments = cloneSegments(segmentsRef.current)
+          buf.streaming = finalPreview
+          buf.turnThinking = thinkingPreviewFromSegments(segmentsRef.current)
+          buf.activeTool = activeToolSeg?.toolName ?? null
+          buf.loading = true
+          buf.sendInFlight = sendInFlightRef.current || buf.loading
+          buf.approval = approvalRef.current
+          buf.liveTurnMeta = {
+            browsedFiles: [...turnMetaRef.current.browsedFiles],
+            activities: [...turnMetaRef.current.activities]
+          }
+          buf.turnMeta = {
+            browsedFiles: [...turnMetaRef.current.browsedFiles],
+            activities: [...turnMetaRef.current.activities]
+          }
+          buf.turnStartedAt = turnStartedAtRef.current || buf.turnStartedAt
+          buf.turnHadThinking = turnHadThinkingRef.current
+          buf.turnOutcome = turnOutcomeRef.current
+          buf.activeUserMessageId = activeUserMessageIdRef.current
+          sessionBuffersRef.current.set(activeId, buf)
+        }
+      }
     }
     const schedulePaint = () => {
       if (streamRafRef.current != null) return
@@ -276,37 +621,78 @@ export default function App() {
     }, Math.max(0, SEGMENT_RENDER_MS - elapsed))
   }, [])
 
-  /** 无活跃对话时创建新对话 */
+  /** 并发创建对话时复用同一 Promise，避免连点/双触发造出多个空会话 */
+  const creatingConversationRef = useRef<Promise<string> | null>(null)
+
+  /** 无活跃对话时创建新对话（列表刷新不阻塞返回，避免卡死发送） */
   const ensureActiveConversation = useCallback(
     async (opts?: { preserveMessages?: boolean }): Promise<string | null> => {
       const workspaceId = settingsRef.current.activeWorkspaceId
       if (!workspaceId || !getActiveWorkspacePath(settingsRef.current)) return null
-      if (!activeConversationIdRef.current) {
-        const conv = await window.sharker.createConversation(workspaceId)
-        setActiveConversationId(conv.id)
-        activeConversationIdRef.current = conv.id
-        if (!opts?.preserveMessages) {
-          setMessages([])
-          messagesRef.current = []
-        }
-        await refreshConversationList(workspaceId)
+      if (activeConversationIdRef.current) return workspaceId
+
+      if (!creatingConversationRef.current) {
+        creatingConversationRef.current = (async () => {
+          const conv = await window.sharker.createConversation(workspaceId)
+          setActiveConversationId(conv.id)
+          activeConversationIdRef.current = conv.id
+          if (!opts?.preserveMessages) {
+            setMessages([])
+            messagesRef.current = []
+          }
+          // 侧栏列表刷新失败/变慢时绝不能挡住发消息
+          void refreshConversationList(workspaceId).catch((e) =>
+            console.warn('refreshConversationList failed', e)
+          )
+          return conv.id
+        })().finally(() => {
+          creatingConversationRef.current = null
+        })
       }
+
+      await creatingConversationRef.current
       return workspaceId
     },
     [refreshConversationList]
   )
 
-  /** 流式结束后将助手回复写入消息列表 */
+  /**
+   * 将助手回复写入 **指定 conversationId** 的 transcript 并 persist。
+   * 禁止依赖「回调时刻的 active」——切换会话时否则会串写。
+   */
   const commitAssistantReply = useCallback(
-    (content: string, suffix = '', outcome = turnOutcomeRef.current) => {
-      const finalized = finalizeSegments(segmentsRef.current)
-      segmentsRef.current = finalized
+    (
+      content: string,
+      suffix = '',
+      outcome = turnOutcomeRef.current,
+      conversationId?: string | null
+    ) => {
+      const targetId = resolveCommitConversationId({
+        explicitId: conversationId,
+        streamOwnerId: streamOwnerRef.current,
+        activeConversationId: activeConversationIdRef.current
+      })
+
+      const useActiveUi = shouldCommitToActiveUi(targetId, activeConversationIdRef.current)
+      const sourceMessages = useActiveUi
+        ? messagesRef.current
+        : targetId
+          ? (sessionBuffersRef.current.get(targetId)?.messages ?? [])
+          : messagesRef.current
+
+      const finalized = useActiveUi
+        ? finalizeSegments(segmentsRef.current)
+        : finalizeSegments(
+            targetId ? (sessionBuffersRef.current.get(targetId)?.segments ?? []) : segmentsRef.current
+          )
+      if (useActiveUi) segmentsRef.current = finalized
+
       let text = (extractFinalContent(finalized) || content).trim()
       if (suffix) text = (text + suffix).trim()
-      const durationSec = Math.max(
-        0,
-        Math.round((Date.now() - turnStartedAtRef.current) / 1000)
-      )
+      const startedAt = useActiveUi
+        ? turnStartedAtRef.current
+        : (sessionBuffersRef.current.get(targetId ?? '')?.turnStartedAt ?? Date.now())
+      const durationSec = Math.max(0, Math.round((Date.now() - (startedAt || Date.now())) / 1000))
       const provider = settingsRef.current.providers.find(
         (p) => p.id === settingsRef.current.activeProviderId
       )
@@ -325,39 +711,59 @@ export default function App() {
         model: provider?.model?.trim() || undefined
       }
       if (!text) {
-        if (finalized.length > 0 || hadThinking) {
+        if (outcome === 'error') {
+          text = '**错误**: 本轮失败，但未返回详细原因。请检查 设置 → 模型（API Key / SuperGrok 登录）后重试。'
+        } else if (finalized.length > 0 || hadThinking) {
           text = '（本轮未生成文字回复，可展开上方过程查看详情）'
         } else {
-          streamingRef.current = ''
-          segmentsRef.current = []
-          setLiveSegments([])
-          setStreaming('')
-          resetTurnMeta()
-          return
+          text = '（未收到模型回复。若刚改过代码或网络中断，请再发一次；持续失败请打开 设置 → 模型 测试连接。）'
         }
       }
-      setMessages((msgs) => {
-        const last = msgs[msgs.length - 1]
-        if (last?.role === 'assistant' && last.content === text) return msgs
-        const next = [
-          ...msgs,
-          {
-            id: crypto.randomUUID(),
-            role: 'assistant' as const,
-            content: text,
-            meta
-          }
-        ]
-        void persistActiveConversation(next)
-        return next
-      })
-      streamingRef.current = ''
-      turnThinkingRef.current = ''
-      segmentsRef.current = []
-      setLiveSegments([])
-      setStreaming('')
-      setTurnThinking('')
-      resetTurnMeta()
+
+      const assistant: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: text,
+        meta
+      }
+      const next = appendAssistantMessage(sourceMessages, assistant)
+
+      if (targetId) {
+        doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, targetId)
+      }
+      doneCommittedRef.current = true
+
+      if (useActiveUi) {
+        messagesRef.current = next
+        setMessages(next)
+        if (targetId) patchConversationSummary(targetId, next)
+        bumpSessionLive()
+        void persistActiveConversation(next, targetId ?? undefined)
+        // 保留 live 状态到 loading 关闭同一帧处理，避免「消息未挂上、直播已空」的一帧闪断
+        streamingRef.current = ''
+        turnThinkingRef.current = ''
+        // segments 先保留 finalized，等 done 收尾再清
+        setStreaming('')
+        setTurnThinking('')
+        resetTurnMeta()
+      } else if (targetId) {
+        const buf = sessionBuffersRef.current.get(targetId)
+        if (buf) {
+          buf.messages = next
+          patchConversationSummary(targetId, next)
+          bumpSessionLive()
+          buf.streaming = ''
+          buf.turnThinking = ''
+          buf.segments = []
+          buf.loading = false
+          buf.sendInFlight = false
+          buf.doneCommitted = true
+          buf.approval = null
+          buf.activeTool = null
+          sessionBuffersRef.current.set(targetId, buf)
+        }
+        void persistActiveConversation(next, targetId)
+      }
     },
     [persistActiveConversation, resetTurnMeta]
   )
@@ -369,17 +775,6 @@ export default function App() {
   useEffect(() => {
     settingsDraftRef.current = settingsDraft
   }, [settingsDraft])
-
-  /** 刷新当前工作区 Git 分支信息 */
-  const refreshGitInfo = useCallback(async () => {
-    const wsPath = getActiveWorkspacePath(settingsRef.current)
-    if (!wsPath || !window.sharker?.getGitBranchInfo) return
-    setGitInfo(await window.sharker.getGitBranchInfo(wsPath))
-  }, [])
-
-  useEffect(() => {
-    void refreshGitInfo()
-  }, [settings.activeWorkspaceId, refreshGitInfo])
 
   useEffect(() => {
     const off = window.sharker?.onAutomationRun?.((job) => {
@@ -396,38 +791,59 @@ export default function App() {
 
   /** 保存设置并同步本地 state（切换工作区时合并字段） */
   const persistSettings = useCallback(async (next: AppSettings) => {
-    const targetWorkspaceId = next.activeWorkspaceId
-    await window.sharker.saveSettings(next)
-    const updated = await window.sharker.getSettings()
-    if (settingsRef.current.activeWorkspaceId !== targetWorkspaceId) {
-      const merged: AppSettings = {
-        ...settingsRef.current,
-        workspaces: updated.workspaces,
-        providers: updated.providers,
-        activeProviderId: updated.activeProviderId,
-        skillRepoUrls: updated.skillRepoUrls,
-        installedSkillIds: updated.installedSkillIds,
-        permissionMode: updated.permissionMode,
-        networkMode: updated.networkMode,
-        computerUseEnabled: updated.computerUseEnabled,
-        browserUseEnabled: updated.browserUseEnabled,
-        petEnabled: updated.petEnabled
+    try {
+      const targetWorkspaceId = next.activeWorkspaceId
+      await window.sharker.saveSettings(next)
+      const updated = await window.sharker.getSettings()
+      if (settingsRef.current.activeWorkspaceId !== targetWorkspaceId) {
+        const merged: AppSettings = {
+          ...settingsRef.current,
+          workspaces: updated.workspaces,
+          providers: updated.providers,
+          activeProviderId: updated.activeProviderId,
+          permissionMode: updated.permissionMode,
+          networkMode: updated.networkMode,
+          computerUseEnabled: updated.computerUseEnabled,
+          browserUseEnabled: updated.browserUseEnabled,
+          uiGlass: updated.uiGlass,
+          uiTheme: updated.uiTheme
+        }
+        settingsRef.current = merged
+        setSettings(merged)
+        setSettingsDraft(merged)
+        return merged
       }
-      settingsRef.current = merged
-      setSettings(merged)
-      setSettingsDraft(merged)
-      return merged
+      settingsRef.current = updated
+      setSettings(updated)
+      setSettingsDraft(updated)
+      return updated
+    } catch (e) {
+      console.error('保存设置失败', e)
+      throw e
     }
-    settingsRef.current = updated
-    setSettings(updated)
-    setSettingsDraft(updated)
-    return updated
   }, [])
 
   /** 离开设置页前落盘草稿 */
   const flushSettingsDraftIfNeeded = useCallback(async () => {
     if (pageRef.current !== 'settings') return
-    await persistSettings(settingsDraftRef.current)
+    const current = settingsRef.current
+    const draft = settingsDraftRef.current
+    const merged: AppSettings = {
+      ...current,
+      permissionMode: draft.permissionMode,
+      networkMode: draft.networkMode,
+      workspaceProfile: draft.workspaceProfile,
+      providers: draft.providers,
+      activeProviderId: draft.activeProviderId,
+      computerUseEnabled: draft.computerUseEnabled,
+      browserUseEnabled: draft.browserUseEnabled,
+      uiGlass: draft.uiGlass,
+      uiTheme: draft.uiTheme,
+      workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
+      activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
+      workspacePath: current.workspacePath || draft.workspacePath
+    }
+    await persistSettings(merged)
   }, [persistSettings])
 
   useEffect(() => {
@@ -457,16 +873,199 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [messages, activeConversationId, loading, persistActiveConversation])
 
-  /** 订阅主进程流式事件：思考、token、工具、压缩、完成 */
+  /** 订阅主进程流式事件：思考、token、工具、压缩、完成（按 conversationId 隔离） */
   useEffect(() => {
     if (!window.sharker?.onStream) return
+
+    const ensureBuffer = (convId: string): SessionLiveBuffer => {
+      let buf = sessionBuffersRef.current.get(convId)
+      if (!buf) {
+        buf = {
+          messages: [],
+          loading: true,
+          segments: [],
+          streaming: '',
+          turnThinking: '',
+          approval: null,
+          liveTurnMeta: null,
+          turnStartedAt: Date.now(),
+          turnHadThinking: false,
+          activeTool: null,
+          sendInFlight: true,
+          doneCommitted: false,
+          turnOutcome: 'success',
+          turnMeta: { browsedFiles: [], activities: [] }
+        }
+        sessionBuffersRef.current.set(convId, buf)
+      }
+      return buf
+    }
+
+    const applyChunkToBuffer = (buf: SessionLiveBuffer, chunk: import('../shared/types').StreamChunk) => {
+      if (chunk.type === 'think' && chunk.content) {
+        buf.turnHadThinking = true
+        buf.turnThinking += chunk.content
+      }
+      if (chunk.type === 'error') buf.turnOutcome = 'error'
+      if (chunk.type === 'token' && chunk.content) {
+        buf.streaming += chunk.content
+      }
+      buf.segments = applyStreamChunk(buf.segments, chunk)
+      if (chunk.type === 'tool_start' && chunk.toolName) {
+        for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
+          if (!buf.turnMeta.browsedFiles.includes(p)) buf.turnMeta.browsedFiles.push(p)
+        }
+        const label = formatToolActivity(chunk.toolName, chunk.toolArgs)
+        const acts = buf.turnMeta.activities
+        if (acts.length === 0 || acts[acts.length - 1].label !== label) {
+          acts.push({ kind: 'tool', label })
+        }
+        buf.liveTurnMeta = {
+          browsedFiles: [...buf.turnMeta.browsedFiles],
+          activities: [...buf.turnMeta.activities]
+        }
+      }
+      if (chunk.type === 'tool_done' || chunk.type === 'status' || chunk.type === 'tool_start') {
+        const stillActive = [...buf.segments]
+          .reverse()
+          .find((s) => s.kind === 'tool' && s.status === 'active')
+        buf.activeTool = stillActive?.toolName ?? null
+      }
+      if (chunk.type === 'approval_needed' && chunk.approval) {
+        buf.approval = chunk.approval
+      }
+      if (chunk.type === 'approval_resolved') {
+        buf.approval = null
+      }
+      if (chunk.type === 'context_compress' && chunk.contextCompress) {
+        const { messages: compressed } = chunk.contextCompress
+        const last = buf.messages[buf.messages.length - 1]
+        buf.messages =
+          last?.role === 'user' ? [...compressed, last] : [...compressed]
+      }
+      buf.loading = true
+      buf.sendInFlight = true
+    }
+
     const offStream = window.sharker.onStream((chunk) => {
+      const ownerId = chunk.conversationId ?? streamOwnerRef.current
+      const activeId = activeConversationIdRef.current
+      // 无归属的 chunk：仅当当前会话确实在飞且尚无 streamOwner 时才上屏（兼容旧单会话）
+      // 否则丢弃/不污染当前可见 UI，避免 A 的无 id 事件在 B 上闪现
+      const applyToUi = ownerId
+        ? shouldApplyStreamToActive(ownerId, activeId)
+        : Boolean(activeId && sendInFlightRef.current && !streamOwnerRef.current)
+
+      // 后台会话：只写 buffer，绝不污染当前可见 transcript
+      if (ownerId && !applyToUi) {
+        const buf = ensureBuffer(ownerId)
+        if (
+          chunk.type === 'think' ||
+          chunk.type === 'status' ||
+          chunk.type === 'token' ||
+          chunk.type === 'tool_start' ||
+          chunk.type === 'tool_done' ||
+          chunk.type === 'tool_preview' ||
+          chunk.type === 'turn_start' ||
+          chunk.type === 'context_compress' ||
+          chunk.type === 'approval_needed' ||
+          chunk.type === 'approval_resolved' ||
+          chunk.type === 'turn_cancelled' ||
+          chunk.type === 'error'
+        ) {
+          if (
+            !shouldAcceptDoneEvent(doneCommittedMapRef.current, ownerId) &&
+            (chunk.type === 'tool_start' ||
+              chunk.type === 'tool_done' ||
+              chunk.type === 'tool_preview' ||
+              chunk.type === 'status' ||
+              chunk.type === 'token' ||
+              chunk.type === 'think')
+          ) {
+            return
+          }
+          applyChunkToBuffer(buf, chunk)
+        }
+        if (chunk.type === 'turn_start' && ownerId) {
+          // 后台会话只维护自身门闩，绝不抢当前可见会话的 streamOwner
+          doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, ownerId)
+          buf.doneCommitted = false
+          buf.loading = true
+          buf.sendInFlight = true
+        }
+        if (chunk.type === 'turn_cancelled') {
+          buf.turnOutcome = 'aborted'
+        }
+        if (chunk.type === 'done') {
+          if (
+            ownerId &&
+            streamTurnGenByConvRef.current[ownerId] != null &&
+            streamTurnGenByConvRef.current[ownerId]! < turnGenRef.current
+          ) {
+            return
+          }
+          if (ownerId && awaitingTurnStartByConvRef.current[ownerId] != null) {
+            return
+          }
+          if (!shouldAcceptDoneEvent(doneCommittedMapRef.current, ownerId)) return
+          if (buf.doneCommitted) return
+          doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, ownerId)
+          buf.doneCommitted = true
+          buf.loading = false
+          buf.sendInFlight = false
+          buf.activeTool = null
+          buf.approval = null
+          buf.segments = finalizeSegments(buf.segments)
+          const text = extractFinalContent(buf.segments) || buf.streaming
+          const durationSec = Math.max(
+            0,
+            Math.round((Date.now() - (buf.turnStartedAt ?? Date.now())) / 1000)
+          )
+          const provider = settingsRef.current.providers.find(
+            (p) => p.id === settingsRef.current.activeProviderId
+          )
+          const assistant: ChatMessage = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: text.trim(),
+            meta: {
+              browsedFiles: [...buf.turnMeta.browsedFiles],
+              activities: [...buf.turnMeta.activities],
+              segments: buf.segments,
+              durationSec: durationSec > 0 ? durationSec : undefined,
+              model: provider?.model?.trim() || undefined,
+              outcome: buf.turnOutcome
+            }
+          }
+          buf.messages = appendAssistantMessage(buf.messages, assistant)
+          buf.streaming = ''
+          patchConversationSummary(ownerId, buf.messages)
+          bumpSessionLive()
+          void persistActiveConversation(buf.messages, ownerId)
+          if (streamOwnerRef.current === ownerId) streamOwnerRef.current = null
+          const wsId = settingsRef.current.activeWorkspaceId
+          if (wsId) void refreshConversationList(wsId)
+          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, ownerId)
+          sessionQueuesRef.current = queues
+          if (activeConversationIdRef.current === ownerId) {
+            syncActiveQueueUi(queues, ownerId)
+          }
+          if (next) {
+            void dispatchTurnRef.current(next.text, next.attachments, ownerId)
+          } else {
+            sessionBuffersRef.current.set(ownerId, buf)
+          }
+        }
+        return
+      }
+
       if (
         chunk.type === 'think' ||
         chunk.type === 'status' ||
         chunk.type === 'token' ||
         chunk.type === 'tool_start' ||
         chunk.type === 'tool_done' ||
+        chunk.type === 'tool_preview' ||
         chunk.type === 'turn_start' ||
         chunk.type === 'context_compress' ||
         chunk.type === 'approval_needed' ||
@@ -474,6 +1073,28 @@ export default function App() {
         chunk.type === 'turn_cancelled' ||
         chunk.type === 'error'
       ) {
+        // 插队后旧 turn 的迟到 chunk/done：若代数已落后则丢弃
+        if (
+          ownerId &&
+          streamTurnGenByConvRef.current[ownerId] != null &&
+          streamTurnGenByConvRef.current[ownerId]! < turnGenRef.current &&
+          chunk.type !== 'turn_start'
+        ) {
+          return
+        }
+        // 本会话已 stop/commit 后，忽略迟到的工具进度，防止把 cancelled 又改回 done
+        if (
+          ownerId &&
+          !shouldAcceptDoneEvent(doneCommittedMapRef.current, ownerId) &&
+          (chunk.type === 'tool_start' ||
+            chunk.type === 'tool_done' ||
+            chunk.type === 'tool_preview' ||
+            chunk.type === 'status' ||
+            chunk.type === 'token' ||
+            chunk.type === 'think')
+        ) {
+          return
+        }
         if (chunk.type === 'think' && chunk.content) {
           turnHadThinkingRef.current = true
           setTurnHadThinking(true)
@@ -498,14 +1119,6 @@ export default function App() {
           }
           syncLiveTurnMeta()
         }
-        if (chunk.type === 'turn_start' && chunk.skillNames?.length) {
-          const skillActs = activitiesFromSkills(chunk.skillNames)
-          turnMetaRef.current.activities = [
-            ...skillActs,
-            ...turnMetaRef.current.activities.filter((a) => a.kind !== 'skill')
-          ]
-          syncLiveTurnMeta()
-        }
         if (chunk.type === 'context_compress' && chunk.contextCompress) {
           const { messages: compressed, removedCount, beforeTokens, afterTokens } =
             chunk.contextCompress
@@ -513,7 +1126,8 @@ export default function App() {
             const last = msgs[msgs.length - 1]
             const next =
               last?.role === 'user' ? [...compressed, last] : [...compressed]
-            void persistActiveConversation(next)
+            messagesRef.current = next
+            void persistActiveConversation(next, ownerId ?? undefined)
             return next
           })
           turnMetaRef.current.activities.push({
@@ -523,24 +1137,46 @@ export default function App() {
           syncLiveTurnMeta()
         }
         if (chunk.type === 'approval_needed' && chunk.approval) {
-          setApproval(chunk.approval)
+          // 仅当前会话展示审批条
+          if (!chunk.approval.conversationId || chunk.approval.conversationId === activeId) {
+            setApproval(chunk.approval)
+            approvalRef.current = chunk.approval
+          }
+        }
+        if (chunk.type === 'approval_resolved') {
+          setApproval(null)
+          approvalRef.current = null
+        }
+        if (chunk.type === 'turn_start' && ownerId) {
+          streamOwnerRef.current = ownerId
+          if (ownerId && streamTurnGenByConvRef.current[ownerId] == null) {
+            streamTurnGenByConvRef.current[ownerId] = turnGenRef.current
+          }
+          // 新 turn 已真正开始：允许后续 done 收尾
+          if (ownerId) delete awaitingTurnStartByConvRef.current[ownerId]
+          doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, ownerId)
+          doneCommittedRef.current = false
+        }
+        if (chunk.type === 'turn_cancelled') {
+          turnOutcomeRef.current = 'aborted'
         }
         flushSegmentsToUI()
         return
       }
       if (chunk.type === 'plan_ready' && chunk.planDocument) {
-        setPendingPlan({ document: chunk.planDocument, filePath: chunk.planFilePath })
+        if (applyToUi || !ownerId) {
+          setPendingPlan({ document: chunk.planDocument, filePath: chunk.planFilePath })
+        }
         return
       }
-      if (chunk.type === 'approval_needed' && chunk.approval) {
-        setApproval(chunk.approval)
-      }
       if (chunk.type === 'command' && chunk.command === 'clear') {
+        if (!applyToUi && ownerId) return
         setMessages([])
         messagesRef.current = []
         void persistActiveConversation([])
       }
       if (chunk.type === 'command' && chunk.command === 'compact') {
+        if (!applyToUi && ownerId) return
         void (async () => {
           const result = await window.sharker.compressContext(messagesRef.current)
           if (!result.compressed) return
@@ -550,8 +1186,68 @@ export default function App() {
         })()
       }
       if (chunk.type === 'done') {
-        if (doneCommittedRef.current) return
-        doneCommittedRef.current = true
+        const completedId = ownerId ?? activeConversationIdRef.current
+        // 插队后旧 turn 的迟到 done：代数落后则直接丢弃，避免把新 turn loading 清掉
+        if (
+          completedId &&
+          streamTurnGenByConvRef.current[completedId] != null &&
+          streamTurnGenByConvRef.current[completedId]! < turnGenRef.current
+        ) {
+          return
+        }
+        // 新 turn 已派发但尚未 turn_start：此时 done 只可能来自刚 abort 的旧 turn
+        if (completedId && awaitingTurnStartByConvRef.current[completedId] != null) {
+          return
+        }
+        // 按会话门闩：A 的 stop 不得挡住 B 的 real done
+        if (!shouldAcceptDoneEvent(doneCommittedMapRef.current, completedId)) return
+        if (completedId) {
+          doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, completedId)
+        }
+        const isActiveDone =
+          !completedId || completedId === activeConversationIdRef.current
+        if (!isActiveDone) {
+          // 防御：owner 与当前可见会话不一致时，走 buffer 收尾，绝不清当前 UI
+          const buf = ensureBuffer(completedId!)
+          if (!buf.doneCommitted) {
+            buf.doneCommitted = true
+            buf.loading = false
+            buf.sendInFlight = false
+            buf.activeTool = null
+            buf.approval = null
+            buf.segments = finalizeSegments(buf.segments)
+            const text = extractFinalContent(buf.segments) || buf.streaming
+            const durationSec = Math.max(
+              0,
+              Math.round((Date.now() - (buf.turnStartedAt ?? Date.now())) / 1000)
+            )
+            const provider = settingsRef.current.providers.find(
+              (p) => p.id === settingsRef.current.activeProviderId
+            )
+            const assistant: ChatMessage = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: text.trim(),
+              meta: {
+                browsedFiles: [...buf.turnMeta.browsedFiles],
+                activities: [...buf.turnMeta.activities],
+                segments: buf.segments,
+                durationSec: durationSec > 0 ? durationSec : undefined,
+                model: provider?.model?.trim() || undefined,
+                outcome: buf.turnOutcome
+              }
+            }
+            buf.messages = appendAssistantMessage(buf.messages, assistant)
+            buf.streaming = ''
+            sessionBuffersRef.current.set(completedId!, buf)
+            void persistActiveConversation(buf.messages, completedId)
+          }
+          if (streamOwnerRef.current === completedId) streamOwnerRef.current = null
+          return
+        }
+        if (completedId === activeConversationIdRef.current) {
+          doneCommittedRef.current = true
+        }
         if (streamRafRef.current != null) {
           cancelAnimationFrame(streamRafRef.current)
           streamRafRef.current = null
@@ -565,25 +1261,43 @@ export default function App() {
           thinkRafRef.current = null
         }
         segmentsRef.current = finalizeSegments(segmentsRef.current)
+        // 先把最终片段刷到直播区，再提交到消息列表；loading 由 commit 后统一关闭，避免空窗闪断
         setLiveSegments(cloneSegments(segmentsRef.current))
-        setLoading(false)
-        setActiveTool(null)
-        sendInFlightRef.current = false
         setTurnThinking(thinkingPreviewFromSegments(segmentsRef.current))
         setStreaming(extractFinalContent(segmentsRef.current))
-        commitAssistantReply(streamingRef.current)
+        setActiveTool(null)
+        sendInFlightRef.current = false
+        commitAssistantReply(streamingRef.current, '', turnOutcomeRef.current, completedId)
+        segmentsRef.current = []
+        setLiveSegments([])
+        setLoading(false)
+        bumpSessionLive()
+        // 当前会话完成后再删 buffer；后台会话保留给切回恢复
+        if (completedId && completedId === activeConversationIdRef.current) {
+          sessionBuffersRef.current.delete(completedId)
+        }
+        if (streamOwnerRef.current === completedId) streamOwnerRef.current = null
         const wsId = settingsRef.current.activeWorkspaceId
         if (wsId) void refreshConversationList(wsId)
-        const queue = queuedPromptsRef.current
-        if (queue.length > 0) {
-          const [next, ...rest] = queue
-          setQueuedPrompts(rest)
-          queuedPromptsRef.current = rest
-          void dispatchTurnRef.current(next.text, next.attachments)
+        if (completedId) {
+          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, completedId)
+          syncActiveQueueUi(queues, activeConversationIdRef.current)
+          if (next) {
+            void dispatchTurnRef.current(next.text, next.attachments, next.conversationId)
+          }
         }
       }
     })
-    const offApproval = window.sharker.onApproval((req) => setApproval(req))
+    const offApproval = window.sharker.onApproval((req) => {
+      const activeId = activeConversationIdRef.current
+      if (req.conversationId && activeId && req.conversationId !== activeId) {
+        const buf = sessionBuffersRef.current.get(req.conversationId)
+        if (buf) buf.approval = req
+        return
+      }
+      setApproval(req)
+      approvalRef.current = req
+    })
     return () => {
       offStream()
       offApproval()
@@ -591,13 +1305,103 @@ export default function App() {
       if (streamFlushTimerRef.current != null) clearTimeout(streamFlushTimerRef.current)
       if (thinkRafRef.current != null) cancelAnimationFrame(thinkRafRef.current)
     }
-  }, [commitAssistantReply, flushSegmentsToUI, syncLiveTurnMeta, refreshConversationList, persistActiveConversation])
+  }, [
+    commitAssistantReply,
+    flushSegmentsToUI,
+    syncLiveTurnMeta,
+    refreshConversationList,
+    persistActiveConversation,
+    syncActiveQueueUi
+  ])
 
-  /** 派发单条 turn：写入用户消息并触发 IPC */
+  /** 带超时的 Promise，防止 IPC/数据库卡住导致「发了没反应」 */
+  const withTimeout = useCallback(
+    <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+          reject(new Error(`${label}超时（${Math.round(ms / 1000)}s）。请重试；若反复出现请重启应用。`))
+        }, ms)
+        promise.then(
+          (value) => {
+            window.clearTimeout(timer)
+            resolve(value)
+          },
+          (err) => {
+            window.clearTimeout(timer)
+            reject(err)
+          }
+        )
+      })
+    },
+    []
+  )
+
+  /** 派发单条 turn：立刻展示用户消息，再触发 IPC（绑定 conversationId） */
   const dispatchTurn = useCallback(
-    async (text: string, attachments: ChatAttachment[] = []) => {
-      const current = settingsRef.current
-      const providerErr = validateActiveProvider(current)
+    async (text: string, attachments: ChatAttachment[] = [], conversationId?: string) => {
+      let convId = conversationId ?? activeConversationIdRef.current
+
+      // 后台会话续跑：只更新该会话 buffer，不污染当前可见会话
+      if (convId && convId !== activeConversationIdRef.current) {
+        let buf = sessionBuffersRef.current.get(convId)
+        if (!buf) {
+          buf = {
+            messages: [],
+            loading: true,
+            segments: [],
+            streaming: '',
+            turnThinking: '',
+            approval: null,
+            liveTurnMeta: null,
+            turnStartedAt: Date.now(),
+            turnHadThinking: false,
+            activeTool: null,
+            sendInFlight: true,
+            doneCommitted: false,
+            turnOutcome: 'success',
+            turnMeta: { browsedFiles: [], activities: [] }
+          }
+        }
+        const userMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'user',
+          content: text,
+          attachments: attachments.length ? attachments : undefined
+        }
+        const history = buf.messages
+        buf.messages = [...history, userMsg]
+        buf.loading = true
+        buf.sendInFlight = true
+        buf.doneCommitted = false
+        patchConversationSummary(convId, buf.messages)
+        bumpSessionLive()
+        const seedAt = Date.now()
+        buf.segments = [
+          {
+            id: `status-local-start-${seedAt}`,
+            kind: 'status',
+            content: '连接模型并准备任务…',
+            status: 'active',
+            startedAt: seedAt
+          }
+        ]
+        buf.streaming = ''
+        buf.turnThinking = ''
+        buf.approval = null
+        buf.turnStartedAt = seedAt
+        buf.turnMeta = { browsedFiles: [], activities: [] }
+        sessionBuffersRef.current.set(convId, buf)
+        doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
+        try {
+          await window.sharker.sendMessage(text, history, attachments, convId)
+          void persistActiveConversation(buf.messages, convId)
+        } catch (e) {
+          console.error('后台会话发送失败', e)
+          buf.loading = false
+          buf.sendInFlight = false
+        }
+        return
+      }
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
@@ -609,59 +1413,133 @@ export default function App() {
       const history = messagesRef.current
       const nextMessages = [...history, userMsg]
 
-      if (providerErr) {
-        const workspaceId = await ensureActiveConversation({ preserveMessages: true })
-        const errReply: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: `**错误**: ${providerErr}`,
-          meta: {
-            browsedFiles: [],
-            activities: [],
-            outcome: 'error',
-            retryOfUserMessageId: userMsg.id
-          }
-        }
-        const withErr = [...nextMessages, errReply]
-        setMessages(withErr)
-        messagesRef.current = withErr
-        if (workspaceId) void persistActiveConversation(withErr)
-        return
-      }
+      // 先落屏：避免 createConversation / 鉴权等待时「输入消失却没反应」
+      setMessages(nextMessages)
+      messagesRef.current = nextMessages
+      if (convId) patchConversationSummary(convId, nextMessages)
+      bumpSessionLive()
 
+      // 客户端不拦截：主进程有完整 Key/鉴权；设置回写时渲染侧 key 可能为空
+      const myTurn = ++turnGenRef.current
       sendInFlightRef.current = true
       doneCommittedRef.current = false
       setLoading(true)
+      bumpSessionLive()
       beginTurnMeta()
       activeUserMessageIdRef.current = userMsg.id
       streamingRef.current = ''
       turnThinkingRef.current = ''
-      segmentsRef.current = []
-      setLiveSegments([])
+      // 立刻放一个“准备中”片段：即便主进程还没回 turn_start，直播区也有呼吸与步骤
+      const seedAt = Date.now()
+      segmentsRef.current = [
+        {
+          id: `status-local-start-${seedAt}`,
+          kind: 'status',
+          content: '连接模型并准备任务…',
+          status: 'active',
+          startedAt: seedAt
+        }
+      ]
+      setLiveSegments(cloneSegments(segmentsRef.current))
       setStreaming('')
       setTurnThinking('')
 
       try {
-        const workspaceId = await ensureActiveConversation({ preserveMessages: true })
-        if (!workspaceId) {
-          throw new Error('无法创建或加载当前对话')
+        if (!window.sharker?.sendMessage) {
+          throw new Error('应用桥接未就绪（window.sharker 不可用），请完全退出后重新 npm run dev')
         }
-        setMessages(nextMessages)
-        messagesRef.current = nextMessages
-        void persistActiveConversation(nextMessages)
-        await window.sharker.sendMessage(text, history, attachments)
+
+        // 会话准备与发消息并行：DB/列表再慢也不能挡住模型调用
+        const ensureP = withTimeout(
+          ensureActiveConversation({ preserveMessages: true }),
+          15_000,
+          '准备对话'
+        ).then((workspaceId) => {
+          convId = activeConversationIdRef.current ?? convId
+          if (workspaceId) void persistActiveConversation(nextMessages, convId ?? undefined)
+          return workspaceId
+        })
+
+        // 确保有 conversationId 再发（新建会话时 ensure 会写入 active）
+        await ensureP
+        convId = activeConversationIdRef.current ?? convId
+        // streamOwner 仅在主进程真正 turn_start 时设置，避免 B 排队时抢占 A 的归属
+        if (convId) {
+          doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
+          // 尽早标记归属：切换会话后、turn_start 到达前，chunk 也能落到正确 buffer
+          streamOwnerRef.current = convId
+          if (convId) {
+            streamTurnGenByConvRef.current[convId] = myTurn
+            // 在真正 turn_start 前，旧 turn 的 done 一律视为过期
+            awaitingTurnStartByConvRef.current[convId] = myTurn
+          }
+          sessionBuffersRef.current.set(convId, {
+            messages: nextMessages,
+            loading: true,
+            segments: cloneSegments(segmentsRef.current),
+            streaming: '',
+            turnThinking: '',
+            approval: null,
+            liveTurnMeta: null,
+            turnStartedAt: turnStartedAtRef.current || Date.now(),
+            turnHadThinking: false,
+            activeTool: null,
+            sendInFlight: true,
+            doneCommitted: false,
+            turnOutcome: 'success',
+            activeUserMessageId: userMsg.id,
+            turnMeta: { browsedFiles: [], activities: [] }
+          })
+        }
+
+        await window.sharker.sendMessage(text, history, attachments, convId ?? undefined)
       } catch (e) {
         console.error('发送失败', e)
-        doneCommittedRef.current = true
-        sendInFlightRef.current = false
-        setLoading(false)
-        setActiveTool(null)
-        const msg = e instanceof Error ? e.message : String(e)
-        turnOutcomeRef.current = 'error'
-        commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`, 'error')
+        if (turnGenRef.current === myTurn) {
+          doneCommittedRef.current = true
+          const msg = e instanceof Error ? e.message : String(e)
+          turnOutcomeRef.current = 'error'
+          commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`, 'error')
+          segmentsRef.current = []
+          setLiveSegments([])
+          setStreaming('')
+          setLoading(false)
+        }
+      } finally {
+        // sendMessage 在 turn 结束后才 resolve；仅清理本轮。
+        // 若 done 事件尚未提交（极少数竞态），保留 loading，让 onStream(done) 收尾，避免直播区突然消失。
+        // 若用户已切到其他会话，只维护原会话 buffer，绝不污染当前可见 UI。
+        if (turnGenRef.current === myTurn) {
+          const stillActive = !convId || activeConversationIdRef.current === convId
+          if (stillActive) {
+            sendInFlightRef.current = false
+            setActiveTool(null)
+            if (doneCommittedRef.current) {
+              segmentsRef.current = []
+              setLiveSegments([])
+              setLoading(false)
+            }
+          } else if (convId) {
+            const buf = sessionBuffersRef.current.get(convId)
+            if (buf) {
+              buf.sendInFlight = false
+              if (buf.doneCommitted) {
+                buf.loading = false
+                buf.activeTool = null
+              }
+              sessionBuffersRef.current.set(convId, buf)
+            }
+          }
+        }
       }
     },
-    [beginTurnMeta, commitAssistantReply, ensureActiveConversation, persistActiveConversation]
+    [
+      beginTurnMeta,
+      commitAssistantReply,
+      ensureActiveConversation,
+      persistActiveConversation,
+      withTimeout
+    ]
   )
 
   useEffect(() => {
@@ -681,7 +1559,11 @@ export default function App() {
       mode: PromptSubmitMode = 'send',
       attachments: ChatAttachment[] = []
     ) => {
-      await flushSettingsDraftIfNeeded()
+      try {
+        await flushSettingsDraftIfNeeded()
+      } catch (e) {
+        console.error('flush settings failed', e)
+      }
       if (!getActiveWorkspacePath(settingsRef.current)) {
         const trimmedEarly = text.trim()
         if (!trimmedEarly) return
@@ -706,56 +1588,105 @@ export default function App() {
       const trimmed = text.trim()
       if (!trimmed) return
 
-      // UI 斜杠命令（完整匹配 name，可选 args）
-      if (trimmed.startsWith('/')) {
-        const body = trimmed.slice(1)
-        const sp = body.indexOf(' ')
-        const name = (sp >= 0 ? body.slice(0, sp) : body).toLowerCase()
-        const args = sp >= 0 ? body.slice(sp + 1) : ''
-        const meta = SLASH_COMMANDS.find((c) => c.name === name && c.scope === 'ui')
-        if (meta) {
-          await handleSlashActionRef.current(meta, args)
-          return
-        }
-      }
+      // 斜杠命令 UI/拦截暂关（后续再恢复）
 
+      const convId = activeConversationIdRef.current
       const busy = loading || sendInFlightRef.current
       if (busy) {
-        const item: QueuedPrompt = {
-          id: crypto.randomUUID(),
-          text: trimmed,
-          attachments: attachments.length ? attachments : undefined
-        }
-        if (mode === 'jump') {
-          setQueuedPrompts((prev) => {
-            const next = [item, ...prev]
-            queuedPromptsRef.current = next
-            return next
-          })
-          await window.sharker.abortChat()
+        // 无会话 id 时无法安全归属队列：插队中止后直接发
+        if (!convId) {
+          if (mode === 'jump') {
+            try {
+              await window.sharker.abortChat()
+            } catch (e) {
+              console.error('abort failed', e)
+            }
+            sendInFlightRef.current = false
+            setLoading(false)
+            await dispatchTurn(trimmed, attachments)
+          }
           return
         }
-        setQueuedPrompts((prev) => {
-          const next = [...prev, item]
-          queuedPromptsRef.current = next
-          return next
-        })
+        const item = createQueuedPrompt(
+          convId,
+          trimmed,
+          attachments.length ? attachments : undefined
+        )
+        if (mode === 'jump') {
+          // 插队：中止当前可见 turn 后立刻派发本条（不再依赖 done 回调出队）
+          // 1) 先作废当前 turn 代数，避免旧 finally/seed 干扰
+          turnGenRef.current += 1
+          // 2) 本地收口 live（调试 seed 无后端 turn 时也必须能停）
+          if (sendInFlightRef.current || loading) {
+            doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, convId)
+            doneCommittedRef.current = true
+            turnOutcomeRef.current = 'aborted'
+            segmentsRef.current = applyStreamChunk(segmentsRef.current, {
+              type: 'turn_cancelled',
+              conversationId: convId,
+              timestamp: Date.now()
+            })
+            segmentsRef.current = finalizeSegments(segmentsRef.current)
+            commitAssistantReply(
+              streamingRef.current,
+              '\n\n_(已停止)_',
+              'aborted',
+              convId
+            )
+          }
+          segmentsRef.current = []
+          setLiveSegments([])
+          setStreaming('')
+          streamingRef.current = ''
+          setTurnThinking('')
+          turnThinkingRef.current = ''
+          setActiveTool(null)
+          setApproval(null)
+          approvalRef.current = null
+          sendInFlightRef.current = false
+          setLoading(false)
+          if (streamOwnerRef.current === convId) streamOwnerRef.current = null
+          // 3) 清掉该会话排队，插队消息直接执行
+          if (sessionQueuesRef.current[convId]) {
+            const cleared = { ...sessionQueuesRef.current }
+            delete cleared[convId]
+            syncActiveQueueUi(cleared, convId)
+          }
+          try {
+            await window.sharker.abortChat(convId)
+          } catch (e) {
+            console.error('abort failed', e)
+          }
+          // 4) 打开新 turn 门闩并立即派发
+          doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
+          doneCommittedRef.current = false
+          // 抬代数：后续旧 abort/done 一律视为过期
+          const jumpGen = ++turnGenRef.current
+          streamTurnGenByConvRef.current[convId] = jumpGen
+          awaitingTurnStartByConvRef.current[convId] = jumpGen
+          void dispatchTurn(trimmed, attachments, convId)
+          return
+        }
+        const queues = enqueueForConversation(sessionQueuesRef.current, convId, item, 'append')
+        syncActiveQueueUi(queues, convId)
         return
       }
 
-      await dispatchTurn(trimmed, attachments)
+      await dispatchTurn(trimmed, attachments, convId ?? undefined)
     },
-    [dispatchTurn, flushSettingsDraftIfNeeded, loading]
+    [commitAssistantReply, dispatchTurn, flushSettingsDraftIfNeeded, loading, syncActiveQueueUi]
   )
 
-  /** 取消排队中的消息 */
-  const handleCancelQueued = useCallback((id: string) => {
-    setQueuedPrompts((prev) => {
-      const next = prev.filter((q) => q.id !== id)
-      queuedPromptsRef.current = next
-      return next
-    })
-  }, [])
+  /** 取消排队中的消息（仅当前会话） */
+  const handleCancelQueued = useCallback(
+    (id: string) => {
+      const convId = activeConversationIdRef.current
+      if (!convId) return
+      const queues = cancelQueuedPrompt(sessionQueuesRef.current, convId, id)
+      syncActiveQueueUi(queues, convId)
+    },
+    [syncActiveQueueUi]
+  )
 
   /** Replay the latest failed turn without duplicating its user message. */
   const handleRetry = useCallback(
@@ -764,13 +1695,53 @@ export default function App() {
       const index = current.findIndex((message) => message.id === userMessageId && message.role === 'user')
       const original = current[index]
       if (index < 0 || !original) return
+      // 重试前清掉当前可见 live/错误态，避免旧过程与新 turn 叠在一起
+      if (sendInFlightRef.current || loading) {
+        try {
+          await window.sharker.abortChat(activeConversationIdRef.current ?? undefined)
+        } catch {
+          /* ignore */
+        }
+      }
+      // 重试：立刻清错误/旧过程，并先 seed 直播头，避免“点了重试却像停住”
+      // 抬高 turn 代数，避免上一轮 finally 把新直播 loading 清掉
+      turnGenRef.current += 1
+      sendInFlightRef.current = true
+      doneCommittedRef.current = false
+      if (activeConversationIdRef.current) {
+        doneCommittedMapRef.current = clearDoneCommitted(
+          doneCommittedMapRef.current,
+          activeConversationIdRef.current
+        )
+      }
+      setApproval(null)
+      approvalRef.current = null
+      setActiveTool(null)
+      setStreaming('')
+      streamingRef.current = ''
+      setTurnThinking('')
+      turnThinkingRef.current = ''
+      const seedAt = Date.now()
+      segmentsRef.current = [
+        {
+          id: `status-retry-start-${seedAt}`,
+          kind: 'status',
+          content: '连接模型并准备任务…',
+          status: 'active',
+          startedAt: seedAt
+        }
+      ]
+      setLiveSegments(cloneSegments(segmentsRef.current))
+      setLoading(true)
+      setTurnStartedAt(seedAt)
+      turnStartedAtRef.current = seedAt
       const history = current.slice(0, index)
       setMessages(history)
       messagesRef.current = history
       await persistActiveConversation(history)
       await dispatchTurn(original.content, original.attachments ?? [])
     },
-    [dispatchTurn, persistActiveConversation]
+    [dispatchTurn, loading, persistActiveConversation]
   )
 
   /** 用户点击 Build：进入 build 阶段并按计划派发 */
@@ -783,23 +1754,120 @@ export default function App() {
     )
   }, [pendingPlan, handlePromptSubmit])
 
-  /** 用户点击停止：中止 IPC 并提交已流式内容 */
+  /**
+   * 用户点击停止：只取消 **当前可见且 busy** 的会话。
+   * 不全局 abort 其他会话的 activeSlot；不给其他会话写「已停止」。
+   */
   const handleAbort = useCallback(async () => {
-    await window.sharker.abortChat()
-    sendInFlightRef.current = false
-    doneCommittedRef.current = true
-    setLoading(false)
-    setActiveTool(null)
-    setApproval(null)
-    setApprovalResponding(false)
-    setTurnThinking(turnThinkingRef.current)
-    turnOutcomeRef.current = 'aborted'
-    commitAssistantReply(streamingRef.current, '\n\n_(已停止)_', 'aborted')
-  }, [commitAssistantReply])
+    const activeId = activeConversationIdRef.current
+    const busy = sendInFlightRef.current || loading
+    const action = resolveStopAction({
+      activeConversationId: activeId,
+      activeIsBusy: busy
+    })
+    if (!action.abortConversationId) return
 
-  /** 设置页保存回调 */
+    // 先关门闩 + 同步把未完成工具标 cancelled，再 abort：
+    // 避免 abort 等待期间 tool_done 抢先把命令标成 done，摘要误显示“运行 1 个命令”
+    doneCommittedMapRef.current = markDoneCommitted(
+      doneCommittedMapRef.current,
+      action.abortConversationId
+    )
+    if (action.commitStopToConversationId === activeConversationIdRef.current) {
+      doneCommittedRef.current = true
+      turnOutcomeRef.current = 'aborted'
+      segmentsRef.current = applyStreamChunk(segmentsRef.current, {
+        type: 'turn_cancelled',
+        conversationId: action.abortConversationId ?? undefined,
+        timestamp: Date.now()
+      })
+      segmentsRef.current = finalizeSegments(segmentsRef.current)
+      setLiveSegments(cloneSegments(segmentsRef.current))
+    } else if (action.commitStopToConversationId) {
+      const buf = sessionBuffersRef.current.get(action.commitStopToConversationId)
+      if (buf) {
+        buf.turnOutcome = 'aborted'
+        buf.segments = applyStreamChunk(buf.segments, {
+          type: 'turn_cancelled',
+          conversationId: action.commitStopToConversationId,
+          timestamp: Date.now()
+        })
+        buf.segments = finalizeSegments(buf.segments)
+        sessionBuffersRef.current.set(action.commitStopToConversationId, buf)
+      }
+    }
+    await window.sharker.abortChat(action.abortConversationId)
+
+    if (action.commitStopToConversationId === activeConversationIdRef.current) {
+      sendInFlightRef.current = false
+      doneCommittedRef.current = true
+      setActiveTool(null)
+      setApproval(null)
+      setApprovalResponding(false)
+      setTurnThinking(turnThinkingRef.current)
+      turnOutcomeRef.current = 'aborted'
+      // 再次收口，防止 abort 回调间隙又写入 active 工具
+      segmentsRef.current = applyStreamChunk(segmentsRef.current, {
+        type: 'turn_cancelled',
+        conversationId: action.abortConversationId ?? undefined,
+        timestamp: Date.now()
+      })
+      segmentsRef.current = finalizeSegments(segmentsRef.current)
+      commitAssistantReply(
+        streamingRef.current,
+        '\n\n_(已停止)_',
+        'aborted',
+        action.commitStopToConversationId
+      )
+      segmentsRef.current = []
+      setLiveSegments([])
+      setStreaming('')
+      setLoading(false)
+      if (streamOwnerRef.current === action.abortConversationId) {
+        streamOwnerRef.current = null
+      }
+    } else if (action.commitStopToConversationId) {
+      // 缓冲会话上的 stop（一般不应发生：Stop 只对 active）
+      const buf = sessionBuffersRef.current.get(action.commitStopToConversationId)
+      if (buf) {
+        buf.segments = applyStreamChunk(buf.segments, {
+          type: 'turn_cancelled',
+          conversationId: action.commitStopToConversationId,
+          timestamp: Date.now()
+        })
+        buf.segments = finalizeSegments(buf.segments)
+        buf.turnOutcome = 'aborted'
+        sessionBuffersRef.current.set(action.commitStopToConversationId, buf)
+      }
+      commitAssistantReply('', '\n\n_(已停止)_', 'aborted', action.commitStopToConversationId)
+    }
+  }, [commitAssistantReply, loading])
+
+  /**
+   * 设置页保存回调。
+   * 只合并「设置字段」，保留当前会话正在使用的 activeWorkspace / workspaces，
+   * 避免外观/模型 debounce 回写把刚切换的项目冲回「对话」。
+   */
   const handleSaveSettings = async (next: AppSettings) => {
-    await persistSettings(next)
+    const current = settingsRef.current
+    const merged: AppSettings = {
+      ...current,
+      // 设置页可改字段
+      permissionMode: next.permissionMode,
+      networkMode: next.networkMode,
+      workspaceProfile: next.workspaceProfile,
+      providers: next.providers,
+      activeProviderId: next.activeProviderId,
+      computerUseEnabled: next.computerUseEnabled,
+      browserUseEnabled: next.browserUseEnabled,
+      uiGlass: next.uiGlass,
+      uiTheme: next.uiTheme,
+      // 工作区选择以当前 live 状态为准（侧栏切换优先）
+      workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
+      activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
+      workspacePath: current.workspacePath || next.workspacePath
+    }
+    await persistSettings(merged)
   }
 
   /** 工作区与对话：切换、新建、删除、置顶 */
@@ -808,7 +1876,7 @@ export default function App() {
       await flushSettingsDraftIfNeeded()
       if (sendInFlightRef.current || loading) {
         await window.sharker.abortChat()
-        clearChatUiState()
+        clearChatUiState({ dropActiveBuffer: true })
       }
 
       const prevId = settingsRef.current.activeWorkspaceId
@@ -832,7 +1900,16 @@ export default function App() {
       try {
         await window.sharker.saveSettings(next)
         if (settingsRef.current.activeWorkspaceId !== id) return
-        const updated = await window.sharker.getSettings()
+        let updated = await window.sharker.getSettings()
+        // 防御：设置页 debounce 可能夹带旧 activeWorkspace 回写，把刚选的项目冲掉
+        if (updated.activeWorkspaceId !== id) {
+          const repaired = withActiveWorkspace(updated, id)
+          await window.sharker.saveSettings(repaired)
+          updated = await window.sharker.getSettings()
+          if (updated.activeWorkspaceId !== id) {
+            updated = repaired
+          }
+        }
         if (settingsRef.current.activeWorkspaceId !== id) return
         settingsRef.current = updated
         setSettings(updated)
@@ -844,32 +1921,93 @@ export default function App() {
     [clearChatUiState, flushSettingsDraftIfNeeded, loadWorkspaceSession]
   )
 
-  /** 侧栏切换对话 */
+  /** 侧栏切换对话：不 abort 原会话，队列与流按 conversationId 隔离 */
   const handleSelectConversation = async (workspaceId: string, conversationId: string) => {
+    await flushSettingsDraftIfNeeded()
+    const prevId = activeConversationIdRef.current
+    if (prevId && prevId !== conversationId) {
+      snapshotActiveSessionBuffer()
+      cancelScheduledStreamPaint()
+    }
+
     setActiveConversationId(conversationId)
     activeConversationIdRef.current = conversationId
     setPage('chat')
+    syncActiveQueueUi(sessionQueuesRef.current, conversationId)
 
-    await flushSettingsDraftIfNeeded()
-    if (sendInFlightRef.current || loading) {
-      await window.sharker.abortChat()
-      clearChatUiState()
-    }
     if (settingsRef.current.activeWorkspaceId !== workspaceId) {
       await persistSettings(withActiveWorkspace(settingsRef.current, workspaceId))
     }
+    // 与加载并行，不阻塞首帧恢复
+    const setActiveP = window.sharker.setActiveConversation(workspaceId, conversationId)
+
+    const buf = sessionBuffersRef.current.get(conversationId)
+    if (buf) {
+      const live =
+        buf.loading ||
+        buf.sendInFlight ||
+        (buf.segments.length > 0 && !buf.doneCommitted)
+      if (live) {
+        applyBufferToUi(buf)
+        // 恢复进行中会话时，保持流归属，便于后续 done/status 正确落到当前 UI
+        if ((buf.loading || buf.sendInFlight) && !buf.doneCommitted) {
+          streamOwnerRef.current = conversationId
+          doneCommittedRef.current = false
+        }
+        await setActiveP
+        return
+      }
+      // 后台已完成但落盘可能尚未完成：优先用内存 buffer，避免切回空白
+      if (buf.messages.length > 0) {
+        messagesRef.current = buf.messages
+        setMessages(buf.messages)
+        sendInFlightRef.current = false
+        doneCommittedRef.current = true
+        streamingRef.current = ''
+        turnThinkingRef.current = ''
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        setTurnThinking('')
+        setLoading(false)
+        setActiveTool(null)
+        setApproval(null)
+        setApprovalResponding(false)
+        resetTurnMeta()
+        // 已提交的缓冲可以释放，防止无限堆积
+        sessionBuffersRef.current.delete(conversationId)
+        await setActiveP
+        return
+      }
+    }
+
+    // 先加载目标会话，再一次性替换 UI，避免“清空 → 等待”造成的空白闪帧
     const conv = await window.sharker.loadConversation(workspaceId, conversationId)
-    await window.sharker.setActiveConversation(workspaceId, conversationId)
+    await setActiveP
+    if (activeConversationIdRef.current !== conversationId) return
     const loaded = conv?.messages ?? []
+    sendInFlightRef.current = false
+    doneCommittedRef.current = true
+    streamingRef.current = ''
+    turnThinkingRef.current = ''
+    segmentsRef.current = []
+    setLiveSegments([])
+    setStreaming('')
+    setTurnThinking('')
+    setLoading(false)
+    setActiveTool(null)
+    setApproval(null)
+    setApprovalResponding(false)
+    resetTurnMeta()
     messagesRef.current = loaded
     setMessages(loaded)
   }
 
-  /** 删除对话并选中相邻条目 */
+  /** 删除对话并选中相邻条目（仅设置 → 已归档 使用） */
   const handleDeleteConversation = async (workspaceId: string, conversationId: string) => {
     if (sendInFlightRef.current || loading) {
       await window.sharker.abortChat()
-      clearChatUiState()
+      clearChatUiState({ dropActiveBuffer: true })
     }
 
     const wasActive = activeConversationIdRef.current === conversationId
@@ -899,20 +2037,114 @@ export default function App() {
     }
   }
 
-  /** 在工作区创建新对话 */
-  const handleNewConversation = async (workspaceId: string) => {
+  /** 归档对话（主侧栏）：移出列表，当前对话则切换相邻 */
+  const handleArchiveConversation = async (workspaceId: string, conversationId: string) => {
+    if (typeof window.sharker.archiveConversation !== 'function') {
+      console.error('archiveConversation 不可用：请完全重启应用以加载 preload')
+      window.alert('归档功能需要重启应用后生效，请关闭并重新打开 Sharker。')
+      return
+    }
+
     if (sendInFlightRef.current || loading) {
       await window.sharker.abortChat()
+      clearChatUiState({ dropActiveBuffer: true })
     }
+
+    const wasActive = activeConversationIdRef.current === conversationId
+    const archivedIndex = conversationList.findIndex((c) => c.id === conversationId)
+
+    // 先从 UI 移除，避免接口慢时感觉「没反应」
+    setConversationList((prev) => prev.filter((c) => c.id !== conversationId))
+
+    try {
+      await window.sharker.archiveConversation(workspaceId, conversationId, true)
+    } catch (e) {
+      console.error('归档失败', e)
+      window.alert(e instanceof Error ? e.message : '归档失败')
+      await refreshConversationList(workspaceId)
+      return
+    }
+
+    const state = await refreshConversationList(workspaceId)
+
+    if (!wasActive) return
+
+    const pick =
+      archivedIndex >= 0
+        ? state.conversations[Math.min(archivedIndex, state.conversations.length - 1)]
+        : state.conversations[state.conversations.length - 1]
+    if (pick) {
+      const conv = await window.sharker.loadConversation(workspaceId, pick.id)
+      await window.sharker.setActiveConversation(workspaceId, pick.id)
+      setActiveConversationId(pick.id)
+      const loaded = conv?.messages ?? []
+      messagesRef.current = loaded
+      setMessages(loaded)
+    } else {
+      await window.sharker.setActiveConversation(workspaceId, null)
+      setActiveConversationId(null)
+      messagesRef.current = []
+      setMessages([])
+    }
+  }
+
+  /** 在工作区创建新对话（不中止其他会话的进行中 turn） */
+  const handleNewConversation = async (workspaceId: string) => {
+    // 先快照当前会话 live 状态，再切到空白会话；绝不全局 abort 后台回合
+    snapshotActiveSessionBuffer()
     clearChatUiState()
+    // 始终以调用方传入的 workspaceId 为准（避免 ref 在并发设置回写中被冲回「对话」）
+    const pinned = withActiveWorkspace(settingsRef.current, workspaceId)
+    settingsRef.current = pinned
+    setSettings(pinned)
+    setSettingsDraft(pinned)
     if (settingsRef.current.activeWorkspaceId !== workspaceId) {
-      await persistSettings(withActiveWorkspace(settingsRef.current, workspaceId))
+      await persistSettings(pinned)
+    } else {
+      // 即使已是目标工作区，也落盘一次，盖掉可能在路上的旧草稿
+      try {
+        await window.sharker.saveSettings(pinned)
+      } catch (e) {
+        console.warn('pin workspace before new conversation failed', e)
+      }
     }
     const conv = await window.sharker.createConversation(workspaceId)
+    // create 后再次确认 active workspace 未被夹带回写
+    if (settingsRef.current.activeWorkspaceId !== workspaceId) {
+      const again = withActiveWorkspace(settingsRef.current, workspaceId)
+      settingsRef.current = again
+      setSettings(again)
+      setSettingsDraft(again)
+      void window.sharker.saveSettings(again)
+    }
+    // 乐观写入侧栏：创建后立即高亮新对话，避免 list 往返期间选中滞后
+    const optimistic: ConversationSummary = {
+      id: conv.id,
+      workspaceId: conv.workspaceId,
+      title: conv.title || DEFAULT_CONVERSATION_TITLE,
+      customTitle: conv.customTitle,
+      createdAt: conv.createdAt,
+      updatedAt: conv.updatedAt,
+      messageCount: conv.messages?.length ?? 0,
+      status: conv.status ?? 'active'
+    }
+    setConversationList((list) => {
+      if (list.some((c) => c.id === conv.id)) return list
+      return sortConversationsByCreatedAt([...list, optimistic])
+    })
     setActiveConversationId(conv.id)
+    activeConversationIdRef.current = conv.id
+    messagesRef.current = []
     setMessages([])
-    await refreshConversationList(workspaceId)
+    // 不要清空其他会话的 streamOwner：后台 turn 仍依赖它做无 conversationId 的回落
+    if (streamOwnerRef.current === conv.id) {
+      streamOwnerRef.current = null
+    }
     setPage('chat')
+    // 后台刷新真实列表；失败时保留乐观项
+    void refreshConversationList(workspaceId).catch((e) =>
+      console.warn('refreshConversationList after new conversation failed', e)
+    )
   }
 
   /** 文件夹选择器添加工作区 */
@@ -930,7 +2162,7 @@ export default function App() {
 
     if (sendInFlightRef.current || loading) {
       await window.sharker.abortChat()
-      clearChatUiState()
+      clearChatUiState({ dropActiveBuffer: true })
     }
 
     const name = normalized.split(/[/\\]/).pop() || '目录'
@@ -976,7 +2208,7 @@ export default function App() {
 
     if (sendInFlightRef.current || loading) {
       await window.sharker.abortChat()
-      clearChatUiState()
+      clearChatUiState({ dropActiveBuffer: true })
     }
 
     const workspaces = current.workspaces.filter((w) => w.id !== id)
@@ -1021,6 +2253,20 @@ export default function App() {
     await persistSettings({ ...settings, activeProviderId: id })
   }
 
+  /** 对话区切换思考水平（写入对应 provider） */
+  const handleThinkingLevelChange = async (providerId: string, level: string) => {
+    const next = {
+      ...settingsRef.current,
+      providers: settingsRef.current.providers.map((p) =>
+        p.id === providerId ? { ...p, thinkingLevel: level } : p
+      )
+    }
+    settingsRef.current = next
+    setSettings(next)
+    setSettingsDraft(next)
+    await persistSettings(next)
+  }
+
   /** 切换工作区置顶 */
   const handleTogglePinWorkspace = async (id: string) => {
     const current = settingsRef.current
@@ -1034,25 +2280,79 @@ export default function App() {
     await persistSettings(next)
   }
 
+  /** 重命名项目（仅改侧栏显示名，不改磁盘路径） */
+  const handleRenameWorkspace = async (id: string, label: string) => {
+    const name = label.trim()
+    if (!name) return
+    const current = settingsRef.current
+    const workspaces = current.workspaces.map((w) =>
+      w.id === id ? { ...w, label: name } : w
+    )
+    const next = { ...current, workspaces: sortWorkspaces(workspaces) }
+    settingsRef.current = next
+    setSettings(next)
+    setSettingsDraft(next)
+    await persistSettings(next)
+  }
+
   /** 聊天 ↔ 设置页导航 */
   const handleNavigate = async (targetPage: AppPage, tab?: SettingsTab) => {
     if (page === 'settings' && targetPage !== 'settings') {
-      await persistSettings(settingsDraft)
+      // 用受保护合并，避免草稿里的旧 activeWorkspaceId 覆盖侧栏当前项目
+      await handleSaveSettings(settingsDraftRef.current)
     }
     if (targetPage === 'settings') {
-      setSettingsDraft(settings)
+      // 进入设置时以 live settings 为草稿底，避免陈旧 draft
+      setSettingsDraft(settingsRef.current)
       setSettingsTab(tab ?? 'models')
     }
     setPage(targetPage)
   }
 
-  /** 执行轨道内审批响应 */
-  const handleApproval = async (approved: boolean) => {
+  /** 执行轨道内审批响应：once / session / deny → 主进程真实授权路径 */
+  const handleApproval = async (decision: ApprovalDecision) => {
     if (!approval || approvalResponding) return
     setApprovalResponding(true)
     try {
-      await window.sharker.respondApproval(approval.id, approved)
+      // DEV 注入的审批没有主进程 pending，直接收起 UI 以便验收按钮链路
+      if (import.meta.env.DEV && String(approval.id).startsWith('debug-approval-')) {
+        setApproval(null)
+        approvalRef.current = null
+        // 保持直播呼吸：拒绝后回到规划态，允许后清审批等待
+        if (decision === 'deny') {
+          const now = Date.now()
+          const segs: TurnSegment[] = [
+            {
+              id: `debug-status-denied-${now}`,
+              kind: 'status',
+              content: '已拒绝该操作，继续规划下一步…',
+              status: 'active',
+              startedAt: now
+            }
+          ]
+          segmentsRef.current = segs
+          setLiveSegments(cloneSegments(segs))
+          setLoading(true)
+        } else {
+          const now = Date.now()
+          const segs: TurnSegment[] = [
+            {
+              id: `debug-status-allowed-${now}`,
+              kind: 'status',
+              content: '已授权，继续执行…',
+              status: 'active',
+              startedAt: now
+            }
+          ]
+          segmentsRef.current = segs
+          setLiveSegments(cloneSegments(segs))
+          setLoading(true)
+        }
+        return
+      }
+      await window.sharker.respondApproval(approval.id, decision)
       setApproval(null)
+      approvalRef.current = null
     } finally {
       setApprovalResponding(false)
     }
@@ -1088,11 +2388,6 @@ export default function App() {
           if (match) await handleSelectProvider(match.id)
           break
         }
-        case 'pick_skill':
-          await dispatchTurnRef.current(
-            `/plan 请加载并遵循 Skill：${args.trim() || '（请在 /skill 后指定名称）'}`
-          )
-          break
         case 'git_branch':
           await dispatchTurnRef.current('请用 git 工具查看当前分支与工作区状态，并简要汇报。')
           break
@@ -1120,9 +2415,750 @@ export default function App() {
     handleSlashActionRef.current = handleSlashAction
   }, [handleSlashAction])
 
+  /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+
+    const api: SharkerDevDebugApi = {
+      injectApproval: (partial = {}) => {
+        const req: ApprovalRequest = {
+          id: partial.id ?? `debug-approval-${Date.now()}`,
+          title: partial.title ?? '删除工作区外文件',
+          description:
+            partial.description ?? '该操作可能不可恢复，请确认是否允许继续执行。',
+          toolName: partial.toolName ?? 'run_command',
+          args: partial.args ?? { command: 'rm -rf /tmp/sharker-debug-demo' },
+          conversationId: partial.conversationId ?? activeConversationIdRef.current ?? undefined
+        }
+        setApproval(req)
+        approvalRef.current = req
+        setApprovalResponding(false)
+        setLoading(true)
+        const now = Date.now()
+        const segs: TurnSegment[] = [
+          {
+            id: `debug-status-wait-${now}`,
+            kind: 'status',
+            content: '等待确认 · 高危操作',
+            status: 'active',
+            startedAt: now
+          }
+        ]
+        segmentsRef.current = segs
+        setLiveSegments(cloneSegments(segs))
+        setTurnStartedAt((prev) => prev ?? now)
+        turnStartedAtRef.current = turnStartedAtRef.current || now
+        return req
+      },
+      clearApproval: () => {
+        setApproval(null)
+        approvalRef.current = null
+        setApprovalResponding(false)
+      },
+      injectError: (message) => {
+        const raw =
+          typeof message === 'string'
+            ? message
+            : message && typeof message === 'object' && 'message' in message
+              ? String((message as { message?: unknown }).message ?? '')
+              : ''
+        const rawText = raw.trim()
+        const errText = rawText
+          ? (/^\*\*错误\*\*/.test(rawText) ? rawText : `**错误**: ${rawText}`)
+          : '**错误**: 开发调试注入的失败态。请检查模型配置后重试。'
+        // 注入错误态前必须关掉直播层，否则 live assistant 会盖住错误卡片
+        sendInFlightRef.current = false
+        doneCommittedRef.current = true
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setActiveTool(null)
+        setApproval(null)
+        approvalRef.current = null
+        setLoading(false)
+        let base = messagesRef.current
+        let lastUser = [...base].reverse().find((m) => m.role === 'user')
+        if (!lastUser) {
+          lastUser = {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content: '（调试）触发一次失败重试路径'
+          }
+          base = [...base, lastUser]
+        }
+        const assistant: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: errText,
+          meta: {
+            outcome: 'error',
+            retryOfUserMessageId: lastUser.id,
+            browsedFiles: [],
+            activities: [{ kind: 'tool', label: '读取文件 · package.json' }],
+            durationSec: 1,
+            segments: [
+              {
+                id: `debug-err-tool-${Date.now()}`,
+                kind: 'tool',
+                toolName: 'read_file',
+                toolTitle: '读取文件',
+                toolDetail: 'package.json',
+                content: '读取文件 · package.json',
+                status: 'error',
+                errorMessage: '开发调试注入失败',
+                startedAt: Date.now() - 1500,
+                endedAt: Date.now()
+              }
+            ]
+          }
+        }
+        const next = appendAssistantMessage(base, assistant)
+        messagesRef.current = next
+        setMessages(next)
+        setPage('chat')
+        pageRef.current = 'chat'
+        setLoading(false)
+        sendInFlightRef.current = false
+        setApproval(null)
+        approvalRef.current = null
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setActiveTool(null)
+        setTurnStartedAt(null)
+        turnStartedAtRef.current = 0
+        return assistant
+      },
+      injectAborted: (message) => {
+        const raw =
+          typeof message === 'string'
+            ? message
+            : message && typeof message === 'object' && 'message' in message
+              ? String((message as { message?: unknown }).message ?? '')
+              : ''
+        const content =
+          `${raw.trim() || '已保留停止前生成的内容'}\n\n_(已停止)_`
+        // 注入停止态前关掉直播层，避免 live 行盖住中止卡片
+        sendInFlightRef.current = false
+        doneCommittedRef.current = true
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setActiveTool(null)
+        setApproval(null)
+        approvalRef.current = null
+        setLoading(false)
+        let base = messagesRef.current
+        let lastUser = [...base].reverse().find((m) => m.role === 'user')
+        if (!lastUser) {
+          lastUser = {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content: '（调试）触发一次停止路径'
+          }
+          base = [...base, lastUser]
+        }
+        const assistant: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content,
+          meta: {
+            outcome: 'aborted',
+            browsedFiles: [],
+            activities: [],
+            durationSec: 1,
+            segments: [
+              {
+                id: `debug-tool-${Date.now()}`,
+                kind: 'tool',
+                toolName: 'read_file',
+                toolTitle: '读取文件',
+                toolDetail: 'package.json',
+                content: '读取文件 · package.json',
+                status: 'cancelled',
+                startedAt: Date.now() - 2000,
+                endedAt: Date.now()
+              }
+            ]
+          }
+        }
+        const next = appendAssistantMessage(base, assistant)
+        messagesRef.current = next
+        setMessages(next)
+        setLoading(false)
+        sendInFlightRef.current = false
+        setApproval(null)
+        approvalRef.current = null
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setActiveTool(null)
+        setTurnStartedAt(null)
+        turnStartedAtRef.current = 0
+        return assistant
+      },
+      seedLiveProcess: (mode = 'preparing') => {
+        const now = Date.now()
+        // 每次 seed 彻底清掉上一次调试/真实回合残留，保证 live 序列可复现、不串步
+        setApproval(null)
+        approvalRef.current = null
+        streamingRef.current = ''
+        setStreaming('')
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        segmentsRef.current = []
+        setLiveSegments([])
+        setActiveTool(null)
+        let segs: TurnSegment[] = []
+        if (mode === 'preparing') {
+          segs = [
+            {
+              id: `debug-status-prep-${now}`,
+              kind: 'status',
+              content: '连接模型并准备任务…',
+              status: 'active',
+              startedAt: now
+            }
+          ]
+        } else if (mode === 'tool') {
+          segs = [
+            {
+              id: `debug-tool-read-${now}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'active',
+              startedAt: now - 900
+            }
+          ]
+        } else if (mode === 'chain') {
+          segs = [
+            {
+              id: `debug-tool-read-${now}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'done',
+              startedAt: now - 5200,
+              endedAt: now - 3600,
+              resultSummary: '已读取 package.json'
+            },
+            {
+              id: `debug-tool-list-${now}`,
+              kind: 'tool',
+              toolName: 'list_dir',
+              toolTitle: '列出目录',
+              toolDetail: 'src',
+              toolArgs: { path: 'src' },
+              content: '列出目录 · src',
+              status: 'active',
+              startedAt: now - 800
+            }
+          ]
+        } else if (mode === 'planning') {
+          segs = [
+            {
+              id: `debug-tool-done-${now}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'done',
+              startedAt: now - 3200,
+              endedAt: now - 400,
+              resultSummary: '已读取 package.json'
+            }
+          ]
+        } else if (mode === 'answer') {
+          segs = [
+            {
+              id: `debug-tool-done-${now}`,
+              kind: 'tool',
+              toolName: 'list_dir',
+              toolTitle: '列出目录',
+              toolDetail: 'src',
+              toolArgs: { path: 'src' },
+              content: '列出目录 · src',
+              status: 'done',
+              startedAt: now - 5000,
+              endedAt: now - 1200,
+              resultSummary: '已列出 src'
+            },
+            {
+              id: `debug-final-${now}`,
+              kind: 'text',
+              role: 'final',
+              content: '正在整理结果…',
+              status: 'active',
+              startedAt: now - 200
+            }
+          ]
+          streamingRef.current = '正在整理结果…'
+          setStreaming('正在整理结果…')
+        } else {
+          segs = [
+            {
+              id: `debug-status-wait-${now}`,
+              kind: 'status',
+              content: '等待确认 · 高危操作',
+              status: 'active',
+              startedAt: now
+            }
+          ]
+          const req: ApprovalRequest = {
+            id: `debug-approval-${now}`,
+            title: '删除工作区外文件',
+            description: '该操作可能不可恢复，请确认是否允许继续执行。',
+            toolName: 'run_command',
+            args: { command: 'rm -rf /tmp/sharker-debug-demo' },
+            conversationId: activeConversationIdRef.current ?? undefined
+          }
+          setApproval(req)
+          approvalRef.current = req
+        }
+        segmentsRef.current = segs
+        setLiveSegments(cloneSegments(segs))
+        setLoading(true)
+        sendInFlightRef.current = true
+        // 调试直播视为进行中回合：允许切会话后恢复，且 Stop/done 门闩可工作
+        doneCommittedRef.current = false
+        if (activeConversationIdRef.current) {
+          doneCommittedMapRef.current = clearDoneCommitted(
+            doneCommittedMapRef.current,
+            activeConversationIdRef.current
+          )
+        }
+        // 强制刷新计时起点，避免沿用上一条回合的 elapsed 造成“卡住感”
+        setTurnStartedAt(now - 3000)
+        turnStartedAtRef.current = now - 3000
+        setActiveTool(
+          mode === 'tool'
+            ? 'read_file'
+            : mode === 'chain'
+              ? 'list_dir'
+              : mode === 'planning'
+                ? null
+                : null
+        )
+        // 立刻写入当前会话 buffer，切到其它会话时侧栏 live 点与恢复才可靠
+        if (activeConversationIdRef.current) {
+          snapshotActiveSessionBuffer()
+          bumpSessionLive()
+        }
+        return segs
+      },
+      clearLiveProcess: () => {
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setLoading(false)
+        sendInFlightRef.current = false
+        setActiveTool(null)
+        setApproval(null)
+        approvalRef.current = null
+        setTurnStartedAt(null)
+        turnStartedAtRef.current = 0
+      },
+      playLiveSequence: async () => {
+        const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+        const heads: string[] = []
+        const readHead = () => {
+          const el = document.querySelector(
+            '.turn-flow--streaming, .turn-flow[data-live="true"]'
+          ) as HTMLElement | null
+          const fromDom =
+            el?.getAttribute('data-head-label') ||
+            el?.querySelector('[data-live-label]')?.getAttribute('data-live-label') ||
+            el?.querySelector('.turn-flow-live-label')?.textContent?.trim()
+          if (fromDom) return fromDom
+          const active = [...segmentsRef.current].reverse().find((s) => s.status === 'active')
+          return (
+            active?.toolTitle ||
+            active?.content ||
+            active?.toolName ||
+            (streamingRef.current ? '生成回答中' : '处理中')
+          )
+        }
+        const paint = (
+          segs: TurnSegment[],
+          opts?: { streaming?: string; activeTool?: string | null }
+        ) => {
+          setApproval(null)
+          approvalRef.current = null
+          segmentsRef.current = segs
+          setLiveSegments(cloneSegments(segs))
+          setLoading(true)
+          sendInFlightRef.current = true
+          const streaming = opts?.streaming ?? ''
+          streamingRef.current = streaming
+          setStreaming(streaming)
+          setActiveTool(opts?.activeTool ?? null)
+          const now = Date.now()
+          setTurnStartedAt((prev) => prev ?? now - 1200)
+          turnStartedAtRef.current = turnStartedAtRef.current || now - 1200
+        }
+
+        const t0 = Date.now()
+        // 同一回合内逐步推进，验收粘滞头/呼吸不中断（非整包 reseed）
+        paint([
+          {
+            id: `live-prep-${t0}`,
+            kind: 'status',
+            content: '连接模型并准备任务…',
+            status: 'active',
+            startedAt: t0
+          }
+        ])
+        await wait(380)
+        heads.push(readHead())
+
+        paint(
+          [
+            {
+              id: `live-prep-${t0}`,
+              kind: 'status',
+              content: '连接模型并准备任务…',
+              status: 'done',
+              startedAt: t0,
+              endedAt: t0 + 200
+            },
+            {
+              id: `live-read-${t0}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'active',
+              startedAt: t0 + 220
+            }
+          ],
+          { activeTool: 'read_file' }
+        )
+        await wait(420)
+        heads.push(readHead())
+
+        paint(
+          [
+            {
+              id: `live-read-${t0}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'done',
+              startedAt: t0 + 220,
+              endedAt: t0 + 700,
+              resultSummary: '已读取 package.json'
+            },
+            {
+              id: `live-list-${t0}`,
+              kind: 'tool',
+              toolName: 'list_dir',
+              toolTitle: '列出目录',
+              toolDetail: 'src',
+              toolArgs: { path: 'src' },
+              content: '列出目录 · src',
+              status: 'active',
+              startedAt: t0 + 740
+            }
+          ],
+          { activeTool: 'list_dir' }
+        )
+        await wait(420)
+        heads.push(readHead())
+
+        paint([
+          {
+            id: `live-read-${t0}`,
+            kind: 'tool',
+            toolName: 'read_file',
+            toolTitle: '读取文件',
+            toolDetail: 'package.json',
+            toolArgs: { path: 'package.json' },
+            content: '读取文件 · package.json',
+            status: 'done',
+            startedAt: t0 + 220,
+            endedAt: t0 + 700,
+            resultSummary: '已读取 package.json'
+          },
+          {
+            id: `live-list-${t0}`,
+            kind: 'tool',
+            toolName: 'list_dir',
+            toolTitle: '列出目录',
+            toolDetail: 'src',
+            toolArgs: { path: 'src' },
+            content: '列出目录 · src',
+            status: 'done',
+            startedAt: t0 + 740,
+            endedAt: t0 + 1100,
+            resultSummary: '已列出 src'
+          }
+        ])
+        await wait(420)
+        heads.push(readHead())
+
+        paint(
+          [
+            {
+              id: `live-read-${t0}`,
+              kind: 'tool',
+              toolName: 'read_file',
+              toolTitle: '读取文件',
+              toolDetail: 'package.json',
+              toolArgs: { path: 'package.json' },
+              content: '读取文件 · package.json',
+              status: 'done',
+              startedAt: t0 + 220,
+              endedAt: t0 + 700,
+              resultSummary: '已读取 package.json'
+            },
+            {
+              id: `live-list-${t0}`,
+              kind: 'tool',
+              toolName: 'list_dir',
+              toolTitle: '列出目录',
+              toolDetail: 'src',
+              toolArgs: { path: 'src' },
+              content: '列出目录 · src',
+              status: 'done',
+              startedAt: t0 + 740,
+              endedAt: t0 + 1100,
+              resultSummary: '已列出 src'
+            },
+            {
+              id: `live-final-${t0}`,
+              kind: 'text',
+              role: 'final',
+              content: '正在整理结果…',
+              status: 'active',
+              startedAt: t0 + 1200
+            }
+          ],
+          { streaming: '正在整理结果…' }
+        )
+        await wait(380)
+        heads.push(readHead())
+        return heads
+      },
+      /** 调试：清空当前会话消息与 live，便于无历史干扰地验直播过程 */
+      resetChatVisual: () => {
+        messagesRef.current = []
+        setMessages([])
+        segmentsRef.current = []
+        setLiveSegments([])
+        setStreaming('')
+        streamingRef.current = ''
+        setTurnThinking('')
+        turnThinkingRef.current = ''
+        setLoading(false)
+        sendInFlightRef.current = false
+        setActiveTool(null)
+        setApproval(null)
+        approvalRef.current = null
+        setTurnStartedAt(null)
+        turnStartedAtRef.current = 0
+        const cid = activeConversationIdRef.current
+        if (cid) {
+          const buf = sessionBuffersRef.current.get(cid)
+          if (buf) {
+            buf.messages = []
+            buf.segments = []
+            buf.streaming = ''
+            buf.loading = false
+            buf.sendInFlight = false
+            buf.approval = null
+          }
+        }
+      },
+      navigateTo: (targetPage, tab) => {
+        if (targetPage === 'settings') {
+          setSettingsDraft(settingsRef.current)
+          setSettingsTab(tab ?? 'models')
+        }
+        setPage(targetPage)
+        pageRef.current = targetPage
+      },
+      setSidebarCollapsed: (collapsed: boolean) => {
+        setSidebarCollapsed(Boolean(collapsed))
+        localStorage.setItem('sharker-sidebar-collapsed', collapsed ? '1' : '0')
+        setSidebarPeeking(false)
+      },
+      openHistoryPicker: () => {
+        setPage('chat')
+        pageRef.current = 'chat'
+        setShowHistoryPicker(true)
+      },
+      selectConversation: async (conversationId: string) => {
+        const id = String(conversationId || '').trim()
+        if (!id) return false
+        const workspaceId = settingsRef.current.activeWorkspaceId
+        if (!workspaceId) return false
+        // 直接走与侧栏相同的切换逻辑（含 buffer 恢复）
+        await (async () => {
+          const prevId = activeConversationIdRef.current
+          if (prevId && prevId !== id) {
+            snapshotActiveSessionBuffer()
+            cancelScheduledStreamPaint()
+          }
+          setActiveConversationId(id)
+          activeConversationIdRef.current = id
+          setPage('chat')
+          pageRef.current = 'chat'
+          syncActiveQueueUi(sessionQueuesRef.current, id)
+          void window.sharker.setActiveConversation(workspaceId, id)
+          const buf = sessionBuffersRef.current.get(id)
+          if (buf) {
+            const live =
+              buf.loading ||
+              buf.sendInFlight ||
+              (buf.segments.length > 0 && !buf.doneCommitted)
+            if (live) {
+              applyBufferToUi(buf)
+              if ((buf.loading || buf.sendInFlight) && !buf.doneCommitted) {
+                streamOwnerRef.current = id
+                doneCommittedRef.current = false
+              }
+              return
+            }
+            if (buf.messages.length > 0) {
+              messagesRef.current = buf.messages
+              setMessages(buf.messages)
+              sendInFlightRef.current = false
+              doneCommittedRef.current = true
+              streamingRef.current = ''
+              turnThinkingRef.current = ''
+              segmentsRef.current = []
+              setLiveSegments([])
+              setStreaming('')
+              setTurnThinking('')
+              setLoading(false)
+              setActiveTool(null)
+              setApproval(null)
+              setApprovalResponding(false)
+              resetTurnMeta()
+              sessionBuffersRef.current.delete(id)
+              return
+            }
+          }
+          const conv = await window.sharker.loadConversation(workspaceId, id)
+          if (activeConversationIdRef.current !== id) return
+          const loaded = conv?.messages ?? []
+          sendInFlightRef.current = false
+          doneCommittedRef.current = true
+          streamingRef.current = ''
+          turnThinkingRef.current = ''
+          segmentsRef.current = []
+          setLiveSegments([])
+          setStreaming('')
+          setTurnThinking('')
+          setLoading(false)
+          setActiveTool(null)
+          setApproval(null)
+          setApprovalResponding(false)
+          resetTurnMeta()
+          messagesRef.current = loaded
+          setMessages(loaded)
+        })()
+        return activeConversationIdRef.current === id
+      },
+      openRightPanel: (tab) => {
+        if (tab) setRightPanelTab(tab)
+        setRightPanelOpen(true)
+        setPage('chat')
+        pageRef.current = 'chat'
+      },
+      closeRightPanel: () => {
+        setRightPanelOpen(false)
+      },
+      listSessionBuffers: () => {
+        return [...sessionBuffersRef.current.entries()].map(([id, buf]) => ({
+          id,
+          loading: buf.loading,
+          sendInFlight: buf.sendInFlight,
+          doneCommitted: buf.doneCommitted,
+          messageCount: buf.messages.length,
+          liveSegmentCount: buf.segments.length,
+          streamingLen: buf.streaming.length,
+          approval: Boolean(buf.approval)
+        }))
+      },
+      peekSession: (conversationId) => {
+        const buf = sessionBuffersRef.current.get(conversationId)
+        if (!buf) return null
+        const active = [...buf.segments].reverse().find((s) => s.status === 'active')
+        return {
+          source: 'buffer' as const,
+          loading: buf.loading || buf.sendInFlight,
+          messages: buf.messages.map((m) => ({
+            role: m.role,
+            content: (m.content || '').slice(0, 160)
+          })),
+          liveHead: active?.content || active?.toolTitle || active?.toolName
+        }
+      },
+      getSnapshot: () => ({
+        page: pageRef.current,
+        loading: sendInFlightRef.current,
+        approval: approvalRef.current,
+        liveSegmentCount: segmentsRef.current.length,
+        messageCount: messagesRef.current.length,
+        messageRoles: messagesRef.current.map((m) => m.role),
+        activeConversationId: activeConversationIdRef.current,
+        hasLiveSegments: segmentsRef.current.length > 0,
+        streamingLen: streamingRef.current.length,
+        streamOwner: streamOwnerRef.current,
+        bufferCount: sessionBuffersRef.current.size,
+        bufferIds: [...sessionBuffersRef.current.keys()]
+      })
+    }
+
+    window.__sharkerDebug = api
+    return () => {
+      if (window.__sharkerDebug === api) delete window.__sharkerDebug
+    }
+  }, [bumpSessionLive, snapshotActiveSessionBuffer])
+
+  const liveConversationIds = (() => {
+    void sessionLiveVersion
+    const ids = new Set<string>()
+    for (const [id, buf] of sessionBuffersRef.current.entries()) {
+      if (buf.loading || buf.sendInFlight) ids.add(id)
+    }
+    if (loading && activeConversationId) ids.add(activeConversationId)
+    return ids
+  })()
+
   return (
     <div className="app-shell">
-      <TitleBar />
+      {/* Codex 风格全屏布局：侧栏通顶 + 主区自带顶栏，无整条 TitleBar */}
       <div className="app">
         <Sidebar
           page={page === 'automations' ? 'chat' : page}
@@ -1130,32 +3166,33 @@ export default function App() {
           settings={settings}
           conversations={conversationList}
           activeConversationId={activeConversationId}
+          liveConversationIds={liveConversationIds}
           onSelectWorkspace={handleSelectWorkspace}
           onSelectConversation={handleSelectConversation}
           onAddWorkspace={handleAddWorkspace}
           onDeleteWorkspace={handleDeleteWorkspace}
           onTogglePinWorkspace={handleTogglePinWorkspace}
+          onRenameWorkspace={(id, label) => void handleRenameWorkspace(id, label)}
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
+          onArchiveConversation={(ws, id) => void handleArchiveConversation(ws, id)}
           onNavigate={handleNavigate}
-          onOpenAutomations={() => setPage('automations')}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+          onPeekChange={setSidebarPeeking}
         />
         <main className="main">
           {page === 'chat' ? (
             <div key="chat" className="main-pane view-enter main-pane--chat">
             <ChatToolbar
-              gitInfo={gitInfo}
-              workspacePath={getActiveWorkspacePath(settings) ?? ''}
-              workspaceLabel={settings.workspaces.find((w) => w.id === settings.activeWorkspaceId)?.label ?? ''}
-              conversationTitle={conversationList.find((c) => c.id === activeConversationId)?.title ?? '新对话'}
               rightPanelOpen={rightPanelOpen}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={toggleSidebar}
               onToggleRightPanel={handleToggleRightPanel}
-              onRefreshGit={() => void refreshGitInfo()}
-              onCheckoutBranch={async (branch) => {
-                const wsPath = getActiveWorkspacePath(settingsRef.current)
-                if (!wsPath) throw new Error('未选择工作区')
-                await window.sharker.gitCheckout(wsPath, branch)
-                await refreshGitInfo()
+              onNewConversation={() => {
+                const wsId = settingsRef.current.activeWorkspaceId
+                if (wsId) void handleNewConversation(wsId)
+                else void handleAddWorkspace()
               }}
             />
             {pendingPlan && (
@@ -1166,11 +3203,14 @@ export default function App() {
               />
             )}
             <ChatView
+              sessionKey={activeConversationId}
               workspaces={settings.workspaces}
               activeWorkspaceId={settings.activeWorkspaceId}
+              onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
               providers={settings.providers}
               activeProviderId={settings.activeProviderId}
               onSelectProvider={handleSelectProvider}
+              onThinkingLevelChange={(id, level) => void handleThinkingLevelChange(id, level)}
               messages={messages}
               liveSegments={liveSegments}
               streaming={streaming}
@@ -1203,11 +3243,13 @@ export default function App() {
             />
             </div>
           ) : page === 'automations' ? (
-            <div key="automations" className="main-pane view-enter">
+            <div key="automations" className="main-pane view-enter main-pane--page">
+              <div className="main-drag-strip" aria-hidden />
               <AutomationsPage onBack={() => setPage('chat')} />
             </div>
           ) : (
-            <div key="settings" className="main-pane view-enter">
+            <div key="settings" className="main-pane view-enter main-pane--page">
+              <div className="main-drag-strip" aria-hidden />
             <SettingsPage
               tab={settingsTab}
               draft={settingsDraft}
@@ -1226,7 +3268,6 @@ export default function App() {
           onTabChange={setRightPanelTab}
           onClose={() => setRightPanelOpen(false)}
         />
-        <PetWidget enabled={settings.petEnabled ?? false} />
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 /**
  * 全部 Tool 的 OpenAI JSON Schema（纯数据，主进程与渲染进程均可 import）。
  * 各 builtin 模块负责 execute；此处负责模型可见的 schema。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import type { OpenAIToolDefinition } from './types'
 import { EXTENDED_TOOL_DEFINITIONS } from './schemas-extended'
@@ -88,6 +88,29 @@ const CORE_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'present_inline_demo',
+      description:
+        'Embed a self-contained interactive HTML/CSS/JS demo directly inside the chat message stream (conversation-native visualization). Use this when the user asks to demonstrate, show, illustrate, or 演示 a concept/UI/algorithm. Do NOT write an HTML file and open a browser for demos — call this instead. Prefer host CSS variables: --text, --accent, --surface, --border, transparent background.',
+      parameters: {
+        type: 'object',
+        properties: {
+          html: {
+            type: 'string',
+            description:
+              'Self-contained HTML fragment or document (inline CSS/JS ok). Transparent body; use host CSS variables when possible.'
+          },
+          caption: {
+            type: 'string',
+            description: 'Optional short caption shown above the demo'
+          }
+        },
+        required: ['html']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'search_replace',
       description: 'Replace old_string with new_string in a file',
       parameters: {
@@ -123,14 +146,14 @@ const CORE_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'uninstall_application',
       description:
-        'Fully uninstall a Linux application: stop processes, remove apt packages (pkexec), delete user data dirs, remove desktop shortcuts, and verify. Use for "删掉 Steam/卸载 XX" instead of manual rm -rf. Requires user approval.',
+        'Fully uninstall a macOS application: stop processes, brew uninstall --cask when applicable, remove .app bundles, delete ~/Library user data, and verify. Use for "删掉/卸载 XX" instead of manual rm -rf. Requires user approval.',
       parameters: {
         type: 'object',
         properties: {
-          name: { type: 'string', description: 'App keyword, e.g. steam, watt' },
+          name: { type: 'string', description: 'App keyword, e.g. steam' },
           remove_packages: {
             type: 'boolean',
-            description: 'Remove apt packages via pkexec (default true)'
+            description: 'Remove Homebrew casks (default true)'
           },
           remove_user_data: {
             type: 'boolean',
@@ -151,7 +174,7 @@ const CORE_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'verify_removal',
       description:
-        'Verify an app or paths are fully removed: checks dirs, apt packages, processes, desktop entries. Harness may auto-run after deletes.',
+        'Verify an app or paths are fully removed: checks dirs, brew casks, processes, .app bundles. Harness may auto-run after deletes.',
       parameters: {
         type: 'object',
         properties: {
@@ -320,6 +343,26 @@ const CORE_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
           args: { type: 'array', items: { type: 'string' } }
         },
         required: ['skillPath', 'script']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_skills',
+      description: 'List installed skills available to the agent',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'read_skill',
+      description: 'Read a skill SKILL.md by name',
+      parameters: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        required: ['name']
       }
     }
   }

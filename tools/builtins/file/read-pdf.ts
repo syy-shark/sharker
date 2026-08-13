@@ -1,6 +1,6 @@
 /**
  * read_pdf：PDF 转文本（pdftotext）。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { execFile } from 'child_process'
 import { promisify } from 'util'
@@ -31,7 +31,7 @@ export const readPdfTool: ToolHandler = {
       const slice = limit != null ? lines.slice(offset, offset + limit) : lines.slice(offset)
       return ok(slice.map((l, i) => `L${offset + i + 1}: ${l}`).join('\n') || '(empty pdf)')
     } catch {
-      throw new Error('pdftotext failed — install poppler-utils: sudo apt install poppler-utils')
+      throw new Error('pdftotext failed — install poppler: brew install poppler')
     }
   }
 }

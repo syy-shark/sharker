@@ -1,6 +1,6 @@
 /**
  * search_replace：文件内字符串替换。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import { buildFileDiff, formatEditSummary } from '../../shared/line-diff'

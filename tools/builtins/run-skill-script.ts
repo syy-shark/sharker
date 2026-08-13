@@ -1,6 +1,6 @@
 /**
  * run_skill_script：执行 Skill 目录下的脚本。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import path from 'path'
 import { execFile } from 'child_process'

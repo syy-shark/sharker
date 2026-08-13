@@ -1,57 +1,59 @@
+/* 与 turn-flow-live-head 同几何，避免两套样式切换时跳一下 */
 .thinking-indicator {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  min-height: 26px;
-  margin: 0 0 12px;
-  padding: 2px 0;
-  animation: thinking-indicator-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
+  min-height: 22px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 0.5px solid color-mix(in srgb, var(--accent) 14%, var(--glass-edge-soft));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--glass-fill));
+  box-shadow: var(--glass-rim-soft);
+  animation:
+    view-enter var(--motion-duration-normal) var(--motion-ease-soft) both,
+    live-panel-breathe var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
 }
 
-@keyframes thinking-indicator-enter {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+.thinking-indicator-orb-slot {
+  position: relative;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 
-@keyframes thinking-text-sweep {
-  from { background-position: -30% 50%; }
-  to { background-position: 130% 50%; }
+.thinking-indicator-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -3.5px 0 0 -3.5px;
 }
 
 .thinking-indicator-label {
-  color: var(--text-muted);
-  background: linear-gradient(
-    105deg,
-    var(--text-muted) 0%,
-    var(--text-muted) 35%,
-    var(--text) 48%,
-    var(--accent) 52%,
-    var(--text-muted) 65%,
-    var(--text-muted) 100%
-  );
-  background-size: 260% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 22px;
-  animation: thinking-text-sweep 2s linear infinite;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  line-height: 20px;
 }
 
 .thinking-indicator-time {
-  min-width: 4ch;
+  min-width: 4.5ch;
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  line-height: 22px;
+  letter-spacing: 0.02em;
+  line-height: 20px;
 }
 
 .thinking-indicator-text {
   flex-basis: 100%;
   margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-family: var(--font);
   font-size: 13px;
   line-height: 1.55;
@@ -60,17 +62,17 @@
   word-break: break-word;
   max-height: 140px;
   overflow-y: auto;
+  opacity: 0.92;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .thinking-indicator,
-  .thinking-indicator-label {
-    animation: none;
+  .thinking-indicator {
+    animation: none !important;
   }
 
-  .thinking-indicator-label {
-    background: none;
-    color: var(--text-secondary);
-    -webkit-text-fill-color: currentColor;
+  .thinking-indicator-orb,
+  .thinking-indicator-orb::after {
+    animation: none !important;
+    opacity: 1;
   }
 }

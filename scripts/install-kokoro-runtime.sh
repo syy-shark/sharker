@@ -1,13 +1,13 @@
 #!/bin/bash
+# Kokoro TTS runtime for macOS
 set -Eeuo pipefail
 
-data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-# Sharker 默认 venv 路径；仍兼容 Codex 环境变量
-venv="${SHARKER_READ_ALOUD_KOKORO_VENV:-${CODEX_LINUX_READ_ALOUD_KOKORO_VENV:-$data_home/sharker/read-aloud/kokoro-venv}}"
-model="${SHARKER_READ_ALOUD_KOKORO_MODEL:-${CODEX_LINUX_READ_ALOUD_KOKORO_MODEL:-$data_home/kokoro/kokoro-v1.0.onnx}}"
-voices="${SHARKER_READ_ALOUD_KOKORO_VOICES:-${CODEX_LINUX_READ_ALOUD_KOKORO_VOICES:-$data_home/kokoro/voices-v1.0.bin}}"
-model_url="${CODEX_LINUX_READ_ALOUD_KOKORO_MODEL_URL:-https://huggingface.co/zijuncheng/kokoro_model_v1.0/resolve/main/kokoro-v1.0.onnx}"
-voices_url="${CODEX_LINUX_READ_ALOUD_KOKORO_VOICES_URL:-https://huggingface.co/zijuncheng/kokoro_model_v1.0/resolve/main/voices-v1.0.bin}"
+data_home="${SHARKER_DATA_HOME:-$HOME/Library/Application Support/sharker}"
+venv="${SHARKER_READ_ALOUD_KOKORO_VENV:-$data_home/read-aloud/kokoro-venv}"
+model="${SHARKER_READ_ALOUD_KOKORO_MODEL:-$data_home/kokoro/kokoro-v1.0.onnx}"
+voices="${SHARKER_READ_ALOUD_KOKORO_VOICES:-$data_home/kokoro/voices-v1.0.bin}"
+model_url="${SHARKER_READ_ALOUD_KOKORO_MODEL_URL:-https://huggingface.co/zijuncheng/kokoro_model_v1.0/resolve/main/kokoro-v1.0.onnx}"
+voices_url="${SHARKER_READ_ALOUD_KOKORO_VOICES_URL:-https://huggingface.co/zijuncheng/kokoro_model_v1.0/resolve/main/voices-v1.0.bin}"
 
 choose_python() {
     local candidate
@@ -35,13 +35,11 @@ download_file() {
 
     if command -v curl >/dev/null 2>&1; then
         curl --fail --location --show-error --user-agent "sharker-read-aloud" --output "$tmp" "$url"
-    elif command -v wget >/dev/null 2>&1; then
-        wget --user-agent="sharker-read-aloud" --output-document "$tmp" "$url"
     else
         "$python_bin" - "$url" "$tmp" <<'PY'
 import sys
 import urllib.request
-request = urllib.request.Request(sys.argv[1], headers={"User-Agent": "codex-desktop-read-aloud"})
+request = urllib.request.Request(sys.argv[1], headers={"User-Agent": "sharker-read-aloud"})
 with urllib.request.urlopen(request) as response, open(sys.argv[2], "wb") as output:
     output.write(response.read())
 PY
@@ -59,7 +57,7 @@ PY
 
 python_bin="$(choose_python || true)"
 [ -n "$python_bin" ] || {
-    echo "Python 3.10-3.13 is required for kokoro-onnx" >&2
+    echo "Python 3.10-3.13 is required for kokoro-onnx (brew install python@3.12)" >&2
     exit 127
 }
 
@@ -81,7 +79,7 @@ fi
 
 echo "Kokoro runtime installed at $venv" >&2
 
-if [ "${CODEX_LINUX_READ_ALOUD_SKIP_MODEL_DOWNLOAD:-0}" != "1" ]; then
+if [ "${SHARKER_READ_ALOUD_SKIP_MODEL_DOWNLOAD:-0}" != "1" ]; then
     download_file "$model_url" "$model" 50000000
     download_file "$voices_url" "$voices" 1000000
     echo "Kokoro model installed at $model" >&2

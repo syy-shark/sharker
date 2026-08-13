@@ -1,9 +1,9 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡与输入区
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowUp, Clock3, FolderKanban, GitPullRequestArrow, Sparkles } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type {
   AssistantMeta,
@@ -14,16 +14,12 @@ import type {
   TurnSegment,
   WorkspaceItem
 } from '../../shared/types'
-import { resolveContextLimit } from '../../shared/context-limit'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
-import { ContextRing } from './ContextRing'
 import { ModelPicker } from './ModelPicker'
-import { SlashCommandMenu, shouldShowSlashMenu } from './SlashCommandMenu'
-import type { SlashCommandMeta } from '../../shared/slash-commands'
-import { filterSlashCommands } from '../../shared/slash-commands'
+import { SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
 import './ChatView.css'
 
 const STICKY_BOTTOM_PX = 80
@@ -74,11 +70,15 @@ function MessageAttachments({ attachments }: { attachments?: ChatAttachment[] })
 
 /** ChatView Props：工作区/模型选择、消息与流式状态、发送回调 */
 interface Props {
+  /** 会话切换时触发消息区轻过渡，避免硬切空白 */
+  sessionKey?: string | null
   workspaces: WorkspaceItem[]
   activeWorkspaceId: string
+  onSelectWorkspace?: (id: string) => void
   providers: ProviderConfig[]
   activeProviderId: string
   onSelectProvider: (id: string) => void
+  onThinkingLevelChange?: (providerId: string, level: string) => void
   messages: ChatMessage[]
   queuedPrompts: QueuedPrompt[]
   liveSegments: TurnSegment[]
@@ -100,16 +100,19 @@ interface Props {
   onRetry?: (userMessageId: string) => void
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
-  onApproval?: (approved: boolean) => void | Promise<void>
+  onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
 export function ChatView({
+  sessionKey = null,
   workspaces,
   activeWorkspaceId,
+  onSelectWorkspace,
   providers,
   activeProviderId,
   onSelectProvider,
+  onThinkingLevelChange,
   messages,
   queuedPrompts,
   liveSegments,
@@ -136,11 +139,15 @@ export function ChatView({
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const [attachmentError, setAttachmentError] = useState('')
-  const [slashIndex, setSlashIndex] = useState(0)
   const [stickToBottom, setStickToBottom] = useState(true)
-  const [modelPickerOpen, setModelPickerOpen] = useState(false)
-  const [contextRingOpen, setContextRingOpen] = useState(false)
   const [composerFocus, setComposerFocus] = useState<'none' | 'pointer' | 'keyboard'>('none')
+  const [historyActiveIndex, setHistoryActiveIndex] = useState(0)
+  const historyActiveIndexRef = useRef(0)
+  /** 受控历史弹层挂载/退出（关闭播 exit 后真正卸载，并回焦输入框） */
+  const [historyMounted, setHistoryMounted] = useState(false)
+  const [historyExiting, setHistoryExiting] = useState(false)
+  const historyMountedRef = useRef(false)
+  const historyCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -151,6 +158,119 @@ export function ChatView({
   const userScrollLockRef = useRef(false)
   const touchStartYRef = useRef<number | null>(null)
   const shownApprovalIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    historyActiveIndexRef.current = historyActiveIndex
+  }, [historyActiveIndex])
+
+  // 受控历史弹层：打开立即挂载；关闭先 exit 再卸载，并回焦输入框
+  useEffect(() => {
+    historyMountedRef.current = historyMounted
+  }, [historyMounted])
+
+  useEffect(() => {
+    if (showHistoryPicker) {
+      if (historyCloseTimerRef.current) {
+        clearTimeout(historyCloseTimerRef.current)
+        historyCloseTimerRef.current = null
+      }
+      setHistoryExiting(false)
+      setHistoryMounted(true)
+      historyMountedRef.current = true
+      return
+    }
+    // 关闭：用 ref 判断是否仍挂载，避免 effect 闭包读到旧 false
+    if (!historyMountedRef.current) {
+      const t = window.setTimeout(() => textareaRef.current?.focus(), 0)
+      return () => window.clearTimeout(t)
+    }
+    setHistoryExiting(true)
+    if (historyCloseTimerRef.current) clearTimeout(historyCloseTimerRef.current)
+    historyCloseTimerRef.current = setTimeout(() => {
+      setHistoryMounted(false)
+      setHistoryExiting(false)
+      historyMountedRef.current = false
+      historyCloseTimerRef.current = null
+      textareaRef.current?.focus()
+    }, 180)
+    // 注意：不要在 cleanup 里 clearTimeout，否则 StrictMode/并发更新会取消卸载
+  }, [showHistoryPicker])
+
+  useEffect(() => {
+    return () => {
+      if (historyCloseTimerRef.current) {
+        clearTimeout(historyCloseTimerRef.current)
+        historyCloseTimerRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showHistoryPicker) return
+    const list = conversationTitles
+    if (!list?.length) return
+    const id = list[historyActiveIndex]?.id
+    if (!id) return
+    const el = document.getElementById(`history-option-${id}`)
+    if (!el) return
+    // 在弹层容器内滚动，避免带动整页；深色长列表键盘浏览更稳
+    const menu = el.closest('.history-picker, .slash-menu') as HTMLElement | null
+    if (!menu) {
+      el.scrollIntoView({ block: 'nearest' })
+      return
+    }
+    const er = el.getBoundingClientRect()
+    const mr = menu.getBoundingClientRect()
+    if (er.top < mr.top) {
+      menu.scrollTop -= mr.top - er.top + 6
+    } else if (er.bottom > mr.bottom) {
+      menu.scrollTop += er.bottom - mr.bottom + 6
+    }
+  }, [historyActiveIndex, showHistoryPicker, conversationTitles])
+
+  // 历史选择器键盘：↑↓ 移动高亮，Enter 打开，Esc 关闭；与 hover 同步
+  useEffect(() => {
+    if (!showHistoryPicker) return
+    setHistoryActiveIndex(0)
+    historyActiveIndexRef.current = 0
+    const total = conversationTitles?.length ?? 0
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onCloseHistoryPicker?.()
+        return
+      }
+      if (!total) return
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setHistoryActiveIndex((i) => {
+          const n = (i + 1) % total
+          historyActiveIndexRef.current = n
+          return n
+        })
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setHistoryActiveIndex((i) => {
+          const n = (i - 1 + total) % total
+          historyActiveIndexRef.current = n
+          return n
+        })
+        return
+      }
+      if (e.key === 'Enter') {
+        const item = conversationTitles?.[historyActiveIndexRef.current]
+        if (!item) return
+        e.preventDefault()
+        onPickConversation?.(item.id)
+        onCloseHistoryPicker?.()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showHistoryPicker, conversationTitles, onCloseHistoryPicker, onPickConversation])
+
   const stickToBottomRef = useRef(stickToBottom)
   stickToBottomRef.current = stickToBottom
   const isEmpty =
@@ -161,18 +281,12 @@ export function ChatView({
     !turnThinking &&
     !loading
   const canSend = Boolean(input.trim() || pendingAttachments.length > 0)
-  const slashMenu = shouldShowSlashMenu(input)
-  const filteredSlash = slashMenu.show ? filterSlashCommands(slashMenu.query) : []
   const activeWorkspace =
     sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
     sortWorkspaces(workspaces ?? [])[0]
   const hasWorkspace = Boolean(activeWorkspace?.path?.trim())
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const modelLabel = activeProvider?.model?.trim() || activeProvider?.name
-  const contextLimit = resolveContextLimit(
-    activeProvider?.model ?? '',
-    activeProvider?.contextWindow
-  )
 
   useEffect(() => {
     const onPointerDown = () => {
@@ -323,17 +437,22 @@ export function ChatView({
     return () => window.cancelAnimationFrame(frame)
   }, [approval, lockUserScroll])
 
-  /** 流式输出：每帧贴底一次，避免 smooth 动画与内容增高来回「荡」 */
+  /** 流式输出：内容增高时贴底，避免每帧强制写 scrollTop */
   useEffect(() => {
     if (isEmpty || !loading) return
     let rafId = 0
+    let lastHeight = 0
     const follow = () => {
       if (stickToBottomRef.current && !userScrollLockRef.current) {
         const el = messagesRef.current
         if (el) {
-          programmaticScrollRef.current = true
-          el.scrollTop = el.scrollHeight
-          programmaticScrollRef.current = false
+          const h = el.scrollHeight
+          if (h !== lastHeight) {
+            lastHeight = h
+            programmaticScrollRef.current = true
+            el.scrollTop = h
+            programmaticScrollRef.current = false
+          }
         }
       }
       rafId = requestAnimationFrame(follow)
@@ -381,15 +500,35 @@ export function ChatView({
     }
   }
 
-  /** 提交输入：空闲直接发送，忙时默认排队 */
+  /** 提交输入：空闲直接发送，忙时默认排队；UI 斜杠命令本地拦截 */
   const submit = (mode: PromptSubmitMode = loading ? 'queue' : 'send') => {
     const t = input.trim()
     const attachments = pendingAttachments
     if (!t && attachments.length === 0) return
+
+    // /automations /settings 等 UI 命令：不进模型，直接路由
+    if (t.startsWith('/') && attachments.length === 0) {
+      const body = t.slice(1).trim()
+      const space = body.search(/\s/)
+      const name = (space >= 0 ? body.slice(0, space) : body).toLowerCase()
+      const args = space >= 0 ? body.slice(space + 1).trim() : ''
+      const cmd = SLASH_COMMANDS.find((c) => c.name === name && c.scope === 'ui')
+      if (cmd && onSlashAction) {
+        setInput('')
+        setPendingAttachments([])
+        setAttachmentError('')
+        onSlashAction(cmd, args)
+        requestAnimationFrame(() => {
+          syncTextareaHeight()
+          textareaRef.current?.focus()
+        })
+        return
+      }
+    }
+
     setInput('')
     setPendingAttachments([])
     setAttachmentError('')
-    setSlashIndex(0)
     setStickToBottom(true)
     onSend(t || '请看这张图片。', mode, attachments)
     requestAnimationFrame(() => {
@@ -398,23 +537,7 @@ export function ChatView({
     })
   }
 
-  const pickSlashCommand = (cmd: SlashCommandMeta) => {
-    if (cmd.scope === 'ui' && onSlashAction) {
-      setInput('')
-      setSlashIndex(0)
-      onSlashAction(cmd, '')
-      requestAnimationFrame(() => textareaRef.current?.focus())
-      return
-    }
-    setInput(`/${cmd.name} `)
-    setSlashIndex(0)
-    requestAnimationFrame(() => {
-      syncTextareaHeight()
-      textareaRef.current?.focus()
-    })
-  }
-
-  /** 输入框与底部工具栏（工作区、模型、上下文、发送） */
+  /** 输入框与底部工具栏（模型、发送）；斜杠菜单 / 工作区选择暂关 */
   const composer = (
     <div
       className={`composer-box composer-box--focus-${composerFocus}`}
@@ -425,38 +548,49 @@ export function ChatView({
         }
       }}
     >
-      {(slashMenu.show && filteredSlash.length > 0) ||
-      (showHistoryPicker && conversationTitles?.length) ? (
+      {historyMounted && conversationTitles?.length ? (
         <div className="composer-popover-slot">
-          {slashMenu.show && filteredSlash.length > 0 ? (
-            <SlashCommandMenu
-              query={slashMenu.query}
-              activeIndex={slashIndex}
-              onSelect={pickSlashCommand}
-              onActiveIndexChange={setSlashIndex}
-            />
-          ) : null}
-          {showHistoryPicker && conversationTitles?.length ? (
-            <div className="slash-menu history-picker" role="listbox" aria-label="历史对话">
-              <ul className="slash-menu-list">
-                {conversationTitles.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      className="slash-menu-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        onPickConversation?.(c.id)
-                        onCloseHistoryPicker?.()
-                      }}
-                    >
-                      <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <div
+            className={`slash-menu history-picker ${historyExiting ? 'popover-exit' : 'popover-enter'}`.trim()}
+            role="listbox"
+            aria-label="历史对话"
+            aria-activedescendant={
+              conversationTitles[historyActiveIndex]
+                ? `history-option-${conversationTitles[historyActiveIndex].id}`
+                : undefined
+            }
+          >
+            <ul className="slash-menu-list">
+              {conversationTitles.map((c, index) => (
+                <li key={c.id} role="presentation">
+                  <button
+                    type="button"
+                    id={`history-option-${c.id}`}
+                    role="option"
+                    aria-selected={index === historyActiveIndex}
+                    className={`slash-menu-item${index === historyActiveIndex ? ' slash-menu-item--active' : ''}`}
+                    onMouseEnter={() => {
+                      setHistoryActiveIndex(index)
+                      historyActiveIndexRef.current = index
+                    }}
+                    onMouseMove={() => {
+                      if (historyActiveIndexRef.current !== index) {
+                        setHistoryActiveIndex(index)
+                        historyActiveIndexRef.current = index
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      onPickConversation?.(c.id)
+                      onCloseHistoryPicker?.()
+                    }}
+                  >
+                    <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       ) : null}
       <textarea
@@ -465,32 +599,14 @@ export function ChatView({
         value={input}
         onChange={(e) => {
           setInput(e.target.value)
-          setSlashIndex(0)
         }}
         onKeyDown={(e) => {
-          if (slashMenu.show && filteredSlash.length > 0) {
-            if (e.key === 'ArrowDown') {
-              e.preventDefault()
-              setSlashIndex((i) => (i + 1) % filteredSlash.length)
-              return
-            }
-            if (e.key === 'ArrowUp') {
-              e.preventDefault()
-              setSlashIndex((i) => (i - 1 + filteredSlash.length) % filteredSlash.length)
-              return
-            }
-            if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
-              e.preventDefault()
-              const cmd = filteredSlash[slashIndex]
-              if (cmd) pickSlashCommand(cmd)
-              return
-            }
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              setInput('')
-              return
-            }
-          }
+          // 中文输入法组字中按 Enter 不应发送（keyCode 229 = 组字中）
+          const composing =
+            e.nativeEvent.isComposing ||
+            e.key === 'Process' ||
+            (e.nativeEvent as KeyboardEvent).keyCode === 229
+          if (composing) return
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             submit(loading ? 'queue' : 'send')
@@ -515,7 +631,7 @@ export function ChatView({
             e.preventDefault()
           }
         }}
-        placeholder={loading ? '可继续输入，Enter 排队… 输入 / 命令' : '输入消息… 输入 / 查看命令'}
+        placeholder={loading ? '可继续输入，Enter 排队…' : '输入消息…'}
         rows={1}
       />
       {pendingAttachments.length > 0 || attachmentError ? (
@@ -542,26 +658,21 @@ export function ChatView({
       ) : null}
       <div className="composer-footer">
         <div className="composer-footer-left">
-          <span className="composer-workspace-label" title={activeWorkspace?.path}>
-            <FolderKanban size={14} aria-hidden />
-            {activeWorkspace?.label ?? '未选择工作区'}
-          </span>
+          {activeWorkspace?.label || activeWorkspace?.path ? (
+            <span
+              className="composer-workspace-label"
+              title={activeWorkspace.path || activeWorkspace.label || ''}
+            >
+              {activeWorkspace.label || activeWorkspace.path}
+            </span>
+          ) : null}
         </div>
         <div className="composer-footer-right">
           <ModelPicker
             providers={providers}
             activeProviderId={activeProviderId}
             onSelect={onSelectProvider}
-            dismissWhenPeerOpen={contextRingOpen}
-            onOpenChange={setModelPickerOpen}
-          />
-          <ContextRing
-            messages={messages}
-            streaming={streaming}
-            draftInput={input}
-            context={contextLimit}
-            dismissWhenPeerOpen={modelPickerOpen}
-            onOpenChange={setContextRingOpen}
+            onThinkingLevelChange={onThinkingLevelChange}
           />
           {loading && canSend ? (
             <button
@@ -605,81 +716,93 @@ export function ChatView({
   )
 
   const showLiveAssistant = loading
+  // 有 segment 流时由 TurnFlow 负责；这里仅给旧路径/无实质工具时的思考态
   const isThinkingLive =
-    loading && !streaming.trim() && Boolean(turnThinking.trim()) && liveSegments.length === 0
+    loading &&
+    !streaming.trim() &&
+    (Boolean(turnThinking.trim()) ||
+      liveSegments.some((s) => s.kind === 'thinking' && s.status === 'active') ||
+      liveSegments.some((s) => s.kind === 'status' && s.status === 'active'))
 
   return (
-    <div className={`chat ${isEmpty ? 'chat--empty' : 'chat--active'}`}>
+    <div
+      className={`chat ${isEmpty ? 'chat--empty' : 'chat--active'}`}
+      data-session-key={sessionKey || undefined}
+    >
       {!isEmpty && (
-        <div className="messages" ref={messagesRef}>
-          {messages.map((m, index) =>
-            m.role === 'user' ? (
-              <div key={m.id} className="message-row message-row--user">
-	                <div className="message-user-wrap">
-	                  <div className="message-bubble message-bubble--user">
-	                    <MessageAttachments attachments={m.attachments} />
-	                    <p>{m.content}</p>
-	                  </div>
-                  <MessageActions content={m.content} messageId={m.id} />
+        /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
+        <div className="messages-scroll" ref={messagesRef}>
+          <div className="messages">
+            {messages.map((m, index) =>
+              m.role === 'user' ? (
+                <div key={m.id} className="message-row message-row--user">
+                  <div className="message-user-wrap">
+                    <div className="message-bubble message-bubble--user">
+                      <MessageAttachments attachments={m.attachments} />
+                      <p>{m.content}</p>
+                    </div>
+                    <MessageActions content={m.content} messageId={m.id} />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div key={m.id} className="message-row message-row--assistant">
+              ) : (
+                <div key={m.id} className="message-row message-row--assistant">
+                  <AssistantMessage
+                    messageId={m.id}
+                    content={m.content}
+                    meta={m.meta}
+                    modelLabel={m.meta?.model ?? modelLabel}
+                    onRetry={
+                      index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
+                        ? () => onRetry(m.meta!.retryOfUserMessageId!)
+                        : undefined
+                    }
+                  />
+                </div>
+              )
+            )}
+
+            {showLiveAssistant && (
+              <div className="message-row message-row--assistant message-row--live">
                 <AssistantMessage
-                  messageId={m.id}
-                  content={m.content}
-                  meta={m.meta}
-                  modelLabel={m.meta?.model ?? modelLabel}
-                  onRetry={
-                    index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
-                      ? () => onRetry(m.meta!.retryOfUserMessageId!)
-                      : undefined
-                  }
+                  messageId="streaming"
+                  content={streaming}
+                  meta={liveTurnMeta ?? undefined}
+                  liveSegments={liveSegments}
+                  modelLabel={modelLabel}
+                  hadThinkingLive={turnHadThinking}
+                  isThinkingLive={isThinkingLive}
+                  activeTool={activeTool}
+                  liveStartedAt={turnStartedAt ?? undefined}
+                  isStreaming
+                  approval={approval}
+                  approvalResponding={approvalResponding}
+                  onApproval={onApproval}
                 />
               </div>
-            )
-          )}
+            )}
 
-          {showLiveAssistant && (
-            <div className="message-row message-row--assistant message-row--live">
-              <AssistantMessage
-                messageId="streaming"
-                content={streaming}
-                meta={liveTurnMeta ?? undefined}
-                liveSegments={liveSegments}
-                modelLabel={modelLabel}
-                hadThinkingLive={turnHadThinking}
-                isThinkingLive={isThinkingLive}
-                activeTool={activeTool}
-                liveStartedAt={turnStartedAt ?? undefined}
-                isStreaming
-                approval={approval}
-                approvalResponding={approvalResponding}
-                onApproval={onApproval}
-              />
-            </div>
-          )}
-
-          {queuedPrompts.map((q) => (
-            <div key={q.id} className="message-row message-row--user message-row--queued">
-              <div className="message-user-wrap">
-	                <div className="message-bubble message-bubble--user message-bubble--queued">
-	                  <span className="queued-badge">排队中</span>
-	                  <MessageAttachments attachments={q.attachments} />
-	                  <p>{q.text}</p>
-	                </div>
-                <button
-                  type="button"
-                  className="queued-cancel"
-                  onClick={() => onCancelQueued(q.id)}
-                  title="取消排队"
-                  aria-label="取消排队"
-                >
-                  取消
-                </button>
+            {queuedPrompts.map((q) => (
+              <div key={q.id} className="message-row message-row--user message-row--queued">
+                <div className="message-user-wrap">
+                  <div className="message-bubble message-bubble--user message-bubble--queued">
+                    <span className="queued-badge">排队中</span>
+                    <MessageAttachments attachments={q.attachments} />
+                    <p>{q.text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="queued-cancel"
+                    onClick={() => onCancelQueued(q.id)}
+                    title="取消排队"
+                    aria-label="取消排队"
+                  >
+                    取消
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+            <div ref={bottomRef} />
+          </div>
           {!stickToBottom && (
             <div className="chat-scroll-bottom-wrap">
               <button
@@ -691,45 +814,17 @@ export function ChatView({
                 回到底部
               </button>
             </div>
-          )} 
-          <div ref={bottomRef} />
+          )}
         </div>
       )}
 
 
       <div className="composer-stage">
+        {/* 空对话不再堆欢迎语 / 快捷卡片 / 最近对话，只留输入区 */}
         {isEmpty && !hasWorkspace && (
           <h2 className="chat-empty-prompt chat-empty-prompt--hint">
             请先在侧栏或设置中添加一个工作区文件夹，然后开始对话。
           </h2>
-        )}
-        {isEmpty && hasWorkspace && activeWorkspace && (
-          <div className="chat-empty-content">
-            <div className="chat-empty-heading">
-              <span className="chat-empty-kicker"><FolderKanban size={14} aria-hidden /> {activeWorkspace.label}</span>
-              <h2 className="chat-empty-prompt" title={activeWorkspace.path}>今天从哪里开始？</h2>
-            </div>
-            <div className="chat-empty-actions" aria-label="快速开始">
-              <button type="button" onClick={() => onSend('请检查当前项目状态，并告诉我最值得先处理的事情。')}>
-                <GitPullRequestArrow size={16} aria-hidden />
-                <span><strong>查看项目状态</strong><small>检查代码、Git 与待办</small></span>
-              </button>
-              <button type="button" onClick={() => onSend('请和我一起规划一个新任务，先了解目标和约束，不要立刻修改代码。')}>
-                <Sparkles size={16} aria-hidden />
-                <span><strong>规划新任务</strong><small>澄清目标并形成方案</small></span>
-              </button>
-            </div>
-            {conversationTitles?.length ? (
-              <div className="chat-empty-recent">
-                <span><Clock3 size={13} aria-hidden /> 最近对话</span>
-                {conversationTitles.slice(-3).reverse().map((conversation) => (
-                  <button key={conversation.id} type="button" onClick={() => onPickConversation?.(conversation.id)}>
-                    {conversation.title || '未命名对话'}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
         )}
         <div className="composer-wrap">{composer}</div>
       </div>

@@ -1,6 +1,6 @@
 /**
  * 可中止、可后台的 shell 执行器：开发服务器等长驻进程不阻塞 Agent turn。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { spawn, type ChildProcess } from 'child_process'
 import net from 'net'
@@ -42,19 +42,11 @@ export function killAllShellChildren(): void {
   activeChildren.clear()
 }
 
-/** 终止子进程及其进程组（Unix）；Windows 仅 kill 子进程 */
+/** 终止子进程及其进程组 */
 function killChildTree(child: ChildProcess): void {
   if (!child.pid) {
     try {
       child.kill('SIGTERM')
-    } catch {
-      /* ignore */
-    }
-    return
-  }
-  if (process.platform === 'win32') {
-    try {
-      child.kill()
     } catch {
       /* ignore */
     }
@@ -172,6 +164,8 @@ export interface ShellRunOptions {
   blockUntilMs?: number
   signal?: AbortSignal
   maxBuffer?: number
+  /** 节流进度回调：命令执行中推送末行/耗时，供直播过程保持“活着” */
+  onStatus?: (content: string) => void
 }
 
 /**
@@ -206,6 +200,45 @@ export async function runShellCommand(
     let settled = false
     let backgrounded = false
     let readinessInFlight = false
+    const startedAt = Date.now()
+    let lastStatusAt = 0
+    let lastStatusText = ''
+
+    const emitStatus = (raw?: string, force = false): void => {
+      if (!options?.onStatus || settled) return
+      const now = Date.now()
+      if (!force && now - lastStatusAt < 700) return
+      const elapsedSec = Math.max(1, Math.round((now - startedAt) / 1000))
+      const line = (raw || '')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .at(-1)
+      let text = line
+        ? (line.length > 96 ? `${line.slice(0, 95)}…` : line)
+        : `执行中… ${elapsedSec}s`
+      if (!line) {
+        // keep heartbeat even without output
+        text = `执行中… ${elapsedSec}s`
+      } else if (elapsedSec >= 2) {
+        text = `${text} · ${elapsedSec}s`
+      }
+      if (!force && text === lastStatusText && now - lastStatusAt < 1600) return
+      lastStatusText = text
+      lastStatusAt = now
+      try {
+        options.onStatus(text)
+      } catch {
+        /* ignore UI bridge errors */
+      }
+    }
+
+    const heartbeat = setInterval(() => {
+      emitStatus(undefined, true)
+    }, 1600)
+    emitStatus('已启动命令…', true)
+
+    let blockTimer: ReturnType<typeof setTimeout> | null = null
 
     const detachListeners = (): void => {
       if (options?.signal) {
@@ -220,7 +253,8 @@ export async function runShellCommand(
     const fail = (err: Error): void => {
       if (settled) return
       settled = true
-      clearTimeout(blockTimer)
+      if (blockTimer) clearTimeout(blockTimer)
+      clearInterval(heartbeat)
       detachListeners()
       killChildTree(child)
       cleanup(false)
@@ -230,7 +264,8 @@ export async function runShellCommand(
     const finish = (result: string, keepChild: boolean): void => {
       if (settled) return
       settled = true
-      clearTimeout(blockTimer)
+      if (blockTimer) clearTimeout(blockTimer)
+      clearInterval(heartbeat)
       detachListeners()
       if (keepChild) detachBackgroundChild(child)
       cleanup(keepChild)
@@ -269,17 +304,21 @@ export async function runShellCommand(
     }
 
     child.stdout?.on('data', (chunk: Buffer) => {
-      stdout = trimBuffer(stdout + chunk.toString(), maxBuffer)
+      const text = chunk.toString()
+      stdout = trimBuffer(stdout + text, maxBuffer)
+      emitStatus(text)
       if (isDevServer) void tryFinishDevServerEarly()
     })
     child.stderr?.on('data', (chunk: Buffer) => {
-      stderr = trimBuffer(stderr + chunk.toString(), maxBuffer)
+      const text = chunk.toString()
+      stderr = trimBuffer(stderr + text, maxBuffer)
+      emitStatus(text)
       if (isDevServer) void tryFinishDevServerEarly()
     })
 
     child.on('error', (err) => fail(err))
 
-    const blockTimer = setTimeout(() => {
+    blockTimer = setTimeout(() => {
       if (settled) return
       void (async () => {
         if (settled) return
@@ -304,7 +343,7 @@ export async function runShellCommand(
     }, blockMs)
 
     child.on('close', (code) => {
-      clearTimeout(blockTimer)
+      if (blockTimer) clearTimeout(blockTimer)
       if (settled) {
         if (!backgrounded) cleanup(false)
         return

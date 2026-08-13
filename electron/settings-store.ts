@@ -1,6 +1,6 @@
 /**
  * 应用设置持久化（settings.json）与 API Key 加密存储。
- * @see electron/README.md
+ * @see electron/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'
@@ -39,12 +39,28 @@ export async function loadSettings(): Promise<AppSettings> {
 
 /** 加密 API Key 后写入 settings.json。 */
 export async function saveSettings(settings: AppSettings): Promise<void> {
+  // 合并旧 encryptedKeys：渲染进程偶发带着空 apiKey 回写时，不能把磁盘上的 Key 冲掉
+  let existingEnc: Record<string, string> = {}
+  try {
+    const raw = await fs.readFile(settingsPath(), 'utf8')
+    const parsed = JSON.parse(raw) as { encryptedKeys?: Record<string, string> }
+    if (parsed.encryptedKeys && typeof parsed.encryptedKeys === 'object') {
+      existingEnc = parsed.encryptedKeys
+    }
+  } catch {
+    /* first save */
+  }
+
   const encryptedKeys: Record<string, string> = {}
   const toSave = normalizeSettings(structuredClone(settings), app.getPath('home'))
   if (safeStorage.isEncryptionAvailable()) {
     for (const p of toSave.providers) {
-      if (p.apiKey) {
+      if (p.apiKey?.trim()) {
         encryptedKeys[p.id] = safeStorage.encryptString(p.apiKey).toString('base64')
+        p.apiKey = ''
+      } else if (existingEnc[p.id]) {
+        // 渲染进程回写时 apiKey 常为空：保留磁盘上已加密的 Key
+        encryptedKeys[p.id] = existingEnc[p.id]
         p.apiKey = ''
       }
     }
@@ -52,5 +68,4 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   await fs.mkdir(path.dirname(settingsPath()), { recursive: true })
   const payload = { ...toSave, encryptedKeys }
   await fs.writeFile(settingsPath(), JSON.stringify(payload, null, 2), 'utf8')
-  delete (toSave as { encryptedKeys?: unknown }).encryptedKeys
 }

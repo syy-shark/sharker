@@ -1,24 +1,46 @@
 /**
  * 跨进程核心 TypeScript 类型与默认设置。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
+import { builtinProviders } from './provider-catalog'
+
 /** 文件访问权限：沙箱（仅工作区）或完整访问 */
 export type PermissionMode = 'sandbox' | 'full'
 
 /** Agent 网络隔离模式（对标 Codex agent-workspace network.mode） */
 export type NetworkMode = 'open' | 'local_only' | 'disabled'
 
+/**
+ * 接入鉴权方式：
+ * - api_key：官方 API Key（DeepSeek / Kimi / 智谱 Coding Plan 等）
+ * - subscription：订阅登录导入（ChatGPT Plus/Pro、SuperGrok / X Premium+），不是 API Key
+ */
+export type ProviderAuthMode = 'api_key' | 'subscription'
+
 /** OpenAI 兼容 API 提供商配置 */
 export interface ProviderConfig {
   id: string
   name: string
   baseUrl: string
+  /**
+   * API Key 或订阅 access token。
+   * subscription 模式下由「导入订阅」写入，UI 不展示为 API Key。
+   */
   apiKey: string
   model: string
   /** 上下文 token 上限；不填则按模型 ID 自动识别 */
   contextWindow?: number
   /** 是否支持视觉（Computer Use 截图回灌）；不填则按模型名启发 */
   vision?: boolean
+  /** 鉴权方式；默认 api_key */
+  authMode?: ProviderAuthMode
+  /** 订阅已连接时展示用（邮箱等） */
+  subscriptionLabel?: string
+  /**
+   * 思考 / 推理水平（仅当该模型官方支持时有效）。
+   * 取值见 shared/thinking-levels.ts（如 off/low/medium/high/max/on…）。
+   */
+  thinkingLevel?: string
 }
 
 /** 侧栏工作区条目 */
@@ -30,7 +52,7 @@ export interface WorkspaceItem {
   pinned?: boolean
 }
 
-/** 应用全局设置（工作区、模型、权限、Skill） */
+/** 应用全局设置（工作区、模型、权限） */
 export interface AppSettings {
   /** @deprecated 由 workspaces + activeWorkspaceId 派生，保存时同步 */
   workspacePath: string
@@ -43,15 +65,16 @@ export interface AppSettings {
   workspaceProfile?: string
   providers: ProviderConfig[]
   activeProviderId: string
-  skillRepoUrls: string[]
-  /** 桌面自动化（desktop_* + computer-use MCP）；默认开启 */
+  /** 桌面自动化（desktop_*）；默认开启 */
   computerUseEnabled?: boolean
-  /** 浏览器自动化（browser_* + playwright MCP）；默认开启 */
+  /** 浏览器自动化（browser_*）；默认开启 */
   browserUseEnabled?: boolean
-  /** 已从目录安装的 Skill 插件 id */
-  installedSkillIds?: string[]
-  /** 桌面小宠物 */
-  petEnabled?: boolean
+  /**
+   * 历史字段：玻璃透明度。现已固定材质，浅色=0.82、深色=0，仅兼容旧设置。
+   */
+  uiGlass?: number
+  /** 外观主题：light=苹果玻璃，dark=深金属 */
+  uiTheme?: 'light' | 'dark'
 }
 
 /** 聊天消息角色 */
@@ -67,9 +90,9 @@ export interface ChatAttachment {
   kind: 'image'
 }
 
-/** 单轮助手活动记录（技能/工具/压缩） */
+/** 单轮助手活动记录（工具/压缩） */
 export interface TurnActivity {
-  kind: 'skill' | 'tool' | 'compress'
+  kind: 'tool' | 'compress'
   label: string
 }
 
@@ -134,6 +157,8 @@ export interface TurnSegment {
   toolCallId?: string
   /** tool: 中文步骤标题 */
   toolTitle?: string
+  /** tool: 原始参数（标题/详情回退用，避免进度心跳冲掉命令摘要） */
+  toolArgs?: Record<string, unknown>
   /** tool: 文件名 / 命令摘要 */
   toolDetail?: string
   status?: TurnSegmentStatus
@@ -148,7 +173,7 @@ export interface TurnSegment {
   approval?: ApprovalRequest
   /** text: 中途旁白 vs 最终回答 */
   role?: TurnTextRole
-  /** skill / compress 等元片段标题 */
+  /** compress 等元片段标题 */
   metaTitle?: string
   /** 编辑类工具完成后的行级 diff */
   fileDiff?: FileDiff
@@ -195,6 +220,8 @@ export interface ApprovalRequest {
   description: string
   toolName: string
   args: Record<string, unknown>
+  /** 归属会话（多会话隔离时 UI 只展示当前会话的审批） */
+  conversationId?: string
 }
 
 /** 上下文自动压缩结果摘要 */
@@ -215,6 +242,8 @@ export interface StreamChunk {
     | 'turn_start'
     | 'tool_start'
     | 'tool_done'
+    /** 工具参数流式预览（如 present_inline_demo 的 html 边生成边出） */
+    | 'tool_preview'
     | 'done'
     | 'error'
     | 'approval_needed'
@@ -237,7 +266,6 @@ export interface StreamChunk {
   toolStatus?: 'done' | 'error'
   isVerification?: boolean
   approved?: boolean
-  skillNames?: string[]
   error?: string
   approval?: ApprovalRequest
   contextCompress?: ContextCompressInfo
@@ -248,17 +276,14 @@ export interface StreamChunk {
   planFilePath?: string
   /** 当前 Harness 阶段 */
   harnessPhase?: 'normal' | 'plan' | 'build'
+  /**
+   * 流归属会话。渲染层仅当与 activeConversationId 一致时更新可见 UI，
+   * 否则写入该会话缓冲，避免切换会话污染 transcript。
+   */
+  conversationId?: string
 }
 
-/** 已加载 Skill 的元数据与正文 */
-export interface SkillInfo {
-  name: string
-  description: string
-  path: string
-  body: string
-}
-
-/** 首次启动时的默认设置 */
+/** 首次启动时的默认设置（含内置接入预设，Key 为空待填写） */
 export const DEFAULT_SETTINGS: AppSettings = {
   workspacePath: '',
   workspaces: [],
@@ -266,19 +291,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   permissionMode: 'sandbox',
   networkMode: 'open',
   workspaceProfile: '',
-  providers: [
-    {
-      id: 'default',
-      name: 'OpenAI Compatible',
-      baseUrl: 'https://api.openai.com/v1',
-      apiKey: '',
-      model: 'gpt-4o-mini'
-    }
-  ],
-  activeProviderId: 'default',
-  skillRepoUrls: [],
+  providers: builtinProviders(),
+  /** 不预选：避免空 Key 被当成当前模型 */
+  activeProviderId: '',
   computerUseEnabled: true,
   browserUseEnabled: true,
-  installedSkillIds: [],
-  petEnabled: false
+  uiGlass: 0.82,
+  uiTheme: 'light'
 }

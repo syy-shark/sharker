@@ -1,23 +1,25 @@
 /**
  * AI 助手消息：有序过程流（思考/旁白/工具）+ 最终回答
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleStop, RotateCcw } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type { ApprovalRequest, AssistantMeta, TurnSegment } from '../../shared/types'
+import type { ApprovalDecision } from '../../shared/approval-session'
 import { buildProcessSteps, canExpandProcess } from '../../shared/process-steps'
 import {
+  buildAnswerParts,
   extractFinalContent,
   hasProcessFlow,
-  processSegments
+  processSegments,
+  shouldDisplayFinalBody
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
-import { skillActivityLabel } from '../../shared/turn-meta'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
-import { ThinkingIndicator } from './ThinkingIndicator'
 import { TurnFlow } from './TurnFlow'
+import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
 import './AssistantMessage.css'
 import './TurnFlow.css'
@@ -38,7 +40,7 @@ interface Props {
   onRetry?: () => void
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
-  onApproval?: (approved: boolean) => void | Promise<void>
+  onApproval?: (decision: ApprovalDecision) => void | Promise<void>
   children?: React.ReactNode
 }
 
@@ -83,13 +85,6 @@ export function AssistantMessage({
       : '已完成任务分析'
     : ''
 
-  const skillNames = useMemo(
-    () =>
-      meta?.activities.filter((a) => a.kind === 'skill').map((a) => a.label.split(':')[0] ?? a.label) ??
-      [],
-    [meta?.activities]
-  )
-
   const durationSec =
     meta?.durationSec ??
     (liveStartedAt != null ? Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000)) : undefined)
@@ -119,12 +114,6 @@ export function AssistantMessage({
     [meta?.activities, hadThinking, thinkingText, isStreaming, isThinkingLive, activeTool]
   )
   const legacyExpandable = !useSegmentFlow && canExpandProcess(processSteps)
-  const legacyThinkingOnly =
-    !useSegmentFlow &&
-    Boolean(isStreaming) &&
-    !activeTool &&
-    processSteps.length > 0 &&
-    processSteps.every((step) => step.kind === 'think')
 
   useEffect(() => {
     if (!isStreaming) {
@@ -138,26 +127,76 @@ export function AssistantMessage({
     if (!userToggledFlow.current) setFlowOpen(true)
   }, [isStreaming, useSegmentFlow, segments?.length])
 
-  const finalContent = useSegmentFlow
+  const extractedFinal = useSegmentFlow
     ? extractFinalContent(segments!, { isStreaming })
-    : content.trim()
-  const isError = meta?.outcome === 'error' || /^\*\*错误\*\*:?/u.test(finalContent)
+    : ''
+  // 错误/中止时 segment 可能只有 tool/status 而无 final 文本：回退到 message.content
+  const finalContentRaw = (
+    extractedFinal.trim() ||
+    content.trim()
+  )
+  const isError =
+    meta?.outcome === 'error' || /^\*\*错误\*\*:?/u.test(finalContentRaw)
   const isAborted = meta?.outcome === 'aborted'
+  const finalDecision =
+    useSegmentFlow && !isError && !isAborted
+      ? shouldDisplayFinalBody(finalContentRaw, segments!, { isStreaming })
+      : { show: Boolean(finalContentRaw.trim()), content: finalContentRaw }
+  const finalContent = finalDecision.show ? finalDecision.content : ''
   const displayContent = isAborted
-    ? finalContent.replace(/\s*_\((?:已停止|stopped)\)_\s*$/iu, '').trim()
+    ? finalContentRaw.replace(/\s*_\((?:已停止|stopped)\)_\s*$/iu, '').trim()
     : finalContent
 
+  // 文字 + 内联演示按时间顺序交错（可在 demo 上/下）
+  const answerParts = useMemo(() => {
+    if (!useSegmentFlow || !segments?.length || isError || isAborted) return []
+    return buildAnswerParts(segments, { isStreaming })
+  }, [useSegmentFlow, segments, isStreaming, isError, isAborted])
+
   const processOnly = useSegmentFlow ? processSegments(segments!, { isStreaming }) : []
+  // 过程区不再重复：主区已展示的文字 / 内联演示
+  const answerTextIds = useMemo(
+    () => new Set(answerParts.filter((p) => p.type === 'text').map((p) => p.id)),
+    [answerParts]
+  )
+  const processForFlow = useMemo(
+    () =>
+      processOnly.filter((s) => {
+        if (s.toolName === 'present_inline_demo') return false
+        if (s.kind === 'text' && answerTextIds.has(s.id)) return false
+        return true
+      }),
+    [processOnly, answerTextIds]
+  )
   const showFlowPanel = useSegmentFlow && (isStreaming ? true : flowOpen)
-  const showFinalDivider =
-    (useSegmentFlow && processOnly.length > 0 && showFlowPanel) ||
-    (!useSegmentFlow && legacyExpandable && flowOpen)
+  const hasAnswerStream = answerParts.length > 0
+  const showFinalBody =
+    Boolean(children) ||
+    hasAnswerStream ||
+    (Boolean(displayContent) &&
+      (isError || isAborted || finalDecision.show) &&
+      !useSegmentFlow)
+  // 正文在上、过程在下：分隔线画在过程区顶部
+  const showLiveProcess = Boolean(isStreaming) // 直播时始终有呼吸过程区
+  const showProcessBelowAnswer =
+    showFinalBody &&
+    (showLiveProcess ||
+      (useSegmentFlow && processForFlow.length > 0) ||
+      (!useSegmentFlow && legacyExpandable && flowOpen))
   const phaseModel = useMemo(
     () => (useSegmentFlow ? deriveProcessPhases(segments!, { isStreaming }) : null),
     [isStreaming, segments, useSegmentFlow]
   )
   const summary = phaseModel
-    ? summarizeProcessPhases(phaseModel, meta?.durationSec ?? shownDuration)
+    ? summarizeProcessPhases(
+        phaseModel,
+        meta?.durationSec ?? shownDuration,
+        meta?.outcome === 'error' || meta?.outcome === 'aborted'
+          ? meta.outcome
+          : /^\*\*错误\*\*:?/u.test((content || '').trim())
+            ? 'error'
+            : 'success'
+      )
     : null
   const showMetaRow =
     shownDuration != null ||
@@ -176,13 +215,9 @@ export function AssistantMessage({
 
   return (
     <article className="assistant-message">
-      {legacyThinkingOnly ? (
-        <ThinkingIndicator
-          elapsed={shownDuration != null ? formatDuration(shownDuration) : undefined}
-        />
-      ) : null}
+      {/* 直播过程统一走 TurnFlow 呼吸头 */}
 
-      {showMetaRow && !useSegmentFlow && !legacyThinkingOnly && (
+      {showMetaRow && !useSegmentFlow && !isStreaming && (
         <div className="assistant-message-meta">
           {(shownDuration != null || isStreaming || legacyExpandable) && (
             <>
@@ -240,53 +275,118 @@ export function AssistantMessage({
         </div>
       )}
 
-      {/* 新过程流：结束后摘要 chip */}
-      {useSegmentFlow && !isStreaming && hasProcessFlow(segments!) && summary ? (
-        <button
-          type="button"
-          className={`turn-flow-summary-chip turn-flow-summary-chip--${
-            isError ? 'error' : isAborted ? 'aborted' : 'success'
+
+      {/* 直播：过程在上，始终可见当前步骤与呼吸反馈 */}
+      {isStreaming ? (
+        <div
+          className={`assistant-process-below assistant-process-below--live-top ${
+            showFinalBody ? 'assistant-process-below--live-top-gap' : ''
           }`}
-          onClick={() => {
-            userToggledFlow.current = true
-            setFlowOpen((o) => !o)
-          }}
-          aria-expanded={flowOpen}
         >
-          <span>{summary}</span>
-          <ChevronDown
-            size={12}
-            className={`assistant-meta-chevron ${flowOpen ? 'assistant-meta-chevron--open' : ''}`}
-            aria-hidden
-          />
-        </button>
+          {useSegmentFlow && answerParts.some((p) => p.type === 'demo')
+            ? answerParts
+                .filter((p): p is Extract<typeof p, { type: 'demo' }> => p.type === 'demo')
+                .map((part) => (
+                  <div key={`live-demo-${part.id}`} className="assistant-live-demo">
+                    <InlineDemo
+                      html={part.html}
+                      caption={part.caption}
+                      streaming={Boolean(part.streaming)}
+                    />
+                  </div>
+                ))
+            : null}
+
+          {useSegmentFlow ? (
+            <div className="turn-flow-live-panel">
+              <TurnFlow
+                segments={processForFlow}
+                isStreaming
+                liveStartedAt={liveStartedAt}
+                approvalWaiting={Boolean(approval)}
+                answerStreaming={Boolean(
+                  finalContentRaw.trim() ||
+                    answerParts.some((p) => p.type === 'text' && p.content.trim())
+                )}
+              />
+            </div>
+          ) : (
+            <div className="turn-flow-live-panel">
+              <TurnFlow
+                segments={[]}
+                isStreaming
+                liveStartedAt={liveStartedAt}
+                approvalWaiting={Boolean(approval)}
+                answerStreaming={Boolean(finalContentRaw.trim())}
+              />
+            </div>
+          )}
+        </div>
       ) : null}
 
-      {/* 过程流面板 */}
-      {useSegmentFlow && processOnly.length > 0 ? (
-        <div
-          className={`turn-flow-collapse ${showFlowPanel ? 'turn-flow-collapse--open' : ''}`}
-          aria-hidden={!showFlowPanel}
-          inert={showFlowPanel ? undefined : true}
-        >
-          <div className="turn-flow-collapse-inner">
-            <TurnFlow
-              segments={segments!}
-              isStreaming={isStreaming}
-              liveStartedAt={liveStartedAt}
-            />
+      {/* 正文 / 错误 / 中止 */}
+      {isAborted ? (
+        <div className="assistant-aborted" role="status">
+          <CircleStop size={15} aria-hidden />
+          <div>
+            <strong>任务已停止</strong>
+            <span>{displayContent ? '已保留停止前生成的内容' : '未产生可保留的结果'}</span>
           </div>
         </div>
       ) : null}
 
-      {/* 旧 ProcessTimeline 回退 */}
-      {legacyExpandable && flowOpen && !useSegmentFlow && !legacyThinkingOnly ? (
-        <div className="assistant-process-wrap assistant-process-wrap--open">
-          <div className="assistant-process-inner">
-            <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
-              <ProcessTimeline steps={processSteps} />
+      {isError && finalContentRaw ? (
+        <div className="assistant-error" role="alert">
+          <div className="assistant-error-head">
+            <AlertTriangle size={16} aria-hidden />
+            <div>
+              <strong>任务未完成</strong>
+              <span>
+                {finalContentRaw.replace(/\*\*错误\*\*:?\s*/g, '').split('\n')[0] ||
+                  '请求执行失败'}
+              </span>
             </div>
+            {onRetry ? (
+              <button type="button" className="assistant-error-retry" onClick={onRetry}>
+                <RotateCcw size={14} aria-hidden />
+                重试
+              </button>
+            ) : null}
           </div>
+          <details className="assistant-error-details">
+            <summary>
+              查看详情 <ChevronDown size={13} aria-hidden />
+            </summary>
+            <MarkdownBody>{finalContentRaw}</MarkdownBody>
+          </details>
+        </div>
+      ) : showFinalBody ? (
+        <div
+          className={`assistant-message-body message-body--assistant ${
+            isStreaming
+              ? 'turn-flow-final turn-flow-final--streaming message-body--streaming-active'
+              : 'turn-flow-final'
+          }`}
+        >
+          {children ??
+            (hasAnswerStream ? (
+              answerParts.map((part) => {
+                if (part.type === 'demo') {
+                  if (isStreaming) return null
+                  return (
+                    <InlineDemo
+                      key={part.id}
+                      html={part.html}
+                      caption={part.caption}
+                      streaming={false}
+                    />
+                  )
+                }
+                return <MarkdownBody key={part.id}>{part.content}</MarkdownBody>
+              })
+            ) : displayContent ? (
+              <MarkdownBody>{displayContent}</MarkdownBody>
+            ) : null)}
         </div>
       ) : null}
 
@@ -298,67 +398,93 @@ export function AssistantMessage({
         />
       ) : null}
 
-      {filesOpen && browsedFiles.length > 0 && (
-        <ul className="assistant-message-files">
-          {browsedFiles.map((f) => (
-            <li key={f}>{f}</li>
-          ))}
-        </ul>
-      )}
+      {/* 结束后：过程摘要与可展开时间线在正文下方 */}
+      {!isStreaming ? (
+        <div
+          className={`assistant-process-below ${
+            showProcessBelowAnswer ? 'assistant-process-below--separated' : ''
+          }`}
+        >
+          {useSegmentFlow && hasProcessFlow(segments!) && summary ? (
+            <button
+              type="button"
+              className={`turn-flow-summary-chip turn-flow-summary-chip--${
+                isError ? 'error' : isAborted ? 'aborted' : 'success'
+              }`}
+              onClick={() => {
+                userToggledFlow.current = true
+                setFlowOpen((o) => !o)
+              }}
+              aria-expanded={flowOpen}
+            >
+              <span>{summary}</span>
+              <ChevronDown
+                size={12}
+                className={`assistant-meta-chevron ${flowOpen ? 'assistant-meta-chevron--open' : ''}`}
+                aria-hidden
+              />
+            </button>
+          ) : null}
 
-      {skillNames.length > 0 && (
-        <p className="assistant-message-hook">
-          已载入技能 <code>{skillActivityLabel(skillNames[0])}</code>
-        </p>
-      )}
+          {useSegmentFlow && processForFlow.length > 0 ? (
+            <div
+              className={`turn-flow-collapse ${showFlowPanel ? 'turn-flow-collapse--open' : ''}`}
+              aria-hidden={!showFlowPanel}
+              inert={showFlowPanel ? undefined : true}
+            >
+              <div className="turn-flow-collapse-inner">
+                <TurnFlow segments={processForFlow} isStreaming={false} />
+              </div>
+            </div>
+          ) : null}
 
-      {isAborted ? (
-        <div className="assistant-aborted" role="status">
-          <CircleStop size={15} aria-hidden />
-          <div>
-            <strong>任务已停止</strong>
-            <span>{displayContent ? '已保留停止前生成的内容' : '未产生可保留的结果'}</span>
+          {legacyExpandable && !useSegmentFlow ? (
+            <div
+              className={`assistant-process-wrap ${flowOpen ? 'assistant-process-wrap--open' : ''}`}
+              aria-hidden={!flowOpen}
+              inert={flowOpen ? undefined : true}
+            >
+              <div className="assistant-process-inner">
+                <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
+                  <ProcessTimeline steps={processSteps} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {browsedFiles.length > 0 ? (
+        <div
+          className={`assistant-files-collapse ${filesOpen ? 'assistant-files-collapse--open' : ''}`}
+          aria-hidden={!filesOpen}
+          inert={filesOpen ? undefined : true}
+        >
+          <div className="assistant-files-collapse-inner">
+            <ul className="assistant-message-files">
+              {browsedFiles.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
           </div>
         </div>
       ) : null}
 
-      {isError && finalContent ? (
-        <div className="assistant-error" role="alert">
-          <div className="assistant-error-head">
-            <AlertTriangle size={16} aria-hidden />
-            <div>
-              <strong>任务未完成</strong>
-              <span>{finalContent.replace(/\*\*错误\*\*:?\s*/g, '').split('\n')[0] || '请求执行失败'}</span>
-            </div>
-            {onRetry ? (
-              <button type="button" className="assistant-error-retry" onClick={onRetry}>
-                <RotateCcw size={14} aria-hidden />
-                重试
-              </button>
-            ) : null}
-          </div>
-          <details className="assistant-error-details">
-            <summary>查看详情 <ChevronDown size={13} aria-hidden /></summary>
-            <MarkdownBody>{finalContent}</MarkdownBody>
-          </details>
-        </div>
-      ) : (displayContent || children) && (
-        <div
-          className={`assistant-message-body message-body--assistant ${
-            isStreaming
-              ? 'turn-flow-final turn-flow-final--streaming message-body--streaming-active'
-              : 'turn-flow-final'
-          } ${
-            showFinalDivider ? 'turn-flow-final--separated' : ''
-          }`}
-        >
-          {children ?? <MarkdownBody>{displayContent}</MarkdownBody>}
-        </div>
-      )}
-
-      {displayContent && !isStreaming && !isError && (
-        <MessageActions content={displayContent} messageId={messageId} />
-      )}
+      {(displayContent ||
+        answerParts.some((p) => p.type === 'text' && p.content.trim())) &&
+        !isStreaming &&
+        !isError && (
+          <MessageActions
+            content={
+              displayContent ||
+              answerParts
+                .filter((p): p is Extract<typeof p, { type: 'text' }> => p.type === 'text')
+                .map((p) => p.content)
+                .join('\n\n')
+            }
+            messageId={messageId}
+          />
+        )}
     </article>
   )
 }

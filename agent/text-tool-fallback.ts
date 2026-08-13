@@ -5,7 +5,6 @@
  */
 import { randomUUID } from 'crypto'
 import { KNOWN_TOOL_NAMES } from './tool-definitions'
-import { isMcpDynamicToolName } from '../tools/services/mcp-tool-pool'
 
 const KNOWN_TOOLS = KNOWN_TOOL_NAMES
 
@@ -15,8 +14,6 @@ const ZERO_ARG_TOOLS = new Set([
   'desktop_list_windows',
   'browser_close',
   'voice_stop',
-  'mcp_list_tools',
-  'list_skills',
   'task_list',
   'agent_list',
   'git_status'
@@ -38,7 +35,7 @@ type ParsedJsonToolBlock = {
 }
 
 function isKnownToolName(name: string): boolean {
-  return KNOWN_TOOLS.has(name) || isMcpDynamicToolName(name)
+  return KNOWN_TOOLS.has(name)
 }
 
 function normalizeArgs(value: unknown): Record<string, unknown> {

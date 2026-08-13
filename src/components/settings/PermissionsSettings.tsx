@@ -1,6 +1,6 @@
 /**
  * 权限模式与网络隔离选择
- * @see src/README.md
+ * @see src/ARCH.md
  */
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
 import {

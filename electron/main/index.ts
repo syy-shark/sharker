@@ -1,13 +1,9 @@
 /// <reference types="electron-vite/node" />
 /**
  * Electron 主进程入口：窗口生命周期、全部 IPC 注册与 Agent 对话调度。
- * @see electron/README.md
+ * @see electron/ARCH.md
  */
 import { app, BrowserWindow, ipcMain, dialog, Menu, nativeImage, shell, safeStorage } from 'electron'
-
-if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('class', 'sharker')
-}
 import fs from 'fs'
 import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
@@ -22,30 +18,41 @@ import type {
 } from '../../shared/types'
 import { generateTitle, type ApprovalHandler } from '../../agent/loop'
 import { executeUserInput, abortActiveTurn } from '../../agent/pipeline'
+import {
+  ConversationApprovalRegistry,
+  normalizeApprovalDecision,
+  type ApprovalDecision
+} from '../../shared/approval-session'
 import { initMemorySystem, onSettingsChanged } from '../../agent/memory/init'
 import { closeMemoryDb } from '../../agent/memory/db'
-import { testProvider, simpleCompletion } from '../../providers/openai'
-import { cloneSkillRepo } from '../../skills/loader'
-import { normalizeSettings, getActiveWorkspacePath } from '../../shared/workspace'
+import { testProvider, listProviderModels, simpleCompletion } from '../../providers/openai'
+import { normalizeSettings, getActiveWorkspacePath, globalWorkspacePath } from '../../shared/workspace'
+import { importCodexCredentials } from '../../shared/oauth-gpt'
+import {
+  importHermesXaiCredentials,
+  loadOAuthXaiMeta,
+  persistXaiTokens,
+  refreshXaiToken,
+  startXaiDeviceCode,
+  waitXaiDeviceToken
+} from '../../shared/oauth-xai'
 import type { Conversation } from '../../shared/conversation'
 import {
   createConversationOnDisk,
   deleteConversation,
+  setConversationArchived,
+  listArchivedConversations,
   listWorkspaceConversations,
   loadConversation,
   saveConversation,
   setActiveConversation
 } from '../conversations-store'
-import { readMcpConfig, writeMcpConfig } from '../../tools/services/mcp-config-io'
-import { listMcpPluginStates, setMcpPluginEnabled } from '../../tools/services/mcp-plugin-store'
 import {
   disableBrowserUse,
   disableComputerUse,
   ensureBrowserUseReady,
   ensureComputerUseReady
 } from '../../tools/services/feature-use-setup'
-import { listMcpTools } from '../../tools/services/mcp-registry'
-import { invalidateMcpToolPool } from '../../tools/services/mcp-tool-pool'
 import { gatherComputerUseStatus } from '../../shared/computer-use-status'
 import {
   gatherBrowserUseStatus,
@@ -63,23 +70,19 @@ import {
   writeTerminal
 } from './terminal-manager'
 import { listAutomations, saveAutomations, startAutomationScheduler } from './automation-scheduler'
-import { loadHooks, saveHooks, runHooks } from '../../agent/hooks/runner'
-import type { HookEntry } from '../../agent/hooks/runner'
-import { importCodexCredentials, loadOAuthGptMeta } from '../../shared/oauth-gpt'
-import { createRemoteRoom, loadRemoteCollab } from '../../shared/remote-collab'
-import { getLspStatus, startTypescriptLsp, stopLsp } from '../../tools/services/lsp-client'
-import { installLinuxDesktopEntry } from '../linux-desktop'
+import { stopLsp } from '../../tools/services/lsp-client'
 
 let mainWindow: BrowserWindow | null = null
 let settings: AppSettings
 
 const pendingApprovals = new Map<
   string,
-  { resolve: (v: boolean) => void; reject: (e: Error) => void }
+  { resolve: (v: ApprovalDecision) => void; reject: (e: Error) => void }
 >()
+/** 按会话隔离的「允许本会话」授权表 */
+const approvalRegistry = new ConversationApprovalRegistry()
 
 let cachedAppIcon: Electron.NativeImage | undefined
-let cachedAppIconPath: string | undefined
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 const IMAGE_MIME_TO_EXT: Record<string, string> = {
@@ -95,6 +98,94 @@ function sanitizeAttachmentName(name: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80) || 'image'
+}
+
+/**
+ * SuperGrok 订阅：access token 过期则用 refresh_token 刷新，并写回 settings。
+ * 失败时抛错，让聊天区显示明确提示（不要静默用过期 token）。
+ */
+async function ensureXaiSubscriptionFresh(
+  s: AppSettings,
+  opts?: { force?: boolean }
+): Promise<AppSettings> {
+  const provider = s.providers.find((p) => p.id === 'xai-grok')
+  if (!provider || provider.authMode !== 'subscription') return s
+  // 默认仅在当前 active 为 xAI 时刷新；测试/拉模型可 force
+  if (!opts?.force && s.activeProviderId !== 'xai-grok') return s
+
+  let meta
+  try {
+    meta = await loadOAuthXaiMeta()
+  } catch (e) {
+    console.warn('[xai-oauth] load meta failed', e)
+    return s
+  }
+
+  // 未走 OAuth 元数据、但 settings 里仍有 key：直接放行
+  if (!meta.connected && provider.apiKey?.trim()) return s
+
+  const expiresMs = meta.expiresAt ? Date.parse(meta.expiresAt) : NaN
+  const skewMs = 90_000
+  const hasExpiry = Number.isFinite(expiresMs)
+  const stillValid =
+    hasExpiry && Date.now() < expiresMs - skewMs && Boolean(provider.apiKey?.trim())
+  if (stillValid) return s
+
+  // 无过期时间但有 key：尝试直接用（兼容旧数据）
+  if (!hasExpiry && provider.apiKey?.trim() && !meta.refreshTokenEnc) return s
+
+  const reLoginHint =
+    '请打开 **设置 → 模型 → xAI Grok**，重新登录 SuperGrok（设备码授权）。'
+
+  if (!meta.refreshTokenEnc || !safeStorage.isEncryptionAvailable()) {
+    throw new Error(`SuperGrok 登录已过期或未登录。${reLoginHint}`)
+  }
+
+  try {
+    const refreshToken = safeStorage.decryptString(Buffer.from(meta.refreshTokenEnc, 'base64'))
+    const refreshed = await refreshXaiToken(refreshToken)
+    if (!refreshed.ok || !refreshed.accessToken) {
+      console.warn('[xai-oauth] refresh failed:', refreshed.message)
+      throw new Error(
+        `SuperGrok 登录已过期，自动刷新失败（${refreshed.message || '未知错误'}）。${reLoginHint}`
+      )
+    }
+    const encrypt = (plain: string) => safeStorage.encryptString(plain).toString('base64')
+    await persistXaiTokens(
+      {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        expiresAt: refreshed.expiresAt
+      },
+      encrypt
+    )
+    const next = normalizeSettings(
+      {
+        ...s,
+        providers: s.providers.map((p) =>
+          p.id === 'xai-grok'
+            ? {
+                ...p,
+                apiKey: refreshed.accessToken!,
+                authMode: 'subscription' as const,
+                subscriptionLabel: p.subscriptionLabel || '已登录 SuperGrok 订阅'
+              }
+            : p
+        )
+      },
+      app.getPath('home')
+    )
+    await saveSettings(next)
+    settings = next
+    console.log('[xai-oauth] access token refreshed, expiresAt=', refreshed.expiresAt)
+    return next
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('SuperGrok')) throw e
+    console.warn('[xai-oauth] refresh error', e)
+    throw new Error(
+      `SuperGrok 登录刷新失败（${e instanceof Error ? e.message : String(e)}）。${reLoginHint}`
+    )
+  }
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
@@ -154,18 +245,12 @@ async function readAttachmentDataUrl(filePath: string): Promise<string> {
   return `data:${mimeType};base64,${buf.toString('base64')}`
 }
 
-/** 从磁盘路径加载 NativeImage，Linux 下自动放大 */
+/** 从磁盘路径加载 NativeImage */
 function loadIconFromPath(filePath: string): Electron.NativeImage | undefined {
   if (!filePath || !fs.existsSync(filePath)) return undefined
   try {
-    let img = nativeImage.createFromPath(filePath)
+    const img = nativeImage.createFromPath(filePath)
     if (img.isEmpty()) return undefined
-    if (process.platform === 'linux') {
-      const { width, height } = img.getSize()
-      if (width !== height || width < 128) {
-        img = img.resize({ width: 256, height: 256, quality: 'best' })
-      }
-    }
     return img
   } catch {
     return undefined
@@ -208,25 +293,63 @@ function resolveAppIcon(): Electron.NativeImage | undefined {
     const img = loadIconFromPath(p)
     if (img) {
       cachedAppIcon = img
-      cachedAppIconPath = p
       return img
     }
   }
   return undefined
 }
 
-/** 将图标应用到 macOS Dock */
+/** 将图标应用到 Dock */
 function applyAppIcon(icon: Electron.NativeImage): void {
-  if (process.platform === 'darwin' && app.dock) {
+  if (app.dock) {
     app.dock.setIcon(icon)
   }
 }
 
+/** 按设置应用 macOS 窗口材质：浅色大面积玻璃 vibrancy / 深色金属实色 */
+function applyWindowAppearance(win: BrowserWindow, s: AppSettings): void {
+  const dark = s.uiTheme === 'dark'
+  if (!dark) {
+    // 浅色：透明窗 + under-window 磨砂（刚才可用组合）
+    win.setBackgroundColor('#e8eaed')
+    const effects: Array<'under-window' | 'fullscreen-ui' | 'sidebar' | 'header' | 'hud'> = [
+      'under-window',
+      'fullscreen-ui',
+      'sidebar',
+      'header',
+      'hud'
+    ]
+    let applied: string | null = null
+    for (const effect of effects) {
+      try {
+        win.setVibrancy(effect)
+        applied = effect
+        break
+      } catch {
+        /* try next */
+      }
+    }
+    if (!applied) console.warn('[window] failed to apply vibrancy')
+    else console.log('[window] vibrancy =', applied)
+  } else {
+    try {
+      win.setVibrancy(null)
+    } catch {
+      /* ignore */
+    }
+    win.setBackgroundColor('#0b0d11')
+  }
+  if (!win.isVisible()) {
+    win.show()
+  }
+  win.focus()
+}
+
 /** 创建主窗口并加载渲染进程（开发 URL 或打包 HTML）。 */
 function createWindow(): void {
-  const isMac = process.platform === 'darwin'
-  const customChrome = !isMac
   const icon = resolveAppIcon()
+  const dark = settings?.uiTheme === 'dark'
+  const useGlass = !dark
 
   mainWindow = new BrowserWindow({
     width: 1180,
@@ -234,10 +357,15 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     title: 'Sharker',
-    backgroundColor: customChrome ? '#00000000' : '#dce8f8',
-    transparent: customChrome,
-    frame: isMac,
-    titleBarStyle: isMac ? 'hiddenInset' : undefined,
+    show: false,
+    backgroundColor: useGlass ? '#e8eaed' : '#0b0d11',
+    /* 仅浅色玻璃需要透明；深色金属用实色底，避免窗口“看不见” */
+    transparent: false, // 避免无 vibrancy 时整窗纯黑；材质用 CSS 玻璃层表达
+    vibrancy: useGlass ? 'under-window' : undefined,
+    visualEffectState: 'active',
+    frame: true,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 18 },
     autoHideMenuBar: true,
     icon,
     webPreferences: {
@@ -255,11 +383,34 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error('[window] did-fail-load', code, desc, url)
+  })
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[window] did-finish-load', mainWindow?.webContents.getURL())
+  })
+  mainWindow.webContents.on('console-message', (event) => {
+    // Electron 新事件对象；兼容旧签名字段
+    const level = (event as any).level ?? 0
+    const message = String((event as any).message ?? '')
+    const line = (event as any).lineNumber ?? (event as any).line ?? 0
+    const sourceId = String((event as any).sourceId ?? '')
+    if (level >= 2) console.warn('[renderer]', message, `${sourceId}:${line}`)
+  })
+
   mainWindow.setMenuBarVisibility(false)
+  applyWindowAppearance(mainWindow, settings)
 
   if (icon) {
     mainWindow.setIcon(icon)
   }
+
+  mainWindow.once('ready-to-show', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.show()
+    mainWindow.focus()
+    if (process.platform === 'darwin') app.dock?.show()
+  })
 
   /** 禁止聊天内链接在应用窗口内跳转（否则会顶掉 UI、窗口变透明） */
   const rendererOrigin = process.env.ELECTRON_RENDERER_URL
@@ -277,10 +428,6 @@ function createWindow(): void {
     event.preventDefault()
     if (isSafeExternalUrl(url)) void shell.openExternal(url)
   })
-
-  if (!app.isPackaged) {
-    mainWindow.webContents.openDevTools({ mode: 'detach' })
-  }
 }
 
 /** 仅允许 http(s) 外链，防止 file/javascript 等协议 */
@@ -293,7 +440,7 @@ function isSafeExternalUrl(url: string): boolean {
   }
 }
 
-/** 高危工具调用审批：向渲染进程推送请求并等待用户响应。 */
+/** 高危工具调用审批：向渲染进程推送请求并等待用户响应（once/session/deny）。 */
 const approvalHandler: ApprovalHandler = (req) => {
   return new Promise((resolve, reject) => {
     pendingApprovals.set(req.id, { resolve, reject })
@@ -307,8 +454,23 @@ function registerIpc(): void {
 
   ipcMain.handle(IPC.SAVE_SETTINGS, async (_e, next: AppSettings) => {
     const prev = settings
-    settings = normalizeSettings(next, app.getPath('home'))
+    // 渲染侧漏传 apiKey 时沿用主进程内存中的 key，避免切换模型后 Key 被清空
+    const mergedProviders = (next.providers ?? []).map((p) => {
+      const prevP = prev.providers.find((x) => x.id === p.id)
+      if (!p.apiKey?.trim() && prevP?.apiKey?.trim()) {
+        return { ...p, apiKey: prevP.apiKey }
+      }
+      return p
+    })
+    settings = normalizeSettings({ ...next, providers: mergedProviders }, app.getPath('home'))
     await saveSettings(settings)
+    if (
+      mainWindow &&
+      !mainWindow.isDestroyed() &&
+      (prev.uiGlass !== settings.uiGlass || prev.uiTheme !== settings.uiTheme)
+    ) {
+      applyWindowAppearance(mainWindow, settings)
+    }
     void onSettingsChanged(settings).catch((e) => console.warn('[memory] workspace sync', e))
     const workspace = getActiveWorkspacePath(settings) ?? ''
     try {
@@ -328,13 +490,201 @@ function registerIpc(): void {
     return true
   })
 
+  /** draft 来自渲染进程时 apiKey 常被清空；合并主进程内存里的 Key */
+  const snapshotWithKeys = (draft?: AppSettings): AppSettings => {
+    if (!draft) return settings
+    const mergedProviders = (draft.providers ?? []).map((p) => {
+      const live = settings.providers.find((x) => x.id === p.id)
+      if (!p.apiKey?.trim() && live?.apiKey?.trim()) {
+        return { ...p, apiKey: live.apiKey }
+      }
+      return p
+    })
+    return normalizeSettings({ ...draft, providers: mergedProviders }, app.getPath('home'))
+  }
+
   ipcMain.handle(
     IPC.TEST_PROVIDER,
     async (_e, providerId: string, draft?: AppSettings) => {
-      const snapshot = draft
-        ? normalizeSettings(draft, app.getPath('home'))
-        : settings
+      let snapshot = snapshotWithKeys(draft)
+      if (providerId === 'xai-grok') {
+        try {
+          snapshot = await ensureXaiSubscriptionFresh(snapshot, { force: true })
+        } catch (e) {
+          return {
+            ok: false,
+            message: e instanceof Error ? e.message : String(e)
+          }
+        }
+      }
       return testProvider(snapshot, providerId)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.LIST_PROVIDER_MODELS,
+    async (_e, providerId: string, draft?: AppSettings) => {
+      let snapshot = snapshotWithKeys(draft)
+      if (providerId === 'xai-grok') {
+        try {
+          snapshot = await ensureXaiSubscriptionFresh(snapshot, { force: true })
+        } catch (e) {
+          return {
+            ok: false,
+            models: [],
+            message: e instanceof Error ? e.message : String(e)
+          }
+        }
+      }
+      const provider = snapshot.providers.find((p) => p.id === providerId)
+      if (!provider) return { ok: false, models: [], message: '未找到该 API 配置' }
+      return listProviderModels(provider)
+    }
+  )
+
+  /** ChatGPT 订阅：从本机 Codex 登录缓存导入 access token */
+  ipcMain.handle(IPC.IMPORT_CHATGPT_SUBSCRIPTION, async () => {
+    const encrypt = safeStorage.isEncryptionAvailable()
+      ? (plain: string) => safeStorage.encryptString(plain).toString('base64')
+      : undefined
+    const result = await importCodexCredentials(encrypt)
+    if (!result.ok || !result.accessToken) {
+      return { ok: false, message: result.message, settings: null as AppSettings | null }
+    }
+    const next = normalizeSettings(
+      {
+        ...settings,
+        providers: settings.providers.map((p) =>
+          p.id === 'openai-chatgpt'
+            ? {
+                ...p,
+                authMode: 'subscription' as const,
+                apiKey: result.accessToken!,
+                subscriptionLabel: result.email
+                  ? `已登录 ${result.email}`
+                  : '已导入 ChatGPT 订阅'
+              }
+            : p
+        ),
+        activeProviderId: settings.activeProviderId || 'openai-chatgpt'
+      },
+      app.getPath('home')
+    )
+    settings = next
+    await saveSettings(next)
+    return { ok: true, message: result.message, settings: next }
+  })
+
+  /**
+   * SuperGrok 订阅登录：
+   * - mode=device（默认）：OAuth 设备码 → 打开 accounts.x.ai/oauth2/device?user_code=… → 轮询换票
+   * - mode=hermes：从本机 Hermes 缓存导入
+   */
+  ipcMain.handle(
+    IPC.IMPORT_XAI_SUBSCRIPTION,
+    async (_e, mode: 'device' | 'hermes' = 'device') => {
+      const encrypt = safeStorage.isEncryptionAvailable()
+        ? (plain: string) => safeStorage.encryptString(plain).toString('base64')
+        : undefined
+
+      const applyToken = async (
+        accessToken: string,
+        label: string,
+        message: string
+      ) => {
+        const next = normalizeSettings(
+          {
+            ...settings,
+            providers: settings.providers.map((p) =>
+              p.id === 'xai-grok'
+                ? {
+                    ...p,
+                    authMode: 'subscription' as const,
+                    apiKey: accessToken,
+                    subscriptionLabel: label
+                  }
+                : p
+            ),
+            activeProviderId: settings.activeProviderId || 'xai-grok'
+          },
+          app.getPath('home')
+        )
+        settings = next
+        await saveSettings(next)
+        return {
+          ok: true as const,
+          message,
+          settings: next,
+          userCode: undefined as string | undefined,
+          verificationUri: undefined as string | undefined
+        }
+      }
+
+      if (mode === 'hermes') {
+        const result = await importHermesXaiCredentials(encrypt)
+        if (!result.ok || !result.accessToken) {
+          return {
+            ok: false,
+            message: result.message,
+            settings: null as AppSettings | null
+          }
+        }
+        return applyToken(result.accessToken, '已导入 SuperGrok 订阅', result.message)
+      }
+
+      // —— 设备码流程（用户期望的弹窗形态）——
+      const started = await startXaiDeviceCode()
+      if (!started.ok || !started.deviceCode || !started.verificationUri) {
+        return {
+          ok: false,
+          message: started.message,
+          settings: null as AppSettings | null
+        }
+      }
+
+      // 先把 user_code 推给渲染进程展示
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(IPC.XAI_DEVICE_CODE, {
+          userCode: started.userCode,
+          verificationUri: started.verificationUri
+        })
+      }
+
+      // 打开 https://accounts.x.ai/oauth2/device?user_code=XXXX
+      try {
+        await shell.openExternal(started.verificationUri)
+      } catch (e) {
+        console.warn('[xai-oauth] open browser failed', e)
+      }
+
+      const tokens = await waitXaiDeviceToken(started.deviceCode, {
+        intervalSec: started.intervalSec,
+        expiresIn: started.expiresIn
+      })
+      if (!tokens.ok || !tokens.accessToken) {
+        return {
+          ok: false,
+          message: tokens.message,
+          settings: null as AppSettings | null,
+          userCode: started.userCode,
+          verificationUri: started.verificationUri
+        }
+      }
+
+      await persistXaiTokens(
+        {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt
+        },
+        encrypt
+      )
+
+      return applyToken(
+        tokens.accessToken,
+        '已登录 SuperGrok 订阅',
+        tokens.message
+      )
     }
   )
 
@@ -391,6 +741,19 @@ function registerIpc(): void {
   )
 
   ipcMain.handle(
+    IPC.ARCHIVE_CONVERSATION,
+    async (_e, workspaceId: string, conversationId: string, archived: boolean) => {
+      const p = workspacePathById(workspaceId)
+      await setConversationArchived(p, workspaceId, conversationId, archived)
+      return true
+    }
+  )
+
+  ipcMain.handle(IPC.LIST_ARCHIVED_CONVERSATIONS, async () => {
+    return listArchivedConversations()
+  })
+
+  ipcMain.handle(
     IPC.SET_ACTIVE_CONVERSATION,
     async (_e, workspaceId: string, conversationId: string | null) => {
       const p = workspacePathById(workspaceId)
@@ -407,15 +770,6 @@ function registerIpc(): void {
     }
   )
 
-  ipcMain.handle(IPC.IMPORT_SKILL_REPO, async (_e, url: string) => {
-    const path = await cloneSkillRepo(url)
-    if (!settings.skillRepoUrls.includes(url)) {
-      settings.skillRepoUrls.push(url)
-      await saveSettings(settings)
-    }
-    return path
-  })
-
   ipcMain.handle(
     IPC.GENERATE_TITLE,
     async (_e, messages: ChatMessage[]) => {
@@ -427,16 +781,19 @@ function registerIpc(): void {
     }
   )
 
-  ipcMain.handle(IPC.APPROVAL_RESPONSE, async (_e, id: string, approved: boolean) => {
-    const pending = pendingApprovals.get(id)
-    if (pending) {
-      pendingApprovals.delete(id)
-      pending.resolve(approved)
+  ipcMain.handle(
+    IPC.APPROVAL_RESPONSE,
+    async (_e, id: string, decision: ApprovalDecision | boolean) => {
+      const pending = pendingApprovals.get(id)
+      if (pending) {
+        pendingApprovals.delete(id)
+        pending.resolve(normalizeApprovalDecision(decision))
+      }
     }
-  })
+  )
 
-  ipcMain.handle(IPC.ABORT_CHAT, async () => {
-    abortActiveTurn()
+  ipcMain.handle(IPC.ABORT_CHAT, async (_e, conversationId?: string) => {
+    abortActiveTurn(conversationId)
   })
 
   ipcMain.handle(
@@ -463,21 +820,10 @@ function registerIpc(): void {
     return true
   })
 
-  ipcMain.handle(IPC.GET_MCP_CONFIG, async (_e, workspace: string) => {
-    const { raw, path: configPath } = await readMcpConfig(workspace)
-    return { raw, path: configPath }
-  })
-
-  ipcMain.handle(IPC.SAVE_MCP_CONFIG, async (_e, targetPath: string, raw: string) => {
-    try {
-      const parsed = JSON.parse(raw) as { servers?: unknown }
-      if (!Array.isArray(parsed.servers)) throw new Error('servers must be an array')
-      await writeMcpConfig(targetPath, parsed as { servers: import('../../tools/services/mcp-registry').McpServerConfig[] })
-      invalidateMcpToolPool()
-      return true
-    } catch {
-      return false
-    }
+  ipcMain.handle(IPC.OPEN_PATH, async (_e, targetPath: string) => {
+    if (!targetPath || typeof targetPath !== 'string') return false
+    const err = await shell.openPath(path.resolve(targetPath))
+    return err === ''
   })
 
   ipcMain.handle(IPC.GET_COMPUTER_USE_STATUS, async (_e, workspace: string) => {
@@ -492,21 +838,9 @@ function registerIpc(): void {
     return runBrowserUseManifestInstall()
   })
 
-  ipcMain.handle(IPC.LIST_MCP_PLUGINS, async (_e, workspace: string) => {
-    return listMcpPluginStates(workspace)
-  })
-
-  ipcMain.handle(
-    IPC.TOGGLE_MCP_PLUGIN,
-    async (_e, workspace: string, pluginId: string, enabled: boolean) => {
-      await setMcpPluginEnabled(workspace, pluginId, enabled)
-      return listMcpPluginStates(workspace)
-    }
-  )
-
   ipcMain.handle(IPC.COMPRESS_CONTEXT, async (_e, history: ChatMessage[]) => {
     const summarize = async (s: AppSettings, transcript: string) =>
-      simpleCompletion(s, [{ role: 'user', content: transcript }])
+      simpleCompletion(s, '你是对话摘要助手，用简洁中文保留关键信息。', transcript)
     const result = await compressContextForce(settings, history, summarize)
     return result
   })
@@ -529,6 +863,39 @@ function registerIpc(): void {
       }
       const content = await fs.promises.readFile(filePath, 'utf8')
       return { ok: true as const, path: filePath, content }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return { ok: false as const, error: msg }
+    }
+  })
+
+  ipcMain.handle(IPC.READ_FILE_DATA_URL, async (_e, filePath: string) => {
+    const MAX_BYTES = 2 * 1024 * 1024
+    try {
+      const stat = await fs.promises.stat(filePath)
+      if (!stat.isFile()) return { ok: false as const, error: '不是文件' }
+      if (stat.size > MAX_BYTES) {
+        return { ok: false as const, error: `文件过大（>${Math.round(MAX_BYTES / 1024)}KB）` }
+      }
+      const buf = await fs.promises.readFile(filePath)
+      const ext = path.extname(filePath).toLowerCase().replace('.', '')
+      const mime =
+        ext === 'png'
+          ? 'image/png'
+          : ext === 'jpg' || ext === 'jpeg'
+            ? 'image/jpeg'
+            : ext === 'gif'
+              ? 'image/gif'
+              : ext === 'webp'
+                ? 'image/webp'
+                : ext === 'svg'
+                  ? 'image/svg+xml'
+                  : 'application/octet-stream'
+      return {
+        ok: true as const,
+        path: filePath,
+        dataUrl: `data:${mime};base64,${buf.toString('base64')}`
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       return { ok: false as const, error: msg }
@@ -586,75 +953,6 @@ function registerIpc(): void {
     return true
   })
 
-  ipcMain.handle(IPC.LIST_HOOKS, async () => loadHooks())
-  ipcMain.handle(IPC.SAVE_HOOKS, async (_e, hooks: HookEntry[]) => {
-    await saveHooks(hooks)
-    return true
-  })
-
-  ipcMain.handle(IPC.OAUTH_GPT_META, async () => loadOAuthGptMeta())
-  ipcMain.handle(IPC.OAUTH_GPT_START, async () => {
-    const encrypt =
-      safeStorage.isEncryptionAvailable()
-        ? (plain: string) => safeStorage.encryptString(plain).toString('base64')
-        : undefined
-
-    const result = await importCodexCredentials(encrypt)
-    if (!result.ok) return { ok: false, message: result.message }
-
-    // 可选：创建 OpenAI 兼容 provider 预设，便于在对话中选择
-    if (result.accessToken) {
-      const codexProviderId = 'codex-chatgpt'
-      const hasPreset = settings.providers.some((p) => p.id === codexProviderId)
-      if (!hasPreset) {
-        settings = {
-          ...settings,
-          providers: [
-            ...settings.providers,
-            {
-              id: codexProviderId,
-              name: 'ChatGPT (Codex)',
-              baseUrl: 'https://api.openai.com/v1',
-              apiKey: result.accessToken,
-              model: 'gpt-4o'
-            }
-          ]
-        }
-        await saveSettings(settings)
-      }
-    }
-
-    return { ok: true, message: result.message, email: result.email }
-  })
-
-  ipcMain.handle(IPC.REMOTE_COLLAB_GET, async () => loadRemoteCollab())
-  ipcMain.handle(IPC.REMOTE_COLLAB_CREATE, async (_e, name: string) => createRemoteRoom(name))
-
-  ipcMain.handle(IPC.LSP_START, async (_e, workspace: string) => startTypescriptLsp(workspace))
-  ipcMain.handle(IPC.LSP_STATUS, async () => getLspStatus())
-  ipcMain.handle(IPC.LSP_STOP, async () => {
-    stopLsp()
-    return true
-  })
-
-  ipcMain.handle(IPC.TEST_MCP_CONFIG, async (_e, workspace: string) => {
-    try {
-      invalidateMcpToolPool()
-      const tools = await listMcpTools(workspace)
-      const names = tools.filter((t) => !t.name.startsWith('('))
-      if (!names.length) {
-        return { ok: true, message: '已连接，但未发现工具（或配置为空）' }
-      }
-      return {
-        ok: true,
-        message: `发现 ${names.length} 个工具，例如 ${names.slice(0, 5).map((t) => `${t.server}/${t.name}`).join(', ')}`
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      return { ok: false, message: msg }
-    }
-  })
-
   /** chat:send — 转发至 Turn 管线 executeUserInput，流式推送 chunk。 */
   ipcMain.handle(
     IPC.SEND_MESSAGE,
@@ -662,40 +960,110 @@ function registerIpc(): void {
       event,
       userText: string,
       history: ChatMessage[],
-      attachments: ChatAttachment[] = []
+      attachments: ChatAttachment[] = [],
+      conversationId?: string
     ) => {
       const send = (chunk: StreamChunk) => {
-        event.sender.send('chat:stream', chunk)
+        if (event.sender.isDestroyed()) return
+        event.sender.send('chat:stream', {
+          ...chunk,
+          conversationId: chunk.conversationId ?? conversationId
+        })
       }
-      await executeUserInput({
-        settings,
-        history,
-        userText,
-        attachments,
-        onApproval: approvalHandler,
-        send,
-        reloadSettings: async () => {
-          settings = normalizeSettings(await loadSettings(), app.getPath('home'))
-          return settings
-        }
-      })
+      const sessionApprovals = approvalRegistry.get(conversationId)
+      // 发送前刷新过期的 SuperGrok token；失败直接回错误
+      try {
+        settings = await ensureXaiSubscriptionFresh(
+          normalizeSettings(await loadSettings(), app.getPath('home'))
+        )
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.warn('[chat:send] ensureXaiSubscriptionFresh failed', msg)
+        send({ type: 'error', error: msg, conversationId })
+        send({ type: 'done', conversationId })
+        return
+      }
+      try {
+        await executeUserInput({
+          settings,
+          history,
+          userText,
+          attachments,
+          conversationId,
+          sessionApprovals,
+          onApproval: approvalHandler,
+          send,
+          reloadSettings: async () => {
+            let next = normalizeSettings(await loadSettings(), app.getPath('home'))
+            try {
+              next = await ensureXaiSubscriptionFresh(next)
+            } catch (e) {
+              // 轮次中途刷新失败：继续用当前 next，让 API 层报错
+              console.warn('[chat:send] mid-turn refresh failed', e)
+            }
+            settings = next
+            return settings
+          }
+        })
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error('[chat:send] executeUserInput threw', msg)
+        send({ type: 'error', error: msg, conversationId })
+        send({ type: 'done', conversationId })
+      }
     }
   )
+
+  /** 工作区 git 变更列表（右侧 Changes 面板） */
+  ipcMain.handle(IPC.GIT_STATUS_CHANGES, async (_e, cwd: string) => {
+    try {
+      const branch = (await runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
+      const porcelain = await runGit(cwd, ['status', '--porcelain', '-uall'])
+      const files = porcelain
+        .split('\n')
+        .map((line) => line.trimEnd())
+        .filter(Boolean)
+        .map((line) => {
+          const status = line.slice(0, 2).trim() || line.slice(0, 2)
+          let pathPart = line.length > 3 ? line.slice(3).trim() : ''
+          // rename: "R  old -> new" / quoted paths
+          const arrow = pathPart.indexOf(' -> ')
+          if (arrow >= 0) pathPart = pathPart.slice(arrow + 4).trim()
+          if (
+            (pathPart.startsWith('"') && pathPart.endsWith('"')) ||
+            (pathPart.startsWith("'") && pathPart.endsWith("'"))
+          ) {
+            pathPart = pathPart.slice(1, -1)
+          }
+          return { status, path: pathPart, raw: line }
+        })
+      return { isRepo: true, branch, files }
+    } catch {
+      return { isRepo: false, branch: '', files: [] as { status: string; path: string; raw: string }[] }
+    }
+  })
 }
 
 /** 应用就绪：加载设置、注册 IPC、创建主窗口。 */
 app.whenReady().then(async () => {
+  if (process.platform !== 'darwin') {
+    dialog.showErrorBox('Sharker', 'Sharker 仅支持 macOS。')
+    app.quit()
+    return
+  }
+
   Menu.setApplicationMenu(null)
   const icon = resolveAppIcon()
-  if (icon) {
-    applyAppIcon(icon)
-    if (process.platform === 'linux' && cachedAppIconPath) {
-      installLinuxDesktopEntry(cachedAppIconPath)
-    }
-  }
+  if (icon) applyAppIcon(icon)
 
   settings = await loadSettings()
   settings = normalizeSettings(settings, app.getPath('home'))
+  // 全局对话目录：~/.sharker/global
+  try {
+    fs.mkdirSync(globalWorkspacePath(app.getPath('home')), { recursive: true })
+  } catch (e) {
+    console.warn('[workspace] ensure global dir failed', e)
+  }
   await saveSettings(settings)
   registerIpc()
   createWindow()
@@ -723,7 +1091,11 @@ app.whenReady().then(async () => {
 
   app.on('before-quit', () => {
     killAllTerminals()
-    stopLsp()
+    try {
+      stopLsp()
+    } catch (e) {
+      console.warn('[lsp] stop failed', e)
+    }
     void closeMemoryDb()
   })
 
@@ -733,5 +1105,5 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  /* macOS: keep app alive until quit from Dock / Cmd+Q */
 })

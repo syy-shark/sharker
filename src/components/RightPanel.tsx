@@ -1,15 +1,16 @@
 /**
  * 右侧可展开面板：文件树 / 终端 / 内置浏览器；支持拖拽调宽与全屏。
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Expand, Minimize2, X } from 'lucide-react'
 import { FileTree } from './panel/FileTree'
 import { EmbeddedTerminal } from './panel/EmbeddedTerminal'
 import { EmbeddedBrowser } from './panel/EmbeddedBrowser'
+import { ChangesPanel } from './panel/ChangesPanel'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 
-export type RightPanelTab = 'files' | 'terminal' | 'browser'
+export type RightPanelTab = 'files' | 'changes' | 'terminal' | 'browser'
 
 const PANEL_WIDTH_KEY = 'sharker-right-panel-width'
 const PANEL_DEFAULT_WIDTH = RIGHT_PANEL_LAYOUT.default
@@ -43,9 +44,14 @@ export function RightPanel({
   })
   const [fullscreen, setFullscreen] = useState(false)
   const [resizing, setResizing] = useState(false)
+  const [animating, setAnimating] = useState(false)
   const [compact, setCompact] = useState(() => window.innerWidth < WORKBENCH_BREAKPOINT)
+  /** 窄屏遮罩：关闭时先播 exit 再卸载，避免瞬隐 */
+  const [backdropMounted, setBackdropMounted] = useState(false)
+  const [backdropExiting, setBackdropExiting] = useState(false)
+  const backdropTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef({ startX: 0, startWidth: width })
-
+  const panelRef = useRef<HTMLElement>(null)
   useEffect(() => {
     if (!resizing) return
     document.body.classList.add('right-panel-resizing')
@@ -87,8 +93,6 @@ export function RightPanel({
     [open, fullscreen, width]
   )
 
-  const panelWidth = open && !fullscreen ? width : undefined
-
   const exitFullscreen = useCallback(() => {
     setFullscreen(false)
   }, [])
@@ -103,10 +107,98 @@ export function RightPanel({
     if (!open) setFullscreen(false)
   }, [open])
 
+  /** 全屏时给 body 打标：隐藏下层侧栏/主区，杜绝文字透出叠字 */
   useEffect(() => {
-    const onResize = () => setCompact(window.innerWidth < WORKBENCH_BREAKPOINT)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    if (!fullscreen) {
+      document.body.classList.remove('right-panel-fullscreen')
+      return
+    }
+    document.body.classList.add('right-panel-fullscreen')
+    return () => {
+      document.body.classList.remove('right-panel-fullscreen')
+    }
+  }, [fullscreen])
+
+  /** 展开/收起时标记 animating：CSS 关掉 blur，过渡结束后再开 */
+  useEffect(() => {
+    if (fullscreen || resizing) {
+      setAnimating(false)
+      return
+    }
+    setAnimating(true)
+    const el = panelRef.current
+    let settled = false
+    const settle = () => {
+      if (settled) return
+      settled = true
+      setAnimating(false)
+    }
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target !== el) return
+      if (e.propertyName !== 'transform' && e.propertyName !== 'margin-right') return
+      settle()
+    }
+    el?.addEventListener('transitionend', onEnd)
+    // 兜底：避免 transitionend 丢失时一直无 blur
+    const t = window.setTimeout(settle, 360)
+    return () => {
+      el?.removeEventListener('transitionend', onEnd)
+      window.clearTimeout(t)
+    }
+  }, [open, fullscreen, resizing])
+
+  useEffect(() => {
+    // matchMedia 比裸 resize 更稳：CDP/Emulation 改 viewport 时也能同步 compact
+    const mql = window.matchMedia(`(max-width: ${WORKBENCH_BREAKPOINT - 1}px)`)
+    const syncCompact = () => setCompact(mql.matches)
+    syncCompact()
+    const onChange = () => syncCompact()
+    if (typeof mql.addEventListener === 'function') mql.addEventListener('change', onChange)
+    else mql.addListener(onChange)
+    window.addEventListener('resize', syncCompact)
+    window.visualViewport?.addEventListener('resize', syncCompact)
+    return () => {
+      if (typeof mql.removeEventListener === 'function') mql.removeEventListener('change', onChange)
+      else mql.removeListener(onChange)
+      window.removeEventListener('resize', syncCompact)
+      window.visualViewport?.removeEventListener('resize', syncCompact)
+    }
+  }, [])
+
+  // 打开面板时强制同步一次，避免“已打开时改宽度”漏遮罩
+  useEffect(() => {
+    if (!open) return
+    setCompact(window.matchMedia(`(max-width: ${WORKBENCH_BREAKPOINT - 1}px)`).matches)
+  }, [open])
+
+  useEffect(() => {
+    const shouldShow = compact && open && !fullscreen
+    if (shouldShow) {
+      if (backdropTimerRef.current) {
+        clearTimeout(backdropTimerRef.current)
+        backdropTimerRef.current = null
+      }
+      setBackdropExiting(false)
+      setBackdropMounted(true)
+      return
+    }
+    // 已在退出中或未挂载：勿重开计时，避免 StrictMode/重渲染打断 exit
+    if (!backdropMounted || backdropExiting) return
+    setBackdropExiting(true)
+    backdropTimerRef.current = setTimeout(() => {
+      setBackdropMounted(false)
+      setBackdropExiting(false)
+      backdropTimerRef.current = null
+    }, 280)
+  }, [compact, open, fullscreen, backdropMounted, backdropExiting])
+
+  useEffect(() => {
+    return () => {
+      if (backdropTimerRef.current) {
+        clearTimeout(backdropTimerRef.current)
+        backdropTimerRef.current = null
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -123,8 +215,27 @@ export function RightPanel({
 
   const panel = (
     <aside
-      className={`right-panel ${open ? 'right-panel--open' : ''} ${fullscreen ? 'right-panel--fullscreen' : ''} ${resizing ? 'right-panel--resizing' : ''}`}
-      style={panelWidth != null ? { width: panelWidth } : undefined}
+      ref={panelRef}
+      className={[
+        'right-panel',
+        open ? 'right-panel--open' : '',
+        compact ? 'right-panel--compact' : '',
+        fullscreen ? 'right-panel--fullscreen' : '',
+        resizing ? 'right-panel--resizing' : '',
+        animating && !fullscreen ? 'right-panel--animating' : ''
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={
+        fullscreen || compact
+          ? undefined
+          : ({
+              ['--right-panel-w' as string]: `${width}px`,
+              width,
+              minWidth: width,
+              maxWidth: width
+            } as CSSProperties)
+      }
       aria-label="工作区面板"
       aria-hidden={!open}
     >
@@ -154,6 +265,7 @@ export function RightPanel({
           {(
             [
               ['files', '文件'],
+              ['changes', '变更'],
               ['terminal', '终端'],
               ['browser', '浏览器']
             ] as const
@@ -191,8 +303,9 @@ export function RightPanel({
           </button>
         </div>
       </div>
-      <div className="right-panel-body">
+      <div className="right-panel-body view-enter" key={tab}>
         {tab === 'files' && <FileTree workspacePath={workspacePath} isHome={isHome} />}
+        {tab === 'changes' && <ChangesPanel workspacePath={workspacePath} />}
         {tab === 'terminal' && <EmbeddedTerminal workspacePath={workspacePath} />}
         {tab === 'browser' && <EmbeddedBrowser />}
       </div>
@@ -201,12 +314,13 @@ export function RightPanel({
 
   return (
     <>
-      {compact && open && !fullscreen ? (
+      {backdropMounted ? (
         <button
           type="button"
-          className="right-panel-backdrop"
+          className={`right-panel-backdrop${backdropExiting ? ' right-panel-backdrop--exit' : ''}`}
           aria-label="关闭工作区面板"
           onClick={returnToMain}
+          tabIndex={backdropExiting ? -1 : 0}
         />
       ) : null}
       {panel}

@@ -105,24 +105,30 @@ export async function listWorkspaceConversations(
   await ensureWorkspaceRow(workspaceId, workspacePath)
   const db = await getMemoryDb()
 
+  // 主列表只含未归档；一条 SQL 带上 messageCount，避免 N+1 拖死 UI
   const sessions = await db.query<{
     id: string
     title: string
     custom_title: string | null
     created_at: number
     updated_at: number
+    status: string | null
+    msg_count: number
   }>(
-    `SELECT id, title, custom_title, created_at, updated_at FROM sessions
-     WHERE workspace_id = $1 ORDER BY created_at ASC`,
+    `SELECT s.id, s.title, s.custom_title, s.created_at, s.updated_at, s.status,
+            COALESCE(c.msg_count, 0)::int AS msg_count
+     FROM sessions s
+     LEFT JOIN (
+       SELECT session_id, COUNT(*)::int AS msg_count
+       FROM session_messages
+       GROUP BY session_id
+     ) c ON c.session_id = s.id
+     WHERE s.workspace_id = $1 AND (s.status IS NULL OR s.status = 'active')
+     ORDER BY s.created_at ASC`,
     [workspaceId]
   )
 
-  const summaries: ConversationSummary[] = []
-  for (const s of sessions.rows) {
-    const countRes = await db.query<{ c: number }>(
-      'SELECT COUNT(*)::int AS c FROM session_messages WHERE session_id = $1',
-      [s.id]
-    )
+  const summaries: ConversationSummary[] = sessions.rows.map((s) => {
     const conv: Conversation = {
       id: s.id,
       workspaceId,
@@ -130,13 +136,14 @@ export async function listWorkspaceConversations(
       customTitle: s.custom_title ?? undefined,
       messages: [],
       createdAt: Number(s.created_at),
-      updatedAt: Number(s.updated_at)
+      updatedAt: Number(s.updated_at),
+      status: 'active'
     }
-    summaries.push({
+    return {
       ...toConversationSummary(conv),
-      messageCount: countRes.rows[0]?.c ?? 0
-    })
-  }
+      messageCount: Number(s.msg_count) || 0
+    }
+  })
 
   const conversations = sortConversationsByCreatedAt(summaries)
   const meta = await db.query<{ active_session_id: string | null }>(
@@ -248,6 +255,83 @@ export async function saveConversation(
   }
 
   return next
+}
+
+/** 归档 / 回档对话（status: active | archived） */
+export async function setConversationArchived(
+  workspacePath: string,
+  workspaceId: string,
+  id: string,
+  archived: boolean
+): Promise<void> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const status = archived ? 'archived' : 'active'
+  const now = Date.now()
+  await db.query(
+    `UPDATE sessions SET status = $1, updated_at = $2
+     WHERE id = $3 AND workspace_id = $4`,
+    [status, now, id, workspaceId]
+  )
+  if (archived) {
+    const meta = await db.query<{ active_session_id: string | null }>(
+      'SELECT active_session_id FROM workspace_session_meta WHERE workspace_id = $1',
+      [workspaceId]
+    )
+    if (meta.rows[0]?.active_session_id === id) {
+      await db.query(
+        `INSERT INTO workspace_session_meta (workspace_id, active_session_id)
+         VALUES ($1, NULL) ON CONFLICT (workspace_id) DO UPDATE SET active_session_id = NULL`,
+        [workspaceId]
+      )
+    }
+  }
+}
+
+/** 列出全部已归档对话（跨工作区，供设置页） */
+export async function listArchivedConversations(): Promise<ConversationSummary[]> {
+  const db = await getMemoryDb()
+  const sessions = await db.query<{
+    id: string
+    workspace_id: string
+    title: string
+    custom_title: string | null
+    created_at: number
+    updated_at: number
+    workspace_label: string | null
+    workspace_path: string | null
+  }>(
+    `SELECT s.id, s.workspace_id, s.title, s.custom_title, s.created_at, s.updated_at,
+            w.label AS workspace_label, w.path AS workspace_path
+     FROM sessions s
+     LEFT JOIN workspaces w ON w.id = s.workspace_id
+     WHERE s.status = 'archived'
+     ORDER BY s.updated_at DESC`
+  )
+
+  const out: ConversationSummary[] = []
+  for (const s of sessions.rows) {
+    const countRes = await db.query<{ c: number }>(
+      'SELECT COUNT(*)::int AS c FROM session_messages WHERE session_id = $1',
+      [s.id]
+    )
+    const conv: Conversation = {
+      id: s.id,
+      workspaceId: s.workspace_id,
+      title: s.title,
+      customTitle: s.custom_title ?? undefined,
+      messages: [],
+      createdAt: Number(s.created_at),
+      updatedAt: Number(s.updated_at),
+      status: 'archived'
+    }
+    out.push({
+      ...toConversationSummary(conv),
+      messageCount: countRes.rows[0]?.c ?? 0,
+      workspaceLabel: s.workspace_label || s.workspace_path || s.workspace_id
+    })
+  }
+  return out
 }
 
 /** 删除对话 */

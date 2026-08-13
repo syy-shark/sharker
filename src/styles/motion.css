@@ -1,11 +1,21 @@
 /* 全局动效：统一弹层、切换、交互的曲线与时长 */
 :root {
+  /* 更接近系统级减速：末端长尾更丝滑 */
   --motion-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
-  --motion-duration-fast: 0.12s;
-  --motion-duration-normal: 0.18s;
-  --motion-duration-slow: 0.22s;
+  --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --motion-duration-fast: 0.15s;
+  --motion-duration-normal: 0.22s;
+  --motion-duration-slow: 0.3s;
+  --motion-duration-panel: 0.28s;
+  --motion-duration-breath: 2.2s;
+  /* JS 与 CSS 对齐用（ms），含 1 帧缓冲 */
+  --motion-ms-fast: 150;
+  --motion-ms-normal: 220;
+  --motion-ms-slow: 300;
+  --motion-ms-panel: 280;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -13,6 +23,12 @@
     --motion-duration-fast: 0.01ms;
     --motion-duration-normal: 0.01ms;
     --motion-duration-slow: 0.01ms;
+    --motion-duration-panel: 0.01ms;
+    --motion-duration-breath: 0.01ms;
+    --motion-ms-fast: 0;
+    --motion-ms-normal: 0;
+    --motion-ms-slow: 0;
+    --motion-ms-panel: 0;
   }
 
   *,
@@ -27,44 +43,131 @@
 @keyframes popover-enter {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.96);
+    transform: translate3d(0, 8px, 0) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes popover-exit {
   from {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translate3d(0, 4px, 0) scale(0.985);
   }
 }
 
+/* 仅透明度：勿留 transform，否则子级 position:fixed 会相对该层定位 */
 @keyframes view-enter {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes list-item-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translate3d(0, 4px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 直播呼吸：只动 opacity / box-shadow，避免挤布局 */
+@keyframes live-orb-glow {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes live-orb-ring {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--bg-base) 88%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--bg-base) 88%, transparent),
+      0 0 0 7px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+@keyframes live-soft-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes live-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes live-panel-breathe {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--accent) 10%, var(--glass-edge-soft));
+    box-shadow:
+      var(--glass-rim-soft),
+      0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  50% {
+    border-color: color-mix(in srgb, var(--accent) 22%, var(--glass-edge-soft));
+    box-shadow:
+      var(--glass-rim-soft),
+      0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes stream-caret {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.92;
   }
 }
 
@@ -72,16 +175,19 @@
 .popover-enter {
   transform-origin: bottom center;
   animation: popover-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+  backface-visibility: hidden;
 }
 
 .popover-exit {
   transform-origin: bottom center;
-  animation: popover-exit var(--motion-duration-normal) var(--motion-ease-soft) both;
+  animation: popover-exit var(--motion-duration-fast) var(--motion-ease-soft) both;
   pointer-events: none;
+  backface-visibility: hidden;
 }
 
 .view-enter {
-  animation: view-enter var(--motion-duration-slow) var(--motion-ease-spring) both;
+  animation: view-enter var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+  backface-visibility: hidden;
 }
 
 .ui-interactive {
@@ -92,4 +198,78 @@
     box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
     opacity var(--motion-duration-fast) var(--motion-ease-soft),
     transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.ui-interactive:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.ui-panel-transition {
+  transition:
+    background-color var(--motion-duration-panel) var(--motion-ease-soft),
+    border-color var(--motion-duration-panel) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-panel) var(--motion-ease-soft),
+    opacity var(--motion-duration-panel) var(--motion-ease-soft),
+    transform var(--motion-duration-panel) var(--motion-ease-spring),
+    width var(--motion-duration-panel) var(--motion-ease-spring),
+    max-width var(--motion-duration-panel) var(--motion-ease-spring),
+    padding var(--motion-duration-panel) var(--motion-ease-spring);
+}
+
+/* 统一直播呼吸点：处理中 / 步骤 active / 演示 live */
+.live-orb {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: live-orb-glow var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
+}
+
+.live-orb::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  pointer-events: none;
+  animation: live-orb-ring var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: live-soft-pulse 1.6s var(--motion-ease-in-out) infinite;
+}
+
+.live-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-muted) 10%, transparent) 0%,
+    color-mix(in srgb, var(--text-muted) 22%, transparent) 50%,
+    color-mix(in srgb, var(--text-muted) 10%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: live-shimmer 1.5s var(--motion-ease-in-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-orb,
+  .live-orb::after,
+  .live-dot,
+  .live-shimmer {
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .ui-interactive:active:not(:disabled) {
+    transform: none;
+  }
 }

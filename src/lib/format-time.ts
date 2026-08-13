@@ -1,6 +1,6 @@
 /**
  * 对话列表相对时间格式化
- * @see src/README.md
+ * @see src/ARCH.md
  */
 export function formatConversationTime(updatedAt: number): string {
   const diff = Math.max(0, Date.now() - updatedAt)

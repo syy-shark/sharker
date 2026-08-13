@@ -1,5 +1,5 @@
 /**
- * Voice / Read Aloud 状态：本地 TTS、Kokoro、read-aloud MCP。
+ * Voice / Read Aloud 状态：macOS say、Kokoro。
  * @see docs/computer-use-setup.md · scripts/install-kokoro-runtime.sh
  */
 import fs from 'fs/promises'
@@ -7,7 +7,6 @@ import os from 'os'
 import path from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
-import { loadMcpConfig } from '../tools/services/mcp-registry'
 
 const execFileAsync = promisify(execFile)
 
@@ -26,8 +25,6 @@ export interface VoiceStatus {
   kokoroModel: string
   kokoroVoices: string
   kokoroReady: boolean
-  readAloudMcpConfigured: boolean
-  readAloudMcpConnected: boolean
   readAloudBinary: string | null
   checklist: VoiceCheckItem[]
   setupScript: string
@@ -53,27 +50,24 @@ async function pathKind(p: string): Promise<string> {
   }
 }
 
-/** Kokoro 路径（Sharker 默认，兼容 Codex 环境变量） */
+/** Kokoro 路径（Sharker 默认） */
 export function kokoroPaths() {
-  const dataHome = process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share')
+  const dataHome = path.join(os.homedir(), 'Library', 'Application Support', 'sharker')
   return {
     python:
       process.env.SHARKER_READ_ALOUD_KOKORO_PYTHON ??
-      process.env.CODEX_LINUX_READ_ALOUD_KOKORO_PYTHON ??
-      path.join(dataHome, 'sharker', 'read-aloud', 'kokoro-venv', 'bin', 'python'),
+      path.join(dataHome, 'read-aloud', 'kokoro-venv', 'bin', 'python'),
     model:
       process.env.SHARKER_READ_ALOUD_KOKORO_MODEL ??
-      process.env.CODEX_LINUX_READ_ALOUD_KOKORO_MODEL ??
       path.join(dataHome, 'kokoro', 'kokoro-v1.0.onnx'),
     voices:
       process.env.SHARKER_READ_ALOUD_KOKORO_VOICES ??
-      process.env.CODEX_LINUX_READ_ALOUD_KOKORO_VOICES ??
       path.join(dataHome, 'kokoro', 'voices-v1.0.bin')
   }
 }
 
 async function resolveReadAloudBinary(): Promise<string | null> {
-  const env = process.env.SHARKER_READ_ALOUD_BIN ?? process.env.CODEX_READ_ALOUD_BIN
+  const env = process.env.SHARKER_READ_ALOUD_BIN
   if (env) {
     try {
       await fs.access(env, fs.constants.X_OK)
@@ -83,10 +77,11 @@ async function resolveReadAloudBinary(): Promise<string | null> {
     }
   }
   const candidates = [
-    path.join(os.homedir(), 'codex-desktop-linux-main', 'target', 'release', 'codex-read-aloud-linux'),
-    path.join(os.homedir(), '下载', 'GitHub', 'codex-desktop-linux-main', 'target', 'release', 'codex-read-aloud-linux')
+    path.join(os.homedir(), '.local', 'bin', 'read-aloud'),
+    '/opt/homebrew/bin/read-aloud',
+    '/usr/local/bin/read-aloud'
   ]
-  const fromPath = await which('codex-read-aloud-linux')
+  const fromPath = await which('read-aloud')
   if (fromPath) candidates.unshift(fromPath)
   for (const c of candidates) {
     try {
@@ -99,15 +94,10 @@ async function resolveReadAloudBinary(): Promise<string | null> {
   return null
 }
 
-function isReadAloudServer(name: string, command?: string): boolean {
-  return name === 'read-aloud' || Boolean(command?.includes('codex-read-aloud-linux'))
-}
-
 /** 聚合 Voice 就绪状态 */
-export async function gatherVoiceStatus(workspace: string): Promise<VoiceStatus> {
-  const spd = await which('spd-say')
-  const espeak = await which('espeak-ng')
-  const localTts = spd ? 'spd-say' : espeak ? 'espeak-ng' : null
+export async function gatherVoiceStatus(_workspace: string): Promise<VoiceStatus> {
+  const say = await which('say')
+  const localTts = say ? 'say' : null
 
   const paths = kokoroPaths()
   const pyKind = await pathKind(paths.python)
@@ -115,30 +105,14 @@ export async function gatherVoiceStatus(workspace: string): Promise<VoiceStatus>
   const voicesKind = await pathKind(paths.voices)
   const kokoroReady = pyKind === 'executable' && modelKind === 'file' && voicesKind === 'file'
 
-  const servers = await loadMcpConfig(workspace)
-  const raServer = servers.find((s) => isReadAloudServer(s.name, s.command))
-  const readAloudMcpConfigured = Boolean(raServer?.command)
-  let readAloudMcpConnected = false
-  if (readAloudMcpConfigured) {
-    const { listMcpTools } = await import('../tools/services/mcp-registry')
-    try {
-      const tools = await listMcpTools(workspace)
-      readAloudMcpConnected = tools.some(
-        (t) => isReadAloudServer(t.server, raServer?.command) && t.name === 'read_aloud'
-      )
-    } catch {
-      readAloudMcpConnected = false
-    }
-  }
-
   const readAloudBinary = await resolveReadAloudBinary()
 
   const checklist: VoiceCheckItem[] = [
     {
       id: 'local-tts',
-      label: '本地 TTS（spd-say / espeak）',
+      label: '本地 TTS（say）',
       ok: Boolean(localTts),
-      detail: localTts ?? '未安装 — sudo apt install speech-dispatcher espeak-ng'
+      detail: localTts ?? '未找到 macOS say'
     },
     {
       id: 'kokoro',
@@ -149,20 +123,10 @@ export async function gatherVoiceStatus(workspace: string): Promise<VoiceStatus>
         : `python=${pyKind}, model=${modelKind}, voices=${voicesKind}`
     },
     {
-      id: 'read-aloud-mcp',
-      label: 'codex-read-aloud-linux MCP',
-      ok: readAloudMcpConnected,
-      detail: readAloudMcpConnected
-        ? 'MCP read_aloud 可用'
-        : readAloudMcpConfigured
-          ? '已配置但未连接'
-          : '未配置 — 见 tools/mcp.example.json'
-    },
-    {
       id: 'read-aloud-bin',
       label: 'read-aloud 二进制',
       ok: Boolean(readAloudBinary),
-      detail: readAloudBinary ?? 'cargo build -p codex-read-aloud-linux'
+      detail: readAloudBinary ?? '可选外部二进制'
     }
   ]
 
@@ -172,8 +136,6 @@ export async function gatherVoiceStatus(workspace: string): Promise<VoiceStatus>
     kokoroModel: paths.model,
     kokoroVoices: paths.voices,
     kokoroReady,
-    readAloudMcpConfigured,
-    readAloudMcpConnected,
     readAloudBinary,
     checklist,
     setupScript: 'scripts/install-kokoro-runtime.sh'

@@ -1,6 +1,6 @@
 /**
  * 沙箱路径校验、工作区边界检测与高危命令识别。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import path from 'path'
 import type { PermissionMode } from '../shared/types'

@@ -1,17 +1,18 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { AlertTriangle, ChevronDown, LoaderCircle, ShieldCheck, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, LoaderCircle, ShieldCheck, ShieldPlus, X } from 'lucide-react'
 import type { ApprovalRequest } from '../../shared/types'
+import type { ApprovalDecision } from '../../shared/approval-session'
 import './InlineApproval.css'
 
 export interface InlineApprovalProps {
   request: ApprovalRequest
-  onRespond: (approved: boolean) => void | Promise<void>
+  onRespond: (decision: ApprovalDecision) => void | Promise<void>
   responding?: boolean
 }
 
 interface SubmittedDecision {
   requestId: string
-  approved: boolean
+  decision: ApprovalDecision
 }
 
 function formatArgs(args: Record<string, unknown>): string {
@@ -22,7 +23,7 @@ function formatArgs(args: Record<string, unknown>): string {
   }
 }
 
-/** Inline, non-modal confirmation for a pending tool approval. */
+/** Inline, non-modal confirmation: Allow once / Allow for session / Deny. */
 export function InlineApproval({ request, onRespond, responding = false }: InlineApprovalProps) {
   const rootRef = useRef<HTMLElement>(null)
   const submittedRequestRef = useRef<string | null>(null)
@@ -37,11 +38,11 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
     rootRef.current?.scrollIntoView({ block: 'nearest' })
   }, [request.id])
 
-  const respond = (approved: boolean) => {
+  const respond = (choice: ApprovalDecision) => {
     if (responding || submittedRequestRef.current === request.id) return
 
     submittedRequestRef.current = request.id
-    setDecision({ requestId: request.id, approved })
+    setDecision({ requestId: request.id, decision: choice })
 
     const resetAfterFailure = () => {
       if (submittedRequestRef.current !== request.id) return
@@ -50,7 +51,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
     }
 
     try {
-      void Promise.resolve(onRespond(approved)).catch(resetAfterFailure)
+      void Promise.resolve(onRespond(choice)).catch(resetAfterFailure)
     } catch {
       resetAfterFailure()
     }
@@ -104,16 +105,26 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
           type="button"
           className="inline-approval__button inline-approval__button--reject"
           disabled={busy}
-          onClick={() => respond(false)}
+          onClick={() => respond('deny')}
         >
           <X size={15} aria-hidden="true" />
           拒绝
         </button>
         <button
           type="button"
+          className="inline-approval__button inline-approval__button--session"
+          disabled={busy}
+          onClick={() => respond('session')}
+          title="本会话内同一工具不再询问"
+        >
+          <ShieldPlus size={15} aria-hidden="true" />
+          允许本会话
+        </button>
+        <button
+          type="button"
           className="inline-approval__button inline-approval__button--allow"
           disabled={busy}
-          onClick={() => respond(true)}
+          onClick={() => respond('once')}
         >
           <ShieldCheck size={15} aria-hidden="true" />
           允许一次

@@ -1,6 +1,6 @@
 /**
  * 预加载脚本：通过 contextBridge 将 IPC 能力暴露为 window.sharker。
- * @see electron/README.md
+ * @see electron/ARCH.md
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../../shared/ipc'
@@ -23,6 +23,35 @@ contextBridge.exposeInMainWorld('sharker', {
     draft?: AppSettings
   ): Promise<{ ok: boolean; message: string }> =>
     ipcRenderer.invoke(IPC.TEST_PROVIDER, providerId, draft),
+  listProviderModels: (
+    providerId: string,
+    draft?: AppSettings
+  ): Promise<{ ok: boolean; models: Array<{ id: string; ownedBy?: string }>; message: string }> =>
+    ipcRenderer.invoke(IPC.LIST_PROVIDER_MODELS, providerId, draft),
+  importChatgptSubscription: (): Promise<{
+    ok: boolean
+    message: string
+    settings: AppSettings | null
+  }> => ipcRenderer.invoke(IPC.IMPORT_CHATGPT_SUBSCRIPTION),
+  importXaiSubscription: (
+    mode?: 'device' | 'hermes'
+  ): Promise<{
+    ok: boolean
+    message: string
+    settings: AppSettings | null
+    userCode?: string
+    verificationUri?: string
+  }> => ipcRenderer.invoke(IPC.IMPORT_XAI_SUBSCRIPTION, mode ?? 'device'),
+  onXaiDeviceCode: (
+    cb: (info: { userCode?: string; verificationUri?: string }) => void
+  ): (() => void) => {
+    const handler = (
+      _e: Electron.IpcRendererEvent,
+      info: { userCode?: string; verificationUri?: string }
+    ) => cb(info)
+    ipcRenderer.on(IPC.XAI_DEVICE_CODE, handler)
+    return () => ipcRenderer.removeListener(IPC.XAI_DEVICE_CODE, handler)
+  },
   selectWorkspace: (): Promise<string | null> => ipcRenderer.invoke(IPC.SELECT_WORKSPACE),
   pickWorkspaceFolder: (): Promise<string | null> =>
     ipcRenderer.invoke(IPC.PICK_WORKSPACE_FOLDER),
@@ -36,16 +65,20 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.CREATE_CONVERSATION, workspaceId),
   deleteConversation: (workspaceId: string, conversationId: string) =>
     ipcRenderer.invoke(IPC.DELETE_CONVERSATION, workspaceId, conversationId),
+  archiveConversation: (workspaceId: string, conversationId: string, archived: boolean) =>
+    ipcRenderer.invoke(IPC.ARCHIVE_CONVERSATION, workspaceId, conversationId, archived),
+  listArchivedConversations: () => ipcRenderer.invoke(IPC.LIST_ARCHIVED_CONVERSATIONS),
   setActiveConversation: (workspaceId: string, conversationId: string | null) =>
     ipcRenderer.invoke(IPC.SET_ACTIVE_CONVERSATION, workspaceId, conversationId),
-  importSkillRepo: (url: string): Promise<string> => ipcRenderer.invoke(IPC.IMPORT_SKILL_REPO, url),
   generateTitle: (messages: ChatMessage[]): Promise<string> =>
     ipcRenderer.invoke(IPC.GENERATE_TITLE, messages),
   sendMessage: (
     text: string,
     history: ChatMessage[],
-    attachments?: ChatAttachment[]
-  ): Promise<void> => ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments),
+    attachments?: ChatAttachment[],
+    conversationId?: string
+  ): Promise<void> =>
+    ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments, conversationId),
   saveAttachment: (input: {
     name: string
     mimeType: string
@@ -53,9 +86,12 @@ contextBridge.exposeInMainWorld('sharker', {
   }): Promise<ChatAttachment> => ipcRenderer.invoke(IPC.SAVE_ATTACHMENT, input),
   readAttachmentDataUrl: (filePath: string): Promise<string> =>
     ipcRenderer.invoke(IPC.READ_ATTACHMENT_DATA_URL, filePath),
-  abortChat: (): Promise<void> => ipcRenderer.invoke(IPC.ABORT_CHAT),
-  respondApproval: (id: string, approved: boolean): Promise<void> =>
-    ipcRenderer.invoke(IPC.APPROVAL_RESPONSE, id, approved),
+  abortChat: (conversationId?: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.ABORT_CHAT, conversationId),
+  respondApproval: (
+    id: string,
+    decision: import('../../shared/approval-session').ApprovalDecision | boolean
+  ): Promise<void> => ipcRenderer.invoke(IPC.APPROVAL_RESPONSE, id, decision),
   onStream: (cb: (chunk: StreamChunk) => void): (() => void) => {
     const handler = (_: unknown, chunk: StreamChunk): void => cb(chunk)
     ipcRenderer.on('chat:stream', handler)
@@ -70,31 +106,26 @@ contextBridge.exposeInMainWorld('sharker', {
   windowMaximize: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_MAXIMIZE),
   windowClose: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_CLOSE),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
-  getMcpConfig: (workspace: string): Promise<{ raw: string; path: string }> =>
-    ipcRenderer.invoke(IPC.GET_MCP_CONFIG, workspace),
-  saveMcpConfig: (targetPath: string, raw: string): Promise<boolean> =>
-    ipcRenderer.invoke(IPC.SAVE_MCP_CONFIG, targetPath, raw),
-  testMcpConfig: (workspace: string): Promise<{ ok: boolean; message: string }> =>
-    ipcRenderer.invoke(IPC.TEST_MCP_CONFIG, workspace),
+  openPath: (targetPath: string) => ipcRenderer.invoke(IPC.OPEN_PATH, targetPath),
   getComputerUseStatus: (workspace: string) =>
     ipcRenderer.invoke(IPC.GET_COMPUTER_USE_STATUS, workspace),
   getBrowserUseStatus: (workspace: string) =>
     ipcRenderer.invoke(IPC.GET_BROWSER_USE_STATUS, workspace),
   installBrowserUseManifest: (): Promise<{ ok: boolean; message: string }> =>
     ipcRenderer.invoke(IPC.INSTALL_BROWSER_USE_MANIFEST),
-  listMcpPlugins: (workspace: string) => ipcRenderer.invoke(IPC.LIST_MCP_PLUGINS, workspace),
-  toggleMcpPlugin: (workspace: string, pluginId: string, enabled: boolean) =>
-    ipcRenderer.invoke(IPC.TOGGLE_MCP_PLUGIN, workspace, pluginId, enabled),
   compressContext: (history: ChatMessage[]) =>
     ipcRenderer.invoke(IPC.COMPRESS_CONTEXT, history),
   getTokenUsage: (days?: number) => ipcRenderer.invoke(IPC.GET_TOKEN_USAGE, days),
   getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) =>
     ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly),
   readTextFile: (filePath: string) => ipcRenderer.invoke(IPC.READ_TEXT_FILE, filePath),
+  readFileDataUrl: (filePath: string) =>
+    ipcRenderer.invoke(IPC.READ_FILE_DATA_URL, filePath),
   getGitBranchInfo: (cwd: string) => ipcRenderer.invoke(IPC.GIT_BRANCH_INFO, cwd),
   listGitBranches: (cwd: string) => ipcRenderer.invoke(IPC.GIT_LIST_BRANCHES, cwd),
   gitCheckout: (cwd: string, branch: string) =>
     ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch),
+  getGitStatusChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_STATUS_CHANGES, cwd),
   createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),
   writeTerminal: (id: string, data: string) =>
     ipcRenderer.invoke(IPC.TERMINAL_WRITE, id, data),
@@ -117,19 +148,5 @@ contextBridge.exposeInMainWorld('sharker', {
     const handler = (_: unknown, job: unknown) => cb(job)
     ipcRenderer.on('automation:run', handler)
     return () => ipcRenderer.removeListener('automation:run', handler)
-  },
-  listHooks: () => ipcRenderer.invoke(IPC.LIST_HOOKS),
-  saveHooks: (hooks: unknown) => ipcRenderer.invoke(IPC.SAVE_HOOKS, hooks),
-  getOAuthGptMeta: () => ipcRenderer.invoke(IPC.OAUTH_GPT_META),
-  startOAuthGpt: () =>
-    ipcRenderer.invoke(IPC.OAUTH_GPT_START) as Promise<{
-      ok: boolean
-      message: string
-      email?: string
-    }>,
-  getRemoteCollab: () => ipcRenderer.invoke(IPC.REMOTE_COLLAB_GET),
-  createRemoteRoom: (name: string) => ipcRenderer.invoke(IPC.REMOTE_COLLAB_CREATE, name),
-  startLsp: (workspace: string) => ipcRenderer.invoke(IPC.LSP_START, workspace),
-  getLspStatus: () => ipcRenderer.invoke(IPC.LSP_STATUS),
-  stopLsp: () => ipcRenderer.invoke(IPC.LSP_STOP)
+  }
 })

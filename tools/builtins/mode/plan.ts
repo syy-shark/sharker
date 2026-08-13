@@ -1,6 +1,6 @@
 /**
  * 计划模式：enter / exit（Cursor 式只读规划 + Build）。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import {
   enterPlanMode,

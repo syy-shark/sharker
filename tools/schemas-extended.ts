@@ -1,6 +1,6 @@
 /**
  * 扩展 Tool Schema（Phase 2+），由 schemas.ts 合并导出。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import type { OpenAIToolDefinition } from './types'
 
@@ -304,7 +304,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'open_url',
       description:
-        'Open a URL for the user in the system browser. Use this when the user asks to open a website or specifically says "用 Chrome 打开"; do not use headless browser_navigate for visible browsing.',
+        'Open a real website for the user in the system browser. Only when they explicitly ask to open a site (e.g. "用 Chrome 打开哔哩哔哩"). NEVER use this for teaching demos / visualizations — use present_inline_demo or a ```demo fenced block instead. Do not open localhost just to show a demo.',
       parameters: {
         type: 'object',
         properties: {
@@ -321,29 +321,9 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
     type: 'function',
     function: {
-      name: 'list_skills',
-      description: 'List installed skills',
-      parameters: { type: 'object', properties: {} }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'read_skill',
-      description: 'Read SKILL.md body by name',
-      parameters: {
-        type: 'object',
-        properties: { name: { type: 'string' } },
-        required: ['name']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
       name: 'desktop_doctor',
       description:
-        'Diagnose Ubuntu desktop automation readiness (ydotool, screenshot tools, uinput). Background virtual input does not steal physical mouse.',
+        'Diagnose macOS desktop automation readiness (screencapture, Accessibility, optional Cua Driver).',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -351,7 +331,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'desktop_screenshot',
-      description: 'Capture full desktop screenshot to workspace .sharker/desktop/',
+      description: 'Capture full desktop screenshot via screencapture to workspace .sharker/desktop/',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -360,7 +340,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'desktop_click',
       description:
-        'Click at screen coordinates via ydotool virtual pointer (non-intrusive; physical mouse stays put)',
+        'Click at screen coordinates via cliclick.',
       parameters: {
         type: 'object',
         properties: {
@@ -377,7 +357,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'desktop_type',
-      description: 'Type text via ydotool virtual keyboard',
+      description: 'Type text via cliclick.',
       parameters: {
         type: 'object',
         properties: { text: { type: 'string' } },
@@ -389,7 +369,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'desktop_key',
-      description: 'Send key chord via ydotool (e.g. 29:1 29:0 for Ctrl)',
+      description: 'Send keystroke via osascript System Events (fallback)',
       parameters: {
         type: 'object',
         properties: { key: { type: 'string' } },
@@ -401,7 +381,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'desktop_list_windows',
-      description: 'List open windows (wmctrl/hyprctl; full AT-SPI via codex-computer-use-linux MCP)',
+      description: 'List open windows via osascript System Events',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -410,7 +390,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'desktop_get_ui_tree',
       description:
-        'AT-SPI UI tree stub; reports bus status and points to MCP get_app_state when codex-computer-use-linux is configured',
+        'Accessibility UI tree via System Events (limited); use desktop_list_windows + desktop_screenshot for full workflow',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -419,7 +399,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'desktop_scroll',
       description:
-        'Scroll via ydotool key fallback (Page/Arrow); for pixel-accurate scroll use MCP scroll after configuring codex-computer-use-linux',
+        'Scroll via System Events Page/Arrow keys',
       parameters: {
         type: 'object',
         properties: {
@@ -509,7 +489,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'voice_read_aloud',
-      description: 'Read text aloud via spd-say/espeak or MCP read-aloud',
+      description: 'Read text aloud via macOS say',
       parameters: {
         type: 'object',
         properties: { text: { type: 'string' } },

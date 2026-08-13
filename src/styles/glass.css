@@ -1,17 +1,20 @@
-/* Crystal glass — white facet highlights, not blue tint overlays */
+/* macOS Control Center crystal glass — shared materials */
 
 .glass-crystal {
   position: relative;
   isolation: isolate;
-  backdrop-filter: var(--glass-blur-panel);
-  -webkit-backdrop-filter: var(--glass-blur-panel);
-  box-shadow: var(--glass-inset);
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
 }
 
 .glass-crystal::before {
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: var(--glass-facet);
   pointer-events: none;
   z-index: 0;
@@ -28,34 +31,117 @@
   top: 0;
   left: 10%;
   right: 10%;
-  height: 1px;
+  height: 0.5px;
   background: linear-gradient(
     90deg,
     transparent,
-    var(--glass-shine) 22%,
-    var(--glass-shine) 78%,
+    rgba(255, 255, 255, 0.7) 28%,
+    rgba(255, 255, 255, 0.7) 72%,
     transparent
   );
   pointer-events: none;
   z-index: 2;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
+/* Control Center tile — rounded rect / circle modules */
+.glass-tile {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
+  overflow: hidden;
+}
+
+.glass-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-facet);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-tile > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Pill bar (brightness / volume style) */
+.glass-pill {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
+  overflow: hidden;
+}
+
+.glass-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-facet);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-pill > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards / settings groups / elevated panels */
 .glass-card {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(
-    148deg,
-    rgba(255, 255, 255, 0.34) 0%,
-    rgba(255, 255, 255, 0.16) 100%
-  );
+  background: var(--glass-fill-raised);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-crystal);
-  box-shadow: var(--shadow-sm);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow-card), var(--glass-rim);
+  overflow: hidden;
 }
 
 .glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-facet);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Floating menus / popovers — thicker crystal */
+.glass-popover {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-fill-popover);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: 0.5px solid var(--glass-edge-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow-popover), var(--glass-rim);
+  overflow: hidden;
+}
+
+.glass-popover::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -65,26 +151,114 @@
   z-index: 0;
 }
 
-.glass-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.95) 30%,
-    rgba(255, 255, 255, 0.95) 70%,
-    transparent
-  );
-  pointer-events: none;
+.glass-popover > * {
+  position: relative;
   z-index: 1;
 }
 
-.glass-card > * {
-  position: relative;
+/* Nested chip / control on glass */
+.glass-chip {
+  background: var(--glass-fill-nested);
+  backdrop-filter: blur(28px) saturate(1.55);
+  -webkit-backdrop-filter: blur(28px) saturate(1.55);
+  border: 0.5px solid var(--glass-edge-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--glass-rim-soft);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.glass-chip:hover,
+.glass-chip--active {
+  background: var(--glass-fill-nested-hover);
+  border-color: var(--glass-edge);
+}
+
+/* Circle icon button (CC module) */
+.glass-orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 50%;
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
+}
+
+html.theme-dark .glass-crystal-rim::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(230, 238, 255, 0.28) 28%,
+    rgba(230, 238, 255, 0.28) 72%,
+    transparent
+  );
+  opacity: 0.85;
+}
+
+/* 深色金属：禁用模糊，保留镜面高光层 */
+html.theme-dark .glass-crystal,
+html.theme-dark .glass-tile,
+html.theme-dark .glass-pill,
+html.theme-dark .glass-card,
+html.theme-dark .glass-popover,
+html.theme-dark .glass-orb {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.theme-dark .glass-chip {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-fill-nested);
+}
+
+
+/* 浅色水滴玻璃：顶部折射高光更像 CC */
+html.theme-light .glass-crystal-rim::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.85) 28%,
+    rgba(255, 255, 255, 0.85) 72%,
+    transparent
+  );
+  opacity: 0.95;
+}
+
+html.theme-light .glass-tile,
+html.theme-light .glass-pill,
+html.theme-light .glass-card,
+html.theme-light .glass-popover,
+html.theme-light .glass-orb,
+html.theme-light .glass-crystal {
+  overflow: hidden;
+}
+
+html.theme-light .glass-tile::after,
+html.theme-light .glass-pill::after,
+html.theme-light .glass-card::after,
+html.theme-light .glass-popover::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.75) 30%,
+    rgba(255, 255, 255, 0.75) 70%,
+    transparent
+  );
+  pointer-events: none;
   z-index: 2;
+  opacity: 0.9;
 }

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Browser Use：安装 Chrome native messaging manifest，指向 codex-chrome-extension-host
-# 路径约定改编自 codex-desktop-linux（MIT）· @see docs/computer-use-setup.md
+# Browser Use：安装 Chrome native messaging manifest（macOS）
+# @see docs/computer-use-setup.md
 set -Eeuo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST_NAME="com.openai.codexextension"
 EXTENSION_ID="${SHARKER_BROWSER_EXTENSION_ID:-hehggadaopoacecdllhhajmbjkdcmajg}"
 
@@ -14,9 +13,9 @@ find_chrome_host_binary() {
   local candidate
   for candidate in \
     "${SHARKER_CHROME_EXTENSION_HOST:-}" \
-    "${CODEX_CHROME_EXTENSION_HOST:-}" \
-    "$REPO_DIR/../codex-desktop-linux-main/target/release/codex-chrome-extension-host" \
-    "$HOME/codex-desktop-linux-main/target/release/codex-chrome-extension-host" \
+    "$HOME/.local/bin/codex-chrome-extension-host" \
+    "/opt/homebrew/bin/codex-chrome-extension-host" \
+    "/usr/local/bin/codex-chrome-extension-host" \
     "$(command -v codex-chrome-extension-host 2>/dev/null || true)"; do
     [ -n "$candidate" ] || continue
     if [ -x "$candidate" ]; then
@@ -29,12 +28,14 @@ find_chrome_host_binary() {
 
 native_host_dirs() {
   local home="${HOME:?}"
+  local support="$home/Library/Application Support"
   printf '%s\n' \
-    "$home/.config/google-chrome/NativeMessagingHosts" \
-    "$home/.config/google-chrome-beta/NativeMessagingHosts" \
-    "$home/.config/google-chrome-unstable/NativeMessagingHosts" \
-    "$home/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts" \
-    "$home/.config/chromium/NativeMessagingHosts"
+    "$support/Google/Chrome/NativeMessagingHosts" \
+    "$support/Google/Chrome Beta/NativeMessagingHosts" \
+    "$support/Google/Chrome Canary/NativeMessagingHosts" \
+    "$support/BraveSoftware/Brave-Browser/NativeMessagingHosts" \
+    "$support/Chromium/NativeMessagingHosts" \
+    "$support/Microsoft Edge/NativeMessagingHosts"
 }
 
 write_manifest() {
@@ -45,7 +46,7 @@ write_manifest() {
   cat >"$manifest" <<JSON
 {
   "name": "${HOST_NAME}",
-  "description": "Codex / Sharker Browser Use native messaging host",
+  "description": "Sharker Browser Use native messaging host",
   "path": "${host_path}",
   "type": "stdio",
   "allowed_origins": [
@@ -58,14 +59,14 @@ JSON
 
 host_bin="$(find_chrome_host_binary 2>/dev/null || true)"
 if [ -z "$host_bin" ]; then
-  warn "codex-chrome-extension-host not found."
-  warn "Build: cd codex-desktop-linux-main/computer-use-linux && cargo build --release -p codex-computer-use-linux --bin codex-chrome-extension-host"
-  warn "Or set SHARKER_CHROME_EXTENSION_HOST=/absolute/path"
+  warn "chrome extension host not found."
+  warn "Set SHARKER_CHROME_EXTENSION_HOST=/absolute/path"
+  warn "Or use Playwright / in-app Browser panel (no native host required)."
   exit 1
 fi
 
 info "Using native host: $host_bin"
-info "Chrome extension ID: $EXTENSION_ID (Codex Browser Use extension)"
+info "Chrome extension ID: $EXTENSION_ID"
 info ""
 
 while IFS= read -r dir; do
@@ -74,7 +75,7 @@ done < <(native_host_dirs)
 
 info ""
 info "Next steps:"
-info "  1. Install Codex Browser Use Chrome extension (extension ID above) in Chrome/Chromium/Brave"
+info "  1. Install the Browser Use Chrome extension (ID above) if using native host path"
 info "  2. Restart the browser"
-info "  3. Sharker builtin browser_* (Playwright) works without the extension; extension path enables logged-in Chrome profile automation via Codex Browser Use stack"
-info "  4. Optional MCP: configure @playwright/mcp in ~/.sharker/mcp.json (see tools/mcp.example.json)"
+info "  3. Prefer Playwright: enable Browser Use in Settings"
+info "  4. npm install playwright && npx playwright install chromium"

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# cua-driver 安装与 ~/.sharker/mcp.json 配置（Sharker Computer Use 推荐后端）
+# cua-driver 安装检测与 doctor（可选桌面自动化后端）
 # @see docs/computer-use-setup.md
 set -Eeuo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MCP_CONFIG="${SHARKER_MCP_CONFIG:-$HOME/.sharker/mcp.json}"
 
 info() { printf '%s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
@@ -15,8 +14,9 @@ find_cua_driver() {
     "${SHARKER_CUA_DRIVER_BIN:-}" \
     "$(command -v cua-driver 2>/dev/null || true)" \
     "$HOME/.local/bin/cua-driver" \
+    "/opt/homebrew/bin/cua-driver" \
     "/usr/local/bin/cua-driver" \
-    "/usr/bin/cua-driver"; do
+    "$HOME/.cua-driver/bin/cua-driver"; do
     [ -n "$candidate" ] || continue
     if [ -x "$candidate" ]; then
       printf '%s\n' "$candidate"
@@ -37,31 +37,6 @@ install_cua_driver() {
   return 1
 }
 
-merge_mcp_config() {
-  local binary="$1"
-  mkdir -p "$(dirname "$MCP_CONFIG")"
-  python3 - "$MCP_CONFIG" "$binary" <<'PY'
-import json, sys, os
-path, binary = sys.argv[1], sys.argv[2]
-servers = []
-if os.path.isfile(path):
-    with open(path, encoding='utf-8') as f:
-        data = json.load(f)
-        servers = data.get('servers', [])
-name = 'cua-driver'
-entry = {'name': name, 'command': binary, 'args': ['mcp']}
-idx = next((i for i, s in enumerate(servers) if s.get('name') == name), -1)
-if idx >= 0:
-    servers[idx] = entry
-else:
-    servers.append(entry)
-with open(path, 'w', encoding='utf-8') as f:
-    json.dump({'servers': servers}, f, indent=2, ensure_ascii=False)
-    f.write('\n')
-print(path)
-PY
-}
-
 info "Sharker cua-driver setup"
 info "Repository: $REPO_DIR"
 info ""
@@ -77,21 +52,4 @@ info ""
 info "Running doctor:"
 "$BINARY" doctor 2>&1 || true
 info ""
-
-case "${1:-}" in
-  --install-mcp|--apply)
-    OUT="$(merge_mcp_config "$BINARY")"
-    info "已写入 MCP 配置: $OUT"
-    info '  { "name": "cua-driver", "command": "'"$BINARY"'", "args": ["mcp"] }'
-    info "重启 Sharker 对话以使 MCP 工具池刷新。"
-    ;;
-  --help|-h)
-    info "Usage: $0 [--install-mcp]"
-    info "  (no args)     检测 cua-driver 并运行 doctor"
-    info "  --install-mcp 合并 cua-driver 到 ~/.sharker/mcp.json"
-    ;;
-  *)
-    info "Doctor 完成。写入 MCP 配置请运行:"
-    info "  bash $0 --install-mcp"
-    ;;
-esac
+info "Doctor 完成。Sharker 使用内置 desktop_* 工具；cua-driver 仅作可选诊断。"

@@ -1,41 +1,77 @@
 .settings-select {
   position: relative;
   width: auto;
-  min-width: 168px;
-  max-width: min(280px, 42vw);
+  min-width: 148px;
+  max-width: min(260px, 42vw);
   z-index: 1;
+  /* 容器本身绝无背景/边框，避免圆角按钮外再套一层方角 */
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .settings-select--open {
   z-index: 40;
 }
 
+/*
+ * 系统设置式圆角控件：只保留一层圆角底，
+ * 禁止 border / inset ring / 外阴影，杜绝「圆角外再套尖角」。
+ */
 .settings-select-trigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  min-height: 34px;
-  padding: 6px 10px 6px 12px;
-  border: 1px solid var(--surface-border-soft);
-  border-radius: 10px;
-  background: var(--surface-frost);
-  backdrop-filter: blur(14px) saturate(1.35);
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px 0 11px;
+  border: 0 !important;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 4.5%, transparent);
+  background-clip: padding-box;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: var(--text);
   font-size: 13px;
+  font-weight: 510;
+  line-height: 1;
+  letter-spacing: -0.01em;
   text-align: left;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s,
-    background 0.15s;
+    background var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
-.settings-select-trigger:hover,
+.settings-select-trigger:hover {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  box-shadow: none !important;
+}
+
+.settings-select-trigger:active {
+  transform: scale(0.99);
+}
+
 .settings-select--open .settings-select-trigger {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: var(--surface-frost-hover);
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: none !important;
+}
+
+.settings-select-trigger:focus-visible {
+  background: var(--accent-soft);
+  color: var(--text);
+  outline: 2px solid var(--accent-ring) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 
 .settings-select-label {
@@ -46,26 +82,53 @@
   white-space: nowrap;
 }
 
+.settings-select-trigger svg {
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform var(--motion-duration-normal) var(--motion-ease-spring);
+}
+
 .settings-select-chevron--open {
   transform: rotate(180deg);
 }
 
 .settings-select-menu {
-  position: absolute;
-  top: auto;
-  bottom: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  min-width: 100%;
-  z-index: 50;
+  min-width: 168px;
+  max-width: min(280px, 70vw);
+  max-height: min(280px, 50vh);
   padding: 6px;
-  background: rgba(252, 252, 253, 0.92);
-  backdrop-filter: blur(32px) saturate(1.5);
-  -webkit-backdrop-filter: blur(32px) saturate(1.5);
-  border: 1px solid var(--surface-border-soft);
-  border-radius: 12px;
-  box-shadow: var(--shadow-panel);
-  transform-origin: bottom center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  isolation: isolate;
+  /* 更密的磨砂：透但挡住背后文字（对标控制中心） */
+  background: var(--glass-fill-popover);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: 0.5px solid var(--glass-edge-strong);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow-popover), var(--glass-rim);
+}
+
+/* 与 model/history picker 对齐：显式 enter/exit，避免被局部样式覆盖成瞬开瞬关 */
+.settings-select-menu.popover-enter {
+  transform-origin: inherit;
+  animation: popover-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
+  backface-visibility: hidden;
+}
+
+.settings-select-menu.popover-exit {
+  transform-origin: inherit;
+  animation: popover-exit var(--motion-duration-fast) var(--motion-ease-soft) both;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+/* portal 到 body，不被卡片 overflow 裁切；overflow hidden 裁掉菜单自己的 blur 尖角 */
+.settings-select-menu--fixed {
+  position: fixed;
+  z-index: 10000;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .settings-select-item {
@@ -86,7 +149,18 @@
 }
 
 .settings-select-item:hover {
-  background: var(--surface-frost-hover);
+  background: var(--glass-fill-nested-hover);
+}
+
+.settings-select-item:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--glass-fill-nested-hover);
+}
+
+.settings-select-item:active {
+  transform: scale(0.99);
 }
 
 .settings-select-item.active {
@@ -99,7 +173,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 1.5px solid rgba(15, 23, 42, 0.16);
+  border: 1.5px solid color-mix(in srgb, var(--text) 16%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,4 +194,40 @@
   flex: 1;
   min-width: 0;
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.theme-dark .settings-select-trigger {
+  background: color-mix(in srgb, white 8%, transparent);
+  box-shadow: none;
+}
+
+html.theme-dark .settings-select-trigger:hover {
+  background: color-mix(in srgb, white 12%, transparent);
+}
+
+html.theme-dark .settings-select--open .settings-select-trigger,
+html.theme-dark .settings-select-trigger:focus-visible {
+  background: var(--accent-soft-strong);
+}
+
+html.theme-dark .settings-select-menu {
+  background: var(--glass-fill-popover);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-select-menu,
+  .settings-select-menu.popover-enter,
+  .settings-select-menu.popover-exit,
+  .settings-select-item,
+  .settings-select-trigger,
+  .settings-select-trigger svg {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

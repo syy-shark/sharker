@@ -1,6 +1,6 @@
 /**
  * glob_file_search：按 glob 模式查找文件。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok, toolCwd } from '../context'
 import { resolveCommandCwd } from '../permissions'

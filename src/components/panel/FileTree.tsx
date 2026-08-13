@@ -96,6 +96,19 @@ export function FileTree({ workspacePath, isHome = false }: Props) {
     void load()
   }, [load])
 
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    window.addEventListener('focus', onVis)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', onVis)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [load])
+
+
   const onToggle = (path: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)

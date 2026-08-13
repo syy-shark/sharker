@@ -3,23 +3,14 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  transition:
+    background-color var(--motion-duration-panel) var(--motion-ease-soft),
+    color var(--motion-duration-panel) var(--motion-ease-soft);
 }
 
+/* 不用彩色氛围光；浅色靠宿主玻璃，深色靠金属底 */
 .settings-page::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(720px, 90%);
-  height: 280px;
-  background: radial-gradient(
-    ellipse at center top,
-    rgba(219, 234, 254, 0.16) 0%,
-    transparent 72%
-  );
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 .settings-page-inner {
@@ -28,7 +19,8 @@
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  padding: 40px 28px 64px;
+  /* 通顶布局后顶拖条已占 chrome，这里少留一点上边距 */
+  padding: 20px 28px 64px;
   box-sizing: border-box;
 }
 
@@ -38,9 +30,9 @@
 
 .settings-page-header h1 {
   margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-size: 26px;
+  font-weight: 620;
+  letter-spacing: -0.03em;
   color: var(--text);
   line-height: 1.15;
 }
@@ -56,6 +48,10 @@
 .settings-stack {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  transition:
+    opacity var(--motion-duration-normal) var(--motion-ease-soft),
+    transform var(--motion-duration-normal) var(--motion-ease-spring);
 }
 
 .settings-panel.view-enter {
@@ -89,7 +85,10 @@
   -webkit-backdrop-filter: blur(12px) saturate(1.35);
   outline: none;
   font-size: 13px;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
+    background var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .settings-field input:focus {
@@ -117,6 +116,15 @@
   border-radius: 10px;
   border: 1px solid var(--surface-border-soft);
   background: var(--surface-frost);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
 }
 
 .btn-secondary:hover {
@@ -131,11 +139,20 @@
   border-radius: 8px;
   border: 1px solid var(--surface-border-faint);
   background: var(--surface-frost);
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .btn-ghost:hover {
   color: var(--text);
   background: var(--surface-frost-hover);
+}
+
+.btn-ghost:active {
+  transform: scale(0.98);
 }
 
 /* Workbench theme inheritance */
@@ -144,108 +161,78 @@
 .settings-page-header { margin-bottom: 26px; }
 .settings-page-header h1 { font-size: 24px; font-weight: 650; letter-spacing: 0; }
 .settings-field input,
-.btn-secondary { border-radius: 6px; background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.btn-secondary {
+  border-radius: var(--radius-sm);
+  background: var(--glass-fill);
+  color: var(--text);
+  border: 0.5px solid var(--glass-edge);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: var(--glass-rim-soft);
+}
+
+.btn-secondary:hover,
+.settings-field input:focus {
+  background: var(--glass-fill-nested-hover);
+  border-color: var(--glass-edge-strong);
+}
 
 .btn-danger-ghost {
   padding: 6px 12px;
   font-size: 12px;
   color: var(--danger);
   border-radius: 8px;
+  border: 0.5px solid transparent;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .btn-danger-ghost:hover {
   background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.btn-danger-ghost:active {
+  transform: scale(0.98);
 }
 
 .test-result {
   font-size: 12px;
   margin-top: 8px;
   color: var(--text-secondary);
+  animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
 .test-result.ok {
-  color: #16a34a;
+  color: var(--success);
 }
 
 .test-result.err {
   color: var(--danger);
 }
 
-.skill-repo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.75;
-  word-break: break-all;
+
+html.theme-light .settings-page,
+html.theme-light .settings-page-inner,
+html.theme-light .settings-stack {
+  background: transparent !important;
 }
 
-.skill-repo-list li {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+html.theme-light .settings-page::before {
+  display: none !important;
 }
 
-.skill-repo-list li:last-child {
-  border-bottom: none;
-}
 
-/* 扩展设置（Hooks / OAuth / LSP） */
-.ext-hook-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 4px;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-.ext-hook-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.ext-hook-item:last-child {
-  border-bottom: none;
-}
-
-.ext-hook-event {
-  flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: rgba(74, 158, 255, 0.1);
-  color: var(--accent, #4a9eff);
-  font-size: 11px;
-}
-
-.ext-hook-arrow {
-  flex-shrink: 0;
-  color: var(--text-muted);
-}
-
-.ext-hook-cmd {
-  flex: 1;
-  min-width: 0;
-  word-break: break-all;
-  color: var(--text-secondary);
-}
-
-.ext-status {
-  margin: 8px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid rgba(15, 23, 42, 0.05);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
-.ext-status--ok {
-  color: #16a34a;
-}
-
-.ext-status--err {
-  color: var(--danger);
+@media (prefers-reduced-motion: reduce) {
+  .settings-page,
+  .settings-field input,
+  .settings-nav-item,
+  .view-enter {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

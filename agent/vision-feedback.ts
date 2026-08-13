@@ -54,7 +54,7 @@ export async function buildVisionContentParts(
       {
         type: 'text',
         text:
-          `[系统] 截图过大 (${stat.size} bytes)，未附图像。路径: ${imagePath}。请用 MCP get_app_state 的 coordinate 元数据或缩小截图。`
+          `[系统] 截图过大 (${stat.size} bytes)，未附图像。路径: ${imagePath}。请缩小截图后重试。`
       }
     ]
   }
@@ -69,8 +69,8 @@ export async function buildVisionContentParts(
   const b64 = buf.toString('base64')
   const text =
     hint ??
-    '[系统] 上一工具截图已附后。根据 coordinate_width/coordinate_height 使用 mcp_computer_use__click 点击。' +
-      '微信等无 AT-SPI 树的应用必须靠看图定位 UI，不要重复调用 screenshot。'
+    '[系统] 上一工具截图已附后。根据坐标使用 desktop_click 点击。' +
+      '必须靠看图定位 UI，不要重复调用 screenshot。'
   return [
     { type: 'text', text },
     { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}`, detail: 'low' } }

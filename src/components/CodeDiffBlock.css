@@ -1,5 +1,6 @@
 .code-diff-block {
   margin: 10px 0;
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
 .code-diff-language {
@@ -18,15 +19,15 @@
 }
 
 .code-diff-stat-add {
-  color: #287a4d;
+  color: var(--success);
 }
 
 .code-diff-stat-del {
-  color: #a34a4a;
+  color: var(--danger);
 }
 
 .code-diff-body {
-  background: #f7f8fa;
+  background: var(--glass-fill-nested);
 }
 
 .code-diff-code {
@@ -43,15 +44,15 @@
 }
 
 .code-diff-line--add {
-  background: #eef7f1;
+  background: var(--success-soft);
 }
 
 .code-diff-line--del {
-  background: #fbf0f0;
+  background: var(--danger-soft);
 }
 
 .code-diff-line--ctx {
-  background: #f7f8fa;
+  background: transparent;
 }
 
 .code-diff-gutter {
@@ -63,23 +64,23 @@
   align-items: center;
   gap: 0;
   padding: 0 6px 0 4px;
-  border-right: 1px solid rgba(24, 31, 41, 0.08);
-  color: #969da7;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--text-muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   user-select: none;
 }
 
 .code-diff-line--add .code-diff-gutter {
-  background: #e5f2e9;
+  background: color-mix(in srgb, var(--success) 14%, transparent);
 }
 
 .code-diff-line--del .code-diff-gutter {
-  background: #f7e5e5;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
 .code-diff-line--ctx .code-diff-gutter {
-  background: #f2f4f6;
+  background: var(--glass-fill-nested);
 }
 
 .code-diff-sign {
@@ -89,11 +90,11 @@
 }
 
 .code-diff-line--add .code-diff-sign {
-  color: #287a4d;
+  color: var(--success);
 }
 
 .code-diff-line--del .code-diff-sign {
-  color: #a34a4a;
+  color: var(--danger);
 }
 
 .code-diff-ln {
@@ -106,7 +107,7 @@
   padding: 0 14px;
   border-radius: 0;
   background: transparent;
-  color: #262b33;
+  color: var(--text);
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -125,15 +126,23 @@
   font-size: 11px;
   transition:
     color var(--motion-duration-fast) var(--motion-ease-soft),
-    background-color var(--motion-duration-fast) var(--motion-ease-soft);
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .code-diff-expand:hover {
-  background: #e5e9ee;
+  background: var(--glass-fill-nested);
   color: var(--text);
 }
 
+.code-diff-expand:active {
+  transform: scale(0.98);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .code-diff-block {
+    animation-duration: 0.01ms !important;
+  }
   .code-diff-expand {
     transition: none;
   }

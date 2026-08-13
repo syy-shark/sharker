@@ -17,7 +17,7 @@ function statusLine(status: BrowserUseStatus | null, enabled: boolean, loading: 
   if (!enabled) return '已关闭'
   if (loading) return '配置中…'
   if (!status) return '检测中…'
-  if (status.mcpPlaywrightConfigured || status.playwrightAvailable) return '已就绪'
+  if (status.playwrightAvailable) return '已就绪'
   return 'Playwright 安装中或首次使用会稍慢'
 }
 

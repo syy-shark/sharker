@@ -8,6 +8,7 @@ import {
   SettingsRow,
   SettingsSection
 } from './SettingsPrimitives'
+import './SettingsPrimitives.css'
 import './FeatureStatusPanel.css'
 
 /** 单项检查结果 */
@@ -130,7 +131,7 @@ export function FeatureStatusPanel({
   )
 }
 
-/** 内联 Toggle，避免循环依赖 GlassFeaturePanel */
+/** 内联 Toggle */
 function SettingsToggleWrap({
   checked,
   onChange,
@@ -152,7 +153,7 @@ function SettingsToggleWrap({
       disabled={disabled}
       onClick={() => onChange(!checked)}
     >
-      <span className="st-toggle-thumb" />
+      <span className="st-toggle-knob" />
     </button>
   )
 }

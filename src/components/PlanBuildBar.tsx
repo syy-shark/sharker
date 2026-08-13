@@ -13,7 +13,7 @@ interface Props {
 export function PlanBuildBar({ planDocument, onBuild, onDismiss }: Props) {
   const preview = planDocument.slice(0, 400)
   return (
-    <div className="plan-build-bar">
+    <div className="plan-build-bar view-enter">
       <div className="plan-build-header">
         <span className="plan-build-title">计划已就绪</span>
         <button type="button" className="plan-build-dismiss" onClick={onDismiss}>

@@ -2,10 +2,11 @@
 export const WORKBENCH_BREAKPOINT = 1120
 
 export const SIDEBAR_LAYOUT = {
-  default: 248,
+  default: 260,
   min: 220,
-  max: 320,
-  collapsed: 52
+  max: 340,
+  /** 收起后不占宽、不显示任何侧栏内容 */
+  collapsed: 0
 } as const
 
 export const RIGHT_PANEL_LAYOUT = {

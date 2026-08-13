@@ -1,9 +1,13 @@
 .code-artifact-shell {
   margin: 10px 0;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #f7f8fa;
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: var(--radius);
+  background: var(--glass-fill);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: var(--glass-rim-soft);
   color: var(--text);
   font-family: var(--mono);
   font-size: 12px;
@@ -16,8 +20,8 @@
   align-items: center;
   gap: 10px;
   padding: 0 8px 0 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: #f0f2f5;
+  border-bottom: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
 }
 
 .code-artifact-label {
@@ -52,12 +56,17 @@
   color: var(--text-muted);
   transition:
     color var(--motion-duration-fast) var(--motion-ease-soft),
-    background-color var(--motion-duration-fast) var(--motion-ease-soft);
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .code-artifact-copy:hover {
-  background: #e4e8ed;
+  background: var(--glass-fill-nested-hover);
   color: var(--text);
+}
+
+.code-artifact-copy:active {
+  transform: scale(0.94);
 }
 
 .code-artifact-copy:focus-visible {
@@ -90,9 +99,9 @@
   left: 0;
   z-index: 1;
   padding: 0 10px 0 6px;
-  border-right: 1px solid var(--border-subtle);
-  background: #f7f8fa;
-  color: #969da7;
+  border-right: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  color: var(--text-muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -104,7 +113,7 @@
   padding: 0 14px;
   border-radius: 0;
   background: transparent;
-  color: #262b33;
+  color: var(--text);
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -117,12 +126,22 @@
   min-height: 32px;
   align-items: center;
   justify-content: center;
-  border-top: 1px solid var(--border-subtle);
-  background: #f3f5f7;
+  border-top: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .code-artifact-shell {
+    animation-duration: 0.01ms !important;
+  }
   .code-artifact-copy {
     transition: none;
   }
+}
+
+
+html.theme-dark .code-artifact-shell {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-fill-raised);
 }

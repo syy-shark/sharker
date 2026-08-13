@@ -14,31 +14,6 @@ export function memoryDbDir(homeDir: string): string {
   return path.join(homeDir, '.sharker', 'memory-db')
 }
 
-async function removeStalePostmasterPid(dir: string): Promise<void> {
-  if (process.platform !== 'win32') return
-
-  const pidFile = path.join(dir, 'postmaster.pid')
-  let raw = ''
-  try {
-    raw = await fs.readFile(pidFile, 'utf8')
-  } catch {
-    return
-  }
-
-  const firstLine = raw.split(/\r?\n/, 1)[0]?.trim()
-  const pid = firstLine ? Number(firstLine) : NaN
-  if (!Number.isInteger(pid) || pid <= 0) {
-    await fs.rm(pidFile, { force: true })
-    return
-  }
-
-  try {
-    process.kill(pid, 0)
-  } catch {
-    await fs.rm(pidFile, { force: true })
-  }
-}
-
 function backupName(): string {
   return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
 }
@@ -67,7 +42,6 @@ async function quarantineMemoryDb(dir: string): Promise<string | null> {
 
 async function openMemoryDb(dir: string): Promise<PGlite> {
   await fs.mkdir(dir, { recursive: true })
-  await removeStalePostmasterPid(dir)
   const instance = new PGlite(dir)
   await runMigrations(instance)
   db = instance
@@ -75,7 +49,7 @@ async function openMemoryDb(dir: string): Promise<PGlite> {
 }
 
 async function initMemoryDb(homeDir?: string): Promise<PGlite> {
-  const dir = memoryDbDir(homeDir ?? process.env.HOME ?? process.env.USERPROFILE ?? '.')
+  const dir = memoryDbDir(homeDir ?? process.env.HOME ?? '.')
   try {
     return await openMemoryDb(dir)
   } catch (firstError) {

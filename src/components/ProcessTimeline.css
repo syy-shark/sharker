@@ -19,11 +19,11 @@
 @keyframes process-step-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -51,6 +51,7 @@
 
 .process-step-icon--active {
   color: var(--accent);
+  animation: live-soft-pulse var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
 }
 
 .process-timeline-line {
@@ -59,7 +60,7 @@
   min-height: 10px;
   margin-top: 6px;
   border-radius: 1px;
-  background: rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
 }
 
 .process-timeline-body {
@@ -91,26 +92,14 @@
   height: 5px;
   border-radius: 50%;
   background: var(--accent);
-  animation: process-pulse 1.4s var(--motion-ease-soft) infinite;
-}
-
-@keyframes process-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  animation: live-soft-pulse 1.4s var(--motion-ease-in-out) infinite;
 }
 
 /* 思考正文：无内框，仅左侧淡色引导线 */
 .process-thinking {
   margin-top: 6px;
   padding: 2px 0 2px 12px;
-  border-left: 2px solid rgba(59, 130, 246, 0.18);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 18%, transparent);
   background: none;
   border-top: none;
   border-right: none;
@@ -120,7 +109,7 @@
 }
 
 .process-thinking--live {
-  border-left-color: rgba(59, 130, 246, 0.38);
+  border-left-color: color-mix(in srgb, var(--accent) 38%, transparent);
 }
 
 .process-thinking-text {
@@ -133,7 +122,7 @@
   max-height: 160px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.12) transparent;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 20%, transparent) transparent;
 }
 
 .process-thinking-text::-webkit-scrollbar {
@@ -141,7 +130,7 @@
 }
 
 .process-thinking-text::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
   border-radius: 3px;
 }
 
@@ -187,4 +176,17 @@
 
 .process-timeline-item--active .process-timeline-detail {
   color: var(--text-secondary);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .process-step,
+  .process-timeline,
+  .process-step-dot,
+  .process-step-caret,
+  .process-step-label {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

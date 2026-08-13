@@ -94,14 +94,6 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'tools'
   },
   {
-    name: 'skill',
-    description: '选择 Skill 并注入提示',
-    scope: 'ui',
-    action: 'pick_skill',
-    argsHint: '[skill名]',
-    category: 'tools'
-  },
-  {
     name: 'branch',
     description: '查看 / 切换 Git 分支',
     scope: 'ui',

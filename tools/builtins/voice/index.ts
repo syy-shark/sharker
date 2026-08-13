@@ -1,5 +1,5 @@
 /**
- * 语音朗读（TTS）：本地 spd-say / espeak 或 MCP read-aloud Server。
+ * 语音朗读（TTS）：macOS say。
  * @see docs/agent-capabilities.md
  */
 import { spawn } from 'child_process'
@@ -10,23 +10,17 @@ import type { ToolHandler } from '../../types'
 /** 用本地 TTS 朗读文本 */
 async function speakLocal(text: string): Promise<string> {
   const trimmed = text.slice(0, 2000)
-  if (await which('spd-say')) {
+  if (await which('say')) {
     await new Promise<void>((resolve, reject) => {
-      const child = spawn('spd-say', [trimmed], { stdio: 'ignore' })
-      child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`spd-say exit ${code}`))))
+      const child = spawn('say', [trimmed], { stdio: 'ignore' })
+      child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`say exit ${code}`))))
       child.on('error', reject)
     })
-    return 'Spoke via spd-say'
-  }
-  if (await which('espeak-ng')) {
-    const r = await runCmd('espeak-ng', ['-s', '150', trimmed])
-    if (r.code !== 0) throw new Error(r.stderr || 'espeak-ng failed')
-    return 'Spoke via espeak-ng'
+    return 'Spoke via say'
   }
   return (
-    'No local TTS found (spd-say / espeak-ng).\n' +
-    'Install: sudo apt install speech-dispatcher espeak-ng\n' +
-    'Or configure codex-read-aloud-linux MCP in ~/.sharker/mcp.json'
+    'No local TTS found (macOS say).\n' +
+    'Or install Kokoro: bash scripts/install-kokoro-runtime.sh'
   )
 }
 
@@ -45,9 +39,7 @@ export const voiceStopTool: ToolHandler = {
   name: 'voice_stop',
   title: '停止朗读',
   async execute() {
-    if (await which('spd-say')) {
-      await runCmd('spd-say', ['--stop'])
-    }
+    await runCmd('pkill', ['-x', 'say']).catch(() => {})
     return ok('Stop signal sent (if TTS was running)')
   }
 }

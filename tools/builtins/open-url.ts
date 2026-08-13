@@ -1,10 +1,8 @@
 /**
  * open_url：在系统浏览器中打开 URL；用于用户明确要求“打开网页/用 Chrome 打开”。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { execFile } from 'child_process'
-import fs from 'fs'
-import path from 'path'
 import { promisify } from 'util'
 import { ok } from '../context'
 import { assertWebAccessAllowed } from '../network-policy'
@@ -23,71 +21,13 @@ function normalizeUrl(input: string): string {
   return url.toString()
 }
 
-function fileExists(p: string): boolean {
-  try {
-    return fs.existsSync(p)
-  } catch {
-    return false
-  }
-}
-
-function windowsChromeCandidates(): string[] {
-  const vars = [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA]
-  return vars
-    .filter(Boolean)
-    .map((base) => path.join(String(base), 'Google', 'Chrome', 'Application', 'chrome.exe'))
-}
-
-function linuxChromeCommands(): string[] {
-  return ['google-chrome', 'google-chrome-stable', 'chromium-browser', 'chromium']
-}
-
 async function openDefaultBrowser(url: string): Promise<void> {
-  if (process.platform === 'win32') {
-    await execFileAsync('rundll32.exe', ['url.dll,FileProtocolHandler', url])
-    return
-  }
-  if (process.platform === 'darwin') {
-    await execFileAsync('open', [url])
-    return
-  }
-  await execFileAsync('xdg-open', [url])
+  await execFileAsync('open', [url])
 }
 
 async function openChrome(url: string): Promise<string> {
-  if (process.platform === 'win32') {
-    for (const candidate of windowsChromeCandidates()) {
-      if (fileExists(candidate)) {
-        await execFileAsync(candidate, [url])
-        return candidate
-      }
-    }
-    await execFileAsync('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      'Start-Process -FilePath chrome -ArgumentList $args[0]',
-      '--',
-      url
-    ])
-    return 'chrome'
-  }
-
-  if (process.platform === 'darwin') {
-    await execFileAsync('open', ['-a', 'Google Chrome', url])
-    return 'Google Chrome'
-  }
-
-  for (const command of linuxChromeCommands()) {
-    try {
-      await execFileAsync(command, [url])
-      return command
-    } catch {
-      /* try next */
-    }
-  }
-  await execFileAsync('xdg-open', [url])
-  return 'default browser (Chrome not found)'
+  await execFileAsync('open', ['-a', 'Google Chrome', url])
+  return 'Google Chrome'
 }
 
 export const openUrlTool: ToolHandler = {

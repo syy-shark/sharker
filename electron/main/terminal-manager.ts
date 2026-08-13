@@ -1,6 +1,9 @@
 /**
  * 集成终端 PTY 管理（node-pty）。
+ * 若报 posix_spawnp failed：多为 spawn-helper 无 +x，运行 npm run fix:pty。
+ * @see ../../src/components/panel/ARCH.md
  */
+import fs from 'fs'
 import os from 'os'
 import type { BrowserWindow } from 'electron'
 import * as pty from 'node-pty'
@@ -13,6 +16,53 @@ interface TerminalSession {
 
 const sessions = new Map<string, TerminalSession>()
 
+function resolveWorkdir(cwd: string): string {
+  const raw = cwd?.trim() || os.homedir()
+  try {
+    if (fs.existsSync(raw) && fs.statSync(raw).isDirectory()) return raw
+  } catch {
+    /* fall through */
+  }
+  return os.homedir()
+}
+
+function spawnShell(shell: string, workdir: string): pty.IPty {
+  const env = {
+    ...process.env,
+    TERM: 'xterm-256color',
+    COLORTERM: 'truecolor',
+    LANG: process.env.LANG || 'en_US.UTF-8',
+    PATH: process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin'
+  } as Record<string, string>
+
+  // 先普通交互；失败再试登录 shell
+  const attempts: Array<{ args: string[] }> = [{ args: [] }]
+  if (shell.includes('zsh') || shell.endsWith('/bash') || shell.endsWith('/sh')) {
+    attempts.push({ args: ['-l'] })
+  }
+
+  let lastErr: unknown
+  for (const { args } of attempts) {
+    try {
+      return pty.spawn(shell, args, {
+        name: 'xterm-256color',
+        cols: 80,
+        rows: 24,
+        cwd: workdir,
+        env
+      })
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  const msg = lastErr instanceof Error ? lastErr.message : String(lastErr)
+  const hint =
+    msg.includes('posix_spawnp') || msg.includes('spawn')
+      ? '（可在仓库执行 npm run fix:pty 修复 spawn-helper 权限）'
+      : ''
+  throw new Error(`node-pty 启动失败（${shell}）：${msg}${hint}`)
+}
+
 /** 创建 PTY 会话并向窗口推送输出 */
 export function createTerminal(
   win: BrowserWindow,
@@ -20,13 +70,8 @@ export function createTerminal(
 ): { id: string } {
   const id = crypto.randomUUID()
   const shell = defaultInteractiveShell()
-  const proc = pty.spawn(shell, [], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 24,
-    cwd: cwd || os.homedir(),
-    env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
-  })
+  const workdir = resolveWorkdir(cwd)
+  const proc = spawnShell(shell, workdir)
 
   proc.onData((data) => {
     if (!win.isDestroyed()) win.webContents.send('terminal:data', { id, data })
@@ -43,12 +88,26 @@ export function createTerminal(
 
 /** 写入 PTY stdin */
 export function writeTerminal(id: string, data: string): void {
-  sessions.get(id)?.pty.write(data)
+  const s = sessions.get(id)
+  if (!s) return
+  try {
+    s.pty.write(data)
+  } catch {
+    /* PTY already exited */
+  }
 }
 
 /** 调整 PTY 尺寸 */
 export function resizeTerminal(id: string, cols: number, rows: number): void {
-  sessions.get(id)?.pty.resize(cols, rows)
+  const s = sessions.get(id)
+  if (!s) return
+  const c = Math.max(2, Math.floor(cols || 80))
+  const r = Math.max(1, Math.floor(rows || 24))
+  try {
+    s.pty.resize(c, r)
+  } catch {
+    /* PTY already exited */
+  }
 }
 
 /** 销毁 PTY */

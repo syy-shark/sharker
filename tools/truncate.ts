@@ -1,6 +1,6 @@
 /**
  * 工具输出截断，防止过长结果撑爆模型上下文。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 const DEFAULT_MAX_CHARS = 10_000
 const HEAD_RATIO = 0.55
@@ -8,7 +8,7 @@ const HEAD_RATIO = 0.55
 /** 截断过长工具输出：保留头尾，中间省略 */
 export function truncateToolOutput(text: string, maxChars?: number, toolName?: string): string {
   let limit = maxChars ?? DEFAULT_MAX_CHARS
-  if (toolName?.includes('get_app_state') || toolName?.includes('mcp_computer_use__')) {
+  if (toolName?.startsWith('desktop_')) {
     limit = Math.max(limit, 120_000)
   }
   if (text.length <= limit) return text

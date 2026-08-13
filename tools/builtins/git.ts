@@ -1,6 +1,6 @@
 /**
  * Git 工具组：status / diff / log / show / add / commit / pull / push。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok, toolCwd } from '../context'
 import { resolveCommandCwd } from '../permissions'

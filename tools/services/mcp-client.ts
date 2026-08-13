@@ -12,23 +12,13 @@ const REQUEST_TIMEOUT_MS = 120_000
 /** 每轮对话前刷新 MCP 工具池的单 server 超时 */
 export const MCP_POOL_CONNECT_MS = 12_000
 
-/** Windows 上 npx/npm/.cmd 需 shell，否则 spawn EINVAL */
+/** 解析 MCP 子进程启动参数 */
 export function resolveMcpSpawn(config: McpServerConfig): {
   command: string
   args: string[]
   shell: boolean
 } {
-  let command = config.command
-  const lower = command.toLowerCase()
-  let shell = false
-  if (process.platform === 'win32') {
-    if (lower === 'npx') command = 'npx.cmd'
-    else if (lower === 'npm') command = 'npm.cmd'
-    if (/\.(cmd|bat)$/i.test(command) || lower === 'npx' || lower === 'npm') {
-      shell = true
-    }
-  }
-  return { command, args: config.args ?? [], shell }
+  return { command: config.command, args: config.args ?? [], shell: false }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {

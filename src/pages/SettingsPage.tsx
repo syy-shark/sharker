@@ -1,17 +1,15 @@
 /**
- * 设置页壳：权限 / 模型 / Skills 分页切换
- * @see src/README.md
+ * 设置页壳：权限 / 模型 / 外观 / 已归档
+ * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
+ * @see src/ARCH.md
  */
 import type { Dispatch, SetStateAction } from 'react'
 import type { AppSettings } from '../../shared/types'
 import type { SettingsTab } from '../types/navigation'
 import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
-import { SkillsSettings } from '../components/settings/SkillsSettings'
-import { McpSettings } from '../components/settings/McpSettings'
-import { TokenUsageSettings } from '../components/settings/TokenUsageSettings'
-import { PetSettings } from '../components/settings/PetSettings'
-import { ExtensionsSettings } from '../components/settings/ExtensionsSettings'
+import { AppearanceSettings } from '../components/settings/AppearanceSettings'
+import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -23,27 +21,13 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
     title: '模型',
     desc: '配置 OpenAI 兼容 API，并选择对话时使用的模型。'
   },
-  skills: {
-    title: 'Skill',
-    desc: '内置 Skill 开箱即用；市场可安装 Anthropic / Claude Code 生态合集。'
+  appearance: {
+    title: '外观',
+    desc: '浅色苹果玻璃与深色金属两套外观。'
   },
-  mcp: {
-    title: 'MCP',
-    desc: ''
-  },
-  computerUse: { title: 'MCP', desc: '' },
-  browserUse: { title: 'MCP', desc: '' },
-  usage: {
-    title: 'Token 消耗',
-    desc: '查看每日上下文 token 估算与近一年热力图。'
-  },
-  pet: {
-    title: '小宠物',
-    desc: 'Codex 风格桌面伙伴。'
-  },
-  extensions: {
-    title: '扩展',
-    desc: 'Hooks、OAuth GPT、远程协作与 LSP。'
+  archived: {
+    title: '已归档',
+    desc: '已归档的对话。可回档到侧栏列表，或彻底删除。'
   }
 }
 
@@ -56,36 +40,29 @@ interface Props {
   onNavigateTab?: (tab: SettingsTab) => void
 }
 
-/** 设置页：按 Tab 渲染权限/模型/Skill 子面板 */
+/** 设置页：按 Tab 渲染权限/模型等子面板 */
 export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
-  const effectiveTab: SettingsTab =
-    tab === 'computerUse' || tab === 'browserUse' ? 'mcp' : tab
-  const meta = TAB_META[effectiveTab]
+  const meta = TAB_META[tab]
 
   return (
     <div className="settings-page">
       <div className="settings-page-inner">
-        <header key={`header-${effectiveTab}`} className="settings-page-header view-enter">
+        <header key={`header-${tab}`} className="settings-page-header view-enter">
           <h1>{meta.title}</h1>
           {meta.desc ? <p>{meta.desc}</p> : null}
         </header>
 
-        <div key={effectiveTab} className="settings-stack settings-panel view-enter">
-          {effectiveTab === 'permissions' && (
+        <div key={tab} className="settings-stack settings-panel view-enter">
+          {tab === 'permissions' && (
             <PermissionsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {effectiveTab === 'models' && (
+          {tab === 'models' && (
             <ModelsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {effectiveTab === 'skills' && (
-            <SkillsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          {tab === 'appearance' && (
+            <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {effectiveTab === 'mcp' && <McpSettings draft={draft} />}
-          {effectiveTab === 'usage' && <TokenUsageSettings />}
-          {effectiveTab === 'pet' && (
-            <PetSettings draft={draft} setDraft={setDraft} onSave={onSave} />
-          )}
-          {effectiveTab === 'extensions' && <ExtensionsSettings draft={draft} />}
+          {tab === 'archived' && <ArchivedSettings />}
         </div>
       </div>
     </div>

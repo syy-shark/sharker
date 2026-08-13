@@ -1,6 +1,6 @@
 /**
  * 当前 API 配置校验与简要描述。
- * 详见 shared/README.md
+ * 详见 shared/ARCH.md
  */
 import type { AppSettings } from './types'
 
@@ -14,10 +14,13 @@ export function validateActiveProvider(settings: AppSettings): string | null {
     return '当前选中的 API 配置不存在，请重新选择'
   }
   if (!p.apiKey?.trim()) {
+    if (p.authMode === 'subscription') {
+      return `请先为「${p.name}」导入订阅（浏览器登录后导入，不是 API Key）`
+    }
     return `请为「${p.name}」填写 API Key`
   }
   if (!p.model?.trim()) {
-    return `请为「${p.name}」填写模型 ID`
+    return `请为「${p.name}」选择模型`
   }
   const base = p.baseUrl?.trim()
   if (!base) {

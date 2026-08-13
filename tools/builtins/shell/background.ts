@@ -1,6 +1,6 @@
 /**
  * 后台 Shell 会话 Tool（基于 task-manager）。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { resolveCommandCwd } from '../../permissions'
 import { createShellTask, getTask, stopTask } from '../../services/task-manager'

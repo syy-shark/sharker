@@ -1,7 +1,7 @@
 /**
  * Browser 自动化：Playwright 可选集成（navigate/snapshot/click/type）。
- * 未安装 playwright 时返回安装指引；也可通过 MCP @playwright/mcp 对接。
- * @see tools/README.md · docs/agent-capabilities.md
+ * 未安装 playwright 时返回安装指引。
+ * @see tools/ARCH.md · docs/agent-capabilities.md
  */
 import { ok } from '../../context'
 import type { ToolHandler } from '../../types'
@@ -47,8 +47,7 @@ async function getSession(
   const pw = await loadPlaywright()
   if (!pw) {
     return (
-      'Playwright 未安装。请运行: npm install playwright && npx playwright install chromium\n' +
-      '或在 ~/.sharker/mcp.json 配置 @playwright/mcp Server。'
+      'Playwright 未安装。请运行: npm install playwright && npx playwright install chromium'
     )
   }
   if (!session) {

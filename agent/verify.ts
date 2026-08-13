@@ -1,6 +1,6 @@
 /**
  * 代码修改后的自动验证：根据 package.json scripts 选择 npm run 命令。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

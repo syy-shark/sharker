@@ -1,6 +1,6 @@
 /**
- * 将一轮工具/技能活动转为过程时间线步骤。
- * 详见 shared/README.md
+ * 将一轮工具活动转为过程时间线步骤。
+ * 详见 shared/ARCH.md
  */
 import type { TurnActivity } from './types'
 
@@ -24,7 +24,6 @@ const TOOL_TITLES: Record<string, string> = {
   git_commit: 'Git 提交',
   git_pull: 'Git 拉取',
   git_push: 'Git 推送',
-  run_skill_script: '运行技能',
   apply_patch: '应用补丁',
   read_pdf: '读取 PDF',
   read_image: '读取图片',
@@ -50,10 +49,7 @@ const TOOL_TITLES: Record<string, string> = {
   web_fetch: '抓取网页',
   web_search: '网页搜索',
   open_url: '打开网页',
-  list_skills: '列出技能',
-  read_skill: '读取技能',
-  mcp_list_tools: 'MCP 工具列表',
-  mcp_call_tool: 'MCP 调用',
+  present_inline_demo: '内联演示',
   agent_spawn: '启动子 Agent',
   agent_send_message: '子 Agent 消息',
   agent_get_result: '子 Agent 结果',
@@ -63,7 +59,7 @@ const TOOL_TITLES: Record<string, string> = {
 /** 过程步骤状态：已完成或进行中 */
 export type ProcessStepStatus = 'done' | 'active'
 /** 过程步骤类型 */
-export type ProcessStepKind = 'think' | 'skill' | 'tool' | 'compress'
+export type ProcessStepKind = 'think' | 'tool' | 'compress'
 
 /** 助手消息过程时间线的单步 */
 export interface ProcessStep {
@@ -95,12 +91,6 @@ function parseToolLabel(label: string): { title: string; detail?: string; toolNa
     title: TOOL_TITLES[toolName] ?? toolName,
     detail: detail || undefined
   }
-}
-
-/** 从 skill label 解析技能名（冒号前） */
-function parseSkillName(label: string): string {
-  const colon = label.indexOf(':')
-  return colon === -1 ? label : label.slice(0, colon)
 }
 
 /** 判断相邻步骤是否为同一工具操作 */
@@ -149,17 +139,6 @@ export function buildProcessSteps(options: {
         kind: 'compress',
         title: '压缩上下文',
         detail: a.label.includes('·') ? a.label.split('·')[1]?.trim() : undefined,
-        status: 'done'
-      })
-      continue
-    }
-    if (a.kind === 'skill') {
-      const name = parseSkillName(a.label)
-      steps.push({
-        id: `skill-${name}-${i}`,
-        kind: 'skill',
-        title: '载入技能',
-        detail: name,
         status: 'done'
       })
       continue

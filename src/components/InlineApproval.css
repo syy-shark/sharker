@@ -4,10 +4,16 @@
   padding: 14px;
   color: var(--text);
   background: var(--warning-soft);
-  border: 1px solid rgba(154, 91, 8, 0.24);
+  border: 0.5px solid color-mix(in srgb, var(--warning) 28%, transparent);
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(69, 43, 8, 0.05);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: var(--glass-rim-soft), 0 8px 24px color-mix(in srgb, var(--warning) 10%, transparent);
   scroll-margin: 64px 16px 104px;
+  /* 进入 + 持续呼吸：等待确认时不能看起来停住 */
+  animation:
+    view-enter var(--motion-duration-normal) var(--motion-ease-spring) both,
+    live-panel-breathe var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
 }
 
 .inline-approval__heading {
@@ -24,8 +30,8 @@
   width: 28px;
   height: 28px;
   color: var(--warning);
-  background: rgba(154, 91, 8, 0.09);
-  border: 1px solid rgba(154, 91, 8, 0.15);
+  background: var(--warning-soft);
+  border: 1px solid color-mix(in srgb, var(--warning) 18%, transparent);
   border-radius: var(--radius-sm);
 }
 
@@ -62,10 +68,11 @@
 
 .inline-approval__details {
   margin: 12px 0 0 38px;
-  border-top: 1px solid rgba(154, 91, 8, 0.13);
+  border-top: 1px solid color-mix(in srgb, var(--warning) 16%, transparent);
 }
 
 .inline-approval__details summary {
+  transition: color var(--motion-duration-fast) var(--motion-ease-soft), background-color var(--motion-duration-fast) var(--motion-ease-soft);
   display: flex;
   min-width: 0;
   height: 34px;
@@ -87,7 +94,7 @@
 }
 
 .inline-approval__details summary:focus-visible {
-  outline: 2px solid rgba(154, 91, 8, 0.38);
+  outline: 2px solid color-mix(in srgb, var(--warning) 38%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
 }
@@ -103,7 +110,7 @@
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--surface-frost-raised);
   border-radius: 4px;
 }
 
@@ -121,8 +128,8 @@
   max-height: 200px;
   margin-bottom: 10px;
   overflow: auto;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(154, 91, 8, 0.12);
+  background: var(--glass-fill-raised);
+  border: 1px solid color-mix(in srgb, var(--warning) 14%, transparent);
   border-radius: var(--radius-sm);
 }
 
@@ -139,7 +146,7 @@
 }
 
 .inline-approval__args pre:focus-visible {
-  outline: 2px solid rgba(154, 91, 8, 0.32);
+  outline: 2px solid color-mix(in srgb, var(--warning) 32%, transparent);
   outline-offset: -2px;
 }
 
@@ -147,6 +154,7 @@
   display: flex;
   min-height: 31px;
   margin: 12px 0 0 38px;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -165,7 +173,7 @@
 
 .inline-approval__status svg {
   flex: 0 0 auto;
-  animation: inline-approval-spin 0.9s linear infinite;
+  animation: ui-spin 0.9s linear infinite;
 }
 
 .inline-approval__button {
@@ -185,46 +193,58 @@
     color var(--motion-duration-fast) var(--motion-ease-soft),
     background-color var(--motion-duration-fast) var(--motion-ease-soft),
     border-color var(--motion-duration-fast) var(--motion-ease-soft),
-    opacity var(--motion-duration-fast) var(--motion-ease-soft);
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
+    opacity var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.inline-approval__button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .inline-approval__button--reject {
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.58);
-  border-color: rgba(80, 87, 98, 0.18);
+  background: var(--glass-fill-raised);
+  border-color: var(--border-subtle);
 }
 
 .inline-approval__button--reject:hover:not(:disabled) {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.86);
-  border-color: rgba(80, 87, 98, 0.3);
+  background: var(--glass-fill-popover);
+  border-color: var(--border);
+}
+
+.inline-approval__button--session {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+}
+
+.inline-approval__button--session:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--warning) 72%, var(--text));
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .inline-approval__button--allow {
-  color: #fff;
+  color: var(--on-accent);
   background: var(--warning);
   border-color: var(--warning);
 }
 
 .inline-approval__button--allow:hover:not(:disabled) {
-  background: #7d4907;
-  border-color: #7d4907;
+  background: color-mix(in srgb, var(--warning) 86%, var(--text));
+  border-color: color-mix(in srgb, var(--warning) 86%, var(--text));
 }
 
 .inline-approval__button:focus-visible {
-  outline: 2px solid rgba(154, 91, 8, 0.42);
+  outline: 2px solid color-mix(in srgb, var(--warning) 42%, transparent);
   outline-offset: 2px;
 }
 
 .inline-approval__button:disabled {
   cursor: default;
   opacity: 0.58;
-}
-
-@keyframes inline-approval-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (max-width: 560px) {
@@ -248,6 +268,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .inline-approval,
+  .inline-approval:not([aria-busy='true']) {
+    animation: none !important;
+  }
+
   .inline-approval__chevron,
   .inline-approval__button {
     transition: none;
@@ -256,4 +281,50 @@
   .inline-approval__status svg {
     animation: none;
   }
+}
+
+
+.inline-approval[aria-busy='true'] {
+  /* 提交中停呼吸，只保留按钮 spinner */
+  animation: none;
+}
+
+
+html.theme-dark .inline-approval {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: color-mix(in srgb, var(--warning) 12%, var(--glass-fill-raised));
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--glass-edge-soft));
+  box-shadow: var(--glass-rim-soft);
+}
+
+html.theme-dark .inline-approval__icon {
+  background: color-mix(in srgb, var(--warning) 16%, var(--glass-fill-raised));
+}
+
+html.theme-dark .inline-approval__button {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.theme-dark .inline-approval__button--allow {
+  background: color-mix(in srgb, var(--warning) 18%, var(--glass-fill-raised));
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--glass-edge-soft));
+  color: color-mix(in srgb, var(--warning) 82%, var(--text));
+}
+
+html.theme-dark .inline-approval__button--session {
+  background: var(--glass-fill-raised);
+  border-color: var(--glass-edge-soft);
+}
+
+html.theme-dark .inline-approval__button--reject {
+  background: color-mix(in srgb, var(--danger) 12%, var(--glass-fill-raised));
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--glass-edge-soft));
+}
+
+html.theme-dark .inline-approval__args,
+html.theme-dark .inline-approval__details {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border-color: var(--glass-edge-soft);
 }

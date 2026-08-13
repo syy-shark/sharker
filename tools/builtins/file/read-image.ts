@@ -1,6 +1,6 @@
 /**
  * read_image：读取图片文件元数据与路径（供多模态或本地预览）。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

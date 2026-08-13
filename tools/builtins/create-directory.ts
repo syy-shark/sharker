@@ -1,6 +1,6 @@
 /**
  * create_directory：创建目录。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import { assertAccess, ok } from '../context'

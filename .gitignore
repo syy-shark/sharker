@@ -6,3 +6,5 @@ out
 data-dir/
 sharker/
 *.tsbuildinfo
+.tmp-artifacts/
+electron.vite.config.*.mjs

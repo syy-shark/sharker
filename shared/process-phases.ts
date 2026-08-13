@@ -1,11 +1,11 @@
 /**
  * 将 TurnSegment 纯派生为前端执行阶段，不改变持久化契约。
- * @see shared/README.md
+ * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
 
 export type ProcessPhase = 'understand' | 'explore' | 'execute' | 'verify'
-export type ProcessPhaseState = 'pending' | 'active' | 'done' | 'error'
+export type ProcessPhaseState = 'pending' | 'active' | 'done' | 'error' | 'cancelled'
 export type ProcessPhaseStepKind = 'thinking' | 'status' | 'narration' | 'tool'
 
 export interface ProcessPhaseStep {
@@ -51,7 +51,7 @@ const PHASE_LABELS: Record<ProcessPhase, string> = {
   verify: '验证'
 }
 
-const UNDERSTAND_TOOLS = new Set(['skill', 'compress', 'enter_plan_mode', 'exit_plan_mode'])
+const UNDERSTAND_TOOLS = new Set(['compress', 'enter_plan_mode', 'exit_plan_mode'])
 
 const EXPLORE_TOOLS = new Set([
   'read_file',
@@ -66,17 +66,15 @@ const EXPLORE_TOOLS = new Set([
   'git_diff',
   'git_log',
   'git_show',
-  'list_skills',
-  'read_skill',
   'web_fetch',
   'web_search',
   'open_url',
+  'present_inline_demo',
   'task_list',
   'task_get',
   'task_output',
   'agent_list',
   'agent_get_result',
-  'mcp_list_tools',
   'desktop_doctor',
   'desktop_screenshot',
   'desktop_list_windows',
@@ -100,7 +98,6 @@ const EDIT_TOOLS = new Set([
 const COMMAND_TOOLS = new Set([
   'run_terminal_cmd',
   'run_background_shell',
-  'run_skill_script',
   'shell_send_input'
 ])
 
@@ -115,7 +112,8 @@ function cleanInlineText(value: string | undefined, max = 96): string | undefine
   if (!value) return undefined
   const clean = value
     .replace(/```[\s\S]*?```/g, '代码片段')
-    .replace(/[`*_>#-]/g, ' ')
+    // 保留连字符与下划线（rm -rf / STOP_TEST），只清理 markdown 符号
+    .replace(/[`*>#]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
   if (!clean) return undefined
@@ -133,7 +131,7 @@ function classifyTool(segment: TurnSegment): ProcessPhase {
   if (EXPLORE_TOOLS.has(name)) return 'explore'
   if (EDIT_TOOLS.has(name)) return 'execute'
 
-  // MCP 名称包含 server 前缀；用末尾动作词补足未知工具的展示归类。
+  // 用末尾动作词补足未知工具的展示归类。
   if (/(?:^|__)(?:read|search|list|get|snapshot|screenshot|inspect)(?:_|$)/i.test(name)) {
     return 'explore'
   }
@@ -149,11 +147,85 @@ function classifyContent(content: string | undefined, fallback: ProcessPhase): P
   return fallback
 }
 
+function shortNameFromDetail(detail: string | undefined): string | undefined {
+  const cleaned = cleanInlineText(detail, 48)
+  if (!cleaned) return undefined
+  // 只取路径末段，避免直播标题过长
+  const base = cleaned.split(/[\\/]/).filter(Boolean).at(-1) || cleaned
+  return base.length > 24 ? `${base.slice(0, 23)}…` : base
+}
+
+/** shell 命令摘要：保留 -rf 等短选项，不取路径末段误伤命令 */
+function commandSummaryFromDetail(detail: string | undefined): string | undefined {
+  if (!detail) return undefined
+  const clean = detail
+    .replace(/```[\s\S]*?```/g, '代码片段')
+    .replace(/[`*>#]/g, ' ')
+    // 保留连字符（rm -rf），只压空白
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!clean) return undefined
+  return clean.length > 36 ? `${clean.slice(0, 35)}…` : clean
+}
+
 function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
   if (segment.kind === 'thinking') return '分析任务目标与约束'
-  if (segment.kind === 'tool') return segment.toolTitle ?? segment.toolName ?? '执行操作'
+  if (segment.kind === 'tool') {
+    const base = segment.toolTitle ?? segment.toolName ?? '执行操作'
+    const tool = segment.toolName || ''
+    // 读/列/改文件类：标题带上目标，避免多个「列出目录」像卡住重复
+    if (
+      tool === 'list_dir' ||
+      tool === 'read_file' ||
+      tool === 'write_file' ||
+      tool === 'search_replace' ||
+      tool === 'apply_patch' ||
+      tool === 'delete_file' ||
+      tool === 'glob_file_search' ||
+      tool === 'grep'
+    ) {
+      const leaf = shortNameFromDetail(segment.toolDetail)
+      if (leaf && !base.includes(leaf)) return `${base} · ${leaf}`
+    }
+    if (tool === 'run_terminal_cmd') {
+      const fromArgs =
+        typeof segment.toolArgs?.command === 'string'
+          ? commandSummaryFromDetail(segment.toolArgs.command)
+          : undefined
+      // 进度心跳只进 resultSummary；标题优先 toolArgs / 非进度 toolDetail
+      const detailCandidate = segment.toolDetail
+      const detailLooksProgress =
+        !!detailCandidate &&
+        (/^(已启动|执行中|运行中|处理中)/.test(detailCandidate.trim()) ||
+          /执行中…\s*\d+s/.test(detailCandidate) ||
+          /·\s*\d+s$/.test(detailCandidate.trim()))
+      const cmd =
+        fromArgs ||
+        (!detailLooksProgress ? commandSummaryFromDetail(detailCandidate) : undefined)
+      if (cmd && !/^(已启动|执行中|运行中|处理中)/.test(cmd) && !base.includes(cmd)) {
+        return `${base} · ${cmd}`
+      }
+    }
+    return base
+  }
   if (segment.kind === 'status') {
-    return cleanInlineText(segment.content) ?? phaseActiveLabel(phase)
+    const cleaned = cleanInlineText(segment.content)
+    // 源码/JSON 行不当步骤标题
+    if (cleaned && /^(L\d+:|[{}\[\]]|```)/.test(cleaned)) {
+      return phaseActiveLabel(phase)
+    }
+    // 规划/准备类状态压缩成稳定短标题，方便直播头同步
+    if (cleaned && /规划下一步|决定下一动作|规划中/.test(cleaned)) return '规划下一步'
+    if (cleaned && /正在准备读取/.test(cleaned)) return '正在准备读取文件'
+    if (cleaned && /正在准备运行|正在准备命令/.test(cleaned)) return '正在准备运行命令'
+    if (cleaned && /正在准备列出|正在准备目录|正在准备浏览/.test(cleaned)) return '正在准备列出目录'
+    if (cleaned && /正在准备写入|正在准备修改|正在整理.*修改|正在生成.*写入/.test(cleaned))
+      return '正在准备修改文件'
+    if (cleaned && /正在准备/.test(cleaned)) {
+      // 其余准备态：保留短文案，避免直播头被长句拖住
+      return cleaned.length > 18 ? `${cleaned.slice(0, 18)}…` : cleaned
+    }
+    return cleaned ?? phaseActiveLabel(phase)
   }
   return cleanInlineText(segment.content) ?? '整理阶段结果'
 }
@@ -211,30 +283,66 @@ function groupSummary(phase: ProcessPhase, steps: ProcessPhaseStep[]): string {
   return '验证完成'
 }
 
+function normalizeText(value: string | undefined): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim()
+}
+
+function isDuplicateOfFinalText(content: string | undefined, finalContent: string): boolean {
+  const c = normalizeText(content)
+  const f = normalizeText(finalContent)
+  if (!c || !f) return false
+  if (c === f) return true
+  if (f.startsWith(c) && c.length >= 12) return true
+  if (c.startsWith(f) && f.length >= 12) return true
+  return false
+}
+
 function sourceSegments(segments: TurnSegment[], isStreaming: boolean): TurnSegment[] {
   let source = segments.filter((segment) => !(segment.kind === 'text' && segment.role === 'final'))
   if (isStreaming) {
     const last = source[source.length - 1]
     // 末尾 active text 是正在生成的最终回答，不重复放进执行轨道。
     if (last?.kind === 'text' && last.status === 'active') source = source.slice(0, -1)
+    // 工具仍在跑时：已闭合的旁白若将被当作 final 展示，过程区先不放，避免双份
+    const hasActiveWork = segments.some(
+      (s) =>
+        s.status === 'active' &&
+        (s.kind === 'tool' || s.kind === 'thinking' || s.kind === 'status')
+    )
+    if (hasActiveWork) {
+      // 保留中途旁白，但与「当前即将作为 final 的文本」相同的除外
+      const trailingText = [...segments]
+        .reverse()
+        .find((s) => s.kind === 'text' && s.content?.trim())
+      const trail = normalizeText(trailingText?.content)
+      if (trail) {
+        source = source.filter(
+          (s) => !(s.kind === 'text' && isDuplicateOfFinalText(s.content, trail) && s.status === 'done')
+        )
+      }
+    }
+  } else {
+    // 结束后：去掉与 final 正文重复的旁白
+    const finalSeg = [...segments].reverse().find((s) => s.kind === 'text' && s.role === 'final')
+    const finalText =
+      normalizeText(finalSeg?.content) ||
+      normalizeText([...segments].reverse().find((s) => s.kind === 'text')?.content)
+    if (finalText) {
+      source = source.filter(
+        (s) => !(s.kind === 'text' && isDuplicateOfFinalText(s.content, finalText))
+      )
+    }
   }
   return source
 }
 
-/** 从原始片段派生稳定的四阶段展示模型；不暴露 thinking.content。 */
-export function deriveProcessPhases(
-  segments: TurnSegment[],
-  options?: { isStreaming?: boolean }
-): ProcessPhaseModel {
-  const isStreaming = options?.isStreaming ?? false
-  const source = sourceSegments(segments, isStreaming)
-  const lastActive = isStreaming
-    ? [...source].reverse().find((segment) => segment.status === 'active')
-    : undefined
+/** 将源片段转为步骤列表（时间序）；不暴露 thinking 原文。 */
+function buildStepsFromSource(
+  source: TurnSegment[],
+  isStreaming: boolean
+): ProcessPhaseStep[] {
   let fallbackPhase: ProcessPhase = 'understand'
-
-  const buckets = new Map<ProcessPhase, ProcessPhaseStep[]>()
-  for (const phase of PROCESS_PHASE_ORDER) buckets.set(phase, [])
+  const steps: ProcessPhaseStep[] = []
 
   for (const segment of source) {
     let phase: ProcessPhase
@@ -249,25 +357,101 @@ export function deriveProcessPhases(
     }
 
     if (segment.kind !== 'thinking') fallbackPhase = phase
+    // 尊重片段自身 status：流式时允许多个已完成步骤 + 一个 active，
+    // 不要只因“不是 lastActive”就把工具步骤误标 done 后还让 seed 独占 active。
     const status: ProcessPhaseStep['status'] =
       segment.status === 'error'
         ? 'error'
-        : isStreaming && segment.id === lastActive?.id
+        : segment.status === 'active'
           ? 'active'
-          : 'done'
+          : segment.status === 'cancelled'
+            ? 'cancelled'
+            : 'done'
 
-    buckets.get(phase)!.push({
+    const title = stepTitle(segment, phase)
+    let detail =
+      segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
+        ? cleanInlineText(
+            (() => {
+              const summary = segment.resultSummary?.trim()
+              const toolDetail = segment.toolDetail
+              const progressLike =
+                !!summary &&
+                (/^(已启动|执行中|运行中|处理中|已停止)/.test(summary) ||
+                  /执行中…\s*\d+s/.test(summary) ||
+                  /·\s*\d+s$/.test(summary))
+              // 直播中：进度心跳写 summary，优先展示
+              if (
+                segment.status === 'active' &&
+                summary &&
+                !/^(L\d+:|[{}\[\]]|```)/.test(summary)
+              ) {
+                return summary
+              }
+              // 结束后：进度心跳不作为永久详情
+              if (progressLike) {
+                if (summary === '已停止') return '已停止'
+                return undefined
+              }
+              return toolDetail || summary
+            })(),
+            120
+          )
+        : segment.kind === 'tool' && segment.toolName === 'present_inline_demo'
+          ? cleanInlineText(segment.toolDetail, 80)
+          : undefined
+    // 标题已含 path/command 时不再重复 detail（避免“运行命令 · sleep… sleep…”）
+    if (
+      detail &&
+      segment.kind === 'tool' &&
+      segment.status !== 'active' &&
+      title.includes(detail)
+    ) {
+      detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
+    }
+
+    steps.push({
       id: segment.id,
       phase,
       kind:
         segment.kind === 'text'
           ? 'narration'
           : (segment.kind as Exclude<ProcessPhaseStepKind, 'narration'>),
-      title: stepTitle(segment, phase),
-      detail: segment.kind === 'tool' ? cleanInlineText(segment.toolDetail, 120) : undefined,
+      title,
+      detail,
       status,
       segment
     })
+  }
+  return steps
+}
+
+/**
+ * 按先后顺序的过程步骤（直播与回看统一时间线）。
+ * 不按阶段折叠，出现一个就展示一个。
+ */
+export function deriveChronologicalSteps(
+  segments: TurnSegment[],
+  options?: { isStreaming?: boolean }
+): ProcessPhaseStep[] {
+  const isStreaming = options?.isStreaming ?? false
+  const source = sourceSegments(segments, isStreaming)
+  return buildStepsFromSource(source, isStreaming)
+}
+
+/** 从原始片段派生稳定的四阶段展示模型；不暴露 thinking.content。 */
+export function deriveProcessPhases(
+  segments: TurnSegment[],
+  options?: { isStreaming?: boolean }
+): ProcessPhaseModel {
+  const isStreaming = options?.isStreaming ?? false
+  const source = sourceSegments(segments, isStreaming)
+  const chronological = buildStepsFromSource(source, isStreaming)
+
+  const buckets = new Map<ProcessPhase, ProcessPhaseStep[]>()
+  for (const phase of PROCESS_PHASE_ORDER) buckets.set(phase, [])
+  for (const step of chronological) {
+    buckets.get(step.phase)!.push(step)
   }
 
   const groups = PROCESS_PHASE_ORDER.map((phase): ProcessPhaseGroup => {
@@ -276,9 +460,14 @@ export function deriveProcessPhases(
       ? 'active'
       : steps.some((step) => step.status === 'error')
         ? 'error'
-        : steps.length > 0
-          ? 'done'
-          : 'pending'
+        : steps.some((step) => step.status === 'cancelled') &&
+            steps.every((step) => step.status === 'cancelled' || step.status === 'done')
+          ? steps.every((step) => step.status === 'cancelled')
+            ? 'cancelled'
+            : 'done'
+          : steps.length > 0
+            ? 'done'
+            : 'pending'
     return {
       phase,
       label: PHASE_LABELS[phase],
@@ -288,7 +477,11 @@ export function deriveProcessPhases(
     }
   })
 
-  const current = groups.find((group) => group.state === 'active')
+  const current =
+    groups.find((group) => group.state === 'active') ||
+    (isStreaming
+      ? [...groups].reverse().find((group) => group.state === 'done' || group.state === 'error')
+      : undefined)
   const readFiles = new Set<string>()
   const modifiedFiles = new Set<string>()
   let commands = 0
@@ -300,7 +493,15 @@ export function deriveProcessPhases(
       if (step.phase === 'execute' && EDIT_TOOLS.has(name)) {
         files.forEach((file) => modifiedFiles.add(file))
       }
-      if (step.phase === 'execute' && COMMAND_TOOLS.has(name)) commands++
+      // 只统计真正完成的工具命令（kind=tool + done）；status 桥接步 / cancelled 不算
+      if (
+        step.kind === 'tool' &&
+        step.phase === 'execute' &&
+        COMMAND_TOOLS.has(name) &&
+        step.status === 'done'
+      ) {
+        commands++
+      }
     }
   }
 
@@ -319,7 +520,11 @@ export function deriveProcessPhases(
 }
 
 /** 供外层完成态摘要复用。 */
-export function summarizeProcessPhases(model: ProcessPhaseModel, durationSec?: number): string {
+export function summarizeProcessPhases(
+  model: ProcessPhaseModel,
+  durationSec?: number,
+  outcome?: 'success' | 'error' | 'aborted'
+): string {
   const parts: string[] = []
   if (model.totals.readFiles > 0) parts.push(`浏览 ${model.totals.readFiles} 个文件`)
   if (model.totals.modifiedFiles > 0) parts.push(`修改 ${model.totals.modifiedFiles} 个文件`)
@@ -331,7 +536,14 @@ export function summarizeProcessPhases(model: ProcessPhaseModel, durationSec?: n
   else if (verify && verify.steps.length > 0) parts.push('验证完成')
 
   if (parts.length === 0) {
-    parts.push('完成')
+    if (outcome === 'error') parts.push('未完成')
+    else if (outcome === 'aborted') parts.push('已停止')
+    else parts.push('完成')
+  } else if (outcome === 'error') {
+    // 有过程统计时也要标明失败，避免鉴权失败仍显示“完成”
+    parts.unshift('未完成')
+  } else if (outcome === 'aborted') {
+    parts.unshift('已停止')
   }
   if (durationSec != null && durationSec > 0) parts.push(`${durationSec}s`)
   return parts.join(' · ')

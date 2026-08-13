@@ -13,7 +13,7 @@ flowchart TB
   end
   subgraph L4 [L4 记忆层]
     MemStore[PostgreSQL 记忆库]
-    Skills[Skills + 自进化]
+    Evolve[记忆 + 自进化]
   end
   subgraph L3 [L3 策略层]
     TestMind[主动测试思维]
@@ -44,7 +44,7 @@ flowchart TB
 
 ## Phase 0：现状（已完成）
 
-- 看搜改跑 + Git + Skills + 终端
+- 看搜改跑 + Git + 终端
 - 沙箱 / 审批、上下文压缩、寒暄跳过 tools
 - 工作区快照、写代码纪律、输出截断、改后自动 verify
 - 过程 UI、对话管理
@@ -116,26 +116,15 @@ flowchart LR
 
 实现落点：`agent/memory/` + `memory_*` 工具；对话 JSON 仍由现有 conversations store 管理，Postgres 只存**提炼后的记忆条目**。
 
-### 2.1 与 Skill 的关系
-
-| | Skill | 记忆 |
-|---|-------|------|
-| 形式 | SKILL.md + scripts | 结构化 DB 行 + embedding |
-| 触发 | 用户意图匹配 | 语义 / 关键词检索 |
-| 进化 | 人工维护 + 导入 repo | **自动提炼 + 显式写入** |
-
----
-
 ## Phase 3：自进化（2～3 周，依赖 Phase 2）
 
 | 机制 | 说明 |
 |------|------|
 | 失败归因 | verify 失败 / 用户点踩 → 记录 tool+错误模式 |
 | 教训沉淀 | 同类失败 2 次 → 写入记忆库（kind=learning） |
-| Skill 提议 | 重复 3 次的工作流 → 提议生成新 SKILL 草稿 |
 | 指标面板（后期） | 成功率、平均轮次、verify 通过率 |
 
-**边界**：自进化只写 **记忆/Skill 草稿**，不自动改 Harness 代码，避免失控。
+**边界**：自进化只写 **记忆草稿**，不自动改 Harness 代码，避免失控。
 
 ---
 
@@ -147,7 +136,7 @@ flowchart LR
 |------|----------|
 | Word .docx | Python `python-docx` / `pandoc` 终端工具 |
 | PDF | `pdftotext` 读、`pandoc`/`weasyprint` 生成、表单用 `pdftk` |
-| PPT .pptx | `python-pptx` 脚本封装为 skill 或专用 tool |
+| PPT .pptx | `python-pptx` 脚本封装为专用 tool |
 | Excel | `openpyxl` / CSV 优先 |
 
 **Harness 要点**：读 binary → 转 markdown 摘要进上下文；改 → 脚本生成新文件；跑 → 验证文件可打开/页数对。
@@ -166,7 +155,7 @@ flowchart LR
 | v2 | 字幕：whisper 转写 → srt 嵌入 |
 | v3 | 简单时间线 UI 预览（后期） |
 
-依赖：**跑** 层成熟 + Skills（`video-edit` skill 封装 ffmpeg 命令）。
+依赖：**跑** 层成熟（ffmpeg 命令封装为专用 tool）。
 
 ---
 
@@ -217,7 +206,7 @@ gantt
 | **记忆自动写入** | 允许自动提炼进 PostgreSQL 记忆库（可设置开关） |
 | **Office** | Word、PDF、PPT **都要**，同 Phase 4 一并规划 |
 | **视频** | v1 接受 ffmpeg 命令行，无时间线 UI |
-| **文档驱动** | 全局 `docs/` + 每模块 `README.md`，见 [DOC-GUIDE.md](./DOC-GUIDE.md) |
+| **文档驱动** | 全局 `docs/` + 每模块 `ARCH.md`，见 [DOC-GUIDE.md](./DOC-GUIDE.md) |
 
 ---
 

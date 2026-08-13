@@ -1,6 +1,6 @@
 /**
  * read_file：读取文件内容。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import { assertAccess, ok } from '../context'

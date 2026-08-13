@@ -1,6 +1,6 @@
 /**
  * Git worktree 与 Harness worktree 模式切换。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import { assertAccess, ok, toolCwd } from '../../context'
 import { resolveCommandCwd } from '../../permissions'

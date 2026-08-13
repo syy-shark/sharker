@@ -3,8 +3,10 @@
   align-items: center;
   gap: 2px;
   margin-top: 10px;
-  opacity: 0.5;
-  transition: opacity var(--motion-duration-fast) var(--motion-ease-soft);
+  opacity: 0.45;
+  transition:
+    opacity var(--motion-duration-normal) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .message-row--user:hover .message-actions,
@@ -23,16 +25,51 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 50%;
+  border: 0.5px solid transparent;
   color: var(--text-muted);
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
 .message-actions-btn:hover {
-  background: rgba(39, 39, 42, 0.06);
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+  box-shadow: var(--glass-rim-soft);
   color: var(--text-secondary);
 }
 
 .message-actions-btn:active {
-  background: rgba(39, 39, 42, 0.1);
+  background: var(--glass-fill-raised);
   color: var(--text);
+}
+
+
+.message-actions-btn--copied {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.message-actions-btn:active {
+  transform: scale(0.94);
+}
+
+.message-actions-btn:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .message-actions,
+  .message-actions-btn {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

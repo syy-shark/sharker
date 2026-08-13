@@ -1,6 +1,6 @@
 /**
  * 后台任务 Tool 组。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import {
   createShellTask,

@@ -1,9 +1,21 @@
 .plan-build-bar {
   margin: 12px 16px;
   padding: 14px 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(74, 158, 255, 0.35);
-  background: rgba(74, 158, 255, 0.08);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-raised);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+html.theme-dark .plan-build-bar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-fill-raised);
 }
 
 .plan-build-header {
@@ -25,6 +37,18 @@
   opacity: 0.7;
   cursor: pointer;
   font-size: 13px;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.plan-build-dismiss:hover {
+  opacity: 1;
+}
+
+.plan-build-dismiss:active {
+  transform: scale(0.98);
+  opacity: 0.85;
 }
 
 .plan-build-preview {
@@ -40,15 +64,44 @@
 .plan-build-btn {
   width: 100%;
   padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background: #4a9eff;
-  color: #fff;
+  border: 0.5px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+  box-shadow:
+    inset 0 0.5px 0 color-mix(in srgb, white 35%, transparent),
+    0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--on-accent);
   font-weight: 600;
   cursor: pointer;
   font-size: 14px;
+  transition:
+    filter var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .plan-build-btn:hover {
-  background: #3d8ce6;
+  filter: brightness(1.06);
+}
+
+.plan-build-btn:active {
+  transform: scale(0.985);
+}
+
+.plan-build-btn:focus-visible,
+.plan-build-dismiss:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-build-bar,
+  .plan-build-btn,
+  .plan-build-dismiss {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -41,7 +41,7 @@ export const MCP_CATALOG: McpCatalogItem[] = [
   {
     id: 'cua-driver',
     title: 'cua-driver (推荐)',
-    description: 'Cua Driver：Windows/macOS 后台 UI 自动化（UIA/AT-SPI），元素级点击与窗口状态，不抢焦点。',
+    description: 'Cua Driver：macOS 后台 UI 自动化（Accessibility），元素级点击与窗口状态，不抢焦点。',
     serverName: 'cua-driver',
     category: 'recommended',
     feature: 'computerUse',
@@ -49,20 +49,6 @@ export const MCP_CATALOG: McpCatalogItem[] = [
       name: 'cua-driver',
       command: '{{cua_driver_binary}}',
       args: ['mcp']
-    }
-  },
-  {
-    id: 'computer-use',
-    title: 'Computer Use (Codex)',
-    description: 'codex-computer-use-linux：AT-SPI、portal 截图与窗口聚焦。',
-    serverName: 'computer-use',
-    category: 'more',
-    feature: 'computerUse',
-    template: {
-      name: 'computer-use',
-      command: '{{codex_binary}}',
-      args: ['mcp'],
-      transport: 'ndjson'
     }
   },
   {

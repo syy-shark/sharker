@@ -40,7 +40,7 @@ flowchart LR
 3. `ipc invoke` `chat:send` → `electron/main/index.ts` → `executeUserInput`
 4. `queryServe` 占坑（`turn_start`、AbortController、普通任务 15 分钟 / 桌面自动化 20 分钟超时）
 5. `processUserInput`：斜杠命令本地处理（`shouldQuery=false`）或进入 `onQuery`
-6. `onQuery`：`loadSettings` → `compressContextIfNeeded` → 组装 system + skills
+6. `onQuery`：`loadSettings` → `compressContextIfNeeded` → 组装 system
 7. `queryLoop`：`streamChat` 流式调模型；有 `tool_calls` 则审批 + `executeTool`（默认最多 40 轮）
 8. `StreamChunk` 经 `chat:stream` 推回 UI（含 `token` / `think` / `tool_*` / `command`）
 9. 结束后 `persistActiveConversation` 写入 `.sharker/conversations/`
@@ -51,7 +51,6 @@ flowchart LR
 sharker/
 ├── agent/          # Harness：loop、verify、bootstrap、tool-definitions
 ├── tools/          # 模块化工具：schemas + builtins + registry
-├── skills/         # Skill 发现与 prompt 注入
 ├── providers/      # LLM API 客户端
 ├── shared/         # 主/renderer 共用类型与纯逻辑
 ├── electron/       # 主进程、preload、持久化
@@ -65,17 +64,16 @@ sharker/
 |------|------|
 | 应用设置 | `~/.config/.../settings.json`（userData，API Key 加密） |
 | 会话、长期记忆、Agent 事件 | `~/.sharker/memory-db`（嵌入式 PGlite） |
-| Skills（优先 .claude，其次 .sharker） | `~/.claude/skills/`、`<workspace>/.claude/skills/`、`~/.sharker/skills/`、`<workspace>/.sharker/skills/` |
 
 ## 权限
 
 - `sandbox`：工具路径必须在当前工作区内
 - `full`：可访问整机（整理桌面、系统路径）
 
-高危操作（删除递归、git push、skill 脚本等）弹窗审批。
+高危操作（删除递归、git push 等）弹窗审批。
 
 ## 相关文档
 
-- [agent/README.md](../agent/README.md) — 循环细节
+- [agent/ARCH.md](../agent/ARCH.md) — 循环细节
 - [shared/ipc.ts](../shared/ipc.ts) — IPC 常量一览
 - [roadmap-harness.md](./roadmap-harness.md) — 演进方向

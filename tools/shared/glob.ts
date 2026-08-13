@@ -1,6 +1,6 @@
 /**
  * 简易 glob 匹配与目录遍历。
- * @see tools/README.md
+ * @see tools/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'

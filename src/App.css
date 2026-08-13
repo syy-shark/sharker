@@ -1,3 +1,4 @@
+/* Codex 风格全屏壳：侧栏通顶 + 主区通顶，无整条 TitleBar */
 .app-shell {
   position: relative;
   z-index: 1;
@@ -5,12 +6,9 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--bg-base);
-}
-
-html.window-rounded .app-shell {
-  border-radius: var(--window-radius);
-  box-shadow: 0 0 0 1px rgba(24, 31, 41, 0.14);
+  background: transparent;
+  /* 供左上 chrome 簇 absolute 定位（ChatToolbar portal） */
+  isolation: isolate;
 }
 
 .app {
@@ -19,7 +17,8 @@ html.window-rounded .app-shell {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  background: var(--bg-base);
+  height: 100%;
+  background: transparent;
 }
 
 .main {
@@ -29,19 +28,99 @@ html.window-rounded .app-shell {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--bg-elevated);
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      var(--layer-main-fill-top) 0%,
+      var(--layer-main-fill-mid) 45%,
+      var(--layer-main-fill-bottom) 100%
+    );
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-inset-main);
+  /* peek 滑入时与侧栏同速让出左缘，输入框随之压缩 */
+  transition: padding-left var(--motion-duration-panel) var(--motion-ease-spring);
+}
+
+/*
+ * 收起态 hover peek：侧栏是 fixed 浮层不占 flex 宽，
+ * 给主区补同等 padding-left，让对话柱/输入框像固定展开一样变短、右移。
+ */
+.app:has(.sidebar--peek-visible) .main {
+  padding-left: var(--sidebar-w, 260px);
+}
+
+.main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-facet-main);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main > * {
+  position: relative;
+  z-index: 1;
 }
 
 .main-pane {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
+  overflow-x: clip;
+  transition:
+    background-color var(--motion-duration-panel) var(--motion-ease-soft),
+    color var(--motion-duration-panel) var(--motion-ease-soft),
+    opacity var(--motion-duration-panel) var(--motion-ease-soft);
 }
 
 .main-pane--chat {
   min-height: 0;
+  min-width: 0;
+}
+
+/* 设置 / 自动化页：顶栏拖拽条（替代原 TitleBar） */
+.main-pane--page {
+  min-height: 0;
+}
+
+.main-drag-strip {
+  flex-shrink: 0;
+  height: var(--chrome-top, 52px);
+  -webkit-app-region: drag;
+}
+
+/* 设置页等：侧栏收起时拖条让出红绿灯（对话顶栏左簇已 fixed 自带 78px） */
+html:not(.window-rounded) .app:has(.sidebar--collapsed) .main .main-drag-strip {
+  padding-left: 78px;
+}
+
+/*
+ * 层叠：左簇 z-index:120 固定在最上，展开/收起都可点。
+ * 侧栏展开 20；收起 peek 50。
+ */
+.app {
+  isolation: isolate;
+}
+
+.app > .sidebar {
+  position: relative;
+  z-index: 20;
+}
+
+.app > .sidebar.sidebar--collapsed {
+  z-index: 50;
+}
+
+.app > .main {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -49,4 +128,22 @@ html.window-rounded .app-shell {
   .main {
     transition: none;
   }
+
+  .app:has(.sidebar--peek-visible) .main {
+    transition: none;
+  }
+}
+
+/* 浅色最后面背景：子层全透，玻璃只在 app-shell + 系统 vibrancy */
+html.theme-light .main,
+html.theme-light .app {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+html.theme-light .main::before,
+html.theme-light .main::after {
+  display: none !important;
 }

@@ -1,6 +1,6 @@
 /**
  * 斜杠命令注册表：本地处理、不走模型的用户输入。
- * @see agent/README.md
+ * @see agent/ARCH.md
  */
 import { formatSlashCommandHelp } from '../shared/slash-commands'
 import { enterPlanMode, getPlanDocument } from '../tools/harness-state'
@@ -32,7 +32,7 @@ const COMMANDS: SlashCommand[] = [
       reply: [
         '# Sharker 帮助',
         '',
-        '**能力**：看搜改跑、Git、Skills、子 Agent、MCP、Computer/Browser Use。',
+        '**能力**：看搜改跑、Git、子 Agent、Computer/Browser Use。',
         '',
         formatSlashCommandHelp(),
         '',

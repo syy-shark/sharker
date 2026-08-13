@@ -4,9 +4,11 @@
  */
 export {
   listWorkspaceConversations,
+  listArchivedConversations,
   loadConversation,
   saveConversation,
   deleteConversation,
+  setConversationArchived,
   setActiveConversation,
   createConversationOnDisk
 } from '../agent/memory/conversations'

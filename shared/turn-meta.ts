@@ -1,8 +1,7 @@
 /**
- * 工具/技能活动的侧栏 label 格式化。
- * 详见 shared/README.md
+ * 工具活动的侧栏 label 格式化。
+ * 详见 shared/ARCH.md
  */
-import type { TurnActivity } from './types'
 
 const PATH_TOOLS = new Set([
   'read_file',
@@ -48,25 +47,9 @@ export function formatToolActivity(
   if (toolName === 'glob_file_search' && typeof args?.pattern === 'string') {
     return `${toolName} · ${args.pattern}`
   }
+  if (toolName === 'present_inline_demo') {
+    const caption = typeof args?.caption === 'string' ? args.caption.trim() : ''
+    return caption ? `${toolName} · ${caption}` : toolName
+  }
   return toolName
-}
-
-/** 与 Cursor skill 标签格式一致，供 process-steps 解析 */
-export function skillActivityLabel(skillName: string): string {
-  return `${skillName}:${skillName}`
-}
-
-/** 注入系统提示的技能钩子行（英文，模型可读） */
-export function buildSkillHookLine(skillNames: string[]): string | null {
-  if (skillNames.length === 0) return null
-  const tag = skillActivityLabel(skillNames[0])
-  return `Using \`${tag}\` to keep the repo workflow loaded before I respond.`
-}
-
-/** 将 Skill 名列表转为 TurnActivity 数组 */
-export function activitiesFromSkills(skillNames: string[]): TurnActivity[] {
-  return skillNames.map((name) => ({
-    kind: 'skill' as const,
-    label: skillActivityLabel(name)
-  }))
 }

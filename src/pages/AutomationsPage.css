@@ -2,17 +2,25 @@
   flex: 1;
   overflow: auto;
   padding: 24px 28px 48px;
+  transition:
+    background-color var(--motion-duration-panel) var(--motion-ease-soft),
+    color var(--motion-duration-panel) var(--motion-ease-soft);
 }
 
 .automations-inner {
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
+
 
 .automations-head h1 {
   margin: 8px 0 4px;
   font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .automations-head p {
@@ -25,9 +33,22 @@
   border: none;
   background: transparent;
   font-size: 13px;
-  color: var(--accent, #4a9eff);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring),
+    opacity var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.automations-back:hover {
+  color: var(--accent);
+}
+
+.automations-back:active {
+  transform: translateX(-1px);
+  opacity: 0.9;
 }
 
 .automations-list {
@@ -39,9 +60,33 @@
 
 .automation-card {
   padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--surface-border-faint);
-  background: rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-raised);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow-card), var(--glass-rim);
+  animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.automation-card:hover {
+  border-color: var(--glass-edge-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--glass-shadow-card), var(--glass-rim), 0 10px 24px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.automation-card:active {
+  transform: translateY(0);
+}
+
+html.theme-dark .automation-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .automation-title {
@@ -67,10 +112,33 @@
 .automation-field textarea {
   font-size: 13px;
   padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--surface-border-faint);
-  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--glass-rim-soft);
   color: var(--text);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.automation-field input:focus,
+.automation-field textarea:focus,
+.automation-field input:focus-visible,
+.automation-field textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-ring);
+  background: var(--glass-fill-raised);
+  box-shadow: var(--glass-rim-soft), 0 0 0 3px var(--accent-soft);
+}
+
+html.theme-dark .automation-field input,
+html.theme-dark .automation-field textarea {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .automation-toggle {
@@ -82,21 +150,213 @@
 }
 
 .automations-empty {
+  margin: 8px 2px 0;
   font-size: 13px;
+  line-height: 1.55;
   color: var(--text-muted);
+  transition: color var(--motion-duration-fast) var(--motion-ease-soft);
+
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
+/* 水滴玻璃主按钮：不用实心廉价蓝 */
 .automations-add {
+  position: relative;
+  isolation: isolate;
   margin-top: 16px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  background: var(--accent, #4a9eff);
-  color: #fff;
+  padding: 10px 18px;
+  overflow: hidden;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, white 42%, transparent) 0%,
+      color-mix(in srgb, white 14%, transparent) 42%,
+      color-mix(in srgb, white 8%, transparent) 100%
+    ),
+    var(--accent-soft);
+  backdrop-filter: blur(20px) saturate(1.45);
+  -webkit-backdrop-filter: blur(20px) saturate(1.45);
+  box-shadow: var(--glass-rim), var(--glass-shadow-card);
+  color: var(--accent);
   font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.automations-add::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-facet);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.9;
+}
+
+.automations-add:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, white 50%, transparent) 0%,
+      color-mix(in srgb, white 18%, transparent) 100%
+    ),
+    var(--accent-soft-strong);
+  color: var(--accent);
+}
+
+.automations-add:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .automations-add:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+html.theme-dark .automations-add {
+  background: var(--metal-control-fill);
+  border-color: var(--glass-edge-soft);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--glass-rim), var(--glass-shadow-card);
+  color: var(--text);
+}
+
+html.theme-dark .automations-add::before {
+  background: linear-gradient(180deg, color-mix(in srgb, white 8%, transparent) 0%, transparent 50%);
+  opacity: 1;
+}
+
+html.theme-dark .automations-add:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+  background: var(--metal-control-fill-strong);
+}
+
+
+.automation-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.automation-title {
+  margin-bottom: 0;
+}
+
+.automation-delete {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.automation-delete:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  background: var(--danger-soft);
+}
+
+.automation-delete:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.automation-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.automation-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.automation-toggle-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 550;
+  transition: color var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+/* 兼容 SettingsPrimitives 的 knob 命名 */
+.st-toggle-thumb,
+.st-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, white 96%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 14%, transparent);
+  transition: transform var(--motion-duration-normal) var(--motion-ease-spring);
+}
+
+.st-toggle--on .st-toggle-thumb,
+.st-toggle--on .st-toggle-knob {
+  transform: translateX(20px);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .automations-inner,
+  .automation-card,
+  .automation-field input,
+  .automation-field textarea,
+  .automations-add,
+  .automation-delete,
+  .automation-toggle-label,
+  .automations-empty {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+
+  .automations-page.view-enter {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+
+.automations-back:focus-visible,
+.automations-add:focus-visible,
+.automation-delete:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.automation-title:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.automation-card-footer .st-toggle:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
