@@ -1,9 +1,15 @@
 /**
  * 输入区：模型选择 + 思考水平（官方支持时）+ 厂商图标
+ * 每个已配置接入展开 knownModels，可在同一订阅下换型号。
  */
 import { useEffect, useRef } from 'react'
 import type { ProviderConfig } from '../../shared/types'
-import { configuredProviders, isProviderConfigured } from '../../shared/provider-catalog'
+import {
+  configuredProviders,
+  formatModelLabel,
+  isProviderConfigured,
+  knownModelsForProvider
+} from '../../shared/provider-catalog'
 import {
   defaultThinkingLevel,
   resolveThinkingOptions,
@@ -16,7 +22,8 @@ import './ModelPicker.css'
 interface Props {
   providers: ProviderConfig[]
   activeProviderId: string
-  onSelect: (id: string) => void
+  /** 选中某接入下的某个模型 id */
+  onSelect: (providerId: string, model: string) => void
   /** 更新当前模型的思考水平 */
   onThinkingLevelChange?: (providerId: string, level: string) => void
   dismissWhenPeerOpen?: boolean
@@ -67,7 +74,11 @@ export function ModelPicker({
     return ready
   })()
   const active = list.find((p) => p.id === activeProviderId) ?? list[0]
-  const modelLabel = active?.model?.trim() || (active ? '未填模型' : '未配置模型')
+  const modelLabel = active?.model?.trim()
+    ? formatModelLabel(active.model.trim())
+    : active
+      ? '未填模型'
+      : '未配置模型'
   const thinkingOpts = active ? resolveThinkingOptions(active) : []
   const thinkingValue =
     active &&
@@ -110,8 +121,8 @@ export function ModelPicker({
     }
   }, [pop.expanded, pop.hide])
 
-  const pickModel = (id: string) => {
-    onSelect(id)
+  const pickModel = (providerId: string, model: string) => {
+    onSelect(providerId, model)
   }
 
   const pickThinking = (level: string) => {
@@ -158,27 +169,43 @@ export function ModelPicker({
         <div className={`model-picker-menu ${pop.surfaceClass}`} role="listbox">
           <div className="model-picker-menu-head">对话模型</div>
           {list.map((p) => {
-            const isActive = p.id === (active?.id ?? activeProviderId)
-            const modelName = p.model?.trim() || '未填模型 ID'
+            const models = knownModelsForProvider(p.id, p.model)
+            const ids = models.length > 0 ? models : [p.model?.trim() || '']
             return (
-              <button
-                key={p.id}
-                type="button"
-                role="option"
-                aria-selected={isActive}
-                className={`model-picker-item ${isActive ? 'active' : ''}`}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  pickModel(p.id)
-                }}
-              >
-                <ProviderBrandIcon provider={p} size={20} className="model-picker-item-brand" />
-                <span className="model-picker-item-body">
-                  <span className="model-picker-item-model">{modelName}</span>
-                  {p.name ? <span className="model-picker-item-name">{p.name}</span> : null}
-                </span>
-                {isActive ? <span className="model-picker-item-check">✓</span> : null}
-              </button>
+              <div key={p.id} className="model-picker-group">
+                <div className="model-picker-group-label">{p.name}</div>
+                {ids.filter(Boolean).map((modelId) => {
+                  const isActive =
+                    p.id === (active?.id ?? activeProviderId) &&
+                    modelId === (active?.model?.trim() || '')
+                  return (
+                    <button
+                      key={`${p.id}:${modelId}`}
+                      type="button"
+                      role="option"
+                      aria-selected={isActive}
+                      title={modelId}
+                      className={`model-picker-item ${isActive ? 'active' : ''}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        pickModel(p.id, modelId)
+                      }}
+                    >
+                      <ProviderBrandIcon
+                        provider={{ ...p, model: modelId }}
+                        size={20}
+                        className="model-picker-item-brand"
+                      />
+                      <span className="model-picker-item-body">
+                        <span className="model-picker-item-model">
+                          {formatModelLabel(modelId)}
+                        </span>
+                      </span>
+                      {isActive ? <span className="model-picker-item-check">✓</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
             )
           })}
 

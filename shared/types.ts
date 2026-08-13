@@ -12,7 +12,7 @@ export type NetworkMode = 'open' | 'local_only' | 'disabled'
 
 /**
  * 接入鉴权方式：
- * - api_key：官方 API Key（DeepSeek / Kimi / 智谱 Coding Plan 等）
+ * - api_key：官方 API Key（DeepSeek / Kimi / 智谱 Coding Plan / OpenCode Go 套餐等）
  * - subscription：订阅登录导入（ChatGPT Plus/Pro、SuperGrok / X Premium+），不是 API Key
  */
 export type ProviderAuthMode = 'api_key' | 'subscription'

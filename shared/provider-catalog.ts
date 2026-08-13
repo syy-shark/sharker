@@ -3,7 +3,7 @@
  * 稳定 id，供默认设置与「一键添加」使用。
  *
  * 鉴权：
- * - api_key：官方 Key（DeepSeek / Kimi / 智谱 Coding Plan）
+ * - api_key：官方 Key（DeepSeek / Kimi / 智谱 Coding Plan / OpenCode Go 套餐）
  * - subscription：浏览器订阅登录后导入（ChatGPT Plus/Pro、SuperGrok）
  */
 import type { ProviderAuthMode, ProviderConfig } from './types'
@@ -15,6 +15,7 @@ export type BuiltinProviderId =
   | 'openai-chatgpt'
   | 'kimi'
   | 'zhipu-coding'
+  | 'opencode-go'
 
 /** 内置接入模板 */
 export interface ProviderPreset {
@@ -30,6 +31,11 @@ export interface ProviderPreset {
    * 名称必须与官方 API model id 一致。
    */
   knownModels: string[]
+  /**
+   * 刷新 /models 后从下拉剔除的 id。
+   * OpenCode Go 里部分型号走 Anthropic Messages / OpenAI Responses，本客户端只调 Chat Completions。
+   */
+  omitListedModels?: readonly string[]
   /** 设置页说明 */
   hint: string
   apiKeyPlaceholder: string
@@ -38,12 +44,13 @@ export interface ProviderPreset {
 }
 
 /**
- * 默认支持的接入（2026-08 对齐公开文档）：
- * - DeepSeek 官方 API：deepseek-v4-flash / deepseek-v4-pro
- * - xAI SuperGrok 订阅（浏览器登录导入，非 console API Key）
- * - OpenAI ChatGPT 订阅（Codex/ChatGPT OAuth 导入，非 Platform sk-）
- * - Kimi（Moonshot）API
- * - 智谱 GLM Coding Plan 专用端点
+ * 默认支持的接入（2026-08，与设置页展示名单对齐）：
+ * - DeepSeek：deepseek-v4-flash / deepseek-v4-pro
+ * - xAI SuperGrok：grok-4.6 / grok-4.5
+ * - OpenAI ChatGPT：gpt-5.6-sol / terra / luna
+ * - Kimi：kimi-k3 / kimi-k2.7-code / kimi-k2.7-code-highspeed
+ * - 智谱 Coding Plan：glm-5.2
+ * - OpenCode Go：套餐内 Chat Completions 主力（不含 MiniMax/Qwen Messages、GPT-5.6 Luna Responses）
  */
 export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   {
@@ -63,21 +70,12 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: 'xai-grok',
     name: 'xAI Grok 订阅',
     baseUrl: 'https://api.x.ai/v1',
-    model: 'grok-4',
-    contextWindow: 256_000,
+    model: 'grok-4.6',
+    contextWindow: 500_000,
     vision: true,
     authMode: 'subscription',
-    // 与 xAI / Hermes SuperGrok 侧常见 id 对齐
-    knownModels: [
-      'grok-4',
-      'grok-4.5',
-      'grok-4.3',
-      'grok-build-0.1',
-      'grok-4-1-fast-reasoning',
-      'grok-4-1-fast',
-      'grok-3',
-      'grok-3-mini'
-    ],
+    // 与设置页展示名单对齐：只保留 Grok 4.6 / 4.5
+    knownModels: ['grok-4.6', 'grok-4.5'],
     hint: 'SuperGrok / X Premium+：点登录会打开 accounts.x.ai/oauth2/device?user_code=… 设备码页（不是账户设置页）。',
     apiKeyPlaceholder: '（订阅 token，由导入写入）',
     docsUrl: 'https://accounts.x.ai/'
@@ -86,20 +84,11 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: 'openai-chatgpt',
     name: 'ChatGPT 订阅',
     baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5.2',
+    model: 'gpt-5.6-sol',
     contextWindow: 256_000,
     vision: true,
     authMode: 'subscription',
-    knownModels: [
-      'gpt-5.2',
-      'gpt-5.1',
-      'gpt-5',
-      'gpt-5-mini',
-      'gpt-4.1',
-      'gpt-4.1-mini',
-      'o3',
-      'o4-mini'
-    ],
+    knownModels: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'],
     hint: 'ChatGPT Plus/Pro 订阅：用 Codex `codex login` 浏览器登录后「导入订阅」，不是 Platform sk- API Key。',
     apiKeyPlaceholder: '（订阅 token，由导入写入）',
     docsUrl: 'https://chatgpt.com/'
@@ -108,22 +97,12 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: 'kimi',
     name: 'Kimi（Moonshot）',
     baseUrl: 'https://api.moonshot.cn/v1',
-    model: 'kimi-k2.6',
-    contextWindow: 256_000,
+    model: 'kimi-k3',
+    contextWindow: 1_000_000,
     vision: true,
     authMode: 'api_key',
-    knownModels: [
-      'kimi-k2.6',
-      'kimi-k2.5',
-      'kimi-k2',
-      'kimi-k2-turbo-preview',
-      'kimi-k2-thinking',
-      'kimi-k2-0905-preview',
-      'moonshot-v1-128k',
-      'moonshot-v1-32k',
-      'moonshot-v1-8k'
-    ],
-    hint: '月之暗面 Kimi API Key。国内 api.moonshot.cn；国际可改 api.moonshot.ai/v1。',
+    knownModels: ['kimi-k3', 'kimi-k2.7-code', 'kimi-k2.7-code-highspeed'],
+    hint: '月之暗面 Kimi API Key。国内 api.moonshot.cn；国际可改 api.moonshot.ai/v1。主推 K3。',
     apiKeyPlaceholder: 'sk-…（platform.moonshot.cn）',
     docsUrl: 'https://platform.moonshot.cn'
   },
@@ -131,26 +110,50 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     id: 'zhipu-coding',
     name: '智谱 Coding Plan',
     baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
-    model: 'glm-4.7',
-    contextWindow: 200_000,
+    model: 'glm-5.2',
+    contextWindow: 1_000_000,
     vision: false,
     authMode: 'api_key',
-    // Coding Plan 套餐常见模型 id（以套餐控制台为准，可刷新 /models）
-    knownModels: [
-      'glm-4.7',
-      'glm-4.6',
-      'glm-4.5',
-      'glm-4.5-air',
-      'glm-4.5-flash',
-      'glm-4-plus',
-      'glm-4-air',
-      'glm-4-flash',
-      'glm-5',
-      'glm-5.1'
-    ],
+    // Coding Plan 当前主力
+    knownModels: ['glm-5.2'],
     hint: '智谱编码套餐专用端点 /api/coding/paas/v4（勿填通用 /api/paas/v4）。',
     apiKeyPlaceholder: '…（bigmodel.cn 编程套餐 API Key）',
     docsUrl: 'https://bigmodel.cn/coding-plan'
+  },
+  {
+    id: 'opencode-go',
+    name: 'OpenCode Go 套餐',
+    baseUrl: 'https://opencode.ai/zen/go/v1',
+    model: 'deepseek-v4-flash',
+    authMode: 'api_key',
+    // 仅 Chat Completions；对照 https://opencode.ai/docs/go/ 与 GET /zen/go/v1/models（2026-08）
+    knownModels: [
+      'deepseek-v4-flash',
+      'deepseek-v4-pro',
+      'kimi-k3',
+      'kimi-k2.7-code',
+      'kimi-k2.6',
+      'glm-5.2',
+      'glm-5.1',
+      'grok-4.5',
+      'mimo-v2.5-pro',
+      'mimo-v2.5',
+      'hy3'
+    ],
+    omitListedModels: [
+      'gpt-5.6-luna',
+      'minimax-m3',
+      'minimax-m2.7',
+      'minimax-m2.5',
+      'qwen3.8-max',
+      'qwen3.7-max',
+      'qwen3.7-plus',
+      'qwen3.6-plus',
+      'qwen3.5-plus'
+    ],
+    hint: 'OpenCode Go 套餐 Key：在 opencode.ai/auth 订阅后复制，粘贴到下方。走 zen/go Chat Completions，不是 ChatGPT/Grok 那种浏览器登录。',
+    apiKeyPlaceholder: 'sk-…（opencode.ai/auth Go 套餐）',
+    docsUrl: 'https://opencode.ai/auth'
   }
 ] as const
 
@@ -244,4 +247,43 @@ export function ensureBuiltinProviders(providers: ProviderConfig[]): ProviderCon
     if (p.authMode) return p
     return { ...p, authMode: preset.authMode, name: p.name || preset.name }
   })
+}
+
+/**
+ * 设置页 / 选择器展示名（只写可读名，不再拼一遍 id）。
+ * 与 PROVIDER_PRESETS.knownModels 同步。
+ */
+export const MODEL_LABELS: Record<string, string> = {
+  'deepseek-v4-flash': 'V4 Flash',
+  'deepseek-v4-pro': 'V4 Pro',
+  'grok-4.6': 'Grok 4.6',
+  'grok-4.5': 'Grok 4.5',
+  'gpt-5.6-sol': 'GPT-5.6 Sol',
+  'gpt-5.6-terra': 'GPT-5.6 Terra',
+  'gpt-5.6-luna': 'GPT-5.6 Luna',
+  'kimi-k3': 'Kimi K3',
+  'kimi-k2.7-code': 'K2.7 Code',
+  'kimi-k2.7-code-highspeed': 'K2.7 Code 高速',
+  'kimi-k2.6': 'K2.6',
+  'glm-5.2': 'GLM-5.2',
+  'glm-5.1': 'GLM-5.1',
+  'mimo-v2.5-pro': 'MiMo V2.5 Pro',
+  'mimo-v2.5': 'MiMo V2.5',
+  'hy3': 'Hy3'
+}
+
+/**
+ * 刷新 /models 后按预设剔除本客户端调不了的 id。
+ * 未知预设原样返回。
+ */
+export function filterListedModels(providerId: string, ids: string[]): string[] {
+  const drop = getProviderPreset(providerId)?.omitListedModels
+  if (!drop?.length) return ids
+  const skip = new Set(drop)
+  return ids.filter((id) => !skip.has(id))
+}
+
+/** 下拉展示名；未知 id 原样显示 */
+export function formatModelLabel(id: string): string {
+  return MODEL_LABELS[id] ?? id
 }

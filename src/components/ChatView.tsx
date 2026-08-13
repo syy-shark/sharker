@@ -3,7 +3,7 @@
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowUp } from 'lucide-react'
+import { ArrowUp, Folder } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type {
   AssistantMeta,
@@ -22,7 +22,10 @@ import { ModelPicker } from './ModelPicker'
 import { SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
 import './ChatView.css'
 
-const STICKY_BOTTOM_PX = 80
+/** 贴回底部：只有真正滚到尽头才恢复跟随 */
+const AT_BOTTOM_PX = 16
+/** 离开底部：超过这个距离才显示「回到底部」（避免误触） */
+const LEAVE_BOTTOM_PX = 48
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -77,7 +80,7 @@ interface Props {
   onSelectWorkspace?: (id: string) => void
   providers: ProviderConfig[]
   activeProviderId: string
-  onSelectProvider: (id: string) => void
+  onSelectProvider: (providerId: string, model: string) => void
   onThinkingLevelChange?: (providerId: string, level: string) => void
   messages: ChatMessage[]
   queuedPrompts: QueuedPrompt[]
@@ -140,6 +143,8 @@ export function ChatView({
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const [attachmentError, setAttachmentError] = useState('')
   const [stickToBottom, setStickToBottom] = useState(true)
+  /** 内容溢出且用户不在底部时才显示「回到底部」 */
+  const [canJumpToBottom, setCanJumpToBottom] = useState(false)
   const [composerFocus, setComposerFocus] = useState<'none' | 'pointer' | 'keyboard'>('none')
   const [historyActiveIndex, setHistoryActiveIndex] = useState(0)
   const historyActiveIndexRef = useRef(0)
@@ -154,8 +159,11 @@ export function ChatView({
   const composerFocusOriginRef = useRef<'pointer' | 'keyboard'>('pointer')
   /** 程序触发的滚动期间，忽略 scroll 事件对 stickToBottom 的干扰 */
   const programmaticScrollRef = useRef(false)
-  /** 用户正在回看历史；只有显式点击“回到底部”才解除。 */
+  /** 用户主动上翻；只有自己滚回尽头或点「回到底部」才解除。 */
   const userScrollLockRef = useRef(false)
+  /** 最近一次用户滚动方向，避免上滑后仍被当成贴底而拉回去 */
+  const lastScrollIntentRef = useRef<'up' | 'down' | null>(null)
+  const lastScrollTopRef = useRef(0)
   const touchStartYRef = useRef<number | null>(null)
   const shownApprovalIdRef = useRef<string | null>(null)
 
@@ -303,58 +311,88 @@ export function ChatView({
     }
   }, [])
 
-  /** 是否贴近底部（用于决定是否自动跟随流式） */
-  const checkStickToBottom = useCallback(() => {
+  /** 滚动度量：是否溢出、距底部距离 */
+  const readScrollMetrics = useCallback(() => {
     const el = messagesRef.current
-    if (!el) return true
-    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
-    return distance < STICKY_BOTTOM_PX
+    if (!el) return { overflowing: false, distance: 0, maxTop: 0 }
+    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    const overflowing = maxTop > 12
+    const distance = overflowing ? Math.max(0, maxTop - el.scrollTop) : 0
+    return { overflowing, distance, maxTop }
   }, [])
 
+  /** 根据当前滚动位置同步贴底跟随与「回到底部」显隐。用户上翻锁住后，不会因仍靠近底部而被拉回去。 */
+  const syncScrollFlags = useCallback(() => {
+    const { overflowing, distance } = readScrollMetrics()
+    if (!overflowing) {
+      userScrollLockRef.current = false
+      stickToBottomRef.current = true
+      setStickToBottom(true)
+      setCanJumpToBottom(false)
+      return
+    }
+    if (userScrollLockRef.current) {
+      const resume =
+        lastScrollIntentRef.current === 'down' && distance <= AT_BOTTOM_PX
+      if (resume) {
+        userScrollLockRef.current = false
+        lastScrollIntentRef.current = null
+        stickToBottomRef.current = true
+        setStickToBottom(true)
+        setCanJumpToBottom(false)
+        return
+      }
+      stickToBottomRef.current = false
+      setStickToBottom(false)
+      setCanJumpToBottom(distance > LEAVE_BOTTOM_PX)
+      return
+    }
+    if (distance > LEAVE_BOTTOM_PX) {
+      userScrollLockRef.current = true
+      stickToBottomRef.current = false
+      setStickToBottom(false)
+      setCanJumpToBottom(true)
+      return
+    }
+    stickToBottomRef.current = true
+    setStickToBottom(true)
+    setCanJumpToBottom(false)
+  }, [readScrollMetrics])
+
   const lockUserScroll = useCallback(() => {
+    const { overflowing } = readScrollMetrics()
+    if (!overflowing) return
+    lastScrollIntentRef.current = 'up'
     userScrollLockRef.current = true
     stickToBottomRef.current = false
     setStickToBottom(false)
-  }, [])
+  }, [readScrollMetrics])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesRef.current
     if (!el) return
     programmaticScrollRef.current = true
-    el.scrollTo({ top: el.scrollHeight, behavior })
+    const { maxTop } = readScrollMetrics()
+    el.scrollTo({ top: maxTop, behavior })
     if (behavior === 'auto') {
       programmaticScrollRef.current = false
-      if (userScrollLockRef.current) {
-        stickToBottomRef.current = false
-        setStickToBottom(false)
-      } else {
-        const nextStickToBottom = checkStickToBottom()
-        stickToBottomRef.current = nextStickToBottom
-        setStickToBottom(nextStickToBottom)
-      }
+      if (!userScrollLockRef.current) syncScrollFlags()
       return
     }
     const finish = () => {
       programmaticScrollRef.current = false
-      if (userScrollLockRef.current) {
-        stickToBottomRef.current = false
-        setStickToBottom(false)
-        return
-      }
-      const nextStickToBottom = checkStickToBottom()
-      stickToBottomRef.current = nextStickToBottom
-      setStickToBottom(nextStickToBottom)
+      if (!userScrollLockRef.current) syncScrollFlags()
     }
-    // Keep the programmatic guard for the whole smooth-scroll window. Releasing it
-    // on the first scroll event races with the remaining animation frames.
     window.setTimeout(finish, 500)
-  }, [checkStickToBottom])
+  }, [readScrollMetrics, syncScrollFlags])
 
   const resumeStickToBottom = useCallback(() => {
+    lastScrollIntentRef.current = 'down'
     userScrollLockRef.current = false
     stickToBottomRef.current = true
     setStickToBottom(true)
+    setCanJumpToBottom(false)
     scrollToBottom('smooth')
   }, [scrollToBottom])
 
@@ -368,27 +406,32 @@ export function ChatView({
 
   useEffect(() => {
     const el = messagesRef.current
-    if (!el) return
+    if (!el || isEmpty) {
+      setCanJumpToBottom(false)
+      return
+    }
     const onScroll = () => {
-      if (userScrollLockRef.current) {
-        stickToBottomRef.current = false
-        setStickToBottom(false)
-        return
-      }
       if (programmaticScrollRef.current) return
-      const nextStickToBottom = checkStickToBottom()
-      if (!nextStickToBottom) {
-        userScrollLockRef.current = true
-        stickToBottomRef.current = false
-        setStickToBottom(false)
-        return
-      }
-      stickToBottomRef.current = true
-      setStickToBottom(true)
+      const top = el.scrollTop
+      if (top < lastScrollTopRef.current - 0.5) lastScrollIntentRef.current = 'up'
+      else if (top > lastScrollTopRef.current + 0.5) lastScrollIntentRef.current = 'down'
+      lastScrollTopRef.current = top
+      syncScrollFlags()
     }
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [checkStickToBottom])
+    const ro = new ResizeObserver(() => {
+      if (programmaticScrollRef.current) return
+      if (stickToBottomRef.current && !userScrollLockRef.current) return
+      syncScrollFlags()
+    })
+    ro.observe(el)
+    lastScrollTopRef.current = el.scrollTop
+    syncScrollFlags()
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      ro.disconnect()
+    }
+  }, [isEmpty, syncScrollFlags])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -396,6 +439,7 @@ export function ChatView({
 
     const onWheel = (event: WheelEvent) => {
       if (event.deltaY < 0) lockUserScroll()
+      else if (event.deltaY > 0) lastScrollIntentRef.current = 'down'
     }
     const onTouchStart = (event: TouchEvent) => {
       touchStartYRef.current = event.touches[0]?.clientY ?? null
@@ -430,7 +474,7 @@ export function ChatView({
       const el = messagesRef.current
       if (!el) return
       programmaticScrollRef.current = true
-      el.scrollTop = el.scrollHeight
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
       programmaticScrollRef.current = false
       lockUserScroll()
     })
@@ -450,7 +494,7 @@ export function ChatView({
           if (h !== lastHeight) {
             lastHeight = h
             programmaticScrollRef.current = true
-            el.scrollTop = h
+            el.scrollTop = Math.max(0, h - el.clientHeight)
             programmaticScrollRef.current = false
           }
         }
@@ -462,9 +506,10 @@ export function ChatView({
   }, [loading, isEmpty])
 
   useEffect(() => {
-    if (isEmpty || !stickToBottom || loading) return
-    scrollToBottom('smooth')
-  }, [messages, isEmpty, stickToBottom, loading, scrollToBottom])
+    if (isEmpty || loading) return
+    if (!stickToBottomRef.current || userScrollLockRef.current) return
+    scrollToBottom('auto')
+  }, [messages, isEmpty, loading, scrollToBottom])
 
   useEffect(() => {
     syncTextareaHeight()
@@ -663,7 +708,10 @@ export function ChatView({
               className="composer-workspace-label"
               title={activeWorkspace.path || activeWorkspace.label || ''}
             >
-              {activeWorkspace.label || activeWorkspace.path}
+              <Folder size={13} strokeWidth={2} aria-hidden />
+              <span className="composer-workspace-name">
+                {activeWorkspace.label || activeWorkspace.path}
+              </span>
             </span>
           ) : null}
         </div>
@@ -801,20 +849,8 @@ export function ChatView({
                 </div>
               </div>
             ))}
-            <div ref={bottomRef} />
+            <div ref={bottomRef} className="messages-end" aria-hidden />
           </div>
-          {!stickToBottom && (
-            <div className="chat-scroll-bottom-wrap">
-              <button
-                type="button"
-                className="chat-scroll-bottom"
-                onClick={resumeStickToBottom}
-                aria-label="回到底部"
-              >
-                回到底部
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -826,7 +862,21 @@ export function ChatView({
             请先在侧栏或设置中添加一个工作区文件夹，然后开始对话。
           </h2>
         )}
-        <div className="composer-wrap">{composer}</div>
+        <div className="composer-wrap">
+          {canJumpToBottom ? (
+            <div className="chat-scroll-bottom-wrap">
+              <button
+                type="button"
+                className="chat-scroll-bottom"
+                onClick={resumeStickToBottom}
+                aria-label="回到底部"
+              >
+                回到底部
+              </button>
+            </div>
+          ) : null}
+          {composer}
+        </div>
       </div>
     </div>
   )

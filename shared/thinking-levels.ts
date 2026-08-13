@@ -4,10 +4,11 @@
  *
  * 参考（2026-08）：
  * - DeepSeek Thinking Mode：thinking.type + reasoning_effort low/high/max
- * - xAI Grok：reasoning_effort（4.5: low/medium/high；4.3: none/low/medium/high）
- * - OpenAI o 系列 / GPT-5：reasoning_effort low/medium/high（部分支持更多）
- * - Kimi：thinking.type enabled/disabled
- * - 智谱 GLM：thinking.type +（GLM-5.2+）reasoning_effort
+ * - xAI Grok：4.6 low/medium/high/xhigh；4.5 low/medium/high
+ * - OpenAI GPT-5.6：reasoning_effort none/minimal/low/medium/high/xhigh
+ * - Kimi K3：顶层 reasoning_effort low/high/max；K2.7 Code：thinking.type
+ * - 智谱 GLM-5.2：thinking.type + reasoning_effort
+ * - OpenCode Go：同一网关多厂商 id，按模型名前缀走上面各表（不单独成一家）
  */
 import type { ProviderConfig } from './types'
 
@@ -50,32 +51,32 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
       ]
 
     case 'xai':
+      // grok-4.6：low/medium/high/xhigh，默认 high
+      if (/grok-4\.6|grok-4-6/.test(model)) {
+        return [
+          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
+          { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
+          { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' },
+          { id: 'xhigh', label: '很高', hint: 'reasoning_effort=xhigh' }
+        ]
+      }
       // grok-4.5：low/medium/high，不可关闭，默认 high
-      if (/grok-4\.5|grok-4-5|grok-4\.20|grok-4-20|grok-build/.test(model)) {
+      if (/grok-4\.5|grok-4-5/.test(model)) {
         return [
           { id: 'low', label: '低', hint: 'reasoning_effort=low' },
           { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
           { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' }
         ]
       }
-      // grok-4.3：none/low/medium/high
-      if (/grok-4\.3|grok-4-3/.test(model)) {
-        return [
-          { id: 'off', label: '关闭', hint: 'reasoning_effort=none' },
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高', hint: 'reasoning_effort=high' }
-        ]
-      }
-      // grok-4-1-fast / grok-4-fast 等：社区与文档常见 low/medium/high
-      if (/grok-4.*fast|grok-4-1/.test(model)) {
+      // 其它 grok id（刷新 /models 可能带回）：按 4.6 档位
+      if (/^grok-/.test(model)) {
         return [
           { id: 'low', label: '低', hint: 'reasoning_effort=low' },
           { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高', hint: 'reasoning_effort=high' }
+          { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' },
+          { id: 'xhigh', label: '很高', hint: 'reasoning_effort=xhigh' }
         ]
       }
-      // 纯 grok-4：官方曾写不可配置 reasoning_effort → 不展示
       return []
 
     case 'openai':
@@ -101,7 +102,15 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
       return []
 
     case 'kimi':
-      // platform.kimi.ai：thinking.type enabled|disabled
+      // K3：顶层 reasoning_effort low|high|max，默认 max
+      if (/kimi-k3/.test(model)) {
+        return [
+          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
+          { id: 'high', label: '高', hint: 'reasoning_effort=high' },
+          { id: 'max', label: '最大（默认）', hint: 'reasoning_effort=max' }
+        ]
+      }
+      // K2.7 Code：thinking.type enabled|disabled
       if (/kimi|moonshot|thinking/.test(model) || kind === 'kimi') {
         return [
           { id: 'off', label: '关闭思考', hint: 'thinking.type=disabled' },
@@ -141,7 +150,10 @@ export function defaultThinkingLevel(provider: ProviderConfig): string {
   if (kind === 'deepseek') return 'high'
   if (kind === 'xai') return 'high'
   if (kind === 'openai') return 'medium'
-  if (kind === 'kimi') return 'on'
+  if (kind === 'kimi') {
+    if (/kimi-k3/i.test(provider.model ?? '')) return 'max'
+    return 'on'
+  }
   if (kind === 'zhipu') {
     if (opts.some((o) => o.id === 'max')) return 'max'
     return 'on'
@@ -183,7 +195,7 @@ export function buildThinkingRequestFields(
 
     case 'xai': {
       if (level === 'off') return { reasoning_effort: 'none' }
-      if (level === 'low' || level === 'medium' || level === 'high') {
+      if (level === 'low' || level === 'medium' || level === 'high' || level === 'xhigh') {
         return { reasoning_effort: level }
       }
       return { reasoning_effort: 'high' }
@@ -195,6 +207,10 @@ export function buildThinkingRequestFields(
     }
 
     case 'kimi': {
+      if (/kimi-k3/.test(model)) {
+        const effort = level === 'low' || level === 'high' || level === 'max' ? level : 'max'
+        return { reasoning_effort: effort }
+      }
       return {
         thinking: { type: level === 'off' ? 'disabled' : 'enabled' }
       }

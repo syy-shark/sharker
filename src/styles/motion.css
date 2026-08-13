@@ -260,13 +260,39 @@
   animation: live-shimmer 1.5s var(--motion-ease-in-out) infinite;
 }
 
+/* 过程态存活感：扫过高光字，不用呼吸灯 */
+.live-text-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 28%,
+    var(--text) 50%,
+    var(--text-muted) 72%,
+    var(--text-muted) 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: live-shimmer 1.8s var(--motion-ease-in-out) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .live-orb,
   .live-orb::after,
   .live-dot,
-  .live-shimmer {
+  .live-shimmer,
+  .live-text-shimmer {
     animation: none !important;
     opacity: 1;
+  }
+
+  .live-text-shimmer {
+    background: none;
+    color: var(--text-secondary);
+    -webkit-text-fill-color: unset;
+    -webkit-background-clip: unset;
+    background-clip: unset;
   }
 
   .ui-interactive:active:not(:disabled) {

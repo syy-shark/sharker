@@ -37,6 +37,8 @@ import {
   pickActiveWorkspaceId,
   withActiveWorkspace
 } from '../shared/workspace'
+import { knownModelsForProvider } from '../shared/provider-catalog'
+import { defaultThinkingLevel, resolveThinkingOptions } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
@@ -2248,9 +2250,21 @@ export default function App() {
     }
   }
 
-  /** 切换对话使用的模型 */
-  const handleSelectProvider = async (id: string) => {
-    await persistSettings({ ...settings, activeProviderId: id })
+  /** 切换对话使用的接入与型号 */
+  const handleSelectProvider = async (id: string, model?: string) => {
+    const current = settingsRef.current
+    const providers = current.providers.map((p) => {
+      if (p.id !== id) return p
+      const nextModel = (model ?? p.model).trim()
+      if (!nextModel || nextModel === p.model) return p
+      const nextP = { ...p, model: nextModel }
+      const opts = resolveThinkingOptions(nextP)
+      return {
+        ...nextP,
+        thinkingLevel: opts.length === 0 ? '' : defaultThinkingLevel(nextP)
+      }
+    })
+    await persistSettings({ ...current, activeProviderId: id, providers })
   }
 
   /** 对话区切换思考水平（写入对应 provider） */
@@ -2379,13 +2393,24 @@ export default function App() {
         }
         case 'pick_model': {
           const q = args.trim().toLowerCase()
-          const match = settingsRef.current.providers.find(
-            (p) =>
-              p.model.toLowerCase().includes(q) ||
-              p.name.toLowerCase().includes(q) ||
-              p.id === q
+          if (!q) break
+          const providers = settingsRef.current.providers
+          const byName = providers.find(
+            (p) => p.id === q || p.name.toLowerCase().includes(q)
           )
-          if (match) await handleSelectProvider(match.id)
+          if (byName) {
+            await handleSelectProvider(byName.id, byName.model)
+            break
+          }
+          for (const p of providers) {
+            const hit = knownModelsForProvider(p.id, p.model).find((id) =>
+              id.toLowerCase().includes(q)
+            )
+            if (hit) {
+              await handleSelectProvider(p.id, hit)
+              break
+            }
+          }
           break
         }
         case 'git_branch':

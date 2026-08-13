@@ -38,7 +38,7 @@
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |
-| `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱） |
+| `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |
 | `provider-validate.ts` | 当前 API 配置校验 |
 | `provider-vision.ts` | 模型是否支持视觉（截图回灌） |
 | `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射 |

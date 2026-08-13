@@ -106,7 +106,7 @@ export function normalizeSettings(
     if (noKey && factoryModel && (factoryId || factoryName)) return false
     return true
   })
-  // 补齐内置接入（DeepSeek / xAI / OpenAI·ChatGPT / Kimi / 智谱 Coding Plan）
+  // 补齐内置接入（DeepSeek / xAI / OpenAI·ChatGPT / Kimi / 智谱 Coding Plan / OpenCode Go）
   providers = ensureBuiltinProviders(providers).map(migrateRetiredModelIds)
   let activeProviderId = raw.activeProviderId ?? ''
   if (activeProviderId && !providers.some((p) => p.id === activeProviderId)) {
@@ -167,13 +167,15 @@ function basename(p: string): string {
 
 /**
  * 迁移已下线/更名的默认模型 id。
- * DeepSeek：deepseek-chat / deepseek-reasoner 已退役，改到 V4。
+ * 目标名单与 provider-catalog 当前主力一致。
  */
 function migrateRetiredModelIds(
   p: import('./types').ProviderConfig
 ): import('./types').ProviderConfig {
   const model = (p.model ?? '').trim().toLowerCase()
   const base = (p.baseUrl ?? '').toLowerCase()
+  // 网关套餐与原生厂商共用 model id，不可按名称把 Go 的 kimi-k2.6 等迁走
+  if (p.id === 'opencode-go' || base.includes('opencode.ai')) return p
   const isDeepseek =
     p.id === 'deepseek' || base.includes('deepseek.com') || model.startsWith('deepseek-')
   if (isDeepseek) {
@@ -185,7 +187,6 @@ function migrateRetiredModelIds(
     }
     return p
   }
-  // OpenAI / ChatGPT 订阅：淘汰 gpt-4o 系默认，迁到当前主力模型
   const isOpenAI =
     p.id === 'openai-chatgpt' ||
     base.includes('openai.com') ||
@@ -193,12 +194,58 @@ function migrateRetiredModelIds(
     model.startsWith('gpt-') ||
     /^o[1-9]/.test(model)
   if (isOpenAI) {
-    if (model === 'gpt-4o' || model === 'gpt-4o-2024-08-06' || model === 'gpt-4o-2024-11-20') {
-      return { ...p, model: 'gpt-5.2', contextWindow: p.contextWindow ?? 256_000 }
+    if (
+      model === 'gpt-4o' ||
+      model === 'gpt-4o-2024-08-06' ||
+      model === 'gpt-4o-2024-11-20' ||
+      model === 'gpt-4.1' ||
+      model === 'gpt-5' ||
+      model === 'gpt-5.1' ||
+      model === 'gpt-5.2'
+    ) {
+      return { ...p, model: 'gpt-5.6-sol', contextWindow: p.contextWindow ?? 256_000 }
     }
-    if (model === 'gpt-4o-mini') {
-      return { ...p, model: 'gpt-5-mini', contextWindow: p.contextWindow ?? 256_000 }
+    if (model === 'gpt-4o-mini' || model === 'gpt-5-mini') {
+      return { ...p, model: 'gpt-5.6-luna', contextWindow: p.contextWindow ?? 256_000 }
     }
+  }
+  const isXai = p.id === 'xai-grok' || base.includes('x.ai') || model.startsWith('grok-')
+  if (isXai) {
+    if (
+      model === 'grok-3' ||
+      model === 'grok-3-mini' ||
+      model === 'grok-4' ||
+      model === 'grok-4.3' ||
+      model === 'grok-build-0.1' ||
+      model === 'grok-4-1-fast' ||
+      model === 'grok-4-1-fast-reasoning'
+    ) {
+      return { ...p, model: 'grok-4.6', contextWindow: p.contextWindow ?? 500_000 }
+    }
+  }
+  const isKimi =
+    p.id === 'kimi' || base.includes('moonshot') || base.includes('kimi.ai') || model.startsWith('kimi-')
+  if (
+    isKimi &&
+    (model === 'kimi-k2.5' ||
+      model === 'kimi-k2.6' ||
+      model === 'kimi-k2' ||
+      model === 'kimi-k2-turbo-preview' ||
+      model === 'kimi-k2-thinking')
+  ) {
+    return { ...p, model: 'kimi-k3', contextWindow: p.contextWindow ?? 1_000_000 }
+  }
+  const isZhipu =
+    p.id === 'zhipu-coding' || base.includes('bigmodel') || model.startsWith('glm-')
+  if (
+    isZhipu &&
+    (model === 'glm-4.7' ||
+      model === 'glm-4.7-flash' ||
+      model === 'glm-4.6' ||
+      model === 'glm-5' ||
+      model === 'glm-5.1')
+  ) {
+    return { ...p, model: 'glm-5.2', contextWindow: p.contextWindow ?? 1_000_000 }
   }
   return p
 }

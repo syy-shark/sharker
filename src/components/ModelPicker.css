@@ -3,7 +3,7 @@
    * 收起：width:max-content 紧凑；
    * 展开：用 min/max-width 插值拉到菜单宽（width 不能从 max-content 过渡）。
    */
-  --model-picker-menu-w: 280px;
+  --model-picker-menu-w: 300px;
   --model-picker-expand-dur: var(--motion-duration-slow);
   --model-picker-expand-ease: var(--motion-ease-spring);
   position: relative;
@@ -40,7 +40,8 @@
   background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
-  line-height: 1;
+  /* 1 会裁掉 g/p/y 的下行部；ellipsis 仍靠 label overflow */
+  line-height: 1.25;
   transition:
     transform var(--motion-duration-fast) var(--motion-ease-spring),
     color var(--model-picker-expand-dur) var(--model-picker-expand-ease),
@@ -80,6 +81,7 @@
 
 .model-picker-label {
   font-weight: 500;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -93,13 +95,15 @@
 }
 
 .model-picker-thinking-chip {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
   height: 18px;
   padding: 0 6px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 1.2;
   color: var(--accent);
   background: var(--accent-soft);
   border: 0.5px solid color-mix(in srgb, var(--accent) 18%, transparent);
@@ -126,7 +130,7 @@
   max-height: min(420px, calc(100vh - 120px));
   display: flex;
   flex-direction: column;
-  padding: 6px;
+  padding: 8px;
   overflow-x: hidden;
   overflow-y: auto;
   isolation: isolate;
@@ -203,6 +207,18 @@
   height: 0.5px;
   margin: 6px 8px;
   background: var(--glass-edge-soft);
+}
+
+.model-picker-group-label {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.model-picker-group + .model-picker-group {
+  margin-top: 2px;
 }
 
 .model-picker-item {

@@ -1,6 +1,6 @@
 /**
- * 过程流 · Mac 式安静时间线
- * 细轨微点、弱对比文案、直播时轻呼吸；浅色水滴玻璃 token / 深色金属 token
+ * 过程流 · 安静时间线
+ * 细轨微点、弱对比文案、直播时用文字扫光表示存活；浅色水滴玻璃 token / 深色金属 token
  */
 
 .turn-flow {
@@ -11,35 +11,21 @@
   padding: 0;
 }
 
-/* —— 直播头：固定槽位 + 呼吸灯；步骤未到时也保持“活着” —— */
+/* —— 直播头：状态字 + 耗时；步骤未到时也保持“活着” —— */
 .turn-flow-live-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 10px;
   min-height: 22px;
-  margin: 0 0 10px;
-  padding: 6px 10px;
-  border: 0.5px solid color-mix(in srgb, var(--accent) 14%, var(--glass-edge-soft));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 6%, var(--glass-fill));
-  box-shadow: var(--glass-rim-soft);
-  animation: live-panel-breathe var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
+  margin: 0 0 8px;
+  padding: 2px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
   flex-shrink: 0;
-}
-
-.turn-flow-live-orb-slot {
-  position: relative;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-}
-
-.turn-flow-live-orb {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -3.5px 0 0 -3.5px;
 }
 
 .turn-flow-live-copy {
@@ -51,12 +37,11 @@
 }
 
 .turn-flow-live-label {
-  transition: color var(--motion-duration-fast) var(--motion-ease-soft), opacity var(--motion-duration-fast) var(--motion-ease-soft);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-soft);
   flex-shrink: 0;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 20px;
 }
 
@@ -279,7 +264,7 @@ html.theme-dark .turn-flow-phase-track-item--current {
 
 
 html.theme-dark .turn-flow-live-head {
-  background: color-mix(in srgb, var(--accent) 10%, var(--glass-fill-raised));
+  background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -343,11 +328,6 @@ html.theme-dark .turn-flow-live-head {
   width: 7px;
   height: 7px;
   background: var(--accent);
-  animation: live-dot-pulse 1.8s var(--motion-ease-in-out) infinite;
-}
-
-.turn-flow-step-live-dot {
-  flex-shrink: 0;
 }
 
 .turn-flow-step-dot--error {
@@ -631,16 +611,8 @@ html.theme-dark .turn-flow-step-dot {
 @media (prefers-reduced-motion: reduce) {
   .turn-flow-step,
   .turn-flow-live-head,
-  .turn-flow-live-orb,
-  .turn-flow-live-orb::after,
-  .turn-flow-step-dot--active,
   .turn-flow-live-waiting-bar {
     animation: none !important;
-  }
-
-  .turn-flow-live-orb,
-  .turn-flow-live-orb::after {
-    opacity: 1;
   }
 }
 
@@ -652,23 +624,15 @@ html.theme-dark .turn-flow-step-dot {
 }
 
 
-.turn-flow--streaming .turn-flow-live-label {
-  /* 呼吸用 filter/opacity 关键，避免覆盖 swap 入场 animation */
-  animation: live-soft-pulse 2.4s var(--motion-ease-in-out) infinite;
-}
-
-
 .turn-flow-live-phase--wait-approval {
   color: color-mix(in srgb, var(--warning) 85%, var(--text));
   border-color: color-mix(in srgb, var(--warning) 30%, var(--glass-edge-soft));
   background: var(--warning-soft);
-  animation: live-soft-pulse 1.6s var(--motion-ease-in-out) infinite;
 }
 
 
 .turn-flow-step-result--live {
   color: var(--text-secondary);
-  animation: live-soft-pulse 2s var(--motion-ease-in-out) infinite;
 }
 
 
@@ -698,14 +662,12 @@ html.theme-dark .turn-flow-step-dot {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 28%, var(--glass-edge-soft));
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  animation: live-soft-pulse 1.8s var(--motion-ease-in-out) infinite;
 }
 
 .turn-flow-live-phase[data-phase="answer"] {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 28%, var(--glass-edge-soft));
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  animation: live-soft-pulse 1.8s var(--motion-ease-in-out) infinite;
 }
 
 

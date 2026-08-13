@@ -7,6 +7,7 @@ import { TOOL_DEFINITIONS } from '../agent/tool-definitions'
 import { getToolDefinitionsForPhase } from '../tools/registry'
 import { inferProviderVision } from '../shared/provider-vision'
 import { buildThinkingRequestFields } from '../shared/thinking-levels'
+import { filterListedModels } from '../shared/provider-catalog'
 import { toolTitle } from '../shared/process-steps'
 
 /** OpenAI Chat Completions 多模态 content 片段 */
@@ -176,14 +177,19 @@ export async function listProviderModels(
       seen.add(m.id)
       return true
     })
+    const listedIds = new Set(filterListedModels(
+      provider.id,
+      unique.map((m) => m.id)
+    ))
+    const filtered = unique.filter((m) => listedIds.has(m.id))
 
-    if (unique.length === 0) {
+    if (filtered.length === 0) {
       return { ok: false, models: [], message: '接口未返回可用模型' }
     }
     return {
       ok: true,
-      models: unique,
-      message: `已获取 ${unique.length} 个模型`
+      models: filtered,
+      message: `已获取 ${filtered.length} 个模型`
     }
   } catch (e) {
     if (e instanceof Error && e.name === 'AbortError') {
@@ -231,7 +237,8 @@ function preferredModelSort(a: string, b: string): number {
   const score = (id: string) => {
     const s = id.toLowerCase()
     let n = 0
-    if (/v4|4\.5|4-1|glm-4\.7|glm-4\.6|kimi-k2|grok-4/.test(s)) n += 100
+    if (/5\.6|4\.6|glm-5\.2|kimi-k3|kimi-k2\.7|grok-4\.6/.test(s)) n += 120
+    if (/v4|4\.5|4-1|glm-5|kimi-k2|grok-4/.test(s)) n += 100
     if (/pro|plus|max|opus|sonnet/.test(s)) n += 20
     if (/flash|mini|fast|air|turbo/.test(s)) n += 10
     if (/chat$|reasoner$|legacy/.test(s)) n -= 50

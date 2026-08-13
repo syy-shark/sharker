@@ -74,7 +74,7 @@
 3. **背景**：页面/面板背景是否透明或半透，让最后面玻璃露出来？
 4. **边与高光**：是否有细边 + 顶沿高光，而不是粗描边/无边色块？
 5. **文字对比**：半透底上文字是否仍清晰（优先 `--text` / `--text-secondary`）？
-6. **动效**：复用 `styles/motion.css` 时长与曲线；直播过程用 `.live-orb` / `.live-dot` / `.live-shimmer` 保持呼吸反馈；尊重 `prefers-reduced-motion`。
+6. **动效**：复用 `styles/motion.css` 时长与曲线；直播过程用 `.live-text-shimmer` 表示存活，不要呼吸灯；尊重 `prefers-reduced-motion`。
 7. **硬编码**：是否避免写死仅浅色可用的颜色？
 
 ### 推荐写法
@@ -128,6 +128,6 @@ html.theme-dark .my-panel { /* 金属面，无 blur */ }
 
 ## 直播过程动效
 
-- 始终显示当前步骤与呼吸灯（`.live-orb` / `.live-dot` / `live-panel-breathe`）
+- 闲聊/思考：一行状态字 + 耗时（`.live-text-shimmer`），不要呼吸灯
 - 工具间隙显示「规划下一步」；仅在已有回答流时显示「生成回答」
 - 主题色统一使用 CSS 变量（`--accent` / `--on-accent` 等），避免硬编码蓝/白

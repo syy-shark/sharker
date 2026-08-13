@@ -1,21 +1,30 @@
 /**
  * 对话原生内联演示：完整展开嵌进消息流，无内部滚动条；
- * 整块可收起 / 展开。
+ * 外壳透明，吃宿主玻璃/金属 token，不另起一块灰底。
  */
 
 .inline-demo {
-  margin: 10px 0 12px;
+  margin: 8px 0 10px;
   padding: 0;
   max-width: 100%;
-  border: 0.5px solid var(--glass-edge-soft);
+  border: 0.5px solid var(--glass-edge);
   border-radius: var(--radius-sm, 12px);
-  background: var(--glass-fill-nested);
+  background: transparent;
   box-shadow: var(--glass-rim-soft);
   overflow: hidden;
 }
 
+html.theme-light .inline-demo {
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim-soft), var(--glass-shadow-tile);
+}
+
 html.theme-dark .inline-demo {
-  background: color-mix(in srgb, var(--text) 4%, transparent);
+  background: transparent;
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim-soft);
 }
 
 /* 整块演示：展开 / 收起 */
@@ -24,14 +33,15 @@ html.theme-dark .inline-demo {
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   padding: 6px 12px;
   border: 0;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
   font-size: 12.5px;
-  font-weight: 560;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   text-align: left;
   cursor: pointer;
   transition:
@@ -80,7 +90,6 @@ html.theme-dark .inline-demo {
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  animation: live-soft-pulse 1.6s var(--motion-ease-in-out) infinite;
 }
 
 .inline-demo-skeleton {
@@ -115,7 +124,6 @@ html.theme-dark .inline-demo {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .inline-demo-live-dot,
   .inline-demo-skeleton-bar {
     animation: none;
     opacity: 1;
@@ -138,8 +146,7 @@ html.theme-dark .inline-demo {
 }
 
 .inline-demo-body {
-  padding: 0 10px 10px;
-  /* 外层不滚，高度跟 iframe 内容走 */
+  padding: 0 2px 8px;
   overflow: visible;
 }
 
@@ -152,16 +159,14 @@ html.theme-dark .inline-demo {
   display: block;
   width: 100%;
   min-height: 48px;
-  /* 取消高度上限与内滚：完整展在对话里 */
   max-height: none;
   border: 0;
   margin: 0;
   padding: 0;
   background: transparent;
   color-scheme: inherit;
-  border-radius: 0;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
-  /* 隐藏 iframe 滚动条（各引擎） */
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

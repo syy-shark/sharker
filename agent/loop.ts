@@ -39,7 +39,7 @@ When the user asks to demonstrate, show, illustrate, animate, or "画/演示/可
 1. **Preferred**: call \`present_inline_demo\` with self-contained HTML/CSS/JS. Embedded in chat automatically.
 2. **Alternative**: fenced block \`\`\`demo (aliases: demo-html, visualization, viz, inline-demo).
 3. **Forbidden**: write HTML to disk + open browser / localhost / open_url just to "show" a demo.
-4. Host CSS vars: --text, --text-secondary, --text-muted, --accent, --accent-soft, --border, --border-soft, --surface, --surface-nested, --danger, --success, --radius, --font, --mono. Body background **transparent**. No outer fake browser chrome on the whole demo.
+4. Host CSS vars: --text, --text-secondary, --text-muted, --accent, --accent-soft, --border, --border-soft, --bg, --surface, --surface-nested, --surface-popover, --danger, --success, --radius, --font, --mono. Body background **transparent**. Surfaces use these vars — never hardcode #111 / #1a1a1a / #222 page fills (they will not match the host metal/glass theme). No outer fake browser chrome on the whole demo.
 5. **Layout (must)**:
    - Root fits chat width; no fixed huge min-height; no large empty bottom padding that leaves a blank band under the demo.
    - Host shows the demo **fully expanded in the chat** (no internal scrollbar). Do not wrap the whole demo in \`overflow:auto\` + fixed height.

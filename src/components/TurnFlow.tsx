@@ -1,17 +1,14 @@
 /**
- * 一回合过程时间线（Mac 式安静直播）：
- * - 不重复展示阶段名（无「理解」叠「理解」）
- * - 无大脑/绿色对号等喧闹图标；细轨 + 微点
- * - 直播时逐步出现，完成后由外层 summary 收起
- * - 直播头标签始终等于下方展示步骤的最后一项，避免“头停住、列表在走”
+ * 一回合过程时间线（安静直播）：
+ * - 闲聊/思考：一行状态字 + 耗时，无呼吸灯
+ * - 有工具/旁白才展开时间线
+ * - thinking 原文永不作为时间线标题
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { TurnSegment } from '../../shared/types'
 import {
   deriveChronologicalSteps,
-  deriveProcessPhases,
-  type ProcessPhase,
   type ProcessPhaseStep
 } from '../../shared/process-phases'
 import { buildLiveHead, shouldSynthesizePlanning } from '../../shared/live-display'
@@ -50,11 +47,13 @@ function formatDuration(seconds: number): string {
   return `${seconds}s`
 }
 
-const PHASE_LIVE_LABEL: Record<ProcessPhase, string> = {
-  understand: '理解中',
-  explore: '探索中',
-  execute: '执行中',
-  verify: '验证中'
+function isNoisyLiveDetail(label: string, detail?: string): boolean {
+  const d = (detail || '').trim()
+  const l = label.trim()
+  if (!d) return true
+  if (d === l) return true
+  if (l.includes(d) || d.includes(l)) return true
+  return /分析任务|规划下一步|正在推进|连接模型|整理结果|处理中|思考中/.test(d)
 }
 
 function isGenericMetaStep(step: ProcessPhaseStep): boolean {
@@ -133,10 +132,7 @@ function visibleSteps(steps: ProcessPhaseStep[], isStreaming: boolean): ProcessP
       if (step.kind === 'tool' || step.kind === 'narration') return true
       // 直播中已完成的桥接 status（连接模型/规划/准备）不要残留在时间线，避免像“回跳准备”
       if (isBridgeStatusStep(step) && step.status !== 'active') return false
-      if (isGenericMetaStep(step)) {
-        // 有实质步骤后，不再刷「分析任务目标」一类空壳
-        return !hasSubstance && step.status === 'active'
-      }
+      if (isGenericMetaStep(step)) return false
       // 有实质步骤后，active 桥接也只保留「规划下一步」一类当前头，不重复挂旧准备态
       if (hasSubstance && isBridgeStatusStep(step) && !step.title.includes('规划下一步')) {
         return false
@@ -201,15 +197,7 @@ function buildDisplaySteps(options: {
   if (!isStreaming) return steps.map(toDisplayStep)
 
   if (showThinkingPlaceholder) {
-    return [
-      {
-        id: 'synthetic-thinking',
-        title: '思考中',
-        detail: '分析任务并规划下一步…',
-        status: 'active',
-        kind: 'synthetic'
-      }
-    ]
+    return []
   }
 
   const display = steps.map(toDisplayStep)
@@ -278,7 +266,6 @@ function ProcessStepRow({
       <div className="turn-flow-step-content">
         <div className="turn-flow-step-copy">
           <span className="turn-flow-step-title">{title}</span>
-          {step.status === 'active' ? <span className="live-dot turn-flow-step-live-dot" aria-hidden /> : null}
           {step.detail && !isDemo ? (
             <code className="turn-flow-step-detail" title={step.detail || segment?.toolDetail}>
               {step.detail}
@@ -363,7 +350,6 @@ export function TurnFlow({
 
   const chronological = deriveChronologicalSteps(segments, { isStreaming })
   const steps = visibleSteps(chronological, isStreaming)
-  const phaseModel = deriveProcessPhases(segments, { isStreaming })
 
   const fallbackStartedAt =
     liveStartedAt ??
@@ -396,7 +382,7 @@ export function TurnFlow({
     isStreaming && !hasActiveWork && allProcessDone && answerStreaming
   )
 
-  // 工具/实质步骤完成后、尚未开始正文：显示「规划下一步」保持呼吸
+  // 工具/实质步骤完成后、尚未开始正文：显示「规划下一步」保持存活感
   const lastVisibleTitle = (steps.at(-1)?.title || '').trim()
   const planningNext = Boolean(
     isStreaming &&
@@ -428,50 +414,34 @@ export function TurnFlow({
     planningNext,
     showThinkingPlaceholder
   })
-  const showSteps = displaySteps.length > 0
   const lastDisplayStep = displaySteps[displaySteps.length - 1] || null
   const liveHead = buildLiveHead({
     steps: displaySteps,
     approvalWaiting,
-    fallbackLabel: phaseModel.currentPhase
-      ? PHASE_LIVE_LABEL[phaseModel.currentPhase]
-      : '处理中'
+    fallbackLabel: approvalWaiting
+      ? '等待确认'
+      : generatingAnswer
+        ? '生成回答中'
+        : planningNext
+          ? '规划下一步'
+          : '思考中'
   })
   const headStep = liveHead.step
-  const activeDisplayStep = headStep
 
-  // 直播头标签 = 当前展示步骤标题（与下方列表同源）
   const liveLabel = isStreaming ? liveHead.label : '处理中'
 
   let liveDetail: string | undefined
   if (isStreaming) {
     if (approvalWaiting) {
-      liveDetail = liveHead.detail || '高危操作需要你确认后才能继续'
-    } else if (headStep?.detail?.trim()) {
+      liveDetail = liveHead.detail || '需要确认后继续'
+    } else if (headStep?.kind === 'tool' && headStep.detail?.trim()) {
       liveDetail = headStep.detail
-    } else if (headStep?.kind === 'tool') {
-      liveDetail = '执行中…'
-    } else if (showThinkingPlaceholder) {
-      liveDetail = '分析任务并规划下一步…'
-    } else if (planningNext) {
-      liveDetail = '根据已完成步骤决定下一动作…'
-    } else if (generatingAnswer) {
-      liveDetail = '整理结果并输出…'
-    } else if (phaseModel.currentPhase) {
-      liveDetail =
-        phaseModel.groups.find((g) => g.phase === phaseModel.currentPhase)?.summary ||
-        '正在推进任务…'
-    } else if (hasToolOrNarration) {
-      // 已有实质步骤时不要跳回“连接模型…”，保持“还在推进/规划”的连续感
-      liveDetail = planningNext
-        ? '根据已完成步骤决定下一动作…'
-        : '正在推进任务…'
-    } else {
-      liveDetail = '连接模型并准备下一步…'
+    } else if (headStep?.kind === 'narration' && headStep.detail?.trim()) {
+      liveDetail = headStep.detail
     }
-    if (!liveDetail?.trim()) {
-      liveDetail = hasToolOrNarration ? '正在推进任务…' : '分析任务并规划下一步…'
-    }
+  }
+  if (liveDetail && isNoisyLiveDetail(liveLabel, liveDetail)) {
+    liveDetail = undefined
   }
 
   // 文案粘滞：同相位内 280ms 内不来回跳；真正阶段切换时带 swap 动画
@@ -518,7 +488,7 @@ export function TurnFlow({
     lastSwapAtRef.current = nowMs
   }, [isStreaming, rawLiveLabel, rawLiveDetail, stickyLive.label, stickyLive.detail])
 
-  // 完成后若无可视步骤则不渲染；直播时即便还没步骤也要出呼吸头，避免“停住”
+  // 完成后若无可视步骤则不渲染；直播时即便还没步骤也要出状态行，避免“停住”
   // （粘滞 effect 已在上方无条件注册）
   if (!isStreaming && chronological.length === 0) return null
   if (!isStreaming && steps.length === 0) return null
@@ -527,16 +497,12 @@ export function TurnFlow({
   const displayLiveDetail = isStreaming ? stickyLive.detail : undefined
   const labelSwapKey = displayLiveLabel
   const detailSwapKey = displayLiveDetail || ''
-
-  const doneCount = displaySteps.filter((step) => step.status !== 'active').length
-  const progressCurrent =
-    activeDisplayStep || generatingAnswer || planningNext || showThinkingPlaceholder
-      ? doneCount + 1
-      : doneCount
-  const progressTotal = Math.max(
-    displaySteps.length,
-    progressCurrent,
-    showThinkingPlaceholder ? 1 : 0
+  const listSteps = displaySteps.filter(
+    (s) =>
+      s.kind === 'tool' ||
+      s.kind === 'narration' ||
+      s.status === 'error' ||
+      Boolean(s.source?.segment.approval)
   )
 
   return (
@@ -551,125 +517,44 @@ export function TurnFlow({
       aria-busy={isStreaming || undefined}
     >
       {isStreaming ? (
-        <>
-          <div className="turn-flow-live-head">
-            <span className="turn-flow-live-orb-slot" aria-hidden>
-              <span className="live-orb turn-flow-live-orb" />
+        <div className="turn-flow-live-head">
+          <div className="turn-flow-live-copy">
+            <span
+              key={`lbl-${labelSwapKey}`}
+              className="turn-flow-live-label live-text-shimmer"
+              data-live-label={displayLiveLabel}
+            >
+              {displayLiveLabel}
             </span>
-            <div className="turn-flow-live-copy">
+            {displayLiveDetail ? (
               <span
-                key={`lbl-${labelSwapKey}`}
-                className="turn-flow-live-label turn-flow-live-label--swap"
-                data-live-label={displayLiveLabel}
+                key={`dtl-${detailSwapKey}`}
+                className="turn-flow-live-detail turn-flow-live-detail--swap"
+                data-live-detail={displayLiveDetail}
+                title={displayLiveDetail}
               >
-                {displayLiveLabel}
-              </span>
-              {displayLiveDetail ? (
-                <span
-                  key={`dtl-${detailSwapKey}`}
-                  className="turn-flow-live-detail turn-flow-live-detail--swap"
-                  data-live-detail={displayLiveDetail}
-                  title={displayLiveDetail}
-                >
-                  {displayLiveDetail}
-                </span>
-              ) : null}
-            </div>
-            <span className="turn-flow-live-time">{elapsed ?? '0s'}</span>
-            {progressTotal > 0 ? (
-              <span className="turn-flow-live-count" title="进度">
-                {progressCurrent}/{progressTotal}
+                {displayLiveDetail}
               </span>
             ) : null}
-            {approvalWaiting ? (
-              <span
-                key="phase-approval"
-                className="turn-flow-live-phase turn-flow-live-phase--wait-approval turn-flow-live-phase--swap"
-                data-phase="approval"
-              >
-                审批
-              </span>
-            ) : generatingAnswer ? (
-              <span
-                key="phase-answer"
-                className="turn-flow-live-phase turn-flow-live-phase--swap"
-                data-phase="answer"
-              >
-                回答
-              </span>
-            ) : planningNext ? (
-              <span
-                key="phase-plan"
-                className="turn-flow-live-phase turn-flow-live-phase--swap"
-                data-phase="plan"
-              >
-                规划
-              </span>
-            ) : phaseModel.currentPhase ? (
-              <span
-                key={`phase-${phaseModel.currentPhase}`}
-                className="turn-flow-live-phase turn-flow-live-phase--swap"
-                data-phase={phaseModel.currentPhase}
-              >
-                {PHASE_LIVE_LABEL[phaseModel.currentPhase].replace(/中$/, '')}
-              </span>
-            ) : (
-              <span
-                key="phase-wait"
-                className="turn-flow-live-phase turn-flow-live-phase--waiting turn-flow-live-phase--swap"
-              >
-                准备
-              </span>
-            )}
           </div>
-          <ol className="turn-flow-phase-track" aria-label="执行阶段">
-            {phaseModel.groups.map((group, index) => {
-              const preparing =
-                group.state === 'pending' &&
-                !phaseModel.currentPhase &&
-                index === phaseModel.groups.findIndex((g) => g.state === 'pending')
-              return (
-                <li
-                  key={group.phase}
-                  className={[
-                    'turn-flow-phase-track-item',
-                    `turn-flow-phase-track-item--${group.state}`,
-                    phaseModel.currentPhase === group.phase
-                      ? 'turn-flow-phase-track-item--current'
-                      : '',
-                    preparing ? 'turn-flow-phase-track-item--preparing' : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  <span className="turn-flow-phase-track-dot" aria-hidden />
-                  <span className="turn-flow-phase-track-label">{group.label}</span>
-                </li>
-              )
-            })}
-          </ol>
-        </>
-      ) : null}
-      {isStreaming ? (
-        <div
-          className={`turn-flow-live-waiting ${
-            showSteps && !generatingAnswer && !planningNext && !approvalWaiting
-              ? 'turn-flow-live-waiting--subtle'
-              : ''
-          }`}
-          aria-hidden
-        >
-          <span className="turn-flow-live-waiting-bar live-shimmer" />
-          <span className="turn-flow-live-waiting-bar turn-flow-live-waiting-bar--mid live-shimmer" />
+          <span className="turn-flow-live-time">{elapsed ?? '0s'}</span>
+          {approvalWaiting ? (
+            <span
+              className="turn-flow-live-phase turn-flow-live-phase--wait-approval"
+              data-phase="approval"
+            >
+              审批
+            </span>
+          ) : null}
         </div>
       ) : null}
-      {showSteps ? (
+      {listSteps.length > 0 ? (
         <ol className="turn-flow-steps">
-          {displaySteps.map((step, i) => (
+          {listSteps.map((step, i) => (
             <ProcessStepRow
               key={step.id}
               step={step}
-              isLast={i === displaySteps.length - 1}
+              isLast={i === listSteps.length - 1}
             />
           ))}
         </ol>

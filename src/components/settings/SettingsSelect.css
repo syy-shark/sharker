@@ -39,7 +39,8 @@
   color: var(--text);
   font-size: 13px;
   font-weight: 510;
-  line-height: 1;
+  /* 1 会裁掉 g/p/y 的下行部 */
+  line-height: 1.25;
   letter-spacing: -0.01em;
   text-align: left;
   overflow: hidden;
@@ -77,6 +78,7 @@
 .settings-select-label {
   flex: 1;
   min-width: 0;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

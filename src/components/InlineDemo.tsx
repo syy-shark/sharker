@@ -31,8 +31,10 @@ function readHostTheme(): ThemeVars {
     accentSoft: pick('--accent-soft', 'rgba(0,122,255,0.14)'),
     border: pick('--glass-edge', isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.45)'),
     borderSoft: pick('--glass-edge-soft', isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
-    surface: pick('--glass-fill-raised', isDark ? 'rgba(40,44,52,0.9)' : 'rgba(255,255,255,0.28)'),
-    surfaceNested: pick('--glass-fill-nested', isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.16)'),
+    bg: pick('--bg-base', isDark ? '#0b0d11' : '#e8eaed'),
+    surface: pick('--glass-fill-raised', isDark ? '#2c313b' : 'rgba(255,255,255,0.28)'),
+    surfaceNested: pick('--glass-fill-nested', isDark ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.16)'),
+    surfacePopover: pick('--glass-fill-popover', isDark ? '#1c2129' : 'rgba(255,255,255,0.4)'),
     danger: pick('--danger', '#ff3b30'),
     success: pick('--success', '#34c759'),
     radius: pick('--radius', '16px'),
@@ -62,8 +64,10 @@ function buildSrcDoc(html: string, theme: ThemeVars, demoId: string): string {
   --accent-soft: ${theme.accentSoft};
   --border: ${theme.border};
   --border-soft: ${theme.borderSoft};
+  --bg: ${theme.bg};
   --surface: ${theme.surface};
   --surface-nested: ${theme.surfaceNested};
+  --surface-popover: ${theme.surfacePopover};
   --danger: ${theme.danger};
   --success: ${theme.success};
   --radius: ${theme.radius};
@@ -76,9 +80,8 @@ html {
   margin: 0;
   padding: 0;
   background: transparent !important;
-  overflow: hidden !important;
-  overflow-x: hidden !important;
-  overflow-y: hidden !important;
+  /* 可见溢出才能量到真实高度；滚动条另外藏掉 */
+  overflow: visible !important;
 }
 html, body {
   margin: 0;
@@ -91,13 +94,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 body {
-  padding: 0 0 2px;
+  padding: 0 0 4px;
   min-height: 0 !important;
   max-width: 100%;
-  /* 完整展开进对话：iframe 内不出现滚动条 */
-  overflow: hidden !important;
-  overflow-x: hidden !important;
-  overflow-y: hidden !important;
+  overflow: visible !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -126,7 +126,9 @@ button:disabled, [aria-disabled="true"] {
 [class*="zone"], [class*="Zone"], [class*="card"], [class*="Card"] {
   max-width: 100%;
   min-width: 0;
-  overflow: hidden;
+  max-height: none !important;
+  overflow-x: hidden;
+  overflow-y: visible;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -332,6 +334,7 @@ button:disabled, [aria-disabled="true"] {
 <script>
 (function () {
   var id = ${JSON.stringify(demoId)};
+  var isDark = ${isDark ? 'true' : 'false'};
 
   function parseRgb(color) {
     if (!color) return null;
@@ -728,29 +731,90 @@ button:disabled, [aria-disabled="true"] {
     forceReadableText(body);
   }
 
+  function isNeutralGrey(c) {
+    if (!c) return false;
+    return Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) < 32;
+  }
+
+  /** 把模型写死的灰/黑底换成宿主 token，避免和聊天金属/玻璃色域打架 */
+  function harmonizeSurfaces() {
+    var root = document.body;
+    if (!root) return;
+    root.style.setProperty('background', 'transparent', 'important');
+    root.style.setProperty('background-color', 'transparent', 'important');
+    root.style.setProperty('background-image', 'none', 'important');
+    var bodyRect = root.getBoundingClientRect();
+    var bodyW = Math.max(bodyRect.width, 1);
+    var bodyH = Math.max(bodyRect.height, 1);
+    var nodes = root.querySelectorAll('*');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!el || el.nodeType !== 1) continue;
+      if (/^(CANVAS|SVG|IMG|VIDEO|PATH|SCRIPT|STYLE|SOURCE)$/i.test(el.tagName)) continue;
+      if (el.closest && el.closest('.sharker-term, canvas, svg, img, video')) continue;
+      var st = window.getComputedStyle(el);
+      var bg = parseRgb(st.backgroundColor);
+      if (!bg || !isNeutralGrey(bg)) continue;
+      var alphaMatch = (st.backgroundColor || '').match(/rgba\\([^,]+,[^,]+,[^,]+,\\s*([0-9.]+)/);
+      var alpha = alphaMatch ? parseFloat(alphaMatch[1]) : 1;
+      if (alpha < 0.08) continue;
+      var lum = luminance(bg);
+      var r = el.getBoundingClientRect();
+      var coversRoot = r.width > bodyW * 0.9 && r.height > Math.max(bodyH * 0.62, 120);
+      if (isDark) {
+        if (coversRoot) {
+          el.style.setProperty('background', 'transparent', 'important');
+          el.style.setProperty('background-image', 'none', 'important');
+          continue;
+        }
+        if (lum < 0.08) {
+          el.style.setProperty('background', 'var(--surface-nested)', 'important');
+        } else if (lum < 0.3) {
+          el.style.setProperty('background', 'var(--surface)', 'important');
+        } else {
+          continue;
+        }
+        var borderC = parseRgb(st.borderColor);
+        if (borderC && isNeutralGrey(borderC)) {
+          el.style.setProperty('border-color', 'var(--border-soft)', 'important');
+        }
+      } else {
+        if (coversRoot || lum > 0.93) {
+          el.style.setProperty('background', 'transparent', 'important');
+          el.style.setProperty('background-image', 'none', 'important');
+          continue;
+        }
+        if (lum > 0.78) {
+          el.style.setProperty('background', 'var(--surface)', 'important');
+          var borderL = parseRgb(st.borderColor);
+          if (borderL && isNeutralGrey(borderL)) {
+            el.style.setProperty('border-color', 'var(--border-soft)', 'important');
+          }
+        }
+      }
+    }
+  }
+
   function report() {
     try {
-      // 用实际内容底边算高，避免空 min-height 把 iframe 撑出大片空白
-      var maxBottom = 0;
       var root = document.body;
       if (!root) return;
-      var kids = root.children;
-      for (var i = 0; i < kids.length; i++) {
-        var el = kids[i];
+      var maxBottom = 0;
+      var nodes = root.querySelectorAll('*');
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
         if (el.getAttribute && el.getAttribute('data-sharker-ignore-height')) continue;
         var r = el.getBoundingClientRect();
-        var mb = parseFloat(window.getComputedStyle(el).marginBottom) || 0;
-        var bottom = r.bottom + mb;
-        if (bottom > maxBottom) maxBottom = bottom;
+        if (r.bottom > maxBottom) maxBottom = r.bottom;
       }
-      // 回退 scrollHeight
+      var bodyRect = root.getBoundingClientRect();
+      if (bodyRect.bottom > maxBottom) maxBottom = bodyRect.bottom;
       var scrollH = Math.max(
         document.documentElement ? document.documentElement.scrollHeight : 0,
         root.scrollHeight || 0
       );
-      var h = maxBottom > 24 ? maxBottom : scrollH;
-      // 完整嵌进对话：按内容真实高度，不设 640 上限（由外层展开/收起控制）
-      h = Math.max(Math.ceil(h + 8), 48);
+      var h = Math.max(maxBottom, scrollH);
+      h = Math.max(Math.ceil(h + 16), 48);
       parent.postMessage({ type: 'sharker-inline-demo-height', id: id, height: h }, '*');
     } catch (e) {}
   }
@@ -877,6 +941,7 @@ button:disabled, [aria-disabled="true"] {
         historyFixed = true;
       }
       renderMath();
+      harmonizeSurfaces();
     } catch (e) {}
     enhancing = false;
     report();
@@ -988,24 +1053,63 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
     return () => mo.disconnect()
   }, [])
 
+  const paintable = Boolean(paintHtml.trim() && paintHtml !== '<!-- streaming -->')
+  const srcDoc = useMemo(
+    () => (paintable ? buildSrcDoc(paintHtml, theme, demoId) : ''),
+    [paintHtml, theme, demoId, paintable]
+  )
+
   useEffect(() => {
     const onMsg = (event: MessageEvent) => {
       const data = event.data
       if (!data || data.type !== 'sharker-inline-demo-height') return
       if (data.id !== demoId) return
       if (typeof data.height === 'number' && Number.isFinite(data.height)) {
-        setHeight(Math.round(data.height))
+        const next = Math.round(data.height)
+        setHeight((prev) => (streaming ? Math.max(prev, next) : next))
       }
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)
-  }, [demoId])
+  }, [demoId, streaming])
 
-  const paintable = paintHtml.trim() && paintHtml !== '<!-- streaming -->'
-  const srcDoc = useMemo(
-    () => (paintable ? buildSrcDoc(paintHtml, theme, demoId) : ''),
-    [paintHtml, theme, demoId, paintable]
-  )
+  useEffect(() => {
+    const frame = frameRef.current
+    if (!frame || !paintable) return
+    let ro: ResizeObserver | null = null
+    const measure = () => {
+      try {
+        const doc = frame.contentDocument
+        const body = doc?.body
+        if (!doc || !body) return
+        const h = Math.ceil(
+          Math.max(body.scrollHeight, doc.documentElement.scrollHeight, body.getBoundingClientRect().height) + 16
+        )
+        if (h >= 48) setHeight((prev) => (Math.abs(prev - h) > 2 ? (streaming ? Math.max(prev, h) : h) : prev))
+      } catch {
+        /* srcDoc 同源；读失败时仍走 postMessage */
+      }
+    }
+    const attach = () => {
+      measure()
+      try {
+        const doc = frame.contentDocument
+        if (!doc?.body) return
+        ro?.disconnect()
+        ro = new ResizeObserver(measure)
+        ro.observe(doc.body)
+        ro.observe(doc.documentElement)
+      } catch {
+        /* ignore */
+      }
+    }
+    frame.addEventListener('load', attach)
+    attach()
+    return () => {
+      frame.removeEventListener('load', attach)
+      ro?.disconnect()
+    }
+  }, [srcDoc, paintable, streaming])
   const label = caption?.trim() || (streaming ? '交互演示' : '内联演示')
   const charHint =
     streaming && paintHtml.length > 0 && paintable

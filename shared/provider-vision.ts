@@ -9,7 +9,7 @@ export function inferProviderVision(provider: ProviderConfig): boolean {
   if (provider.vision === true) return true
   if (provider.vision === false) return false
   const m = provider.model.toLowerCase()
-  return /gpt-4o|gpt-4-turbo|gpt-4-vision|o1|o3|o4|claude-3|claude-4|gemini|qwen.*vl|glm-4v|vision|4v|gpt-5|composer|grok-2-vision|grok-4|kimi-k2\.5|kimi-k3/i.test(
+  return /gpt-4o|gpt-4-turbo|gpt-4-vision|o1|o3|o4|claude-3|claude-4|gemini|qwen.*vl|glm-4v|vision|4v|gpt-5|composer|grok-2-vision|grok-4|kimi-k2|kimi-k3|mimo/i.test(
     m
   )
 }

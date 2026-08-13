@@ -49,6 +49,15 @@ html.theme-dark .provider-brand-icon--kimi {
   color: #3859ff;
 }
 
+/* OpenCode 近黑 O；深色反白 */
+.provider-brand-icon--opencode {
+  color: #211e1e;
+}
+
+html.theme-dark .provider-brand-icon--opencode {
+  color: #f8f7f7;
+}
+
 .provider-brand-icon--generic {
   color: var(--text-secondary);
 }

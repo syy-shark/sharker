@@ -11,7 +11,8 @@ import {
   isProviderConfigured,
   knownModelsForProvider,
   mergeModelLists,
-  presetToProvider
+  presetToProvider,
+  formatModelLabel
 } from '../../../shared/provider-catalog'
 import {
   defaultThinkingLevel,
@@ -445,7 +446,7 @@ export function ModelsSettings({ draft, setDraft, onSave }: Props) {
 
       <SettingsSection title="API 配置">
         <p className="provider-section-hint">
-          <strong>DeepSeek / Kimi / 智谱</strong>用 API Key；
+          <strong>DeepSeek / Kimi / 智谱 / OpenCode Go</strong>用 API Key；
           <strong>ChatGPT / Grok</strong>是<strong>订阅登录导入</strong>（不是 sk- Key）。
           模型一律用下拉选择；点「刷新模型」同步官方列表。
         </p>
@@ -615,7 +616,9 @@ export function ModelsSettings({ draft, setDraft, onSave }: Props) {
                         {current ? ` · 当前 ${current}` : ''}
                         {preset?.id === 'deepseek'
                           ? ' · 官方主推 deepseek-v4-flash / deepseek-v4-pro'
-                          : ''}
+                          : preset?.id === 'opencode-go'
+                            ? ' · Go 套餐 Chat Completions 主力'
+                            : ''}
                       </span>
                     </label>
                     {thinkingOpts.length > 0 ? (
@@ -730,27 +733,4 @@ export function ModelsSettings({ draft, setDraft, onSave }: Props) {
       </SettingsSection>
     </>
   )
-}
-
-/** 下拉展示：技术 id + 可读名 */
-function formatModelLabel(id: string): string {
-  const map: Record<string, string> = {
-    'deepseek-v4-flash': 'deepseek-v4-flash · V4 Flash',
-    'deepseek-v4-pro': 'deepseek-v4-pro · V4 Pro',
-    'grok-4': 'grok-4',
-    'grok-4.5': 'grok-4.5',
-    'grok-4.3': 'grok-4.3',
-    'grok-build-0.1': 'grok-build-0.1',
-    'gpt-5.2': 'gpt-5.2',
-    'gpt-5.1': 'gpt-5.1',
-    'gpt-5': 'gpt-5',
-    'gpt-5-mini': 'gpt-5-mini',
-    'gpt-4.1': 'gpt-4.1',
-    'kimi-k2.6': 'kimi-k2.6',
-    'kimi-k2.5': 'kimi-k2.5',
-    'glm-4.7': 'glm-4.7',
-    'glm-5': 'glm-5',
-    'glm-5.1': 'glm-5.1'
-  }
-  return map[id] ?? id
 }

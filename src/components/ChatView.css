@@ -43,6 +43,12 @@
   scrollbar-gutter: stable;
 }
 
+.messages-end {
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+
 .messages {
   width: 100%;
   max-width: min(var(--chat-column-max), 100%);
@@ -163,6 +169,7 @@
 }
 
 .composer-wrap {
+  position: relative;
   width: 100%;
   max-width: min(var(--chat-column-max, 720px), 100%);
   min-width: 0;
@@ -645,23 +652,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 10px 10px 8px;
-  min-height: 40px;
+  min-height: 36px;
+  padding: 2px 10px 8px;
 }
 
 .composer-footer-left {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
+  height: 28px;
   z-index: 1;
-  /* 允许工作区菜单向上弹出，勿裁切 */
   overflow: visible;
 }
 
 .composer-footer-right {
   flex: 0 1 auto;
   min-width: 0;
+  height: 28px;
   /* 展开模型菜单时允许触发器撑到 280px，不被 footer 挤扁 */
   display: flex;
   align-items: center;
@@ -842,12 +850,15 @@
 }
 
 .chat-scroll-bottom-wrap {
-  position: sticky;
-  bottom: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
   display: flex;
   justify-content: center;
+  pointer-events: none;
   z-index: 10;
-  margin-top: 8px;
+  margin: 0 0 10px;
 }
 
 .chat-scroll-bottom {
@@ -1027,7 +1038,7 @@ html.theme-dark .chat-scroll-bottom {
 }
 
 .composer-input {
-  padding: 13px 14px 7px;
+  padding: 13px 14px 6px;
   min-height: 42px;
   min-width: 0;
   width: 100%;
@@ -1039,21 +1050,34 @@ html.theme-dark .chat-scroll-bottom {
   outline: none;
   box-shadow: none;
 }
-.composer-footer { min-height: 38px; padding: 5px 8px 8px; }
 
 .composer-workspace-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  max-width: 220px;
+  height: 28px;
+  max-width: min(48%, 240px);
+  padding: 0 4px;
+  box-sizing: border-box;
   overflow: hidden;
   color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 550;
-  letter-spacing: -0.01em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.composer-workspace-label svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.composer-workspace-name {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .composer-send-slot {

@@ -2,44 +2,23 @@
 .thinking-indicator {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 10px;
   min-height: 22px;
-  margin: 0 0 10px;
-  padding: 6px 10px;
-  border: 0.5px solid color-mix(in srgb, var(--accent) 14%, var(--glass-edge-soft));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 6%, var(--glass-fill));
-  box-shadow: var(--glass-rim-soft);
-  animation:
-    view-enter var(--motion-duration-normal) var(--motion-ease-soft) both,
-    live-panel-breathe var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
-}
-
-.thinking-indicator-orb-slot {
-  position: relative;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-}
-
-.thinking-indicator-orb {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -3.5px 0 0 -3.5px;
+  margin: 0 0 8px;
+  padding: 2px 0;
 }
 
 .thinking-indicator-label {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 560;
-  letter-spacing: -0.01em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 20px;
 }
 
 .thinking-indicator-time {
   min-width: 4.5ch;
+  margin-left: auto;
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
@@ -63,16 +42,4 @@
   max-height: 140px;
   overflow-y: auto;
   opacity: 0.92;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .thinking-indicator {
-    animation: none !important;
-  }
-
-  .thinking-indicator-orb,
-  .thinking-indicator-orb::after {
-    animation: none !important;
-    opacity: 1;
-  }
 }
