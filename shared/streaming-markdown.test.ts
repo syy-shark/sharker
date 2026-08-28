@@ -76,7 +76,7 @@ describe('splitStreamingMarkdown', () => {
     expect(extractOpenFenceBody('```ts')).toBe('')
   })
 
-  it('parses paired inline marks and keeps an open mark as text', () => {
+  it('parses paired inline marks and paints an open mark before it closes', () => {
     expect(parseCheapInlineMarkdown('见 `` a`b `` 后')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'code', text: 'a`b' },
@@ -96,7 +96,49 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 及 ' },
       { type: 'del', text: '删' }
     ])
-    expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
+    expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'strong', text: '粗', raw: '**粗' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 *斜')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'em', text: '斜', raw: '*斜' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 ~~删')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'del', text: '删', raw: '~~删' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 `code')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'code', text: 'code', raw: '`code' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 ***粗斜')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'em', text: '粗斜', mark: '***', inner: 'strong', raw: '***粗斜' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 **_粗斜')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'strong', text: '粗斜', inner: 'em', raw: '**_粗斜' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 *__粗斜')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'em', text: '粗斜', inner: 'strong', raw: '*__粗斜' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 ___粗斜')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'em', text: '粗斜', mark: '___', inner: 'strong', raw: '___粗斜' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 <https://a')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'link', text: 'https://a', href: 'https://a', raw: '<https://a' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 **')).toEqual([{ type: 'text', text: '半截 **' }])
+    expect(parseCheapInlineMarkdown('半截 *')).toEqual([{ type: 'text', text: '半截 *' }])
+    expect(parseCheapInlineMarkdown('半截 ~~')).toEqual([{ type: 'text', text: '半截 ~~' }])
+    expect(parseCheapInlineMarkdown('半截 `')).toEqual([{ type: 'text', text: '半截 `' }])
+    expect(parseCheapInlineMarkdown('~~ not')).toEqual([{ type: 'text', text: '~~ not' }])
+    expect(parseCheapInlineMarkdown('foo_bar_baz')).toEqual([{ type: 'text', text: 'foo_bar_baz' }])
+    expect(parseCheapInlineMarkdown('_foo_bar')).toEqual([{ type: 'text', text: '_foo_bar' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
     expect(parseCheapInlineMarkdown('见 <https://a.test/x> 后')).toEqual([
       { type: 'text', text: '见 ' },
@@ -772,6 +814,29 @@ describe('splitStreamingMarkdown', () => {
     expect(closedLink[0]).toBe(openNodes[0])
     expect(closedLink.map((n) => n.type)).toEqual(['text', 'link'])
     expect(closedLink[1]).toMatchObject({ type: 'link', href: 'https://a.test/x', text: '文档' })
+    const openStrong = '半截 **粗'
+    const openStrongNodes = parseCheapInlineMarkdown(openStrong)
+    const closedStrong = continueCheapInlineMarkdown(openStrong, openStrongNodes, '半截 **粗体**')
+    expect(closedStrong[0]).toBe(openStrongNodes[0])
+    expect(closedStrong.map((n) => n.type)).toEqual(['text', 'strong'])
+    expect(closedStrong[1]).toMatchObject({ type: 'strong', text: '粗体' })
+    expect('raw' in (closedStrong[1] ?? {}) ? (closedStrong[1] as { raw?: string }).raw : undefined).toBeUndefined()
+    const openCode = '见 `fo'
+    const openCodeNodes = parseCheapInlineMarkdown(openCode)
+    const closedCode = continueCheapInlineMarkdown(openCode, openCodeNodes, '见 `foo`')
+    expect(closedCode[0]).toBe(openCodeNodes[0])
+    expect(closedCode.map((n) => n.type)).toEqual(['text', 'code'])
+    expect(closedCode[1]).toMatchObject({ type: 'code', text: 'foo' })
+    const openAuto = '见 <https://a'
+    const openAutoNodes = parseCheapInlineMarkdown(openAuto)
+    const closedAuto = continueCheapInlineMarkdown(openAuto, openAutoNodes, '见 <https://a.test/x>')
+    expect(closedAuto[0]).toBe(openAutoNodes[0])
+    expect(closedAuto.map((n) => n.type)).toEqual(['text', 'link'])
+    expect(closedAuto[1]).toMatchObject({
+      type: 'link',
+      text: 'https://a.test/x',
+      href: 'https://a.test/x'
+    })
   })
 
   it('reuses closed blocks when only the tail grows', () => {

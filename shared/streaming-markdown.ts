@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -193,10 +193,10 @@ export function extractOpenFenceBody(tail: string): string {
 /** 直播散文尾：廉价行内节点，避免每 token 跑 remark */
 export type CheapInlineNode =
   | { type: 'text'; text: string }
-  | { type: 'code'; text: string }
-  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del'; children?: CheapInlineNode[] }
-  | { type: 'del'; text: string; inner?: 'strong' | 'em'; children?: CheapInlineNode[] }
-  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del'; children?: CheapInlineNode[] }
+  | { type: 'code'; text: string; raw?: string }
+  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del'; children?: CheapInlineNode[]; raw?: string }
+  | { type: 'del'; text: string; inner?: 'strong' | 'em'; children?: CheapInlineNode[]; raw?: string }
+  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del'; children?: CheapInlineNode[]; raw?: string }
   | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
@@ -624,7 +624,7 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 /**
  * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合或未闭合 `[text](url` /
  * `[text][id]` / `![alt](url)` / `![alt][id]` / `[![alt](img)](url)`、dest 内成对括号、标签内强调/代码、多反引号行内代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
- * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
+ * 未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画标记（空 opener 仍留原文）；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
 /** 图片 alt 对标 micromark：标签里的强调/代码只留纯文本，避免收束改 alt */
 function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
@@ -702,7 +702,7 @@ function nestInner<T extends 'em' | 'strong' | 'del'>(
 }
 
 function applyMarkedInner<
-  T extends { text: string; inner?: 'em' | 'strong' | 'del'; children?: CheapInlineNode[] }
+  T extends { text: string; inner?: 'em' | 'strong' | 'del'; children?: CheapInlineNode[]; raw?: string }
 >(node: T, marked: ReturnType<typeof parseMarkedInner>, allowed: readonly ('em' | 'strong' | 'del')[]): T {
   node.text = marked.text
   if (marked.children?.length) {
@@ -711,6 +711,12 @@ function applyMarkedInner<
   }
   const inner = nestInner(marked, allowed)
   if (inner) node.inner = inner as T['inner']
+  return node
+}
+
+/** 未闭合标记必须留下原文，避免 `continueCheapInline` / 列表续行拼出假闭合符 */
+function withInlineRaw<T extends { raw?: string }>(node: T, raw: string): T {
+  node.raw = raw
   return node
 }
 
@@ -754,23 +760,31 @@ export function parseCheapInlineMarkdown(
     }
     if (src[i] === '`') {
       const codeSpan = readInlineCodeSpan(src, i)
-      if (!codeSpan) {
-        buf += src.slice(i)
+      if (codeSpan) {
+        flush()
+        const file = parseFileCitation(codeSpan.text)
+        if (file) {
+          nodes.push({
+            type: 'file',
+            text: codeSpan.text,
+            path: file.path,
+            line: file.line,
+            column: file.column
+          })
+        } else nodes.push({ type: 'code', text: codeSpan.text })
+        i = codeSpan.end
+        continue
+      }
+      let ticks = 0
+      while (src[i + ticks] === '`') ticks += 1
+      const openCode = src.slice(i + ticks)
+      if (openCode) {
+        flush()
+        nodes.push({ type: 'code', text: openCode, raw: src.slice(i) })
         break
       }
-      flush()
-      const file = parseFileCitation(codeSpan.text)
-      if (file) {
-        nodes.push({
-          type: 'file',
-          text: codeSpan.text,
-          path: file.path,
-          line: file.line,
-          column: file.column
-        })
-      } else nodes.push({ type: 'code', text: codeSpan.text })
-      i = codeSpan.end
-      continue
+      buf += src.slice(i)
+      break
     }
     // `***foo***` / `___foo___` / `**_foo_**` / `*__foo__*` 对标 remark em+strong，避免收束跳标签
     if (src.startsWith('***', i)) {
@@ -781,6 +795,19 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
+      const openInner = src.slice(i + 3)
+      if (openInner) {
+        flush()
+        nodes.push(
+          withInlineRaw(
+            { type: 'em', text: decodeHtmlEntities(openInner), mark: '***', inner: 'strong' },
+            src.slice(i)
+          )
+        )
+        break
+      }
+      buf += src.slice(i)
+      break
     }
     if (src.startsWith('___', i) && canOpenUnderscore(src, i)) {
       const end = src.indexOf('___', i + 3)
@@ -789,6 +816,21 @@ export function parseCheapInlineMarkdown(
         nodes.push({ type: 'em', text: decodeHtmlEntities(src.slice(i + 3, end)), mark: '___', inner: 'strong' })
         i = end + 3
         continue
+      }
+      if (end === -1) {
+        const openInner = src.slice(i + 3)
+        if (openInner) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              { type: 'em', text: decodeHtmlEntities(openInner), mark: '___', inner: 'strong' },
+              src.slice(i)
+            )
+          )
+          break
+        }
+        buf += src.slice(i)
+        break
       }
     }
     if (src.startsWith('**_', i)) {
@@ -799,6 +841,14 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
+      const openInner = src.slice(i + 3)
+      if (openInner) {
+        flush()
+        nodes.push(withInlineRaw({ type: 'strong', text: decodeHtmlEntities(openInner), inner: 'em' }, src.slice(i)))
+        break
+      }
+      buf += src.slice(i)
+      break
     }
     if (src.startsWith('*__', i)) {
       const end = src.indexOf('__*', i + 3)
@@ -808,10 +858,29 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
+      const openInner = src.slice(i + 3)
+      if (openInner) {
+        flush()
+        nodes.push(withInlineRaw({ type: 'em', text: decodeHtmlEntities(openInner), inner: 'strong' }, src.slice(i)))
+        break
+      }
+      buf += src.slice(i)
+      break
     }
     if (src.startsWith('**', i)) {
       const end = src.indexOf('**', i + 2)
       if (end === -1) {
+        const openInner = src.slice(i + 2)
+        if (openInner) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              applyMarkedInner({ type: 'strong', text: '' }, parseMarkedInner(openInner), ['em', 'del']),
+              src.slice(i)
+            )
+          )
+          break
+        }
         buf += src.slice(i)
         break
       }
@@ -834,10 +903,34 @@ export function parseCheapInlineMarkdown(
         i = end + 2
         continue
       }
+      if (end === -1) {
+        const openInner = src.slice(i + 2)
+        if (openInner) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              applyMarkedInner({ type: 'strong', text: '', mark: '__' }, parseMarkedInner(openInner), ['em', 'del']),
+              src.slice(i)
+            )
+          )
+          break
+        }
+      }
     }
     if (src.startsWith('~~', i)) {
       const end = src.indexOf('~~', i + 2)
       if (end === -1) {
+        const openInner = src.slice(i + 2)
+        if (openInner && !/^[ \t]/.test(openInner)) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(openInner), ['strong', 'em']),
+              src.slice(i)
+            )
+          )
+          break
+        }
         buf += src.slice(i)
         break
       }
@@ -852,6 +945,17 @@ export function parseCheapInlineMarkdown(
     if (src[i] === '*') {
       const end = src.indexOf('*', i + 1)
       if (end === -1) {
+        const openInner = src.slice(i + 1)
+        if (openInner) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              applyMarkedInner({ type: 'em', text: '' }, parseMarkedInner(openInner), ['strong', 'del']),
+              src.slice(i)
+            )
+          )
+          break
+        }
         buf += src.slice(i)
         break
       }
@@ -882,6 +986,17 @@ export function parseCheapInlineMarkdown(
         from = end + 1
       }
       if (matched) continue
+      const openInner = src.slice(i + 1)
+      if (openInner && !openInner.includes('_')) {
+        flush()
+        nodes.push(
+          withInlineRaw(
+            applyMarkedInner({ type: 'em', text: '', mark: '_' }, parseMarkedInner(openInner), ['strong', 'del']),
+            src.slice(i)
+          )
+        )
+        break
+      }
     }
     if (src[i] === '<') {
       const end = src.indexOf('>', i + 1)
@@ -898,6 +1013,13 @@ export function parseCheapInlineMarkdown(
           nodes.push({ type: 'link', text: inner, href: `mailto:${inner}`, raw: `<${inner}>` })
           i = end + 1
           continue
+        }
+      } else {
+        const rest = src.slice(i + 1)
+        if (!rest.includes('\n') && /^https?:\/\/\S+$/i.test(rest)) {
+          flush()
+          nodes.push({ type: 'link', text: rest, href: rest, raw: src.slice(i) })
+          break
         }
       }
     }
@@ -1094,6 +1216,7 @@ export function parseCheapInlineMarkdown(
 }
 
 function cheapInlineSource(node: CheapInlineNode): string {
+  if ('raw' in node && node.raw) return node.raw
   if (node.type === 'br') return '  \n'
   if (node.type === 'fn') return `[^${node.id}]`
   if (node.type === 'code') return wrapInlineCode(node.text)
