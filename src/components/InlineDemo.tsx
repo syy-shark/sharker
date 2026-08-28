@@ -1248,8 +1248,12 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
   }, [])
 
   const paintable = isInlineDemoPaintable(paintHtml)
+  const showFrame = paintable || streaming
   const srcDoc = useMemo(
-    () => (paintable ? buildSrcDoc(paintHtml, theme, demoId) : ''),
+    () =>
+      paintable
+        ? buildSrcDoc(paintHtml, theme, demoId)
+        : '<!DOCTYPE html><html><body></body></html>',
     [paintHtml, theme, demoId, paintable]
   )
 
@@ -1337,18 +1341,24 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         .join(' ')}
       data-inline-demo
     >
-      <div className="inline-demo-body" hidden={!expanded} aria-hidden={!expanded}>
-        {paintable ? (
+      <div
+        className="inline-demo-body"
+        hidden={!expanded}
+        aria-hidden={!expanded}
+        style={expanded && showFrame ? { minHeight: frameH } : undefined}
+      >
+        {showFrame ? (
           <iframe
             ref={frameRef}
-            className="inline-demo-frame"
+            className={`inline-demo-frame${paintable ? '' : ' inline-demo-frame--pending'}`}
             title={label}
             sandbox="allow-scripts"
             srcDoc={srcDoc}
             scrolling="no"
             style={{ height: frameH }}
           />
-        ) : streaming ? (
+        ) : null}
+        {streaming && !paintable ? (
           <div className="inline-demo-skeleton" aria-hidden>
             <span className="inline-demo-skeleton-bar" />
             <span className="inline-demo-skeleton-bar inline-demo-skeleton-bar--short" />

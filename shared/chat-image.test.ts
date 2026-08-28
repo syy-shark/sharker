@@ -3,6 +3,7 @@ import {
   canExportChatImage,
   chatImageAspectStyle,
   chatImageSlotMinHeight,
+  liveChatImageMinHeight,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
@@ -80,5 +81,7 @@ describe('chat-image', () => {
     expect(chatImageSlotMinHeight(null, true)).toBe(48)
     expect(chatImageSlotMinHeight({ width: 320, height: 200 }, true)).toBe(0)
     expect(chatImageSlotMinHeight(null, false)).toBe(0)
+    expect(liveChatImageMinHeight(48, { width: 16, height: 16 }, false)).toBe(48)
+    expect(liveChatImageMinHeight(0, null, true)).toBe(48)
   })
 })

@@ -17,6 +17,7 @@ import {
   canExportChatImage,
   chatImageAspectStyle,
   chatImageSlotMinHeight,
+  liveChatImageMinHeight,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
@@ -153,7 +154,7 @@ export function ChatImage({
   const slot = chatImageSlotMinHeight(known, pending)
   const slotHighWater = useRef(slot)
   if (slot > slotHighWater.current) slotHighWater.current = slot
-  const reserved = known ? 0 : slotHighWater.current
+  const reserved = liveChatImageMinHeight(slotHighWater.current, known, pending)
   const input: ChatImageExportInput = {
     src: displaySrc || src,
     filePath: resolvedFilePath,

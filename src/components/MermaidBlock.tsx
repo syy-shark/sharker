@@ -12,7 +12,7 @@ import {
   writeCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
-import { ArtifactCodeLines, CodeArtifactBlock, CodeArtifactShell } from './CodeArtifactBlock'
+import { ArtifactCodeLines, CodeArtifactShell } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
 type MermaidApi = {
@@ -146,14 +146,12 @@ export function MermaidBlock({
     </CodeArtifactShell>
   )
 
-  if (!closed) {
-    return shell(placeholder(<ArtifactCodeLines code={source} />))
-  }
-  if (!source.trim() || failed) {
-    return <CodeArtifactBlock code={source} language={fenceLang} />
-  }
-  if (!svg) {
-    return shell(placeholder(<ArtifactCodeLines code={source} />))
+  if (!closed || !source.trim() || failed || !svg) {
+    return shell(
+      placeholder(<ArtifactCodeLines code={source} />),
+      undefined,
+      failed ? 'mermaid 解析失败' : undefined
+    )
   }
   const aspect = mermaidSvgAspectStyle(svg)
   return shell(

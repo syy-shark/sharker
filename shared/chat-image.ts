@@ -270,6 +270,15 @@ export function chatImageSlotMinHeight(
   return pending ? CHAT_IMAGE_PENDING_MIN_PX : 0
 }
 
+/** 直播图槽：记住 pending 高，成图后只升不降，避免 48px 占位在小图上塌贴底 */
+export function liveChatImageMinHeight(
+  floorPx: number,
+  known: ChatImageSize | null | undefined,
+  pending: boolean
+): number {
+  return Math.max(Math.max(0, floorPx), chatImageSlotMinHeight(known, pending))
+}
+
 export function chatImageAspectStyle(
   size: ChatImageSize | null | undefined
 ): { aspectRatio: string } | undefined {

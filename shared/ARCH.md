@@ -44,7 +44,7 @@
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区或附加根（目录名前缀）；拒绝 `www.`、`</tag>` 与尾斜杠 / `a\\` 假路径，以免直播把自动链接 / HTML / 反斜杠硬换行收束成文件芯片 |
 | `mermaid-fence.ts` | ```mermaid / ```mmd 围栏判定；直播开闭都挂 MermaidBlock，只在闭合后画图；按主题缓存 SVG，避免重挂闪回源码；从 viewBox / 宽高解析固有尺寸；成图前按节点/边/行数估高并做高水位占位，避免代码尾换 SVG 跳贴底 |
 | `mermaid-fence.test.ts` | 认 mermaid / mmd，拒绝 js / diff；SVG 缓存按主题隔离并 LRU 淘汰；viewBox / px 尺寸、忽略百分宽高；估高 / 高度缓存 / 成图槽取高 |
-| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位（不再用 8rem 成图后塌贴底） |
+| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位，`liveChatImageMinHeight` 成图后只升不降（不再用 8rem / 小图塌贴底） |
 | `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高 |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
