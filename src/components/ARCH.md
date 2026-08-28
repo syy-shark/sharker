@@ -21,7 +21,7 @@
 | `GoalProgressRow.tsx` / `.css` | 输入框上方的线程目标进度行（对标 Codex Goal）：暂停 / 继续 / 编辑 / 清除；`/goal edit` 用 `editTick` 打开编辑；`startedAt` 用独立秒表显示耗时；不接收直播 token |
 | `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史（标题/正文/分支扩匹配）、项目选择器、附件、听写/语音、忙时 Enter 按 `followUpBehavior`（默认排队）/ ⌘⇧Enter 反转 / Tab 排队（⌃Tab / ⌘Tab 不补全也不排队）、`composerEnterBehavior` 三档（对标 Codex Enter 发送）、审批打开时 Enter 允许一次 / Esc 拒绝、计划 / 本地 / 隔离芯片（计划不跟直播 token 变、不自动开一轮）；`/` 列表并入已安装 Skill（选中写入 `$name`，不盖内置命令）；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；空输入 Esc+Esc 回编上一条用户气泡（不把草稿填回输入框）；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘；有目标时在输入框上方挂 `GoalProgressRow` |
 | `ComposerQueue.tsx` / `.css` | 输入框上方排队条（对标 Codex）：编辑 / 重排 / 发送 / 删除；不进对话滚动区，避免直播贴底跳动 |
-| `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
+| `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、Hand off 交接本地/隔离（对标 Codex header）、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上（对标 Codex 时序）；过程区间距固定，不在正文出现时再加分隔；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出）；命令输出按 `toolOutputDisplay` 截尾/折叠；正文已上屏时隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动 |
@@ -29,7 +29,7 @@
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览；保住 GFM 任务列表 class；元素子节点不套 span，避免收束跳动 |
-| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价 ATX/Setext 标题（含行尾 `#`）/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/嵌套引用（`blockquote>p`、引用围栏与懒续行）/表格对齐与无两侧 `|`/分隔线（含 `* * *`）/缩进代码/脚注区（缩进续行与多段）/http 图（含 title 与 `![alt][id]`）/HTML 实体/删除线/下划线强调/`***` 嵌套强调/反斜杠转义/引用式链接/邮箱/`www.`/硬换行与可点 http / 文件引用；全文引用定义挂到已闭合块；任务项用 GFM `contains-task-list` / `task-list-item`；`continueCheapProseBlocks` 保住已闭合项，不每 token 跑 remark |
+| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价 ATX/Setext 标题（含行尾 `#`）/列表（含 `1)`、`ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/嵌套引用（`blockquote>p`、引用围栏与懒续行）/表格对齐与无两侧 `|`/分隔线（含 `* * *`）/缩进代码/脚注区（缩进续行与多段）/http 图（含 title 与 `![alt][id]`）/HTML 实体/删除线/下划线强调/`***` 嵌套强调/反斜杠转义/引用式链接/邮箱/`www.`/硬换行与可点 http / 文件引用；全文引用定义挂到已闭合块；任务项用 GFM `contains-task-list` / `task-list-item`；`continueCheapProseBlocks` 保住已闭合项，不每 token 跑 remark |
 | `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 与收束后共用行节点（已闭合行 memo），头栏同为语言标签 + 复制按钮位（不再写「写入中」），闭合围栏不再换一套 DOM |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论；⌘/Ctrl+单击行打开预览 |

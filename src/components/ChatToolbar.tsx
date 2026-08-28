@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：右侧面板；中间空白拖窗
+ * - 右：Hand off / 隔离 worktree / PR / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { useEffect, useState } from 'react'
@@ -17,6 +17,7 @@ import {
   GitBranch,
   Pin
 } from 'lucide-react'
+import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
 
 interface Props {
@@ -39,6 +40,9 @@ interface Props {
   worktreePath?: string | null
   onOpenWorktree?: () => void
   onCreateBranchHere?: () => void
+  /** 顶栏 Hand off（对标 Codex：header 在 Local / Worktree 之间交接） */
+  threadMode?: ThreadMode
+  onThreadModeChange?: (mode: ThreadMode) => void
 }
 
 /** 挂到 body，用 fixed 相对视口，避免 flex 壳把 absolute 子节点挤到底部 */
@@ -61,7 +65,9 @@ export function ChatToolbar({
   onOpenPullRequest,
   worktreePath = null,
   onOpenWorktree,
-  onCreateBranchHere
+  onCreateBranchHere,
+  threadMode = 'local',
+  onThreadModeChange
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
 
@@ -128,6 +134,26 @@ export function ChatToolbar({
         <div className="chat-toolbar-drag" aria-hidden />
 
         <div className="chat-toolbar-right">
+          {onThreadModeChange && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-pr-chip"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onThreadModeChange(threadMode === 'worktree' ? 'local' : 'worktree')
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title={
+                threadMode === 'worktree'
+                  ? '交接回本地工作区（对标 Codex Hand off）'
+                  : '交接进隔离 worktree（对标 Codex Hand off）'
+              }
+              aria-label={threadMode === 'worktree' ? '交接到本地' : '交接到隔离'}
+            >
+              {threadMode === 'worktree' ? '交接到本地' : '交接到隔离'}
+            </button>
+          ) : null}
           {worktreePath && onOpenWorktree && !popout ? (
             <button
               type="button"

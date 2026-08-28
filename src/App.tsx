@@ -6194,6 +6194,8 @@ export default function App() {
               worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
               onOpenWorktree={handleOpenWorktree}
               onCreateBranchHere={() => void handleCreateBranchHere()}
+              threadMode={threadMode}
+              onThreadModeChange={handleThreadModeChange}
               onPopOut={() => {
                 const ws = settingsRef.current.activeWorkspaceId
                 const id = activeConversationIdRef.current
