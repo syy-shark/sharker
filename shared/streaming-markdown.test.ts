@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapInlineMarkdown,
   splitStreamingMarkdown
@@ -63,5 +64,32 @@ describe('splitStreamingMarkdown', () => {
     ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
+  })
+
+  it('reuses closed blocks when only the tail grows', () => {
+    const first = splitStreamingMarkdown('Hello world.\n\nNext')
+    expect(first.closedEnd).toBe('Hello world.\n\n'.length)
+    const grown = continueStreamingMarkdown(first, 'Hello world.\n\nNext', 'Hello world.\n\nNext sentence')
+    expect(grown.blocks[0]).toBe(first.blocks[0])
+    expect(grown.blocks).toBe(first.blocks)
+    expect(grown.tail).toBe('Next sentence')
+    expect(grown.closedEnd).toBe(first.closedEnd)
+
+    const committed = continueStreamingMarkdown(
+      grown,
+      'Hello world.\n\nNext sentence',
+      'Hello world.\n\nNext sentence\n\nMore'
+    )
+    expect(committed.blocks[0]).toBe(first.blocks[0])
+    expect(committed.blocks).toHaveLength(2)
+    expect(committed.blocks[1]?.text).toBe('Next sentence\n')
+    expect(committed.tail).toBe('More')
+  })
+
+  it('falls back to a full split when the prefix changes', () => {
+    const first = splitStreamingMarkdown('Hello world.\n\nNext')
+    const edited = continueStreamingMarkdown(first, 'Hello world.\n\nNext', 'Changed.\n\nNext')
+    expect(edited.blocks[0]).not.toBe(first.blocks[0])
+    expect(edited.blocks[0]?.text).toBe('Changed.\n')
   })
 })

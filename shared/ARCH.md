@@ -32,8 +32,8 @@
 | `token-usage-format.test.ts` | 用量窗口与汇总 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child） |
-| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；散文尾廉价行内解析 |
-| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、廉价行内 |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价行内解析 |
+| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
 | `git-status.ts` | porcelain 行解析：暂存 / 未暂存 / 未跟踪 |
@@ -92,8 +92,8 @@
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组 |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
-| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字 |
-| `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
+| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字；`shouldStartGoalTurn` 表示文本即首轮提示 |
+| `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 / 首轮是否发起 |
 | `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文 / 本机今日用量） |
 | `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量 |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |

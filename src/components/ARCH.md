@@ -29,7 +29,7 @@
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流 |
-| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + `useMemo` 拆分，已闭合块 memo，只重绘增长尾部；未闭合围栏用 `LiveFenceTail`；散文尾用廉价行内解析，不每 token 跑 remark |
+| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；未闭合围栏用 `LiveFenceTail`；散文尾用廉价行内解析，不每 token 跑 remark |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏（无行号节点） |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |

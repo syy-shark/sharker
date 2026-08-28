@@ -85,6 +85,11 @@ export function goalPromptBlock(goal: ThreadGoal | null | undefined): string | n
   ].join('\n')
 }
 
+/** 官方 `/goal 文本`：目标即首轮提示，不自动多小时循环 */
+export function shouldStartGoalTurn(command: GoalCommand): boolean {
+  return command.type === 'set'
+}
+
 /** Composer 芯片短文案 */
 export function formatGoalChip(goal: ThreadGoal | null | undefined): string | null {
   const text = goal?.text?.trim()

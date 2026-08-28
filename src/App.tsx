@@ -124,6 +124,7 @@ import { goalTextForConversation, loadThreadGoal, saveThreadGoal } from './lib/t
 import {
   applyGoalCommand,
   parseGoalCommand,
+  shouldStartGoalTurn,
   type GoalCommand,
   type ThreadGoal
 } from '../shared/thread-goal'
@@ -4067,10 +4068,15 @@ export default function App() {
           break
         case 'set_goal': {
           const convId = activeConversationIdRef.current
-          const next = applyGoalCommand(threadGoalRef.current, parseGoalCommand(args))
+          const command = parseGoalCommand(args)
+          const next = applyGoalCommand(threadGoalRef.current, command)
           threadGoalRef.current = next.goal
           setThreadGoal(next.goal)
           if (convId) saveThreadGoal(convId, next.goal)
+          if (shouldStartGoalTurn(command) && command.type === 'set') {
+            void handlePromptSubmit(command.text)
+            break
+          }
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
@@ -4472,6 +4478,7 @@ export default function App() {
       handleNativeOrAppUndo,
       handleMarkUnread,
       handleOpenWorktree,
+      handlePromptSubmit,
       handleRenameConversation,
       handleStandaloneConversation,
       handleThreadModeChange,

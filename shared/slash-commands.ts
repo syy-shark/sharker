@@ -56,7 +56,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'goal',
-    description: '设定 / 暂停 / 清除线程目标',
+    description: '设定目标并开始首轮；pause / resume / clear 管理进度',
     scope: 'ui',
     action: 'set_goal',
     argsHint: '[文本|pause|resume|clear]',

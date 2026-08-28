@@ -4,7 +4,8 @@ import {
   formatGoalChip,
   formatGoalProgressLabel,
   goalPromptBlock,
-  parseGoalCommand
+  parseGoalCommand,
+  shouldStartGoalTurn
 } from './thread-goal'
 
 describe('thread goal', () => {
@@ -14,6 +15,9 @@ describe('thread goal', () => {
     expect(parseGoalCommand('PAUSE')).toEqual({ type: 'pause' })
     expect(parseGoalCommand('resume')).toEqual({ type: 'resume' })
     expect(parseGoalCommand('修好滚动')).toEqual({ type: 'set', text: '修好滚动' })
+    expect(shouldStartGoalTurn({ type: 'set', text: '修好滚动' })).toBe(true)
+    expect(shouldStartGoalTurn({ type: 'show' })).toBe(false)
+    expect(shouldStartGoalTurn({ type: 'pause' })).toBe(false)
   })
 
   it('sets pauses and clears a goal', () => {

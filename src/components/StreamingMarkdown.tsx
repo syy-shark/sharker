@@ -2,11 +2,12 @@
  * 流式 Markdown：已闭合块 memo 住，只重绘增长中的尾部。
  * @see src/components/ARCH.md
  */
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { LiveFenceTail } from './CodeArtifactBlock'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
 import {
+  continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapInlineMarkdown,
   splitStreamingMarkdown
@@ -30,7 +31,12 @@ const LiveProseTail = memo(function LiveProseTail({ text }: { text: string }) {
 
 /** 直播正文：稳定块 + 尾部，避免每 token 重解析全文 */
 export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
-  const split = useMemo(() => splitStreamingMarkdown(text), [text])
+  const prevRef = useRef({ text: '', split: splitStreamingMarkdown('') })
+  const split = useMemo(() => {
+    const next = continueStreamingMarkdown(prevRef.current.split, prevRef.current.text, text)
+    prevRef.current = { text, split: next }
+    return next
+  }, [text])
   const fenceBody = useMemo(
     () => (split.tailKind === 'fence' ? extractOpenFenceBody(split.tail) : ''),
     [split.tail, split.tailKind]
