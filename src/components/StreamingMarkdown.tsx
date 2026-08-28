@@ -13,6 +13,7 @@ import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import {
   collectLinkDefinitions,
   cheapInlineNodeKeys,
+  cheapProseBlockKeys,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
@@ -125,7 +126,7 @@ function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
 function renderCheapList(
   ordered: boolean,
   items: CheapListItem[],
-  key?: number,
+  key?: string,
   loose?: boolean,
   start?: number
 ): ReactNode {
@@ -179,7 +180,7 @@ function renderCheapList(
         const inner = (
           <>
             {body}
-            {item.blocks?.map((block, bi) => renderCheapBlock(block, bi))}
+            {item.blocks?.length ? renderCheapBlocks(item.blocks) : null}
             {tail}
             {nested}
           </>
@@ -201,21 +202,26 @@ function cellAlign(align: 'left' | 'right' | 'center' | null | undefined) {
   return align ? { textAlign: align } : undefined
 }
 
+function renderCheapBlocks(blocks: CheapProseBlock[]): ReactNode[] {
+  const keys = cheapProseBlockKeys(blocks)
+  return blocks.map((block, index) => renderCheapBlock(block, keys[index]!))
+}
+
 /** 廉价块用与收束后 MarkdownBody 接近的标签，减少贴底跳动 */
-function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
+function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
   if (block.type === 'heading') {
     const Tag = `h${block.level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
-    return <Tag key={index}>{renderCheapInline(block.nodes)}</Tag>
+    return <Tag key={key}>{renderCheapInline(block.nodes)}</Tag>
   }
   if (block.type === 'list') {
-    return renderCheapList(block.ordered, block.items, index, block.loose, block.start)
+    return renderCheapList(block.ordered, block.items, key, block.loose, block.start)
   }
   if (block.type === 'quote') {
-    return <blockquote key={index}>{block.blocks.map(renderCheapBlock)}</blockquote>
+    return <blockquote key={key}>{renderCheapBlocks(block.blocks)}</blockquote>
   }
   if (block.type === 'table') {
     return (
-      <table key={index}>
+      <table key={key}>
         <thead>
           <tr>
             {block.header.map((cell, i) => (
@@ -241,19 +247,19 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
       </table>
     )
   }
-  if (block.type === 'hr') return <hr key={index} />
+  if (block.type === 'hr') return <hr key={key} />
   if (block.type === 'pre') {
     if (isMermaidLang(block.lang)) {
-      return <MermaidBlock key={index} code={block.text} />
+      return <MermaidBlock key={key} code={block.text} />
     }
     if (isInlineDemoLang(block.lang) && isInlineDemoPaintable(block.text)) {
-      return <InlineDemo key={index} html={block.text} streaming />
+      return <InlineDemo key={key} html={block.text} streaming />
     }
-    return <LiveFenceTail key={index} code={block.text} language={block.lang} />
+    return <LiveFenceTail key={key} code={block.text} language={block.lang} />
   }
   if (block.type === 'footnotes') {
     return (
-      <section key={index} data-footnotes className="footnotes">
+      <section key={key} data-footnotes className="footnotes">
         <h2 className="sr-only" id="footnote-label">
           Footnotes
         </h2>
@@ -284,7 +290,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
       </section>
     )
   }
-  return <p key={index}>{renderCheapInline(block.nodes)}</p>
+  return <p key={key}>{renderCheapInline(block.nodes)}</p>
 }
 
 /** 增长中的散文尾：廉价块 + 行内，不跑 remark */
@@ -301,7 +307,7 @@ const LiveProseTail = memo(function LiveProseTail({
     prevRef.current = { text, blocks: next }
     return next
   }, [text, defs])
-  return <div className="live-prose-tail">{blocks.map(renderCheapBlock)}</div>
+  return <div className="live-prose-tail">{renderCheapBlocks(blocks)}</div>
 })
 
 /** 直播正文：散文全文廉价增量；未闭合围栏单独画，避免每段收束换 remark */

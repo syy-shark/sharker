@@ -1380,6 +1380,24 @@ function cheapInlineSourceAll(nodes: CheapInlineNode[]): string {
   return nodes.map(cheapInlineSource).join('')
 }
 
+/** 直播块 key：按类型计数，中间块改类型时后面已画块不换下标 */
+export function cheapProseBlockKeys(blocks: CheapProseBlock[]): string[] {
+  const counts = new Map<string, number>()
+  return blocks.map((block) => {
+    const kind =
+      block.type === 'heading'
+        ? `h${block.level}`
+        : block.type === 'list'
+          ? block.ordered
+            ? 'ol'
+            : 'ul'
+          : block.type
+    const n = counts.get(kind) ?? 0
+    counts.set(kind, n + 1)
+    return `${kind}:${n}`
+  })
+}
+
 /** 直播行内 key：用类型 + 前缀长度，闭合标记时已画节点不换下标 */
 export function cheapInlineNodeKeys(nodes: CheapInlineNode[]): string[] {
   const keys: string[] = []

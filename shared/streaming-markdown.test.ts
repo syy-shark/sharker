@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   collectLinkDefinitions,
   cheapInlineNodeKeys,
+  cheapProseBlockKeys,
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
@@ -854,6 +855,11 @@ describe('splitStreamingMarkdown', () => {
     expect(pipelessGrown.map((b) => b.type)).toEqual(['table', 'heading', 'list'])
     expect(pipelessGrown[1]).toBe(pipelessFirst[1])
     expect(pipelessGrown[2]).toBe(pipelessFirst[2])
+    const pipelessFirstKeys = cheapProseBlockKeys(pipelessFirst)
+    const pipelessGrownKeys = cheapProseBlockKeys(pipelessGrown)
+    expect(pipelessGrownKeys[1]).toBe(pipelessFirstKeys[1])
+    expect(pipelessGrownKeys[2]).toBe(pipelessFirstKeys[2])
+    expect(pipelessGrownKeys[0]).not.toBe(pipelessFirstKeys[0])
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
