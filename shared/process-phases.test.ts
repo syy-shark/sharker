@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveChronologicalSteps } from './process-phases'
+import { deriveChronologicalSteps, reuseProcessPhaseSteps } from './process-phases'
 import type { TurnSegment } from './types'
 
 describe('process phases privacy', () => {
@@ -29,5 +29,23 @@ describe('process phases privacy', () => {
     const think = steps.find((s) => s.kind === 'thinking')
     expect(think?.title).toBe('分析任务目标与约束')
     expect(think?.title).not.toMatch(/package\.json secretly|The user wants/)
+    const grown = deriveChronologicalSteps([
+      ...segments,
+      {
+        id: 'tool2',
+        kind: 'tool',
+        toolName: 'write_file',
+        toolTitle: '写入文件',
+        toolDetail: 'src/a.ts',
+        content: '写入文件 · src/a.ts',
+        status: 'active',
+        startedAt: 5
+      }
+    ])
+    const reused = reuseProcessPhaseSteps(steps, grown)
+    expect(reused[0]).toBe(steps[0])
+    expect(reused[1]).toBe(steps[1])
+    expect(reused).toHaveLength(3)
+    expect(reused[2]).toBe(grown[2])
   })
 })

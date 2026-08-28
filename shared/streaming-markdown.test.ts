@@ -7,6 +7,7 @@ import {
   finalizeStreamingMarkdownSplit,
   extractOpenFenceBody,
   isOnlyLinkDefinitions,
+  linkDefinitionBlob,
   markdownBlockWithDefs,
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
@@ -472,6 +473,9 @@ describe('splitStreamingMarkdown', () => {
       }
     ])
     expect(isOnlyLinkDefinitions('[d]: https://a.test/x\n')).toBe(true)
+    expect(linkDefinitionBlob('普通段落 **粗** 与 `code`')).toBe('')
+    expect(collectLinkDefinitions('普通段落没有引用定义').size).toBe(0)
+    expect(isOnlyLinkDefinitions('普通段落')).toBe(false)
     expect(parseCheapProseBlocks('<!-- comment -->').map((b) => b.type)).toEqual([])
     expect(parseCheapProseBlocks('foo <!-- x --> bar')).toEqual([
       { type: 'p', nodes: [{ type: 'text', text: 'foo  bar' }] }

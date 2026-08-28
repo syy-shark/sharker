@@ -7,12 +7,13 @@
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { LiveDuration } from './LiveDuration'
 import type { TurnSegment } from '../../shared/types'
 import {
   deriveChronologicalSteps,
+  reuseProcessPhaseSteps,
   type ProcessPhaseStep
 } from '../../shared/process-phases'
 import {
@@ -263,6 +264,31 @@ function buildDisplaySteps(options: {
   return display
 }
 
+function reuseDisplaySteps(prev: DisplayStep[], next: DisplayStep[]): DisplayStep[] {
+  if (prev === next) return prev
+  if (!prev.length) return next
+  const out: DisplayStep[] = []
+  const shared = Math.min(prev.length, next.length)
+  for (let i = 0; i < shared; i++) {
+    const a = prev[i]!
+    const b = next[i]!
+    if (
+      a.id === b.id &&
+      a.title === b.title &&
+      a.detail === b.detail &&
+      a.status === b.status &&
+      a.kind === b.kind &&
+      a.source === b.source
+    ) {
+      out.push(a)
+    } else {
+      out.push(b)
+    }
+  }
+  if (next.length > prev.length) out.push(...next.slice(prev.length))
+  return out
+}
+
 export function ThoughtDisclosure({
   text,
   open,
@@ -364,7 +390,7 @@ function WorkedDisclosure({
   )
 }
 
-function ProcessStepRow({
+const ProcessStepRow = memo(function ProcessStepRow({
   step,
   isLast,
   onOpenSubAgent,
@@ -479,10 +505,10 @@ function ProcessStepRow({
       </div>
     </li>
   )
-}
+})
 
 /** 按先后顺序渲染过程；正文上屏后把步骤收进 Worked for，避免顶着回答长高。 */
-export function TurnFlow({
+export const TurnFlow = memo(function TurnFlow({
   segments,
   isStreaming = false,
   liveStartedAt,
@@ -524,10 +550,15 @@ export function TurnFlow({
     wasContentStreamingRef.current = contentStreaming
   }, [contentStreaming])
 
-  const chronological = useMemo(
-    () => deriveChronologicalSteps(segments, { isStreaming }),
-    [isStreaming, segments]
-  )
+  const chronologicalRef = useRef<ProcessPhaseStep[]>([])
+  const chronological = useMemo(() => {
+    const next = reuseProcessPhaseSteps(
+      chronologicalRef.current,
+      deriveChronologicalSteps(segments, { isStreaming })
+    )
+    chronologicalRef.current = next
+    return next
+  }, [isStreaming, segments])
   const steps = useMemo(
     () => visibleSteps(chronological, isStreaming),
     [chronological, isStreaming]
@@ -604,14 +635,19 @@ export function TurnFlow({
   // 对标 Codex：思考默认折叠成一条「思考中」，不把增长正文顶在回答上面造成贴底跳动。
   const thoughtExpanded = userThoughtRef.current ? thoughtOpen : false
 
-  const displaySteps = buildDisplaySteps({
-    steps,
-    isStreaming,
-    approvalWaiting,
-    generatingAnswer,
-    planningNext,
-    showThinkingPlaceholder
-  })
+  const displayStepsRef = useRef<DisplayStep[]>([])
+  const displaySteps = reuseDisplaySteps(
+    displayStepsRef.current,
+    buildDisplaySteps({
+      steps,
+      isStreaming,
+      approvalWaiting,
+      generatingAnswer,
+      planningNext,
+      showThinkingPlaceholder
+    })
+  )
+  displayStepsRef.current = displaySteps
   const lastDisplayStep = displaySteps[displaySteps.length - 1] || null
   const liveHead = buildLiveHead({
     steps: displaySteps,
@@ -829,4 +865,4 @@ export function TurnFlow({
       ) : null}
     </div>
   )
-}
+})

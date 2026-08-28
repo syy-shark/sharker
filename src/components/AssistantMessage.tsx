@@ -16,7 +16,7 @@ import {
   shouldDisplayFinalBody
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
-import { liveThinkingText, isInlineDemoPaintable } from '../../shared/live-display'
+import { liveThinkingText, isInlineDemoPaintable, sameRefList } from '../../shared/live-display'
 import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
@@ -186,15 +186,17 @@ export const AssistantMessage = memo(function AssistantMessage({
     () => new Set(answerParts.filter((p) => p.type === 'text').map((p) => p.id)),
     [answerParts]
   )
-  const processForFlow = useMemo(
-    () =>
-      processOnly.filter((s) => {
-        if (s.toolName === 'present_inline_demo') return false
-        if (s.kind === 'text' && answerTextIds.has(s.id)) return false
-        return true
-      }),
-    [processOnly, answerTextIds]
-  )
+  const processForFlowRef = useRef<TurnSegment[]>([])
+  const processForFlow = useMemo(() => {
+    const next = processOnly.filter((s) => {
+      if (s.toolName === 'present_inline_demo') return false
+      if (s.kind === 'text' && answerTextIds.has(s.id)) return false
+      return true
+    })
+    if (sameRefList(processForFlowRef.current, next)) return processForFlowRef.current
+    processForFlowRef.current = next
+    return next
+  }, [processOnly, answerTextIds])
   const showFlowPanel = useSegmentFlow && (isStreaming ? true : flowOpen)
   /** 完成后可展开：真实工具 / 未进正文的旁白 / 错误。演示与闲聊不占按钮。 */
   const hasExpandableProcess = processForFlow.some(

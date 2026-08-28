@@ -8,6 +8,7 @@ import {
   liveThinkingText,
   rollingThinkPreview,
   selectLiveHeadStep,
+  sameRefList,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
   shouldSynthesizePlanning,
@@ -169,6 +170,12 @@ describe('worked-for fold', () => {
     expect(shouldCollapseProcessOnAnswerStart(true, false)).toBe(true)
     expect(shouldCollapseProcessOnAnswerStart(true, true)).toBe(false)
     expect(shouldCollapseProcessOnAnswerStart(false, false)).toBe(false)
+    const tool = { id: 'read' }
+    const prev = [tool]
+    expect(sameRefList(prev, [tool])).toBe(true)
+    expect(sameRefList(prev, prev)).toBe(true)
+    expect(sameRefList(prev, [{ id: 'read' }])).toBe(false)
+    expect(sameRefList(prev, [tool, { id: 'write' }])).toBe(false)
   })
 
   it('uses the earliest start and latest end for the worked clock', () => {

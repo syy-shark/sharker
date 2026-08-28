@@ -274,6 +274,10 @@ const SETEXT_RE = /^ {0,3}(?:=+|-+)\s*$/
 export type CheapLinkDef = { href: string; title?: string }
 
 const EMPTY_LINK_DEFS: ReadonlyMap<string, CheapLinkDef> = new Map()
+const EMPTY_FOOTNOTE_DEFS: ReadonlyMap<string, string> = new Map()
+const EMPTY_SKIP: ReadonlySet<number> = new Set()
+const EMPTY_LINK_SCAN = { defs: EMPTY_LINK_DEFS as Map<string, CheapLinkDef>, skip: EMPTY_SKIP as Set<number> }
+const EMPTY_FOOTNOTE_SCAN = { defs: EMPTY_FOOTNOTE_DEFS as Map<string, string>, skip: EMPTY_SKIP as Set<number> }
 
 function asLinkDef(value: string | CheapLinkDef | undefined): CheapLinkDef | undefined {
   if (value == null) return undefined
@@ -628,12 +632,16 @@ function parseLinkDestination(dest: string): { href: string; title?: string } | 
 
 /** 从全文收集引用定义，供直播尾与已闭合块共用 */
 export function collectLinkDefinitions(text: string): Map<string, CheapLinkDef> {
-  return scanLinkDefinitions(normalizeStreamingText(text).split('\n')).defs
+  const src = normalizeStreamingText(text)
+  if (!src.includes(']:')) return new Map()
+  return scanLinkDefinitions(src.split('\n')).defs
 }
 
 /** 把定义行拼回 Markdown，挂到已闭合块上让 remark 也能解析引用 */
 export function linkDefinitionBlob(text: string): string {
-  const lines = normalizeStreamingText(text).split('\n')
+  const src = normalizeStreamingText(text)
+  if (!src.includes(']:')) return ''
+  const lines = src.split('\n')
   const { skip } = scanLinkDefinitions(lines)
   return lines.filter((_, index) => skip.has(index)).join('\n')
 }
@@ -649,7 +657,9 @@ function isBlankAfterHtmlComments(text: string): boolean {
 
 /** 整段只有引用定义时不要画成段落（remark 会吃掉，直播也不画） */
 export function isOnlyLinkDefinitions(text: string): boolean {
-  const lines = normalizeStreamingText(text).split('\n')
+  const src = normalizeStreamingText(text)
+  if (!src.includes(']:')) return false
+  const lines = src.split('\n')
   const { skip } = scanLinkDefinitions(lines)
   const nonempty = lines
     .map((line, index) => ({ line, index }))
@@ -1782,9 +1792,9 @@ export function parseCheapProseBlocks(
   const src = normalizeStreamingText(text)
   if (!src) return []
   const lines = src.split('\n')
-  const linkDefScan = scanLinkDefinitions(lines)
+  const linkDefScan = src.includes(']:') ? scanLinkDefinitions(lines) : EMPTY_LINK_SCAN
   const linkDefs = defs ?? linkDefScan.defs
-  const footnoteScan = scanFootnoteDefinitions(lines)
+  const footnoteScan = src.includes('[^') ? scanFootnoteDefinitions(lines) : EMPTY_FOOTNOTE_SCAN
   const footnoteDefs = footnoteScan.defs
   const blocks: CheapProseBlock[] = []
   let para: string[] = []

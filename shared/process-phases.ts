@@ -446,6 +446,36 @@ export function deriveChronologicalSteps(
   return buildStepsFromSource(source, isStreaming)
 }
 
+/** 已完成步骤保持同一对象，只换增长中的那一行，避免直播重挂整条时间线 */
+export function reuseProcessPhaseSteps(
+  prev: ProcessPhaseStep[],
+  next: ProcessPhaseStep[]
+): ProcessPhaseStep[] {
+  if (prev === next) return prev
+  if (!prev.length) return next
+  const out: ProcessPhaseStep[] = []
+  const shared = Math.min(prev.length, next.length)
+  for (let i = 0; i < shared; i++) {
+    const a = prev[i]!
+    const b = next[i]!
+    if (
+      a.id === b.id &&
+      a.phase === b.phase &&
+      a.kind === b.kind &&
+      a.title === b.title &&
+      a.detail === b.detail &&
+      a.status === b.status &&
+      a.segment === b.segment
+    ) {
+      out.push(a)
+    } else {
+      out.push(b)
+    }
+  }
+  if (next.length > prev.length) out.push(...next.slice(prev.length))
+  return out
+}
+
 /** 从原始片段派生稳定的四阶段展示模型；不暴露 thinking.content。 */
 export function deriveProcessPhases(
   segments: TurnSegment[],

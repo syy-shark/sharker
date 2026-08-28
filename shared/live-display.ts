@@ -230,6 +230,13 @@ export function formatElapsedClock(seconds: number): string {
   return rem ? `${hours}h ${rem}m` : `${hours}h`
 }
 
+/** 直播过程数组：引用没变就复用同一份，避免回答 token 重挂 TurnFlow */
+export function sameRefList<T>(prev: readonly T[] | null | undefined, next: readonly T[]): boolean {
+  if (prev === next) return true
+  if (!prev || prev.length !== next.length) return false
+  return prev.every((item, i) => item === next[i])
+}
+
 /** 该历史行是否落在贴底窗口内（0-based index） */
 export function isNearLiveMessageRow(
   index: number,
