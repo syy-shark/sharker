@@ -189,6 +189,11 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
       { type: 'text', text: '半截 ![未闭](https://x' }
     ])
+    expect(parseCheapInlineMarkdown('[x]()')).toEqual([{ type: 'link', text: 'x', href: '' }])
+    expect(parseCheapInlineMarkdown('[见](#sec)')).toEqual([{ type: 'link', text: '见', href: '#sec' }])
+    expect(parseCheapInlineMarkdown('[rel](./a.ts)')).toEqual([
+      { type: 'link', text: 'rel', href: './a.ts' }
+    ])
     expect(parseCheapInlineMarkdown('见 __粗__ 与 _斜_ ，但 foo_bar_baz 不动')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'strong', text: '粗', mark: '__' },
@@ -575,6 +580,16 @@ describe('splitStreamingMarkdown', () => {
     }
     const messyFenceFirst = parseCheapProseBlocks('1. ```\ncode\n```')
     expect(messyFenceFirst.map((b) => b.type)).toEqual(['list', 'p', 'pre'])
+    const itemHr = parseCheapProseBlocks('- item\n  ***')
+    expect(itemHr.map((b) => b.type)).toEqual(['list'])
+    if (itemHr[0]?.type === 'list') {
+      expect(itemHr[0].items[0]?.blocks?.[0]?.type).toBe('hr')
+    }
+    const hashDef = parseCheapProseBlocks('见 [节][s]。\n[s]: #sec')
+    expect(hashDef.map((b) => b.type)).toEqual(['p'])
+    if (hashDef[0]?.type === 'p') {
+      expect(hashDef[0].nodes.some((n) => n.type === 'link' && n.href === '#sec')).toBe(true)
+    }
   })
 
   it('reuses closed cheap blocks when a list or table grows', () => {

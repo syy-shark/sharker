@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`、项内引用 / ATX / Setext / 嵌套围栏 / 围栏后后缀）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径）、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -400,7 +400,7 @@ export function parseLinkDefinitionLine(line: string): { id: string; href: strin
   if (!match) return null
   let href = match[2] ?? ''
   if (href.startsWith('<') && href.endsWith('>')) href = href.slice(1, -1)
-  if (!/^https?:\/\//i.test(href) && !href.startsWith('mailto:')) return null
+  if (!href) return null
   const title = match[3] ?? match[4] ?? match[5]
   return title
     ? { id: normalizeLinkLabel(match[1] ?? ''), href, title }
@@ -911,11 +911,13 @@ export function parseCheapInlineMarkdown(
             buf += src.slice(i)
             break
           }
-          const dest = parseLinkDestination(src.slice(labelEnd + 2, urlEnd))
+          const rawDest = src.slice(labelEnd + 2, urlEnd)
+          const dest = parseLinkDestination(rawDest)
+          const emptyDest = rawDest.trim() === ''
           const href = dest?.href ?? ''
           const title = dest?.title
           const wrapRaw = rawLabel.includes('\n') ? src.slice(i, urlEnd + 1) : undefined
-          if (image && /^https?:\/\//i.test(href)) {
+          if (image && (dest || emptyDest)) {
             flush()
             nodes.push(
               cheapImage(label, href, {
@@ -926,7 +928,7 @@ export function parseCheapInlineMarkdown(
             i = urlEnd + 1
             continue
           }
-          if (!image && (/^https?:\/\//i.test(href) || href.startsWith('mailto:'))) {
+          if (!image && (dest || emptyDest)) {
             flush()
             nodes.push(
               linkWithLabel(label, href, {
@@ -1354,6 +1356,12 @@ function stealItemSetext(
 }
 /** CommonMark thematic break：`---` / `* * *` / `- - -`（标记之间可空） */
 const HR_RE = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})[ \t]*$/
+
+function parseHrLine(line: string, baseIndent = 0): boolean {
+  const stripped = baseIndent ? dedentLine(line, baseIndent) : line
+  return HR_RE.test(stripped)
+}
+
 const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/
 const TABLE_ROW_RE = /^\s*\|.+\|\s*$/
 
@@ -1765,6 +1773,16 @@ export function parseCheapProseBlocks(
     if (list && list.items.length && leadingIndent(line) > list.indent && SETEXT_RE.test(line)) {
       const item = deepestItemForIndent(list.items, leadingIndent(line))
       if (item && stealItemSetext(item, line, inline)) {
+        list.afterBlank = false
+        continue
+      }
+    }
+    if (list && list.items.length && leadingIndent(line) > list.indent) {
+      const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
+      const base = item.contentIndent ?? list.indent
+      if (parseHrLine(line, base) || HR_RE.test(line)) {
+        if (list.afterBlank) list.loose = true
+        appendItemBlock(item, { type: 'hr' })
         list.afterBlank = false
         continue
       }
