@@ -91,8 +91,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'automations',
     title: '打开自动化',
-    keywords: 'automations 自动化',
+    keywords: 'automations triage queue 自动化 审查队列',
     action: 'open_automations'
+  },
+  {
+    id: 'personality',
+    title: '切换人格',
+    keywords: 'personality pragmatic empathetic 人格 务实 共情',
+    action: 'set_personality'
   },
   {
     id: 'sidebar',

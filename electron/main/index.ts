@@ -84,7 +84,13 @@ import {
   resizeTerminal,
   writeTerminal
 } from './terminal-manager'
-import { listAutomations, saveAutomations, startAutomationScheduler } from './automation-scheduler'
+import {
+  listAutomations,
+  listAutomationQueue,
+  saveAutomations,
+  saveAutomationQueue,
+  startAutomationScheduler
+} from './automation-scheduler'
 import { stopLsp } from '../../tools/services/lsp-client'
 
 let mainWindow: BrowserWindow | null = null
@@ -971,6 +977,11 @@ function registerIpc(): void {
   ipcMain.handle(IPC.LIST_AUTOMATIONS, async () => listAutomations())
   ipcMain.handle(IPC.SAVE_AUTOMATIONS, async (_e, jobs) => {
     await saveAutomations(jobs)
+    return true
+  })
+  ipcMain.handle(IPC.LIST_AUTOMATION_QUEUE, async () => listAutomationQueue())
+  ipcMain.handle(IPC.SAVE_AUTOMATION_QUEUE, async (_e, queue) => {
+    await saveAutomationQueue(Array.isArray(queue) ? queue : [])
     return true
   })
 

@@ -3,16 +3,24 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AutomationJob } from '../../shared/automation'
+import type { AutomationQueueItem } from '../../shared/automation-queue'
+import {
+  markQueueItem,
+  sortAutomationQueue,
+  unreadQueueCount
+} from '../../shared/automation-queue'
 import '../components/settings/SettingsPrimitives.css'
 import './AutomationsPage.css'
 
 interface Props {
   onBack: () => void
+  onOpenConversation?: (conversationId: string) => void
 }
 
 /** 自动化列表与编辑 */
-export function AutomationsPage({ onBack }: Props) {
+export function AutomationsPage({ onBack, onOpenConversation }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
+  const [queue, setQueue] = useState<AutomationQueueItem[]>([])
   const [busy, setBusy] = useState(false)
   const jobsRef = useRef<AutomationJob[]>([])
 
@@ -25,6 +33,9 @@ export function AutomationsPage({ onBack }: Props) {
     const list = await window.sharker.listAutomations()
     jobsRef.current = list
     setJobs(list)
+    if (window.sharker.listAutomationQueue) {
+      setQueue(await window.sharker.listAutomationQueue())
+    }
   }, [])
 
   useEffect(() => {
@@ -75,8 +86,60 @@ export function AutomationsPage({ onBack }: Props) {
             ← 返回
           </button>
           <h1>自动化</h1>
-          <p>定时向 Agent 派发任务（cron：分 时 日 月 周）</p>
+          <p>定时任务跑完进入审查队列，不打断当前对话（对标 Codex Triage）</p>
         </header>
+
+        <section className="automations-queue" aria-label="审查队列">
+          <h2>
+            审查队列
+            {unreadQueueCount(queue) > 0 ? (
+              <span className="automations-queue-count">{unreadQueueCount(queue)}</span>
+            ) : null}
+          </h2>
+          {queue.length === 0 ? (
+            <p className="automations-empty">还没有自动化结果</p>
+          ) : (
+            <ul className="automations-queue-list">
+              {sortAutomationQueue(queue).map((item) => (
+                <li key={item.id} className={`automations-queue-item is-${item.status}`}>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{new Date(item.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="automations-queue-actions">
+                    {item.conversationId && onOpenConversation ? (
+                      <button
+                        type="button"
+                        className="automations-queue-btn"
+                        onClick={() => {
+                          const next = markQueueItem(queue, item.id, 'read')
+                          setQueue(next)
+                          void window.sharker.saveAutomationQueue?.(next)
+                          onOpenConversation(item.conversationId!)
+                        }}
+                      >
+                        打开线程
+                      </button>
+                    ) : null}
+                    {item.status !== 'archived' ? (
+                      <button
+                        type="button"
+                        className="automations-queue-btn"
+                        onClick={() => {
+                          const next = markQueueItem(queue, item.id, 'archived')
+                          setQueue(next)
+                          void window.sharker.saveAutomationQueue?.(next)
+                        }}
+                      >
+                        归档
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <div className="automations-list">
           {jobs.length === 0 ? (

@@ -16,5 +16,5 @@
 |------|------|
 | `index.ts` | 主进程入口：窗口、菜单、IPC、`chat:send` → `executeUserInput`、记忆初始化等 |
 | `terminal-manager.ts` | node-pty 会话：创建/读写/关闭集成终端 |
-| `automation-scheduler.ts` | 读取 `~/.sharker/automations.json`，按 cron 触发任务 |
+| `automation-scheduler.ts` | 读取 `~/.sharker/automations.json`（jobs + 审查队列），按 cron 触发任务 |
 | `ARCH.md` | 本层架构说明 |

@@ -38,6 +38,7 @@
 | `git:branch-changes` | 相对基线分支的已提交变更 |
 | `git:create-pr` | 审查面板用 `gh pr create` 开 PR |
 | `git:create-branch` | 隔离 worktree 在 HEAD 上创建命名分支 |
+| `automations:queue-*` | 自动化审查队列读写 |
 | `workspace:search-files` | Composer `@` 工作区文件搜索 |
 
 ## 数据流

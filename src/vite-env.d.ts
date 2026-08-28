@@ -10,6 +10,7 @@ import type { Conversation, WorkspaceConversationsState } from '../shared/conver
 import type { ComputerUseStatus } from '../shared/computer-use-status'
 import type { BrowserUseStatus } from '../shared/browser-use-status'
 import type { AutomationJob } from '../shared/automation'
+import type { AutomationQueueItem } from '../shared/automation-queue'
 import type { WorkspaceTreeNode } from '../shared/workspace-tree'
 import type {
   AppSettings,
@@ -196,6 +197,8 @@ export interface SharkerApi {
   onTerminalExit: (cb: (payload: { id: string }) => void) => () => void
   listAutomations: () => Promise<AutomationJob[]>
   saveAutomations: (jobs: AutomationJob[]) => Promise<boolean>
+  listAutomationQueue: () => Promise<AutomationQueueItem[]>
+  saveAutomationQueue: (queue: AutomationQueueItem[]) => Promise<boolean>
   onAutomationRun: (cb: (job: AutomationJob) => void) => () => void
 }
 

@@ -23,7 +23,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   appearance: {
     title: '外观',
-    desc: '浅色苹果玻璃与深色金属两套外观。'
+    desc: '浅色苹果玻璃与深色金属；人格只改语气。'
   },
   archived: {
     title: '已归档',

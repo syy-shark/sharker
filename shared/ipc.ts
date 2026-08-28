@@ -73,5 +73,7 @@ export const IPC = {
   TERMINAL_RESIZE: 'terminal:resize',
   TERMINAL_KILL: 'terminal:kill',
   LIST_AUTOMATIONS: 'automations:list',
-  SAVE_AUTOMATIONS: 'automations:save'
+  SAVE_AUTOMATIONS: 'automations:save',
+  LIST_AUTOMATION_QUEUE: 'automations:queue-list',
+  SAVE_AUTOMATION_QUEUE: 'automations:queue-save'
 } as const

@@ -123,10 +123,19 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'review',
-    description: '审查未提交变更（只读，不改文件）',
+    description: '审查变更（未提交或相对基线，只读）',
     scope: 'ui',
     action: 'review_working_tree',
+    argsHint: '[uncommitted|branch]',
     category: 'panel'
+  },
+  {
+    name: 'personality',
+    description: '切换人格（务实 / 共情 / 关闭）',
+    scope: 'ui',
+    action: 'set_personality',
+    argsHint: '[pragmatic|empathetic|none]',
+    category: 'mode'
   },
   {
     name: 'mention',

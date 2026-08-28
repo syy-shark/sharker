@@ -7,6 +7,7 @@ describe('slash commands', () => {
     expect(names).toContain('changes')
     expect(names).toContain('review')
     expect(names).toContain('mention')
+    expect(names).toContain('personality')
     expect(SLASH_COMMANDS.find((c) => c.name === 'changes')?.action).toBe('toggle_changes')
     expect(SLASH_COMMANDS.find((c) => c.name === 'review')?.action).toBe('review_working_tree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mention')?.action).toBe('mention_file')

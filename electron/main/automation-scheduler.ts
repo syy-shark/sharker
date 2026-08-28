@@ -6,31 +6,56 @@ import path from 'path'
 import os from 'os'
 
 import type { AutomationJob } from '../../shared/automation'
+import type { AutomationQueueItem } from '../../shared/automation-queue'
 
 interface AutomationStore {
   jobs: AutomationJob[]
+  queue?: AutomationQueueItem[]
 }
 
 function storePath(): string {
   return path.join(os.homedir(), '.sharker', 'automations.json')
 }
 
-/** 读取全部自动化任务 */
-export async function listAutomations(): Promise<AutomationJob[]> {
+async function readStore(): Promise<AutomationStore> {
   try {
     const raw = await fs.readFile(storePath(), 'utf8')
     const parsed = JSON.parse(raw) as AutomationStore
-    return Array.isArray(parsed.jobs) ? parsed.jobs : []
+    return {
+      jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
+      queue: Array.isArray(parsed.queue) ? parsed.queue : []
+    }
   } catch {
-    return []
+    return { jobs: [], queue: [] }
   }
 }
 
-/** 保存任务列表 */
-export async function saveAutomations(jobs: AutomationJob[]): Promise<void> {
+async function writeStore(store: AutomationStore): Promise<void> {
   const dir = path.dirname(storePath())
   await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(storePath(), JSON.stringify({ jobs }, null, 2), 'utf8')
+  await fs.writeFile(storePath(), JSON.stringify({ jobs: store.jobs, queue: store.queue ?? [] }, null, 2), 'utf8')
+}
+
+/** 读取全部自动化任务 */
+export async function listAutomations(): Promise<AutomationJob[]> {
+  return (await readStore()).jobs
+}
+
+/** 保存任务列表（保留审查队列） */
+export async function saveAutomations(jobs: AutomationJob[]): Promise<void> {
+  const store = await readStore()
+  await writeStore({ ...store, jobs })
+}
+
+/** 读取自动化审查队列 */
+export async function listAutomationQueue(): Promise<AutomationQueueItem[]> {
+  return (await readStore()).queue ?? []
+}
+
+/** 保存审查队列（保留任务列表） */
+export async function saveAutomationQueue(queue: AutomationQueueItem[]): Promise<void> {
+  const store = await readStore()
+  await writeStore({ ...store, queue })
 }
 
 function fieldMatches(part: string, value: number): boolean {

@@ -4,6 +4,7 @@
  */
 import type { AppSettings, WorkspaceItem } from './types'
 import { ensureBuiltinProviders } from './provider-catalog'
+import { parsePersonality } from './personality'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -125,6 +126,7 @@ export function normalizeSettings(
 
     uiGlass: migrateUiGlass(raw),
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
+    personality: parsePersonality(raw.personality),
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

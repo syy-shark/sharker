@@ -49,7 +49,18 @@ import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
-import { REVIEW_WORKING_TREE_PROMPT } from '../shared/review-prompt'
+import {
+  REVIEW_BRANCH_PROMPT,
+  REVIEW_WORKING_TREE_PROMPT,
+  parseReviewScope
+} from '../shared/review-prompt'
+import {
+  nextPersonality,
+  parsePersonality,
+  parsePersonalityArg,
+  personalitySwitchNote
+} from '../shared/personality'
+import { enqueueAutomationRun } from '../shared/automation-queue'
 import { CommandPalette } from './components/CommandPalette'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
@@ -815,11 +826,29 @@ export default function App() {
 
   useEffect(() => {
     const off = window.sharker?.onAutomationRun?.((job) => {
-      const j = job as { prompt?: string }
-      if (j.prompt) void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
+      void (async () => {
+        const j = job as { id?: string; title?: string; prompt?: string }
+        if (!j.prompt) return
+        const wsId = settingsRef.current.activeWorkspaceId
+        if (!wsId || !window.sharker.createConversation) {
+          void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
+          return
+        }
+        const conv = await window.sharker.createConversation(wsId)
+        if (window.sharker.listAutomationQueue && window.sharker.saveAutomationQueue) {
+          const prev = await window.sharker.listAutomationQueue()
+          const item = enqueueAutomationRun(
+            { id: String(j.id || conv.id), title: String(j.title || '自动化'), prompt: j.prompt },
+            conv.id
+          )
+          await window.sharker.saveAutomationQueue([item, ...prev])
+        }
+        void refreshConversationList(wsId)
+        void dispatchTurnRef.current(`[自动化] ${j.title ? `${j.title}\n\n` : ''}${j.prompt}`, [], conv.id)
+      })()
     })
     return () => off?.()
-  }, [])
+  }, [refreshConversationList])
 
   /** 切换右侧 Codex 风格面板 */
   const handleToggleRightPanel = useCallback(() => {
@@ -843,7 +872,8 @@ export default function App() {
           computerUseEnabled: updated.computerUseEnabled,
           browserUseEnabled: updated.browserUseEnabled,
           uiGlass: updated.uiGlass,
-          uiTheme: updated.uiTheme
+          uiTheme: updated.uiTheme,
+          personality: updated.personality
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -2572,8 +2602,30 @@ export default function App() {
           break
         case 'review_working_tree':
           handleTogglePanel('changes')
-          await dispatchTurnRef.current(REVIEW_WORKING_TREE_PROMPT)
+          await dispatchTurnRef.current(
+            parseReviewScope(args) === 'branch' ? REVIEW_BRANCH_PROMPT : REVIEW_WORKING_TREE_PROMPT
+          )
           break
+        case 'set_personality': {
+          const current = parsePersonality(settingsRef.current.personality)
+          const next = parsePersonalityArg(args) ?? nextPersonality(current)
+          const merged = { ...settingsRef.current, personality: next }
+          await persistSettings(merged)
+          setSettings(merged)
+          setSettingsDraft(merged)
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: personalitySwitchNote(next)
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
         case 'toggle_browser':
           handleTogglePanel('browser')
           break
@@ -2585,7 +2637,7 @@ export default function App() {
           break
       }
     },
-    [conversationList, handleTogglePanel]
+    [conversationList, handleTogglePanel, persistActiveConversation, persistSettings]
   )
 
   useEffect(() => {
@@ -3518,7 +3570,15 @@ export default function App() {
           ) : page === 'automations' ? (
             <div key="automations" className="main-pane view-enter main-pane--page">
               <div className="main-drag-strip" aria-hidden />
-              <AutomationsPage onBack={() => setPage('chat')} />
+              <AutomationsPage
+                onBack={() => setPage('chat')}
+                onOpenConversation={(conversationId) => {
+                  const wsId = settingsRef.current.activeWorkspaceId
+                  if (!wsId) return
+                  setPage('chat')
+                  void handleSelectConversation(wsId, conversationId)
+                }}
+              />
             </div>
           ) : (
             <div key="settings" className="main-pane view-enter main-pane--page">

@@ -8,6 +8,7 @@ describe('command palette', () => {
     expect(ids).toContain('mention')
     expect(ids).toContain('settings')
     expect(ids).toContain('find')
+    expect(ids).toContain('personality')
   })
 
   it('filters by title and keywords', () => {

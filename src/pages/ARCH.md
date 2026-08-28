@@ -13,5 +13,5 @@
 | 文件 | 说明 |
 |------|------|
 | `SettingsPage.tsx` / `.css` | 设置页壳：Tab 切换与各设置面板挂载（无彩色氛围光） |
-| `AutomationsPage.tsx` / `.css` | 自动化任务列表与编辑（卡片 list-item 入场、hover/focus 过渡；开关/删除即时持久化） |
+| `AutomationsPage.tsx` / `.css` | 自动化任务列表 + Codex 式审查队列（打开线程 / 归档）；开关/删除即时持久化 |
 | `ARCH.md` | 本层架构说明 |

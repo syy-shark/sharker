@@ -19,7 +19,7 @@
 | `pipeline.ts` | 用户输入入口与多会话 turn 队列；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
 | `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
-| `loop.ts` | `buildSystemPrompt`、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
+| `loop.ts` | `buildSystemPrompt`（含人格语气）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
 | `commands.ts` | 斜杠命令注册表（本地处理，不走模型） |
 | `file-refs.ts` | 解析 `@path` 并注入文件内容 |
 | `message-attachments.ts` | 用户图片附件 → OpenAI 兼容多模态 content |

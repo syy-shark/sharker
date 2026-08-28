@@ -8,6 +8,7 @@ import { gatherComputerUseStatus } from '../shared/computer-use-status'
 import { gatherBrowserUseStatus } from '../shared/browser-use-status'
 import { simpleCompletion } from '../providers/openai'
 import { buildWorkspaceBootstrap } from './workspace-bootstrap'
+import { parsePersonality, personalityPrompt } from '../shared/personality'
 
 const CODING_RULES_BASE = `# Work rules
 - You MUST use the provided function tools (read_file, write_file, list_dir, etc.) to read, create, and edit files.
@@ -142,6 +143,9 @@ export async function buildSystemPrompt(
       }
     }
   }
+
+  const tone = personalityPrompt(parsePersonality(settings.personality))
+  if (tone) parts.push('', '# Communication style', tone)
 
   parts.push('', buildCodingRules())
   return parts.join('\n')

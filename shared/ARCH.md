@@ -38,7 +38,7 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配 |
 | `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K |
-| `review-prompt.ts` | `/review` 只读审查提示词 |
+| `review-prompt.ts` | `/review` 未提交 / 基线提示词 |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
 | `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
@@ -80,10 +80,15 @@
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
 | `automation.ts` | 自动化任务类型 |
+| `automation-queue.ts` | 自动化审查队列（Triage） |
+| `automation-queue.test.ts` | 入队、未读计数、排序 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /personality） |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
+| `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
+| `personality.test.ts` | 别名解析、循环、提示词 |
+| `review-prompt.test.ts` | `/review branch` 解析 |
 | `ARCH.md` | 本层架构说明 |
 
 ## 设计原则

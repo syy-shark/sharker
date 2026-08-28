@@ -75,6 +75,8 @@ export interface AppSettings {
   uiGlass?: number
   /** 外观主题：light=苹果玻璃，dark=深金属 */
   uiTheme?: 'light' | 'dark'
+  /** Codex 式人格：只改语气 */
+  personality?: import('./personality').AgentPersonality
 }
 
 /** 聊天消息角色 */
@@ -297,5 +299,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   computerUseEnabled: true,
   browserUseEnabled: true,
   uiGlass: 0.82,
-  uiTheme: 'light'
+  uiTheme: 'light',
+  personality: 'pragmatic'
 }

@@ -3,7 +3,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import { SettingsCard, SettingsSection } from './SettingsPrimitives'
+import type { AgentPersonality } from '../../../shared/personality'
+import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
+import { SettingsCard, SettingsChoiceGroup, SettingsSection } from './SettingsPrimitives'
 import './AppearanceSettings.css'
 
 interface Props {
@@ -83,6 +85,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   }
 
   return (
+    <>
     <SettingsSection title="主题">
       <SettingsCard>
         <div className="appearance-theme-grid" role="radiogroup" aria-label="主题">
@@ -117,5 +120,23 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
         </div>
       </SettingsCard>
     </SettingsSection>
+      <SettingsSection title="人格">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parsePersonality(draft.personality)}
+            onChange={(personality: AgentPersonality) => {
+              const next = { ...draftRef.current, personality }
+              scheduleSave(next)
+            }}
+            options={PERSONALITY_OPTIONS.map((o) => ({
+              value: o.id,
+              title: o.title,
+              description: o.description,
+              icon: <span aria-hidden>{o.title.slice(0, 1)}</span>
+            }))}
+          />
+        </SettingsCard>
+      </SettingsSection>
+    </>
   )
 }
