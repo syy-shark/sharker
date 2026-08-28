@@ -16,6 +16,7 @@ import type {
 import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
+import { ChatImage } from './ChatImage'
 import { MessageActions } from './MessageActions'
 import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
 import { ComposerQueue } from './ComposerQueue'
@@ -59,7 +60,7 @@ function AttachmentImage({ attachment }: { attachment: ChatAttachment }) {
   }, [attachment.path])
 
   if (!src) return <div className="attachment-image-placeholder" aria-hidden />
-  return <img src={src} alt={attachment.name} />
+  return <ChatImage src={src} alt={attachment.name} filePath={attachment.path} name={attachment.name} />
 }
 
 function MessageAttachments({ attachments }: { attachments?: ChatAttachment[] }) {

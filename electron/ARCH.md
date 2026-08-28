@@ -29,6 +29,7 @@
 | Channel | 作用 |
 |---------|------|
 | `chat:send` / `chat:abort` | 跑 / 中止 Turn |
+| `chat:copy-image` / `chat:save-image` | 复制 / 另存对话渲染图（附件、http(s)、`data:image`） |
 | `app:notify-turn` / `app:notify-turn-click` | 后台回合系统通知与点击回跳 |
 | `app:request-notify-permission` | 设置页主动申请系统通知权限 |
 | `app:set-dock-badge` | macOS Dock 本机未读数字 |

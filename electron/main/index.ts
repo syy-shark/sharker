@@ -8,7 +8,9 @@ import {
   BrowserWindow,
   ipcMain,
   dialog,
+  clipboard,
   nativeImage,
+  net,
   Notification,
   powerSaveBlocker,
   shell,
@@ -17,6 +19,7 @@ import {
 import fs from 'fs'
 import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
+import { canExportChatImage, suggestedImageFilename, type ChatImageExportInput } from '../../shared/chat-image'
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
@@ -345,12 +348,46 @@ async function saveChatAttachment(input: {
   }
 }
 
-async function readAttachmentDataUrl(filePath: string): Promise<string> {
+function resolveAttachmentPath(filePath: string): string {
   const attachmentsDir = path.join(app.getPath('userData'), 'attachments')
   const resolved = path.resolve(filePath)
   if (!resolved.startsWith(path.resolve(attachmentsDir) + path.sep)) {
     throw new Error('附件路径无效')
   }
+  return resolved
+}
+
+async function readChatImageBytes(
+  input: ChatImageExportInput
+): Promise<{ buffer: Buffer; ext: string }> {
+  if (!canExportChatImage(input)) throw new Error('不支持的图片来源')
+  if (input.filePath?.trim()) {
+    const resolved = resolveAttachmentPath(input.filePath)
+    const buffer = await fs.promises.readFile(resolved)
+    return { buffer, ext: path.extname(resolved).toLowerCase() || '.png' }
+  }
+  const src = String(input.src || '').trim()
+  if (src.startsWith('data:image/')) {
+    const match = /^data:image\/([a-zA-Z0-9.+-]+);base64,([\s\S]+)$/i.exec(src)
+    if (!match) throw new Error('无法读取图片')
+    const subtype = match[1]!.toLowerCase()
+    const ext = subtype === 'jpeg' ? '.jpg' : `.${subtype}`
+    return { buffer: Buffer.from(match[2]!, 'base64'), ext }
+  }
+  if (/^https?:\/\//i.test(src)) {
+    const res = await net.fetch(src)
+    if (!res.ok) throw new Error('无法下载图片')
+    const buffer = Buffer.from(await res.arrayBuffer())
+    const img = nativeImage.createFromBuffer(buffer)
+    if (img.isEmpty()) throw new Error('无法读取图片')
+    const extMatch = /\.(jpe?g|gif|webp|png|bmp|avif)(?:\?|#|$)/i.exec(src)
+    return { buffer, ext: extMatch ? extMatch[0].toLowerCase().replace('.jpeg', '.jpg') : '.png' }
+  }
+  throw new Error('不支持的图片来源')
+}
+
+async function readAttachmentDataUrl(filePath: string): Promise<string> {
+  const resolved = resolveAttachmentPath(filePath)
   const ext = path.extname(resolved).toLowerCase()
   const mimeType =
     ext === '.txt'
@@ -1035,6 +1072,37 @@ function registerIpc(): void {
   ipcMain.handle(IPC.READ_ATTACHMENT_DATA_URL, async (_e, filePath: string) =>
     readAttachmentDataUrl(filePath)
   )
+
+  ipcMain.handle(IPC.COPY_CHAT_IMAGE, async (_e, input: ChatImageExportInput) => {
+    try {
+      const { buffer } = await readChatImageBytes(input)
+      const img = nativeImage.createFromBuffer(buffer)
+      if (img.isEmpty()) return { ok: false, message: '无法读取图片' }
+      clipboard.writeImage(img)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : '复制失败' }
+    }
+  })
+
+  ipcMain.handle(IPC.SAVE_CHAT_IMAGE, async (e, input: ChatImageExportInput) => {
+    try {
+      const { buffer, ext } = await readChatImageBytes(input)
+      const win = windowFromEvent(e)
+      const saveOpts = {
+        defaultPath: suggestedImageFilename({ ...input, name: input.name || `image${ext}` }),
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
+      }
+      const result = win
+        ? await dialog.showSaveDialog(win, saveOpts)
+        : await dialog.showSaveDialog(saveOpts)
+      if (result.canceled || !result.filePath) return { ok: false, canceled: true, message: '' }
+      await fs.promises.writeFile(result.filePath, buffer)
+      return { ok: true, path: result.filePath }
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : '保存失败' }
+    }
+  })
 
   ipcMain.handle(
     IPC.NOTIFY_TURN_COMPLETE,

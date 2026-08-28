@@ -4,6 +4,7 @@
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
 import { LiveFenceTail } from './CodeArtifactBlock'
+import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
@@ -91,7 +92,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
       )
     }
     if (node.type === 'image') {
-      return <img key={index} src={node.href} alt={node.alt} title={node.title} loading="lazy" />
+      return <ChatImage key={index} src={node.href} alt={node.alt} title={node.title} />
     }
     if (node.type === 'fn') {
       return (

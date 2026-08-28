@@ -13,6 +13,7 @@ import { parseUnifiedDiff } from '../../shared/line-diff'
 import { CodeArtifactBlock } from './CodeArtifactBlock'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { CompareBlock, parseCompareRows } from './CompareBlock'
+import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
 
@@ -132,7 +133,7 @@ const markdownComponents: Components = {
   ul: ({ children, className }) => <ul className={className}>{children}</ul>,
   ol: ({ children, className }) => <ol className={className}>{children}</ol>,
   img: ({ src, alt }) =>
-    src && /^https?:\/\//i.test(src) ? <img src={src} alt={alt ?? ''} loading="lazy" /> : null,
+    src && /^https?:\/\//i.test(src) ? <ChatImage src={src} alt={alt ?? ''} /> : null,
   li: ({ children, className }) => <li className={className}>{withFileCitations(children)}</li>,
   td: ({ children, align }) => (
     <td style={align ? { textAlign: align } : undefined}>{withFileCitations(children)}</td>

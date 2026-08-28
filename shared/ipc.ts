@@ -16,6 +16,10 @@ export const IPC = {
   SEND_MESSAGE: 'chat:send',
   SAVE_ATTACHMENT: 'chat:save-attachment',
   READ_ATTACHMENT_DATA_URL: 'chat:read-attachment-data-url',
+  /** 复制对话渲染图到剪贴板（对标 Codex Save or copy rendered images） */
+  COPY_CHAT_IMAGE: 'chat:copy-image',
+  /** 另存对话渲染图 */
+  SAVE_CHAT_IMAGE: 'chat:save-image',
   /** 后台回合完成：系统通知 */
   NOTIFY_TURN_COMPLETE: 'app:notify-turn',
   /** 设置页主动请求系统通知权限（对标 Codex Notifications permission prompt） */

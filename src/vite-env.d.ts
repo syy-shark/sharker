@@ -96,6 +96,12 @@ export interface SharkerApi {
     dataUrl: string
   }) => Promise<ChatAttachment>
   readAttachmentDataUrl: (filePath: string) => Promise<string>
+  copyChatImage: (
+    input: import('../shared/chat-image').ChatImageExportInput
+  ) => Promise<{ ok: boolean; message?: string }>
+  saveChatImage: (
+    input: import('../shared/chat-image').ChatImageExportInput
+  ) => Promise<{ ok: boolean; canceled?: boolean; path?: string; message?: string }>
   requestNotifyPermission: () => Promise<{ ok: boolean; permission: string }>
   notifyTurnComplete: (payload: {
     title: string

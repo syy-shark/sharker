@@ -94,6 +94,10 @@ contextBridge.exposeInMainWorld('sharker', {
   }): Promise<ChatAttachment> => ipcRenderer.invoke(IPC.SAVE_ATTACHMENT, input),
   readAttachmentDataUrl: (filePath: string): Promise<string> =>
     ipcRenderer.invoke(IPC.READ_ATTACHMENT_DATA_URL, filePath),
+  copyChatImage: (input: import('../../shared/chat-image').ChatImageExportInput) =>
+    ipcRenderer.invoke(IPC.COPY_CHAT_IMAGE, input),
+  saveChatImage: (input: import('../../shared/chat-image').ChatImageExportInput) =>
+    ipcRenderer.invoke(IPC.SAVE_CHAT_IMAGE, input),
   requestNotifyPermission: () => ipcRenderer.invoke(IPC.REQUEST_NOTIFY_PERMISSION),
   notifyTurnComplete: (payload: {
     title: string

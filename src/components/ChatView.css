@@ -575,12 +575,21 @@
 
 .message-body--assistant img,
 .streaming-markdown img,
-.live-prose-tail img {
+.live-prose-tail img,
+.message-body--assistant .chat-image,
+.streaming-markdown .chat-image,
+.live-prose-tail .chat-image {
   display: block;
   max-width: 100%;
   height: auto;
   margin: 0 0 10px;
   border-radius: var(--radius-sm, 6px);
+}
+
+.message-body--assistant .chat-image img,
+.streaming-markdown .chat-image img,
+.live-prose-tail .chat-image img {
+  margin-bottom: 0;
 }
 
 .streaming-markdown > :last-child,
