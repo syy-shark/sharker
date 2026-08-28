@@ -6,20 +6,12 @@ import type { FileDiff, FileEditPreview, StreamChunk, TurnSegment } from './type
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
 
-/** 深拷贝片段数组，避免 React 状态引用相等不刷新 */
+/**
+ * 浅拷贝片段数组：每个 segment 新对象，嵌套 diff 行共享。
+ * 直播每 token 深拷贝 fileDiff.lines 会卡顿；applyStreamChunk 只改顶层字段或整段替换 diffs。
+ */
 export function cloneSegments(segments: TurnSegment[]): TurnSegment[] {
-  return segments.map((s) => ({
-    ...s,
-    fileDiff: s.fileDiff
-      ? { ...s.fileDiff, lines: [...s.fileDiff.lines], stats: { ...s.fileDiff.stats } }
-      : undefined,
-    fileDiffs: s.fileDiffs?.map(cloneFileDiff),
-    editPreview: s.editPreview?.map((p) => ({ path: p.path, stats: { ...p.stats } }))
-  }))
-}
-
-function cloneFileDiff(diff: FileDiff): FileDiff {
-  return { ...diff, lines: [...diff.lines], stats: { ...diff.stats } }
+  return segments.map((s) => ({ ...s }))
 }
 
 /** 从工具活动 label 解析详情（· 后部分） */

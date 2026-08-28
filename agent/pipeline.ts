@@ -61,6 +61,8 @@ export interface ExecuteUserInputContext {
   sessionApprovals?: import('../shared/approval-session').SessionApprovalStore
   /** 本轮隔离 worktree；空则清掉覆盖，回到工作区 */
   worktreePath?: string | null
+  /** 进行中的线程目标，注入 system（对标 Codex /goal） */
+  threadGoal?: string | null
 }
 
 type TurnSlot = {
@@ -204,6 +206,9 @@ async function* onQuery(
       `\n\nThis thread is isolated to Git worktree: ${ctx.worktreePath}. ` +
       `Treat that path as the current workspace for all file, git, and terminal tools. ` +
       `Do not modify the original checkout.`
+  }
+  if (ctx.threadGoal?.trim()) {
+    systemContent += `\n\n${ctx.threadGoal.trim()}`
   }
 
   try {

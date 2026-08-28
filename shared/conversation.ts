@@ -86,6 +86,26 @@ export function createEmptyConversation(workspaceId: string): Conversation {
   }
 }
 
+/** `/fork` 分叉标题（对标 Codex fork thread） */
+export function forkConversationTitle(title: string): string {
+  const base = String(title || '').trim() || DEFAULT_CONVERSATION_TITLE
+  if (base.endsWith('（分叉）')) return base
+  return `${base}（分叉）`
+}
+
+/** 用已创建的空对话装入源线程消息；不拷 worktreePath */
+export function buildForkedConversation(
+  created: Conversation,
+  source: { title?: string; messages: ChatMessage[] }
+): Conversation {
+  return {
+    ...created,
+    title: forkConversationTitle(source.title || created.title),
+    messages: source.messages.map((m) => ({ ...m })),
+    updatedAt: Date.now()
+  }
+}
+
 /** 把进行中的对话抽成侧栏「进行中」任务行（对标 Codex 并行线程） */
 export function splitLiveConversations<T extends { id: string }>(
   items: T[],

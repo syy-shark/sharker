@@ -5,6 +5,7 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { afterEach, describe, expect, it } from 'vitest'
 import { prepareThreadWorktree } from './thread-worktree'
+import { readFile as readUtf, utimes } from 'fs/promises'
 
 const execFileAsync = promisify(execFile)
 
@@ -27,9 +28,12 @@ describe('prepareThreadWorktree', () => {
     await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
     await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
 
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-'))
+    temps.push(home)
     const first = await prepareThreadWorktree({
       workspacePath: repo,
-      conversationId: 'conv-abc-123'
+      conversationId: 'conv-abc-123',
+      home
     })
     expect(first.ok).toBe(true)
     if (!first.ok) return
@@ -38,7 +42,8 @@ describe('prepareThreadWorktree', () => {
 
     const second = await prepareThreadWorktree({
       workspacePath: repo,
-      conversationId: 'conv-abc-123'
+      conversationId: 'conv-abc-123',
+      home
     })
     expect(second.ok).toBe(true)
     if (second.ok) expect(second.path).toBe(first.path)
@@ -57,9 +62,12 @@ describe('prepareThreadWorktree', () => {
     await execFileAsync('git', ['add', 'README.md', '.gitignore', '.worktreeinclude'], { cwd: repo })
     await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
 
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-inc-'))
+    temps.push(home)
     const result = await prepareThreadWorktree({
       workspacePath: repo,
-      conversationId: 'conv-include-1'
+      conversationId: 'conv-include-1',
+      home
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -83,10 +91,13 @@ describe('prepareThreadWorktree', () => {
     await execFileAsync('git', ['commit', '-m', 'feat'], { cwd: repo })
     await execFileAsync('git', ['checkout', '-'], { cwd: repo })
 
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-base-'))
+    temps.push(home)
     const result = await prepareThreadWorktree({
       workspacePath: repo,
       conversationId: 'conv-base-1',
-      baseRef: 'feature-a'
+      baseRef: 'feature-a',
+      home
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -104,5 +115,63 @@ describe('prepareThreadWorktree', () => {
     })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toMatch(/git/)
+  })
+
+  it('prunes older managed worktrees and restores a snapshot', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-prune-'))
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-prune-'))
+    temps.push(repo, home)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'hello\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+
+    const first = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-old-1',
+      home,
+      keep: 2
+    })
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    await writeFile(path.join(first.path, 'scratch.txt'), 'keep-me\n')
+    await utimes(first.path, new Date(1_700_000_000_000), new Date(1_700_000_000_000))
+
+    const second = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-mid-2',
+      home,
+      keep: 2
+    })
+    expect(second.ok).toBe(true)
+    if (second.ok) {
+      await utimes(second.path, new Date(1_700_000_100_000), new Date(1_700_000_100_000))
+    }
+
+    const third = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-new-3',
+      home,
+      keep: 2
+    })
+    expect(third.ok).toBe(true)
+    if (!third.ok) return
+
+    const { stdout } = await execFileAsync('git', ['worktree', 'list'], { cwd: repo })
+    expect(stdout).not.toContain(first.path)
+    expect(stdout).toContain(third.path)
+
+    const restored = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-old-1',
+      home,
+      keep: 3
+    })
+    expect(restored.ok).toBe(true)
+    if (!restored.ok) return
+    temps.push(restored.path)
+    expect(await readUtf(path.join(restored.path, 'scratch.txt'), 'utf8')).toBe('keep-me\n')
   })
 })

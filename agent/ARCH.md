@@ -16,11 +16,12 @@
 
 | 文件 | 说明 |
 |------|------|
-| `pipeline.ts` | 用户输入入口与多会话 turn 队列；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd |
+| `pipeline.ts` | 用户输入入口与多会话 turn 队列；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd；可选 `threadGoal` 注入 system |
+| `commands.ts` | 斜杠命令注册表（本地处理，不走模型；`/plan-mode` 等同 `/plan`） |
+| `commands.test.ts` | `/plan-mode` 与 `/plan` 同义 |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
 | `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
 | `loop.ts` | `buildSystemPrompt`（含人格语气）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
-| `commands.ts` | 斜杠命令注册表（本地处理，不走模型） |
 | `file-refs.ts` | 解析 `@path` 并注入文件内容（跳过 `@chat/`） |
 | `chat-refs.ts` | 解析 `@chat/<id>` 并注入有界对话摘要 |
 | `chat-refs.test.ts` | 跳过当前线程、未解析则原样返回 |

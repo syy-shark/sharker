@@ -47,6 +47,34 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'mode'
   },
   {
+    name: 'plan-mode',
+    description: '进入计划模式（/plan 别名，对标 Codex /plan-mode）',
+    scope: 'agent',
+    category: 'mode'
+  },
+  {
+    name: 'goal',
+    description: '设定 / 暂停 / 清除线程目标',
+    scope: 'ui',
+    action: 'set_goal',
+    argsHint: '[文本|pause|resume|clear]',
+    category: 'mode'
+  },
+  {
+    name: 'status',
+    description: '显示当前模型、权限、线程与上下文',
+    scope: 'ui',
+    action: 'show_status',
+    category: 'session'
+  },
+  {
+    name: 'diff',
+    description: '打开变更审查（查看本地 diff）',
+    scope: 'ui',
+    action: 'show_diff',
+    category: 'panel'
+  },
+  {
     name: 'build',
     description: '按计划进入构建模式（需先有计划）',
     scope: 'agent',
@@ -83,6 +111,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     description: '恢复上一条对话',
     scope: 'ui',
     action: 'resume_conversation',
+    category: 'session'
+  },
+  {
+    name: 'fork',
+    description: '分叉当前对话到新线程（保留消息，隔离 worktree 另建）',
+    scope: 'ui',
+    action: 'fork_conversation',
     category: 'session'
   },
   {

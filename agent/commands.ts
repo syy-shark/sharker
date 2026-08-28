@@ -24,6 +24,18 @@ interface SlashCommand {
   run: (args: string) => CommandRunResult
 }
 
+/** `/plan` 与桌面端 `/plan-mode` 共用 */
+function runPlanMode(args: string): CommandRunResult {
+  enterPlanMode()
+  const hint = args.trim()
+  const base =
+    '请进入**计划模式**：仅使用只读工具调研代码库与用户目标，输出完整 Markdown 计划，然后调用 exit_plan_mode。'
+  return {
+    shouldQuery: true,
+    rewrittenText: hint ? `${base}\n\n用户补充：${hint}` : base
+  }
+}
+
 const COMMANDS: SlashCommand[] = [
   {
     name: 'help',
@@ -53,16 +65,12 @@ const COMMANDS: SlashCommand[] = [
   {
     name: 'plan',
     description: '进入计划模式',
-    run: (args) => {
-      enterPlanMode()
-      const hint = args.trim()
-      const base =
-        '请进入**计划模式**：仅使用只读工具调研代码库与用户目标，输出完整 Markdown 计划，然后调用 exit_plan_mode。'
-      return {
-        shouldQuery: true,
-        rewrittenText: hint ? `${base}\n\n用户补充：${hint}` : base
-      }
-    }
+    run: runPlanMode
+  },
+  {
+    name: 'plan-mode',
+    description: '进入计划模式（桌面端 /plan-mode 别名）',
+    run: runPlanMode
   },
   {
     name: 'build',

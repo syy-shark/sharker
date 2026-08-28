@@ -40,6 +40,7 @@ import {
 } from '../../shared/composer-dictation'
 import { filterChatList } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
+import { formatGoalChip, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
@@ -148,6 +149,8 @@ interface Props {
   onOpenSubAgent?: (id: string | null) => void
   /** Codex 式线程目标：本地工作区或隔离 worktree */
   threadMode?: ThreadMode
+  threadGoal?: ThreadGoal | null
+  onClearThreadGoal?: () => void
   onThreadModeChange?: (mode: ThreadMode) => void
   /** 首次创建隔离 worktree 的起点分支 */
   worktreeBaseRef?: string
@@ -196,6 +199,8 @@ export function ChatView({
   onApproval,
   onOpenSubAgent,
   threadMode = 'local',
+  threadGoal = null,
+  onClearThreadGoal,
   onThreadModeChange,
   worktreeBaseRef = '',
   onWorktreeBaseRefChange,
@@ -1583,6 +1588,17 @@ export function ChatView({
                 隔离
               </button>
             </div>
+          ) : null}
+          {formatGoalChip(threadGoal) ? (
+            <button
+              type="button"
+              className={`composer-thread-chip${threadGoal?.status === 'paused' ? '' : ' is-active'}`}
+              title={threadGoal?.text}
+              onClick={() => onClearThreadGoal?.()}
+              aria-label="清除线程目标"
+            >
+              {formatGoalChip(threadGoal)}
+            </button>
           ) : null}
           {onThreadModeChange && threadMode === 'worktree' ? (
             <label className="composer-worktree-base">

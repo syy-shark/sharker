@@ -83,6 +83,17 @@ describe('turn segment event state machine', () => {
     expect(segments[0].status).toBe('done')
     expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)
   })
+
+  it('does not mutate previous segment objects when appending tokens', () => {
+    let segments: TurnSegment[] = []
+    segments = applyStreamChunk(segments, { type: 'token', content: '你好', timestamp: 1 })
+    const first = segments[0]
+    const snapshot = first.content
+    segments = applyStreamChunk(segments, { type: 'token', content: '世界', timestamp: 2 })
+    expect(first.content).toBe(snapshot)
+    expect(first).not.toBe(segments[0])
+    expect(segments[0].content).toBe('你好世界')
+  })
 })
 
 describe('process flow visibility', () => {

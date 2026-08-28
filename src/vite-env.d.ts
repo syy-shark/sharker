@@ -79,7 +79,7 @@ export interface SharkerApi {
     history: ChatMessage[],
     attachments?: ChatAttachment[],
     conversationId?: string,
-    options?: { worktreePath?: string | null }
+    options?: { worktreePath?: string | null; goal?: string | null }
   ) => Promise<void>
   saveAttachment: (input: {
     name: string

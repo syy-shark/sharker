@@ -18,8 +18,8 @@
 | `ipc.ts` | IPC channel 名称常量 |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分 |
-| `conversation.test.ts` | 按标题 / id 过滤对话、进行中拆分 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、`/fork` 分叉标题与拷贝 |
+| `conversation.test.ts` | 按标题 / id 过滤对话、进行中拆分、分叉标题 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |
@@ -72,12 +72,18 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、状态、目标、打开 worktree） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
-| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
-| `turn-segments.test.ts` | turn-segments / phases 单测 |
+| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；直播浅拷贝片段（不复制 diff 行）；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
+| `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
+| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块 |
+| `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
+| `thread-status.ts` | `/status` Markdown 快照 |
+| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径 |
+| `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删 |
+| `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表 |
 | `approval-session.test.ts` | 审批决策与会话授权单测 |
@@ -105,7 +111,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /personality、/skill） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/status、/diff、/goal、/plan-mode） |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
 | `personality.test.ts` | 别名解析、循环、提示词 |

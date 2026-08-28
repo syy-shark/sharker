@@ -3,7 +3,7 @@
  * 创建时按 `.worktreeinclude` 拷贝被忽略的本地文件。
  * @see tools/ARCH.md
  */
-import { copyFile, lstat, mkdir, readFile, readdir } from 'fs/promises'
+import { copyFile, lstat, mkdir, readFile, readdir, stat, utimes, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { runGit } from './shared/git-runner'
@@ -13,6 +13,11 @@ import {
   sanitizeWorktreeBaseRef,
   worktreeIncludePatterns
 } from '../shared/worktree-include'
+import {
+  DEFAULT_MANAGED_WORKTREE_LIMIT,
+  isManagedWorktreeDirName,
+  selectManagedWorktreesToPrune
+} from '../shared/worktree-prune'
 
 export type PrepareWorktreeResult =
   | { ok: true; path: string; branch: string }
@@ -88,11 +93,142 @@ export async function copyWorktreeIncludes(workspacePath: string, dest: string):
   return copied
 }
 
+/** 未跟踪相对路径：拒绝 `..` */
+function safeRelPath(rel: string): string | null {
+  const n = rel.replace(/\\/g, '/').replace(/^\/+/, '')
+  if (!n || n.split('/').some((part) => part === '..')) return null
+  return n
+}
+
+/** 托管 worktree 与快照根目录（可注入 home 便于测试） */
+export function managedWorktreeRoot(home = os.homedir()): string {
+  return path.join(home, '.sharker', 'worktrees')
+}
+
+function snapshotFileFor(dest: string, home: string): string {
+  return path.join(home, '.sharker', 'worktree-snapshots', `${path.basename(dest)}.json`)
+}
+
+/** 删除前保存 HEAD + 脏文件，便于会话再打开时恢复 */
+export async function snapshotManagedWorktree(dest: string, home = os.homedir()): Promise<void> {
+  let head = ''
+  try {
+    head = (await runGit(dest, ['rev-parse', 'HEAD'])).trim()
+  } catch {
+    return
+  }
+  const dirty: Array<{ path: string; content: string }> = []
+  let porcelain = ''
+  try {
+    porcelain = await runGit(dest, ['status', '--porcelain'], { trim: false })
+  } catch {
+    porcelain = ''
+  }
+  for (const raw of porcelain.split('\n')) {
+    if (!raw.trim() || dirty.length >= 40) break
+    const rel = safeRelPath(raw.slice(3).trim().replace(/ -> /g, '').split(' ').pop() || '')
+    if (!rel) continue
+    try {
+      const abs = path.join(dest, rel)
+      const st = await stat(abs)
+      if (!st.isFile() || st.size > 256 * 1024) continue
+      const content = await readFile(abs, 'utf8')
+      if (content.includes('\0')) continue
+      dirty.push({ path: rel, content })
+    } catch {
+      /* missing / unreadable */
+    }
+  }
+  const file = snapshotFileFor(dest, home)
+  await mkdir(path.dirname(file), { recursive: true })
+  await writeFile(file, JSON.stringify({ head, dirty, savedAt: Date.now() }))
+}
+
+async function restoreWorktreeSnapshot(dest: string, home: string): Promise<boolean> {
+  try {
+    const raw = await readFile(snapshotFileFor(dest, home), 'utf8')
+    const snap = JSON.parse(raw) as { head?: string; dirty?: Array<{ path: string; content: string }> }
+    for (const file of snap.dirty ?? []) {
+      const rel = safeRelPath(String(file.path || ''))
+      if (!rel) continue
+      const abs = path.join(dest, rel)
+      await mkdir(path.dirname(abs), { recursive: true })
+      await writeFile(abs, file.content ?? '')
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+function parseWorktreePaths(porcelain: string): string[] {
+  return porcelain
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => line.slice('worktree '.length).trim())
+    .filter(Boolean)
+}
+
+/** 保留最近 N 个托管 worktree；删除前先快照 */
+export async function pruneManagedWorktrees(options: {
+  workspacePath: string
+  repoName: string
+  home?: string
+  keep?: number
+  protectPaths?: string[]
+}): Promise<string[]> {
+  const cwd = path.resolve(options.workspacePath)
+  const home = options.home ?? os.homedir()
+  const root = path.resolve(managedWorktreeRoot(home))
+  let porcelain = ''
+  try {
+    porcelain = await runGit(cwd, ['worktree', 'list', '--porcelain'], { trim: false })
+  } catch {
+    return []
+  }
+  const entries: Array<{ path: string; mtimeMs: number }> = []
+  for (const wt of parseWorktreePaths(porcelain)) {
+    if (path.resolve(path.dirname(wt)) !== root) continue
+    if (!isManagedWorktreeDirName(options.repoName, path.basename(wt))) continue
+    try {
+      const st = await stat(wt)
+      entries.push({ path: wt, mtimeMs: st.mtimeMs })
+    } catch {
+      /* vanished */
+    }
+  }
+  const removed: string[] = []
+  for (const dest of selectManagedWorktreesToPrune(entries, {
+    keep: options.keep ?? DEFAULT_MANAGED_WORKTREE_LIMIT,
+    protectPaths: options.protectPaths
+  })) {
+    try {
+      await snapshotManagedWorktree(dest, home)
+      await runGit(cwd, ['worktree', 'remove', '--force', dest])
+      removed.push(dest)
+    } catch (e) {
+      console.warn('[worktree] prune failed', dest, e)
+    }
+  }
+  return removed
+}
+
+async function currentBranchName(dest: string): Promise<string> {
+  try {
+    return (await runGit(dest, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim() || 'detached'
+  } catch {
+    return 'detached'
+  }
+}
+
 /** 在 ~/.sharker/worktrees 下为会话创建或复用 detached worktree */
 export async function prepareThreadWorktree(options: {
   workspacePath: string
   conversationId: string
   baseRef?: string
+  /** 测试可注入，默认 os.homedir() */
+  home?: string
+  keep?: number
 }): Promise<PrepareWorktreeResult> {
   const cwd = path.resolve(options.workspacePath)
   try {
@@ -112,39 +248,59 @@ export async function prepareThreadWorktree(options: {
     /* keep basename */
   }
 
-  const dest = path.join(os.homedir(), '.sharker', 'worktrees', `${repoName}-${shortId(options.conversationId)}`)
+  const home = options.home ?? os.homedir()
+  const dest = path.join(managedWorktreeRoot(home), `${repoName}-${shortId(options.conversationId)}`)
   await mkdir(path.dirname(dest), { recursive: true })
+
+  const finish = async (branch: string): Promise<PrepareWorktreeResult> => {
+    try {
+      await utimes(dest, new Date(), new Date())
+    } catch {
+      /* ignore */
+    }
+    try {
+      await pruneManagedWorktrees({
+        workspacePath: cwd,
+        repoName,
+        home,
+        keep: options.keep,
+        protectPaths: [dest]
+      })
+    } catch (e) {
+      console.warn('[worktree] prune skipped', e)
+    }
+    return { ok: true, path: dest, branch }
+  }
 
   try {
     const existing = await runGit(cwd, ['worktree', 'list', '--porcelain'])
     if (existing.split('\n').some((line) => line === `worktree ${dest}`)) {
-      let branch = 'detached'
-      try {
-        branch = (await runGit(dest, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim() || 'detached'
-      } catch {
-        /* detached */
-      }
-      return { ok: true, path: dest, branch }
+      return finish(await currentBranchName(dest))
     }
   } catch {
     /* list failed: try add */
   }
 
-  const baseRef = sanitizeWorktreeBaseRef(options.baseRef)
+  const snapFile = snapshotFileFor(dest, home)
+  let start = sanitizeWorktreeBaseRef(options.baseRef)
   try {
-    await runGit(cwd, ['worktree', 'add', '--detach', dest, baseRef])
-    let branch = 'detached'
-    try {
-      branch = (await runGit(dest, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim() || 'detached'
-    } catch {
-      /* detached */
+    const snap = JSON.parse(await readFile(snapFile, 'utf8')) as { head?: string }
+    if (typeof snap.head === 'string' && /^[0-9a-f]{7,40}$/i.test(snap.head)) {
+      start = snap.head
     }
+  } catch {
+    /* no snapshot */
+  }
+
+  try {
+    await runGit(cwd, ['worktree', 'add', '--detach', dest, start])
+    await restoreWorktreeSnapshot(dest, home)
     try {
       await copyWorktreeIncludes(cwd, dest)
     } catch (e) {
       console.warn('[worktree] copy include files failed', e)
     }
-    return { ok: true, path: dest, branch }
+    return finish(await currentBranchName(dest))
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return { ok: false, error: msg || '创建 worktree 失败' }

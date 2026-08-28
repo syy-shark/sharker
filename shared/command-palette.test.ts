@@ -16,6 +16,12 @@ describe('command palette', () => {
     expect(ids).toContain('agents')
     expect(ids).toContain('personality')
     expect(ids).toContain('shortcuts')
+    expect(ids).toContain('fork')
+    expect(ids).toContain('status')
+    expect(ids).toContain('goal')
+    expect(ids).toContain('diff')
+    expect(ids).toContain('open-worktree')
+    expect(ids).toContain('create-branch')
   })
 
   it('filters by title and keywords', () => {

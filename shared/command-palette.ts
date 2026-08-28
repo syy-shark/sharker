@@ -29,11 +29,47 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_history'
   },
   {
+    id: 'fork',
+    title: '分叉当前对话',
+    keywords: 'fork thread 分叉 对话',
+    action: 'fork_conversation'
+  },
+  {
+    id: 'status',
+    title: '会话状态',
+    keywords: 'status model permission 状态 模型',
+    action: 'show_status'
+  },
+  {
+    id: 'goal',
+    title: '设定线程目标',
+    keywords: 'goal 目标',
+    action: 'set_goal'
+  },
+  {
+    id: 'open-worktree',
+    title: '打开隔离 worktree',
+    keywords: 'open worktree folder 打开 隔离',
+    action: 'open_worktree'
+  },
+  {
+    id: 'create-branch',
+    title: '在此创建分支',
+    keywords: 'create branch here 分支',
+    action: 'create_branch_here'
+  },
+  {
     id: 'review',
     title: '审查未提交变更',
     shortcut: '⌘⌥B',
     keywords: 'review changes diff 审查 变更',
     action: 'review_working_tree'
+  },
+  {
+    id: 'diff',
+    title: '查看本地 diff',
+    keywords: 'diff changes 变更 差异',
+    action: 'show_diff'
   },
   {
     id: 'changes',

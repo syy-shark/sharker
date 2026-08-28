@@ -32,6 +32,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` | 打开 `$` Skill 选择器 |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
+| `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
+| `/status` | 显示模型、权限、线程模式、分支与上下文占用 |
+| `/diff` | 打开右侧变更审查看本地 diff |
+| `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；Composer 显示芯片 |
+| `/plan-mode` | `/plan` 的桌面端别名 |
 
 ### @file 引用
 
@@ -52,8 +57,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
-- 隔离 worktree 若仍是 detached HEAD，可在审查面板 **创建分支**（对标 Codex Create branch here）
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。
+- 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个，删除前会快照未提交文件，再打开同一会话可恢复。
 
 ### 线程内查找
 

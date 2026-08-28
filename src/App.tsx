@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationSummary } from '../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
+  buildForkedConversation,
   deriveConversationTitle,
   sortConversationsByCreatedAt
 } from '../shared/conversation'
@@ -84,8 +85,18 @@ import {
   loadThreadRuntime,
   runtimeForConversation,
   saveThreadRuntime,
-  type ThreadMode
+  type ThreadMode,
+  type ThreadRuntime
 } from './lib/thread-runtime'
+import { goalTextForConversation, loadThreadGoal, saveThreadGoal } from './lib/thread-goal'
+import {
+  applyGoalCommand,
+  parseGoalCommand,
+  type ThreadGoal
+} from '../shared/thread-goal'
+import { formatThreadStatus } from '../shared/thread-status'
+import { estimateContextUsage } from '../shared/token-estimate'
+import { resolveContextLimit } from '../shared/context-limit'
 import {
   appendAssistantMessage,
   cancelQueuedPrompt,
@@ -239,8 +250,10 @@ export default function App() {
   const [changesRevision, setChangesRevision] = useState(0)
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
+  const [threadGoal, setThreadGoal] = useState<ThreadGoal | null>(null)
+  const threadGoalRef = useRef<ThreadGoal | null>(null)
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
-  const threadRuntimeRef = useRef<{ mode: ThreadMode; worktreePath?: string }>({ mode: 'local' })
+  const threadRuntimeRef = useRef<ThreadRuntime>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
   )
@@ -619,7 +632,7 @@ export default function App() {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
       lastStreamRenderAt.current = performance.now()
-      setLiveSegments(cloneSegments(segmentsRef.current))
+      setLiveSegments(segmentsRef.current)
       // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
       const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
       setStreaming(finalPreview)
@@ -657,7 +670,7 @@ export default function App() {
             }
           }
           buf.messages = [...messagesRef.current]
-          buf.segments = cloneSegments(segmentsRef.current)
+          buf.segments = segmentsRef.current
           buf.streaming = finalPreview
           buf.turnThinking = thinkingPreviewFromSegments(segmentsRef.current)
           buf.activeTool = activeToolSeg?.toolName ?? null
@@ -860,6 +873,9 @@ export default function App() {
     setThreadWorktreePath(runtime.worktreePath)
     setWorktreeBaseRef(runtime.baseRef || '')
     threadRuntimeRef.current = runtime
+    const goal = loadThreadGoal(activeConversationId)
+    threadGoalRef.current = goal
+    setThreadGoal(goal)
     setQueueHeld(Boolean(activeConversationId && queueHeldByConvRef.current.has(activeConversationId)))
   }, [activeConversationId])
 
@@ -1706,7 +1722,10 @@ export default function App() {
         doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
         try {
           const worktreePath = await ensureWorktreeForTurn(convId)
-          await window.sharker.sendMessage(text, history, attachments, convId, { worktreePath })
+          await window.sharker.sendMessage(text, history, attachments, convId, {
+            worktreePath,
+            goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current)
+          })
           void persistActiveConversation(buf.messages, convId)
         } catch (e) {
           console.error('后台会话发送失败', e)
@@ -1822,7 +1841,8 @@ export default function App() {
           setLiveSegments(cloneSegments(segmentsRef.current))
         }
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
-          worktreePath
+          worktreePath,
+          goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current)
         })
       } catch (e) {
         console.error('发送失败', e)
@@ -1930,6 +1950,28 @@ export default function App() {
     setRightPanelOpen(true)
     setPage('chat')
   }, [])
+
+  const handleOpenWorktree = useCallback(() => {
+    const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
+    if (!dest || !window.sharker.openPath) return
+    void window.sharker.openPath(dest)
+  }, [threadWorktreePath])
+
+  const handleCreateBranchHere = useCallback(async () => {
+    const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
+    if (!dest || !window.sharker.createGitBranch) return
+    const raw = window.prompt('在此隔离 worktree 创建分支', '')
+    if (raw == null) return
+    const result = await window.sharker.createGitBranch(dest, raw)
+    if (!result.ok) {
+      window.alert(result.error)
+      return
+    }
+    setRightPanelTab('changes')
+    setRightPanelOpen(true)
+    setPage('chat')
+    setChangesRevision((n) => n + 1)
+  }, [threadWorktreePath])
 
   /** Codex 快捷键：同一 Tab 再按一次则收起 */
   const handleShortcutPanel = useCallback((tab: RightPanelTab) => {
@@ -2803,6 +2845,99 @@ export default function App() {
         case 'show_history':
           setShowHistoryPicker(true)
           break
+        case 'fork_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) break
+          const sourceId = activeConversationIdRef.current
+          const created = await window.sharker.createConversation(ws)
+          const forked = buildForkedConversation(created, {
+            title:
+              conversationList.find((c) => c.id === sourceId)?.title || DEFAULT_CONVERSATION_TITLE,
+            messages: messagesRef.current
+          })
+          await window.sharker.saveConversation(ws, forked)
+          saveThreadRuntime(forked.id, {
+            mode: threadRuntimeRef.current.mode,
+            baseRef: threadRuntimeRef.current.baseRef
+          })
+          const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
+          if (sourceGoal) saveThreadGoal(forked.id, sourceGoal)
+          await handleSelectConversation(ws, forked.id)
+          break
+        }
+        case 'show_status': {
+          const settingsNow = settingsRef.current
+          const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+          const model = provider?.model || settingsNow.activeProviderId
+          const cwd =
+            (threadMode === 'worktree' ? threadWorktreePath : undefined) ||
+            getActiveWorkspacePath(settingsNow) ||
+            ''
+          let branch = ''
+          if (cwd && window.sharker.getGitBranchInfo) {
+            try {
+              const info = await window.sharker.getGitBranchInfo(cwd)
+              branch = info.branch
+            } catch {
+              /* optional */
+            }
+          }
+          const usage = estimateContextUsage(messagesRef.current, streamingRef.current, '')
+          const { limit } = resolveContextLimit(model, provider?.contextWindow)
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatThreadStatus({
+              modelLabel: provider ? `${provider.name} / ${model}` : model,
+              permissionMode: settingsNow.permissionMode,
+              networkMode: settingsNow.networkMode ?? 'open',
+              threadMode,
+              workspacePath: getActiveWorkspacePath(settingsNow) || '',
+              worktreePath: threadWorktreePath,
+              branch,
+              goal: threadGoalRef.current?.text,
+              contextUsed: usage.total,
+              contextLimit: limit
+            })
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'show_diff':
+          setPage('chat')
+          setRightPanelTab('changes')
+          setRightPanelOpen(true)
+          break
+        case 'set_goal': {
+          const convId = activeConversationIdRef.current
+          const next = applyGoalCommand(threadGoalRef.current, parseGoalCommand(args))
+          threadGoalRef.current = next.goal
+          setThreadGoal(next.goal)
+          if (convId) saveThreadGoal(convId, next.goal)
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: next.note
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'open_worktree':
+          handleOpenWorktree()
+          break
+        case 'create_branch_here':
+          void handleCreateBranchHere()
+          break
         case 'resume_conversation': {
           const prev = conversationList.filter((c) => c.id !== activeConversationIdRef.current)[0]
           if (prev && settingsRef.current.activeWorkspaceId) {
@@ -2906,7 +3041,17 @@ export default function App() {
           break
       }
     },
-    [conversationList, handleSelectConversation, handleTogglePanel, persistActiveConversation, persistSettings]
+    [
+      conversationList,
+      handleCreateBranchHere,
+      handleOpenWorktree,
+      handleSelectConversation,
+      handleTogglePanel,
+      persistActiveConversation,
+      persistSettings,
+      threadMode,
+      threadWorktreePath
+    ]
   )
 
   useEffect(() => {
@@ -3939,6 +4084,9 @@ export default function App() {
               popout={Boolean(popoutRoute)}
               prLabel={prChipLabel}
               onOpenPullRequest={handleOpenPullRequest}
+              worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
+              onOpenWorktree={handleOpenWorktree}
+              onCreateBranchHere={() => void handleCreateBranchHere()}
               onPopOut={() => {
                 const ws = settingsRef.current.activeWorkspaceId
                 const id = activeConversationIdRef.current
@@ -4000,6 +4148,13 @@ export default function App() {
                 setShowHistoryPicker(false)
               }}
               threadMode={threadMode}
+              threadGoal={threadGoal}
+              onClearThreadGoal={() => {
+                const convId = activeConversationIdRef.current
+                threadGoalRef.current = null
+                setThreadGoal(null)
+                if (convId) saveThreadGoal(convId, null)
+              }}
               onThreadModeChange={handleThreadModeChange}
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}

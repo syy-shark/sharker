@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { filterChatList, splitLiveConversations } from './conversation'
+import {
+  DEFAULT_CONVERSATION_TITLE,
+  buildForkedConversation,
+  createEmptyConversation,
+  filterChatList,
+  forkConversationTitle,
+  splitLiveConversations
+} from './conversation'
 
 describe('conversation search', () => {
   it('filters chats by title or id', () => {
@@ -11,6 +18,25 @@ describe('conversation search', () => {
     expect(filterChatList(items, 'c2').map((c) => c.id)).toEqual(['c2'])
     expect(filterChatList(items, '')).toEqual(items)
     expect(filterChatList(items, 'zzz')).toEqual([])
+  })
+
+  it('names a forked thread', () => {
+    expect(forkConversationTitle('修好滚动')).toBe('修好滚动（分叉）')
+    expect(forkConversationTitle('修好滚动（分叉）')).toBe('修好滚动（分叉）')
+    expect(forkConversationTitle('  ')).toBe(`${DEFAULT_CONVERSATION_TITLE}（分叉）`)
+  })
+
+  it('copies messages into a new conversation without sharing objects', () => {
+    const created = createEmptyConversation('ws')
+    const sourceMsg = { id: 'm1', role: 'user' as const, content: '先改滚动' }
+    const forked = buildForkedConversation(created, {
+      title: '修好滚动',
+      messages: [sourceMsg]
+    })
+    expect(forked.id).toBe(created.id)
+    expect(forked.title).toBe('修好滚动（分叉）')
+    expect(forked.messages[0]).toEqual(sourceMsg)
+    expect(forked.messages[0]).not.toBe(sourceMsg)
   })
 
   it('splits live conversations into a first-class task list', () => {

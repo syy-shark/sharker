@@ -12,7 +12,9 @@ import {
   PanelRightClose,
   PanelRightOpen,
   SquarePen,
-  AppWindow
+  AppWindow,
+  FolderOpen,
+  GitBranch
 } from 'lucide-react'
 import './ChatToolbar.css'
 
@@ -29,6 +31,10 @@ interface Props {
   /** 当前分支若已有 PR，顶栏显示芯片并打开审查 */
   prLabel?: string | null
   onOpenPullRequest?: () => void
+  /** 隔离 worktree：打开目录 / 在此创建分支（对标 Codex header） */
+  worktreePath?: string | null
+  onOpenWorktree?: () => void
+  onCreateBranchHere?: () => void
 }
 
 /** 挂到 body，用 fixed 相对视口，避免 flex 壳把 absolute 子节点挤到底部 */
@@ -46,7 +52,10 @@ export function ChatToolbar({
   onPopOut,
   popout = false,
   prLabel = null,
-  onOpenPullRequest
+  onOpenPullRequest,
+  worktreePath = null,
+  onOpenWorktree,
+  onCreateBranchHere
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
 
@@ -113,6 +122,38 @@ export function ChatToolbar({
         <div className="chat-toolbar-drag" aria-hidden />
 
         <div className="chat-toolbar-right">
+          {worktreePath && onOpenWorktree && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenWorktree()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="打开隔离 worktree"
+              aria-label="打开隔离 worktree"
+            >
+              <FolderOpen size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
+          {worktreePath && onCreateBranchHere && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onCreateBranchHere()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="在此创建分支"
+              aria-label="在隔离 worktree 上创建分支"
+            >
+              <GitBranch size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
           {prLabel && onOpenPullRequest && !popout ? (
             <button
               type="button"
