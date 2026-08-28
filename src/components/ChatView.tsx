@@ -16,7 +16,7 @@ import type {
 import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
-import { ChatImage } from './ChatImage'
+import { ChatImage, ChatImageWorkspaceProvider } from './ChatImage'
 import { MessageActions } from './MessageActions'
 import {
   ComposerDock,
@@ -1024,6 +1024,10 @@ export function ChatView({
       liveSegments.some((s) => s.kind === 'status' && s.status === 'active'))
 
   return (
+    <ChatImageWorkspaceProvider
+      workspacePath={fileSearchRoot}
+      extraRoots={fileSearchExtraRoots}
+    >
     <div
       className={`chat ${isEmpty ? 'chat--empty' : 'chat--active'}`}
       data-session-key={sessionKey || undefined}
@@ -1308,5 +1312,6 @@ export function ChatView({
         </div>
       ) : null}
     </div>
+    </ChatImageWorkspaceProvider>
   )
 }

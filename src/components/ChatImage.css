@@ -12,9 +12,18 @@
 
 .streaming-markdown .chat-image--pending img,
 .live-prose-tail .chat-image--pending img,
-.message-body--assistant .chat-image--pending img {
+.message-body--assistant .chat-image--pending img,
+.streaming-markdown .chat-image--pending .chat-image-slot,
+.live-prose-tail .chat-image--pending .chat-image-slot,
+.message-body--assistant .chat-image--pending .chat-image-slot {
+  display: block;
   min-height: 8rem;
   background: var(--glass-fill-nested);
+}
+
+.chat-image--workspace img,
+.chat-image--workspace .chat-image-slot {
+  cursor: pointer;
 }
 
 .chat-image-actions {

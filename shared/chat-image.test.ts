@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   canExportChatImage,
   chatImageAspectStyle,
+  isRemoteChatImageSrc,
+  isWorkspaceChatImageSrc,
   readCachedChatImageSize,
+  readCachedWorkspaceImageDataUrl,
+  resolveWorkspaceChatImagePath,
   suggestedImageFilename,
-  writeCachedChatImageSize
+  writeCachedChatImageSize,
+  writeCachedWorkspaceImageDataUrl
 } from './chat-image'
 
 describe('chat-image', () => {
@@ -35,5 +40,29 @@ describe('chat-image', () => {
     writeCachedChatImageSize('https://a.test/zero.png', { width: 0, height: 10 })
     expect(readCachedChatImageSize('https://a.test/zero.png')).toBeNull()
     expect(readCachedChatImageSize('')).toBeNull()
+    expect(isRemoteChatImageSrc('https://a.test/p.png')).toBe(true)
+    expect(isRemoteChatImageSrc('data:image/png;base64,aa')).toBe(true)
+    expect(isWorkspaceChatImageSrc('docs/foo.png')).toBe(true)
+    expect(isWorkspaceChatImageSrc('./shot.webp')).toBe(true)
+    expect(isWorkspaceChatImageSrc('https://a.test/p.png')).toBe(false)
+    expect(isWorkspaceChatImageSrc('file:///tmp/a.png')).toBe(false)
+    expect(isWorkspaceChatImageSrc('javascript:alert(1)')).toBe(false)
+    expect(isWorkspaceChatImageSrc('src/App.tsx')).toBe(false)
+    expect(resolveWorkspaceChatImagePath('docs/foo.png', '/tmp/proj')).toBe('/tmp/proj/docs/foo.png')
+    expect(resolveWorkspaceChatImagePath('./shot.webp', '/tmp/proj', ['/tmp/extra'])).toBe(
+      '/tmp/proj/shot.webp'
+    )
+    expect(resolveWorkspaceChatImagePath('extra/pic.png', '/tmp/proj', ['/tmp/extra'])).toBe(
+      '/tmp/extra/pic.png'
+    )
+    expect(resolveWorkspaceChatImagePath('docs/foo.png', '')).toBe('')
+    expect(resolveWorkspaceChatImagePath('file:///tmp/a.png', '/tmp/proj')).toBe('')
+    expect(readCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png')).toBeNull()
+    expect(
+      writeCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png', 'data:image/png;base64,aa')
+    ).toBe('data:image/png;base64,aa')
+    expect(readCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png')).toBe('data:image/png;base64,aa')
+    writeCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png', 'https://evil.test/x.png')
+    expect(readCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png')).toBe('data:image/png;base64,aa')
   })
 })

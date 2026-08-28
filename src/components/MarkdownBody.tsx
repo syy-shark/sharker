@@ -137,8 +137,7 @@ const markdownComponents: Components = {
   p: ({ children }) => <p>{withFileCitations(children)}</p>,
   ul: ({ children, className }) => <ul className={className}>{children}</ul>,
   ol: ({ children, className }) => <ol className={className}>{children}</ol>,
-  img: ({ src, alt }) =>
-    src && /^https?:\/\//i.test(src) ? <ChatImage src={src} alt={alt ?? ''} /> : null,
+  img: ({ src, alt }) => (src ? <ChatImage src={src} alt={alt ?? ''} /> : null),
   li: ({ children, className }) => <li className={className}>{withFileCitations(children)}</li>,
   td: ({ children, align }) => (
     <td style={align ? { textAlign: align } : undefined}>{withFileCitations(children)}</td>
