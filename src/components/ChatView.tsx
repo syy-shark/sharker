@@ -46,6 +46,12 @@ import {
   shouldForceStickScroll,
   shouldFollowApprovalIntoView
 } from '../../shared/live-display'
+import {
+  captureTranscriptScroll,
+  resolveRestoredScrollTop,
+  shouldDeferScrollRestore,
+  type TranscriptScrollSnapshot
+} from '../../shared/transcript-scroll'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -312,6 +318,9 @@ interface Props {
   copyPicker?: CopyOutputTarget[] | null
   onCopyPick?: (target: CopyOutputTarget) => void
   onCopyPickerClose?: () => void
+  /** 本会话上次离开时的滚动（对标 Codex 26.406 按对话记住位置） */
+  scrollSnapshot?: TranscriptScrollSnapshot | null
+  onScrollSnapshot?: (conversationId: string, snap: TranscriptScrollSnapshot) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -381,7 +390,9 @@ export function ChatView({
   onInsertComposer,
   copyPicker = null,
   onCopyPick,
-  onCopyPickerClose
+  onCopyPickerClose,
+  scrollSnapshot = null,
+  onScrollSnapshot
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -515,6 +526,68 @@ export function ChatView({
 
   const stickToBottomRef = useRef(stickToBottom)
   stickToBottomRef.current = stickToBottom
+  const lastSnapshotRef = useRef<TranscriptScrollSnapshot | null>(null)
+  const pendingRestoreRef = useRef<TranscriptScrollSnapshot | null>(null)
+  const sessionKeyRef = useRef<string | null | undefined>(undefined)
+  const queuedPersistRef = useRef<{ id: string; snap: TranscriptScrollSnapshot } | null>(null)
+  const onScrollSnapshotRef = useRef(onScrollSnapshot)
+  onScrollSnapshotRef.current = onScrollSnapshot
+  if (sessionKeyRef.current !== sessionKey) {
+    const prev = sessionKeyRef.current
+    if (prev && lastSnapshotRef.current) {
+      queuedPersistRef.current = { id: prev, snap: lastSnapshotRef.current }
+    }
+    sessionKeyRef.current = sessionKey
+    pendingRestoreRef.current = scrollSnapshot ?? null
+  }
+
+  const rememberTranscriptSnapshot = useCallback(() => {
+    const el = messagesRef.current
+    if (!el) return
+    lastSnapshotRef.current = captureTranscriptScroll(
+      el,
+      stickToBottomRef.current,
+      userScrollLockRef.current
+    )
+  }, [])
+
+  const applyTranscriptRestore = useCallback((el: HTMLElement, snap: TranscriptScrollSnapshot | null) => {
+    const r = resolveRestoredScrollTop(el, snap)
+    programmaticScrollRef.current = true
+    el.scrollTop = r.scrollTop
+    programmaticScrollRef.current = false
+    stickToBottomRef.current = r.stickToBottom
+    userScrollLockRef.current = r.userLocked
+    lastScrollIntentRef.current = r.userLocked ? 'up' : null
+    lastScrollTopRef.current = el.scrollTop
+    setStickToBottom(r.stickToBottom)
+    lastSnapshotRef.current = captureTranscriptScroll(el, r.stickToBottom, r.userLocked)
+    pendingRestoreRef.current =
+      snap && shouldDeferScrollRestore(el, snap) ? snap : null
+    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    const distance = Math.max(0, maxTop - el.scrollTop)
+    setCanJumpToBottom(!r.stickToBottom && maxTop > 12 && distance > LEAVE_BOTTOM_PX)
+  }, [])
+
+  useLayoutEffect(() => {
+    const queued = queuedPersistRef.current
+    queuedPersistRef.current = null
+    if (queued) onScrollSnapshotRef.current?.(queued.id, queued.snap)
+    const el = messagesRef.current
+    if (!el) return
+    applyTranscriptRestore(el, pendingRestoreRef.current)
+  }, [sessionKey, applyTranscriptRestore])
+
+  useEffect(() => {
+    return () => {
+      const id = sessionKeyRef.current
+      const el = messagesRef.current
+      const snap = el
+        ? captureTranscriptScroll(el, stickToBottomRef.current, userScrollLockRef.current)
+        : lastSnapshotRef.current
+      if (id && snap) onScrollSnapshotRef.current?.(id, snap)
+    }
+  }, [])
   const isEmpty =
     messages.length === 0 &&
     queuedPrompts.length === 0 &&
@@ -690,8 +763,9 @@ export function ChatView({
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
     requestAnimationFrame(() => {
       programmaticScrollRef.current = false
+      rememberTranscriptSnapshot()
     })
-  }, [findCurrent?.messageId, findCurrent?.occurrence, findOpen, lockUserScroll])
+  }, [findCurrent?.messageId, findCurrent?.occurrence, findOpen, lockUserScroll, rememberTranscriptSnapshot])
 
   /** 高亮当前词；直播重绘文本节点后要重标 */
   useEffect(() => {
@@ -726,15 +800,17 @@ export function ChatView({
       if (behavior === 'auto') {
         programmaticScrollRef.current = false
         if (!userScrollLockRef.current) syncScrollFlags()
+        rememberTranscriptSnapshot()
         return
       }
       const finish = () => {
         programmaticScrollRef.current = false
         if (!userScrollLockRef.current) syncScrollFlags()
+        rememberTranscriptSnapshot()
       }
       window.setTimeout(finish, 500)
     },
-    [readScrollMetrics, syncScrollFlags]
+    [readScrollMetrics, syncScrollFlags, rememberTranscriptSnapshot]
   )
 
   const resumeStickToBottom = useCallback(() => {
@@ -778,6 +854,7 @@ export function ChatView({
         el.scrollTo({ top: 0, behavior: 'smooth' })
         window.setTimeout(() => {
           programmaticScrollRef.current = false
+          rememberTranscriptSnapshot()
         }, 400)
         return
       }
@@ -785,7 +862,7 @@ export function ChatView({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [resumeStickToBottom])
+  }, [resumeStickToBottom, rememberTranscriptSnapshot])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -800,6 +877,7 @@ export function ChatView({
       else if (top > lastScrollTopRef.current + 0.5) lastScrollIntentRef.current = 'down'
       lastScrollTopRef.current = top
       syncScrollFlags()
+      rememberTranscriptSnapshot()
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     const ro = new ResizeObserver(() => {
@@ -810,11 +888,12 @@ export function ChatView({
     ro.observe(el)
     lastScrollTopRef.current = el.scrollTop
     syncScrollFlags()
+    rememberTranscriptSnapshot()
     return () => {
       el.removeEventListener('scroll', onScroll)
       ro.disconnect()
     }
-  }, [isEmpty, syncScrollFlags])
+  }, [isEmpty, syncScrollFlags, rememberTranscriptSnapshot])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -881,6 +960,11 @@ export function ChatView({
     let lastHeight = 0
     let lastClient = 0
     const follow = () => {
+      const pending = pendingRestoreRef.current
+      if (pending) {
+        applyTranscriptRestore(scroller, pending)
+        if (pendingRestoreRef.current) return
+      }
       if (!stickToBottomRef.current || userScrollLockRef.current) return
       const h = scroller.scrollHeight
       const client = scroller.clientHeight
@@ -897,6 +981,7 @@ export function ChatView({
       programmaticScrollRef.current = true
       scroller.scrollTop = liveStickScrollTop(h, client)
       programmaticScrollRef.current = false
+      rememberTranscriptSnapshot()
     }
     const ro = new ResizeObserver(follow)
     ro.observe(content)
@@ -906,7 +991,7 @@ export function ChatView({
     return () => {
       ro.disconnect()
     }
-  }, [isEmpty, loading, sessionKey])
+  }, [isEmpty, loading, sessionKey, applyTranscriptRestore, rememberTranscriptSnapshot])
 
   useEffect(() => {
     const root = messagesInnerRef.current

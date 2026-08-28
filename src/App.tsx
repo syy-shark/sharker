@@ -69,6 +69,7 @@ import {
   stepThinkingLevel
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
+import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
@@ -421,6 +422,12 @@ export default function App() {
   const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
   const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
+  /** 窗口内按会话记住对话柱位置（对标 Codex 26.406；不落盘） */
+  const transcriptScrollByConvRef = useRef(new Map<string, TranscriptScrollSnapshot>())
+  const rememberTranscriptScroll = useCallback((id: string, snap: TranscriptScrollSnapshot) => {
+    if (!id) return
+    transcriptScrollByConvRef.current.set(id, snap)
+  }, [])
   const turnChangedPathsRef = useRef<string[]>([])
   const threadWorktreePathRef = useRef<string | undefined>(undefined)
   const sendInFlightRef = useRef(false)
@@ -6539,6 +6546,12 @@ export default function App() {
               copyPicker={copyPicker}
               onCopyPick={handleCopyPick}
               onCopyPickerClose={handleCopyPickerClose}
+              scrollSnapshot={
+                activeConversationId
+                  ? transcriptScrollByConvRef.current.get(activeConversationId) ?? null
+                  : null
+              }
+              onScrollSnapshot={rememberTranscriptScroll}
             />
             </div>
           ) : page === 'automations' ? (
