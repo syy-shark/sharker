@@ -1,14 +1,17 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
+ * 写盘 revision 静默重拉树，不清预览、不折叠已展开目录。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
 import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
+  fileTreeReloadMode,
   parseGoToLineInput,
-  type FilePreviewKind
+  type FilePreviewKind,
+  type FileTreeReloadReason
 } from '../../../shared/file-preview'
 import {
   formatComposerInsert,
@@ -33,6 +36,8 @@ interface Props {
   onAskInSideChat?: (prompt: string) => void
   /** 划选预览正文插入当前输入框（对标 Codex send selection to composer） */
   onInsertComposer?: (text: string) => void
+  /** 工具写盘后递增：静默重拉树，不清预览、不折叠已展开目录 */
+  revision?: number
 }
 
 function TreeNodeView({
@@ -102,7 +107,8 @@ export function FileTree({
   previewRequest = null,
   extraRoots = EMPTY_EXTRA_ROOTS,
   onAskInSideChat,
-  onInsertComposer
+  onInsertComposer,
+  revision = 0
 }: Props) {
   const extras = useMemo(
     () => extraRoots.filter((root) => root && root !== workspacePath),
@@ -127,27 +133,38 @@ export function FileTree({
   const treeRef = useRef<HTMLDivElement | null>(null)
   const goToInputRef = useRef<HTMLInputElement | null>(null)
 
-  const load = useCallback(async () => {
-    if (!workspacePath || !window.sharker?.getWorkspaceTree) return
-    setLoading(true)
-    setFileError('')
-    try {
-      const nodes = await window.sharker.getWorkspaceTree(workspacePath, isHome, extras)
-      setTree(nodes)
-      setExpanded(new Set([workspacePath, ...extras]))
-    } finally {
-      setLoading(false)
-    }
-  }, [workspacePath, isHome, extras])
+  const load = useCallback(
+    async (reason: FileTreeReloadReason = 'workspace') => {
+      if (!workspacePath || !window.sharker?.getWorkspaceTree) return
+      const mode = fileTreeReloadMode(reason)
+      if (mode.showLoading) {
+        setLoading(true)
+        setFileError('')
+      }
+      try {
+        const nodes = await window.sharker.getWorkspaceTree(workspacePath, isHome, extras)
+        setTree(nodes)
+        if (mode.resetExpanded) setExpanded(new Set([workspacePath, ...extras]))
+      } finally {
+        if (mode.showLoading) setLoading(false)
+      }
+    },
+    [workspacePath, isHome, extras]
+  )
 
   useEffect(() => {
     setOpenFile(null)
-    void load()
+    void load('workspace')
   }, [load])
 
   useEffect(() => {
+    if (!revision) return
+    void load('revision')
+  }, [load, revision])
+
+  useEffect(() => {
     const onVis = () => {
-      if (document.visibilityState === 'visible') void load()
+      if (document.visibilityState === 'visible') void load('focus')
     }
     window.addEventListener('focus', onVis)
     document.addEventListener('visibilitychange', onVis)

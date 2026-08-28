@@ -27,7 +27,7 @@ interface Props {
   isHome?: boolean
   onTabChange: (tab: RightPanelTab) => void
   onClose?: () => void
-  /** 工具写盘后递增，审查列表立刻刷新 */
+  /** 工具写盘后递增，审查列表与打开的文件树立刻刷新 */
   changesRevision?: number
   /** 审查行内评论 → 当前对话 */
   onSendReviewComments?: (prompt: string) => void
@@ -376,6 +376,7 @@ export function RightPanel({
             extraRoots={extraRoots}
             onAskInSideChat={onAskInSideChat}
             onInsertComposer={onInsertComposer}
+            revision={changesRevision}
           />
         )}
         {tab === 'changes' && (

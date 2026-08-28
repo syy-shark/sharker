@@ -3,6 +3,7 @@ import {
   dataUrlMimeForPath,
   filePreviewKind,
   filePreviewUnsupportedMessage,
+  fileTreeReloadMode,
   maxDiffGotoLine,
   parseGoToLineInput,
   previewPathTouchedByWrites
@@ -36,5 +37,16 @@ describe('file preview kinds', () => {
       previewPathTouchedByWrites('/tmp/extra/lib.ts', ['extra/lib.ts'], '/proj', ['/tmp/extra'])
     ).toBe(true)
     expect(previewPathTouchedByWrites('/proj/src/a.ts', [], '/proj')).toBe(false)
+    expect(fileTreeReloadMode('workspace')).toEqual({
+      clearPreview: true,
+      resetExpanded: true,
+      showLoading: true
+    })
+    expect(fileTreeReloadMode('revision')).toEqual({
+      clearPreview: false,
+      resetExpanded: false,
+      showLoading: false
+    })
+    expect(fileTreeReloadMode('focus')).toEqual(fileTreeReloadMode('revision'))
   })
 })

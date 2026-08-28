@@ -101,6 +101,20 @@ function normPreviewPath(path: string): string {
 /**
  * 打开的预览是否被本轮写盘碰到。写完后重读同一文件，对标 Codex 打开文档跟着 Agent 改。
  */
+/** 文件树为何重拉：换工作区要清预览并折回根；写盘/回前台只换节点，保住预览与展开 */
+export type FileTreeReloadReason = 'workspace' | 'focus' | 'revision'
+
+export function fileTreeReloadMode(reason: FileTreeReloadReason): {
+  clearPreview: boolean
+  resetExpanded: boolean
+  showLoading: boolean
+} {
+  if (reason === 'workspace') {
+    return { clearPreview: true, resetExpanded: true, showLoading: true }
+  }
+  return { clearPreview: false, resetExpanded: false, showLoading: false }
+}
+
 export function previewPathTouchedByWrites(
   previewPath: string,
   writtenRelPaths: readonly string[],
