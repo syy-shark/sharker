@@ -35,6 +35,10 @@ describe('command palette', () => {
     expect(ids).toContain('fast')
     expect(ids).toContain('skills')
     expect(ids).toContain('stop')
+    expect(ids).toContain('nav-back')
+    expect(ids).toContain('nav-forward')
+    expect(ids).toContain('font-larger')
+    expect(ids).toContain('clear-terminal')
   })
 
   it('filters by title and keywords', () => {

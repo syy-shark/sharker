@@ -58,6 +58,19 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'u', metaKey: true, altKey: true }))).toBe(
       'toggle_agents'
     )
+    expect(matchWorkbenchShortcut(ev({ key: '=', metaKey: true }))).toBe('font_larger')
+    expect(matchWorkbenchShortcut(ev({ key: '-', metaKey: true }))).toBe('font_smaller')
+    expect(matchWorkbenchShortcut(ev({ key: '0', metaKey: true }))).toBe('font_reset')
+    expect(matchWorkbenchShortcut(ev({ key: '[', code: 'BracketLeft', metaKey: true }))).toBe(
+      'nav_back'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: ']', code: 'BracketRight', metaKey: true }))).toBe(
+      'nav_forward'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'l', ctrlKey: true }))).toBe('clear_terminal')
+    expect(
+      matchWorkbenchShortcut(ev({ key: '[', code: 'BracketLeft', metaKey: true, shiftKey: true }))
+    ).toBe('prev_thread')
   })
 
   it('cycles conversation ids', () => {

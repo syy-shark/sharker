@@ -5,7 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import type { AgentPersonality } from '../../../shared/personality'
 import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
-import { SettingsCard, SettingsChoiceGroup, SettingsSection } from './SettingsPrimitives'
+import {
+  clampUiFontScale,
+  formatUiFontScale,
+  stepUiFontScale,
+  UI_FONT_SCALE_DEFAULT,
+  UI_FONT_SCALE_MAX,
+  UI_FONT_SCALE_MIN
+} from '../../../shared/ui-font-scale'
+import { SettingsCard, SettingsChoiceGroup, SettingsRow, SettingsSection } from './SettingsPrimitives'
 import './AppearanceSettings.css'
 
 interface Props {
@@ -14,8 +22,8 @@ interface Props {
   onSave: (next: AppSettings) => Promise<void>
 }
 
-/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定） */
-export function applyAppearanceDom(theme: 'light' | 'dark'): void {
+/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定）；字号写入 `--ui-font-scale` */
+export function applyAppearanceDom(theme: 'light' | 'dark', fontScale = UI_FONT_SCALE_DEFAULT): void {
   const root = document.documentElement
   root.dataset.theme = theme
   root.classList.toggle('theme-dark', theme === 'dark')
@@ -28,6 +36,7 @@ export function applyAppearanceDom(theme: 'light' | 'dark'): void {
   root.style.setProperty('--ui-opacity', theme === 'light' ? '0.11' : '1')
   root.style.setProperty('--ui-opacity-strong', theme === 'light' ? '0.18' : '1')
   root.style.setProperty('--ui-opacity-soft', theme === 'light' ? '0.08' : '1')
+  root.style.setProperty('--ui-font-scale', String(clampUiFontScale(fontScale)))
 }
 
 /** 外观设置 */
@@ -57,8 +66,8 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   useEffect(() => {
     const t = draft.uiTheme === 'dark' ? 'dark' : 'light'
     setTheme(t)
-    applyAppearanceDom(t)
-  }, [draft.uiTheme])
+    applyAppearanceDom(t, draft.uiFontScale)
+  }, [draft.uiTheme, draft.uiFontScale])
 
   const scheduleSave = useCallback(
     (next: AppSettings) => {
@@ -75,13 +84,19 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   const onTheme = (uiTheme: 'light' | 'dark') => {
     setTheme(uiTheme)
     themeRef.current = uiTheme
-    applyAppearanceDom(uiTheme)
+    applyAppearanceDom(uiTheme, draftRef.current.uiFontScale)
     // 保留 uiGlass 字段兼容旧设置文件，但 UI 不再调节
     scheduleSave({
       ...draftRef.current,
       uiTheme,
       uiGlass: uiTheme === 'light' ? 0.82 : 0
     })
+  }
+
+  const onFontScale = (next: number) => {
+    const uiFontScale = clampUiFontScale(next)
+    applyAppearanceDom(themeRef.current, uiFontScale)
+    scheduleSave({ ...draftRef.current, uiFontScale })
   }
 
   return (
@@ -120,6 +135,37 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
         </div>
       </SettingsCard>
     </SettingsSection>
+      <SettingsSection title="字号">
+        <SettingsCard>
+          <SettingsRow
+            title="界面字号"
+            description="对标 Codex ⌘+ / ⌘-；⌘0 重置。写入外观设置，重启后仍有效。"
+            last
+          >
+            <div className="appearance-font-stepper">
+              <button
+                type="button"
+                className="appearance-font-btn"
+                aria-label="缩小字号"
+                disabled={clampUiFontScale(draft.uiFontScale) <= UI_FONT_SCALE_MIN}
+                onClick={() => onFontScale(stepUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT, -1))}
+              >
+                −
+              </button>
+              <span className="appearance-font-value">{formatUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT)}</span>
+              <button
+                type="button"
+                className="appearance-font-btn"
+                aria-label="放大字号"
+                disabled={clampUiFontScale(draft.uiFontScale) >= UI_FONT_SCALE_MAX}
+                onClick={() => onFontScale(stepUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT, 1))}
+              >
+                +
+              </button>
+            </div>
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
       <SettingsSection title="人格">
         <SettingsCard>
           <SettingsChoiceGroup

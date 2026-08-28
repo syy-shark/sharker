@@ -139,6 +139,47 @@ html.theme-dark .appearance-theme-card.is-selected .appearance-theme-check {
   box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.45);
 }
 
+.appearance-font-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.appearance-font-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: var(--glass-rim-soft);
+}
+
+.appearance-font-btn:hover:not(:disabled) {
+  background: var(--glass-fill-nested-hover);
+}
+
+.appearance-font-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.appearance-font-btn:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.appearance-font-value {
+  min-width: 48px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .appearance-theme-card {
     transition-duration: 0.01ms !important;

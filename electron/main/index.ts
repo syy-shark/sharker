@@ -398,6 +398,16 @@ function applyWindowAppearance(win: BrowserWindow, s: AppSettings): void {
   win.focus()
 }
 
+/** 禁止 pinch / 菜单缩放，字号改走渲染进程 --ui-font-scale（对标 Codex ⌘+/-） */
+function lockWindowZoom(win: BrowserWindow): void {
+  try {
+    win.webContents.setVisualZoomLevelLimits(1, 1)
+    win.webContents.setZoomFactor(1)
+  } catch {
+    /* 旧版 Electron 可能没有 setVisualZoomLevelLimits */
+  }
+}
+
 /** 创建主窗口并加载渲染进程（开发 URL 或打包 HTML）。 */
 function createWindow(): void {
   const icon = resolveAppIcon()
@@ -452,6 +462,7 @@ function createWindow(): void {
   })
 
   mainWindow.setMenuBarVisibility(false)
+  lockWindowZoom(mainWindow)
   applyWindowAppearance(mainWindow, settings)
 
   if (icon) {
@@ -527,6 +538,7 @@ function createThreadWindow(workspaceId: string, conversationId: string, title: 
     })
   }
   win.setMenuBarVisibility(false)
+  lockWindowZoom(win)
   applyWindowAppearance(win, settings)
   if (icon) win.setIcon(icon)
   win.once('ready-to-show', () => {

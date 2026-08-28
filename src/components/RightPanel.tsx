@@ -42,6 +42,8 @@ interface Props {
   /** Composer `!` 待写入终端的命令 */
   pendingTerminalCommand?: string | null
   onPendingTerminalCommandSent?: () => void
+  /** Ctrl+L：递增后清屏 */
+  terminalClearTick?: number
 }
 
 /** Codex 风格右侧面板 */
@@ -60,7 +62,8 @@ export function RightPanel({
   conversationId = null,
   focusSubAgentId = null,
   pendingTerminalCommand = null,
-  onPendingTerminalCommandSent
+  onPendingTerminalCommandSent,
+  terminalClearTick = 0
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -348,6 +351,7 @@ export function RightPanel({
             workspacePath={workspacePath}
             pendingCommand={pendingTerminalCommand}
             onPendingCommandSent={onPendingTerminalCommandSent}
+            clearTick={terminalClearTick}
           />
         )}
         {tab === 'browser' && <EmbeddedBrowser />}

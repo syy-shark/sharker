@@ -52,6 +52,12 @@ import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
+import { navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
+import {
+  clampUiFontScale,
+  stepUiFontScale,
+  UI_FONT_SCALE_DEFAULT
+} from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
 import {
   REVIEW_BRANCH_PROMPT,
@@ -78,6 +84,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
+import { applyAppearanceDom } from './components/settings/AppearanceSettings'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
 import type { ApprovalDecision } from '../shared/approval-session'
@@ -217,21 +224,13 @@ export default function App() {
   /** 全局状态与 ref 镜像，供 IPC 回调与节流刷新读取 */
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
 
-  /** 外观：仅浅色玻璃 / 深色金属两套固定材质 */
+  /** 外观：仅浅色玻璃 / 深色金属两套固定材质；字号写入 --ui-font-scale */
   useEffect(() => {
-    const root = document.documentElement
-    const theme = settings.uiTheme === 'dark' ? 'dark' : 'light'
-    root.dataset.theme = theme
-    root.classList.toggle('theme-dark', theme === 'dark')
-    root.classList.toggle('theme-light', theme === 'light')
-    root.classList.toggle('ui-glass', theme === 'light')
-    root.classList.toggle('ui-solid', theme === 'dark')
-    root.classList.remove('ui-full-glass')
-    root.style.setProperty('--ui-glass', theme === 'light' ? '0.82' : '0')
-    root.style.setProperty('--ui-opacity', theme === 'light' ? '0.11' : '1')
-    root.style.setProperty('--ui-opacity-strong', theme === 'light' ? '0.18' : '1')
-    root.style.setProperty('--ui-opacity-soft', theme === 'light' ? '0.08' : '1')
-  }, [settings.uiTheme])
+    applyAppearanceDom(
+      settings.uiTheme === 'dark' ? 'dark' : 'light',
+      settings.uiFontScale ?? UI_FONT_SCALE_DEFAULT
+    )
+  }, [settings.uiTheme, settings.uiFontScale])
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [page, setPage] = useState<AppPage>('chat')
   const pageRef = useRef<AppPage>('chat')
@@ -275,6 +274,10 @@ export default function App() {
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const [worktreeMissing, setWorktreeMissing] = useState(false)
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
+  const [terminalClearTick, setTerminalClearTick] = useState(0)
+  const navStackRef = useRef<NavEntry[]>([{ page: 'chat' }])
+  const navIndexRef = useRef(0)
+  const navLockRef = useRef(false)
   const threadRuntimeRef = useRef<ThreadRuntime>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
@@ -994,7 +997,8 @@ export default function App() {
           personality: updated.personality,
           worktreeKeepCount: updated.worktreeKeepCount,
           memoryInjection: updated.memoryInjection,
-          memoryGeneration: updated.memoryGeneration
+          memoryGeneration: updated.memoryGeneration,
+          uiFontScale: updated.uiFontScale
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1010,6 +1014,19 @@ export default function App() {
       throw e
     }
   }, [])
+
+  const persistFontScale = useCallback(
+    (nextScale: number) => {
+      const uiFontScale = clampUiFontScale(nextScale)
+      const merged = { ...settingsRef.current, uiFontScale }
+      applyAppearanceDom(merged.uiTheme === 'dark' ? 'dark' : 'light', uiFontScale)
+      settingsRef.current = merged
+      setSettings(merged)
+      setSettingsDraft(merged)
+      void persistSettings(merged)
+    },
+    [persistSettings]
+  )
 
   /** 离开设置页前落盘草稿 */
   const flushSettingsDraftIfNeeded = useCallback(async () => {
@@ -1031,6 +1048,7 @@ export default function App() {
       worktreeKeepCount: draft.worktreeKeepCount,
       memoryInjection: draft.memoryInjection,
       memoryGeneration: draft.memoryGeneration,
+      uiFontScale: draft.uiFontScale,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -2379,6 +2397,7 @@ export default function App() {
       worktreeKeepCount: next.worktreeKeepCount,
       memoryInjection: next.memoryInjection,
       memoryGeneration: next.memoryGeneration,
+      uiFontScale: next.uiFontScale,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -2894,6 +2913,63 @@ export default function App() {
     }
     setPage(targetPage)
   }
+
+  useEffect(() => {
+    if (navLockRef.current) return
+    const next = pushNav(navStackRef.current, navIndexRef.current, {
+      page,
+      conversationId: page === 'chat' ? activeConversationId : undefined,
+      settingsTab: page === 'settings' ? settingsTab : undefined
+    })
+    navStackRef.current = next.stack
+    navIndexRef.current = next.index
+  }, [page, activeConversationId, settingsTab])
+
+  const applyNavEntry = useCallback(
+    async (entry: NavEntry) => {
+      navLockRef.current = true
+      try {
+        if (entry.page === 'settings') {
+          await handleNavigate('settings', (entry.settingsTab as SettingsTab) || 'models')
+        } else if (entry.page === 'automations') {
+          await handleNavigate('automations')
+        } else {
+          await handleNavigate('chat')
+          const ws = settingsRef.current.activeWorkspaceId
+          const id = entry.conversationId ?? null
+          if (ws && id && id !== activeConversationIdRef.current) {
+            await handleSelectConversation(ws, id)
+          }
+        }
+      } finally {
+        window.setTimeout(() => {
+          navLockRef.current = false
+        }, 0)
+      }
+    },
+    [handleNavigate, handleSelectConversation]
+  )
+
+  const handleNavStep = useCallback(
+    (direction: 'back' | 'forward') => {
+      const stepped =
+        direction === 'back'
+          ? navBack(navStackRef.current, navIndexRef.current)
+          : navForward(navStackRef.current, navIndexRef.current)
+      if (!stepped.entry) return
+      navStackRef.current = stepped.stack
+      navIndexRef.current = stepped.index
+      void applyNavEntry(stepped.entry)
+    },
+    [applyNavEntry]
+  )
+
+  const handleClearTerminal = useCallback(() => {
+    setPage('chat')
+    setRightPanelTab('terminal')
+    setRightPanelOpen(true)
+    setTerminalClearTick((n) => n + 1)
+  }, [])
 
   /** 执行轨道内审批响应：once / session / deny → 主进程真实授权路径 */
   const handleApproval = async (decision: ApprovalDecision) => {
@@ -3540,6 +3616,30 @@ export default function App() {
         if (ws && id) void window.sharker.openThreadWindow?.(ws, id)
         return
       }
+      if (cmd.action === 'nav_back') {
+        handleNavStep('back')
+        return
+      }
+      if (cmd.action === 'nav_forward') {
+        handleNavStep('forward')
+        return
+      }
+      if (cmd.action === 'font_larger') {
+        persistFontScale(stepUiFontScale(settingsRef.current.uiFontScale ?? UI_FONT_SCALE_DEFAULT, 1))
+        return
+      }
+      if (cmd.action === 'font_smaller') {
+        persistFontScale(stepUiFontScale(settingsRef.current.uiFontScale ?? UI_FONT_SCALE_DEFAULT, -1))
+        return
+      }
+      if (cmd.action === 'font_reset') {
+        persistFontScale(UI_FONT_SCALE_DEFAULT)
+        return
+      }
+      if (cmd.action === 'clear_terminal') {
+        handleClearTerminal()
+        return
+      }
       void handleSlashActionRef.current(
         {
           name: cmd.id,
@@ -3551,7 +3651,7 @@ export default function App() {
         ''
       )
     },
-    [handleAddWorkspace, toggleSidebar]
+    [handleAddWorkspace, handleClearTerminal, handleNavStep, persistFontScale, toggleSidebar]
   )
 
   useEffect(() => {
@@ -3645,11 +3745,35 @@ export default function App() {
       }
       if (action === 'command_palette') {
         setCommandPaletteOpen((open) => !open)
+        return
+      }
+      if (action === 'nav_back') {
+        handleNavStep('back')
+        return
+      }
+      if (action === 'nav_forward') {
+        handleNavStep('forward')
+        return
+      }
+      if (action === 'font_larger') {
+        persistFontScale(stepUiFontScale(settingsRef.current.uiFontScale ?? UI_FONT_SCALE_DEFAULT, 1))
+        return
+      }
+      if (action === 'font_smaller') {
+        persistFontScale(stepUiFontScale(settingsRef.current.uiFontScale ?? UI_FONT_SCALE_DEFAULT, -1))
+        return
+      }
+      if (action === 'font_reset') {
+        persistFontScale(UI_FONT_SCALE_DEFAULT)
+        return
+      }
+      if (action === 'clear_terminal') {
+        handleClearTerminal()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleNavigate, handleNewConversation, handleSelectConversation, handleShortcutPanel, toggleSidebar])
+  }, [handleAddWorkspace, handleClearTerminal, handleNavigate, handleNavStep, handleNewConversation, handleSelectConversation, handleShortcutPanel, persistFontScale, toggleSidebar])
 
   /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
   useEffect(() => {
@@ -4652,6 +4776,7 @@ export default function App() {
           focusSubAgentId={focusSubAgentId}
           pendingTerminalCommand={pendingTerminalCommand}
           onPendingTerminalCommandSent={() => setPendingTerminalCommand(null)}
+          terminalClearTick={terminalClearTick}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

@@ -6,6 +6,7 @@ import type { AppSettings, WorkspaceItem } from './types'
 import { ensureBuiltinProviders } from './provider-catalog'
 import { parsePersonality } from './personality'
 import { clampWorktreeKeepCount } from './worktree-prune'
+import { clampUiFontScale } from './ui-font-scale'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -127,6 +128,7 @@ export function normalizeSettings(
 
     uiGlass: migrateUiGlass(raw),
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
+    uiFontScale: clampUiFontScale(raw.uiFontScale),
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
     memoryInjection: raw.memoryInjection !== false,

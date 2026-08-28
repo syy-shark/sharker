@@ -21,6 +21,12 @@ export type WorkbenchShortcutAction =
   | 'select_chat'
   | 'search_chats'
   | 'toggle_agents'
+  | 'nav_back'
+  | 'nav_forward'
+  | 'font_larger'
+  | 'font_smaller'
+  | 'font_reset'
+  | 'clear_terminal'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -59,6 +65,17 @@ export function matchWorkbenchShortcut(event: {
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
   if (key === 'o' && !event.altKey && !event.shiftKey) return 'open_folder'
   if (
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === '=' || key === '+' || code === 'Equal' || code === 'NumpadAdd')
+  ) {
+    return 'font_larger'
+  }
+  if (!event.altKey && !event.shiftKey && (key === '-' || key === '_' || code === 'Minus')) {
+    return 'font_smaller'
+  }
+  if (!event.altKey && !event.shiftKey && key === '0') return 'font_reset'
+  if (
     event.shiftKey &&
     !event.altKey &&
     (code === 'BracketLeft' || key === '[' || key === '{')
@@ -71,6 +88,21 @@ export function matchWorkbenchShortcut(event: {
     (code === 'BracketRight' || key === ']' || key === '}')
   ) {
     return 'next_thread'
+  }
+  if (!event.shiftKey && !event.altKey && (code === 'BracketLeft' || key === '[')) {
+    return 'nav_back'
+  }
+  if (!event.shiftKey && !event.altKey && (code === 'BracketRight' || key === ']')) {
+    return 'nav_forward'
+  }
+  if (
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === 'l' || key === 'L')
+  ) {
+    return 'clear_terminal'
   }
   return null
 }
@@ -98,9 +130,14 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
   { keys: '⌘N / ⌘⇧O', title: '新对话' },
+  { keys: '⌘[ / ⌘]', title: '后退 / 前进' },
+  { keys: '⌘+ / ⌘-', title: '放大 / 缩小字号' },
+  { keys: '⌘0', title: '重置字号' },
+  { keys: 'Ctrl+L', title: '清终端' },
   { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘/', title: '快捷键一览' },
+  { keys: '⌘↑ / ⌘↓', title: '对话顶 / 底' },
   { keys: '⌘F', title: '在对话中查找' },
   { keys: '⌘G', title: '搜索对话' },
   { keys: 'Ctrl⇧M', title: '模型选择' },

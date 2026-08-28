@@ -75,6 +75,8 @@ export interface AppSettings {
   uiGlass?: number
   /** 外观主题：light=苹果玻璃，dark=深金属 */
   uiTheme?: 'light' | 'dark'
+  /** 界面字号缩放（对标 Codex ⌘+ / ⌘-）；默认 1 */
+  uiFontScale?: number
   /** Codex 式人格：只改语气 */
   personality?: import('./personality').AgentPersonality
   /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
@@ -306,6 +308,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   browserUseEnabled: true,
   uiGlass: 0.82,
   uiTheme: 'light',
+  uiFontScale: 1,
   personality: 'pragmatic',
   worktreeKeepCount: 15,
   memoryInjection: true,

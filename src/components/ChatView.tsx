@@ -851,6 +851,38 @@ export function ChatView({
     scrollToBottom('smooth')
   }, [scrollToBottom])
 
+  /** ⌘↑ / ⌘↓：长对话跳到顶/底（输入框内不抢光标） */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+      const t = e.target
+      if (t instanceof HTMLElement && t.closest('textarea, input, [contenteditable="true"]')) {
+        return
+      }
+      const el = messagesRef.current
+      if (!el) return
+      e.preventDefault()
+      if (e.key === 'ArrowUp') {
+        lastScrollIntentRef.current = 'up'
+        userScrollLockRef.current = true
+        stickToBottomRef.current = false
+        setStickToBottom(false)
+        setCanJumpToBottom(true)
+        programmaticScrollRef.current = true
+        el.scrollTo({ top: 0, behavior: 'smooth' })
+        window.setTimeout(() => {
+          programmaticScrollRef.current = false
+        }, 400)
+        return
+      }
+      resumeStickToBottom()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [resumeStickToBottom])
+
   /** 根据内容自动调整输入框高度（最高 200px） */
   const syncTextareaHeight = () => {
     const el = textareaRef.current
@@ -1761,6 +1793,44 @@ export function ChatView({
     </div>
   )
 
+  const historicalRows = useMemo(
+    () =>
+      messages.map((m, index) =>
+        m.role === 'user' ? (
+          <UserMessageRow
+            key={m.id}
+            id={m.id}
+            content={m.content}
+            attachments={m.attachments}
+            findHit={findHits.some((h) => h.messageId === m.id)}
+            findCurrent={findHits[findHit]?.messageId === m.id}
+          />
+        ) : (
+          <div
+            key={m.id}
+            id={`msg-${m.id}`}
+            className={`message-row message-row--assistant${
+              findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
+            }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
+          >
+            <AssistantMessage
+              messageId={m.id}
+              content={m.content}
+              meta={m.meta}
+              modelLabel={m.meta?.model ?? modelLabel}
+              onOpenSubAgent={onOpenSubAgent}
+              onRetry={
+                index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
+                  ? () => onRetry(m.meta!.retryOfUserMessageId!)
+                  : undefined
+              }
+            />
+          </div>
+        )
+      ),
+    [findHit, findHits, messages, modelLabel, onOpenSubAgent, onRetry]
+  )
+
   const showLiveAssistant = loading
   // 有 segment 流时由 TurnFlow 负责；这里仅给旧路径/无实质工具时的思考态
   const isThinkingLive =
@@ -1850,39 +1920,7 @@ export function ChatView({
             </div>
           ) : null}
           <div className="messages" ref={messagesInnerRef}>
-            {messages.map((m, index) =>
-              m.role === 'user' ? (
-                <UserMessageRow
-                  key={m.id}
-                  id={m.id}
-                  content={m.content}
-                  attachments={m.attachments}
-                  findHit={findHits.some((h) => h.messageId === m.id)}
-                  findCurrent={findHits[findHit]?.messageId === m.id}
-                />
-              ) : (
-                <div
-                  key={m.id}
-                  id={`msg-${m.id}`}
-                  className={`message-row message-row--assistant${
-                    findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
-                  }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
-                >
-                  <AssistantMessage
-                    messageId={m.id}
-                    content={m.content}
-                    meta={m.meta}
-                    modelLabel={m.meta?.model ?? modelLabel}
-                    onOpenSubAgent={onOpenSubAgent}
-                    onRetry={
-                      index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
-                        ? () => onRetry(m.meta!.retryOfUserMessageId!)
-                        : undefined
-                    }
-                  />
-                </div>
-              )
-            )}
+            {historicalRows}
 
             {showLiveAssistant && (
               <div className="message-row message-row--assistant message-row--live">

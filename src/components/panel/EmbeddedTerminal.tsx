@@ -14,6 +14,8 @@ interface Props {
   /** Composer `!cmd`：PTY 就绪后写入并回车 */
   pendingCommand?: string | null
   onPendingCommandSent?: () => void
+  /** 递增则清屏（对标 Codex Ctrl+L） */
+  clearTick?: number
 }
 
 /**
@@ -76,6 +78,13 @@ function isDarkUi(): boolean {
   return typeof document !== 'undefined' && document.documentElement.classList.contains('theme-dark')
 }
 
+function uiFontScale(): number {
+  if (typeof document === 'undefined') return 1
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--ui-font-scale').trim()
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : 1
+}
+
 function cssVar(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -114,11 +123,13 @@ function safeFit(fit: FitAddon, term: Terminal): void {
 export function EmbeddedTerminal({
   workspacePath,
   pendingCommand = null,
-  onPendingCommandSent
+  onPendingCommandSent,
+  clearTick = 0
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const sessionIdRef = useRef<string | null>(null)
+  const appliedClearRef = useRef(0)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
   /** 主题变化时强制重建 xterm（仅改 options 在部分版本不重绘底色） */
@@ -129,7 +140,7 @@ export function EmbeddedTerminal({
     const obs = new MutationObserver(() => {
       setThemeTick((n) => n + 1)
     })
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
     return () => obs.disconnect()
   }, [])
 
@@ -150,7 +161,7 @@ export function EmbeddedTerminal({
     const term = new Terminal({
       cursorBlink: true,
       cursorStyle: 'bar',
-      fontSize: 13,
+      fontSize: Math.round(13 * uiFontScale()),
       lineHeight: 1.35,
       fontFamily:
         'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Monaco, monospace',
@@ -261,6 +272,18 @@ export function EmbeddedTerminal({
   }, [workspacePath, themeTick])
 
   useEffect(() => {
+    if (!clearTick || clearTick === appliedClearRef.current || !ready) return
+    const term = termRef.current
+    const id = sessionIdRef.current
+    if (!term) return
+    appliedClearRef.current = clearTick
+    term.clear()
+    if (id && window.sharker.writeTerminal) {
+      void window.sharker.writeTerminal(id, '\x0c')
+    }
+  }, [clearTick, ready])
+
+  useEffect(() => {
     if (!ready || !pendingCommand || !sessionIdRef.current || !window.sharker.writeTerminal) {
       return
     }
@@ -279,6 +302,23 @@ export function EmbeddedTerminal({
         <span className="embedded-terminal-title" title={workspacePath}>
           {cwdLabel}
         </span>
+        <button
+          type="button"
+          className="embedded-terminal-clear"
+          aria-label="清终端"
+          title="清终端 · Ctrl+L"
+          onClick={() => {
+            const term = termRef.current
+            const id = sessionIdRef.current
+            if (!term) return
+            term.clear()
+            if (id && window.sharker.writeTerminal) {
+              void window.sharker.writeTerminal(id, '\x0c')
+            }
+          }}
+        >
+          清屏
+        </button>
         <span className="embedded-terminal-status" aria-live="polite">
           {error ? '错误' : ready ? '' : '连接中…'}
         </span>

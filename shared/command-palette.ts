@@ -267,6 +267,48 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘/',
     keywords: 'shortcuts keymap help 快捷键',
     action: 'shortcut_help'
+  },
+  {
+    id: 'nav-back',
+    title: '后退',
+    shortcut: '⌘[',
+    keywords: 'back navigate 后退 导航',
+    action: 'nav_back'
+  },
+  {
+    id: 'nav-forward',
+    title: '前进',
+    shortcut: '⌘]',
+    keywords: 'forward navigate 前进 导航',
+    action: 'nav_forward'
+  },
+  {
+    id: 'font-larger',
+    title: '放大字号',
+    shortcut: '⌘+',
+    keywords: 'font size zoom larger 字号 放大',
+    action: 'font_larger'
+  },
+  {
+    id: 'font-smaller',
+    title: '缩小字号',
+    shortcut: '⌘-',
+    keywords: 'font size zoom smaller 字号 缩小',
+    action: 'font_smaller'
+  },
+  {
+    id: 'font-reset',
+    title: '重置字号',
+    shortcut: '⌘0',
+    keywords: 'font size reset 字号 重置',
+    action: 'font_reset'
+  },
+  {
+    id: 'clear-terminal',
+    title: '清终端',
+    shortcut: 'Ctrl+L',
+    keywords: 'clear terminal 清屏 终端',
+    action: 'clear_terminal'
   }
 ]
 

@@ -51,6 +51,28 @@
   letter-spacing: -0.01em;
 }
 
+.embedded-terminal-clear {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 0.5px solid var(--glass-edge-soft);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.embedded-terminal-clear:hover {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-terminal-clear:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
 .embedded-terminal-status {
   flex-shrink: 0;
   font-size: 10px;
