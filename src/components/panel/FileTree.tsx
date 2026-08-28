@@ -194,7 +194,9 @@ export function FileTree({
       setOpenFile(null)
       return
     }
-    setOpenFile({ path: res.path, kind: 'text', content: res.content, line })
+    const lineCount = res.content.split('\n').length
+    const clamped = line != null ? parseGoToLineInput(String(line), lineCount) ?? undefined : undefined
+    setOpenFile({ path: res.path, kind: 'text', content: res.content, line: clamped })
   }, [workspacePath, extraRoots])
 
   useEffect(() => {

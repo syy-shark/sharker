@@ -94,8 +94,8 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` 给预览 ⌘L 跳行 |
-| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取 |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行 |
+| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |

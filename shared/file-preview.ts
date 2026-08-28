@@ -80,6 +80,18 @@ export function parseGoToLineInput(raw: string, lineCount: number): number | nul
   return Math.min(n, Math.max(1, lineCount))
 }
 
+/** 审查 diff 跳行上限：取新旧行号里较大的那个 */
+export function maxDiffGotoLine(
+  lines: Array<{ newLine?: number | null; oldLine?: number | null }> | undefined
+): number {
+  let max = 0
+  for (const line of lines ?? []) {
+    const n = Number(line.newLine ?? line.oldLine ?? 0)
+    if (Number.isFinite(n) && n > max) max = n
+  }
+  return Math.max(1, max)
+}
+
 export function filePreviewUnsupportedMessage(filePath: string): string {
   const ext = fileExt(filePath)
   if (ext === 'xlsx' || ext === 'xls') {

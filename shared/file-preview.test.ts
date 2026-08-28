@@ -3,6 +3,7 @@ import {
   dataUrlMimeForPath,
   filePreviewKind,
   filePreviewUnsupportedMessage,
+  maxDiffGotoLine,
   parseGoToLineInput
 } from './file-preview'
 
@@ -24,5 +25,8 @@ describe('file preview kinds', () => {
     expect(parseGoToLineInput('0', 10)).toBe(null)
     expect(parseGoToLineInput('ab', 10)).toBe(null)
     expect(parseGoToLineInput('3', 0)).toBe(1)
+    expect(maxDiffGotoLine([{ newLine: 12 }, { oldLine: 40 }])).toBe(40)
+    expect(maxDiffGotoLine([])).toBe(1)
+    expect(maxDiffGotoLine(undefined)).toBe(1)
   })
 })

@@ -1,8 +1,9 @@
 /**
  * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
+ * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line）。
  * @see ./ARCH.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
@@ -20,6 +21,7 @@ import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { formatBranchPrefix } from '../../../shared/git-branch-create'
 import { CodeDiffBlock } from '../CodeDiffBlock'
+import { maxDiffGotoLine, parseGoToLineInput } from '../../../shared/file-preview'
 import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
 import {
   resolveReviewFileClick,
@@ -142,6 +144,11 @@ export function ChangesPanel({
       return true
     }
   })
+  const [goToOpen, setGoToOpen] = useState(false)
+  const [goToDraft, setGoToDraft] = useState('')
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const goToInputRef = useRef<HTMLInputElement | null>(null)
+  const lastReviewKeyRef = useRef('')
 
   useEffect(() => {
     if (!agentFindings.length) return
@@ -581,9 +588,65 @@ export function ChangesPanel({
     }
   }, [sourceFiles, expandedKeys, reviewCwd, revision, scope, compare, commitSha])
 
+  const applyReviewGoToLine = useCallback(() => {
+    const preferred =
+      lastReviewKeyRef.current && expandedKeys.includes(lastReviewKeyRef.current)
+        ? lastReviewKeyRef.current
+        : expandedKeys[0]
+    if (!preferred) return
+    const parsed = parseReviewDiffKey(preferred)
+    if (!parsed) return
+    const line = parseGoToLineInput(goToDraft, maxDiffGotoLine(diffs[preferred]?.lines))
+    if (line == null) return
+    dispatchOpenWorkspaceFile({
+      path: reviewFileOpenPath(parsed.path, parsed.repoRoot, workspacePath),
+      line
+    })
+    setGoToOpen(false)
+  }, [diffs, expandedKeys, goToDraft, workspacePath])
+
+  useEffect(() => {
+    if (!expandedKeys.length) setGoToOpen(false)
+  }, [expandedKeys.length])
+
+  /** 官方 Go to line：审查聚焦且已展开 diff 时 ⌘L；不抢输入框 / 浏览器 */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod || e.altKey || e.shiftKey) return
+      if (e.key !== 'l' && e.key !== 'L') return
+      if (!expandedKeys.length) return
+      const root = panelRef.current
+      if (!root) return
+      const active = document.activeElement
+      const target = e.target
+      const inside =
+        (active instanceof Node && root.contains(active)) ||
+        (target instanceof Node && root.contains(target))
+      if (!inside) return
+      if (target instanceof HTMLElement) {
+        if (target.closest('.composer-box, .embedded-browser, textarea, [contenteditable=true]')) {
+          return
+        }
+        if (target instanceof HTMLInputElement && target !== goToInputRef.current) return
+      }
+      e.preventDefault()
+      e.stopPropagation()
+      setGoToOpen(true)
+      setGoToDraft('')
+      requestAnimationFrame(() => {
+        goToInputRef.current?.focus()
+        goToInputRef.current?.select()
+      })
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [expandedKeys.length])
+
   if (!workspacePath) {
     return (
-      <div className="changes-panel changes-panel--empty">
+      <div className="changes-panel changes-panel--empty" ref={panelRef} tabIndex={-1}>
         <p>请先选择工作区</p>
       </div>
     )
@@ -607,7 +670,7 @@ export function ChangesPanel({
           : '没有未暂存变更'
 
   return (
-    <div className="changes-panel">
+    <div className="changes-panel" ref={panelRef} tabIndex={-1}>
       <div className="changes-panel__head">
         <div className="changes-panel__title">
           <FileDiff size={15} aria-hidden />
@@ -671,6 +734,39 @@ export function ChangesPanel({
           </button>
         </div>
       </div>
+      {goToOpen ? (
+        <form
+          className="changes-panel__goto glass-pill"
+          onSubmit={(event) => {
+            event.preventDefault()
+            applyReviewGoToLine()
+          }}
+        >
+          <label className="changes-panel__goto-label">
+            行
+            <input
+              ref={goToInputRef}
+              className="changes-panel__goto-input"
+              inputMode="numeric"
+              value={goToDraft}
+              onChange={(event) => setGoToDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  setGoToOpen(false)
+                  panelRef.current?.focus()
+                }
+              }}
+              aria-label="跳到行"
+              placeholder="行号"
+            />
+          </label>
+          <button type="submit" className="changes-panel__goto-go">
+            跳转
+          </button>
+        </form>
+      ) : null}
 
       {showRepoSelector ? (
         <label className="changes-panel__commit-pick">
@@ -1000,6 +1096,7 @@ export function ChangesPanel({
                         dispatchOpenWorkspaceFile({ path: openPath })
                         return
                       }
+                      lastReviewKeyRef.current = key
                       setExpandedKeys((prev) => toggleReviewDiffKey(prev, key))
                     }}
                   >
