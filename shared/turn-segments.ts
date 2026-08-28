@@ -862,9 +862,36 @@ export function hasProcessFlow(
   )
 }
 
-const DEMO_FENCE_RE =
-  /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)\b/i
+const DEMO_FENCE_LANGS = [
+  'demo',
+  'demo-html',
+  'html-demo',
+  'visualization',
+  'viz',
+  'inline-demo'
+] as const
+const DEMO_FENCE_LANG_RE = DEMO_FENCE_LANGS.join('|')
+const DEMO_FENCE_RE = new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})\\b`, 'i')
 const TABLE_RE = /\|.+\|[\r\n]+\|[-:\s|]+\|/
+
+function demoLangFromInfo(info: string): string {
+  return (info.trim().split(/[\s{]/)[0] ?? '').toLowerCase()
+}
+
+function captionFromDemoInfo(info: string): string | undefined {
+  const capMatch = info.match(/(?:caption|title)\s*=\s*["']([^"']+)["']/i)
+  return capMatch?.[1]?.trim() || undefined
+}
+
+/** 直播未写完语言标记：`dem` / `viz` 可占槽，不认会撞 ```diff / ```html / ```vim 的短前缀 */
+export function isDemoFenceLangPrefix(word: string): boolean {
+  const w = word.toLowerCase()
+  if (!w) return false
+  if ((DEMO_FENCE_LANGS as readonly string[]).includes(w)) return true
+  if (w.length < 3) return false
+  if (w === 'html' || (w.startsWith('html') && !w.startsWith('html-'))) return false
+  return DEMO_FENCE_LANGS.some((lang) => lang.startsWith(w))
+}
 
 function normalizeForCompare(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
@@ -872,9 +899,7 @@ function normalizeForCompare(value: string): string {
 
 /** 从最终回答中抽出 demo 代码块（过程已讲过时只保留可视化） */
 export function extractDemoBlocksFromContent(content: string): string {
-  const matches = content.match(
-    /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)[^\n]*\n[\s\S]*?```/gi
-  )
+  const matches = content.match(new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})[^\\n]*\\n[\\s\\S]*?\`\`\``, 'gi'))
   return matches?.join('\n\n').trim() ?? ''
 }
 
@@ -948,24 +973,37 @@ function extractStreamingDemoFence(text: string): {
   caption?: string
   closed: boolean
 } | null {
-  const re =
-    /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)([^\n]*)\n/i
+  const re = new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})([^\\n]*)\\n`, 'i')
   const m = text.match(re)
-  if (!m || m.index == null) return null
-  const afterOpen = text.slice(m.index + m[0].length)
-  const info = (m[1] ?? '').trim()
-  const capMatch = info.match(/(?:caption|title)\s*=\s*["']([^"']+)["']/i)
-  const caption = capMatch?.[1]?.trim() || undefined
-  const before = text.slice(0, m.index)
-  const closeIdx = afterOpen.indexOf('```')
-  if (closeIdx === -1) {
-    return { before, html: afterOpen, after: '', caption, closed: false }
+  if (m && m.index != null) {
+    const afterOpen = text.slice(m.index + m[0].length)
+    const info = (m[1] ?? '').trim()
+    const caption = captionFromDemoInfo(info)
+    const before = text.slice(0, m.index)
+    const closeIdx = afterOpen.indexOf('```')
+    if (closeIdx === -1) {
+      return { before, html: afterOpen, after: '', caption, closed: false }
+    }
+    const html = afterOpen.slice(0, closeIdx).replace(/\n$/, '')
+    const afterClose = afterOpen.slice(closeIdx + 3)
+    const nl = afterClose.indexOf('\n')
+    const after = nl === -1 ? '' : afterClose.slice(nl + 1)
+    return { before, html, after, caption, closed: true }
   }
-  const html = afterOpen.slice(0, closeIdx).replace(/\n$/, '')
-  const afterClose = afterOpen.slice(closeIdx + 3)
-  const nl = afterClose.indexOf('\n')
-  const after = nl === -1 ? '' : afterClose.slice(nl + 1)
-  return { before, html, after, caption, closed: true }
+  const lastNl = text.lastIndexOf('\n')
+  const lineStart = lastNl === -1 ? 0 : lastNl + 1
+  const line = text.slice(lineStart)
+  const open = /^( {0,3})(```+)([^\n`]*)$/.exec(line)
+  if (!open) return null
+  const info = (open[3] ?? '').trim()
+  if (!isDemoFenceLangPrefix(demoLangFromInfo(info))) return null
+  return {
+    before: text.slice(0, lineStart),
+    html: '',
+    after: '',
+    caption: captionFromDemoInfo(info),
+    closed: false
+  }
 }
 
 /**

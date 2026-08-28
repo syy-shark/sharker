@@ -6,6 +6,7 @@ import {
   extractFinalContent,
   finalizeSegments,
   hasProcessFlow,
+  isDemoFenceLangPrefix,
   processSegments
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
@@ -262,13 +263,30 @@ describe('turn segment event state machine', () => {
     expect(liveDiffBodyMinHeight(71, 0, 1)).toBe(71)
     expect(liveDiffBodyMinHeight(33, 0, 5)).toBe(109)
 
+    expect(isDemoFenceLangPrefix('dem')).toBe(true)
+    expect(isDemoFenceLangPrefix('viz')).toBe(true)
+    expect(isDemoFenceLangPrefix('html-')).toBe(true)
+    expect(isDemoFenceLangPrefix('d')).toBe(false)
+    expect(isDemoFenceLangPrefix('diff')).toBe(false)
+    expect(isDemoFenceLangPrefix('html')).toBe(false)
+    expect(isDemoFenceLangPrefix('vim')).toBe(false)
     let demoSegs: TurnSegment[] = []
     demoSegs = applyStreamChunk(demoSegs, {
       type: 'token',
-      content: 'See this.\n```demo\n<div>Hi',
+      content: 'See this.\n```dem',
+      timestamp: 9
+    })
+    const pendingDemoId = demoSegs[0]!.id
+    expect(buildAnswerParts(demoSegs, { isStreaming: true }).map((part) => `${part.type}:${part.id}`)).toEqual([
+      `text:${pendingDemoId}`,
+      `demo:${pendingDemoId}-demo-stream`
+    ])
+    demoSegs = applyStreamChunk(demoSegs, {
+      type: 'token',
+      content: 'o\n<div>Hi',
       timestamp: 10
     })
-    const demoId = demoSegs[0]!.id
+    const demoId = pendingDemoId
     const openDemo = buildAnswerParts(demoSegs, { isStreaming: true })
     expect(openDemo.map((part) => `${part.type}:${part.id}`)).toEqual([
       `text:${demoId}`,
@@ -300,6 +318,13 @@ describe('turn segment event state machine', () => {
       html: '<!-- streaming -->',
       streaming: true
     })
+    let diffFence: TurnSegment[] = []
+    diffFence = applyStreamChunk(diffFence, {
+      type: 'token',
+      content: '```diff\n+ok',
+      timestamp: 50
+    })
+    expect(buildAnswerParts(diffFence, { isStreaming: true }).every((part) => part.type === 'text')).toBe(true)
   })
 
   it('keeps finished tool segment identity across token appends', () => {
