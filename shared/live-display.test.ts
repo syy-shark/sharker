@@ -21,6 +21,7 @@ import {
   shouldSynthesizePlanning,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  transcriptNavIntent,
   turnProcessBounds,
   processElapsedSeconds
 } from './live-display'
@@ -190,6 +191,14 @@ describe('near-live message rows', () => {
         { scrollHeight: 800, clientHeight: 400 }
       )
     ).toBe(false)
+    expect(transcriptNavIntent({ key: 'Home' })).toBe('top')
+    expect(transcriptNavIntent({ key: 'End' })).toBe('bottom')
+    expect(transcriptNavIntent({ key: 'ArrowUp', metaKey: true })).toBe('top')
+    expect(transcriptNavIntent({ key: 'ArrowDown', ctrlKey: true })).toBe('bottom')
+    expect(transcriptNavIntent({ key: 'Home' }, true)).toBeNull()
+    expect(transcriptNavIntent({ key: 'Home', metaKey: true })).toBeNull()
+    expect(transcriptNavIntent({ key: 'End', shiftKey: true })).toBeNull()
+    expect(transcriptNavIntent({ key: 'ArrowUp' })).toBeNull()
   })
 })
 

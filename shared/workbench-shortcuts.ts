@@ -299,7 +299,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘T', title: '打开浏览器标签' },
   { keys: '⌘L', title: '跳到行 / 浏览器地址栏（视焦点）' },
   { keys: '鼠标侧键', title: '后退 / 前进' },
-  { keys: '⌘↑ / ⌘↓', title: '对话顶 / 底' },
+  { keys: '⌘↑ / ⌘↓ / Home / End', title: '对话顶 / 底' },
   { keys: '⌘F', title: '在对话中查找' },
   { keys: '⌘G / ⌘⇧G', title: '查找下一条 / 上一条' },
   { keys: 'Ctrl⇧M', title: '模型选择' },

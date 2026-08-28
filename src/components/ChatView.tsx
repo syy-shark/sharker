@@ -33,6 +33,8 @@ import {
   isNearLiveMessageRow,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  transcriptNavIntent,
+  TRANSCRIPT_NAV_BLOCK,
   nextRowIntrinsicHeights,
   rowIntrinsicSizeStyle
 } from '../../shared/live-display'
@@ -742,20 +744,18 @@ export function ChatView({
     ? ''
     : textForSpeech(lastCompletedAssistantText(messages) || streaming)
 
-  /** ⌘↑ / ⌘↓：长对话跳到顶/底（输入框内不抢光标） */
+  /** ⌘↑ / ⌘↓ / Home / End：长对话跳到顶/底（输入框与右侧预览不抢，对标 Codex #39181） */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.isComposing) return
-      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-      const t = e.target
-      if (t instanceof HTMLElement && t.closest('textarea, input, [contenteditable="true"]')) {
-        return
-      }
+      const target = e.target
+      const blocked =
+        target instanceof HTMLElement && Boolean(target.closest(TRANSCRIPT_NAV_BLOCK))
+      const intent = transcriptNavIntent(e, blocked)
+      if (!intent) return
       const el = messagesRef.current
       if (!el) return
       e.preventDefault()
-      if (e.key === 'ArrowUp') {
+      if (intent === 'top') {
         lastScrollIntentRef.current = 'up'
         userScrollLockRef.current = true
         stickToBottomRef.current = false
@@ -822,7 +822,7 @@ export function ChatView({
       if (y != null) touchStartYRef.current = y
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'PageUp' || event.key === 'Home') lockUserScroll()
+      if (event.key === 'PageUp') lockUserScroll()
     }
 
     el.addEventListener('wheel', onWheel, { passive: true, capture: true })

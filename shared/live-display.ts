@@ -350,6 +350,40 @@ export function liveStickNeedsFollow(
   return prev.scrollHeight !== next.scrollHeight || prev.clientHeight !== next.clientHeight
 }
 
+export type TranscriptNavIntent = 'top' | 'bottom'
+
+/** 输入框 / 查找 / 右侧预览 / 终端 / 浏览器里不抢 Home End */
+export const TRANSCRIPT_NAV_BLOCK =
+  'textarea, input, select, [contenteditable="true"], .composer-box, .embedded-browser, .embedded-terminal, .file-tree-viewer, .code-diff-block, .chat-find, .command-palette'
+
+/**
+ * 长对话跳顶/底：⌘↑⌘↓ 以及官方桌面用户期望的 Home / End（对标 Codex #39181）。
+ * 输入框内不抢光标；End 回到贴底以便继续跟直播。
+ */
+export function transcriptNavIntent(
+  event: {
+    key: string
+    metaKey?: boolean
+    ctrlKey?: boolean
+    altKey?: boolean
+    shiftKey?: boolean
+    isComposing?: boolean
+  },
+  blocked = false
+): TranscriptNavIntent | null {
+  if (event.isComposing || blocked) return null
+  if (event.altKey || event.shiftKey) return null
+  const mod = Boolean(event.metaKey || event.ctrlKey)
+  if (mod) {
+    if (event.key === 'ArrowUp') return 'top'
+    if (event.key === 'ArrowDown') return 'bottom'
+    return null
+  }
+  if (event.key === 'Home') return 'top'
+  if (event.key === 'End') return 'bottom'
+  return null
+}
+
 /** 只在行离开贴底窗口时写入高度；引用没变就复用同一 Map */
 export function nextRowIntrinsicHeights(
   prev: ReadonlyMap<string, number>,

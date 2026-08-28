@@ -538,7 +538,6 @@ export const AssistantMessage = memo(function AssistantMessage({
 
       {(displayContent ||
         answerParts.some((p) => p.type === 'text' && p.content.trim())) &&
-        !isStreaming &&
         !isError && (
           <MessageActions
             content={
