@@ -546,10 +546,11 @@
   margin-bottom: 0;
 }
 
-.streaming-markdown > table,
-.live-prose-tail > table {
+.streaming-markdown table,
+.live-prose-tail table {
   width: 100%;
   max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
   line-height: 1.5;
@@ -562,6 +563,8 @@
   border: 1px solid var(--border);
   padding: 8px 12px;
   vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .streaming-markdown > hr,
@@ -731,6 +734,7 @@
 .message-body--assistant table {
   width: 100%;
   max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: 0 0 10px;
   font-size: 13px;
@@ -741,7 +745,9 @@
 .message-body--assistant td {
   border: 1px solid var(--border);
   padding: 8px 12px;
-  vertical-align: top;  
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .message-body--assistant td code,
