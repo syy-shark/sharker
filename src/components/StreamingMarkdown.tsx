@@ -112,17 +112,19 @@ function renderCheapList(
   ordered: boolean,
   items: CheapListItem[],
   key?: number,
-  loose?: boolean
+  loose?: boolean,
+  start?: number
 ): ReactNode {
   const Tag = ordered ? 'ol' : 'ul'
   const hasTask = items.some((item) => parseCheapTaskItem(item.nodes))
   const wrapP = Boolean(loose || items.some((item) => item.extra?.length))
+  const startAt = ordered && start && start !== 1 ? start : undefined
   return (
-    <Tag key={key} className={hasTask ? 'contains-task-list' : undefined}>
+    <Tag key={key} className={hasTask ? 'contains-task-list' : undefined} start={startAt}>
       {items.map((item, i) => {
         const task = parseCheapTaskItem(item.nodes)
         const nested = item.nested
-          ? renderCheapList(item.nested.ordered, item.nested.items)
+          ? renderCheapList(item.nested.ordered, item.nested.items, undefined, undefined, item.nested.start)
           : null
         const paragraphs = listItemParagraphs({
           ...item,
@@ -176,7 +178,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     return <Tag key={index}>{renderCheapInline(block.nodes)}</Tag>
   }
   if (block.type === 'list') {
-    return renderCheapList(block.ordered, block.items, index, block.loose)
+    return renderCheapList(block.ordered, block.items, index, block.loose, block.start)
   }
   if (block.type === 'quote') {
     return <blockquote key={index}>{block.blocks.map(renderCheapBlock)}</blockquote>

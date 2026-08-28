@@ -323,6 +323,19 @@ describe('splitStreamingMarkdown', () => {
       expect(blocks[1].items).toHaveLength(2)
       expect(blocks[1].items[0]?.nodes.some((n) => n.type === 'file')).toBe(true)
     }
+    const paren = parseCheapProseBlocks('1) first\n2) second')
+    expect(paren.map((b) => b.type)).toEqual(['list'])
+    if (paren[0]?.type === 'list') {
+      expect(paren[0].ordered).toBe(true)
+      expect(paren[0].start).toBeUndefined()
+      expect(paren[0].items).toHaveLength(2)
+    }
+    const offset = parseCheapProseBlocks('3. starts at three\n4. four')
+    expect(offset.map((b) => b.type)).toEqual(['list'])
+    if (offset[0]?.type === 'list') {
+      expect(offset[0].ordered).toBe(true)
+      expect(offset[0].start).toBe(3)
+    }
   })
 
   it('reuses closed cheap blocks when a list or table grows', () => {

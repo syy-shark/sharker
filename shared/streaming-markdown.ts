@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -181,13 +181,13 @@ export type CheapInlineNode =
 export type CheapListItem = {
   nodes: CheapInlineNode[]
   extra?: CheapInlineNode[][]
-  nested?: { ordered: boolean; indent: number; items: CheapListItem[] }
+  nested?: { ordered: boolean; indent: number; items: CheapListItem[]; start?: number }
 }
 
 /** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
 export type CheapProseBlock =
   | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; nodes: CheapInlineNode[] }
-  | { type: 'list'; ordered: boolean; items: CheapListItem[]; loose?: boolean }
+  | { type: 'list'; ordered: boolean; items: CheapListItem[]; loose?: boolean; start?: number }
   | { type: 'quote'; blocks: CheapProseBlock[] }
   | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][]; align?: Array<'left' | 'right' | 'center' | null> }
   | { type: 'hr' }
@@ -831,7 +831,7 @@ const HEADING_RE = /^ {0,3}(#{1,6})\s+(.*)$/
 function stripAtxClosingHashes(text: string): string {
   return text.replace(/[ \t]+#+[ \t]*$/, '')
 }
-const LIST_LINE_RE = /^(\s*)(?:[-+]|\*|\d+\.)\s+(.*)$/
+const LIST_LINE_RE = /^(\s*)(?:[-+]|\*|\d+[.)])\s+(.*)$/
 
 /** 行首空白：tab 按 2 空格算，用来判断列表嵌套 */
 function leadingIndent(line: string): number {
@@ -844,16 +844,19 @@ function leadingIndent(line: string): number {
   return n
 }
 
-/** 解析列表行：缩进 + 有序/无序 + 正文 */
-function parseListLine(line: string): { indent: number; ordered: boolean; text: string } | null {
+/** 解析列表行：缩进 + 有序/无序 + 正文；有序记下起始号（对标 GFM `1)` / `ol start`） */
+function parseListLine(
+  line: string
+): { indent: number; ordered: boolean; text: string; start?: number } | null {
   if (!LIST_LINE_RE.test(line)) return null
   const indent = leadingIndent(line)
   const rest = line.trimStart()
   const ul = /^[-+]\s+(.*)$/.exec(rest) || /^\*\s+(.*)$/.exec(rest)
   if (ul) return { indent, ordered: false, text: ul[1] ?? '' }
-  const ol = /^(\d+)\.\s+(.*)$/.exec(rest)
+  const ol = /^(\d+)[.)]\s+(.*)$/.exec(rest)
   if (!ol) return null
-  return { indent, ordered: true, text: ol[2] ?? '' }
+  const start = Number.parseInt(ol[1] ?? '1', 10)
+  return { indent, ordered: true, text: ol[2] ?? '', start: Number.isFinite(start) ? start : 1 }
 }
 
 /** 把更缩进的列表项挂到当前项的嵌套列表 */
@@ -862,15 +865,24 @@ function appendNestedListItem(
   ordered: boolean,
   indent: number,
   text: string,
-  defs: ReadonlyMap<string, string>
+  defs: ReadonlyMap<string, string>,
+  start?: number
 ): void {
+  const listStart = ordered && start && start !== 1 ? start : undefined
   if (!item.nested) {
-    item.nested = { ordered, indent, items: [] }
+    item.nested = { ordered, indent, items: [], start: listStart }
   } else if (indent > item.nested.indent && item.nested.items.length) {
-    appendNestedListItem(item.nested.items[item.nested.items.length - 1]!, ordered, indent, text, defs)
+    appendNestedListItem(
+      item.nested.items[item.nested.items.length - 1]!,
+      ordered,
+      indent,
+      text,
+      defs,
+      start
+    )
     return
   } else if (item.nested.ordered !== ordered && indent <= item.nested.indent) {
-    item.nested = { ordered, indent, items: [] }
+    item.nested = { ordered, indent, items: [], start: listStart }
   }
   item.nested.items.push({ nodes: parseCheapInlineMarkdown(text, defs) })
 }
@@ -976,6 +988,7 @@ export function parseCheapProseBlocks(
     items: CheapListItem[]
     afterBlank: boolean
     loose: boolean
+    start?: number
   } | null = null
   let quote: string[] = []
   let table: string[] | null = null
@@ -1010,7 +1023,8 @@ export function parseCheapProseBlocks(
       type: 'list',
       ordered: list.ordered,
       items: list.items,
-      loose: loose || undefined
+      loose: loose || undefined,
+      start: list.ordered && list.start && list.start !== 1 ? list.start : undefined
     })
     list = null
   }
@@ -1156,7 +1170,8 @@ export function parseCheapProseBlocks(
           listLine.ordered,
           listLine.indent,
           listLine.text,
-          linkDefs
+          linkDefs,
+          listLine.start
         )
         list.afterBlank = false
         continue
@@ -1168,7 +1183,8 @@ export function parseCheapProseBlocks(
           indent: listLine.indent,
           items: [],
           afterBlank: false,
-          loose: false
+          loose: false,
+          start: listLine.start
         }
       }
       if (list.afterBlank && list.items.length) list.loose = true
@@ -1333,8 +1349,11 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
     const same =
       items.length === prev.items.length &&
       items.every((item, i) => item === prev.items[i]) &&
-      prev.loose === next.loose
-    return same ? prev : { type: 'list', ordered: prev.ordered, items, loose: next.loose }
+      prev.loose === next.loose &&
+      prev.start === next.start
+    return same
+      ? prev
+      : { type: 'list', ordered: prev.ordered, items, loose: next.loose, start: next.start }
   }
   if (prev.type === 'table' && next.type === 'table') {
     const header = reuseInlineLists(prev.header, next.header)
