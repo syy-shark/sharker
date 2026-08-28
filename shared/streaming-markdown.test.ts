@@ -269,6 +269,39 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '见图 ' },
       { type: 'image', alt: 'x', href: 'https://a.test/p.png', label: '`x`' }
     ])
+    expect(parseCheapInlineMarkdown('见 **foo ~~bar~~ baz**')).toEqual([
+      { type: 'text', text: '见 ' },
+      {
+        type: 'strong',
+        text: 'foo bar baz',
+        children: [
+          { type: 'text', text: 'foo ' },
+          { type: 'del', text: 'bar' },
+          { type: 'text', text: ' baz' }
+        ]
+      }
+    ])
+    expect(parseCheapInlineMarkdown('见 **[文档](https://a.test/x)**')).toEqual([
+      { type: 'text', text: '见 ' },
+      {
+        type: 'strong',
+        text: '文档',
+        children: [{ type: 'link', text: '文档', href: 'https://a.test/x' }]
+      }
+    ])
+    expect(parseCheapInlineMarkdown('见 **`x`**')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'strong', text: 'x', children: [{ type: 'code', text: 'x' }] }
+    ])
+    expect(parseCheapInlineMarkdown('见图 ![**foo ~~bar~~**](https://a.test/p.png)')).toEqual([
+      { type: 'text', text: '见图 ' },
+      {
+        type: 'image',
+        alt: 'foo bar',
+        href: 'https://a.test/p.png',
+        label: '**foo ~~bar~~**'
+      }
+    ])
     expect(parseCheapInlineMarkdown('见 &amp; &#39; 与 **&lt;粗&gt;**')).toEqual([
       { type: 'text', text: "见 & ' 与 " },
       { type: 'strong', text: '<粗>' }

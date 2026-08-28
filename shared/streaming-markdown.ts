@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -168,9 +168,9 @@ export function extractOpenFenceBody(tail: string): string {
 export type CheapInlineNode =
   | { type: 'text'; text: string }
   | { type: 'code'; text: string }
-  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del' }
-  | { type: 'del'; text: string; inner?: 'strong' | 'em' }
-  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del' }
+  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del'; children?: CheapInlineNode[] }
+  | { type: 'del'; text: string; inner?: 'strong' | 'em'; children?: CheapInlineNode[] }
+  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del'; children?: CheapInlineNode[] }
   | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
@@ -549,6 +549,9 @@ function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
       if (node.type === 'br') return '\n'
       if (node.type === 'fn') return `[^${node.id}]`
       if (node.type === 'link') return node.children ? flattenCheapInlineText(node.children) : node.text
+      if (node.type === 'strong' || node.type === 'em' || node.type === 'del') {
+        return node.children ? flattenCheapInlineText(node.children) : node.text
+      }
       if (node.type === 'image') return node.alt
       if (node.type === 'file') return node.text
       if ('text' in node) return node.text
@@ -574,17 +577,31 @@ function cheapImage(
   return node
 }
 
-/** 整段被另一套标记包住时剥一层，对标 remark `del>strong` / `strong>del` */
-function peelWholeInlineMark(inner: string): { text: string; inner?: 'em' | 'strong' | 'del' } {
+/**
+ * 标记内部再解析：整段套一层用 `inner`，混排 / 链接 / 代码用 `children`。
+ * 对标 remark `strong>del` 与 `strong>foo <del>bar</del>`。
+ */
+function parseMarkedInner(inner: string): {
+  text: string
+  inner?: 'em' | 'strong' | 'del'
+  children?: CheapInlineNode[]
+} {
   const nodes = parseCheapInlineMarkdown(inner)
+  if (!nodes.length) return { text: decodeHtmlEntities(inner) }
   if (nodes.length === 1) {
     const node = nodes[0]!
     if (node.type === 'strong' || node.type === 'em' || node.type === 'del') {
-      return { text: node.text, inner: node.type }
+      return node.children?.length
+        ? { text: flattenCheapInlineText(nodes), children: nodes }
+        : { text: node.text, inner: node.type }
     }
     if (node.type === 'text') return { text: node.text }
+    return { text: flattenCheapInlineText(nodes), children: nodes }
   }
-  return { text: decodeHtmlEntities(inner) }
+  if (nodes.some((node) => node.type !== 'text')) {
+    return { text: flattenCheapInlineText(nodes), children: nodes }
+  }
+  return { text: flattenCheapInlineText(nodes) }
 }
 
 function nestInner<T extends 'em' | 'strong' | 'del'>(
@@ -594,6 +611,19 @@ function nestInner<T extends 'em' | 'strong' | 'del'>(
   return peeled.inner && (allowed as readonly string[]).includes(peeled.inner)
     ? (peeled.inner as T)
     : undefined
+}
+
+function applyMarkedInner<
+  T extends { text: string; inner?: 'em' | 'strong' | 'del'; children?: CheapInlineNode[] }
+>(node: T, marked: ReturnType<typeof parseMarkedInner>, allowed: readonly ('em' | 'strong' | 'del')[]): T {
+  node.text = marked.text
+  if (marked.children?.length) {
+    node.children = marked.children
+    return node
+  }
+  const inner = nestInner(marked, allowed)
+  if (inner) node.inner = inner as T['inner']
+  return node
 }
 
 /** 链接标签里的 `**` / `*` / `` ` `` / `~~` 直播就画，避免收束从纯文本跳成 <a><strong> */
@@ -698,9 +728,7 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      const peeled = peelWholeInlineMark(src.slice(i + 2, end))
-      const inner = nestInner(peeled, ['em', 'del'] as const)
-      nodes.push(inner ? { type: 'strong', text: peeled.text, inner } : { type: 'strong', text: peeled.text })
+      nodes.push(applyMarkedInner({ type: 'strong', text: '' }, parseMarkedInner(src.slice(i + 2, end)), ['em', 'del']))
       i = end + 2
       continue
     }
@@ -708,12 +736,12 @@ export function parseCheapInlineMarkdown(
       const end = src.indexOf('__', i + 2)
       if (end !== -1 && end > i + 2 && canCloseUnderscore(src, end + 1)) {
         flush()
-        const peeled = peelWholeInlineMark(src.slice(i + 2, end))
-        const inner = nestInner(peeled, ['em', 'del'] as const)
         nodes.push(
-          inner
-            ? { type: 'strong', text: peeled.text, mark: '__', inner }
-            : { type: 'strong', text: peeled.text, mark: '__' }
+          applyMarkedInner(
+            { type: 'strong', text: '', mark: '__' },
+            parseMarkedInner(src.slice(i + 2, end)),
+            ['em', 'del']
+          )
         )
         i = end + 2
         continue
@@ -726,9 +754,7 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      const peeled = peelWholeInlineMark(src.slice(i + 2, end))
-      const inner = nestInner(peeled, ['strong', 'em'] as const)
-      nodes.push(inner ? { type: 'del', text: peeled.text, inner } : { type: 'del', text: peeled.text })
+      nodes.push(applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(src.slice(i + 2, end)), ['strong', 'em']))
       i = end + 2
       continue
     }
@@ -739,9 +765,7 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      const peeled = peelWholeInlineMark(src.slice(i + 1, end))
-      const inner = nestInner(peeled, ['strong', 'del'] as const)
-      nodes.push(inner ? { type: 'em', text: peeled.text, inner } : { type: 'em', text: peeled.text })
+      nodes.push(applyMarkedInner({ type: 'em', text: '' }, parseMarkedInner(src.slice(i + 1, end)), ['strong', 'del']))
       i = end + 1
       continue
     }
@@ -753,12 +777,12 @@ export function parseCheapInlineMarkdown(
         if (end === -1) break
         if (end > i + 1 && canCloseUnderscore(src, end)) {
           flush()
-          const peeled = peelWholeInlineMark(src.slice(i + 1, end))
-          const inner = nestInner(peeled, ['strong', 'del'] as const)
           nodes.push(
-            inner
-              ? { type: 'em', text: peeled.text, mark: '_', inner }
-              : { type: 'em', text: peeled.text, mark: '_' }
+            applyMarkedInner(
+              { type: 'em', text: '', mark: '_' },
+              parseMarkedInner(src.slice(i + 1, end)),
+              ['strong', 'del']
+            )
           )
           i = end + 1
           matched = true
@@ -978,17 +1002,20 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'fn') return `[^${node.id}]`
   if (node.type === 'code') return wrapInlineCode(node.text)
   if (node.type === 'strong') {
-    if (node.inner === 'em') return `**_${node.text}_**`
-    if (node.inner === 'del') return `${node.mark ?? '**'}~~${node.text}~~${node.mark ?? '**'}`
     const mark = node.mark ?? '**'
+    if (node.children?.length) return `${mark}${cheapInlineSourceAll(node.children)}${mark}`
+    if (node.inner === 'em') return `**_${node.text}_**`
+    if (node.inner === 'del') return `${mark}~~${node.text}~~${mark}`
     return `${mark}${node.text}${mark}`
   }
   if (node.type === 'del') {
+    if (node.children?.length) return `~~${cheapInlineSourceAll(node.children)}~~`
     if (node.inner === 'strong') return `~~**${node.text}**~~`
     if (node.inner === 'em') return `~~*${node.text}*~~`
     return `~~${node.text}~~`
   }
   if (node.type === 'em') {
+    if (node.children?.length) return `${node.mark ?? '*'}${cheapInlineSourceAll(node.children)}${node.mark ?? '*'}`
     if (node.inner === 'strong') {
       if (node.mark === '___') return `___${node.text}___`
       if (node.mark === '***') return `***${node.text}***`

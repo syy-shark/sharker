@@ -39,48 +39,26 @@ function parseCheapTaskItem(
   return { checked: match[1] !== ' ', nodes: rest }
 }
 
+function cheapMarkBody(node: Extract<CheapInlineNode, { type: 'strong' | 'em' | 'del' }>): ReactNode {
+  if (node.children?.length) return renderCheapInline(node.children)
+  if (node.inner === 'em') return <em>{node.text}</em>
+  if (node.inner === 'strong') return <strong>{node.text}</strong>
+  if (node.inner === 'del') return <del>{node.text}</del>
+  return node.text
+}
+
 /** 廉价行内节点 → 元素（含可点文件引用） */
 function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
   return nodes.map((node, index) => {
     if (node.type === 'code') return <code key={index}>{node.text}</code>
     if (node.type === 'strong') {
-      return (
-        <strong key={index}>
-          {node.inner === 'em' ? (
-            <em>{node.text}</em>
-          ) : node.inner === 'del' ? (
-            <del>{node.text}</del>
-          ) : (
-            node.text
-          )}
-        </strong>
-      )
+      return <strong key={index}>{cheapMarkBody(node)}</strong>
     }
     if (node.type === 'del') {
-      return (
-        <del key={index}>
-          {node.inner === 'strong' ? (
-            <strong>{node.text}</strong>
-          ) : node.inner === 'em' ? (
-            <em>{node.text}</em>
-          ) : (
-            node.text
-          )}
-        </del>
-      )
+      return <del key={index}>{cheapMarkBody(node)}</del>
     }
     if (node.type === 'em') {
-      return (
-        <em key={index}>
-          {node.inner === 'strong' ? (
-            <strong>{node.text}</strong>
-          ) : node.inner === 'del' ? (
-            <del>{node.text}</del>
-          ) : (
-            node.text
-          )}
-        </em>
-      )
+      return <em key={index}>{cheapMarkBody(node)}</em>
     }
     if (node.type === 'link') {
       return (
