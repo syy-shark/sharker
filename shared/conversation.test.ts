@@ -1,24 +1,52 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_CONVERSATION_TITLE,
+  applyCustomTitle,
   buildForkedConversation,
   createEmptyConversation,
   filterChatList,
   forkConversationTitle,
+  formatPinNote,
+  formatRenameNote,
   nextLiveConversationId,
-  splitLiveConversations
+  parseRenameArgs,
+  sortConversationsByCreatedAt,
+  splitLiveConversations,
+  splitPinnedConversations
 } from './conversation'
 
 describe('conversation search', () => {
-  it('filters chats by title or id', () => {
+  it('filters chats by title, custom title or id', () => {
     const items = [
       { id: 'c1', title: '修好滚动' },
-      { id: 'c2', title: '审查队列' }
+      { id: 'c2', title: '审查队列', customTitle: '直播卡顿' }
     ]
     expect(filterChatList(items, '滚动').map((c) => c.id)).toEqual(['c1'])
+    expect(filterChatList(items, '直播').map((c) => c.id)).toEqual(['c2'])
     expect(filterChatList(items, 'c2').map((c) => c.id)).toEqual(['c2'])
     expect(filterChatList(items, '')).toEqual(items)
     expect(filterChatList(items, 'zzz')).toEqual([])
+  })
+
+  it('parses /rename and formats the note', () => {
+    expect(parseRenameArgs('')).toEqual({ kind: 'prompt' })
+    expect(parseRenameArgs('  直播卡顿  ')).toEqual({ kind: 'set', title: '直播卡顿' })
+    expect(applyCustomTitle('  直播卡顿  ')).toBe('直播卡顿')
+    expect(applyCustomTitle('   ')).toBeUndefined()
+    expect(formatRenameNote('直播卡顿')).toBe('对话已重命名为「直播卡顿」。')
+    expect(formatRenameNote(undefined)).toContain('清除')
+    expect(formatPinNote(true)).toContain('置顶')
+    expect(formatPinNote(false)).toContain('取消')
+  })
+
+  it('sorts pinned conversations first then by createdAt', () => {
+    const items = [
+      { id: 'a', title: 'a', createdAt: 1, updatedAt: 1, workspaceId: 'w', messageCount: 0 },
+      { id: 'b', title: 'b', createdAt: 2, updatedAt: 2, workspaceId: 'w', messageCount: 0, pinned: true },
+      { id: 'c', title: 'c', createdAt: 3, updatedAt: 3, workspaceId: 'w', messageCount: 0 }
+    ]
+    expect(sortConversationsByCreatedAt(items).map((c) => c.id)).toEqual(['b', 'a', 'c'])
+    expect(splitPinnedConversations(items).pinned.map((c) => c.id)).toEqual(['b'])
   })
 
   it('names a forked thread', () => {

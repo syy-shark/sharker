@@ -2,7 +2,12 @@
  * 会话与消息 CRUD（PostgreSQL 唯一数据源）。
  */
 import { randomUUID } from 'crypto'
-import type { Conversation, ConversationSummary, WorkspaceConversationsState } from '../../shared/conversation'
+import type {
+  Conversation,
+  ConversationMetaPatch,
+  ConversationSummary,
+  WorkspaceConversationsState
+} from '../../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
   deriveConversationTitle,
@@ -88,7 +93,9 @@ function normalizeConversation(raw: Conversation, workspaceId: string): Conversa
     customTitle: raw.customTitle?.trim(),
     messages,
     createdAt: raw.createdAt ?? Date.now(),
-    updatedAt: raw.updatedAt ?? Date.now()
+    updatedAt: raw.updatedAt ?? Date.now(),
+    pinned: Boolean(raw.pinned),
+    unread: Boolean(raw.unread)
   }
   return { ...base, title: resolveConversationTitle(base) }
 }
@@ -113,9 +120,13 @@ export async function listWorkspaceConversations(
     created_at: number
     updated_at: number
     status: string | null
+    pinned: boolean | null
+    unread: boolean | null
     msg_count: number
   }>(
     `SELECT s.id, s.title, s.custom_title, s.created_at, s.updated_at, s.status,
+            COALESCE(s.pinned, false) AS pinned,
+            COALESCE(s.unread, false) AS unread,
             COALESCE(c.msg_count, 0)::int AS msg_count
      FROM sessions s
      LEFT JOIN (
@@ -137,7 +148,9 @@ export async function listWorkspaceConversations(
       messages: [],
       createdAt: Number(s.created_at),
       updatedAt: Number(s.updated_at),
-      status: 'active'
+      status: 'active',
+      pinned: Boolean(s.pinned),
+      unread: Boolean(s.unread)
     }
     return {
       ...toConversationSummary(conv),
@@ -171,10 +184,15 @@ export async function loadConversation(
     custom_title: string | null
     created_at: number
     updated_at: number
-  }>('SELECT id, title, custom_title, created_at, updated_at FROM sessions WHERE id = $1 AND workspace_id = $2', [
-    id,
-    workspaceId
-  ])
+    pinned: boolean | null
+    unread: boolean | null
+  }>(
+    `SELECT id, title, custom_title, created_at, updated_at,
+            COALESCE(pinned, false) AS pinned,
+            COALESCE(unread, false) AS unread
+     FROM sessions WHERE id = $1 AND workspace_id = $2`,
+    [id, workspaceId]
+  )
   const s = row.rows[0]
   if (!s) return null
 
@@ -187,16 +205,19 @@ export async function loadConversation(
       customTitle: s.custom_title ?? undefined,
       messages,
       createdAt: Number(s.created_at),
-      updatedAt: Number(s.updated_at)
+      updatedAt: Number(s.updated_at),
+      pinned: Boolean(s.pinned),
+      unread: Boolean(s.unread)
     },
     workspaceId
   )
 }
 
-/** 保存对话（消息全量替换） */
+/** 保存对话（消息全量替换）。默认把该会话设为活跃。 */
 export async function saveConversation(
   workspacePath: string,
-  conversation: Conversation
+  conversation: Conversation,
+  options?: { activate?: boolean }
 ): Promise<Conversation> {
   await ensureWorkspaceRow(conversation.workspaceId, workspacePath)
   const db = await getMemoryDb()
@@ -214,17 +235,30 @@ export async function saveConversation(
     title: conversation.customTitle
       ? conversation.title
       : deriveConversationTitle(conversation.messages),
+    pinned: Boolean(conversation.pinned),
+    unread: Boolean(conversation.unread),
     updatedAt: touchUpdatedAt ? now : conversation.updatedAt
   }
 
   await db.query(
-    `INSERT INTO sessions (id, workspace_id, title, custom_title, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO sessions (id, workspace_id, title, custom_title, created_at, updated_at, pinned, unread)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (id) DO UPDATE SET
        title = EXCLUDED.title,
        custom_title = EXCLUDED.custom_title,
-       updated_at = EXCLUDED.updated_at`,
-    [next.id, next.workspaceId, next.title, next.customTitle ?? null, next.createdAt, next.updatedAt]
+       updated_at = EXCLUDED.updated_at,
+       pinned = EXCLUDED.pinned,
+       unread = EXCLUDED.unread`,
+    [
+      next.id,
+      next.workspaceId,
+      next.title,
+      next.customTitle ?? null,
+      next.createdAt,
+      next.updatedAt,
+      next.pinned ?? false,
+      next.unread ?? false
+    ]
   )
 
   await db.query('DELETE FROM session_messages WHERE session_id = $1', [next.id])
@@ -250,11 +284,64 @@ export async function saveConversation(
     'SELECT active_session_id FROM workspace_session_meta WHERE workspace_id = $1',
     [next.workspaceId]
   )
-  if (active.rows[0]?.active_session_id !== next.id) {
+  if (options?.activate !== false && active.rows[0]?.active_session_id !== next.id) {
     await setActiveConversation(workspacePath, next.workspaceId, next.id)
   }
 
   return next
+}
+
+/** 只改标题 / 置顶 / 未读，不重写消息、不抢活跃会话 */
+export async function patchConversationMeta(
+  workspacePath: string,
+  workspaceId: string,
+  id: string,
+  patch: ConversationMetaPatch
+): Promise<ConversationSummary | null> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const existing = await loadConversation(workspacePath, workspaceId, id)
+  if (!existing) return null
+  const next: Conversation = {
+    ...existing,
+    customTitle:
+      'customTitle' in patch
+        ? patch.customTitle?.trim() || undefined
+        : existing.customTitle,
+    pinned: patch.pinned ?? existing.pinned,
+    unread: patch.unread ?? existing.unread
+  }
+  next.title = next.customTitle || deriveConversationTitle(existing.messages)
+  const db = await getMemoryDb()
+  await db.query(
+    `UPDATE sessions
+     SET custom_title = $1, pinned = $2, unread = $3, title = $4
+     WHERE id = $5 AND workspace_id = $6`,
+    [
+      next.customTitle ?? null,
+      Boolean(next.pinned),
+      Boolean(next.unread),
+      next.title,
+      id,
+      workspaceId
+    ]
+  )
+  return toConversationSummary(next)
+}
+
+/** 清掉工作区下全部对话未读（对标 Codex ⇧Esc） */
+export async function clearWorkspaceConversationUnread(
+  workspacePath: string,
+  workspaceId: string
+): Promise<number> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const res = await db.query<{ id: string }>(
+    `UPDATE sessions SET unread = false
+     WHERE workspace_id = $1 AND unread = true
+     RETURNING id`,
+    [workspaceId]
+  )
+  return res.rows.length
 }
 
 /** 归档 / 回档对话（status: active | archived） */
@@ -300,8 +387,12 @@ export async function listArchivedConversations(): Promise<ConversationSummary[]
     updated_at: number
     workspace_label: string | null
     workspace_path: string | null
+    pinned: boolean | null
+    unread: boolean | null
   }>(
     `SELECT s.id, s.workspace_id, s.title, s.custom_title, s.created_at, s.updated_at,
+            COALESCE(s.pinned, false) AS pinned,
+            COALESCE(s.unread, false) AS unread,
             w.label AS workspace_label, w.path AS workspace_path
      FROM sessions s
      LEFT JOIN workspaces w ON w.id = s.workspace_id
@@ -323,7 +414,9 @@ export async function listArchivedConversations(): Promise<ConversationSummary[]
       messages: [],
       createdAt: Number(s.created_at),
       updatedAt: Number(s.updated_at),
-      status: 'archived'
+      status: 'archived',
+      pinned: Boolean(s.pinned),
+      unread: Boolean(s.unread)
     }
     out.push({
       ...toConversationSummary(conv),
@@ -375,7 +468,8 @@ export async function setActiveConversation(
 /** 创建新对话 */
 export async function createConversationOnDisk(
   workspacePath: string,
-  workspaceId: string
+  workspaceId: string,
+  options?: { activate?: boolean }
 ): Promise<Conversation> {
   const conv: Conversation = {
     id: randomUUID(),
@@ -385,7 +479,9 @@ export async function createConversationOnDisk(
     createdAt: Date.now(),
     updatedAt: Date.now()
   }
-  await saveConversation(workspacePath, conv)
-  await setActiveConversation(workspacePath, workspaceId, conv.id)
+  await saveConversation(workspacePath, conv, { activate: options?.activate !== false })
+  if (options?.activate !== false) {
+    await setActiveConversation(workspacePath, workspaceId, conv.id)
+  }
   return conv
 }

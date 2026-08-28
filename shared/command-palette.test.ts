@@ -43,6 +43,13 @@ describe('command palette', () => {
     expect(ids).toContain('search-files')
     expect(ids).toContain('next-attention')
     expect(ids).toContain('approve')
+    expect(ids).toContain('rename')
+    expect(ids).toContain('pin')
+    expect(ids).toContain('unread')
+    expect(ids).toContain('standalone')
+    expect(ids).toContain('usage')
+    expect(ids).toContain('copy-cwd')
+    expect(ids).toContain('copy-session')
   })
 
   it('filters by title and keywords', () => {

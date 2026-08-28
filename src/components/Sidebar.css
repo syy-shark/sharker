@@ -435,6 +435,42 @@ html.window-rounded .sidebar {
   cursor: default;
 }
 
+.sidebar-row--unread .sidebar-row-text {
+  font-weight: 600;
+}
+
+.sidebar-pin-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.sidebar-unread-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.sidebar-rename-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  margin: 4px 0;
+  padding: 0 8px;
+  border: 1px solid var(--border, color-mix(in srgb, var(--accent) 28%, transparent));
+  border-radius: 8px;
+  background: var(--glass-fill-raised, var(--sidebar-surface-active));
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.sidebar-rename-input:focus {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 .sidebar-row-main {
   display: flex;
   flex: 1;

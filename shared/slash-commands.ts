@@ -142,6 +142,36 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'rename',
+    description: '重命名当前对话',
+    scope: 'ui',
+    action: 'rename_conversation',
+    argsHint: '[标题]',
+    category: 'session'
+  },
+  {
+    name: 'pin',
+    description: '置顶 / 取消置顶当前对话',
+    scope: 'ui',
+    action: 'pin_conversation',
+    category: 'session'
+  },
+  {
+    name: 'unread',
+    description: '将当前对话标为未读',
+    scope: 'ui',
+    action: 'mark_unread',
+    category: 'session'
+  },
+  {
+    name: 'usage',
+    description: '查看本机 Token 用量',
+    scope: 'ui',
+    action: 'show_usage',
+    argsHint: '[daily|weekly|cumulative]',
+    category: 'session'
+  },
+  {
     name: 'init',
     description: '在仓库根创建 AGENTS.md 项目说明',
     scope: 'ui',

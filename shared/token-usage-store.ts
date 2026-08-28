@@ -4,12 +4,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
+import type { DayUsage } from './token-usage-format'
 
-export interface DayUsage {
-  date: string
-  tokens: number
-  turns: number
-}
+export type { DayUsage } from './token-usage-format'
 
 interface UsageStore {
   days: Record<string, { tokens: number; turns: number }>

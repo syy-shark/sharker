@@ -52,7 +52,9 @@ import {
   listWorkspaceConversations,
   loadConversation,
   saveConversation,
-  setActiveConversation
+  setActiveConversation,
+  patchConversationMeta,
+  clearWorkspaceConversationUnread
 } from '../conversations-store'
 import {
   disableBrowserUse,
@@ -898,9 +900,30 @@ function registerIpc(): void {
 
   ipcMain.handle(
     IPC.CREATE_CONVERSATION,
+    async (_e, workspaceId: string, options?: { activate?: boolean }) => {
+      const p = workspacePathById(workspaceId)
+      return createConversationOnDisk(p, workspaceId, options)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.PATCH_CONVERSATION_META,
+    async (
+      _e,
+      workspaceId: string,
+      conversationId: string,
+      patch: import('../../shared/conversation').ConversationMetaPatch
+    ) => {
+      const p = workspacePathById(workspaceId)
+      return patchConversationMeta(p, workspaceId, conversationId, patch)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.CLEAR_CONVERSATION_UNREAD,
     async (_e, workspaceId: string) => {
       const p = workspacePathById(workspaceId)
-      return createConversationOnDisk(p, workspaceId)
+      return clearWorkspaceConversationUnread(p, workspaceId)
     }
   )
 

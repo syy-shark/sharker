@@ -30,6 +30,10 @@ export const IPC = {
   LIST_ARCHIVED_CONVERSATIONS: 'conversations:list-archived',
   SET_ACTIVE_CONVERSATION: 'conversations:set-active',
   CREATE_CONVERSATION: 'conversations:create',
+  /** 只改标题 / 置顶 / 未读，不重写消息 */
+  PATCH_CONVERSATION_META: 'conversations:patch-meta',
+  /** 清掉工作区对话未读（⇧Esc） */
+  CLEAR_CONVERSATION_UNREAD: 'conversations:clear-unread',
   GENERATE_TITLE: 'conversations:generate-title',
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

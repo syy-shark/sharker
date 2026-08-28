@@ -27,6 +27,10 @@ describe('slash commands', () => {
     expect(names).toContain('stop')
     expect(names).toContain('approve')
     expect(names).toContain('subagents')
+    expect(names).toContain('rename')
+    expect(names).toContain('pin')
+    expect(names).toContain('unread')
+    expect(names).toContain('usage')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.action).toBe('copy_last_output')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fast')?.action).toBe('set_fast')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')
@@ -50,6 +54,10 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'review')?.action).toBe('review_working_tree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mention')?.action).toBe('mention_file')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skill')?.action).toBe('mention_skill')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'rename')?.action).toBe('rename_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'pin')?.action).toBe('pin_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'unread')?.action).toBe('mark_unread')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'usage')?.action).toBe('show_usage')
   })
 
   it('filters by prefix and description', () => {

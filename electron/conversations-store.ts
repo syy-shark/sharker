@@ -10,5 +10,7 @@ export {
   deleteConversation,
   setConversationArchived,
   setActiveConversation,
-  createConversationOnDisk
+  createConversationOnDisk,
+  patchConversationMeta,
+  clearWorkspaceConversationUnread
 } from '../agent/memory/conversations'

@@ -25,6 +25,10 @@ export interface Conversation {
   createdAt: number
   updatedAt: number
   status?: ConversationStatus
+  /** 置顶（对标 Codex ⌘⌥P） */
+  pinned?: boolean
+  /** 未读（对标 Codex ⌘⇧U） */
+  unread?: boolean
 }
 
 /** 侧栏展示的对话摘要（无消息体） */
@@ -39,13 +43,26 @@ export interface ConversationSummary {
   status?: ConversationStatus
   /** 归档列表展示用工作区名 */
   workspaceLabel?: string
+  pinned?: boolean
+  unread?: boolean
 }
 
-/** 侧栏顺序：上面是老对话，下面是新对话 */
+/** 只改标题 / 置顶 / 未读，不重写消息、不抢活跃会话 */
+export interface ConversationMetaPatch {
+  customTitle?: string | null
+  pinned?: boolean
+  unread?: boolean
+}
+
+/** 侧栏顺序：置顶在前，同组里上面是老对话、下面是新对话 */
 export function sortConversationsByCreatedAt(
   conversations: ConversationSummary[]
 ): ConversationSummary[] {
-  return [...conversations].sort((a, b) => a.createdAt - b.createdAt)
+  return [...conversations].sort((a, b) => {
+    const pin = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))
+    if (pin) return pin
+    return a.createdAt - b.createdAt
+  })
 }
 
 /** 工作区下的对话列表与当前活跃 ID */
@@ -133,17 +150,57 @@ export function nextLiveConversationId(
   return liveIds[(idx + 1) % liveIds.length] ?? null
 }
 
-/** ⌘G 搜索对话：按标题或 id 过滤（对标 Codex Search chats） */
-export function filterChatList<T extends { id: string; title?: string }>(
+/** ⌘G 搜索对话：按标题、自定义标题或 id 过滤（对标 Codex Search chats） */
+export function filterChatList<T extends { id: string; title?: string; customTitle?: string }>(
   items: T[],
   query: string
 ): T[] {
   const q = query.trim().toLowerCase()
   if (!q) return items
   return items.filter((c) => {
-    const title = String(c.title || '').toLowerCase()
-    return title.includes(q) || c.id.toLowerCase().includes(q)
+    const title = String(c.customTitle || c.title || '').toLowerCase()
+    const stored = String(c.title || '').toLowerCase()
+    return title.includes(q) || stored.includes(q) || c.id.toLowerCase().includes(q)
   })
+}
+
+/** `/rename` 参数：空则进入行内改名；有文本则立刻写入 customTitle */
+export function parseRenameArgs(args: string): { kind: 'prompt' } | { kind: 'set'; title: string } {
+  const title = args.replace(/^\s+/, '').trim()
+  if (!title) return { kind: 'prompt' }
+  return { kind: 'set', title }
+}
+
+/** 空标题表示清除自定义名，回退到首条消息推导 */
+export function applyCustomTitle(raw: string): string | undefined {
+  const title = raw.trim()
+  return title || undefined
+}
+
+export function formatRenameNote(title: string | undefined): string {
+  if (!title) return '已清除自定义标题，侧栏将用首条消息推导。'
+  return `对话已重命名为「${title}」。`
+}
+
+export function formatPinNote(pinned: boolean): string {
+  return pinned ? '已置顶此对话。' : '已取消置顶。'
+}
+
+export function formatUnreadNote(): string {
+  return '已将此对话标为未读。打开后会自动清未读。'
+}
+
+/** 侧栏：置顶组与其余（进行中拆分之后再用） */
+export function splitPinnedConversations<T extends { pinned?: boolean }>(
+  items: T[]
+): { pinned: T[]; rest: T[] } {
+  const pinned: T[] = []
+  const rest: T[] = []
+  for (const item of items) {
+    if (item.pinned) pinned.push(item)
+    else rest.push(item)
+  }
+  return { pinned, rest }
 }
 
 /** Conversation → 侧栏摘要 */
@@ -156,6 +213,8 @@ export function toConversationSummary(c: Conversation): ConversationSummary {
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     messageCount: c.messages.length,
-    status: c.status ?? 'active'
+    status: c.status ?? 'active',
+    pinned: c.pinned,
+    unread: c.unread
   }
 }

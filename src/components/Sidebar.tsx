@@ -19,7 +19,7 @@ import {
   SquarePen
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
-import { splitLiveConversations } from '../../shared/conversation'
+import { splitLiveConversations, splitPinnedConversations } from '../../shared/conversation'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { AppPage, SettingsTab } from '../types/navigation'
@@ -46,6 +46,11 @@ interface Props {
   onNewConversation: (workspaceId: string) => void
   onDeleteConversation: (workspaceId: string, conversationId: string) => void
   onArchiveConversation: (workspaceId: string, conversationId: string) => void
+  onRenameConversation?: (workspaceId: string, conversationId: string, title: string) => void
+  onTogglePinConversation?: (workspaceId: string, conversationId: string) => void
+  /** 快捷键 / `/rename` 无参数时进入行内改名 */
+  renameRequestId?: string | null
+  onRenameRequestHandled?: () => void
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
   /** 自动化审查队列未读数（Codex Triage） */
   queueUnread?: number
@@ -97,6 +102,10 @@ export function Sidebar({
   onNewConversation,
   onDeleteConversation: _onDeleteConversation,
   onArchiveConversation,
+  onRenameConversation,
+  onTogglePinConversation,
+  renameRequestId = null,
+  onRenameRequestHandled,
   onNavigate,
   queueUnread = 0,
   collapsed: collapsedProp,
@@ -229,6 +238,31 @@ export function Sidebar({
     () => splitLiveConversations(dialogConvs, liveIdSet),
     [dialogConvs, liveIdSet]
   )
+  const { pinned: pinnedConvs, rest: recentConvs } = useMemo(
+    () => splitPinnedConversations(restConvs),
+    [restConvs]
+  )
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
+  const renameCancelRef = useRef(false)
+
+  useEffect(() => {
+    if (!renameRequestId) return
+    const hit = conversations.find((c) => c.id === renameRequestId)
+    if (hit) {
+      renameCancelRef.current = false
+      setRenamingId(hit.id)
+      setRenameDraft(convTitle(hit))
+    }
+    onRenameRequestHandled?.()
+  }, [conversations, onRenameRequestHandled, renameRequestId])
+
+  useEffect(() => {
+    if (!renamingId) return
+    renameInputRef.current?.focus()
+    renameInputRef.current?.select()
+  }, [renamingId])
 
   const getSettingsNavEl = useCallback(
     (id: string) => settingsNavItemRefs.current.get(id as SettingsTab),
@@ -341,37 +375,107 @@ export function Sidebar({
 
   const shellWidth = width
 
+  const commitRename = (c: ConversationSummary, value: string) => {
+    setRenamingId(null)
+    const next = value.trim()
+    if (next === convTitle(c) && c.customTitle) return
+    onRenameConversation?.(c.workspaceId, c.id, next)
+  }
+
   const renderConvRow = (c: ConversationSummary) => {
     const active = c.id === activeConversationId
     const live = liveIdSet.has(c.id)
     const isolated = loadThreadRuntime(c.id).mode === 'worktree'
+    const renaming = renamingId === c.id
     return (
       <div
         key={c.id}
-        className={`sidebar-row sidebar-row--conv ${active ? 'active' : ''} ${live ? 'sidebar-row--live' : ''}`}
+        className={`sidebar-row sidebar-row--conv ${active ? 'active' : ''} ${live ? 'sidebar-row--live' : ''} ${c.unread ? 'sidebar-row--unread' : ''} ${c.pinned ? 'sidebar-row--pinned' : ''}`}
         data-conversation-id={c.id}
         data-conversation-title={convTitle(c)}
         data-live={live ? 'true' : undefined}
+        data-unread={c.unread ? 'true' : undefined}
+        data-pinned={c.pinned ? 'true' : undefined}
       >
-        <button
-          type="button"
-          className="sidebar-row-main"
-          data-conversation-id={c.id}
-          data-conversation-title={convTitle(c)}
-          onClick={() => {
-            onSelectConversation(c.workspaceId, c.id)
-            if (page !== 'chat') onNavigate('chat')
-          }}
-          title={convTitle(c)}
-        >
-          <span className="sidebar-row-text">{convTitle(c)}</span>
-          {isolated ? (
-            <span className="sidebar-worktree-badge" title="隔离 Worktree 线程">
-              隔离
-            </span>
-          ) : null}
-          {live ? <span className="sidebar-live-dot" aria-label="进行中" title="进行中" /> : null}
-        </button>
+        {renaming ? (
+          <input
+            ref={renameInputRef}
+            className="sidebar-rename-input"
+            value={renameDraft}
+            aria-label="重命名对话"
+            onChange={(e) => setRenameDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                commitRename(c, renameDraft)
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                renameCancelRef.current = true
+                setRenamingId(null)
+              }
+            }}
+            onBlur={() => {
+              if (renameCancelRef.current) {
+                renameCancelRef.current = false
+                return
+              }
+              commitRename(c, renameDraft)
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="sidebar-row-main"
+            data-conversation-id={c.id}
+            data-conversation-title={convTitle(c)}
+            onClick={() => {
+              onSelectConversation(c.workspaceId, c.id)
+              if (page !== 'chat') onNavigate('chat')
+            }}
+            onDoubleClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              renameCancelRef.current = false
+              setRenamingId(c.id)
+              setRenameDraft(convTitle(c))
+            }}
+            title={convTitle(c)}
+          >
+            {c.pinned ? (
+              <Pin size={12} className="sidebar-pin-icon" aria-hidden />
+            ) : null}
+            <span className="sidebar-row-text">{convTitle(c)}</span>
+            {isolated ? (
+              <span className="sidebar-worktree-badge" title="隔离 Worktree 线程">
+                隔离
+              </span>
+            ) : null}
+            {c.unread && !live ? (
+              <span className="sidebar-unread-dot" aria-label="未读" title="未读" />
+            ) : null}
+            {live ? <span className="sidebar-live-dot" aria-label="进行中" title="进行中" /> : null}
+          </button>
+        )}
+        {onTogglePinConversation ? (
+          <button
+            type="button"
+            className="sidebar-row-archive sidebar-row-pin"
+            title={c.pinned ? '取消置顶' : '置顶'}
+            aria-label={c.pinned ? `取消置顶 ${convTitle(c)}` : `置顶 ${convTitle(c)}`}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onTogglePinConversation(c.workspaceId, c.id)
+            }}
+          >
+            <Pin size={14} aria-hidden />
+          </button>
+        ) : null}
         <button
           type="button"
           className="sidebar-row-archive"
@@ -606,12 +710,19 @@ export function Sidebar({
             </section>
           ) : null}
 
+          {pinnedConvs.length > 0 ? (
+            <section className="sidebar-section" aria-label="置顶">
+              <h3 className="sidebar-section-label">置顶</h3>
+              {pinnedConvs.map((c) => renderConvRow(c))}
+            </section>
+          ) : null}
+
           <section className="sidebar-section">
             <h3 className="sidebar-section-label">对话</h3>
             {dialogConvs.length === 0 ? (
               <p className="sidebar-section-empty">暂无对话</p>
-            ) : restConvs.length === 0 ? null : (
-              restConvs.map((c) => renderConvRow(c))
+            ) : recentConvs.length === 0 ? null : (
+              recentConvs.map((c) => renderConvRow(c))
             )}
           </section>
         </div>

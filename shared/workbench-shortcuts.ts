@@ -33,6 +33,12 @@ export type WorkbenchShortcutAction =
   | 'search_files'
   | 'open_browser'
   | 'next_attention'
+  | 'rename_conversation'
+  | 'pin_conversation'
+  | 'mark_unread'
+  | 'standalone_conversation'
+  | 'copy_cwd'
+  | 'copy_session_id'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -70,6 +76,12 @@ export function matchWorkbenchShortcut(event: {
   if (key === 'a' && event.shiftKey && !event.altKey) return 'archive_thread'
   if (key === 'a' && event.altKey && !event.shiftKey) return 'next_attention'
   if (key === 's' && event.altKey && !event.shiftKey) return 'side_conversation'
+  if (key === 'o' && event.altKey && !event.shiftKey) return 'standalone_conversation'
+  if (key === 'r' && event.altKey && !event.shiftKey) return 'rename_conversation'
+  if (key === 'p' && event.altKey && !event.shiftKey) return 'pin_conversation'
+  if (key === 'u' && event.shiftKey && !event.altKey) return 'mark_unread'
+  if (key === 'c' && event.altKey && !event.shiftKey) return 'copy_session_id'
+  if (key === 'c' && event.shiftKey && !event.altKey) return 'copy_cwd'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
   if ((key === '`' || code === 'Backquote') && !event.altKey && !event.shiftKey) {
     return 'toggle_terminal'
@@ -150,6 +162,12 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
   { keys: '⌘N / ⌘⇧O', title: '新对话' },
+  { keys: '⌘⌥O', title: '独立新对话' },
+  { keys: '⌘⌥R', title: '重命名对话' },
+  { keys: '⌘⌥P', title: '置顶 / 取消置顶' },
+  { keys: '⌘⇧U', title: '标为未读' },
+  { keys: '⌘⇧C', title: '复制工作目录（浏览器聚焦时复制网址）' },
+  { keys: '⌘⌥C', title: '复制会话 ID' },
   { keys: '⌘[ / ⌘]', title: '后退 / 前进' },
   { keys: '⌘+ / ⌘-', title: '放大 / 缩小字号' },
   { keys: '⌘0', title: '重置字号' },

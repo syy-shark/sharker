@@ -112,6 +112,11 @@ CREATE TABLE IF NOT EXISTS code_snippets (
 CREATE INDEX IF NOT EXISTS idx_snippets_project ON code_snippets(project_id);
 `
 
+const MIGRATION_V2 = `
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS unread BOOLEAN NOT NULL DEFAULT false;
+`
+
 export async function runMigrations(db: PGlite): Promise<void> {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -122,9 +127,14 @@ export async function runMigrations(db: PGlite): Promise<void> {
   const row = await db.query<{ version: number }>(
     'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'
   )
-  const current = row.rows[0]?.version ?? 0
-  if (current >= 1) return
-
-  await db.exec(MIGRATION_V1)
-  await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [1])
+  let current = row.rows[0]?.version ?? 0
+  if (current < 1) {
+    await db.exec(MIGRATION_V1)
+    await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [1])
+    current = 1
+  }
+  if (current < 2) {
+    await db.exec(MIGRATION_V2)
+    await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [2])
+  }
 }

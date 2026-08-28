@@ -61,8 +61,15 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.LOAD_CONVERSATION, workspaceId, conversationId),
   saveConversation: (workspaceId: string, conversation: Conversation) =>
     ipcRenderer.invoke(IPC.SAVE_CONVERSATION, workspaceId, conversation),
-  createConversation: (workspaceId: string) =>
-    ipcRenderer.invoke(IPC.CREATE_CONVERSATION, workspaceId),
+  createConversation: (workspaceId: string, options?: { activate?: boolean }) =>
+    ipcRenderer.invoke(IPC.CREATE_CONVERSATION, workspaceId, options),
+  patchConversationMeta: (
+    workspaceId: string,
+    conversationId: string,
+    patch: import('../../shared/conversation').ConversationMetaPatch
+  ) => ipcRenderer.invoke(IPC.PATCH_CONVERSATION_META, workspaceId, conversationId, patch),
+  clearConversationUnread: (workspaceId: string) =>
+    ipcRenderer.invoke(IPC.CLEAR_CONVERSATION_UNREAD, workspaceId),
   deleteConversation: (workspaceId: string, conversationId: string) =>
     ipcRenderer.invoke(IPC.DELETE_CONVERSATION, workspaceId, conversationId),
   archiveConversation: (workspaceId: string, conversationId: string, archived: boolean) =>

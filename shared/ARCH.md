@@ -15,11 +15,11 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、记忆注入/写入开关） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝 |
-| `conversation.test.ts` | 按标题 / id 过滤对话、进行中拆分、分叉标题 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G 标题过滤、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
+| `conversation.test.ts` | 按标题 / 自定义标题 / id 过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |
@@ -27,6 +27,8 @@
 | `context-compress.ts` | 85% 阈值自动压缩历史 |
 | `token-estimate.ts` | 上下文 token 粗估 |
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
+| `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案（渲染进程可 import） |
+| `token-usage-format.test.ts` | 用量窗口与汇总 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用 |
 | `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部，避免每 token 重解析全文 |
@@ -41,8 +43,8 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘[ / ⌘] 前进后退、⌘+/- 字号、Ctrl+L 清终端、⇧Esc 清未读、⌘⇧A 归档、⌘⌥S 旁路、⌘⌥A 进行中、⌘P 搜文件、⌘T 浏览器、⌘G 搜对话、⌘⇧O 新对话） |
-| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘[ / ⌘+ / Ctrl+L / ⌘G |
+| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘[ / ⌘] 前进后退、⌘+/- 字号、Ctrl+L 清终端、⇧Esc 清未读、⌘⇧A 归档、⌘⌥S 旁路、⌘⌥A 进行中、⌘P 搜文件、⌘T 浏览器、⌘G 搜对话、⌘⇧O 新对话、⌘⌥O 独立窗、⌘⌥R 重命名、⌘⌥P 置顶、⌘⇧U 未读、⌘⇧C 工作目录、⌘⌥C 会话 ID） |
+| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘[ / ⌘+ / Ctrl+L / ⌘G / ⌘⌥O / ⌘⌥R / ⌘⌥P |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
@@ -76,7 +78,7 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、旁路、归档、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、清终端） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、旁路、归档、重命名、置顶、未读、独立新对话、用量、复制工作目录 / 会话 ID、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、清终端） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
@@ -115,7 +117,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/archive、/init、/permissions、/memories、/copy、/fast、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents） |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择 |

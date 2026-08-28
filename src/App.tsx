@@ -6,11 +6,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationSummary } from '../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
+  applyCustomTitle,
   buildForkedConversation,
   deriveConversationTitle,
+  formatPinNote,
+  formatRenameNote,
+  formatUnreadNote,
   nextLiveConversationId,
+  parseRenameArgs,
   sortConversationsByCreatedAt
 } from '../shared/conversation'
+import { formatUsageReport, parseUsageScope, usageHistoryDays } from '../shared/token-usage-format'
 import type {
   AppSettings,
   ApprovalRequest,
@@ -243,6 +249,8 @@ export default function App() {
   const [conversationList, setConversationList] = useState<ConversationSummary[]>([])
   const conversationListRef = useRef<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  /** ⌘⌥R / `/rename` 无参数：侧栏进入行内改名 */
+  const [renameRequestId, setRenameRequestId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [liveSegments, setLiveSegments] = useState<TurnSegment[]>([])
   const [streaming, setStreaming] = useState('')
@@ -2547,6 +2555,13 @@ export default function App() {
     resetTurnMeta()
     messagesRef.current = loaded
     setMessages(loaded)
+    const summary = conversationListRef.current.find((c) => c.id === conversationId)
+    if ((conv?.unread || summary?.unread) && window.sharker.patchConversationMeta) {
+      setConversationList((list) =>
+        list.map((c) => (c.id === conversationId ? { ...c, unread: false } : c))
+      )
+      void window.sharker.patchConversationMeta(workspaceId, conversationId, { unread: false })
+    }
   }
 
   useEffect(() => {
@@ -2982,12 +2997,18 @@ export default function App() {
   }, [])
 
   const handleClearUnread = useCallback(async () => {
-    if (!window.sharker.listAutomationQueue || !window.sharker.saveAutomationQueue) return
-    const prev = await window.sharker.listAutomationQueue()
-    const next = markAllQueueRead(prev)
-    await window.sharker.saveAutomationQueue(next)
-    setQueueUnread(unreadQueueCount(next))
-    setQueueRevision((n) => n + 1)
+    if (window.sharker.listAutomationQueue && window.sharker.saveAutomationQueue) {
+      const prev = await window.sharker.listAutomationQueue()
+      const next = markAllQueueRead(prev)
+      await window.sharker.saveAutomationQueue(next)
+      setQueueUnread(unreadQueueCount(next))
+      setQueueRevision((n) => n + 1)
+    }
+    const ws = settingsRef.current.activeWorkspaceId
+    if (ws && window.sharker.clearConversationUnread) {
+      await window.sharker.clearConversationUnread(ws)
+      setConversationList((list) => list.map((c) => (c.unread ? { ...c, unread: false } : c)))
+    }
   }, [])
 
   const handleNextAttention = useCallback(() => {
@@ -3061,6 +3082,96 @@ export default function App() {
     }
   }
 
+  const appendLocalNote = useCallback(
+    (content: string) => {
+      const note = {
+        id: crypto.randomUUID(),
+        role: 'assistant' as const,
+        content
+      }
+      setMessages((msgs) => {
+        const nextMsgs = [...msgs, note]
+        messagesRef.current = nextMsgs
+        void persistActiveConversation(nextMsgs)
+        return nextMsgs
+      })
+    },
+    [persistActiveConversation]
+  )
+
+  const handleRenameConversation = useCallback(
+    async (workspaceId: string, conversationId: string, raw: string) => {
+      if (!window.sharker.patchConversationMeta) return
+      const title = applyCustomTitle(raw)
+      const next = await window.sharker.patchConversationMeta(workspaceId, conversationId, {
+        customTitle: title ?? null
+      })
+      if (!next) return
+      setConversationList((list) =>
+        sortConversationsByCreatedAt(list.map((c) => (c.id === conversationId ? { ...c, ...next } : c)))
+      )
+    },
+    []
+  )
+
+  const handleTogglePinConversation = useCallback(async (workspaceId: string, conversationId: string) => {
+    if (!window.sharker.patchConversationMeta) return false
+    const current = conversationListRef.current.find((c) => c.id === conversationId)
+    const pinned = !current?.pinned
+    const next = await window.sharker.patchConversationMeta(workspaceId, conversationId, { pinned })
+    if (!next) return pinned
+    setConversationList((list) =>
+      sortConversationsByCreatedAt(list.map((c) => (c.id === conversationId ? { ...c, ...next } : c)))
+    )
+    return pinned
+  }, [])
+
+  const handleMarkUnread = useCallback(async () => {
+    const ws = settingsRef.current.activeWorkspaceId
+    const id = activeConversationIdRef.current
+    if (!ws || !id || !window.sharker.patchConversationMeta) return
+    const next = await window.sharker.patchConversationMeta(ws, id, { unread: true })
+    if (!next) return
+    setConversationList((list) => list.map((c) => (c.id === id ? { ...c, ...next } : c)))
+  }, [])
+
+  const handleStandaloneConversation = useCallback(async () => {
+    const ws = settingsRef.current.activeWorkspaceId
+    if (!ws || !window.sharker.createConversation) return
+    const created = await window.sharker.createConversation(ws, { activate: false })
+    const optimistic: ConversationSummary = {
+      id: created.id,
+      workspaceId: created.workspaceId,
+      title: created.title || DEFAULT_CONVERSATION_TITLE,
+      customTitle: created.customTitle,
+      createdAt: created.createdAt,
+      updatedAt: created.updatedAt,
+      messageCount: created.messages?.length ?? 0,
+      status: created.status ?? 'active'
+    }
+    setConversationList((list) => {
+      if (list.some((c) => c.id === created.id)) return list
+      return sortConversationsByCreatedAt([...list, optimistic])
+    })
+    if (window.sharker.openThreadWindow) {
+      await window.sharker.openThreadWindow(
+        ws,
+        created.id,
+        created.title || DEFAULT_CONVERSATION_TITLE
+      )
+    }
+    void refreshConversationList(ws)
+  }, [refreshConversationList])
+
+  const copyPlainText = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      return Boolean(text)
+    } catch {
+      return false
+    }
+  }, [])
+
   /** UI 斜杠命令（不经过模型） */
   const handleSlashAction = useCallback(
     async (cmd: SlashCommandMeta, args: string) => {
@@ -3096,7 +3207,7 @@ export default function App() {
         case 'side_conversation': {
           const ws = settingsRef.current.activeWorkspaceId
           if (!ws || !window.sharker.createConversation) break
-          const created = await window.sharker.createConversation(ws)
+          const created = await window.sharker.createConversation(ws, { activate: false })
           saveThreadRuntime(created.id, {
             mode: threadRuntimeRef.current.mode,
             baseRef: threadRuntimeRef.current.baseRef
@@ -3132,6 +3243,66 @@ export default function App() {
           const ws = settingsRef.current.activeWorkspaceId
           const id = activeConversationIdRef.current
           if (ws && id) await handleArchiveConversation(ws, id)
+          break
+        }
+        case 'rename_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          const id = activeConversationIdRef.current
+          const parsed = parseRenameArgs(args)
+          if (!ws || !id) {
+            appendLocalNote('没有当前对话，无法重命名。')
+            break
+          }
+          if (parsed.kind === 'prompt') {
+            setPage('chat')
+            setRenameRequestId(id)
+            break
+          }
+          await handleRenameConversation(ws, id, parsed.title)
+          appendLocalNote(formatRenameNote(applyCustomTitle(parsed.title)))
+          break
+        }
+        case 'pin_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          const id = activeConversationIdRef.current
+          if (!ws || !id) {
+            appendLocalNote('没有当前对话，无法置顶。')
+            break
+          }
+          const pinned = await handleTogglePinConversation(ws, id)
+          appendLocalNote(formatPinNote(pinned))
+          break
+        }
+        case 'mark_unread': {
+          await handleMarkUnread()
+          appendLocalNote(formatUnreadNote())
+          break
+        }
+        case 'standalone_conversation': {
+          await handleStandaloneConversation()
+          break
+        }
+        case 'show_usage': {
+          const scope = parseUsageScope(args)
+          const days = window.sharker.getTokenUsage
+            ? await window.sharker.getTokenUsage(usageHistoryDays(scope))
+            : []
+          appendLocalNote(formatUsageReport(days, scope))
+          break
+        }
+        case 'copy_cwd': {
+          const cwd =
+            (threadMode === 'worktree' ? threadWorktreePath : undefined) ||
+            getActiveWorkspacePath(settingsRef.current) ||
+            ''
+          const ok = await copyPlainText(cwd)
+          appendLocalNote(ok && cwd ? `已复制工作目录：\n\n\`${cwd}\`` : '没有可复制的工作目录。')
+          break
+        }
+        case 'copy_session_id': {
+          const id = activeConversationIdRef.current || ''
+          const ok = await copyPlainText(id)
+          appendLocalNote(ok && id ? `已复制会话 ID：\n\n\`${id}\`` : '没有当前会话。')
           break
         }
         case 'init_agents': {
@@ -3610,10 +3781,16 @@ export default function App() {
       }
     },
     [
+      appendLocalNote,
       conversationList,
+      copyPlainText,
       handleCreateBranchHere,
+      handleMarkUnread,
       handleOpenWorktree,
+      handleRenameConversation,
+      handleStandaloneConversation,
       handleThreadModeChange,
+      handleTogglePinConversation,
       handleSelectConversation,
       handleTogglePanel,
       persistActiveConversation,
@@ -3725,6 +3902,18 @@ export default function App() {
         handleNextAttention()
         return
       }
+      if (cmd.action === 'rename_conversation') {
+        const id = activeConversationIdRef.current
+        if (id) {
+          setPage('chat')
+          setRenameRequestId(id)
+        }
+        return
+      }
+      if (cmd.action === 'standalone_conversation') {
+        void handleStandaloneConversation()
+        return
+      }
       void handleSlashActionRef.current(
         {
           name: cmd.id,
@@ -3743,6 +3932,7 @@ export default function App() {
       handleNavStep,
       handleNextAttention,
       handleOpenBrowserTab,
+      handleStandaloneConversation,
       persistFontScale,
       toggleSidebar
     ]
@@ -3772,6 +3962,10 @@ export default function App() {
         isComposing: e.isComposing
       })
       if (!action) return
+      if (action === 'copy_cwd') {
+        const t = e.target
+        if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
+      }
       e.preventDefault()
       if (action === 'toggle_sidebar') {
         toggleSidebar()
@@ -3911,11 +4105,77 @@ export default function App() {
       }
       if (action === 'next_attention') {
         handleNextAttention()
+        return
+      }
+      if (action === 'rename_conversation') {
+        const id = activeConversationIdRef.current
+        if (id) {
+          setPage('chat')
+          setRenameRequestId(id)
+        }
+        return
+      }
+      if (action === 'pin_conversation') {
+        void handleSlashActionRef.current(
+          {
+            name: 'pin',
+            description: '置顶',
+            scope: 'ui',
+            action: 'pin_conversation',
+            category: 'session'
+          },
+          ''
+        )
+        return
+      }
+      if (action === 'mark_unread') {
+        void handleSlashActionRef.current(
+          {
+            name: 'unread',
+            description: '标为未读',
+            scope: 'ui',
+            action: 'mark_unread',
+            category: 'session'
+          },
+          ''
+        )
+        return
+      }
+      if (action === 'standalone_conversation') {
+        void handleStandaloneConversation()
+        return
+      }
+      if (action === 'copy_cwd') {
+        const t = document.activeElement
+        if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
+        void handleSlashActionRef.current(
+          {
+            name: 'cwd',
+            description: '复制工作目录',
+            scope: 'ui',
+            action: 'copy_cwd',
+            category: 'workspace'
+          },
+          ''
+        )
+        return
+      }
+      if (action === 'copy_session_id') {
+        void handleSlashActionRef.current(
+          {
+            name: 'session',
+            description: '复制会话 ID',
+            scope: 'ui',
+            action: 'copy_session_id',
+            category: 'session'
+          },
+          ''
+        )
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     const onMouseNav = (e: MouseEvent) => {
@@ -4779,6 +5039,10 @@ export default function App() {
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           onArchiveConversation={(ws, id) => void handleArchiveConversation(ws, id)}
+          onRenameConversation={(ws, id, title) => void handleRenameConversation(ws, id, title)}
+          onTogglePinConversation={(ws, id) => void handleTogglePinConversation(ws, id)}
+          renameRequestId={renameRequestId}
+          onRenameRequestHandled={() => setRenameRequestId(null)}
           onNavigate={handleNavigate}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}

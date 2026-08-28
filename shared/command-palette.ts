@@ -350,6 +350,54 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: '批准重试被拒操作',
     keywords: 'approve retry denied 批准 重试 拒绝',
     action: 'approve_denied'
+  },
+  {
+    id: 'rename',
+    title: '重命名当前对话',
+    shortcut: '⌘⌥R',
+    keywords: 'rename title 重命名 标题',
+    action: 'rename_conversation'
+  },
+  {
+    id: 'pin',
+    title: '置顶 / 取消置顶',
+    shortcut: '⌘⌥P',
+    keywords: 'pin unpin 置顶',
+    action: 'pin_conversation'
+  },
+  {
+    id: 'unread',
+    title: '标为未读',
+    shortcut: '⌘⇧U',
+    keywords: 'unread mark 未读',
+    action: 'mark_unread'
+  },
+  {
+    id: 'standalone',
+    title: '独立新对话',
+    shortcut: '⌘⌥O',
+    keywords: 'standalone new window 独立 新对话',
+    action: 'standalone_conversation'
+  },
+  {
+    id: 'usage',
+    title: '查看 Token 用量',
+    keywords: 'usage tokens 用量 token',
+    action: 'show_usage'
+  },
+  {
+    id: 'copy-cwd',
+    title: '复制工作目录',
+    shortcut: '⌘⇧C',
+    keywords: 'copy cwd directory 工作目录 路径',
+    action: 'copy_cwd'
+  },
+  {
+    id: 'copy-session',
+    title: '复制会话 ID',
+    shortcut: '⌘⌥C',
+    keywords: 'copy session id 会话',
+    action: 'copy_session_id'
   }
 ]
 

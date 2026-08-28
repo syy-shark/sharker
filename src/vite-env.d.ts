@@ -60,7 +60,16 @@ export interface SharkerApi {
     conversationId: string
   ) => Promise<Conversation | null>
   saveConversation: (workspaceId: string, conversation: Conversation) => Promise<Conversation>
-  createConversation: (workspaceId: string) => Promise<Conversation>
+  createConversation: (
+    workspaceId: string,
+    options?: { activate?: boolean }
+  ) => Promise<Conversation>
+  patchConversationMeta: (
+    workspaceId: string,
+    conversationId: string,
+    patch: import('../shared/conversation').ConversationMetaPatch
+  ) => Promise<import('../shared/conversation').ConversationSummary | null>
+  clearConversationUnread: (workspaceId: string) => Promise<number>
   deleteConversation: (workspaceId: string, conversationId: string) => Promise<boolean>
   archiveConversation: (
     workspaceId: string,

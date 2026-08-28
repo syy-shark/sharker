@@ -83,6 +83,24 @@ describe('workbench shortcuts', () => {
     )
     expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true }))).toBe('search_files')
     expect(matchWorkbenchShortcut(ev({ key: 't', metaKey: true }))).toBe('open_browser')
+    expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true }))).toBe(
+      'standalone_conversation'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'r', metaKey: true, altKey: true }))).toBe(
+      'rename_conversation'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true, altKey: true }))).toBe(
+      'pin_conversation'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'u', metaKey: true, shiftKey: true }))).toBe(
+      'mark_unread'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, shiftKey: true }))).toBe(
+      'copy_cwd'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, altKey: true }))).toBe(
+      'copy_session_id'
+    )
   })
 
   it('cycles conversation ids', () => {
