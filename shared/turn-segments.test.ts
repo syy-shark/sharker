@@ -128,7 +128,15 @@ describe('turn segment event state machine', () => {
     expect(pendingDiff).toMatchObject({
       type: 'diff',
       id: `${pendingSegs[0]!.id}-diff-0`,
-      diff: { path: 'b.ts', lines: [], stats: { added: 3, removed: 0 } }
+      diff: {
+        path: 'b.ts',
+        lines: [
+          { kind: 'add', content: 'one', newLine: 1 },
+          { kind: 'add', content: 'two', newLine: 2 },
+          { kind: 'add', content: 'three', newLine: 3 }
+        ],
+        stats: { added: 3, removed: 0 }
+      }
     })
     pendingSegs = applyStreamChunk(pendingSegs, {
       type: 'tool_done',
