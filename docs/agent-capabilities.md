@@ -30,7 +30,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/review` | 打开审查并在**新线程**只读评审（对标 detached）；`/review here` 在当前线程；`/review branch` 相对基线 |
 | `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
-| `/skill` | 打开 `$` Skill 选择器 |
+| `/skill` | 打开 `$` Skill 选择器；已安装 Skill 也会出现在 `/` 列表（对标 Codex），选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 | `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
 | `/status` | 显示模型、权限、线程模式、分支与上下文占用 |

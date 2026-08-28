@@ -130,7 +130,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择 |

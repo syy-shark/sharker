@@ -444,6 +444,36 @@ export function filterSlashCommands(query: string): SlashCommandMeta[] {
   )
 }
 
+/** 斜杠菜单：内置命令 + 已安装 Skill（对标 Codex：Enabled skills appear in the slash list） */
+export function slashItemsWithSkills(
+  query: string,
+  skills: Array<{ name: string; description?: string }>
+): SlashCommandMeta[] {
+  const commands = filterSlashCommands(query)
+  const reserved = new Set(SLASH_COMMANDS.map((c) => c.name.toLowerCase()))
+  const q = query.trim().toLowerCase()
+  const skillItems: SlashCommandMeta[] = []
+  for (const skill of skills) {
+    const name = String(skill.name || '').trim()
+    if (!name || reserved.has(name.toLowerCase())) continue
+    if (
+      q &&
+      !name.toLowerCase().includes(q) &&
+      !String(skill.description || '').toLowerCase().includes(q)
+    ) {
+      continue
+    }
+    skillItems.push({
+      name,
+      description: skill.description?.trim() || '已安装 Skill',
+      scope: 'ui',
+      action: 'insert_skill',
+      category: 'tools'
+    })
+  }
+  return skillItems.length ? [...commands, ...skillItems] : commands
+}
+
 /** 生成 help 文本中的命令表 */
 export function formatSlashCommandHelp(): string {
   const byCat = new Map<SlashCommandCategory, SlashCommandMeta[]>()

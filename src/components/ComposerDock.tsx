@@ -17,7 +17,7 @@ import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from 
 import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
-import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
+import { SLASH_COMMANDS, slashItemsWithSkills, type SlashCommandMeta } from '../../shared/slash-commands'
 import { parseBangCommand } from '../../shared/bang-command'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
 import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
@@ -406,7 +406,7 @@ export const ComposerDock = memo(
       !/\s/.test(input.slice(1))
         ? input.slice(1)
         : null
-    const slashItems = slashQuery != null ? filterSlashCommands(slashQuery) : []
+    const slashItems = slashQuery != null ? slashItemsWithSkills(slashQuery, skillCatalog) : []
     const showSlashMenu = slashItems.length > 0
     const promptHits = useMemo(
       () =>
@@ -506,7 +506,7 @@ export const ComposerDock = memo(
       skillActiveIndexRef.current = 0
     }, [skillQuery?.query, skillQuery?.start])
     useEffect(() => {
-      if (!skillQuery || !window.sharker?.listSkills) return
+      if ((!skillQuery && slashQuery == null) || !window.sharker?.listSkills) return
       let cancelled = false
       void window.sharker
         .listSkills(fileSearchRoot)
@@ -519,7 +519,7 @@ export const ComposerDock = memo(
       return () => {
         cancelled = true
       }
-    }, [fileSearchRoot, skillQuery?.start])
+    }, [fileSearchRoot, skillQuery?.start, slashQuery])
 
     const pickMention = (relativePath: string) => {
       const next = insertAtMention(input, cursor, relativePath)
@@ -680,6 +680,21 @@ export const ComposerDock = memo(
           if (!el) return
           el.focus()
           el.setSelectionRange(1, 1)
+          syncTextareaHeight()
+        })
+        return
+      }
+      if (cmd.action === 'insert_skill') {
+        const next = insertSkillMention('/', 1, cmd.name)
+        setInput(next.text)
+        setCursor(next.cursor)
+        setSlashDismissed(true)
+        setSkillDismissed(true)
+        requestAnimationFrame(() => {
+          const el = textareaRef.current
+          if (!el) return
+          el.focus()
+          el.setSelectionRange(next.cursor, next.cursor)
           syncTextareaHeight()
         })
         return
@@ -1121,7 +1136,9 @@ export const ComposerDock = memo(
                         pickSlashCommand(cmd)
                       }}
                     >
-                      <span className="slash-menu-name">/{cmd.name}</span>
+                      <span className="slash-menu-name">
+                        {cmd.action === 'insert_skill' ? `$${cmd.name}` : `/${cmd.name}`}
+                      </span>
                       <span className="slash-menu-desc">{cmd.description}</span>
                     </button>
                   </li>

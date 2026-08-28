@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterSlashCommands, SLASH_COMMANDS } from './slash-commands'
+import { filterSlashCommands, slashItemsWithSkills, SLASH_COMMANDS } from './slash-commands'
 
 describe('slash commands', () => {
   it('lists changes as a panel command and review as a working-tree review', () => {
@@ -78,5 +78,15 @@ describe('slash commands', () => {
     expect(filterSlashCommands('ch').some((c) => c.name === 'changes')).toBe(true)
     expect(filterSlashCommands('审查').some((c) => c.name === 'review')).toBe(true)
     expect(filterSlashCommands('task').some((c) => c.name === 'task')).toBe(true)
+  })
+
+  it('appends installed skills to the slash list without shadowing builtins', () => {
+    const items = slashItemsWithSkills('rev', [
+      { name: 'review-notes', description: '整理审查笔记' },
+      { name: 'review', description: '不该盖住内置 /review' }
+    ])
+    expect(items.some((c) => c.name === 'review' && c.action === 'review_working_tree')).toBe(true)
+    expect(items.some((c) => c.name === 'review-notes' && c.action === 'insert_skill')).toBe(true)
+    expect(items.filter((c) => c.name === 'review')).toHaveLength(1)
   })
 })
