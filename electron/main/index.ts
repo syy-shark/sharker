@@ -90,7 +90,7 @@ import {
   prepareThreadWorktree,
   removeManagedWorktree
 } from '../../tools/thread-worktree'
-import { initAgentsMdFile } from '../../agent/agents-md'
+import { initAgentsMdFile, readPersonalAgentsMd, writePersonalAgentsMd } from '../../agent/agents-md'
 import { listMemoriesExact } from '../../agent/memory/memories'
 import { getActiveSessionId, getWorkspaceProjectId } from '../../agent/memory/workspaces-sync'
 import { loadMcpConfig, listMcpToolsQuick } from '../../tools/services/mcp-registry'
@@ -1654,6 +1654,11 @@ function registerIpc(): void {
   ipcMain.handle(IPC.INIT_AGENTS_MD, async (_e, workspace: string) => {
     return initAgentsMdFile(String(workspace || ''))
   })
+
+  ipcMain.handle(IPC.GET_PERSONAL_AGENTS_MD, async () => readPersonalAgentsMd(app.getPath('home')))
+  ipcMain.handle(IPC.SAVE_PERSONAL_AGENTS_MD, async (_e, content: string) =>
+    writePersonalAgentsMd(String(content ?? ''), app.getPath('home'))
+  )
 
   ipcMain.handle(IPC.MEMORY_LIST, async (_e, workspaceId: string) => {
     const id = String(workspaceId || '')

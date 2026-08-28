@@ -109,6 +109,9 @@ export const IPC = {
   MCP_STATUS: 'mcp:status',
   /** `/init`：没有说明文件时写入仓库根 AGENTS.md */
   INIT_AGENTS_MD: 'workspace:init-agents-md',
+  /** 设置 → 自定义说明：读写 `~/.sharker/AGENTS.md` */
+  GET_PERSONAL_AGENTS_MD: 'agents-md:get-personal',
+  SAVE_PERSONAL_AGENTS_MD: 'agents-md:save-personal',
   /** `/memories`：列出当前工作区相关记忆 */
   MEMORY_LIST: 'memory:list',
   /** 隔离 worktree 是否还在、有无快照 */

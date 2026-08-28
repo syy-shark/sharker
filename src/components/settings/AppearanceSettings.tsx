@@ -51,9 +51,13 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     draft.uiTheme === 'dark' ? 'dark' : 'light'
   )
+  const [instructions, setInstructions] = useState('')
+  const [instructionsPath, setInstructionsPath] = useState('')
+  const [overrideActive, setOverrideActive] = useState(false)
   const themeRef = useRef(theme)
   const draftRef = useRef(draft)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const instructionsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     draftRef.current = draft
@@ -66,7 +70,17 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (instructionsTimer.current) clearTimeout(instructionsTimer.current)
     }
+  }, [])
+
+  useEffect(() => {
+    if (!window.sharker.getPersonalAgentsMd) return
+    void window.sharker.getPersonalAgentsMd().then((doc) => {
+      setInstructions(doc.content)
+      setInstructionsPath(doc.path)
+      setOverrideActive(doc.overrideActive)
+    })
   }, [])
 
   // 外部 draft 同步
@@ -238,6 +252,19 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
+          <SettingsRow
+            title="批准通知"
+            description="对标 Codex permission notifications：后台或失焦时高危操作需要批准会弹系统通知。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.approvalNotify !== false}
+              onChange={(approvalNotify) => {
+                scheduleSave({ ...draftRef.current, approvalNotify })
+              }}
+              label="批准通知"
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
       <SettingsSection title="窗口">
@@ -283,6 +310,37 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               description: o.description,
               icon: <span aria-hidden>{o.title.slice(0, 1)}</span>
             }))}
+          />
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="自定义说明">
+        <SettingsCard>
+          <SettingsRow
+            title="个人 AGENTS.md"
+            description={
+              overrideActive
+                ? `写入 ${instructionsPath || '~/.sharker/AGENTS.md'}。当前有 AGENTS.override.md，注入会优先用 override。`
+                : `对标 Codex Settings → Personalization：写入 ${instructionsPath || '~/.sharker/AGENTS.md'}，所有项目都会注入。`
+            }
+            last
+          >
+            <span className="appearance-instructions-hint">~/.sharker</span>
+          </SettingsRow>
+          <textarea
+            className="appearance-instructions"
+            value={instructions}
+            spellCheck={false}
+            placeholder="跨项目都要遵守的约定，例如：改 JS 后跑 npm test；优先 pnpm。"
+            aria-label="个人自定义说明"
+            onChange={(e) => {
+              const content = e.target.value
+              setInstructions(content)
+              if (!window.sharker.savePersonalAgentsMd) return
+              if (instructionsTimer.current) clearTimeout(instructionsTimer.current)
+              instructionsTimer.current = setTimeout(() => {
+                void window.sharker.savePersonalAgentsMd(content)
+              }, 320)
+            }}
           />
         </SettingsCard>
       </SettingsSection>

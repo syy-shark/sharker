@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   parseTurnNotifyMode,
   shouldMarkConversationUnread,
+  shouldNotifyApproval,
   shouldNotifyTurnComplete,
   formatChangedFilesLabel,
   turnNotifyBody,
@@ -59,6 +60,19 @@ describe('background turn notifications', () => {
     expect(shouldNotifyTurnComplete({ ...base, mode: 'always' })).toBe(true)
     expect(parseTurnNotifyMode('always')).toBe('always')
     expect(parseTurnNotifyMode('')).toBe('background')
+  })
+
+  it('notifies approvals only when not watching the focused chat', () => {
+    const base = {
+      conversationId: 'a',
+      activeConversationId: 'a',
+      page: 'chat' as const,
+      windowFocused: true
+    }
+    expect(shouldNotifyApproval(base)).toBe(false)
+    expect(shouldNotifyApproval({ ...base, windowFocused: false })).toBe(true)
+    expect(shouldNotifyApproval({ ...base, conversationId: 'bg' })).toBe(true)
+    expect(shouldNotifyApproval({ ...base, enabled: false, windowFocused: false })).toBe(false)
   })
 
   it('skips aborted turns', () => {

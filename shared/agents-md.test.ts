@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   AGENTS_MD_SCAFFOLD,
+  clampPersonalAgentsMd,
   dirsFromRootToCwd,
+  globalPersonalAgentsMdPath,
   mergeAgentsDocs,
   pickAgentsDoc
 } from './agents-md'
@@ -41,5 +43,11 @@ describe('agents.md discovery', () => {
 
   it('has a non-empty init scaffold', () => {
     expect(AGENTS_MD_SCAFFOLD).toContain('# 项目说明')
+  })
+
+  it('points personal instructions at ~/.sharker/AGENTS.md', () => {
+    expect(globalPersonalAgentsMdPath('/Users/me')).toBe('/Users/me/.sharker/AGENTS.md')
+    expect(clampPersonalAgentsMd('ok')).toBe('ok')
+    expect(clampPersonalAgentsMd('x'.repeat(100), 8).length).toBeLessThanOrEqual(8)
   })
 })

@@ -89,3 +89,17 @@ export function mergeAgentsDocs(
   }
   return chunks.join('\n\n')
 }
+
+/** 全局个人说明路径（对标 Codex `~/.codex/AGENTS.md`，本机用 `~/.sharker`） */
+export function globalPersonalAgentsMdPath(home: string): string {
+  const base = String(home || '').replace(/[\\/]+$/, '')
+  return `${base}/.sharker/AGENTS.md`
+}
+
+/** 写入前夹到 project_doc 上限，避免撑爆注入 */
+export function clampPersonalAgentsMd(text: string, maxBytes = PROJECT_DOC_MAX_BYTES): string {
+  const input = String(text ?? '')
+  const bytes = new TextEncoder().encode(input)
+  if (bytes.length <= maxBytes) return input
+  return new TextDecoder().decode(bytes.slice(0, maxBytes))
+}

@@ -255,6 +255,15 @@ export interface SharkerApi {
   initAgentsMd: (
     workspace: string
   ) => Promise<{ ok: true; path: string; created: boolean } | { ok: false; error: string }>
+  getPersonalAgentsMd: () => Promise<{
+    path: string
+    content: string
+    exists: boolean
+    overrideActive: boolean
+  }>
+  savePersonalAgentsMd: (
+    content: string
+  ) => Promise<{ ok: true; path: string } | { ok: false; error: string }>
   listMemories: (
     workspaceId: string
   ) => Promise<Array<{ id: string; scope: string; kind: string; content: string }>>

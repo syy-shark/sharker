@@ -45,6 +45,23 @@ export function shouldNotifyTurnComplete(input: {
   return true
 }
 
+/** 审批/提问通知：正在看且窗口在前台不打扰（对标 Codex permission notifications） */
+export function shouldNotifyApproval(input: {
+  conversationId?: string | null
+  activeConversationId?: string | null
+  page: string
+  windowFocused: boolean
+  enabled?: boolean
+}): boolean {
+  if (input.enabled === false) return false
+  const viewing =
+    input.page === 'chat' &&
+    Boolean(input.conversationId) &&
+    input.conversationId === input.activeConversationId
+  if (viewing && input.windowFocused) return false
+  return true
+}
+
 /** 未在聊天页看该对话时标未读（窗口是否在前台无关） */
 export function shouldMarkConversationUnread(input: {
   conversationId?: string | null

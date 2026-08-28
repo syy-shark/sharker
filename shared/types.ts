@@ -103,6 +103,8 @@ export interface AppSettings {
   preventSleepWhileRunning?: boolean
   /** 新弹出对话窗默认置顶（对标 Codex Always on top） */
   popoutAlwaysOnTop?: boolean
+  /** 高危操作审批通知（对标 Codex permission / question notifications） */
+  approvalNotify?: boolean
 }
 
 /** 聊天消息角色 */
@@ -343,5 +345,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   requireModEnter: false,
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
-  popoutAlwaysOnTop: false
+  popoutAlwaysOnTop: false,
+  approvalNotify: true
 }

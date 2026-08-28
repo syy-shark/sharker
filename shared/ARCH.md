@@ -14,7 +14,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter`、`turnNotifyMode` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
@@ -105,8 +105,8 @@
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、恢复上一条、空输入 Esc+Esc 回编 |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
-| `turn-notify.ts` | 后台回合：系统通知档 never/background/always、未读、Dock 徽标、改文件数正文与芯片文案 |
-| `turn-notify.test.ts` | 失焦通知、never/always、同会话不标未读、徽标计数、改文件文案 |
+| `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
+| `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
 | `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications→外观） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
@@ -139,8 +139,8 @@
 | `copy-output.test.ts` | 跳过空助手行 |
 | `skills-status.ts` | `/skills` 已安装列表 |
 | `skills-status.test.ts` | 过滤 |
-| `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架 |
-| `agents-md.test.ts` | override 优先、目录链、截断 |
+| `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架；个人说明路径 `~/.sharker/AGENTS.md` |
+| `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
 | `memory-command.ts` | `/memories` 开关解析与条目文案 |
 | `memory-command.test.ts` | on/off、inject、空列表 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案 |

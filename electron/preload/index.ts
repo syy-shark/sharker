@@ -216,6 +216,8 @@ contextBridge.exposeInMainWorld('sharker', {
   listMcpStatus: (workspace: string, verbose?: boolean) =>
     ipcRenderer.invoke(IPC.MCP_STATUS, workspace, verbose),
   initAgentsMd: (workspace: string) => ipcRenderer.invoke(IPC.INIT_AGENTS_MD, workspace),
+  getPersonalAgentsMd: () => ipcRenderer.invoke(IPC.GET_PERSONAL_AGENTS_MD),
+  savePersonalAgentsMd: (content: string) => ipcRenderer.invoke(IPC.SAVE_PERSONAL_AGENTS_MD, content),
   listMemories: (workspaceId: string) => ipcRenderer.invoke(IPC.MEMORY_LIST, workspaceId),
   inspectWorktree: (dest: string) => ipcRenderer.invoke(IPC.WORKSPACE_INSPECT_WORKTREE, dest),
   handoffThread: (payload: {

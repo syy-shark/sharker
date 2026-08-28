@@ -3,12 +3,14 @@
  * @see agent/ARCH.md
  */
 import { homedir } from 'os'
-import { readFile, writeFile } from 'fs/promises'
+import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 import {
   AGENTS_DOC_NAMES,
   AGENTS_MD_SCAFFOLD,
+  clampPersonalAgentsMd,
   dirsFromRootToCwd,
+  globalPersonalAgentsMdPath,
   mergeAgentsDocs,
   pickAgentsDoc
 } from '../shared/agents-md'
@@ -70,6 +72,40 @@ export async function initAgentsMdFile(
   try {
     await writeFile(dest, AGENTS_MD_SCAFFOLD, 'utf8')
     return { ok: true, path: dest, created: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/** 设置 → 自定义说明：只读写 `~/.sharker/AGENTS.md`，不动 override / 不碰 `~/.codex` */
+export async function readPersonalAgentsMd(homeDir?: string): Promise<{
+  path: string
+  content: string
+  exists: boolean
+  overrideActive: boolean
+}> {
+  const home = homeDir || homedir()
+  const dest = globalPersonalAgentsMdPath(home)
+  const override = await readIfExists(path.join(home, '.sharker', 'AGENTS.override.md'))
+  const content = (await readIfExists(dest)) ?? ''
+  return {
+    path: dest,
+    content,
+    exists: Boolean(content),
+    overrideActive: Boolean(override?.trim())
+  }
+}
+
+export async function writePersonalAgentsMd(
+  content: string,
+  homeDir?: string
+): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  const home = homeDir || homedir()
+  const dest = globalPersonalAgentsMdPath(home)
+  try {
+    await mkdir(path.dirname(dest), { recursive: true })
+    await writeFile(dest, clampPersonalAgentsMd(content), 'utf8')
+    return { ok: true, path: dest }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }

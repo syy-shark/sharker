@@ -143,6 +143,7 @@ export function normalizeSettings(
         : 'background',
     preventSleepWhileRunning: raw.preventSleepWhileRunning === true,
     popoutAlwaysOnTop: raw.popoutAlwaysOnTop === true,
+    approvalNotify: raw.approvalNotify !== false,
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

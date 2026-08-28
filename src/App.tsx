@@ -139,8 +139,10 @@ import {
 } from '../shared/app-undo'
 import {
   shouldMarkConversationUnread,
+  shouldNotifyApproval,
   shouldNotifyTurnComplete,
   turnNotifyBody,
+  turnNotifyPreview,
   turnNotifyTitle,
   unreadDockBadgeCount
 } from '../shared/turn-notify'
@@ -1015,6 +1017,36 @@ export default function App() {
     [persistActiveConversation, resetTurnMeta]
   )
 
+  const lastApprovalNotifyIdRef = useRef<string | null>(null)
+  const notifyApprovalIfNeeded = useCallback((req: ApprovalRequest) => {
+    if (!req.id || lastApprovalNotifyIdRef.current === req.id) return
+    const focused =
+      typeof document !== 'undefined' &&
+      document.hasFocus() &&
+      document.visibilityState === 'visible'
+    const conversationId = req.conversationId || activeConversationIdRef.current
+    if (
+      !shouldNotifyApproval({
+        conversationId,
+        activeConversationId: activeConversationIdRef.current,
+        page: pageRef.current,
+        windowFocused: focused,
+        enabled: settingsRef.current.approvalNotify
+      }) ||
+      !window.sharker.notifyTurnComplete
+    ) {
+      return
+    }
+    lastApprovalNotifyIdRef.current = req.id
+    const conv = conversationListRef.current.find((c) => c.id === conversationId)
+    void window.sharker.notifyTurnComplete({
+      title: '需要批准',
+      body: turnNotifyPreview(req.description || req.title || req.toolName),
+      conversationId: conversationId || '',
+      workspaceId: conv?.workspaceId || settingsRef.current.activeWorkspaceId || ''
+    })
+  }, [])
+
   useEffect(() => {
     conversationListRef.current = conversationList
   }, [conversationList])
@@ -1175,7 +1207,8 @@ export default function App() {
           requireModEnter: updated.requireModEnter,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
-          popoutAlwaysOnTop: updated.popoutAlwaysOnTop
+          popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
+          approvalNotify: updated.approvalNotify
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1232,6 +1265,7 @@ export default function App() {
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
+      approvalNotify: draft.approvalNotify,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -1614,6 +1648,7 @@ export default function App() {
             setApproval(chunk.approval)
             approvalRef.current = chunk.approval
           }
+          notifyApprovalIfNeeded(chunk.approval)
         }
         if (chunk.type === 'approval_resolved') {
           setApproval(null)
@@ -1773,10 +1808,12 @@ export default function App() {
       if (req.conversationId && activeId && req.conversationId !== activeId) {
         const buf = sessionBuffersRef.current.get(req.conversationId)
         if (buf) buf.approval = req
+        notifyApprovalIfNeeded(req)
         return
       }
       setApproval(req)
       approvalRef.current = req
+      notifyApprovalIfNeeded(req)
     })
     return () => {
       offStream()
@@ -1792,7 +1829,8 @@ export default function App() {
     refreshConversationList,
     persistActiveConversation,
     syncActiveQueueUi,
-    bumpChangesSoon
+    bumpChangesSoon,
+    notifyApprovalIfNeeded
   ])
 
   /** 带超时的 Promise，防止 IPC/数据库卡住导致「发了没反应」 */
@@ -2633,6 +2671,7 @@ export default function App() {
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
+      approvalNotify: next.approvalNotify,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,

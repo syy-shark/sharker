@@ -1,8 +1,8 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { initAgentsMdFile, loadAgentsInstructions } from './agents-md'
+import { initAgentsMdFile, loadAgentsInstructions, readPersonalAgentsMd, writePersonalAgentsMd } from './agents-md'
 
 describe('agents md io', () => {
   const temps: string[] = []
@@ -31,5 +31,21 @@ describe('agents md io', () => {
     expect(first.ok && first.created).toBe(true)
     const second = await initAgentsMdFile(repo)
     expect(second.ok && second.created).toBe(false)
+  })
+
+  it('reads and writes personal AGENTS.md without touching override', async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-personal-agents-'))
+    temps.push(home)
+    await mkdir(path.join(home, '.sharker'), { recursive: true })
+    await writeFile(path.join(home, '.sharker', 'AGENTS.override.md'), 'keep-override')
+    const saved = await writePersonalAgentsMd('prefer pnpm', home)
+    expect(saved.ok).toBe(true)
+    const loaded = await readPersonalAgentsMd(home)
+    expect(loaded.content).toBe('prefer pnpm')
+    expect(loaded.overrideActive).toBe(true)
+    expect(loaded.path).toBe(path.join(home, '.sharker', 'AGENTS.md'))
+    expect(await readFile(path.join(home, '.sharker', 'AGENTS.override.md'), 'utf8')).toBe(
+      'keep-override'
+    )
   })
 })

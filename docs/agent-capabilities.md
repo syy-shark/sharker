@@ -98,7 +98,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 外观 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（中止并立即执行）
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
 - 可打开 **用 ⌘Enter 发送**（Enter 换行）
-- 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
+- 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
+- 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）
 - 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
 - Composer 「注入」按钮始终注入当前回合
