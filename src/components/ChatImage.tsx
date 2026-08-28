@@ -161,7 +161,7 @@ export function ChatImage({
   }
 
   if (!remote && !workspaceSrc) return null
-  if (workspaceSrc && failed) return null
+  if (workspaceSrc && (!absPath || failed)) return null
 
   const openWorkspace = () => {
     if (!workspaceSrc) return
