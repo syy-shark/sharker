@@ -132,7 +132,6 @@ function renderCheapList(
 ): ReactNode {
   const Tag = ordered ? 'ol' : 'ul'
   const hasTask = items.some((item) => parseCheapTaskItem(item.nodes))
-  const wrapP = Boolean(loose || items.some((item) => item.extra?.length))
   const startAt = ordered && start && start !== 1 ? start : undefined
   return (
     <Tag key={key} className={hasTask ? 'contains-task-list' : undefined} start={startAt}>
@@ -154,29 +153,17 @@ function renderCheapList(
         const body =
           paragraphs.length === 0
             ? null
-            : wrapP || paragraphs.length > 1
-              ? paragraphs.map((nodes, pi) => (
-                  <p key={pi}>
-                    {pi === 0 && task ? (
-                      <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-                    ) : null}
-                    {renderCheapInline(nodes)}
-                  </p>
-                ))
-              : (
-                  <>
-                    {task ? (
-                      <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-                    ) : null}
-                    {renderCheapInline(task ? task.nodes : item.nodes)}
-                  </>
-                )
-        const tail =
-          item.suffix?.length && (wrapP || paragraphs.length > 1) ? (
-            <p>{renderCheapInline(item.suffix)}</p>
-          ) : item.suffix?.length ? (
-            renderCheapInline(item.suffix)
-          ) : null
+            : paragraphs.map((nodes, pi) => (
+                <p key={pi}>
+                  {pi === 0 && task ? (
+                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+                  ) : null}
+                  {renderCheapInline(nodes)}
+                </p>
+              ))
+        const tail = item.suffix?.length ? (
+          <p>{renderCheapInline(item.suffix)}</p>
+        ) : null
         const inner = (
           <>
             {body}
