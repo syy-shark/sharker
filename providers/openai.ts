@@ -37,6 +37,8 @@ export interface ToolCallStatus {
   /** present_inline_demo 等：参数流中尚未闭合的 html 片段 */
   partialHtml?: string
   partialCaption?: string
+  /** write_file / search_replace / apply_patch：尚未闭合的参数，供 tool_preview 占 live diff 槽 */
+  partialToolArgs?: Record<string, unknown>
 }
 
 type StreamChatChunk = {
@@ -57,6 +59,10 @@ const STREAM_TOTAL_MS = 600_000
 const TOOL_STATUS_THROTTLE_MS = 700
 /** 内联演示 HTML 流式预览更勤，才能「做多少显示多少」 */
 const DEMO_PREVIEW_THROTTLE_MS = 100
+/** 写入/补丁参数流：官方 PatchApplyUpdated 约 500ms，首个 path 立刻出槽 */
+const WRITE_PREVIEW_THROTTLE_MS = 200
+const WRITE_PREVIEW_GROW_CHARS = 80
+const WRITE_PREVIEW_TOOLS = new Set(['write_file', 'search_replace', 'apply_patch'])
 
 /** 从设置中解析当前激活的 API 配置，缺失时抛错 */
 export function getActiveProvider(settings: AppSettings): ProviderConfig {
@@ -552,10 +558,51 @@ function extractToolTargetPath(toolName: string | undefined, args: string): stri
   const fromJson = extractPartialJsonString(args, ['path', 'file_path', 'target_path'])
   if (fromJson) return fromJson
   if (toolName === 'apply_patch') {
-    const match = args.match(/\*\*\* (?:Add|Update) File:\s*([^\n\r*]+)/)
+    const patch = extractPartialJsonString(args, ['patch']) ?? args
+    const match = patch.match(/\*\*\* (?:Add|Update) File:\s*([^\n\r*]+)/)
     return match?.[1]?.trim()
   }
   return undefined
+}
+
+function inferWriteToolName(toolName: string | undefined, args: string): string | undefined {
+  if (toolName && WRITE_PREVIEW_TOOLS.has(toolName)) return toolName
+  if (toolName) return undefined
+  if (/"old_string"\s*:/.test(args) || /"new_string"\s*:/.test(args)) return 'search_replace'
+  if (/"patch"\s*:/.test(args) || /\*\*\* (?:Add|Update) File:/.test(args)) return 'apply_patch'
+  if (/"content"\s*:/.test(args) && /"(?:path|file_path)"\s*:/.test(args) && !/"html"\s*:/.test(args)) {
+    return 'write_file'
+  }
+  return undefined
+}
+
+/** 从尚未闭合的 tool JSON 抽出写入/补丁参数（不编造 diff 行） */
+export function extractPartialWriteToolArgs(
+  toolName: string | undefined,
+  args: string
+): Record<string, unknown> | undefined {
+  const writeName = inferWriteToolName(toolName, args)
+  if (!writeName || !args) return undefined
+  const out: Record<string, unknown> = {}
+  const path = extractToolTargetPath(writeName, args)
+  if (path) out.path = path
+  if (writeName === 'write_file') {
+    const content = extractPartialJsonString(args, ['content'])
+    if (content != null) out.content = content
+  } else if (writeName === 'search_replace') {
+    const oldString = extractPartialJsonString(args, ['old_string'])
+    const newString = extractPartialJsonString(args, ['new_string'])
+    if (oldString != null) out.old_string = oldString
+    if (newString != null) out.new_string = newString
+  } else if (writeName === 'apply_patch') {
+    const patch = extractPartialJsonString(args, ['patch'])
+    if (patch != null) out.patch = patch
+    else {
+      const start = args.indexOf('*** ')
+      if (start >= 0) out.patch = args.slice(start)
+    }
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 function toolStatusFromAccum(
@@ -574,8 +621,13 @@ function toolStatusFromAccum(
     (Boolean(partialHtml) && /"html"\s*:/.test(args)) ||
     /present_inline_demo/.test(args)
   if (isDemo && !toolName) toolName = 'present_inline_demo'
+  if (!isDemo && !toolName) {
+    const inferredWrite = inferWriteToolName(undefined, args)
+    if (inferredWrite) toolName = inferredWrite
+  }
 
   const targetPath = extractToolTargetPath(toolName, args)
+  const partialToolArgs = isDemo ? undefined : extractPartialWriteToolArgs(toolName, args)
   const target = targetPath ? basenamePath(targetPath) : ''
   const argumentsLength = calls.reduce((sum, call) => sum + call.arguments.length, 0)
 
@@ -603,7 +655,8 @@ function toolStatusFromAccum(
     argumentsLength,
     toolCallId: active.id || undefined,
     partialHtml: isDemo ? partialHtml : undefined,
-    partialCaption: isDemo ? partialCaption : undefined
+    partialCaption: isDemo ? partialCaption : undefined,
+    partialToolArgs
   }
 }
 
@@ -655,6 +708,8 @@ async function* streamChatAttempt(
   let receivedChunk = false
   let lastToolStatusAt = 0
   let lastDemoHtmlLen = 0
+  let lastWriteArgsLen = 0
+  let lastWritePath = ''
 
   try {
     // 读 SSE 流：首包与空闲分别计时，解析 data: 行并累积 tool_calls 片段
@@ -758,17 +813,34 @@ async function* streamChatAttempt(
             const htmlLen = status?.partialHtml?.length ?? 0
             const demoHtmlGrew = htmlLen > 0 && htmlLen - lastDemoHtmlLen >= 40
             const isDemoStatus = status?.toolName === 'present_inline_demo'
-            const throttleMs = isDemoStatus ? DEMO_PREVIEW_THROTTLE_MS : TOOL_STATUS_THROTTLE_MS
-            // 演示：HTML 每涨一段就推；其它工具保持原节流
+            const isWriteStatus = Boolean(status?.toolName && WRITE_PREVIEW_TOOLS.has(status.toolName))
+            const writeArgsLen = status?.partialToolArgs
+              ? JSON.stringify(status.partialToolArgs).length
+              : 0
+            const writeGrew = isWriteStatus && writeArgsLen - lastWriteArgsLen >= WRITE_PREVIEW_GROW_CHARS
+            const writePathFirst =
+              isWriteStatus && Boolean(status?.targetPath) && lastWritePath === ''
+            const throttleMs = isDemoStatus
+              ? DEMO_PREVIEW_THROTTLE_MS
+              : isWriteStatus
+                ? WRITE_PREVIEW_THROTTLE_MS
+                : TOOL_STATUS_THROTTLE_MS
+            // 演示 / 写入：参数每涨一段就推；其它工具保持原节流
             const due =
               status &&
               (lastToolStatusAt === 0 ||
                 now - lastToolStatusAt >= throttleMs ||
                 (isDemoStatus && demoHtmlGrew) ||
-                (isDemoStatus && htmlLen > 0 && lastDemoHtmlLen === 0))
+                (isDemoStatus && htmlLen > 0 && lastDemoHtmlLen === 0) ||
+                writePathFirst ||
+                writeGrew)
             if (due && status) {
               lastToolStatusAt = now
               if (isDemoStatus) lastDemoHtmlLen = htmlLen
+              if (isWriteStatus) {
+                lastWriteArgsLen = writeArgsLen
+                lastWritePath = status.targetPath ?? lastWritePath
+              }
               yield {
                 type: 'tool_status',
                 content: status.content,

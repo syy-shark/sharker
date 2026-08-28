@@ -19,6 +19,7 @@ import {
   isScreenshotTool,
   providerSupportsVision
 } from './vision-feedback'
+import { isWritePreviewTool } from '../shared/turn-segments'
 import type { ApprovalHandler } from './loop'
 import { setParentApprovalHandler } from './approval-bridge'
 import {
@@ -479,6 +480,16 @@ export async function* queryLoop(
             toolArgs: chunk.toolStatus.partialCaption
               ? { caption: chunk.toolStatus.partialCaption }
               : undefined
+          }
+        } else if (
+          isWritePreviewTool(chunk.toolStatus?.toolName) &&
+          chunk.toolStatus?.partialToolArgs
+        ) {
+          yield {
+            type: 'tool_preview',
+            toolName: chunk.toolStatus.toolName,
+            toolCallId: chunk.toolStatus.toolCallId,
+            toolArgs: chunk.toolStatus.partialToolArgs
           }
         }
       }

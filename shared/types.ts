@@ -327,7 +327,7 @@ export interface StreamChunk {
     | 'turn_start'
     | 'tool_start'
     | 'tool_done'
-    /** 工具参数流式预览（如 present_inline_demo 的 html 边生成边出） */
+    /** 工具参数流式预览（演示 html；write_file / search_replace / apply_patch 的 path/content/patch） */
     | 'tool_preview'
     | 'done'
     | 'error'

@@ -33,7 +33,8 @@ function editPreviewFromPatch(patch: string): FileEditPreview[] {
 
   const flush = () => {
     if (!current) return
-    if (current.stats.added > 0 || current.stats.removed > 0) previews.push(current)
+    // 路径一出现就占槽；+/- 还没流到时 stats 可为 0（对标 Codex PatchApplyUpdated）
+    if (current.path) previews.push(current)
     current = null
   }
 
@@ -83,11 +84,53 @@ function editPreviewFromToolArgs(
     ]
   }
 
-  if (toolName === 'apply_patch' && typeof toolArgs.patch === 'string') {
-    const previews = editPreviewFromPatch(toolArgs.patch)
-    return previews.length ? previews : undefined
+  if (toolName === 'apply_patch') {
+    if (typeof toolArgs.patch === 'string') {
+      const previews = editPreviewFromPatch(toolArgs.patch)
+      if (previews.length) return previews
+    }
+    const path = typeof toolArgs.path === 'string' ? toolArgs.path.trim() : ''
+    if (path) return [{ path, stats: { added: 0, removed: 0 } }]
+    return undefined
   }
 
+  return undefined
+}
+
+const WRITE_PREVIEW_TOOLS = new Set(['write_file', 'search_replace', 'apply_patch'])
+
+/** 写入/补丁参数流：用同一 tool 段占 `s.id-diff-N`，不另开新块 */
+export function isWritePreviewTool(toolName: string | undefined): boolean {
+  return Boolean(toolName && WRITE_PREVIEW_TOOLS.has(toolName))
+}
+
+function mergeGrowingToolArgs(
+  prev: Record<string, unknown> | undefined,
+  next: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
+  if (!next) return prev
+  if (!prev) return { ...next }
+  const out: Record<string, unknown> = { ...prev }
+  for (const [key, value] of Object.entries(next)) {
+    if (typeof value === 'string' && typeof out[key] === 'string' && value.length < out[key].length) {
+      continue
+    }
+    if (value !== undefined) out[key] = value
+  }
+  return out
+}
+
+function findActiveToolPreview(
+  segments: TurnSegment[],
+  toolName: string,
+  toolCallId?: string
+): TurnSegment | undefined {
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const s = segments[i]
+    if (s.kind !== 'tool' || s.toolName !== toolName || s.status !== 'active') continue
+    if (toolCallId && s.toolCallId && s.toolCallId !== toolCallId) continue
+    return s
+  }
   return undefined
 }
 
@@ -280,6 +323,30 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     return next
   }
 
+  if (chunk.type === 'tool_preview' && chunk.toolName && isWritePreviewTool(chunk.toolName)) {
+    const incoming = chunk.toolArgs
+    let target = findActiveToolPreview(next, chunk.toolName, chunk.toolCallId)
+    if (!target) {
+      for (const s of next) {
+        if (s.status === 'active' && (s.kind === 'thinking' || s.kind === 'status')) {
+          s.status = 'done'
+          s.endedAt = timestamp
+        }
+      }
+      target = makeToolSegment(chunk.toolName, incoming, chunk.toolCallId, timestamp, false)
+      next.push(target)
+    } else {
+      const merged = mergeGrowingToolArgs(target.toolArgs, incoming)
+      const preview = editPreviewFromToolArgs(chunk.toolName, merged)
+      target.toolArgs = merged
+      if (preview) target.editPreview = preview
+      if (chunk.toolCallId && !target.toolCallId) target.toolCallId = chunk.toolCallId
+      const label = formatToolActivity(chunk.toolName, merged)
+      target.toolDetail = detailFromToolLabel(label) ?? preview?.[0]?.path ?? target.toolDetail
+    }
+    return next
+  }
+
   if (chunk.type === 'tool_preview' && chunk.toolName === 'present_inline_demo') {
     // 参数流中：尽早创建/更新演示片段，做多少显示多少（允许 html 暂为空以占位）
     const html = typeof chunk.content === 'string' ? chunk.content : ''
@@ -334,26 +401,24 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         s.endedAt = timestamp
       }
     }
-    // 内联演示若已有预览段：合并到完整参数，避免重复块
-    if (chunk.toolName === 'present_inline_demo') {
-      for (let i = next.length - 1; i >= 0; i--) {
-        const s = next[i]
-        if (s.kind !== 'tool' || s.toolName !== 'present_inline_demo' || s.status !== 'active') {
-          continue
-        }
-        if (chunk.toolCallId && s.toolCallId && s.toolCallId !== chunk.toolCallId) continue
+    // 演示 / 写入若已有参数流预览段：合并到完整参数，避免重复块、保住 `s.id-diff-N`
+    if (chunk.toolName === 'present_inline_demo' || isWritePreviewTool(chunk.toolName)) {
+      const s = findActiveToolPreview(next, chunk.toolName, chunk.toolCallId)
+      if (s) {
         const full = makeToolSegment(
           chunk.toolName,
-          chunk.toolArgs,
+          chunk.toolArgs ?? s.toolArgs,
           chunk.toolCallId ?? s.toolCallId,
           s.startedAt ?? timestamp,
           chunk.isVerification
         )
         s.toolCallId = full.toolCallId
+        s.toolArgs = full.toolArgs ?? s.toolArgs
         s.content = full.content ?? s.content
         s.toolDetail = full.toolDetail ?? s.toolDetail
         s.toolTitle = full.toolTitle
-        s.editPreview = full.editPreview
+        if (full.editPreview) s.editPreview = full.editPreview
+        s.isVerification = full.isVerification
         return next
       }
     }
@@ -826,7 +891,7 @@ function extractStreamingDemoFence(text: string): {
 /**
  * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo + 写盘 diff，按先后顺序。
  * 供结束后与直播时主区融合渲染（文字可在 demo 上/下）。
- * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；写入一开始用 editPreview 占同一 `s.id-diff-N` 槽，完成后填行（对标 Codex 回合中逐文件 diff）。
+ * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；写入/补丁参数流用 editPreview 占同一 `s.id-diff-N` 槽，完成后填行（对标 Codex PatchApplyUpdated）。
  */
 export function buildAnswerParts(
   segments: TurnSegment[],

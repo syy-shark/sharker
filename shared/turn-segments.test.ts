@@ -149,6 +149,89 @@ describe('turn segment event state machine', () => {
     expect(filledParts.find((part) => part.type === 'diff')?.id).toBe(`${pendingSegs[0]!.id}-diff-0`)
     expect(filledParts.find((part) => part.type === 'diff' && part.diff.lines.length === 3)).toBeTruthy()
 
+    let previewSegs: TurnSegment[] = []
+    previewSegs = applyStreamChunk(previewSegs, {
+      type: 'tool_preview',
+      toolName: 'write_file',
+      toolCallId: 'w3',
+      timestamp: 20,
+      toolArgs: { path: 'c.ts' }
+    })
+    const previewId = previewSegs[0]!.id
+    const pathOnly = buildAnswerParts(previewSegs, { isStreaming: true }).find((part) => part.type === 'diff')
+    expect(pathOnly).toMatchObject({
+      type: 'diff',
+      id: `${previewId}-diff-0`,
+      diff: { path: 'c.ts', lines: [], stats: { added: 0, removed: 0 } }
+    })
+    previewSegs = applyStreamChunk(previewSegs, {
+      type: 'tool_preview',
+      toolName: 'write_file',
+      toolCallId: 'w3',
+      timestamp: 21,
+      toolArgs: { path: 'c.ts', content: 'one\ntwo\nthree\nfour' }
+    })
+    expect(previewSegs).toHaveLength(1)
+    expect(previewSegs[0]!.id).toBe(previewId)
+    expect(buildAnswerParts(previewSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
+      id: `${previewId}-diff-0`,
+      diff: { path: 'c.ts', lines: [], stats: { added: 4, removed: 0 } }
+    })
+    previewSegs = applyStreamChunk(previewSegs, {
+      type: 'tool_start',
+      toolName: 'write_file',
+      toolCallId: 'w3',
+      timestamp: 22,
+      toolArgs: { path: 'c.ts', content: 'one\ntwo\nthree\nfour' }
+    })
+    expect(previewSegs).toHaveLength(1)
+    expect(previewSegs[0]!.id).toBe(previewId)
+    previewSegs = applyStreamChunk(previewSegs, {
+      type: 'tool_done',
+      toolName: 'write_file',
+      toolCallId: 'w3',
+      timestamp: 23,
+      fileDiff: {
+        path: 'c.ts',
+        lines: [
+          { kind: 'add', content: 'one', newLine: 1 },
+          { kind: 'add', content: 'two', newLine: 2 },
+          { kind: 'add', content: 'three', newLine: 3 },
+          { kind: 'add', content: 'four', newLine: 4 }
+        ],
+        stats: { added: 4, removed: 0 }
+      }
+    })
+    const previewFilled = buildAnswerParts(previewSegs, { isStreaming: true }).find((part) => part.type === 'diff')
+    expect(previewFilled?.id).toBe(`${previewId}-diff-0`)
+    expect(previewFilled?.type === 'diff' && previewFilled.diff.lines.length === 4).toBe(true)
+
+    let patchSegs: TurnSegment[] = []
+    patchSegs = applyStreamChunk(patchSegs, {
+      type: 'tool_preview',
+      toolName: 'apply_patch',
+      toolCallId: 'p1',
+      timestamp: 30,
+      toolArgs: { path: 'd.ts', patch: '*** Update File: d.ts' }
+    })
+    const patchId = patchSegs[0]!.id
+    expect(buildAnswerParts(patchSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
+      id: `${patchId}-diff-0`,
+      diff: { path: 'd.ts', lines: [], stats: { added: 0, removed: 0 } }
+    })
+    patchSegs = applyStreamChunk(patchSegs, {
+      type: 'tool_preview',
+      toolName: 'apply_patch',
+      toolCallId: 'p1',
+      timestamp: 31,
+      toolArgs: { patch: '*** Update File: d.ts\n@@\n-old\n+new\n' }
+    })
+    expect(patchSegs[0]!.id).toBe(patchId)
+    expect(buildAnswerParts(patchSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
+      id: `${patchId}-diff-0`,
+      diff: { path: 'd.ts', lines: [], stats: { added: 1, removed: 1 } }
+    })
+
     let demoSegs: TurnSegment[] = []
     demoSegs = applyStreamChunk(demoSegs, {
       type: 'token',
