@@ -11,7 +11,8 @@ import {
   PanelLeftClose,
   PanelRightClose,
   PanelRightOpen,
-  SquarePen
+  SquarePen,
+  AppWindow
 } from 'lucide-react'
 import './ChatToolbar.css'
 
@@ -22,6 +23,9 @@ interface Props {
   onToggleSidebar?: () => void
   onToggleRightPanel: () => void
   onNewConversation?: () => void
+  /** 弹出当前对话到独立窗（对标 Codex Open in Popup Window） */
+  onPopOut?: () => void
+  popout?: boolean
 }
 
 /** 挂到 body，用 fixed 相对视口，避免 flex 壳把 absolute 子节点挤到底部 */
@@ -35,7 +39,9 @@ export function ChatToolbar({
   sidebarCollapsed = false,
   onToggleSidebar,
   onToggleRightPanel,
-  onNewConversation
+  onNewConversation,
+  onPopOut,
+  popout = false
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
 
@@ -102,6 +108,25 @@ export function ChatToolbar({
         <div className="chat-toolbar-drag" aria-hidden />
 
         <div className="chat-toolbar-right">
+          {onPopOut && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onPopOut()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="弹出当前对话"
+              aria-label="弹出当前对话"
+            >
+              <AppWindow size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
+          {popout ? (
+            <span className="chat-toolbar-popout-label">弹出对话</span>
+          ) : (
           <button
             type="button"
             className={`panel-rail-toggle ${rightPanelOpen ? 'panel-rail-toggle--open' : ''}`}
@@ -124,6 +149,7 @@ export function ChatToolbar({
               <PanelRightOpen size={18} aria-hidden />
             )}
           </button>
+          )}
         </div>
       </div>
     </>

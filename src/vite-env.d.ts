@@ -166,6 +166,15 @@ export interface SharkerApi {
     | { ok: true; context: import('../shared/git-pr-context').PullRequestContext }
     | { ok: false; error: string }
   >
+  postPullRequestReview: (
+    cwd: string,
+    comments: unknown
+  ) => Promise<{ ok: true; posted: number } | { ok: false; error: string; posted: number }>
+  openThreadWindow: (
+    workspaceId: string,
+    conversationId: string,
+    title?: string
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
   createGitBranch: (
     cwd: string,
     name: string

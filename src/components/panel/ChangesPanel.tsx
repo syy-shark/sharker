@@ -16,6 +16,7 @@ import {
   formatPrCommentsPrompt,
   type PullRequestContext
 } from '../../../shared/git-pr-context'
+import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { CodeDiffBlock } from '../CodeDiffBlock'
 import './ChangesPanel.css'
@@ -776,6 +777,38 @@ export function ChangesPanel({
                     >
                       发送评论
                     </button>
+                    {prContext && window.sharker.postPullRequestReview ? (
+                      <button
+                        type="button"
+                        className="changes-panel__action"
+                        disabled={acting || localCommentsForGithub(comments).length === 0}
+                        onClick={() => {
+                          void (async () => {
+                            if (!workspacePath) return
+                            setActing(true)
+                            setError(null)
+                            try {
+                              const result = await window.sharker.postPullRequestReview(
+                                workspacePath,
+                                comments
+                              )
+                              if (!result.ok) {
+                                setError(result.error || '发布到 GitHub 失败')
+                                return
+                              }
+                              setCommitHint(`已发布 ${result.posted} 条评论到 PR #${prContext.number}`)
+                              setComments((prev) => prev.filter((c) => String(c.id).startsWith('gh-')))
+                            } catch (e) {
+                              setError(e instanceof Error ? e.message : String(e))
+                            } finally {
+                              setActing(false)
+                            }
+                          })()
+                        }}
+                      >
+                        发布到 GitHub
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="changes-panel__action"

@@ -32,6 +32,10 @@ export const IPC = {
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
   WINDOW_CLOSE: 'window:close',
+  /** 弹出独立线程窗（对标 Codex Open in Popup Window） */
+  OPEN_THREAD_WINDOW: 'window:open-thread',
+  /** 把本地行内评论发到当前 GitHub PR */
+  GIT_PR_REVIEW: 'git:pr-review',
   OPEN_EXTERNAL: 'shell:open-external',
   OPEN_PATH: 'shell:open-path',
   GET_COMPUTER_USE_STATUS: 'computer-use:status',

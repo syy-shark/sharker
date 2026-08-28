@@ -29,7 +29,12 @@ import {
 } from '../../shared/skill-mention'
 import { findInThread } from '../../shared/thread-search'
 import { resolveComposerSubmit, restorePreviousComposerPrompt } from '../../shared/composer-submit'
-import { appendDictationTranscript, isDictationShortcut } from '../../shared/composer-dictation'
+import {
+  appendDictationTranscript,
+  isDictationShortcut,
+  isVoiceChatShortcut,
+  textForSpeech
+} from '../../shared/composer-dictation'
 import { filterChatList } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
@@ -142,7 +147,7 @@ interface Props {
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
   /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
-  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | 'dictate' | null
+  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | null
   onComposerIntentHandled?: () => void
   /** 暂停自动出队（对标 Codex hold queue） */
   queueHeld?: boolean
@@ -223,10 +228,17 @@ export function ChatView({
   const [dictating, setDictating] = useState(false)
   const [dictateInterim, setDictateInterim] = useState('')
   const [dictateError, setDictateError] = useState('')
+  const [voiceChat, setVoiceChat] = useState(false)
+  const voiceChatRef = useRef(false)
+  const inputRef = useRef('')
+  const loadingRef = useRef(false)
+  const submitVoiceRef = useRef<(text: string) => void>(() => {})
+  const wasLoadingRef = useRef(false)
   const findInputRef = useRef<HTMLInputElement>(null)
   const historySearchRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<SpeechRec | null>(null)
   const toggleDictationRef = useRef<() => void>(() => {})
+  const toggleVoiceChatRef = useRef<() => void>(() => {})
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -502,6 +514,11 @@ export function ChatView({
       onComposerIntentHandled?.()
       return
     }
+    if (composerIntent === 'voice') {
+      toggleVoiceChatRef.current()
+      onComposerIntentHandled?.()
+      return
+    }
     if (composerIntent === 'model') {
       setModelOpenSignal((n) => n + 1)
       onComposerIntentHandled?.()
@@ -588,6 +605,20 @@ export function ChatView({
       ) {
         e.preventDefault()
         toggleDictationRef.current()
+        return
+      }
+      if (
+        isVoiceChatShortcut({
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          altKey: e.altKey,
+          shiftKey: e.shiftKey,
+          isComposing: e.isComposing
+        })
+      ) {
+        e.preventDefault()
+        toggleVoiceChatRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -784,8 +815,13 @@ export function ChatView({
         else interim += t
       }
       if (finals) {
-        setInput((cur) => appendDictationTranscript(cur, finals))
+        const next = appendDictationTranscript(inputRef.current, finals)
+        setInput(next)
+        inputRef.current = next
         requestAnimationFrame(() => syncTextareaHeight())
+        if (voiceChatRef.current && next.trim()) {
+          submitVoiceRef.current(next.trim())
+        }
       }
       setDictateInterim(interim)
     }
@@ -819,6 +855,44 @@ export function ChatView({
   }, [startDictation, stopDictation])
 
   toggleDictationRef.current = toggleDictation
+
+  const toggleVoiceChat = useCallback(() => {
+    const next = !voiceChatRef.current
+    voiceChatRef.current = next
+    setVoiceChat(next)
+    if (next) {
+      if (!recognitionRef.current) startDictation()
+    } else {
+      stopDictation()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [startDictation, stopDictation])
+
+  toggleVoiceChatRef.current = toggleVoiceChat
+
+  useEffect(() => {
+    inputRef.current = input
+  }, [input])
+
+  useEffect(() => {
+    loadingRef.current = loading
+  }, [loading])
+
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading && voiceChatRef.current) {
+      const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.content.trim())
+      const spoken = textForSpeech(last?.content || streaming)
+      if (spoken && typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+        const utter = new SpeechSynthesisUtterance(spoken)
+        utter.lang = typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'zh-CN'
+        window.speechSynthesis.speak(utter)
+      }
+    }
+    wasLoadingRef.current = loading
+  }, [loading, messages, streaming])
 
   useEffect(() => {
     return () => {
@@ -1009,6 +1083,20 @@ export function ChatView({
     setAttachmentError('')
     setStickToBottom(true)
     onSend(t || '请看这张图片。', mode, attachments)
+    requestAnimationFrame(() => {
+      syncTextareaHeight()
+      textareaRef.current?.focus()
+    })
+  }
+
+  submitVoiceRef.current = (text) => {
+    const t = text.trim()
+    if (!t) return
+    setInput('')
+    inputRef.current = ''
+    setPendingAttachments([])
+    setAttachmentError('')
+    onSend(t, loadingRef.current ? 'queue' : 'send')
     requestAnimationFrame(() => {
       syncTextareaHeight()
       textareaRef.current?.focus()
@@ -1450,13 +1538,22 @@ export function ChatView({
         <div className="composer-footer-right">
           <button
             type="button"
-            className={`composer-mic${dictating ? ' is-active' : ''}`}
+            className={`composer-mic${dictating && !voiceChat ? ' is-active' : ''}`}
             onClick={() => toggleDictation()}
-            title={dictating ? '停止听写（Ctrl⇧D）' : '听写（Ctrl⇧D）'}
-            aria-label={dictating ? '停止听写' : '开始听写'}
-            aria-pressed={dictating}
+            title={dictating && !voiceChat ? '停止听写（Ctrl⇧D）' : '听写（Ctrl⇧D）'}
+            aria-label={dictating && !voiceChat ? '停止听写' : '开始听写'}
+            aria-pressed={dictating && !voiceChat}
           >
             <Mic size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={`composer-jump${voiceChat ? ' is-active' : ''}`}
+            onClick={() => toggleVoiceChat()}
+            title={voiceChat ? '结束语音对话（Ctrl⇧V）' : '语音对话（Ctrl⇧V）'}
+            aria-pressed={voiceChat}
+          >
+            {voiceChat ? '语音中' : '语音'}
           </button>
           <ModelPicker
             providers={providers}

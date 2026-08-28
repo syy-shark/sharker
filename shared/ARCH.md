@@ -52,6 +52,10 @@
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
 | `git-pr-context.ts` | 当前分支 PR + GitHub 行内评论（`gh pr view` / `gh api`） |
 | `git-pr-context.test.ts` | 解析 PR JSON、LEFT→old、缺 gh |
+| `git-pr-review.ts` | 本地行内评论写回 GitHub PR |
+| `git-pr-review.test.ts` | 跳过 gh- 导入评论、拼 api 参数 |
+| `thread-window.ts` | 弹出线程窗 `#thread/<ws>/<id>` |
+| `thread-window.test.ts` | hash 往返 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支 |
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
@@ -62,7 +66,7 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |

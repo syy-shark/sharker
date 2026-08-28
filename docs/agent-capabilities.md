@@ -69,11 +69,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 `/review` 结束时会解析 `review-findings` 围栏，把发现挂到审查 diff 对应行上（与人手评论一起发送）。
 
-当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。未安装 `gh` / 没有 PR 时不报错、不显示横幅。
+当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。本地行内评论可 **发布到 GitHub**（`gh api` 写回 PR）。未安装 `gh` / 没有 PR 时不报错、不显示横幅。
 
 ### 命令面板
 
-`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；空输入时 `↑` 恢复上一条用户提示。
+`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；`Ctrl⇧V` 或「语音」进入语音对话（听写自动发送，回复用系统 TTS 朗读）。顶栏可 **弹出当前对话** 到独立窗看直播（chunk 广播到所有窗）。空输入时 `↑` 恢复上一条用户提示。
 
 ### 排队与插队
 

@@ -26,3 +26,28 @@ export function appendDictationTranscript(current: string, transcript: string): 
   if (/\s$/.test(cur) || /^[,.;:!?…，。！？、]/.test(next)) return `${cur}${next}`
   return `${cur} ${next}`
 }
+
+/** Codex 语音对话：两端都是 Ctrl+Shift+V */
+export function isVoiceChatShortcut(event: {
+  key: string
+  ctrlKey: boolean
+  metaKey?: boolean
+  altKey?: boolean
+  shiftKey?: boolean
+  isComposing?: boolean
+}): boolean {
+  if (event.isComposing) return false
+  if (!event.ctrlKey || !event.shiftKey || event.altKey) return false
+  return event.key.toLowerCase() === 'v'
+}
+
+/** 去掉围栏和标记，给 TTS 念助手回复 */
+export function textForSpeech(markdown: string): string {
+  return String(markdown || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[#*_>~\[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 800)
+}

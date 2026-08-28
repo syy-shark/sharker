@@ -11,6 +11,10 @@
   isolation: isolate;
 }
 
+.app-shell--popout .chat-toolbar-left {
+  display: none !important;
+}
+
 .app {
   position: relative;
   display: flex;

@@ -75,7 +75,9 @@ import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
-import { loadPullRequestContext } from '../../shared/git-pr-context'
+import { loadPullRequestContext, parsePrUrlParts } from '../../shared/git-pr-context'
+import { localCommentsForGithub, postPullRequestLineComments } from '../../shared/git-pr-review'
+import { formatThreadWindowHash } from '../../shared/thread-window'
 import { createNamedBranch } from '../../shared/git-branch-create'
 import { handoffCheckout } from '../../shared/git-handoff'
 import { mkdir, readFile, rm, stat, unlink, writeFile } from 'fs/promises'
@@ -97,7 +99,18 @@ import {
 import { stopLsp } from '../../tools/services/lsp-client'
 
 let mainWindow: BrowserWindow | null = null
+const threadWindows = new Map<string, BrowserWindow>()
 let settings: AppSettings
+
+function broadcastToRenderers(channel: string, payload: unknown): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send(channel, payload)
+  }
+}
+
+function windowFromEvent(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
+  return BrowserWindow.fromWebContents(event.sender)
+}
 
 const pendingApprovals = new Map<
   string,
@@ -454,6 +467,72 @@ function createWindow(): void {
   })
 }
 
+/** 弹出独立线程窗：同一渲染入口，hash 指定对话，直播 chunk 广播到所有窗 */
+function createThreadWindow(workspaceId: string, conversationId: string, title: string): void {
+  const icon = resolveAppIcon()
+  const dark = settings?.uiTheme === 'dark'
+  const useGlass = !dark
+  const hash = formatThreadWindowHash(workspaceId, conversationId)
+  const win = new BrowserWindow({
+    width: 720,
+    height: 780,
+    minWidth: 420,
+    minHeight: 480,
+    title: title || '对话',
+    show: false,
+    backgroundColor: useGlass ? '#e8eaed' : '#0b0d11',
+    transparent: false,
+    vibrancy: useGlass ? 'under-window' : undefined,
+    visualEffectState: 'active',
+    frame: true,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 18 },
+    autoHideMenuBar: true,
+    icon,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webviewTag: true
+    }
+  })
+  threadWindows.set(conversationId, win)
+  win.on('closed', () => {
+    if (threadWindows.get(conversationId) === win) threadWindows.delete(conversationId)
+  })
+  const devUrl = process.env.ELECTRON_RENDERER_URL
+  if (devUrl) {
+    const base = devUrl.endsWith('/') ? devUrl.slice(0, -1) : devUrl
+    void win.loadURL(`${base}/${hash}`)
+  } else {
+    void win.loadFile(path.join(__dirname, '../renderer/index.html'), {
+      hash: hash.replace(/^#/, '')
+    })
+  }
+  win.setMenuBarVisibility(false)
+  applyWindowAppearance(win, settings)
+  if (icon) win.setIcon(icon)
+  win.once('ready-to-show', () => {
+    if (win.isDestroyed()) return
+    win.show()
+    win.focus()
+  })
+  const rendererOrigin = process.env.ELECTRON_RENDERER_URL
+    ? new URL(process.env.ELECTRON_RENDERER_URL).origin
+    : null
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternalUrl(url)) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  win.webContents.on('will-navigate', (event, url) => {
+    if (rendererOrigin && url.startsWith(rendererOrigin)) return
+    if (url.startsWith('file://')) return
+    event.preventDefault()
+    if (isSafeExternalUrl(url)) void shell.openExternal(url)
+  })
+}
+
 /** 仅允许 http(s) 外链，防止 file/javascript 等协议 */
 function isSafeExternalUrl(url: string): boolean {
   try {
@@ -468,7 +547,7 @@ function isSafeExternalUrl(url: string): boolean {
 const approvalHandler: ApprovalHandler = (req) => {
   return new Promise((resolve, reject) => {
     pendingApprovals.set(req.id, { resolve, reject })
-    mainWindow?.webContents.send('chat:approval', req)
+    broadcastToRenderers('chat:approval', req)
   })
 }
 
@@ -830,13 +909,29 @@ function registerIpc(): void {
     readAttachmentDataUrl(filePath)
   )
 
-  ipcMain.handle(IPC.WINDOW_MINIMIZE, () => mainWindow?.minimize())
-  ipcMain.handle(IPC.WINDOW_MAXIMIZE, () => {
-    if (!mainWindow) return
-    if (mainWindow.isMaximized()) mainWindow.unmaximize()
-    else mainWindow.maximize()
+  ipcMain.handle(IPC.WINDOW_MINIMIZE, (e) => windowFromEvent(e)?.minimize())
+  ipcMain.handle(IPC.WINDOW_MAXIMIZE, (e) => {
+    const win = windowFromEvent(e)
+    if (!win) return
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
   })
-  ipcMain.handle(IPC.WINDOW_CLOSE, () => mainWindow?.close())
+  ipcMain.handle(IPC.WINDOW_CLOSE, (e) => windowFromEvent(e)?.close())
+  ipcMain.handle(
+    IPC.OPEN_THREAD_WINDOW,
+    async (_e, workspaceId: string, conversationId: string, title?: string) => {
+      const ws = String(workspaceId || '').trim()
+      const id = String(conversationId || '').trim()
+      if (!ws || !id) return { ok: false as const, error: '缺少对话' }
+      const existing = threadWindows.get(id)
+      if (existing && !existing.isDestroyed()) {
+        existing.focus()
+        return { ok: true as const }
+      }
+      createThreadWindow(ws, id, String(title || '对话'))
+      return { ok: true as const }
+    }
+  )
 
   ipcMain.handle(IPC.OPEN_EXTERNAL, async (_e, url: string) => {
     if (!isSafeExternalUrl(url)) return false
@@ -1005,8 +1100,7 @@ function registerIpc(): void {
       options?: { worktreePath?: string | null }
     ) => {
       const send = (chunk: StreamChunk) => {
-        if (event.sender.isDestroyed()) return
-        event.sender.send('chat:stream', {
+        broadcastToRenderers('chat:stream', {
           ...chunk,
           conversationId: chunk.conversationId ?? conversationId
         })
@@ -1253,6 +1347,27 @@ function registerIpc(): void {
     if (!root) return { ok: false as const, error: '缺少工作区' }
     return loadPullRequestContext({ cwd: root, run: runCommand })
   })
+
+  ipcMain.handle(
+    IPC.GIT_PR_REVIEW,
+    async (_e, cwd: string, comments: unknown) => {
+      const root = path.resolve(String(cwd || ''))
+      if (!root) return { ok: false as const, error: '缺少工作区', posted: 0 }
+      const pr = await loadPullRequestContext({ cwd: root, run: runCommand })
+      if (!pr.ok) return { ok: false as const, error: pr.error, posted: 0 }
+      const parts = parsePrUrlParts(pr.context.url)
+      if (!parts) return { ok: false as const, error: '无法解析 PR 地址', posted: 0 }
+      const drafts = localCommentsForGithub(Array.isArray(comments) ? comments : [])
+      return postPullRequestLineComments({
+        cwd: root,
+        owner: parts.owner,
+        repo: parts.repo,
+        number: parts.number,
+        comments: drafts,
+        run: runCommand
+      })
+    }
+  )
 
   ipcMain.handle(
     IPC.GIT_CREATE_PR,

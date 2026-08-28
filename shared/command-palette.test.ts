@@ -11,6 +11,8 @@ describe('command palette', () => {
     expect(ids).toContain('find')
     expect(ids).toContain('search-chats')
     expect(ids).toContain('dictate')
+    expect(ids).toContain('voice-chat')
+    expect(ids).toContain('popout')
     expect(ids).toContain('personality')
     expect(ids).toContain('shortcuts')
   })

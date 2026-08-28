@@ -145,6 +145,10 @@ contextBridge.exposeInMainWorld('sharker', {
     payload: { title: string; body?: string; base?: string }
   ) => ipcRenderer.invoke(IPC.GIT_CREATE_PR, cwd, payload),
   getPullRequestContext: (cwd: string) => ipcRenderer.invoke(IPC.GIT_PR_CONTEXT, cwd),
+  postPullRequestReview: (cwd: string, comments: unknown) =>
+    ipcRenderer.invoke(IPC.GIT_PR_REVIEW, cwd, comments),
+  openThreadWindow: (workspaceId: string, conversationId: string, title?: string) =>
+    ipcRenderer.invoke(IPC.OPEN_THREAD_WINDOW, workspaceId, conversationId, title),
   createGitBranch: (cwd: string, name: string) =>
     ipcRenderer.invoke(IPC.GIT_CREATE_BRANCH, cwd, name),
   applyGitHunkAction: (

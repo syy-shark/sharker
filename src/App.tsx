@@ -49,6 +49,7 @@ import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
+import { parseThreadWindowHash } from '../shared/thread-window'
 import {
   REVIEW_BRANCH_PROMPT,
   REVIEW_WORKING_TREE_PROMPT,
@@ -253,8 +254,12 @@ export default function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const [composerIntent, setComposerIntent] = useState<
-    'mention' | 'skill' | 'find' | 'model' | 'dictate' | null
+    'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | null
   >(null)
+  const popoutRoute = useMemo(
+    () => parseThreadWindowHash(typeof window !== 'undefined' ? window.location.hash : ''),
+    []
+  )
   const [queueHeld, setQueueHeld] = useState(false)
   const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
@@ -463,7 +468,7 @@ export default function App() {
   /** 将当前对话消息落盘并刷新列表 */
   const persistActiveConversation = useCallback(
     async (msgs: ChatMessage[], convId = activeConversationIdRef.current) => {
-      const workspaceId = settingsRef.current.activeWorkspaceId
+      const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
       if (!workspaceId || !convId) return
       const existing = await window.sharker.loadConversation(workspaceId, convId)
       if (!existing) return
@@ -980,9 +985,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (popoutRoute) return
     if (!settings.activeWorkspaceId) return
     void loadWorkspaceSession(settings.activeWorkspaceId)
-  }, [settings.activeWorkspaceId, loadWorkspaceSession])
+  }, [settings.activeWorkspaceId, loadWorkspaceSession, popoutRoute])
 
   useEffect(() => {
     if (!activeConversationId || loading) return
@@ -2242,10 +2248,15 @@ export default function App() {
     syncActiveQueueUi(sessionQueuesRef.current, conversationId)
 
     if (settingsRef.current.activeWorkspaceId !== workspaceId) {
-      await persistSettings(withActiveWorkspace(settingsRef.current, workspaceId))
+      const next = withActiveWorkspace(settingsRef.current, workspaceId)
+      settingsRef.current = next
+      setSettings(next)
+      if (!popoutRoute) await persistSettings(next)
     }
-    // 与加载并行，不阻塞首帧恢复
-    const setActiveP = window.sharker.setActiveConversation(workspaceId, conversationId)
+    // 弹出窗只看指定线程，不改主窗记住的活跃对话
+    const setActiveP = popoutRoute
+      ? Promise.resolve()
+      : window.sharker.setActiveConversation(workspaceId, conversationId)
 
     const buf = sessionBuffersRef.current.get(conversationId)
     if (buf) {
@@ -2308,6 +2319,13 @@ export default function App() {
     messagesRef.current = loaded
     setMessages(loaded)
   }
+
+  useEffect(() => {
+    if (!popoutRoute || !settings.workspaces.length) return
+    void handleSelectConversation(popoutRoute.workspaceId, popoutRoute.conversationId)
+    // 只在弹出窗首次带上工作区列表时加载指定线程
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popoutRoute, settings.workspaces.length])
 
   /** 删除对话并选中相邻条目（仅设置 → 已归档 使用） */
   const handleDeleteConversation = async (workspaceId: string, conversationId: string) => {
@@ -2838,6 +2856,17 @@ export default function App() {
       if (cmd.action === 'start_dictation') {
         setPage('chat')
         setComposerIntent('dictate')
+        return
+      }
+      if (cmd.action === 'start_voice_chat') {
+        setPage('chat')
+        setComposerIntent('voice')
+        return
+      }
+      if (cmd.action === 'popout_thread') {
+        const ws = settingsRef.current.activeWorkspaceId
+        const id = activeConversationIdRef.current
+        if (ws && id) void window.sharker.openThreadWindow?.(ws, id)
         return
       }
       void handleSlashActionRef.current(
@@ -3770,9 +3799,10 @@ export default function App() {
   })()
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${popoutRoute ? ' app-shell--popout' : ''}`}>
       {/* Codex 风格全屏布局：侧栏通顶 + 主区自带顶栏，无整条 TitleBar */}
-      <div className="app">
+      <div className={`app${popoutRoute ? ' app--popout' : ''}`}>
+        {popoutRoute ? null : (
         <Sidebar
           page={page}
           queueUnread={queueUnread}
@@ -3795,12 +3825,25 @@ export default function App() {
           onCollapsedChange={setSidebarCollapsed}
           onPeekChange={setSidebarPeeking}
         />
+        )}
         <main className="main">
           {page === 'chat' ? (
             <div key="chat" className="main-pane view-enter main-pane--chat">
             <ChatToolbar
               rightPanelOpen={rightPanelOpen}
               sidebarCollapsed={sidebarCollapsed}
+              popout={Boolean(popoutRoute)}
+              onPopOut={() => {
+                const ws = settingsRef.current.activeWorkspaceId
+                const id = activeConversationIdRef.current
+                if (ws && id) {
+                  void window.sharker.openThreadWindow?.(
+                    ws,
+                    id,
+                    conversationListRef.current.find((c) => c.id === id)?.title
+                  )
+                }
+              }}
               onToggleSidebar={toggleSidebar}
               onToggleRightPanel={handleToggleRightPanel}
               onNewConversation={() => {
@@ -3896,6 +3939,7 @@ export default function App() {
             </div>
           )}
         </main>
+        {popoutRoute ? null : (
         <RightPanel
           open={rightPanelOpen && page === 'chat'}
           tab={rightPanelTab}
@@ -3916,6 +3960,7 @@ export default function App() {
             void dispatchTurnRef.current(prompt)
           }}
         />
+        )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
         <CommandPalette
           open={commandPaletteOpen}

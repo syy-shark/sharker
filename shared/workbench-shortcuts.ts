@@ -101,6 +101,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘G', title: '搜索对话' },
   { keys: 'Ctrl⇧M', title: '模型选择' },
   { keys: 'Ctrl⇧D', title: '听写' },
+  { keys: 'Ctrl⇧V', title: '语音对话' },
   { keys: '↑', title: '空输入时恢复上一条' },
   { keys: 'Enter', title: '发送；忙时注入当前回合' },
   { keys: 'Tab', title: '忙时排队下一条' },

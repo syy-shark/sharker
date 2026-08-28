@@ -95,6 +95,19 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'start_dictation'
   },
   {
+    id: 'voice-chat',
+    title: '语音对话',
+    shortcut: '⌃⇧V',
+    keywords: 'voice chat talk 语音 对话',
+    action: 'start_voice_chat'
+  },
+  {
+    id: 'popout',
+    title: '弹出当前对话',
+    keywords: 'popout popup window 弹出 窗口',
+    action: 'popout_thread'
+  },
+  {
     id: 'settings',
     title: '打开设置',
     shortcut: '⌘,',

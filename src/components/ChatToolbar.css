@@ -163,6 +163,12 @@ html.theme-light .chat-toolbar {
   }
 }
 
+.chat-toolbar-popout-label {
+  padding: 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .chat-toolbar-icon-btn:focus-visible {
   outline: 2px solid var(--accent-ring);
   outline-offset: 2px;
