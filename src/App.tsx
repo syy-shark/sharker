@@ -1368,14 +1368,18 @@ export default function App() {
     []
   )
 
+  const worktreeWarningRef = useRef<string | null>(null)
+
   const ensureWorktreeForTurn = useCallback(async (convId: string | null | undefined) => {
     const runtime = threadRuntimeRef.current
+    worktreeWarningRef.current = null
     if (runtime.mode !== 'worktree') return undefined
     if (runtime.worktreePath) return runtime.worktreePath
     const cwd = getActiveWorkspacePath(settingsRef.current)
     if (!cwd || !convId || !window.sharker?.prepareWorktree) return undefined
     const result = await window.sharker.prepareWorktree(cwd, convId)
     if (!result.ok) {
+      worktreeWarningRef.current = result.error
       console.warn('[worktree]', result.error)
       return undefined
     }
@@ -1544,6 +1548,21 @@ export default function App() {
         }
 
         const worktreePath = await ensureWorktreeForTurn(convId)
+        if (worktreeWarningRef.current) {
+          const warnAt = Date.now()
+          segmentsRef.current = [
+            {
+              id: `status-worktree-fallback-${warnAt}`,
+              kind: 'status',
+              content: `隔离失败，已在本地工作区继续：${worktreeWarningRef.current}`,
+              status: 'done',
+              startedAt: warnAt,
+              endedAt: warnAt
+            },
+            ...segmentsRef.current
+          ]
+          setLiveSegments(cloneSegments(segmentsRef.current))
+        }
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
           worktreePath
         })

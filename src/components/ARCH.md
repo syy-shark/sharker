@@ -16,7 +16,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；进行中会话呼吸点；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
+| `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；进行中会话呼吸点；隔离 Worktree 线程小标；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
 | `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver（不再每帧 rAF）；「回到底部」在滚动区与输入框之间的右侧槽；提交时拦截 UI 斜杠命令；`/` 斜杠目录与 `/history` 历史选择弹层；composer 本地/隔离线程模式 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行 |

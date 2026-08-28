@@ -782,6 +782,20 @@ html.theme-dark .sidebar-project-menu {
   animation: live-soft-pulse var(--motion-duration-breath) var(--motion-ease-in-out) infinite;
 }
 
+.sidebar-worktree-badge {
+  flex-shrink: 0;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 0.5px solid color-mix(in srgb, var(--accent) 22%, var(--glass-edge-soft));
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 14px;
+}
+
 
 .sidebar-row-text {
   flex: 1;

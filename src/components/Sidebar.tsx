@@ -24,6 +24,7 @@ import type { AppPage, SettingsTab } from '../types/navigation'
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator'
 import './Sidebar.css'
 import { SIDEBAR_LAYOUT } from '../constants/layout'
+import { loadThreadRuntime } from '../lib/thread-runtime'
 
 interface Props {
   page: AppPage
@@ -332,6 +333,7 @@ export function Sidebar({
   const renderConvRow = (c: ConversationSummary) => {
     const active = c.id === activeConversationId
     const live = liveIdSet.has(c.id)
+    const isolated = loadThreadRuntime(c.id).mode === 'worktree'
     return (
       <div
         key={c.id}
@@ -352,6 +354,11 @@ export function Sidebar({
           title={convTitle(c)}
         >
           <span className="sidebar-row-text">{convTitle(c)}</span>
+          {isolated ? (
+            <span className="sidebar-worktree-badge" title="隔离 Worktree 线程">
+              隔离
+            </span>
+          ) : null}
           {live ? <span className="sidebar-live-dot" aria-label="进行中" title="进行中" /> : null}
         </button>
         <button
