@@ -137,6 +137,8 @@ export interface ComposerDockProps {
   onQueueHeldChange?: (held: boolean) => void
   speechHint?: string
   onSubmitted?: () => void
+  /** 深链 `prompt=`：只在 nonce 变化时写入，不跟直播 token 重绘 */
+  composerSeed?: { nonce: number; text: string } | null
 }
 
 export const ComposerDock = memo(
@@ -171,7 +173,8 @@ export const ComposerDock = memo(
       queueHeld = false,
       onQueueHeldChange,
       speechHint = '',
-      onSubmitted
+      onSubmitted,
+      composerSeed = null
     },
     ref
   ) {
@@ -513,6 +516,19 @@ export const ComposerDock = memo(
         syncTextareaHeight()
       })
     }, [composerIntent, onComposerIntentHandled])
+
+    useEffect(() => {
+      if (!composerSeed?.text) return
+      setInput(composerSeed.text)
+      setCursor(composerSeed.text.length)
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(composerSeed.text.length, composerSeed.text.length)
+        syncTextareaHeight()
+      })
+    }, [composerSeed])
 
     useEffect(() => {
       const onKey = (e: KeyboardEvent) => {

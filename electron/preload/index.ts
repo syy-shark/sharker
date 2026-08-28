@@ -109,6 +109,19 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.on(IPC.NOTIFY_TURN_CLICK, handler)
     return () => ipcRenderer.removeListener(IPC.NOTIFY_TURN_CLICK, handler)
   },
+  takePendingDeeplink: (): Promise<string | null> => ipcRenderer.invoke(IPC.DEEPLINK_TAKE),
+  pathIsDirectory: (target: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC.PATH_IS_DIRECTORY, target),
+  onDeeplink: (cb: (url: string) => void): (() => void) => {
+    const handler = (_: unknown, url: string): void => cb(url)
+    ipcRenderer.on(IPC.DEEPLINK_OPEN, handler)
+    return () => ipcRenderer.removeListener(IPC.DEEPLINK_OPEN, handler)
+  },
+  onMenuAction: (cb: (action: string) => void): (() => void) => {
+    const handler = (_: unknown, action: string): void => cb(action)
+    ipcRenderer.on(IPC.MENU_ACTION, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_ACTION, handler)
+  },
   abortChat: (conversationId?: string): Promise<void> =>
     ipcRenderer.invoke(IPC.ABORT_CHAT, conversationId),
   respondApproval: (

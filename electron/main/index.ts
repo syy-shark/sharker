@@ -8,7 +8,6 @@ import {
   BrowserWindow,
   ipcMain,
   dialog,
-  Menu,
   nativeImage,
   Notification,
   shell,
@@ -18,6 +17,8 @@ import fs from 'fs'
 import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
 import { IPC } from '../../shared/ipc'
+import { DEEPLINK_SCHEME } from '../../shared/deeplink'
+import { installApplicationMenu } from './app-menu'
 import { loadSettings, saveSettings } from '../settings-store'
 import type {
   AppSettings,
@@ -129,6 +130,37 @@ import { stopLsp } from '../../tools/services/lsp-client'
 let mainWindow: BrowserWindow | null = null
 const threadWindows = new Map<string, BrowserWindow>()
 let settings: AppSettings
+let pendingDeeplink: string | null = null
+
+function registerDeeplinkScheme(): void {
+  if (process.defaultApp) {
+    const appPath = path.resolve(process.argv[1] ?? '.')
+    app.setAsDefaultProtocolClient(DEEPLINK_SCHEME, process.execPath, [appPath])
+  } else {
+    app.setAsDefaultProtocolClient(DEEPLINK_SCHEME)
+  }
+}
+
+function broadcastDeeplink(url: string): void {
+  const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
+  if (!wins.length) {
+    pendingDeeplink = url
+    return
+  }
+  pendingDeeplink = null
+  for (const w of wins) {
+    if (w.isMinimized()) w.restore()
+    w.show()
+    w.focus()
+    w.webContents.send(IPC.DEEPLINK_OPEN, url)
+  }
+}
+
+registerDeeplinkScheme()
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  broadcastDeeplink(url)
+})
 
 function broadcastToRenderers(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -491,6 +523,7 @@ function createWindow(): void {
     mainWindow.show()
     mainWindow.focus()
     if (process.platform === 'darwin') app.dock?.show()
+    if (pendingDeeplink) broadcastDeeplink(pendingDeeplink)
   })
 
   /** 禁止聊天内链接在应用窗口内跳转（否则会顶掉 UI、窗口变透明） */
@@ -1012,6 +1045,20 @@ function registerIpc(): void {
     app.dock?.setBadge(n > 0 ? String(n) : '')
   })
 
+  ipcMain.handle(IPC.DEEPLINK_TAKE, () => {
+    const url = pendingDeeplink
+    pendingDeeplink = null
+    return url
+  })
+
+  ipcMain.handle(IPC.PATH_IS_DIRECTORY, (_e, target: string) => {
+    try {
+      return fs.statSync(String(target || '')).isDirectory()
+    } catch {
+      return false
+    }
+  })
+
   ipcMain.handle(IPC.WINDOW_MINIMIZE, (e) => windowFromEvent(e)?.minimize())
   ipcMain.handle(IPC.WINDOW_MAXIMIZE, (e) => {
     const win = windowFromEvent(e)
@@ -1139,7 +1186,13 @@ function registerIpc(): void {
     try {
       const branch = (await runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
       const porcelain = await runGit(cwd, ['status', '--porcelain'], { trim: false })
-      return { isRepo: true, branch, dirty: porcelain.trim().length > 0 }
+      let remoteUrl = ''
+      try {
+        remoteUrl = (await runGit(cwd, ['remote', 'get-url', 'origin'])).trim()
+      } catch {
+        remoteUrl = ''
+      }
+      return { isRepo: true, branch, dirty: porcelain.trim().length > 0, remoteUrl }
     } catch {
       return { isRepo: false, branch: '', dirty: false }
     }
@@ -1653,7 +1706,7 @@ app.whenReady().then(async () => {
     return
   }
 
-  Menu.setApplicationMenu(null)
+  installApplicationMenu()
   const icon = resolveAppIcon()
   if (icon) applyAppIcon(icon)
 
@@ -1673,6 +1726,8 @@ app.whenReady().then(async () => {
   }
   registerIpc()
   createWindow()
+  const argvLink = process.argv.find((a) => a.startsWith(`${DEEPLINK_SCHEME}://`))
+  if (argvLink) broadcastDeeplink(argvLink)
 
   void initMemorySystem(app.getPath('home'), settings).catch((e) =>
     console.warn('[memory] boot init failed', e)

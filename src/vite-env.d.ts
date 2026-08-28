@@ -106,6 +106,10 @@ export interface SharkerApi {
   onNotifyTurnClick: (
     cb: (payload: { conversationId: string; workspaceId: string }) => void
   ) => () => void
+  takePendingDeeplink: () => Promise<string | null>
+  pathIsDirectory: (target: string) => Promise<boolean>
+  onDeeplink: (cb: (url: string) => void) => () => void
+  onMenuAction: (cb: (action: string) => void) => () => void
   abortChat: (conversationId?: string) => Promise<void>
   respondApproval: (
     id: string,
@@ -143,7 +147,7 @@ export interface SharkerApi {
   ) => Promise<{ ok: true; path: string; dataUrl: string } | { ok: false; error: string }>
   getGitBranchInfo: (
     cwd: string
-  ) => Promise<{ isRepo: boolean; branch: string; dirty: boolean }>
+  ) => Promise<{ isRepo: boolean; branch: string; dirty: boolean; remoteUrl?: string }>
   listGitBranches: (
     cwd: string
   ) => Promise<{ isRepo: boolean; branches: string[] }>

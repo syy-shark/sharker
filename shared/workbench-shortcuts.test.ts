@@ -108,6 +108,9 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, altKey: true }))).toBe(
       'copy_session_id'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'l', metaKey: true, altKey: true }))).toBe(
+      'copy_deep_link'
+    )
     expect(matchDefaultWorkbenchShortcut(ev({ key: '2', metaKey: true, altKey: true }))).toBe(
       'select_recent'
     )

@@ -22,6 +22,14 @@ export const IPC = {
   NOTIFY_TURN_CLICK: 'app:notify-turn-click',
   /** macOS Dock 未读数字（本机对话，不拉 Cloud） */
   SET_DOCK_BADGE: 'app:set-dock-badge',
+  /** `sharker://` 深链推送到渲染进程 */
+  DEEPLINK_OPEN: 'app:deeplink',
+  /** 取走启动时尚未投递的深链 */
+  DEEPLINK_TAKE: 'app:deeplink-take',
+  /** 路径是否为本地目录（深链 path=） */
+  PATH_IS_DIRECTORY: 'fs:is-directory',
+  /** 应用菜单点击（无加速键注册，避免与渲染进程快捷键双触发） */
+  MENU_ACTION: 'app:menu-action',
   ABORT_CHAT: 'chat:abort',
   APPROVAL_RESPONSE: 'approval:response',
   /** `/approve`：最近一次拒绝排队一次重试 */

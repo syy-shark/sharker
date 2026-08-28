@@ -18,7 +18,7 @@
 |------|------|
 | `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；审查队列入口与未读徽标；**进行中**任务行（并行线程置顶）；**置顶**分组；进行中会话呼吸点；未读点；双击 / ⌘⌥R 行内改名；隔离 Worktree 线程小标；项目菜单含创建永久 worktree；enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
 | `ChatView.tsx` / `.css` | 聊天主视图：消息列表、排队、滚动；输入区交给 `ComposerDock`（直播 token 不重绘输入框）；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；远离底部的旧消息才 `content-visibility`，贴底附近保持真实高度；历史行 `useMemo` + 用户气泡 `memo`；用户气泡可就地编辑并重发；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（`.composer-box` 内仍可触发）；查找打开时 ⌘G / ⌘⇧G 跳命中；⌘↑ / ⌘↓ 跳到对话顶/底（输入框内不抢）；隔离目录被清理时显示恢复横幅；主线程子 Agent 步骤点开活动 |
-| `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史、附件、听写/语音、Enter 注入 / Tab 排队、本地/隔离线程；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘 |
+| `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史、附件、听写/语音、Enter 注入 / Tab 排队、本地/隔离线程；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |

@@ -126,6 +126,12 @@ import {
   turnNotifyTitle,
   unreadDockBadgeCount
 } from '../shared/turn-notify'
+import {
+  formatThreadDeeplink,
+  matchWorkspaceByOrigin,
+  matchWorkspaceByPath,
+  parseDeeplink
+} from '../shared/deeplink'
 import { formatDebugConfig } from '../shared/debug-config'
 import { formatApproveRetry } from '../shared/approval-session'
 import {
@@ -323,6 +329,8 @@ export default function App() {
   const [composerIntent, setComposerIntent] = useState<
     'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | null
   >(null)
+  const [composerSeed, setComposerSeed] = useState<{ nonce: number; text: string } | null>(null)
+  const composerSeedNonceRef = useRef(0)
   const popoutRoute = useMemo(
     () => parseThreadWindowHash(typeof window !== 'undefined' ? window.location.hash : ''),
     []
@@ -359,6 +367,7 @@ export default function App() {
   const handleSelectConversationRef = useRef<
     (workspaceId: string, conversationId: string) => Promise<void>
   >(async () => {})
+  const applyDeeplinkRef = useRef<(url: string) => Promise<void>>(async () => {})
   /** 按会话的 done/stop 门闩 — 禁止全局 doneCommitted 误杀其他会话 */
   const doneCommittedMapRef = useRef<DoneCommittedMap>({})
   const doneCommittedRef = useRef(false)
@@ -973,6 +982,17 @@ export default function App() {
       setPage('chat')
       void handleSelectConversationRef.current(payload.workspaceId, payload.conversationId)
     })
+  }, [])
+
+  useEffect(() => {
+    if (!window.sharker.onDeeplink) return
+    const run = (url: string) => {
+      void applyDeeplinkRef.current(url)
+    }
+    void window.sharker.takePendingDeeplink?.().then((url) => {
+      if (url) run(url)
+    })
+    return window.sharker.onDeeplink(run)
   }, [])
 
   useEffect(() => {
@@ -2804,6 +2824,7 @@ export default function App() {
     void refreshConversationList(workspaceId).catch((e) =>
       console.warn('refreshConversationList after new conversation failed', e)
     )
+    return conv.id
   }
 
   /** 文件夹选择器添加工作区 */
@@ -2858,6 +2879,102 @@ export default function App() {
       console.error('添加工作区失败', e)
     }
   }
+
+  /** 深链 `path=`：命中已有工作区或把绝对目录加进来 */
+  const ensureWorkspaceByPath = async (absPath: string): Promise<string | null> => {
+    const normalized = absPath.replace(/[\\/]+$/, '')
+    if (!normalized) return null
+    const existing = matchWorkspaceByPath(settingsRef.current.workspaces, normalized)
+    if (existing) return existing.id
+    if (!window.sharker.pathIsDirectory || !(await window.sharker.pathIsDirectory(normalized))) {
+      return null
+    }
+    const name = normalized.split(/[/\\]/).pop() || '目录'
+    const newItem = { id: crypto.randomUUID(), path: normalized, label: name }
+    const next = withActiveWorkspace(
+      { ...settingsRef.current, workspaces: [...settingsRef.current.workspaces, newItem] },
+      newItem.id
+    )
+    settingsRef.current = next
+    setSettings(next)
+    setSettingsDraft(next)
+    try {
+      await window.sharker.saveSettings(next)
+    } catch (e) {
+      console.warn('deeplink add workspace failed', e)
+      return null
+    }
+    return newItem.id
+  }
+
+  const seedComposer = (text: string) => {
+    const nonce = composerSeedNonceRef.current + 1
+    composerSeedNonceRef.current = nonce
+    setComposerSeed({ nonce, text })
+  }
+
+  const applyDeeplink = async (raw: string) => {
+    const action = parseDeeplink(raw)
+    if (action.type === 'noop') return
+    if (action.type === 'settings') {
+      void handleNavigate('settings', action.tab)
+      return
+    }
+    if (action.type === 'automations') {
+      setPage('automations')
+      return
+    }
+    if (action.type === 'skills') {
+      setPage('chat')
+      setComposerIntent('skill')
+      return
+    }
+    if (action.type === 'open_thread') {
+      const listed = conversationListRef.current.find((c) => c.id === action.conversationId)
+      if (listed) {
+        setPage('chat')
+        await handleSelectConversation(listed.workspaceId, listed.id)
+        return
+      }
+      for (const ws of settingsRef.current.workspaces) {
+        try {
+          const state = await window.sharker.listConversations(ws.id)
+          if (state.conversations.some((c) => c.id === action.conversationId)) {
+            setPage('chat')
+            await handleSelectConversation(ws.id, action.conversationId)
+            return
+          }
+        } catch {
+          /* try next workspace */
+        }
+      }
+      return
+    }
+
+    let workspaceId = settingsRef.current.activeWorkspaceId
+    if (action.path) {
+      workspaceId = (await ensureWorkspaceByPath(action.path)) || workspaceId
+    } else if (action.originUrl && window.sharker.getGitBranchInfo) {
+      const remotes: Array<{ id: string; remoteUrl: string }> = []
+      for (const ws of settingsRef.current.workspaces) {
+        if (!ws.path) continue
+        try {
+          const info = await window.sharker.getGitBranchInfo(ws.path)
+          if (info.remoteUrl) remotes.push({ id: ws.id, remoteUrl: info.remoteUrl })
+        } catch {
+          /* skip */
+        }
+      }
+      workspaceId = matchWorkspaceByOrigin(remotes, action.originUrl) || workspaceId
+    }
+    if (workspaceId) {
+      await handleNewConversation(workspaceId)
+    } else {
+      setPage('chat')
+    }
+    if (action.prompt) seedComposer(action.prompt)
+  }
+  applyDeeplinkRef.current = applyDeeplink
 
   /** 项目菜单：创建永久 worktree 并加为独立项目 */
   const handleCreatePermanentWorktree = useCallback(async (workspaceId: string) => {
@@ -3386,6 +3503,13 @@ export default function App() {
           const id = activeConversationIdRef.current || ''
           const ok = await copyPlainText(id)
           appendLocalNote(ok && id ? `已复制会话 ID：\n\n\`${id}\`` : '没有当前会话。')
+          break
+        }
+        case 'copy_deep_link': {
+          const id = activeConversationIdRef.current || ''
+          const href = formatThreadDeeplink(id)
+          const ok = await copyPlainText(href)
+          appendLocalNote(ok && href ? `已复制对话深链：\n\n\`${href}\`` : '没有当前会话。')
           break
         }
         case 'init_agents': {
@@ -4354,11 +4478,79 @@ export default function App() {
           },
           ''
         )
+        return
+      }
+      if (action === 'copy_deep_link') {
+        void handleSlashActionRef.current(
+          {
+            name: 'deeplink',
+            description: '复制对话深链',
+            scope: 'ui',
+            action: 'copy_deep_link',
+            category: 'session'
+          },
+          ''
+        )
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, persistFontScale, rightPanelOpen, toggleSidebar])
+
+  useEffect(() => {
+    if (!window.sharker.onMenuAction) return
+    return window.sharker.onMenuAction((action) => {
+      if (action === 'new_conversation') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        if (wsId) void handleNewConversation(wsId)
+        else void handleAddWorkspace()
+        setPage('chat')
+        return
+      }
+      if (action === 'standalone_conversation') {
+        void handleStandaloneConversation()
+        return
+      }
+      if (action === 'open_folder') {
+        void handleAddWorkspace()
+        return
+      }
+      if (action === 'open_settings') {
+        void handleNavigate('settings', 'models')
+        return
+      }
+      if (action === 'toggle_sidebar') {
+        toggleSidebar()
+        return
+      }
+      if (action === 'toggle_review') {
+        handleShortcutPanel('changes')
+        return
+      }
+      if (action === 'toggle_terminal') {
+        handleShortcutPanel('terminal')
+        return
+      }
+      if (action === 'toggle_files') {
+        handleShortcutPanel('files')
+        return
+      }
+      if (action === 'shortcut_help') {
+        void handleNavigate('settings', 'shortcuts')
+        return
+      }
+      if (action === 'command_palette') {
+        setCommandPaletteOpen((open) => !open)
+      }
+    })
+  }, [
+    handleAddWorkspace,
+    handleNavigate,
+    handleNewConversation,
+    handleShortcutPanel,
+    handleStandaloneConversation,
+    toggleSidebar
+  ])
 
   useEffect(() => {
     const onMouseNav = (e: MouseEvent) => {
@@ -5365,6 +5557,7 @@ export default function App() {
               onRestoreWorktree={handleRestoreWorktreeClick}
               onRetry={handleRetryMessage}
               onEditUserMessage={handleEditUserMessage}
+              composerSeed={composerSeed}
               approval={approval}
               approvalResponding={approvalResponding}
               onApproval={handleApproval}

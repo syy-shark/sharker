@@ -219,6 +219,7 @@ interface Props {
   /** 隔离 worktree 目录已被清理，可从快照恢复 */
   worktreeMissing?: boolean
   onRestoreWorktree?: () => void
+  composerSeed?: { nonce: number; text: string } | null
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -266,7 +267,8 @@ export function ChatView({
   queueHeld = false,
   onQueueHeldChange,
   worktreeMissing = false,
-  onRestoreWorktree
+  onRestoreWorktree,
+  composerSeed = null
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -848,6 +850,7 @@ export function ChatView({
             onQueueHeldChange={onQueueHeldChange}
             speechHint={speechHint}
             onSubmitted={handleComposerSubmitted}
+            composerSeed={composerSeed}
           />
         </div>
       </div>

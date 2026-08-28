@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、记忆注入/写入开关） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / `sharker://` 深链与应用菜单） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G 标题过滤、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
@@ -82,7 +82,7 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、旁路、归档、重命名、置顶、未读、独立新对话、用量、复制工作目录 / 会话 ID、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、清终端） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、旁路、归档、重命名、置顶、未读、独立新对话、用量、复制工作目录 / 会话 ID / 对话深链、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、清终端） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
@@ -104,6 +104,8 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知 / 未读 / Dock 徽标（正在看且窗口在前台不打扰） |
 | `turn-notify.test.ts` | 失焦通知、同会话不标未读、徽标计数 |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置 / Skills / 自动化；不解析 plugins、pets、SSH |
+| `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |

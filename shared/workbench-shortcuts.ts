@@ -40,6 +40,7 @@ export type WorkbenchShortcutAction =
   | 'standalone_conversation'
   | 'copy_cwd'
   | 'copy_session_id'
+  | 'copy_deep_link'
   | 'copy_last_output'
   | 'thinking_lower'
   | 'thinking_higher'
@@ -94,6 +95,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'p' && event.altKey && !event.shiftKey) return 'pin_conversation'
   if (key === 'u' && event.shiftKey && !event.altKey) return 'mark_unread'
   if (key === 'c' && event.altKey && !event.shiftKey) return 'copy_session_id'
+  if (key === 'l' && event.altKey && !event.shiftKey) return 'copy_deep_link'
   if (key === 'c' && event.shiftKey && !event.altKey) return 'copy_cwd'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
   if ((key === '`' || code === 'Backquote') && !event.altKey && !event.shiftKey) {
@@ -288,6 +290,12 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'pick_model', title: '模型选择', defaultKeys: 'Ctrl⇧M', defaultChord: 'mod+ctrl+shift+m' },
   { action: 'copy_cwd', title: '复制工作目录', defaultKeys: '⌘⇧C', defaultChord: 'mod+shift+c' },
   { action: 'copy_session_id', title: '复制会话 ID', defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' },
+  {
+    action: 'copy_deep_link',
+    title: '复制对话深链',
+    defaultKeys: '⌘⌥L',
+    defaultChord: 'mod+alt+l'
+  },
   {
     action: 'copy_last_output',
     title: '复制上一条助手回复',

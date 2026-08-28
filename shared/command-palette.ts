@@ -429,6 +429,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥C',
     keywords: 'copy session id 会话',
     action: 'copy_session_id'
+  },
+  {
+    id: 'copy-deeplink',
+    title: '复制对话深链',
+    shortcut: '⌘⌥L',
+    keywords: 'copy deep link url sharker:// 深链',
+    action: 'copy_deep_link'
   }
 ]
 

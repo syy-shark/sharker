@@ -46,6 +46,7 @@ const ACTION_SET = new Set<string>([
   'standalone_conversation',
   'copy_cwd',
   'copy_session_id',
+  'copy_deep_link',
   'copy_last_output',
   'thinking_lower',
   'thinking_higher'

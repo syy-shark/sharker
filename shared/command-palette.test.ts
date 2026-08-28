@@ -55,6 +55,7 @@ describe('command palette', () => {
     expect(ids).toContain('usage')
     expect(ids).toContain('copy-cwd')
     expect(ids).toContain('copy-session')
+    expect(ids).toContain('copy-deeplink')
   })
 
   it('filters by title and keywords', () => {
