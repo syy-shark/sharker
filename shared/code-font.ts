@@ -59,6 +59,7 @@ const ALIAS: Record<string, CodeFontId> = {
   'sf_mono': 'sf-mono',
   jb: 'jetbrains',
   jetbrainsmono: 'jetbrains',
+  'jetbrains-mono': 'jetbrains',
   'cascadia-code': 'cascadia',
   cascadia_code: 'cascadia',
   firacode: 'fira',
