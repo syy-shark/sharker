@@ -1,5 +1,6 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
+ * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop。
  * @see src/ARCH.md
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -644,32 +645,26 @@ export function ChatView({
     return () => window.cancelAnimationFrame(frame)
   }, [approval])
 
-  /** 内容增高时贴底：ResizeObserver 只在高度变化时写 scrollTop，避免每帧 rAF 抢布局 */
+  /** 内容增高时贴底：ResizeObserver 在布局后、绘制前写 scrollTop，避免多等一帧 */
   useEffect(() => {
     if (isEmpty) return
     const scroller = messagesRef.current
     const content = messagesInnerRef.current
     if (!scroller || !content) return
     let lastHeight = 0
-    let raf = 0
     const follow = () => {
-      if (raf) return
-      raf = window.requestAnimationFrame(() => {
-        raf = 0
-        if (!stickToBottomRef.current || userScrollLockRef.current) return
-        const h = scroller.scrollHeight
-        if (h === lastHeight) return
-        lastHeight = h
-        programmaticScrollRef.current = true
-        scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
-        programmaticScrollRef.current = false
-      })
+      if (!stickToBottomRef.current || userScrollLockRef.current) return
+      const h = scroller.scrollHeight
+      if (h === lastHeight) return
+      lastHeight = h
+      programmaticScrollRef.current = true
+      scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
+      programmaticScrollRef.current = false
     }
     const ro = new ResizeObserver(follow)
     ro.observe(content)
     follow()
     return () => {
-      if (raf) window.cancelAnimationFrame(raf)
       ro.disconnect()
     }
   }, [isEmpty, loading, sessionKey])

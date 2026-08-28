@@ -566,6 +566,11 @@ html.theme-dark .turn-flow-live-head {
   width: 100%;
 }
 
+/* 正文已上屏：收起命令输出，避免过程区在回答上方突然长高 */
+.turn-flow--answer-out .turn-flow-step-output {
+  display: none;
+}
+
 .turn-flow-step-output summary {
   width: fit-content;
   margin-top: 4px;

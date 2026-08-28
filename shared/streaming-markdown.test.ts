@@ -91,6 +91,14 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 与 ' },
       { type: 'file', text: 'foo.ts:3', path: 'foo.ts', line: 3, column: undefined }
     ])
+    expect(parseCheapInlineMarkdown('见图 ![示意](https://a.test/p.png) 后')).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: '示意', href: 'https://a.test/p.png' },
+      { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
+      { type: 'text', text: '半截 ![未闭](https://x' }
+    ])
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {
@@ -144,6 +152,12 @@ describe('splitStreamingMarkdown', () => {
     expect(grown[0]).toBe(first[0])
     expect(grown[1]).toBe(first[1])
     expect(grown.map((n) => n.type)).toEqual(['text', 'code', 'text', 'strong'])
+    const imgFirst = '见图 ![示意](https://a.test/p.png)'
+    const imgNodes = parseCheapInlineMarkdown(imgFirst)
+    const imgGrown = continueCheapInlineMarkdown(imgFirst, imgNodes, `${imgFirst} 后`)
+    expect(imgGrown[0]).toBe(imgNodes[0])
+    expect(imgGrown[1]).toBe(imgNodes[1])
+    expect(imgGrown.map((n) => n.type)).toEqual(['text', 'image', 'text'])
   })
 
   it('reuses closed blocks when only the tail grows', () => {

@@ -64,6 +64,9 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
         </FileCiteLink>
       )
     }
+    if (node.type === 'image') {
+      return <img key={index} src={node.href} alt={node.alt} loading="lazy" />
+    }
     return <span key={index}>{node.text}</span>
   })
 }
@@ -76,13 +79,15 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   }
   if (block.type === 'list') {
     const Tag = block.ordered ? 'ol' : 'ul'
+    const tasks = block.items.map((item) => parseCheapTaskItem(item))
+    const hasTask = tasks.some(Boolean)
     return (
-      <Tag key={index}>
+      <Tag key={index} className={hasTask ? 'contains-task-list' : undefined}>
         {block.items.map((item, i) => {
-          const task = parseCheapTaskItem(item)
+          const task = tasks[i]
           if (!task) return <li key={i}>{renderCheapInline(item)}</li>
           return (
-            <li key={i} className="live-prose-task">
+            <li key={i} className="task-list-item live-prose-task">
               <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
               {renderCheapInline(task.nodes)}
             </li>

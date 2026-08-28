@@ -655,7 +655,9 @@ export function TurnFlow({
 
   return (
     <div
-      className={`turn-flow turn-flow--live ${isStreaming ? 'turn-flow--streaming' : ''}`}
+      className={`turn-flow turn-flow--live${isStreaming ? ' turn-flow--streaming' : ''}${
+        contentStreaming ? ' turn-flow--answer-out' : ''
+      }`}
       data-live={isStreaming ? 'true' : undefined}
       data-head-label={isStreaming ? displayLiveLabel : undefined}
       data-head-step={isStreaming ? (lastDisplayStep?.title || '') : undefined}

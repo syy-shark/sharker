@@ -302,13 +302,9 @@ export const AssistantMessage = memo(function AssistantMessage({
       )}
 
 
-      {/* 直播：思考/工具在上，正文与演示在下（对齐 Cursor） */}
+      {/* 直播：思考/工具在上、正文在下（对标 Codex 时序）；间距固定，正文出现后收起命令输出以免顶回答 */}
       {isStreaming ? (
-        <div
-          className={`assistant-process-below assistant-process-below--live-top ${
-            showFinalBody ? 'assistant-process-below--live-top-gap' : ''
-          }`}
-        >
+        <div className="assistant-process-below assistant-process-below--live-top">
           {useSegmentFlow ? (
             <div className="turn-flow-live-panel">
               <TurnFlow

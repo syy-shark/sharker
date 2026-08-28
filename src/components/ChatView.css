@@ -426,12 +426,20 @@
   margin-bottom: 0;
 }
 
+.streaming-markdown,
 .live-prose-tail {
   margin: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
+/* 直播廉价尾与收束后 Markdown 共用边距，避免段落/表/列表提交时跳一截 */
+.streaming-markdown > p,
+.streaming-markdown > ul,
+.streaming-markdown > ol,
+.streaming-markdown > blockquote,
+.streaming-markdown > table,
+.streaming-markdown > hr,
 .live-prose-tail > p,
 .live-prose-tail > ul,
 .live-prose-tail > ol,
@@ -441,6 +449,12 @@
   margin: 0 0 10px;
 }
 
+.streaming-markdown > h1,
+.streaming-markdown > h2,
+.streaming-markdown > h3,
+.streaming-markdown > h4,
+.streaming-markdown > h5,
+.streaming-markdown > h6,
 .live-prose-tail > h1,
 .live-prose-tail > h2,
 .live-prose-tail > h3,
@@ -452,34 +466,53 @@
   line-height: 1.3;
 }
 
+.streaming-markdown > h1,
 .live-prose-tail > h1 { font-size: 1.45em; }
+.streaming-markdown > h2,
 .live-prose-tail > h2 { font-size: 1.25em; }
+.streaming-markdown > h3,
 .live-prose-tail > h3 { font-size: 1.1em; }
+.streaming-markdown > h4,
+.streaming-markdown > h5,
+.streaming-markdown > h6,
 .live-prose-tail > h4,
 .live-prose-tail > h5,
 .live-prose-tail > h6 { font-size: 1em; }
 
+.streaming-markdown > ul,
+.streaming-markdown > ol,
 .live-prose-tail > ul,
 .live-prose-tail > ol {
   padding-left: 1.4em;
 }
 
+.message-body--assistant .contains-task-list,
+.live-prose-tail .contains-task-list {
+  list-style: none;
+}
+
+.message-body--assistant .task-list-item,
+.live-prose-tail .task-list-item,
 .live-prose-tail .live-prose-task {
   list-style: none;
   margin-left: -1.15em;
 }
 
+.message-body--assistant .task-list-item input,
+.live-prose-tail .task-list-item input,
 .live-prose-tail .live-prose-task input {
   margin-right: 0.4em;
   vertical-align: middle;
 }
 
+.streaming-markdown > blockquote,
 .live-prose-tail > blockquote {
   padding-left: 0.8em;
   border-left: 2px solid var(--border-subtle);
   color: var(--text-secondary);
 }
 
+.streaming-markdown > table,
 .live-prose-tail > table {
   width: 100%;
   max-width: 100%;
@@ -488,6 +521,8 @@
   line-height: 1.5;
 }
 
+.streaming-markdown th,
+.streaming-markdown td,
 .live-prose-tail th,
 .live-prose-tail td {
   border: 1px solid var(--border);
@@ -495,11 +530,23 @@
   vertical-align: top;
 }
 
+.streaming-markdown > hr,
 .live-prose-tail > hr {
   border: 0;
   border-top: 1px solid var(--border-subtle);
 }
 
+.message-body--assistant img,
+.streaming-markdown img,
+.live-prose-tail img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 10px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.streaming-markdown > :last-child,
 .live-prose-tail > :last-child {
   margin-bottom: 0;
 }
@@ -611,14 +658,14 @@
 .message-body--assistant ul,
 .message-body--assistant ol {
   margin: 0 0 10px;
-  padding-left: 1.35em;
+  padding-left: 1.4em;
 }
 
 .message-body--assistant table {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
-  margin: 10px 0 14px;
+  margin: 0 0 10px;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -653,7 +700,10 @@
 .message-body--streaming-active .streaming-content::after,
 .message-body--streaming-active > p:last-child::after,
 .message-body--streaming-active > ul:last-child > li:last-child::after,
-.message-body--streaming-active > ol:last-child > li:last-child::after {
+.message-body--streaming-active > ol:last-child > li:last-child::after,
+.message-body--streaming-active .live-prose-tail > p:last-child::after,
+.message-body--streaming-active .live-prose-tail > ul:last-child > li:last-child::after,
+.message-body--streaming-active .live-prose-tail > ol:last-child > li:last-child::after {
   content: '';
   display: inline-block;
   width: 1.5px;

@@ -1,5 +1,6 @@
 /**
  * 聊天 Markdown 渲染：http(s) 外开；本地文件引用打开右侧预览。
+ * 保住 GFM 任务列表 class；元素子节点不套 span。
  * 支持 ```demo 对话原生内联演示（无浏览器外壳）。
  * @see src/ARCH.md
  */
@@ -50,12 +51,17 @@ function linkifyFileCitations(text: string): ReactNode {
   return parts.length === 1 ? parts[0] : parts
 }
 
-/** 递归处理 remark 子节点里的纯文本 */
+/** 递归处理 remark 子节点里的纯文本；元素（含任务 checkbox）原样留下，避免收束时套 span 跳动 */
 function withFileCitations(children: ReactNode): ReactNode {
   if (typeof children === 'string') return linkifyFileCitations(children)
   if (typeof children === 'number') return children
   if (Array.isArray(children)) {
-    return children.map((child, index) => <span key={index}>{withFileCitations(child)}</span>)
+    return children.map((child, index) => {
+      if (typeof child === 'string' || typeof child === 'number') {
+        return <span key={index}>{withFileCitations(child)}</span>
+      }
+      return child
+    })
   }
   return children
 }
@@ -123,8 +129,13 @@ const markdownComponents: Components = {
     )
   },
   p: ({ children }) => <p>{withFileCitations(children)}</p>,
-  li: ({ children }) => <li>{withFileCitations(children)}</li>,
+  ul: ({ children, className }) => <ul className={className}>{children}</ul>,
+  ol: ({ children, className }) => <ol className={className}>{children}</ol>,
+  img: ({ src, alt }) =>
+    src && /^https?:\/\//i.test(src) ? <img src={src} alt={alt ?? ''} loading="lazy" /> : null,
+  li: ({ children, className }) => <li className={className}>{withFileCitations(children)}</li>,
   td: ({ children }) => <td>{withFileCitations(children)}</td>,
+  th: ({ children }) => <th>{withFileCitations(children)}</th>,
   h1: ({ children }) => <h1>{withFileCitations(children)}</h1>,
   h2: ({ children }) => <h2>{withFileCitations(children)}</h2>,
   h3: ({ children }) => <h3>{withFileCitations(children)}</h3>,

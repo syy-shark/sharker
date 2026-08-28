@@ -171,6 +171,7 @@ export type CheapInlineNode =
   | { type: 'strong'; text: string }
   | { type: 'em'; text: string }
   | { type: 'link'; text: string; href: string }
+  | { type: 'image'; alt: string; href: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
 
 /** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
@@ -190,7 +191,7 @@ function trimBareUrl(raw: string): string {
 }
 
 /**
- * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](url)`、裸 http(s) 与文件引用。
+ * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](url)` / `![alt](url)`、裸 http(s) 与文件引用。
  * 未闭合标记留在原文，避免直播时闪烁。
  */
 export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
@@ -241,13 +242,15 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
       i = end + 1
       continue
     }
-    if (src[i] === '[') {
-      const mid = src.indexOf('](', i + 1)
+    if (src.startsWith('![', i) || src[i] === '[') {
+      const image = src.startsWith('![', i)
+      const labelStart = i + (image ? 2 : 1)
+      const mid = src.indexOf('](', labelStart)
       if (mid === -1) {
         buf += src.slice(i)
         break
       }
-      const label = src.slice(i + 1, mid)
+      const label = src.slice(labelStart, mid)
       if (!label.includes('\n')) {
         const urlEnd = src.indexOf(')', mid + 2)
         if (urlEnd === -1) {
@@ -255,18 +258,26 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
           break
         }
         const href = src.slice(mid + 2, urlEnd).trim()
-        if (/^https?:\/\//i.test(href)) {
+        if (image && /^https?:\/\//i.test(href)) {
+          flush()
+          nodes.push({ type: 'image', alt: label, href })
+          i = urlEnd + 1
+          continue
+        }
+        if (!image && /^https?:\/\//i.test(href)) {
           flush()
           nodes.push({ type: 'link', text: label, href })
           i = urlEnd + 1
           continue
         }
-        const file = parseFileCitation(href)
-        if (file) {
-          flush()
-          nodes.push({ type: 'file', text: label, path: file.path, line: file.line, column: file.column })
-          i = urlEnd + 1
-          continue
+        if (!image) {
+          const file = parseFileCitation(href)
+          if (file) {
+            flush()
+            nodes.push({ type: 'file', text: label, path: file.path, line: file.line, column: file.column })
+            i = urlEnd + 1
+            continue
+          }
         }
       }
     }
@@ -306,6 +317,9 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'em') return `*${node.text}*`
   if (node.type === 'link') {
     return node.text === node.href ? node.href : `[${node.text}](${node.href})`
+  }
+  if (node.type === 'image') {
+    return `![${node.alt}](${node.href})`
   }
   if (node.type === 'file') {
     return node.text

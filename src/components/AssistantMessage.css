@@ -373,22 +373,11 @@ html.theme-dark .assistant-process-below--separated {
 }
 
 
-/* 直播过程置顶：与正文分离，始终先看到当前步骤 */
+/* 直播过程置顶：间距固定，不在正文出现时再加分隔，避免贴底跳一截 */
 .assistant-process-below--live-top {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   padding: 0;
   border-top: 0;
-  animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
-}
-
-.assistant-process-below--live-top-gap {
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 0.5px solid color-mix(in srgb, var(--text-muted) 16%, transparent);
-}
-
-html.theme-dark .assistant-process-below--live-top-gap {
-  border-bottom-color: color-mix(in srgb, var(--text-muted) 22%, transparent);
 }
 
 
