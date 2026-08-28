@@ -3,6 +3,7 @@ import {
   clipToolOutput,
   parseToolOutputDisplay,
   shouldExpandToolOutput,
+  shouldMountToolExitCode,
   shouldMountToolOutputDetails
 } from './tool-output-display'
 
@@ -59,5 +60,8 @@ describe('tool output display', () => {
         isStreaming: false
       })
     ).toBe(false)
+    expect(shouldMountToolExitCode({ exitCode: 0, isStreaming: true })).toBe(false)
+    expect(shouldMountToolExitCode({ exitCode: 1, isStreaming: false })).toBe(true)
+    expect(shouldMountToolExitCode({ exitCode: null, isStreaming: false })).toBe(false)
   })
 })

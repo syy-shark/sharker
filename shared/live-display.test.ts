@@ -21,6 +21,7 @@ import {
   sameRefList,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
+  shouldPromoteSyntheticLiveHead,
   shouldSynthesizePlanning,
   liveStickNeedsFollow,
   liveStickScrollTop,
@@ -83,6 +84,9 @@ describe('live display head', () => {
         lastStepTitle: '读取文件'
       })
     ).toBe(true)
+    expect(shouldPromoteSyntheticLiveHead('planning')).toBe(false)
+    expect(shouldPromoteSyntheticLiveHead('answer')).toBe(false)
+    expect(shouldPromoteSyntheticLiveHead('approval')).toBe(true)
   })
 })
 

@@ -246,6 +246,18 @@ export function shouldSynthesizePlanning(options: {
 }
 
 /**
+ * 合成步骤要不要顶掉直播头。
+ * 规划 / 生成回答只用来关掉思考占位，不把头闪成「规划下一步」（对标 Codex
+ * changelog「flashing thinking summaries」与 #8204 工具间隙不闪 Working）。
+ * 审批没有真实步骤时仍要露出「等待确认」。
+ */
+export function shouldPromoteSyntheticLiveHead(
+  kind: 'planning' | 'answer' | 'approval'
+): boolean {
+  return kind === 'approval'
+}
+
+/**
  * 贴底附近的历史行保持真实高度。
  * 不用 `:nth-last-child`：排队气泡与 `.messages-end` 会把旧消息挤进
  * `content-visibility: auto`，直播增高时滚动会跳。

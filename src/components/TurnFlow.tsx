@@ -4,7 +4,7 @@
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
- * - 直播中不挂「查看输出」（对标 Codex command output behind expand）
+ * - 直播中不挂「查看输出」/ 退出码；工具间隙不把头闪成「规划下一步」
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -25,6 +25,7 @@ import {
   processElapsedSeconds,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
+  shouldPromoteSyntheticLiveHead,
   shouldSynthesizePlanning,
   turnProcessBounds
 } from '../../shared/live-display'
@@ -34,6 +35,7 @@ import {
   clipToolOutput,
   parseToolOutputDisplay,
   shouldExpandToolOutput,
+  shouldMountToolExitCode,
   shouldMountToolOutputDetails,
   type ToolOutputDisplay
 } from '../../shared/tool-output-display'
@@ -203,8 +205,9 @@ function toDisplayStep(step: ProcessPhaseStep): DisplayStep {
 }
 
 /**
- * 最终展示用步骤列表（含合成「规划下一步 / 生成回答 / 思考中」）。
- * 直播头标签直接取最后一项，保证与下方列表永远同步。
+ * 最终展示用步骤列表。
+ * 直播头取最后一项实质步骤，不把「规划下一步 / 生成回答中」顶上来闪头
+ * （对标 Codex flashing thinking summaries）。无步骤的审批仍合成等待确认。
  */
 function buildDisplaySteps(options: {
   steps: ProcessPhaseStep[]
@@ -214,14 +217,7 @@ function buildDisplaySteps(options: {
   planningNext: boolean
   showThinkingPlaceholder: boolean
 }): DisplayStep[] {
-  const {
-    steps,
-    isStreaming,
-    approvalWaiting,
-    generatingAnswer,
-    planningNext,
-    showThinkingPlaceholder
-  } = options
+  const { steps, isStreaming, approvalWaiting, showThinkingPlaceholder } = options
 
   if (!isStreaming) return steps.map(toDisplayStep)
 
@@ -230,30 +226,8 @@ function buildDisplaySteps(options: {
   }
 
   const display = steps.map(toDisplayStep)
-  const lastTitle = display.at(-1)?.title || ''
 
-  if (generatingAnswer) {
-    display.push({
-      id: 'synthetic-answer',
-      title: '生成回答中',
-      detail: '整理结果并输出…',
-      status: 'active',
-      kind: 'synthetic'
-    })
-    return display
-  }
-
-  if (planningNext && !lastTitle.includes('规划下一步')) {
-    display.push({
-      id: 'synthetic-planning',
-      title: '规划下一步',
-      detail: '根据已完成步骤决定下一动作…',
-      status: 'active',
-      kind: 'synthetic'
-    })
-  }
-
-  if (approvalWaiting && display.length === 0) {
+  if (shouldPromoteSyntheticLiveHead('approval') && approvalWaiting && display.length === 0) {
     display.push({
       id: 'synthetic-approval',
       title: '等待确认',
@@ -482,13 +456,18 @@ const ProcessStepRow = memo(function ProcessStepRow({
             {segment.resultSummary}
           </span>
         ) : null}
-        {segment?.exitCode != null ? (
+        {shouldMountToolExitCode({
+          exitCode: segment?.exitCode,
+          isStreaming
+        }) ? (
           <span
             className={`turn-flow-step-exit ${
-              segment.exitCode === 0 ? 'turn-flow-step-exit--ok' : 'turn-flow-step-exit--err'
+              Number(segment?.exitCode) === 0
+                ? 'turn-flow-step-exit--ok'
+                : 'turn-flow-step-exit--err'
             }`}
           >
-            退出码 {segment.exitCode}
+            退出码 {segment?.exitCode}
           </span>
         ) : null}
         {step.status === 'error' ? (
@@ -531,7 +510,7 @@ export const TurnFlow = memo(function TurnFlow({
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
   const [stickyLive, setStickyLive] = useState<{ label: string; detail?: string }>({
-    label: '处理中'
+    label: '思考中'
   })
   const stickyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSwapAtRef = useRef(0)
@@ -693,8 +672,8 @@ export const TurnFlow = memo(function TurnFlow({
   // hooks 必须在任何 early return 之前调用；layout 阶段同步，避免首帧先闪「处理中」
   useLayoutEffect(() => {
     if (!isStreaming) {
-      if (stickyLive.label !== '处理中' || stickyLive.detail) {
-        setStickyLive({ label: '处理中' })
+      if (stickyLive.label !== '思考中' || stickyLive.detail) {
+        setStickyLive({ label: '思考中' })
       }
       lastSwapAtRef.current = 0
       if (stickyTimerRef.current) {

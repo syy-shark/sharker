@@ -64,3 +64,13 @@ export function shouldMountToolOutputDetails(options: {
   if (options.isStreaming) return false
   return true
 }
+
+/** 直播中不挂退出码：工具一结束就多一行会顶过程区，收束后点开「工作了」再看 */
+export function shouldMountToolExitCode(options: {
+  exitCode: number | null | undefined
+  isStreaming?: boolean
+}): boolean {
+  if (options.exitCode == null) return false
+  if (options.isStreaming) return false
+  return true
+}
