@@ -106,6 +106,15 @@ describe('splitStreamingMarkdown', () => {
       { type: 'image', alt: '示意', href: 'https://a.test/p.png' },
       { type: 'text', text: ' 后' }
     ])
+    expect(parseCheapInlineMarkdown('见图 ![示意](https://a.test/p.png "题") 后')).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: '示意', href: 'https://a.test/p.png', title: '题' },
+      { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('见 [文档](https://a.test/x "题")')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://a.test/x', title: '题' }
+    ])
     expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
       { type: 'text', text: '半截 ![未闭](https://x' }
     ])
@@ -224,6 +233,11 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapProseBlocks('   > 缩进引用').map((b) => b.type)).toEqual(['quote'])
     expect(parseCheapProseBlocks('   # 标题')[0]).toMatchObject({ type: 'heading', level: 1 })
     expect(parseCheapProseBlocks('Title\n   ---').map((b) => b.type)).toEqual(['heading'])
+    const quoteTable = parseCheapProseBlocks('> | A | B |\n> | --- | --- |\n> | 1 | 2 |')
+    expect(quoteTable.map((b) => b.type)).toEqual(['quote'])
+    if (quoteTable[0]?.type === 'quote') {
+      expect(quoteTable[0].blocks.map((b) => b.type)).toEqual(['table'])
+    }
     const aligned = parseCheapProseBlocks('| A | B |\n| ---: | :---: |\n| 1 | 2 |')
     if (aligned[0]?.type === 'table') {
       expect(aligned[0].align).toEqual(['right', 'center'])

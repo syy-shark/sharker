@@ -171,8 +171,8 @@ export type CheapInlineNode =
   | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' }
   | { type: 'del'; text: string }
   | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' }
-  | { type: 'link'; text: string; href: string; raw?: string }
-  | { type: 'image'; alt: string; href: string }
+  | { type: 'link'; text: string; href: string; raw?: string; title?: string }
+  | { type: 'image'; alt: string; href: string; title?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
   | { type: 'fn'; id: string }
   | { type: 'br' }
@@ -307,6 +307,30 @@ export function parseLinkDefinitionLine(line: string): { id: string; href: strin
   if (href.startsWith('<') && href.endsWith('>')) href = href.slice(1, -1)
   if (!/^https?:\/\//i.test(href) && !href.startsWith('mailto:')) return null
   return { id: normalizeLinkLabel(match[1] ?? ''), href }
+}
+
+/** CommonMark dest：`url` / `<url>`，可选 `"title"` / `'title'` / `(title)` */
+function parseLinkDestination(dest: string): { href: string; title?: string } | null {
+  const trimmed = dest.trim()
+  if (!trimmed) return null
+  let href = ''
+  let rest = ''
+  if (trimmed.startsWith('<')) {
+    const close = trimmed.indexOf('>')
+    if (close === -1) return null
+    href = trimmed.slice(1, close)
+    rest = trimmed.slice(close + 1).trim()
+  } else {
+    const match = /^(\S+)(?:\s+(.*))?$/.exec(trimmed)
+    if (!match) return null
+    href = match[1] ?? ''
+    rest = (match[2] ?? '').trim()
+  }
+  if (!href) return null
+  let title: string | undefined
+  const quoted = /^(?:"([^"]*)"|'([^']*)'|\(([^)]*)\))$/.exec(rest)
+  if (quoted) title = quoted[1] ?? quoted[2] ?? quoted[3]
+  return title ? { href, title } : { href }
 }
 
 /** 从全文收集引用定义，供直播尾与已闭合块共用 */
@@ -518,16 +542,22 @@ export function parseCheapInlineMarkdown(
             buf += src.slice(i)
             break
           }
-          const href = src.slice(labelEnd + 2, urlEnd).trim()
+          const dest = parseLinkDestination(src.slice(labelEnd + 2, urlEnd))
+          const href = dest?.href ?? ''
+          const title = dest?.title
           if (image && /^https?:\/\//i.test(href)) {
             flush()
-            nodes.push({ type: 'image', alt: label, href })
+            nodes.push(title ? { type: 'image', alt: label, href, title } : { type: 'image', alt: label, href })
             i = urlEnd + 1
             continue
           }
-          if (!image && /^https?:\/\//i.test(href)) {
+          if (!image && (/^https?:\/\//i.test(href) || href.startsWith('mailto:'))) {
             flush()
-            nodes.push({ type: 'link', text: label, href })
+            nodes.push(
+              title
+                ? { type: 'link', text: label, href, title }
+                : { type: 'link', text: label, href }
+            )
             i = urlEnd + 1
             continue
           }
@@ -665,10 +695,12 @@ function cheapInlineSource(node: CheapInlineNode): string {
   }
   if (node.type === 'link') {
     if (node.raw) return node.raw
-    return node.text === node.href ? node.href : `[${node.text}](${node.href})`
+    const dest = node.title ? `${node.href} "${node.title}"` : node.href
+    return node.text === node.href && !node.title ? node.href : `[${node.text}](${dest})`
   }
   if (node.type === 'image') {
-    return `![${node.alt}](${node.href})`
+    const dest = node.title ? `${node.href} "${node.title}"` : node.href
+    return `![${node.alt}](${dest})`
   }
   if (node.type === 'file') {
     return node.text

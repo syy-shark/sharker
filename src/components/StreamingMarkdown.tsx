@@ -56,6 +56,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
         <a
           key={index}
           href={node.href}
+          title={node.title}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(event) => {
@@ -81,7 +82,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
       )
     }
     if (node.type === 'image') {
-      return <img key={index} src={node.href} alt={node.alt} loading="lazy" />
+      return <img key={index} src={node.href} alt={node.alt} title={node.title} loading="lazy" />
     }
     if (node.type === 'fn') {
       return (
