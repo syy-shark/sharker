@@ -145,6 +145,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'workspace'
   },
   {
+    name: 'skill',
+    description: '引用 Skill（等同 $）',
+    scope: 'ui',
+    action: 'mention_skill',
+    category: 'tools'
+  },
+  {
     name: 'browser',
     description: '打开 / 关闭内置浏览器',
     scope: 'ui',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatReviewCommentsPrompt } from './review-comment'
+import { formatReviewCommentsPrompt, parseReviewFindings } from './review-comment'
 
 describe('review comments', () => {
   it('formats line-anchored comments for the agent', () => {
@@ -17,5 +17,25 @@ describe('review comments', () => {
     expect(prompt).toContain('不要吞掉错误')
     expect(prompt).toContain('catch {}')
     expect(prompt).toContain('保持范围最小')
+  })
+
+  it('parses review-findings fences and ### path:line headings', () => {
+    const fromFence = parseReviewFindings(
+      '概述\n\n```review-findings\n[{"path":"src/a.ts","line":4,"side":"new","text":"缺少测试"}]\n```\n'
+    )
+    expect(fromFence).toEqual([
+      {
+        id: 'finding-0-src/a.ts:4',
+        path: 'src/a.ts',
+        line: 4,
+        side: 'new',
+        content: '',
+        text: '缺少测试'
+      }
+    ])
+    const fromHeading = parseReviewFindings('### src/b.ts:9\n不要吞错\n')
+    expect(fromHeading[0]?.path).toBe('src/b.ts')
+    expect(fromHeading[0]?.line).toBe(9)
+    expect(fromHeading[0]?.text).toContain('不要吞错')
   })
 })

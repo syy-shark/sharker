@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyQueueTriageAction,
+  attachQueueChangedPaths,
   enqueueAutomationRun,
   markQueueItem,
+  resolveQueueTriagePaths,
   sortAutomationQueue,
   unreadQueueCount
 } from './automation-queue'
@@ -28,5 +31,27 @@ describe('automation queue', () => {
       'r',
       'z'
     ])
+  })
+
+  it('maps triage actions to read or archived', () => {
+    const item = enqueueAutomationRun({ id: 'j', title: 't', prompt: 'p' }, 'c1')
+    expect(applyQueueTriageAction([item], item.id, 'approve')[0]?.status).toBe('read')
+    expect(applyQueueTriageAction([item], item.id, 'revise')[0]?.status).toBe('read')
+    expect(applyQueueTriageAction([item], item.id, 'reject')[0]?.status).toBe('archived')
+  })
+
+  it('stores workspace extras and only triages recorded paths', () => {
+    const item = enqueueAutomationRun(
+      { id: 'j', title: 't', prompt: 'p' },
+      'c1',
+      new Date('2026-08-28T00:00:00.000Z'),
+      { workspaceId: 'ws', workspacePath: '/repo' }
+    )
+    expect(item.workspaceId).toBe('ws')
+    expect(item.workspacePath).toBe('/repo')
+    const withPaths = attachQueueChangedPaths([item], 'c1', ['src/a.ts', '../etc/passwd', 'src/a.ts'])
+    expect(withPaths[0]?.changedPaths).toEqual(['src/a.ts'])
+    expect(resolveQueueTriagePaths(withPaths[0]!, ['other.ts'])).toEqual(['src/a.ts'])
+    expect(resolveQueueTriagePaths(item, ['fallback.ts'])).toEqual(['fallback.ts'])
   })
 })

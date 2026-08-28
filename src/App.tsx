@@ -2,7 +2,7 @@
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换
  * @see src/ARCH.md
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationSummary } from '../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
@@ -48,7 +48,7 @@ import { AutomationsPage } from './pages/AutomationsPage'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
-import { matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
+import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
 import {
   REVIEW_BRANCH_PROMPT,
   REVIEW_WORKING_TREE_PROMPT,
@@ -60,7 +60,14 @@ import {
   parsePersonalityArg,
   personalitySwitchNote
 } from '../shared/personality'
-import { enqueueAutomationRun } from '../shared/automation-queue'
+import {
+  attachQueueChangedPaths,
+  enqueueAutomationRun,
+  resolveQueueTriagePaths,
+  unreadQueueCount
+} from '../shared/automation-queue'
+import type { AutomationQueueItem, QueueTriageAction } from '../shared/automation-queue'
+import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
@@ -198,6 +205,7 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('models')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [conversationList, setConversationList] = useState<ConversationSummary[]>([])
+  const conversationListRef = useRef<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [liveSegments, setLiveSegments] = useState<TurnSegment[]>([])
@@ -235,8 +243,10 @@ export default function App() {
   }, [])
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
-  const [composerIntent, setComposerIntent] = useState<'mention' | 'find' | null>(null)
+  const [composerIntent, setComposerIntent] = useState<'mention' | 'skill' | 'find' | null>(null)
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
+  const [queueUnread, setQueueUnread] = useState(0)
+  const [suggestedCommit, setSuggestedCommit] = useState('')
   const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
   const turnChangedPathsRef = useRef<string[]>([])
   const threadWorktreePathRef = useRef<string | undefined>(undefined)
@@ -810,6 +820,10 @@ export default function App() {
   )
 
   useEffect(() => {
+    conversationListRef.current = conversationList
+  }, [conversationList])
+
+  useEffect(() => {
     pageRef.current = page
   }, [page])
 
@@ -839,9 +853,15 @@ export default function App() {
           const prev = await window.sharker.listAutomationQueue()
           const item = enqueueAutomationRun(
             { id: String(j.id || conv.id), title: String(j.title || '自动化'), prompt: j.prompt },
-            conv.id
+            conv.id,
+            new Date(),
+            {
+              workspaceId: wsId,
+              workspacePath: getActiveWorkspacePath(settingsRef.current) || undefined
+            }
           )
           await window.sharker.saveAutomationQueue([item, ...prev])
+          setQueueUnread(unreadQueueCount([item, ...prev]))
         }
         void refreshConversationList(wsId)
         void dispatchTurnRef.current(`[自动化] ${j.title ? `${j.title}\n\n` : ''}${j.prompt}`, [], conv.id)
@@ -849,6 +869,11 @@ export default function App() {
     })
     return () => off?.()
   }, [refreshConversationList])
+
+  useEffect(() => {
+    if (!window.sharker?.listAutomationQueue) return
+    void window.sharker.listAutomationQueue().then((q) => setQueueUnread(unreadQueueCount(q)))
+  }, [])
 
   /** 切换右侧 Codex 风格面板 */
   const handleToggleRightPanel = useCallback(() => {
@@ -988,6 +1013,12 @@ export default function App() {
       if (!convId) return
       lastTurnPathsByConvRef.current.set(convId, paths)
       if (activeConversationIdRef.current === convId) setLastTurnPaths(paths)
+      if (!paths.length || !window.sharker.listAutomationQueue) return
+      void window.sharker.listAutomationQueue().then((prev) => {
+        const next = attachQueueChangedPaths(prev, convId, paths)
+        if (next === prev) return
+        void window.sharker.saveAutomationQueue?.(next)
+      })
     }
 
     const applyChunkToBuffer = (buf: SessionLiveBuffer, chunk: import('../shared/types').StreamChunk) => {
@@ -2626,6 +2657,14 @@ export default function App() {
           })
           break
         }
+        case 'mention_file':
+          setPage('chat')
+          setComposerIntent('mention')
+          break
+        case 'mention_skill':
+          setPage('chat')
+          setComposerIntent('skill')
+          break
         case 'toggle_browser':
           handleTogglePanel('browser')
           break
@@ -2660,6 +2699,11 @@ export default function App() {
         setComposerIntent('mention')
         return
       }
+      if (cmd.action === 'mention_skill') {
+        setPage('chat')
+        setComposerIntent('skill')
+        return
+      }
       if (cmd.action === 'find_in_thread') {
         setPage('chat')
         setComposerIntent('find')
@@ -2688,6 +2732,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const action = matchWorkbenchShortcut({
         key: e.key,
+        code: e.code,
         metaKey: e.metaKey,
         ctrlKey: e.ctrlKey,
         altKey: e.altKey,
@@ -2723,13 +2768,26 @@ export default function App() {
         void handleAddWorkspace()
         return
       }
+      if (action === 'prev_thread' || action === 'next_thread') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        const nextId = adjacentConversationId(
+          conversationListRef.current.map((c) => c.id),
+          activeConversationIdRef.current,
+          action === 'next_thread' ? 1 : -1
+        )
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
+        return
+      }
       if (action === 'command_palette') {
         setCommandPaletteOpen((open) => !open)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleNavigate, handleNewConversation, handleShortcutPanel, toggleSidebar])
+  }, [handleAddWorkspace, handleNavigate, handleNewConversation, handleSelectConversation, handleShortcutPanel, toggleSidebar])
 
   /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
   useEffect(() => {
@@ -3462,6 +3520,51 @@ export default function App() {
     }
   }, [bumpSessionLive, snapshotActiveSessionBuffer])
 
+  const reviewFindings = useMemo(() => {
+    const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.content.trim())
+    return last ? parseReviewFindings(last.content) : []
+  }, [messages])
+
+  const handleQueueTriage = useCallback(
+    async (item: AutomationQueueItem, action: QueueTriageAction) => {
+      const cwd =
+        item.workspacePath ||
+        (threadMode === 'worktree' && threadWorktreePath
+          ? threadWorktreePath
+          : getActiveWorkspacePath(settingsRef.current) || '')
+      const wsId = item.workspaceId || settingsRef.current.activeWorkspaceId
+      const paths = resolveQueueTriagePaths(
+        item,
+        item.conversationId
+          ? lastTurnPathsByConvRef.current.get(item.conversationId) ?? []
+          : []
+      )
+      if (action === 'reject' && cwd && paths.length && window.sharker.applyGitReviewAction) {
+        const result = await window.sharker.applyGitReviewAction(cwd, 'revert', paths)
+        if (!result.ok) console.warn('[queue] reject revert failed', result.error)
+      }
+      if (action === 'approve' && cwd && paths.length && window.sharker.applyGitReviewAction) {
+        const result = await window.sharker.applyGitReviewAction(cwd, 'stage', paths)
+        if (!result.ok) console.warn('[queue] approve stage failed', result.error)
+      }
+      if (action === 'approve') {
+        setSuggestedCommit(item.title.trim() || '自动化')
+      }
+      if (wsId && item.conversationId) {
+        setPage('chat')
+        await handleSelectConversation(wsId, item.conversationId)
+        if (action !== 'reject') {
+          setRightPanelTab('changes')
+          setRightPanelOpen(true)
+        }
+      }
+      if (window.sharker.listAutomationQueue) {
+        setQueueUnread(unreadQueueCount(await window.sharker.listAutomationQueue()))
+      }
+    },
+    [handleSelectConversation, threadMode, threadWorktreePath]
+  )
+
   const liveConversationIds = (() => {
     void sessionLiveVersion
     const ids = new Set<string>()
@@ -3477,7 +3580,8 @@ export default function App() {
       {/* Codex 风格全屏布局：侧栏通顶 + 主区自带顶栏，无整条 TitleBar */}
       <div className="app">
         <Sidebar
-          page={page === 'automations' ? 'chat' : page}
+          page={page}
+          queueUnread={queueUnread}
           settingsTab={settingsTab}
           settings={settings}
           conversations={conversationList}
@@ -3578,6 +3682,9 @@ export default function App() {
                   setPage('chat')
                   void handleSelectConversation(wsId, conversationId)
                 }}
+                onTriage={(item, action) => {
+                  void handleQueueTriage(item, action)
+                }}
               />
             </div>
           ) : (
@@ -3606,6 +3713,8 @@ export default function App() {
           onClose={() => setRightPanelOpen(false)}
           changesRevision={changesRevision}
           lastTurnPaths={lastTurnPaths}
+          agentFindings={reviewFindings}
+          suggestedCommit={suggestedCommit}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

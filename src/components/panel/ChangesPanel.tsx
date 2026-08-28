@@ -36,6 +36,10 @@ interface Props {
   lastTurnPaths?: string[]
   /** 把行内评论派发给当前对话 */
   onSendComments?: (prompt: string) => void
+  /** `/review` 解析出的行内发现 */
+  agentFindings?: ReviewLineComment[]
+  /** 审查队列接受后预填提交说明 */
+  suggestedCommit?: string
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -61,7 +65,9 @@ export function ChangesPanel({
   workspacePath,
   revision = 0,
   lastTurnPaths = [],
-  onSendComments
+  onSendComments,
+  agentFindings = [],
+  suggestedCommit = ''
 }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
@@ -83,6 +89,21 @@ export function ChangesPanel({
   const [prTitle, setPrTitle] = useState('')
   const [prUrl, setPrUrl] = useState<string | null>(null)
   const [branchName, setBranchName] = useState('')
+
+  useEffect(() => {
+    if (!agentFindings.length) return
+    setComments((prev) => {
+      const keys = new Set(prev.map((c) => `${c.path}:${c.line}:${c.text}`))
+      const extra = agentFindings.filter((f) => !keys.has(`${f.path}:${f.line}:${f.text}`))
+      return extra.length ? [...prev, ...extra] : prev
+    })
+  }, [agentFindings])
+
+  useEffect(() => {
+    const hint = suggestedCommit.trim()
+    if (!hint) return
+    setCommitMessage((prev) => prev.trim() || hint)
+  }, [suggestedCommit])
 
   const sourceFiles = compare === 'branch' ? branchFiles : files
   const readOnly = compare === 'branch'

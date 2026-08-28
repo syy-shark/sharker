@@ -30,6 +30,10 @@ interface Props {
   onSendReviewComments?: (prompt: string) => void
   /** 上一轮助手写过的相对路径 */
   lastTurnPaths?: string[]
+  /** `/review` 行内发现 */
+  agentFindings?: import('../../shared/review-comment').ReviewLineComment[]
+  /** 审查队列「接受」预填的提交说明 */
+  suggestedCommit?: string
 }
 
 /** Codex 风格右侧面板 */
@@ -42,7 +46,9 @@ export function RightPanel({
   onClose,
   changesRevision = 0,
   onSendReviewComments,
-  lastTurnPaths = []
+  lastTurnPaths = [],
+  agentFindings = [],
+  suggestedCommit = ''
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -319,6 +325,8 @@ export function RightPanel({
             workspacePath={workspacePath}
             revision={changesRevision}
             lastTurnPaths={lastTurnPaths}
+            agentFindings={agentFindings}
+            suggestedCommit={suggestedCommit}
             onSendComments={onSendReviewComments}
           />
         )}

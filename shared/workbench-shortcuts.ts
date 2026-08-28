@@ -12,10 +12,13 @@ export type WorkbenchShortcutAction =
   | 'open_settings'
   | 'open_folder'
   | 'command_palette'
+  | 'prev_thread'
+  | 'next_thread'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
   key: string
+  code?: string
   metaKey: boolean
   ctrlKey: boolean
   altKey: boolean
@@ -26,6 +29,7 @@ export function matchWorkbenchShortcut(event: {
   const mod = event.metaKey || event.ctrlKey
   if (!mod) return null
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+  const code = event.code ?? ''
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
   if (key === 'g' && event.shiftKey && !event.altKey) return 'toggle_review'
@@ -36,5 +40,32 @@ export function matchWorkbenchShortcut(event: {
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
   if (key === 'o' && !event.altKey && !event.shiftKey) return 'open_folder'
+  if (
+    event.shiftKey &&
+    !event.altKey &&
+    (code === 'BracketLeft' || key === '[' || key === '{')
+  ) {
+    return 'prev_thread'
+  }
+  if (
+    event.shiftKey &&
+    !event.altKey &&
+    (code === 'BracketRight' || key === ']' || key === '}')
+  ) {
+    return 'next_thread'
+  }
   return null
+}
+
+/** 在当前项目对话列表里循环切到上一条 / 下一条（对标 Codex ⌘⇧[ / ⌘⇧]） */
+export function adjacentConversationId(
+  ids: string[],
+  current: string | null,
+  direction: -1 | 1
+): string | null {
+  if (ids.length === 0) return null
+  if (!current) return ids[0] ?? null
+  const idx = ids.indexOf(current)
+  if (idx < 0) return ids[0] ?? null
+  return ids[(idx + direction + ids.length) % ids.length] ?? null
 }

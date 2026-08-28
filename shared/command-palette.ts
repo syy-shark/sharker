@@ -68,6 +68,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'mention_file'
   },
   {
+    id: 'skill',
+    title: '引用 Skill',
+    keywords: 'skill $ 技能',
+    action: 'mention_skill'
+  },
+  {
     id: 'find',
     title: '在对话中查找',
     shortcut: '⌘F',

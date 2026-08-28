@@ -16,13 +16,21 @@ export interface AutomationQueueItem {
   createdAt: string
   status: AutomationQueueStatus
   conversationId?: string
+  workspaceId?: string
+  workspacePath?: string
+  /** 该次自动化实际改过的相对路径（接受/拒绝只动这些文件） */
+  changedPaths?: string[]
 }
+
+/** 审查队列上的人审动作（对标 Codex Approve / Revise / Reject） */
+export type QueueTriageAction = 'approve' | 'revise' | 'reject'
 
 /** 从到期任务生成队列条目 */
 export function enqueueAutomationRun(
   job: Pick<AutomationJob, 'id' | 'title' | 'prompt'>,
   conversationId?: string,
-  now = new Date()
+  now = new Date(),
+  extras?: { workspaceId?: string; workspacePath?: string }
 ): AutomationQueueItem {
   return {
     id: `aq-${now.getTime()}-${job.id}`,
@@ -31,8 +39,19 @@ export function enqueueAutomationRun(
     prompt: String(job.prompt || ''),
     createdAt: now.toISOString(),
     status: 'unread',
-    conversationId
+    conversationId,
+    workspaceId: extras?.workspaceId,
+    workspacePath: extras?.workspacePath
   }
+}
+
+/** Approve/Revise → 已读；Reject → 归档 */
+export function applyQueueTriageAction(
+  items: AutomationQueueItem[],
+  id: string,
+  action: QueueTriageAction
+): AutomationQueueItem[] {
+  return markQueueItem(items, id, action === 'reject' ? 'archived' : 'read')
 }
 
 /** 未读条数（侧栏 / 页头徽标） */
@@ -47,6 +66,48 @@ export function markQueueItem(
   status: AutomationQueueStatus
 ): AutomationQueueItem[] {
   return items.map((i) => (i.id === id ? { ...i, status } : i))
+}
+
+function cleanRelPaths(paths: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of paths) {
+    const p = String(raw || '').replaceAll('\\', '/').trim()
+    if (!p || p.includes('..') || seen.has(p)) continue
+    seen.add(p)
+    out.push(p)
+  }
+  return out
+}
+
+/** 回合结束后把该会话改过的路径写回队列条目 */
+export function attachQueueChangedPaths(
+  items: AutomationQueueItem[],
+  conversationId: string,
+  paths: string[]
+): AutomationQueueItem[] {
+  const id = String(conversationId || '')
+  if (!id) return items
+  const cleaned = cleanRelPaths(paths)
+  let changed = false
+  const next = items.map((item) => {
+    if (item.conversationId !== id) return item
+    const prev = item.changedPaths ?? []
+    if (prev.length === cleaned.length && prev.every((p, i) => p === cleaned[i])) return item
+    changed = true
+    return { ...item, changedPaths: cleaned }
+  })
+  return changed ? next : items
+}
+
+/** 接受/拒绝时优先用条目上记录的路径，避免动到用户其它脏文件 */
+export function resolveQueueTriagePaths(
+  item: AutomationQueueItem,
+  fallback: string[] = []
+): string[] {
+  const fromItem = cleanRelPaths(item.changedPaths ?? [])
+  if (fromItem.length) return fromItem
+  return cleanRelPaths(fallback)
 }
 
 /** 展示用：未读在前，已读次之，归档最后 */

@@ -109,6 +109,9 @@ export interface SharkerApi {
     workspace: string,
     query: string
   ) => Promise<Array<{ name: string; path: string; relativePath: string }>>
+  listSkills: (
+    workspace: string
+  ) => Promise<Array<{ name: string; description: string }>>
   readTextFile: (
     filePath: string
   ) => Promise<{ ok: true; path: string; content: string } | { ok: false; error: string }>

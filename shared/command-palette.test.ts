@@ -6,6 +6,7 @@ describe('command palette', () => {
     const ids = PALETTE_COMMANDS.map((c) => c.id)
     expect(ids).toContain('review')
     expect(ids).toContain('mention')
+    expect(ids).toContain('skill')
     expect(ids).toContain('settings')
     expect(ids).toContain('find')
     expect(ids).toContain('personality')

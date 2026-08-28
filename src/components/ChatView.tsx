@@ -21,6 +21,12 @@ import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
+import {
+  filterSkillMentions,
+  insertSkillMention,
+  parseSkillMention,
+  type SkillListItem
+} from '../../shared/skill-mention'
 import { findInThread } from '../../shared/thread-search'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
@@ -112,8 +118,8 @@ interface Props {
   onThreadModeChange?: (mode: ThreadMode) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
-  /** 命令面板「引用文件」/「查找」 */
-  composerIntent?: 'mention' | 'find' | null
+  /** 命令面板「引用文件」/「引用 Skill」/「查找」 */
+  composerIntent?: 'mention' | 'skill' | 'find' | null
   onComposerIntentHandled?: () => void
 }
 
@@ -177,6 +183,10 @@ export function ChatView({
   const [mentionHits, setMentionHits] = useState<Array<{ name: string; relativePath: string }>>([])
   const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
   const mentionActiveIndexRef = useRef(0)
+  const [skillDismissed, setSkillDismissed] = useState(false)
+  const [skillCatalog, setSkillCatalog] = useState<SkillListItem[]>([])
+  const [skillActiveIndex, setSkillActiveIndex] = useState(0)
+  const skillActiveIndexRef = useRef(0)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
@@ -339,6 +349,12 @@ export function ChatView({
       ? parseAtMention(input, cursor)
       : null
   const showMentionMenu = Boolean(mentionQuery && fileSearchRoot)
+  const skillQuery =
+    !showHistoryPicker && !showSlashMenu && !showMentionMenu && !skillDismissed
+      ? parseSkillMention(input, cursor)
+      : null
+  const skillHits = skillQuery ? filterSkillMentions(skillCatalog, skillQuery.query) : []
+  const showSkillMenu = Boolean(skillQuery && skillHits.length > 0)
 
   useEffect(() => {
     slashActiveIndexRef.current = slashActiveIndex
@@ -380,12 +396,54 @@ export function ChatView({
     }
   }, [fileSearchRoot, mentionQuery?.query, mentionQuery?.start])
 
+  useEffect(() => {
+    skillActiveIndexRef.current = skillActiveIndex
+  }, [skillActiveIndex])
+
+  useEffect(() => {
+    setSkillActiveIndex(0)
+    skillActiveIndexRef.current = 0
+  }, [skillQuery?.query, skillQuery?.start])
+
+  useEffect(() => {
+    if (!skillQuery || !window.sharker?.listSkills) {
+      return
+    }
+    let cancelled = false
+    void window.sharker
+      .listSkills(fileSearchRoot)
+      .then((list) => {
+        if (!cancelled) setSkillCatalog(list)
+      })
+      .catch(() => {
+        if (!cancelled) setSkillCatalog([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [fileSearchRoot, skillQuery?.start])
+
   /** 把当前 `@query` 换成选中的工作区相对路径 */
   const pickMention = (relativePath: string) => {
     const next = insertAtMention(input, cursor, relativePath)
     setInput(next.text)
     setCursor(next.cursor)
     setMentionDismissed(false)
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(next.cursor, next.cursor)
+      syncTextareaHeight()
+    })
+  }
+
+  /** 把当前 `$query` 换成选中的 Skill 名 */
+  const pickSkill = (name: string) => {
+    const next = insertSkillMention(input, cursor, name)
+    setInput(next.text)
+    setCursor(next.cursor)
+    setSkillDismissed(false)
     requestAnimationFrame(() => {
       const el = textareaRef.current
       if (!el) return
@@ -402,11 +460,28 @@ export function ChatView({
       requestAnimationFrame(() => findInputRef.current?.focus())
       return
     }
+    if (composerIntent === 'skill') {
+      setInput('$')
+      setCursor(1)
+      setSkillDismissed(false)
+      setSlashDismissed(true)
+      setMentionDismissed(true)
+      onComposerIntentHandled?.()
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(1, 1)
+        syncTextareaHeight()
+      })
+      return
+    }
     if (composerIntent !== 'mention') return
     setInput('@')
     setCursor(1)
     setMentionDismissed(false)
     setSlashDismissed(true)
+    setSkillDismissed(true)
     onComposerIntentHandled?.()
     requestAnimationFrame(() => {
       const el = textareaRef.current
@@ -457,6 +532,22 @@ export function ChatView({
       setInput('@')
       setCursor(1)
       setMentionDismissed(false)
+      setSkillDismissed(true)
+      setSlashDismissed(true)
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(1, 1)
+        syncTextareaHeight()
+      })
+      return
+    }
+    if (cmd.action === 'mention_skill') {
+      setInput('$')
+      setCursor(1)
+      setSkillDismissed(false)
+      setMentionDismissed(true)
       setSlashDismissed(true)
       requestAnimationFrame(() => {
         const el = textareaRef.current
@@ -677,19 +768,27 @@ export function ChatView({
     const content = messagesInnerRef.current
     if (!scroller || !content) return
     let lastHeight = 0
+    let raf = 0
     const follow = () => {
-      if (!stickToBottomRef.current || userScrollLockRef.current) return
-      const h = scroller.scrollHeight
-      if (h === lastHeight) return
-      lastHeight = h
-      programmaticScrollRef.current = true
-      scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
-      programmaticScrollRef.current = false
+      if (raf) return
+      raf = window.requestAnimationFrame(() => {
+        raf = 0
+        if (!stickToBottomRef.current || userScrollLockRef.current) return
+        const h = scroller.scrollHeight
+        if (h === lastHeight) return
+        lastHeight = h
+        programmaticScrollRef.current = true
+        scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
+        programmaticScrollRef.current = false
+      })
     }
     const ro = new ResizeObserver(follow)
     ro.observe(content)
     follow()
-    return () => ro.disconnect()
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf)
+      ro.disconnect()
+    }
   }, [isEmpty, loading, sessionKey])
 
   useEffect(() => {
@@ -819,6 +918,45 @@ export function ChatView({
           </div>
         </div>
       ) : null}
+      {showSkillMenu ? (
+        <div className="composer-popover-slot">
+          <div
+            className="slash-menu popover-enter"
+            role="listbox"
+            aria-label="引用 Skill"
+            aria-activedescendant={
+              skillHits[skillActiveIndex]
+                ? `skill-option-${skillHits[skillActiveIndex].name}`
+                : undefined
+            }
+          >
+            <ul className="slash-menu-list">
+              {skillHits.map((hit, index) => (
+                <li key={hit.name} role="presentation">
+                  <button
+                    type="button"
+                    id={`skill-option-${hit.name}`}
+                    role="option"
+                    aria-selected={index === skillActiveIndex}
+                    className={`slash-menu-item${index === skillActiveIndex ? ' slash-menu-item--active' : ''}`}
+                    onMouseEnter={() => {
+                      setSkillActiveIndex(index)
+                      skillActiveIndexRef.current = index
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      pickSkill(hit.name)
+                    }}
+                  >
+                    <span className="slash-menu-name">${hit.name}</span>
+                    <span className="slash-menu-desc">{hit.description}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
       {showSlashMenu ? (
         <div className="composer-popover-slot">
           <div
@@ -910,6 +1048,7 @@ export function ChatView({
         onChange={(e) => {
           setSlashDismissed(false)
           setMentionDismissed(false)
+          setSkillDismissed(false)
           setInput(e.target.value)
           setCursor(e.target.selectionStart ?? e.target.value.length)
         }}
@@ -923,6 +1062,37 @@ export function ChatView({
             e.key === 'Process' ||
             (e.nativeEvent as KeyboardEvent).keyCode === 229
           if (composing) return
+          if (showSkillMenu) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setSkillActiveIndex((i) => {
+                const n = (i + 1) % skillHits.length
+                skillActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setSkillActiveIndex((i) => {
+                const n = (i - 1 + skillHits.length) % skillHits.length
+                skillActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setSkillDismissed(true)
+              return
+            }
+            if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+              e.preventDefault()
+              const hit = skillHits[skillActiveIndexRef.current]
+              if (hit) pickSkill(hit.name)
+              return
+            }
+          }
           if (showMentionMenu && mentionHits.length > 0) {
             if (e.key === 'ArrowDown') {
               e.preventDefault()

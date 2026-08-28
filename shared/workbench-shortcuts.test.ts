@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { matchWorkbenchShortcut } from './workbench-shortcuts'
+import { adjacentConversationId, matchWorkbenchShortcut } from './workbench-shortcuts'
 
 function ev(partial: {
   key: string
+  code?: string
   metaKey?: boolean
   ctrlKey?: boolean
   altKey?: boolean
@@ -35,6 +36,18 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true, shiftKey: true }))).toBe(
       'command_palette'
     )
+    expect(
+      matchWorkbenchShortcut(ev({ key: '{', code: 'BracketLeft', metaKey: true, shiftKey: true }))
+    ).toBe('prev_thread')
+    expect(
+      matchWorkbenchShortcut(ev({ key: '}', code: 'BracketRight', metaKey: true, shiftKey: true }))
+    ).toBe('next_thread')
+  })
+
+  it('cycles conversation ids', () => {
+    expect(adjacentConversationId(['a', 'b', 'c'], 'b', 1)).toBe('c')
+    expect(adjacentConversationId(['a', 'b', 'c'], 'a', -1)).toBe('c')
+    expect(adjacentConversationId([], 'a', 1)).toBeNull()
   })
 
   it('ignores composing and unmodified keys', () => {

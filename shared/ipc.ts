@@ -66,6 +66,8 @@ export const IPC = {
   GIT_CREATE_BRANCH: 'git:create-branch',
   /** Composer `@` 工作区文件模糊搜索 */
   WORKSPACE_SEARCH_FILES: 'workspace:search-files',
+  /** Composer `$` Skill 列表（名称 + 描述） */
+  SKILLS_LIST: 'skills:list',
   /** 为会话准备隔离 Git worktree */
   WORKSPACE_PREPARE_WORKTREE: 'workspace:prepare-worktree',
   TERMINAL_CREATE: 'terminal:create',

@@ -3,11 +3,12 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AutomationJob } from '../../shared/automation'
-import type { AutomationQueueItem } from '../../shared/automation-queue'
 import {
-  markQueueItem,
+  applyQueueTriageAction,
   sortAutomationQueue,
-  unreadQueueCount
+  unreadQueueCount,
+  type AutomationQueueItem,
+  type QueueTriageAction
 } from '../../shared/automation-queue'
 import '../components/settings/SettingsPrimitives.css'
 import './AutomationsPage.css'
@@ -15,10 +16,11 @@ import './AutomationsPage.css'
 interface Props {
   onBack: () => void
   onOpenConversation?: (conversationId: string) => void
+  onTriage?: (item: AutomationQueueItem, action: QueueTriageAction) => void
 }
 
 /** 自动化列表与编辑 */
-export function AutomationsPage({ onBack, onOpenConversation }: Props) {
+export function AutomationsPage({ onBack, onOpenConversation, onTriage }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
   const [busy, setBusy] = useState(false)
@@ -107,31 +109,54 @@ export function AutomationsPage({ onBack, onOpenConversation }: Props) {
                     <p>{new Date(item.createdAt).toLocaleString()}</p>
                   </div>
                   <div className="automations-queue-actions">
+                    {item.status !== 'archived' && onTriage ? (
+                      <>
+                        <button
+                          type="button"
+                          className="automations-queue-btn"
+                          onClick={() => {
+                            const next = applyQueueTriageAction(queue, item.id, 'approve')
+                            setQueue(next)
+                            void window.sharker.saveAutomationQueue?.(next)
+                            onTriage(item, 'approve')
+                          }}
+                        >
+                          接受
+                        </button>
+                        <button
+                          type="button"
+                          className="automations-queue-btn"
+                          onClick={() => {
+                            const next = applyQueueTriageAction(queue, item.id, 'revise')
+                            setQueue(next)
+                            void window.sharker.saveAutomationQueue?.(next)
+                            onTriage(item, 'revise')
+                          }}
+                        >
+                          修订
+                        </button>
+                        <button
+                          type="button"
+                          className="automations-queue-btn"
+                          onClick={() => {
+                            if (!window.confirm(`确定拒绝「${item.title}」并还原该任务改过的文件？`)) return
+                            const next = applyQueueTriageAction(queue, item.id, 'reject')
+                            setQueue(next)
+                            void window.sharker.saveAutomationQueue?.(next)
+                            onTriage(item, 'reject')
+                          }}
+                        >
+                          拒绝
+                        </button>
+                      </>
+                    ) : null}
                     {item.conversationId && onOpenConversation ? (
                       <button
                         type="button"
                         className="automations-queue-btn"
-                        onClick={() => {
-                          const next = markQueueItem(queue, item.id, 'read')
-                          setQueue(next)
-                          void window.sharker.saveAutomationQueue?.(next)
-                          onOpenConversation(item.conversationId!)
-                        }}
+                        onClick={() => onOpenConversation(item.conversationId!)}
                       >
                         打开线程
-                      </button>
-                    ) : null}
-                    {item.status !== 'archived' ? (
-                      <button
-                        type="button"
-                        className="automations-queue-btn"
-                        onClick={() => {
-                          const next = markQueueItem(queue, item.id, 'archived')
-                          setQueue(next)
-                          void window.sharker.saveAutomationQueue?.(next)
-                        }}
-                      >
-                        归档
                       </button>
                     ) : null}
                   </div>

@@ -121,6 +121,7 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly),
   searchWorkspaceFiles: (workspace: string, query: string) =>
     ipcRenderer.invoke(IPC.WORKSPACE_SEARCH_FILES, workspace, query),
+  listSkills: (workspace: string) => ipcRenderer.invoke(IPC.SKILLS_LIST, workspace),
   readTextFile: (filePath: string) => ipcRenderer.invoke(IPC.READ_TEXT_FILE, filePath),
   readFileDataUrl: (filePath: string) =>
     ipcRenderer.invoke(IPC.READ_FILE_DATA_URL, filePath),

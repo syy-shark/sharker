@@ -61,6 +61,7 @@ import {
 import { compressContextForce } from '../../shared/context-compress'
 import { getUsageHistory } from '../../shared/token-usage-store'
 import { buildWorkspaceTree, searchWorkspaceFiles } from '../../shared/workspace-tree'
+import { loadSkills } from '../../skills/loader'
 import { runGit } from '../../tools/shared/git-runner'
 import { prepareThreadWorktree } from '../../tools/thread-worktree'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
@@ -878,6 +879,11 @@ function registerIpc(): void {
     const root = path.resolve(String(workspace || ''))
     if (!root) return []
     return searchWorkspaceFiles(root, String(query || ''), 30)
+  })
+
+  ipcMain.handle(IPC.SKILLS_LIST, async (_e, workspace = '') => {
+    const skills = await loadSkills(String(workspace || ''))
+    return skills.map((s) => ({ name: s.name, description: s.description }))
   })
 
   ipcMain.handle(IPC.READ_TEXT_FILE, async (_e, filePath: string) => {

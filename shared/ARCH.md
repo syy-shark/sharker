@@ -36,8 +36,8 @@
 | `git-review-actions.test.ts` | 临时仓库验证 stage / unstage / revert |
 | `at-mention.ts` | Composer `@` 查询解析与插入 |
 | `at-mention.test.ts` | `@` 边界与路径插入 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配 |
-| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K |
+| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程） |
+| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词 |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -53,8 +53,10 @@
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `thread-search.ts` | 线程内查找（大小写不敏感） |
 | `thread-search.test.ts` | 命中消息 id |
-| `review-comment.ts` | 行内评论 → Agent 提示 |
-| `review-comment.test.ts` | 评论锚定路径与行号 |
+| `review-comment.ts` | 行内评论 → Agent 提示；解析 `/review` 的 `review-findings` 围栏 |
+| `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
+| `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
+| `skill-mention.test.ts` | `$token` 边界与过滤 |
 | `command-palette.ts` | ⌘K 命令面板目录（含查找） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
@@ -80,11 +82,11 @@
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
 | `automation.ts` | 自动化任务类型 |
-| `automation-queue.ts` | 自动化审查队列（Triage） |
-| `automation-queue.test.ts` | 入队、未读计数、排序 |
+| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件 |
+| `automation-queue.test.ts` | 入队、未读计数、排序、路径回写 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /personality） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /personality、/skill） |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
 | `personality.test.ts` | 别名解析、循环、提示词 |

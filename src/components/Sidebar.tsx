@@ -9,6 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
   Folder,
+  Inbox,
   MoreHorizontal,
   Palette,
   Pin,
@@ -44,6 +45,8 @@ interface Props {
   onDeleteConversation: (workspaceId: string, conversationId: string) => void
   onArchiveConversation: (workspaceId: string, conversationId: string) => void
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
+  /** 自动化审查队列未读数（Codex Triage） */
+  queueUnread?: number
   /** 受控收起态（与主区顶栏同步） */
   collapsed?: boolean
   onCollapsedChange?: (collapsed: boolean) => void
@@ -92,6 +95,7 @@ export function Sidebar({
   onDeleteConversation: _onDeleteConversation,
   onArchiveConversation,
   onNavigate,
+  queueUnread = 0,
   collapsed: collapsedProp,
   onCollapsedChange,
   onPeekChange
@@ -530,6 +534,19 @@ export function Sidebar({
           <button type="button" className="sidebar-nav-item" onClick={handleNewChat}>
             <SquarePen size={18} className="sidebar-nav-ico" aria-hidden />
             <span>新对话</span>
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item${page === 'automations' ? ' active' : ''}`}
+            onClick={() => onNavigate('automations')}
+          >
+            <Inbox size={18} className="sidebar-nav-ico" aria-hidden />
+            <span>审查队列</span>
+            {queueUnread > 0 ? (
+              <span className="sidebar-nav-badge" aria-label={`${queueUnread} 条未读`}>
+                {queueUnread}
+              </span>
+            ) : null}
           </button>
         </nav>
 
