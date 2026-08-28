@@ -4,7 +4,13 @@
  */
 import { useState } from 'react'
 import { Check, Copy, Download } from 'lucide-react'
-import { canExportChatImage, type ChatImageExportInput } from '../../shared/chat-image'
+import {
+  canExportChatImage,
+  chatImageAspectStyle,
+  readCachedChatImageSize,
+  writeCachedChatImageSize,
+  type ChatImageExportInput
+} from '../../shared/chat-image'
 import './MessageActions.css'
 import './ChatImage.css'
 
@@ -22,6 +28,9 @@ export function ChatImage({
   name?: string
 }) {
   const [copied, setCopied] = useState(false)
+  const [, setSizeTick] = useState(0)
+  const known = readCachedChatImageSize(src)
+  const aspect = chatImageAspectStyle(known)
   const input: ChatImageExportInput = { src, filePath, name, alt }
   const canExport = canExportChatImage(input)
 
@@ -39,8 +48,22 @@ export function ChatImage({
   }
 
   return (
-    <span className="chat-image">
-      <img src={src} alt={alt ?? ''} title={title} loading="lazy" />
+    <span className={`chat-image${known ? '' : ' chat-image--pending'}`}>
+      <img
+        src={src}
+        alt={alt ?? ''}
+        title={title}
+        loading="eager"
+        decoding="async"
+        width={known?.width}
+        height={known?.height}
+        style={aspect}
+        onLoad={(event) => {
+          const img = event.currentTarget
+          writeCachedChatImageSize(src, { width: img.naturalWidth, height: img.naturalHeight })
+          setSizeTick((n) => n + 1)
+        }}
+      />
       {canExport ? (
         <span className="chat-image-actions" role="group" aria-label="图片操作">
           <button

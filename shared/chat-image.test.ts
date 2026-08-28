@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { canExportChatImage, suggestedImageFilename } from './chat-image'
+import {
+  canExportChatImage,
+  chatImageAspectStyle,
+  readCachedChatImageSize,
+  suggestedImageFilename,
+  writeCachedChatImageSize
+} from './chat-image'
 
 describe('chat-image', () => {
   it('suggests a safe filename and only exports http / data / attachment images', () => {
@@ -18,5 +24,16 @@ describe('chat-image', () => {
     expect(canExportChatImage({ src: 'javascript:alert(1)' })).toBe(false)
     expect(canExportChatImage({ src: 'file:///etc/passwd' })).toBe(false)
     expect(canExportChatImage({})).toBe(false)
+    expect(readCachedChatImageSize('https://a.test/p.png')).toBeNull()
+    expect(writeCachedChatImageSize('https://a.test/p.png', { width: 800, height: 400 })).toEqual({
+      width: 800,
+      height: 400
+    })
+    expect(readCachedChatImageSize('https://a.test/p.png')).toEqual({ width: 800, height: 400 })
+    expect(chatImageAspectStyle({ width: 800, height: 400 })).toEqual({ aspectRatio: '800 / 400' })
+    expect(chatImageAspectStyle({ width: 0, height: 10 })).toBeUndefined()
+    writeCachedChatImageSize('https://a.test/zero.png', { width: 0, height: 10 })
+    expect(readCachedChatImageSize('https://a.test/zero.png')).toBeNull()
+    expect(readCachedChatImageSize('')).toBeNull()
   })
 })

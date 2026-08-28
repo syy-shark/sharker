@@ -44,8 +44,8 @@
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区或附加根（目录名前缀）；拒绝 `www.`、`</tag>` 与尾斜杠 / `a\\` 假路径，以免直播把自动链接 / HTML / 反斜杠硬换行收束成文件芯片 |
 | `mermaid-fence.ts` | ```mermaid / ```mmd 围栏判定；只在闭合后画图；按主题缓存 SVG，避免重挂闪回源码 |
 | `mermaid-fence.test.ts` | 认 mermaid / mmd，拒绝 js / diff；SVG 缓存按主题隔离并 LRU 淘汰 |
-| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images） |
-| `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://` |
+| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；按 src 缓存固有宽高，直播重挂首帧占位 |
+| `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、尺寸缓存 |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |

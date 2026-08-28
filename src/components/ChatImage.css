@@ -10,6 +10,13 @@
   height: auto;
 }
 
+.streaming-markdown .chat-image--pending img,
+.live-prose-tail .chat-image--pending img,
+.message-body--assistant .chat-image--pending img {
+  min-height: 8rem;
+  background: var(--glass-fill-nested);
+}
+
 .chat-image-actions {
   position: absolute;
   top: 6px;

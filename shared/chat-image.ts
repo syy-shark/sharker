@@ -65,3 +65,34 @@ export function canExportChatImage(input: ChatImageExportInput): boolean {
   const src = input.src?.trim() ?? ''
   return /^https?:\/\//i.test(src) || /^data:image\//i.test(src)
 }
+
+/** 已测到的渲染图固有尺寸，直播重挂时首帧就占位，避免从 0 高撑开贴底 */
+export type ChatImageSize = { width: number; height: number }
+
+const imageSizeCache = new Map<string, ChatImageSize>()
+
+function imageCacheKey(src?: string): string {
+  return (src ?? '').trim()
+}
+
+export function readCachedChatImageSize(src?: string): ChatImageSize | null {
+  const key = imageCacheKey(src)
+  if (!key) return null
+  return imageSizeCache.get(key) ?? null
+}
+
+export function writeCachedChatImageSize(
+  src: string | undefined,
+  size: ChatImageSize
+): ChatImageSize {
+  const key = imageCacheKey(src)
+  if (key && size.width > 0 && size.height > 0) imageSizeCache.set(key, size)
+  return size
+}
+
+export function chatImageAspectStyle(
+  size: ChatImageSize | null | undefined
+): { aspectRatio: string } | undefined {
+  if (!size || size.width <= 0 || size.height <= 0) return undefined
+  return { aspectRatio: `${size.width} / ${size.height}` }
+}
