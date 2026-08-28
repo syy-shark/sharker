@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clearMermaidHeightCache,
   clearMermaidSvgCache,
+  estimateMermaidPlaceholderHeight,
   isMermaidLang,
+  mermaidSlotHeight,
   mermaidSvgAspectStyle,
   mermaidSvgCacheKey,
   parseMermaidSvgSize,
+  readCachedMermaidHeight,
   readCachedMermaidSvg,
+  writeCachedMermaidHeight,
   writeCachedMermaidSvg
 } from './mermaid-fence'
 
@@ -44,5 +49,27 @@ describe('mermaid-fence', () => {
       aspectRatio: '40 / 20'
     })
     expect(parseMermaidSvgSize('<svg></svg>')).toBeNull()
+    expect(estimateMermaidPlaceholderHeight('')).toBe(120)
+    expect(estimateMermaidPlaceholderHeight('graph TD\nA-->B')).toBeGreaterThanOrEqual(120)
+    const tall = [
+      'graph TD',
+      ...Array.from({ length: 8 }, (_, i) => `N${i}[Node ${i}] --> N${i + 1}[Node ${i + 1}]`)
+    ].join('\n')
+    expect(estimateMermaidPlaceholderHeight(tall)).toBeGreaterThan(
+      estimateMermaidPlaceholderHeight('graph TD\nA-->B')
+    )
+    clearMermaidHeightCache()
+    expect(readCachedMermaidHeight('graph TD\nA-->B', 'default')).toBeNull()
+    expect(writeCachedMermaidHeight('graph TD\nA-->B', 'default', 180)).toBe(180)
+    expect(readCachedMermaidHeight('graph TD\nA-->B', 'default')).toBe(180)
+    writeCachedMermaidSvg('flow', 'default', '<svg viewBox="0 0 200 220"></svg>')
+    expect(readCachedMermaidHeight('flow', 'default')).toBe(220)
+    expect(mermaidSlotHeight('flow', 'default', '<svg viewBox="0 0 200 220"></svg>')).toBeGreaterThanOrEqual(
+      220
+    )
+    writeCachedMermaidHeight('flow', 'default', 12)
+    expect(readCachedMermaidHeight('flow', 'default')).toBe(120)
+    clearMermaidHeightCache()
+    expect(readCachedMermaidHeight('flow', 'default')).toBeNull()
   })
 })

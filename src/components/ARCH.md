@@ -38,7 +38,7 @@
 | `CompareBlock.tsx` / `.css` | 旧/新对比行布局 |
 | `MessageActions.tsx` / `.css` | 消息复制 / 用户气泡编辑重发 / 失败重试 |
 | `ChatImage.tsx` / `.css` | 对话渲染图悬停复制 / 保存（对标 Codex Save or copy rendered images）；附件走原文件，Markdown http(s) 图由主进程拉取；工作区相对路径经 `readFileDataUrl` 成图并可点开右侧预览（对标 Codex 在同一工作区打开图片），不认 `file://`；命中尺寸缓存则带 `width`/`height` 与 `aspect-ratio` 首帧占位，未测到前 `8rem` 占位且 `eager` 加载，避免直播从 0 高撑开贴底 |
-| `MermaidBlock.tsx` / `.css` | ```mermaid / ```mmd 开闭都挂本组件（对标 Codex transcript Mermaid）；未闭合不解析；`securityLevel:strict`；失败回退代码块；成图前与成图后共用 `CodeArtifactShell`（只换体内代码行 → SVG）；命中 SVG 缓存则首帧直接成图并按 viewBox 占位；源码改了先留上一张图再换，避免闪回源码撑开贴底 |
+| `MermaidBlock.tsx` / `.css` | ```mermaid / ```mmd 开闭都挂本组件（对标 Codex transcript Mermaid）；未闭合不解析；`securityLevel:strict`；失败回退代码块；成图前与成图后共用 `CodeArtifactShell`（只换体内代码行 → SVG）；成图前按源码估高占位，成图后 `minHeight` 只升不降，避免换成 SVG 时塌/涨把贴底顶跳；命中 SVG 缓存则首帧直接成图并按 viewBox 占位；源码改了先留上一张图再换，避免闪回源码撑开贴底 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐；思考档位改由旁路 `ReasoningGauge` 调节（菜单里仍可点选） |
 | `ReasoningGauge.tsx` / `.css` | 输入框旁思考档位条（对标 Codex compact composer gauge / 官方「model and reasoning control」）；点格或左右键升降；只展示当前模型官方档位；不跟直播 token 重绘 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |

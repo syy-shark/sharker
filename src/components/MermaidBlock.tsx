@@ -6,6 +6,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   isMermaidLang,
+  mermaidSlotHeight,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   writeCachedMermaidSvg,
@@ -71,6 +72,15 @@ export function MermaidBlock({
   )
   const [failed, setFailed] = useState(false)
   const fenceLang = isMermaidLang(language) ? language : 'mermaid'
+  const slotHeight = mermaidSlotHeight(source, theme, svg)
+  const slotHighWater = useRef(slotHeight)
+  if (slotHeight > slotHighWater.current) slotHighWater.current = slotHeight
+  const reserved = slotHighWater.current
+  const placeholder = (lines: ReactNode) => (
+    <div className="mermaid-placeholder" style={{ minHeight: reserved }}>
+      {lines}
+    </div>
+  )
 
   useEffect(() => {
     if (!closed) {
@@ -137,17 +147,21 @@ export function MermaidBlock({
   )
 
   if (!closed) {
-    return shell(<ArtifactCodeLines code={source} />)
+    return shell(placeholder(<ArtifactCodeLines code={source} />))
   }
   if (!source.trim() || failed) {
     return <CodeArtifactBlock code={source} language={fenceLang} />
   }
   if (!svg) {
-    return shell(<ArtifactCodeLines code={source} />)
+    return shell(placeholder(<ArtifactCodeLines code={source} />))
   }
   const aspect = mermaidSvgAspectStyle(svg)
   return shell(
-    <div className="mermaid-block" style={aspect} dangerouslySetInnerHTML={{ __html: svg }} />,
+    <div
+      className="mermaid-block"
+      style={{ ...aspect, minHeight: reserved }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />,
     'mermaid-block-scroll',
     'mermaid 图'
   )

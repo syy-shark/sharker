@@ -37,6 +37,8 @@ export function writeCachedMermaidSvg(
   const key = mermaidSvgCacheKey(source, theme)
   mermaidSvgCache.delete(key)
   mermaidSvgCache.set(key, text)
+  const size = parseMermaidSvgSize(text)
+  if (size) writeCachedMermaidHeight(source, theme, size.height)
   while (mermaidSvgCache.size > MERMAID_SVG_CACHE_LIMIT) {
     const oldest = mermaidSvgCache.keys().next().value
     if (oldest === undefined) break
@@ -78,4 +80,67 @@ export function mermaidSvgAspectStyle(
   const size = svg ? parseMermaidSvgSize(svg) : null
   if (!size) return undefined
   return { aspectRatio: `${size.width} / ${size.height}` }
+}
+
+const MERMAID_HEIGHT_MIN = 120
+const MERMAID_HEIGHT_MAX = 720
+const mermaidHeightCache = new Map<string, number>()
+
+function clampMermaidHeight(value: number): number {
+  if (!Number.isFinite(value)) return MERMAID_HEIGHT_MIN
+  return Math.min(MERMAID_HEIGHT_MAX, Math.max(MERMAID_HEIGHT_MIN, Math.round(value)))
+}
+
+/** 从节点 / 边 / 行数估成图高，闭合后代码尾先占位，避免换成 SVG 时猛涨或塌下去 */
+export function estimateMermaidPlaceholderHeight(source: string): number {
+  const text = source.replace(/\n$/, '').trim()
+  if (!text) return MERMAID_HEIGHT_MIN
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('%%'))
+  const edges = (text.match(/-->|---|-\.-|==>|->>|-->>/g) ?? []).length
+  const nodes = (text.match(/\[[^\]]+\]|\([^)]+\)|\{[^}]+\}/g) ?? []).length
+  const participants = (text.match(/^\s*participant\s+/gim) ?? []).length
+  const rows = Math.max(lines.length, edges + 1, nodes, participants, 1)
+  const fromCode = lines.length * 22 + 48
+  const fromGraph = rows * 36 + 56
+  return clampMermaidHeight(Math.max(fromCode, fromGraph))
+}
+
+export function readCachedMermaidHeight(
+  source: string,
+  theme: MermaidUiTheme
+): number | null {
+  const key = mermaidSvgCacheKey(source, theme)
+  return mermaidHeightCache.get(key) ?? null
+}
+
+export function writeCachedMermaidHeight(
+  source: string,
+  theme: MermaidUiTheme,
+  height: number
+): number {
+  const key = mermaidSvgCacheKey(source, theme)
+  const next = clampMermaidHeight(height)
+  mermaidHeightCache.set(key, next)
+  return next
+}
+
+export function clearMermaidHeightCache(): void {
+  mermaidHeightCache.clear()
+}
+
+/** 成图槽高度：实测 SVG / 缓存 / 估高取高，只升不降以免贴底回跳 */
+export function mermaidSlotHeight(
+  source: string,
+  theme: MermaidUiTheme,
+  svg?: string
+): number {
+  const fromSvg = svg ? parseMermaidSvgSize(svg)?.height : undefined
+  return Math.max(
+    fromSvg && fromSvg > 0 ? clampMermaidHeight(fromSvg) : 0,
+    readCachedMermaidHeight(source, theme) ?? 0,
+    estimateMermaidPlaceholderHeight(source)
+  )
 }
