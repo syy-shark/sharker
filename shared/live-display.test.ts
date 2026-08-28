@@ -8,7 +8,10 @@ import {
   liveThinkingText,
   rollingThinkPreview,
   selectLiveHeadStep,
-  shouldSynthesizePlanning
+  shouldFoldTurnWork,
+  shouldSynthesizePlanning,
+  turnProcessBounds,
+  processElapsedSeconds
 } from './live-display'
 
 describe('live display head', () => {
@@ -142,5 +145,35 @@ describe('elapsed clock', () => {
     expect(formatElapsedClock(240)).toBe('4m')
     expect(formatElapsedClock(4140)).toBe('1h 9m')
     expect(formatElapsedClock(36000)).toBe('10h')
+  })
+})
+
+describe('worked-for fold', () => {
+  it('keeps the timeline open while tools run before any answer', () => {
+    expect(
+      shouldFoldTurnWork({ contentStreaming: false, isStreaming: true, foldableStepCount: 3 })
+    ).toBe(false)
+  })
+
+  it('folds once the answer is on screen or the turn is done', () => {
+    expect(
+      shouldFoldTurnWork({ contentStreaming: true, isStreaming: true, foldableStepCount: 3 })
+    ).toBe(true)
+    expect(
+      shouldFoldTurnWork({ contentStreaming: false, isStreaming: false, foldableStepCount: 2 })
+    ).toBe(true)
+    expect(
+      shouldFoldTurnWork({ contentStreaming: true, isStreaming: false, foldableStepCount: 0 })
+    ).toBe(false)
+  })
+
+  it('uses the earliest start and latest end for the worked clock', () => {
+    expect(
+      turnProcessBounds([
+        { startedAt: 1000, endedAt: 1500 },
+        { startedAt: 800, endedAt: 2400 }
+      ])
+    ).toEqual({ startedAt: 800, endedAt: 2400 })
+    expect(processElapsedSeconds({ startedAt: 1000, endedAt: 13000 })).toBe(12)
   })
 })

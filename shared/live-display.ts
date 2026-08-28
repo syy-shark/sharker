@@ -171,6 +171,46 @@ export function shouldSynthesizePlanning(options: {
  */
 export const NEAR_LIVE_ROW_WINDOW = 8
 
+/**
+ * 正文已上屏或回合结束后，把可折叠过程收成「工作了 / 工作中」（对标 Codex Worked for）。
+ * 审批/失败行不算可折叠：折叠时仍要露出来。
+ */
+export function shouldFoldTurnWork(options: {
+  contentStreaming: boolean
+  isStreaming: boolean
+  foldableStepCount: number
+}): boolean {
+  if (options.foldableStepCount <= 0) return false
+  return options.contentStreaming || !options.isStreaming
+}
+
+/** 过程区起止：最早 startedAt → 最晚 endedAt */
+export function turnProcessBounds(
+  segments: Array<{ startedAt?: number; endedAt?: number }>
+): { startedAt?: number; endedAt?: number } {
+  let startedAt: number | undefined
+  let endedAt: number | undefined
+  for (const segment of segments) {
+    if (segment.startedAt != null) {
+      startedAt = startedAt == null ? segment.startedAt : Math.min(startedAt, segment.startedAt)
+    }
+    if (segment.endedAt != null) {
+      endedAt = endedAt == null ? segment.endedAt : Math.max(endedAt, segment.endedAt)
+    }
+  }
+  return { startedAt, endedAt }
+}
+
+export function processElapsedSeconds(options: {
+  startedAt?: number | null
+  endedAt?: number | null
+  now?: number
+}): number {
+  if (options.startedAt == null) return 0
+  const end = options.endedAt ?? options.now ?? Date.now()
+  return Math.max(0, Math.round((end - options.startedAt) / 1000))
+}
+
 /** 对标 Codex Goal / 长回合秒表：23s · 4m · 1h 9m */
 export function formatElapsedClock(seconds: number): string {
   if (seconds < 1) return '<1s'

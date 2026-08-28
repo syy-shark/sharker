@@ -33,7 +33,7 @@
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
-| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合 |
+| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合；`shouldFoldTurnWork` 在正文上屏后收成 Worked for |
 | `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价块（标题/列表含缩进嵌套、续行与松散项/引用/表格/分隔线）与行内（链接 / http 图 / 删除线 / 文件引用）；`continueCheapProseBlocks` 复用已闭合列表项/嵌套项/表格行 |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内（含 http 图 / 删除线）与标题列表（嵌套、续行）/表格 |
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区 |

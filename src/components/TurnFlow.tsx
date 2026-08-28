@@ -3,6 +3,7 @@
  * - 思考：默认折叠成「思考中」（对标 Codex），点开才看旁白，避免顶着回答长高
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
+ * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -16,9 +17,13 @@ import {
 } from '../../shared/process-phases'
 import {
   buildLiveHead,
+  formatElapsedClock,
   liveThoughtBody,
   liveThinkingText,
-  shouldSynthesizePlanning
+  processElapsedSeconds,
+  shouldFoldTurnWork,
+  shouldSynthesizePlanning,
+  turnProcessBounds
 } from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
@@ -321,6 +326,43 @@ export function ThoughtDisclosure({
   )
 }
 
+function WorkedDisclosure({
+  open,
+  onToggle,
+  streaming,
+  clock
+}: {
+  open: boolean
+  onToggle: () => void
+  streaming: boolean
+  clock: ReactNode
+}) {
+  return (
+    <div className={`turn-flow-worked${streaming ? ' turn-flow-worked--live' : ''}`}>
+      <button
+        type="button"
+        className="turn-flow-thought-toggle"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <ChevronDown
+          size={13}
+          className={`turn-flow-thought-chevron ${open ? 'is-open' : ''}`}
+          aria-hidden
+        />
+        <span
+          className={
+            streaming ? 'turn-flow-thought-label live-text-shimmer' : 'turn-flow-thought-label'
+          }
+        >
+          {streaming ? '工作中' : '工作了'}
+        </span>
+        <span className="turn-flow-thought-time">{clock}</span>
+      </button>
+    </div>
+  )
+}
+
 function ProcessStepRow({
   step,
   isLast,
@@ -438,7 +480,7 @@ function ProcessStepRow({
   )
 }
 
-/** 按先后顺序渲染过程；直播时逐步追加，不做阶段折叠。 */
+/** 按先后顺序渲染过程；正文上屏后把步骤收进 Worked for，避免顶着回答长高。 */
 export function TurnFlow({
   segments,
   isStreaming = false,
@@ -461,6 +503,8 @@ export function TurnFlow({
   const lastSwapAtRef = useRef(0)
   const [thoughtOpen, setThoughtOpen] = useState(false)
   const userThoughtRef = useRef(false)
+  const [workedOpen, setWorkedOpen] = useState(false)
+  const userWorkedRef = useRef(false)
   useEffect(() => {
     return () => {
       if (stickyTimerRef.current) clearTimeout(stickyTimerRef.current)
@@ -646,9 +690,33 @@ export function TurnFlow({
       Boolean(s.source?.segment.approval)
   )
   const thoughtAsLiveHead = Boolean(isStreaming && thoughtBusy && hasThought)
+  const pinnedSteps = listSteps.filter(
+    (step) => step.status === 'error' || Boolean(step.source?.segment.approval)
+  )
+  const foldableSteps = listSteps.filter(
+    (step) => step.status !== 'error' && !step.source?.segment.approval
+  )
+  const showWorkedChip = shouldFoldTurnWork({
+    contentStreaming,
+    isStreaming,
+    foldableStepCount: foldableSteps.length
+  })
+  const workedExpanded = userWorkedRef.current ? workedOpen : false
+  const showStepList = listSteps.length > 0 && (!showWorkedChip || workedExpanded)
+  const showPinnedSteps = pinnedSteps.length > 0 && !showStepList
+  const processBounds = turnProcessBounds(segments)
+  const workedStartedAt = fallbackStartedAt ?? processBounds.startedAt
+  const workedClock = isStreaming ? (
+    <LiveDuration startedAt={workedStartedAt} />
+  ) : (
+    formatElapsedClock(
+      processElapsedSeconds({ startedAt: workedStartedAt, endedAt: processBounds.endedAt })
+    )
+  )
   const showLiveHead = Boolean(
     isStreaming &&
       !thoughtAsLiveHead &&
+      !showWorkedChip &&
       (!contentStreaming || listSteps.length > 0 || approvalWaiting)
   )
   const showThought = Boolean(hasThought && isStreaming)
@@ -709,13 +777,37 @@ export function TurnFlow({
           ) : null}
         </div>
       ) : null}
-      {listSteps.length > 0 ? (
+      {showWorkedChip ? (
+        <WorkedDisclosure
+          open={workedExpanded}
+          onToggle={() => {
+            userWorkedRef.current = true
+            setWorkedOpen(!workedExpanded)
+          }}
+          streaming={isStreaming}
+          clock={workedClock}
+        />
+      ) : null}
+      {showStepList ? (
         <ol className="turn-flow-steps">
           {listSteps.map((step, i) => (
             <ProcessStepRow
               key={step.id}
               step={step}
               isLast={i === listSteps.length - 1}
+              onOpenSubAgent={onOpenSubAgent}
+              outputMode={outputMode}
+            />
+          ))}
+        </ol>
+      ) : null}
+      {showPinnedSteps ? (
+        <ol className="turn-flow-steps">
+          {pinnedSteps.map((step, i) => (
+            <ProcessStepRow
+              key={step.id}
+              step={step}
+              isLast={i === pinnedSteps.length - 1}
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
             />

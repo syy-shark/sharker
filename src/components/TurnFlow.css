@@ -103,7 +103,8 @@
 }
 
 /* Cursor 式 Thought：chevron 折叠条 + 左侧细轨旁白，无灰卡片 */
-.turn-flow-thought {
+.turn-flow-thought,
+.turn-flow-worked {
   display: flex;
   flex-direction: column;
   width: 100%;
