@@ -3984,6 +3984,18 @@ export default function App() {
           }
           const usage = estimateContextUsage(messagesRef.current, streamingRef.current, '')
           const { limit } = resolveContextLimit(model, provider?.contextWindow)
+          let usageTodayTokens = 0
+          let usageTodayTurns = 0
+          if (window.sharker.getTokenUsage) {
+            try {
+              const days = await window.sharker.getTokenUsage(usageHistoryDays('daily'))
+              const today = days[days.length - 1]
+              usageTodayTokens = today?.tokens ?? 0
+              usageTodayTurns = today?.turns ?? 0
+            } catch {
+              /* optional */
+            }
+          }
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
@@ -3998,7 +4010,9 @@ export default function App() {
               branch,
               goal: threadGoalRef.current?.text,
               contextUsed: usage.total,
-              contextLimit: limit
+              contextLimit: limit,
+              usageTodayTokens,
+              usageTodayTurns
             })
           }
           setMessages((msgs) => {

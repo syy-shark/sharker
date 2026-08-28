@@ -426,6 +426,16 @@
   margin-bottom: 0;
 }
 
+.live-prose-tail {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.live-prose-tail:last-child {
+  margin-bottom: 0;
+}
+
 .message-body--assistant pre {
   background: var(--surface-frost-raised);
   border: 1px solid var(--border-crystal-dim);

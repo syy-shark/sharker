@@ -33,7 +33,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 | `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
-| `/status` | 显示对话 ID、模型、权限、线程模式、分支与上下文占用 |
+| `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；输入框上方进度行可暂停 / 继续 / 编辑 / 清除（对标 Codex Goal） |
 | `/plan-mode` | `/plan` 的桌面端别名 |

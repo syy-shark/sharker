@@ -88,3 +88,66 @@ export function extractOpenFenceBody(tail: string): string {
   const nl = tail.indexOf('\n')
   return nl === -1 ? '' : tail.slice(nl + 1)
 }
+
+/** 直播散文尾：廉价行内节点，避免每 token 跑 remark */
+export type CheapInlineNode =
+  | { type: 'text'; text: string }
+  | { type: 'code'; text: string }
+  | { type: 'strong'; text: string }
+  | { type: 'em'; text: string }
+
+/**
+ * 只认成对的 `code` / **bold** / *italic*。
+ * 未闭合标记留在原文，避免直播时闪烁。
+ */
+export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
+  const src = String(text ?? '')
+  if (!src) return []
+  const nodes: CheapInlineNode[] = []
+  let i = 0
+  let buf = ''
+  const flush = () => {
+    if (!buf) return
+    nodes.push({ type: 'text', text: buf })
+    buf = ''
+  }
+  while (i < src.length) {
+    if (src[i] === '`') {
+      const end = src.indexOf('`', i + 1)
+      if (end === -1) {
+        buf += src.slice(i)
+        break
+      }
+      flush()
+      nodes.push({ type: 'code', text: src.slice(i + 1, end) })
+      i = end + 1
+      continue
+    }
+    if (src.startsWith('**', i)) {
+      const end = src.indexOf('**', i + 2)
+      if (end === -1) {
+        buf += src.slice(i)
+        break
+      }
+      flush()
+      nodes.push({ type: 'strong', text: src.slice(i + 2, end) })
+      i = end + 2
+      continue
+    }
+    if (src[i] === '*') {
+      const end = src.indexOf('*', i + 1)
+      if (end === -1) {
+        buf += src.slice(i)
+        break
+      }
+      flush()
+      nodes.push({ type: 'em', text: src.slice(i + 1, end) })
+      i = end + 1
+      continue
+    }
+    buf += src[i]
+    i += 1
+  }
+  flush()
+  return nodes
+}

@@ -32,8 +32,8 @@
 | `token-usage-format.test.ts` | 用量窗口与汇总 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child） |
-| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部，避免每 token 重解析全文 |
-| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；散文尾廉价行内解析 |
+| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、廉价行内 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
 | `git-status.ts` | porcelain 行解析：暂存 / 未暂存 / 未跟踪 |
@@ -94,8 +94,8 @@
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
 | `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字 |
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
-| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文） |
-| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径 |
+| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文 / 本机今日用量） |
+| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量 |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |

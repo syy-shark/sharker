@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { extractOpenFenceBody, splitStreamingMarkdown } from './streaming-markdown'
+import {
+  extractOpenFenceBody,
+  parseCheapInlineMarkdown,
+  splitStreamingMarkdown
+} from './streaming-markdown'
 
 describe('splitStreamingMarkdown', () => {
   it('keeps a growing paragraph in the tail', () => {
@@ -46,5 +50,18 @@ describe('splitStreamingMarkdown', () => {
       'const a = 1\nconst b = 2'
     )
     expect(extractOpenFenceBody('```ts')).toBe('')
+  })
+
+  it('parses paired inline marks and keeps an open mark as text', () => {
+    expect(parseCheapInlineMarkdown('见 `foo` 与 **bar** 和 *baz*')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'code', text: 'foo' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'strong', text: 'bar' },
+      { type: 'text', text: ' 和 ' },
+      { type: 'em', text: 'baz' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
+    expect(parseCheapInlineMarkdown('')).toEqual([])
   })
 })

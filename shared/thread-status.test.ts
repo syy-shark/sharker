@@ -14,13 +14,16 @@ describe('thread status', () => {
       branch: 'main',
       goal: '修好滚动',
       contextUsed: 1200,
-      contextLimit: 128000
+      contextLimit: 128000,
+      usageTodayTokens: 4200,
+      usageTodayTurns: 3
     })
     expect(text).toContain('本地工作区')
     expect(text).toContain('DeepSeek / deepseek-chat')
     expect(text).toContain('修好滚动')
     expect(text).toContain('1200 / 128000')
     expect(text).toContain('conv-live')
+    expect(text).toMatch(/今日 4[,.]?200 tokens · 3 回合/)
     expect(text).not.toContain('/hidden')
   })
 

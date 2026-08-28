@@ -17,6 +17,9 @@ export interface ThreadStatusInfo {
   goal?: string
   contextUsed?: number
   contextLimit?: number
+  /** 本机今日用量（对标 Codex /status rate limits；没有供应商配额时用本机记录） */
+  usageTodayTokens?: number
+  usageTodayTurns?: number
 }
 
 function line(label: string, value: string | undefined): string {
@@ -43,7 +46,13 @@ export function formatThreadStatus(info: ThreadStatusInfo): string {
     info.threadMode === 'worktree' ? line('Worktree', info.worktreePath) : '',
     line('分支', info.branch),
     line('目标', info.goal),
-    ctx ? line('上下文', ctx) : ''
+    ctx ? line('上下文', ctx) : '',
+    info.usageTodayTokens != null || info.usageTodayTurns != null
+      ? line(
+          '用量',
+          `今日 ${(info.usageTodayTokens ?? 0).toLocaleString()} tokens · ${info.usageTodayTurns ?? 0} 回合`
+        )
+      : ''
   ]
     .filter(Boolean)
     .join('\n')
