@@ -68,6 +68,65 @@ export async function listBranchChanges(options: {
   }
 }
 
+/** 审查栏 Commit 视图：一条 git log 行 */
+export type GitCommitRef = {
+  sha: string
+  subject: string
+}
+
+/** `git log --format=%H%x09%s` */
+export function parseCommitLog(text: string): GitCommitRef[] {
+  const rows: GitCommitRef[] = []
+  for (const raw of text.split('\n')) {
+    const line = raw.trimEnd()
+    if (!line) continue
+    const tab = line.indexOf('\t')
+    if (tab < 0) continue
+    const sha = line.slice(0, tab).trim()
+    const subject = line.slice(tab + 1).trim()
+    if (!/^[0-9a-f]{7,40}$/i.test(sha) || !subject) continue
+    rows.push({ sha, subject })
+  }
+  return rows
+}
+
+/** 最近提交（对标 Codex Review → Commit） */
+export async function listRecentCommits(options: {
+  cwd: string
+  runGit: GitRunner
+  limit?: number
+}): Promise<GitCommitRef[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? 20, 50))
+  try {
+    const out = await options.runGit(options.cwd, ['log', `-${limit}`, '--format=%H%x09%s'], {
+      trim: false
+    })
+    return parseCommitLog(out)
+  } catch {
+    return []
+  }
+}
+
+/** 单个 commit 的 name-status（含根提交） */
+export async function listCommitChanges(options: {
+  cwd: string
+  sha: string
+  runGit: GitRunner
+}): Promise<{ sha: string; files: GitStatusChange[] }> {
+  const sha = options.sha.trim()
+  if (!sha) return { sha: '', files: [] }
+  try {
+    const out = await options.runGit(
+      options.cwd,
+      ['diff-tree', '--no-commit-id', '--name-status', '-r', '--root', sha],
+      { trim: false }
+    )
+    return { sha, files: parseNameStatus(out) }
+  } catch {
+    return { sha, files: [] }
+  }
+}
+
 /** 本轮路径是否命中该变更（相对路径或 basename） */
 export function fileInLastTurn(path: string, lastTurnPaths: string[]): boolean {
   if (!lastTurnPaths.length) return false

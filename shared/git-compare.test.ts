@@ -3,9 +3,19 @@ import os from 'os'
 import path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { runGit } from '../tools/shared/git-runner'
-import { fileInLastTurn, listBranchChanges, parseNameStatus } from './git-compare'
+import {
+  fileInLastTurn,
+  listBranchChanges,
+  listCommitChanges,
+  parseCommitLog,
+  parseNameStatus
+} from './git-compare'
 
 describe('git compare', () => {
+  it('parses commit log lines', () => {
+    expect(parseCommitLog('abc1234\tfix login\n')).toEqual([{ sha: 'abc1234', subject: 'fix login' }])
+  })
+
   it('parses name-status including renames', () => {
     const files = parseNameStatus('M\tsrc/a.ts\nA\tnew.ts\nR100\told.ts -> new-name.ts\n')
     expect(files.map((f) => f.path)).toEqual(['src/a.ts', 'new.ts', 'new-name.ts'])
@@ -35,6 +45,9 @@ describe('git compare', () => {
       const result = await listBranchChanges({ cwd: dir, runGit })
       expect(result.base).toBe('main')
       expect(result.files.map((f) => f.path)).toEqual(['b.ts'])
+      const feat = await runGit(dir, ['rev-parse', 'HEAD'])
+      const commit = await listCommitChanges({ cwd: dir, sha: feat.trim(), runGit })
+      expect(commit.files.map((f) => f.path)).toEqual(['b.ts'])
     } finally {
       await rm(dir, { recursive: true, force: true })
     }

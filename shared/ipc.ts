@@ -89,6 +89,8 @@ export const IPC = {
   GIT_PUSH: 'git:push',
   /** 相对基线分支的已提交变更 */
   GIT_BRANCH_CHANGES: 'git:branch-changes',
+  /** 指定 commit 的已提交变更（审查栏 Commit） */
+  GIT_COMMIT_CHANGES: 'git:commit-changes',
   /** 审查面板：用 gh 创建 Pull Request */
   GIT_CREATE_PR: 'git:create-pr',
   /** 当前分支 PR 与 GitHub 行内审查评论 */

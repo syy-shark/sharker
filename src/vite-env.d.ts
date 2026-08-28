@@ -220,11 +220,27 @@ export interface SharkerApi {
       untracked?: boolean
     }[]
   }>
+  getGitCommitChanges: (
+    cwd: string,
+    sha?: string
+  ) => Promise<{
+    commits: { sha: string; subject: string }[]
+    sha: string
+    files: {
+      status: string
+      path: string
+      raw: string
+      staged?: boolean
+      unstaged?: boolean
+      untracked?: boolean
+    }[]
+  }>
   getGitFileDiff: (
     cwd: string,
     filePath: string,
     status?: string,
-    scope?: 'unstaged' | 'staged' | 'branch'
+    scope?: 'unstaged' | 'staged' | 'branch' | 'commit',
+    rev?: string
   ) => Promise<{
     ok: boolean
     path: string

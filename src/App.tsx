@@ -88,7 +88,8 @@ import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
 import {
   REVIEW_BRANCH_PROMPT,
   REVIEW_WORKING_TREE_PROMPT,
-  parseReviewRequest
+  parseReviewRequest,
+  reviewCommitPrompt
 } from '../shared/review-prompt'
 import {
   nextPersonality,
@@ -380,6 +381,11 @@ export default function App() {
   const [queueHeld, setQueueHeld] = useState(false)
   const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
+  const [reviewFocus, setReviewFocus] = useState<{
+    mode: 'uncommitted' | 'last_turn' | 'branch' | 'commit'
+    sha?: string
+    token: number
+  } | null>(null)
   const [queueUnread, setQueueUnread] = useState(0)
   const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
@@ -4315,8 +4321,17 @@ export default function App() {
             delivery: settingsRef.current.reviewDelivery
           })
           handleTogglePanel('changes')
+          setReviewFocus({
+            mode: review.scope === 'commit' ? 'commit' : review.scope === 'branch' ? 'branch' : 'uncommitted',
+            sha: review.commit,
+            token: Date.now()
+          })
           const prompt =
-            review.scope === 'branch' ? REVIEW_BRANCH_PROMPT : REVIEW_WORKING_TREE_PROMPT
+            review.scope === 'commit'
+              ? reviewCommitPrompt(review.commit)
+              : review.scope === 'branch'
+                ? REVIEW_BRANCH_PROMPT
+                : REVIEW_WORKING_TREE_PROMPT
           const wsId = settingsRef.current.activeWorkspaceId
           if (review.detached && wsId && window.sharker.createConversation) {
             const conv = await window.sharker.createConversation(wsId)
@@ -6317,6 +6332,7 @@ export default function App() {
           onClose={() => setRightPanelOpen(false)}
           changesRevision={changesRevision}
           lastTurnPaths={lastTurnPaths}
+          reviewFocus={reviewFocus}
           agentFindings={reviewFindings}
           suggestedCommit={suggestedCommit}
           conversationId={activeConversationId}

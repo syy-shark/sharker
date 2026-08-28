@@ -27,7 +27,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
-| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线 |
+| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线；`/review commit [sha]` 指定提交（对标 Codex Review a commit） |
 | `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
@@ -69,6 +69,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **未提交**：未暂存 / 已暂存；文件与 hunk 可暂存、取消暂存、还原
 - **本轮**：只看上一轮助手写过、仍在工作区的文件
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
+- **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**

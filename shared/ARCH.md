@@ -62,7 +62,7 @@
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
-| `review-prompt.ts` | `/review` 未提交 / 基线提示词；Review delivery（inline / detached）与 here/detached 覆盖 |
+| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；Review delivery（inline / detached）与 here/detached 覆盖 |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -70,8 +70,9 @@
 | `git-hunk-actions.test.ts` | 只暂存第一个 hunk |
 | `git-commit.ts` | 审查面板提交已暂存 / 推送当前分支（可选 `--force-with-lease`） |
 | `git-commit.test.ts` | 只提交暂存、拒绝空说明、无远程推送失败、`gitPushArgs` |
-| `git-compare.ts` | 相对基线分支的 name-status + 本轮路径匹配 |
-| `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
+| `git-compare.ts` | 相对基线分支 / 指定 commit 的 name-status + 本轮路径匹配 |
+| `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main、commit name-status |
+| `commit-review.test.ts` | `/review commit` 解析与 git log 行 |
 | `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
 | `git-pr-context.ts` | 当前分支 PR + GitHub 行内评论（`gh pr view` / `gh api`）；顶栏芯片文案 |
@@ -162,7 +163,7 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` 解析、Review delivery 覆盖 |
+| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖 |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 

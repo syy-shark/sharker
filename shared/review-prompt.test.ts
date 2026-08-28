@@ -7,6 +7,8 @@ describe('review scope', () => {
     expect(parseReviewScope('uncommitted')).toBe('uncommitted')
     expect(parseReviewScope('branch')).toBe('branch')
     expect(parseReviewScope('base')).toBe('branch')
+    expect(parseReviewScope('commit')).toBe('commit')
+    expect(parseReviewRequest('commit abc1234').commit).toBe('abc1234')
   })
 
   it('defaults to a detached review thread unless here is passed', () => {

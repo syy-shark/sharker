@@ -104,7 +104,7 @@ import {
 import { applyGitHunkAction } from '../../shared/git-hunk-actions'
 import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
-import { listBranchChanges } from '../../shared/git-compare'
+import { listBranchChanges, listCommitChanges, listRecentCommits } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
 import { loadPullRequestContext, parsePrUrlParts } from '../../shared/git-pr-context'
 import { localCommentsForGithub, postPullRequestLineComments } from '../../shared/git-pr-review'
@@ -1405,7 +1405,8 @@ function registerIpc(): void {
       cwd: string,
       filePath: string,
       status = 'M',
-      scope: 'unstaged' | 'staged' | 'branch' = 'unstaged'
+      scope: 'unstaged' | 'staged' | 'branch' | 'commit' = 'unstaged',
+      rev = ''
     ) => {
       const root = path.resolve(String(cwd || ''))
       const rel = String(filePath || '').replace(/^[/\\]+/, '')
@@ -1447,6 +1448,21 @@ function registerIpc(): void {
         }
         const oldText = (await show(`${base}:${posix}`)) ?? ''
         const newText = (await show(`HEAD:${posix}`)) ?? ''
+        return {
+          ok: true,
+          path: rel,
+          status,
+          diff: diffFromGitTexts({ path: rel, status, oldText, newText })
+        }
+      }
+
+      if (scope === 'commit') {
+        const sha = String(rev || '').trim()
+        if (!sha) {
+          return { ok: false, path: rel, status, error: '缺少 commit' }
+        }
+        const oldText = (await show(`${sha}^:${posix}`)) ?? ''
+        const newText = (await show(`${sha}:${posix}`)) ?? ''
         return {
           ok: true,
           path: rel,
@@ -1633,6 +1649,27 @@ function registerIpc(): void {
       return { base: null, files: [] }
     }
     return listBranchChanges({ cwd: root, runGit })
+  })
+
+  ipcMain.handle(IPC.GIT_COMMIT_CHANGES, async (_e, cwd: string, sha?: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { commits: [], sha: '', files: [] }
+    try {
+      await runGit(root, ['rev-parse', '--is-inside-work-tree'])
+    } catch {
+      return { commits: [], sha: '', files: [] }
+    }
+    const commits = await listRecentCommits({ cwd: root, runGit })
+    const want = String(sha || '').trim()
+    const resolved =
+      commits.find((c) => c.sha === want || (want.length >= 7 && c.sha.startsWith(want)))?.sha ||
+      want ||
+      commits[0]?.sha ||
+      ''
+    const files = resolved
+      ? (await listCommitChanges({ cwd: root, sha: resolved, runGit })).files
+      : []
+    return { commits, sha: resolved, files }
   })
 
   ipcMain.handle(

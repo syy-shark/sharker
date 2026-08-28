@@ -172,12 +172,15 @@ contextBridge.exposeInMainWorld('sharker', {
     cwd: string,
     filePath: string,
     status?: string,
-    scope?: 'unstaged' | 'staged' | 'branch'
-  ) => ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status, scope),
+    scope?: 'unstaged' | 'staged' | 'branch' | 'commit',
+    rev?: string
+  ) => ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status, scope, rev),
   commitGitChanges: (cwd: string, message: string) =>
     ipcRenderer.invoke(IPC.GIT_COMMIT, cwd, message),
   pushGitBranch: (cwd: string) => ipcRenderer.invoke(IPC.GIT_PUSH, cwd),
   getGitBranchChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_BRANCH_CHANGES, cwd),
+  getGitCommitChanges: (cwd: string, sha?: string) =>
+    ipcRenderer.invoke(IPC.GIT_COMMIT_CHANGES, cwd, sha),
   createGitPullRequest: (
     cwd: string,
     payload: { title: string; body?: string; base?: string }

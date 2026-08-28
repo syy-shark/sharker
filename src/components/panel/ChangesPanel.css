@@ -112,6 +112,31 @@
   outline-offset: 1px;
 }
 
+.changes-panel__commit-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 0;
+}
+
+.changes-panel__commit-pick-label {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.changes-panel__commit-select {
+  min-width: 0;
+  flex: 1;
+  min-height: 28px;
+  padding: 0 8px;
+  color: var(--text);
+  background: var(--glass-fill-nested);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 12px;
+}
+
 .changes-panel__hint--bar {
   padding: 0 12px 8px;
 }

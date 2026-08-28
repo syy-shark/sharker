@@ -7,7 +7,7 @@ import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
 import type { GitReviewAction } from '../../../shared/git-review-actions'
-import { fileInLastTurn } from '../../../shared/git-compare'
+import { fileInLastTurn, type GitCommitRef } from '../../../shared/git-compare'
 import {
   formatReviewCommentsPrompt,
   type ReviewLineComment
@@ -31,7 +31,7 @@ interface ChangeFile {
   untracked?: boolean
 }
 
-type CompareMode = 'uncommitted' | 'last_turn' | 'branch'
+type CompareMode = 'uncommitted' | 'last_turn' | 'branch' | 'commit'
 type ReviewScope = 'unstaged' | 'staged'
 
 interface Props {
@@ -48,6 +48,8 @@ interface Props {
   suggestedCommit?: string
   /** Settings → Git 分支名前缀（占位提示；真正加前缀在主进程） */
   gitBranchPrefix?: string
+  /** `/review` 打开时切到对应对比（对标 Codex Review a commit / branch） */
+  reviewFocus?: { mode: CompareMode; sha?: string; token: number } | null
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -76,13 +78,17 @@ export function ChangesPanel({
   onSendComments,
   agentFindings = [],
   suggestedCommit = '',
-  gitBranchPrefix = ''
+  gitBranchPrefix = '',
+  reviewFocus = null
 }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
   const [files, setFiles] = useState<ChangeFile[]>([])
   const [branchFiles, setBranchFiles] = useState<ChangeFile[]>([])
   const [branchBase, setBranchBase] = useState<string | null>(null)
+  const [commits, setCommits] = useState<GitCommitRef[]>([])
+  const [commitSha, setCommitSha] = useState('')
+  const [commitFiles, setCommitFiles] = useState<ChangeFile[]>([])
   const [compare, setCompare] = useState<CompareMode>('uncommitted')
   const [scope, setScope] = useState<ReviewScope>('unstaged')
   const [loading, setLoading] = useState(false)
@@ -115,8 +121,14 @@ export function ChangesPanel({
     setCommitMessage((prev) => prev.trim() || hint)
   }, [suggestedCommit])
 
-  const sourceFiles = compare === 'branch' ? branchFiles : files
-  const readOnly = compare === 'branch'
+  useEffect(() => {
+    if (!reviewFocus) return
+    setCompare(reviewFocus.mode)
+    if (reviewFocus.sha) setCommitSha(reviewFocus.sha)
+  }, [reviewFocus])
+
+  const sourceFiles = compare === 'branch' ? branchFiles : compare === 'commit' ? commitFiles : files
+  const readOnly = compare === 'branch' || compare === 'commit'
   const visible = sourceFiles.filter((f) => {
     if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
     if (compare === 'branch') return true
@@ -149,7 +161,19 @@ export function ChangesPanel({
           })
         }
       }
-      if (compare !== 'branch') {
+      if (compare === 'commit' && window.sharker.getGitCommitChanges) {
+        const commitResult = await window.sharker.getGitCommitChanges(workspacePath, commitSha)
+        setCommits(commitResult.commits)
+        setCommitSha(commitResult.sha)
+        setCommitFiles(commitResult.files)
+        if (compare === 'commit') {
+          setSelectedPath((prev) => {
+            if (prev && commitResult.files.some((f) => f.path === prev)) return prev
+            return commitResult.files[0]?.path ?? null
+          })
+        }
+      }
+      if (compare !== 'branch' && compare !== 'commit') {
         setSelectedPath((prev) => {
           const nextList = result.files.filter((f) => {
             if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
@@ -180,10 +204,11 @@ export function ChangesPanel({
       setError(e instanceof Error ? e.message : String(e))
       setFiles([])
       setBranchFiles([])
+      setCommitFiles([])
     } finally {
       setLoading(false)
     }
-  }, [workspacePath, scope, compare, lastTurnPaths])
+  }, [workspacePath, scope, compare, lastTurnPaths, commitSha])
 
   /** 执行暂存 / 取消暂存 / 还原；还原前确认 */
   const runAction = useCallback(
@@ -348,9 +373,15 @@ export function ChangesPanel({
     let cancelled = false
     setDiffLoading(true)
     setDiffError(null)
-    const diffScope = compare === 'branch' ? 'branch' : scope
+    const diffScope = compare === 'branch' ? 'branch' : compare === 'commit' ? 'commit' : scope
     void window.sharker
-      .getGitFileDiff(workspacePath, selectedPath, file?.status ?? 'M', diffScope)
+      .getGitFileDiff(
+        workspacePath,
+        selectedPath,
+        file?.status ?? 'M',
+        diffScope,
+        compare === 'commit' ? commitSha : undefined
+      )
       .then((result) => {
         if (cancelled) return
         if (!result.ok || !result.diff) {
@@ -373,7 +404,7 @@ export function ChangesPanel({
     return () => {
       cancelled = true
     }
-  }, [sourceFiles, selectedPath, workspacePath, revision, scope, compare])
+  }, [sourceFiles, selectedPath, workspacePath, revision, scope, compare, commitSha])
 
   if (!workspacePath) {
     return (
@@ -389,7 +420,11 @@ export function ChangesPanel({
       ? lastTurnPaths.length === 0
         ? '本轮还没有改文件'
         : '本轮改动已提交或不在工作区'
-      : compare === 'branch'
+      : compare === 'commit'
+        ? commitSha
+          ? '这个 commit 没有文件变更'
+          : '没有可预览的 commit'
+        : compare === 'branch'
         ? branchBase
           ? `相对 ${branchBase} 没有已提交变更`
           : '无法检测基线分支（main / master）'
@@ -506,7 +541,35 @@ export function ChangesPanel({
           >
             分支{branchBase ? ` · ${branchBase}` : ''}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={compare === 'commit'}
+            className={`changes-panel__scope${compare === 'commit' ? ' is-active' : ''}`}
+            onClick={() => setCompare('commit')}
+          >
+            提交
+          </button>
         </div>
+      ) : null}
+
+      {isRepo && compare === 'commit' ? (
+        <label className="changes-panel__commit-pick">
+          <span className="changes-panel__commit-pick-label">Commit</span>
+          <select
+            className="changes-panel__commit-select"
+            value={commitSha}
+            onChange={(event) => setCommitSha(event.target.value)}
+            aria-label="选择要审查的 commit"
+          >
+            {commits.length === 0 ? <option value="">没有提交</option> : null}
+            {commits.map((item) => (
+              <option key={item.sha} value={item.sha}>
+                {item.sha.slice(0, 7)} {item.subject}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
 
       {isRepo && !readOnly && files.length > 0 && compare === 'uncommitted' ? (
