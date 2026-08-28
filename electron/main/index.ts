@@ -76,7 +76,8 @@ import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
 import { createNamedBranch } from '../../shared/git-branch-create'
-import { readFile, rm, stat, unlink } from 'fs/promises'
+import { handoffCheckout } from '../../shared/git-handoff'
+import { mkdir, readFile, rm, stat, unlink, writeFile } from 'fs/promises'
 import { spawn } from 'child_process'
 import {
   createTerminal,
@@ -1285,6 +1286,26 @@ function registerIpc(): void {
       conversationId: String(conversationId || '')
     })
   })
+
+  ipcMain.handle(
+    IPC.GIT_HANDOFF,
+    async (
+      _e,
+      payload: { direction?: 'to_local' | 'to_worktree'; localCwd?: string; worktreePath?: string }
+    ) => {
+      return handoffCheckout({
+        direction: payload?.direction === 'to_worktree' ? 'to_worktree' : 'to_local',
+        localCwd: String(payload?.localCwd || ''),
+        worktreePath: String(payload?.worktreePath || ''),
+        io: {
+          ...reviewIo(),
+          readFile,
+          writeFile,
+          mkdirp: (abs) => mkdir(abs, { recursive: true }).then(() => undefined)
+        }
+      })
+    }
+  )
 }
 
 /** 应用就绪：加载设置、注册 IPC、创建主窗口。 */

@@ -1253,7 +1253,7 @@ export function ChatView({
                 className={`composer-thread-chip${threadMode === 'local' ? ' is-active' : ''}`}
                 aria-pressed={threadMode === 'local'}
                 onClick={() => onThreadModeChange('local')}
-                title="直接在当前工作区改文件"
+                title="交接回本地工作区（把隔离变更带过来）"
               >
                 本地
               </button>
@@ -1262,7 +1262,7 @@ export function ChatView({
                 className={`composer-thread-chip${threadMode === 'worktree' ? ' is-active' : ''}`}
                 aria-pressed={threadMode === 'worktree'}
                 onClick={() => onThreadModeChange('worktree')}
-                title="隔离到 Git worktree，不碰当前工作区"
+                title="交接进隔离 worktree（把当前未提交变更带过去）"
               >
                 隔离
               </button>

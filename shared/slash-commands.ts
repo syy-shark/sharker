@@ -126,7 +126,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     description: '审查变更（未提交或相对基线，只读）',
     scope: 'ui',
     action: 'review_working_tree',
-    argsHint: '[uncommitted|branch]',
+    argsHint: '[uncommitted|branch] [here]',
     category: 'panel'
   },
   {

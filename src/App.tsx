@@ -52,7 +52,7 @@ import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbe
 import {
   REVIEW_BRANCH_PROMPT,
   REVIEW_WORKING_TREE_PROMPT,
-  parseReviewScope
+  parseReviewRequest
 } from '../shared/review-prompt'
 import {
   nextPersonality,
@@ -1503,20 +1503,66 @@ export default function App() {
     []
   )
 
-  const handleThreadModeChange = useCallback(
-    (mode: ThreadMode) => {
-      const next = {
-        mode,
-        worktreePath: mode === 'worktree' ? threadRuntimeRef.current.worktreePath : undefined
+  const handleThreadModeChange = useCallback(async (mode: ThreadMode) => {
+    const prev = threadRuntimeRef.current
+    if (mode === prev.mode) return
+    const convId = activeConversationIdRef.current
+    const localCwd = getActiveWorkspacePath(settingsRef.current)
+    let worktreePath = prev.worktreePath
+
+    const note = (text: string) => {
+      const msg = {
+        id: crypto.randomUUID(),
+        role: 'assistant' as const,
+        content: text
       }
-      threadRuntimeRef.current = next
-      setThreadMode(mode)
-      setThreadWorktreePath(next.worktreePath)
-      const id = activeConversationIdRef.current
-      if (id) saveThreadRuntime(id, next)
-    },
-    []
-  )
+      setMessages((msgs) => {
+        const nextMsgs = [...msgs, msg]
+        messagesRef.current = nextMsgs
+        void persistActiveConversation(nextMsgs)
+        return nextMsgs
+      })
+    }
+
+    if (mode === 'worktree') {
+      if (!worktreePath && localCwd && convId && window.sharker.prepareWorktree) {
+        const prepared = await window.sharker.prepareWorktree(localCwd, convId)
+        if (!prepared.ok) {
+          note(`**交接失败**：${prepared.error}`)
+          return
+        }
+        worktreePath = prepared.path
+      }
+      if (localCwd && worktreePath && window.sharker.handoffThread) {
+        const result = await window.sharker.handoffThread({
+          direction: 'to_worktree',
+          localCwd,
+          worktreePath
+        })
+        if (!result.ok) {
+          note(`**交接失败**：${result.error}`)
+          return
+        }
+      }
+    } else if (worktreePath && localCwd && window.sharker.handoffThread) {
+      const result = await window.sharker.handoffThread({
+        direction: 'to_local',
+        localCwd,
+        worktreePath
+      })
+      if (!result.ok) {
+        note(`**交接失败**：${result.error}`)
+        return
+      }
+    }
+
+    const next = { mode, worktreePath }
+    threadRuntimeRef.current = next
+    setThreadMode(mode)
+    setThreadWorktreePath(worktreePath)
+    if (convId) saveThreadRuntime(convId, next)
+    note(mode === 'worktree' ? '已交接进隔离 worktree。' : '已交接到本地工作区。')
+  }, [persistActiveConversation])
 
   const worktreeWarningRef = useRef<string | null>(null)
 
@@ -2685,12 +2731,22 @@ export default function App() {
         case 'toggle_changes':
           handleTogglePanel('changes')
           break
-        case 'review_working_tree':
+        case 'review_working_tree': {
+          const review = parseReviewRequest(args)
           handleTogglePanel('changes')
-          await dispatchTurnRef.current(
-            parseReviewScope(args) === 'branch' ? REVIEW_BRANCH_PROMPT : REVIEW_WORKING_TREE_PROMPT
-          )
+          const prompt =
+            review.scope === 'branch' ? REVIEW_BRANCH_PROMPT : REVIEW_WORKING_TREE_PROMPT
+          const wsId = settingsRef.current.activeWorkspaceId
+          if (review.detached && wsId && window.sharker.createConversation) {
+            const conv = await window.sharker.createConversation(wsId)
+            saveThreadRuntime(conv.id, threadRuntimeRef.current)
+            await handleSelectConversation(wsId, conv.id)
+            await dispatchTurnRef.current(prompt, [], conv.id)
+            break
+          }
+          await dispatchTurnRef.current(prompt)
           break
+        }
         case 'set_personality': {
           const current = parsePersonality(settingsRef.current.personality)
           const next = parsePersonalityArg(args) ?? nextPersonality(current)
@@ -2730,7 +2786,7 @@ export default function App() {
           break
       }
     },
-    [conversationList, handleTogglePanel, persistActiveConversation, persistSettings]
+    [conversationList, handleSelectConversation, handleTogglePanel, persistActiveConversation, persistSettings]
   )
 
   useEffect(() => {

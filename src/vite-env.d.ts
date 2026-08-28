@@ -192,6 +192,11 @@ export interface SharkerApi {
     cwd: string,
     conversationId: string
   ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
+  handoffThread: (payload: {
+    direction: 'to_local' | 'to_worktree'
+    localCwd: string
+    worktreePath: string
+  }) => Promise<{ ok: true; applied: string[] } | { ok: false; error: string }>
   createTerminal: (cwd: string) => Promise<{ id: string }>
   writeTerminal: (id: string, data: string) => Promise<void>
   resizeTerminal: (id: string, cols: number, rows: number) => Promise<void>

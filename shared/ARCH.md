@@ -51,6 +51,8 @@
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支 |
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
+| `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
+| `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感） |
 | `thread-search.test.ts` | 命中消息 id |
 | `review-comment.ts` | 行内评论 → Agent 提示；解析 `/review` 的 `review-findings` 围栏 |

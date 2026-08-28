@@ -64,6 +64,8 @@ export const IPC = {
   GIT_CREATE_PR: 'git:create-pr',
   /** 隔离 worktree：在 HEAD 上创建命名分支 */
   GIT_CREATE_BRANCH: 'git:create-branch',
+  /** 本地 ↔ 隔离 worktree 交接（Hand off） */
+  GIT_HANDOFF: 'git:handoff',
   /** Composer `@` 工作区文件模糊搜索 */
   WORKSPACE_SEARCH_FILES: 'workspace:search-files',
   /** Composer `$` Skill 列表（名称 + 描述） */

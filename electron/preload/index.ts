@@ -162,6 +162,11 @@ contextBridge.exposeInMainWorld('sharker', {
   ) => ipcRenderer.invoke(IPC.GIT_REVIEW_ACTION, cwd, action, paths),
   prepareWorktree: (cwd: string, conversationId: string) =>
     ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId),
+  handoffThread: (payload: {
+    direction: 'to_local' | 'to_worktree'
+    localCwd: string
+    worktreePath: string
+  }) => ipcRenderer.invoke(IPC.GIT_HANDOFF, payload),
   createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),
   writeTerminal: (id: string, data: string) =>
     ipcRenderer.invoke(IPC.TERMINAL_WRITE, id, data),

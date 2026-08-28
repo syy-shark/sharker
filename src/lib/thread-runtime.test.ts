@@ -34,4 +34,9 @@ describe('thread runtime', () => {
     ).toEqual({ mode: 'worktree', worktreePath: '/tmp/auto' })
     expect(loadThreadRuntime('missing').mode).toBe('local')
   })
+
+  it('keeps the associated worktree after handing off to local', () => {
+    saveThreadRuntime('c1', { mode: 'local', worktreePath: '/tmp/wt' })
+    expect(loadThreadRuntime('c1')).toEqual({ mode: 'local', worktreePath: '/tmp/wt' })
+  })
 })

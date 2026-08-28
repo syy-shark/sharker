@@ -23,12 +23,12 @@ export function loadThreadRuntime(conversationId: string | null | undefined): Th
     const raw = localStorage.getItem(storageKey(conversationId))
     if (!raw) return { mode: 'local' }
     const parsed = JSON.parse(raw) as Partial<ThreadRuntime>
+    const worktreePath =
+      typeof parsed.worktreePath === 'string' ? parsed.worktreePath : undefined
     if (parsed.mode === 'worktree') {
-      return {
-        mode: 'worktree',
-        worktreePath: typeof parsed.worktreePath === 'string' ? parsed.worktreePath : undefined
-      }
+      return { mode: 'worktree', worktreePath }
     }
+    return { mode: 'local', worktreePath }
   } catch {
     /* ignore broken localStorage */
   }
