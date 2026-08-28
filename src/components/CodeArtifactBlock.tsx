@@ -3,7 +3,7 @@
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
  */
 import { Check, Copy } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react'
 import './CodeArtifactBlock.css'
 
 interface CodeArtifactShellProps {
@@ -94,8 +94,37 @@ function normalizeLanguage(language?: string): string {
   return value
 }
 
+const ArtifactCodeLine = memo(function ArtifactCodeLine({
+  index,
+  text
+}: {
+  index: number
+  text: string
+}) {
+  return (
+    <div className="code-artifact-line">
+      <span className="code-artifact-line-number" aria-hidden>
+        {index + 1}
+      </span>
+      <code className="code-artifact-line-text">{text || ' '}</code>
+    </div>
+  )
+})
+
+/** 直播与收束共用行节点，闭合围栏时文字/行号不再换一套 DOM */
+function ArtifactCodeLines({ code }: { code: string }) {
+  const lines = code.replace(/\n$/, '').split('\n')
+  return (
+    <div className="code-artifact-code">
+      {lines.map((line, index) => (
+        <ArtifactCodeLine key={index} index={index} text={line} />
+      ))}
+    </div>
+  )
+}
+
 /**
- * 直播未闭合围栏：单块 `<pre>` 更新，避免每 token 重建行号节点。
+ * 直播未闭合围栏：与 CodeArtifactBlock 同一行结构，已闭合行 memo 住。
  * 闭合后走 MarkdownBody → CodeArtifactBlock。
  */
 export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
@@ -112,12 +141,7 @@ export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
         <span className="code-artifact-copy-slot" aria-hidden />
       </div>
       <div className="code-artifact-scroll">
-        <div className="code-artifact-code live-fence-tail__code">
-          <span className="live-fence-tail__gutter" aria-hidden />
-          <pre className="live-fence-tail__pre">
-            <code>{code}</code>
-          </pre>
-        </div>
+        <ArtifactCodeLines code={code} />
       </div>
     </div>
   )
@@ -126,21 +150,11 @@ export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
 /** Markdown fenced code 的紧凑编辑器展示。 */
 export function CodeArtifactBlock({ code, language }: CodeArtifactBlockProps) {
   const normalizedCode = code.replace(/\n$/, '')
-  const lines = normalizedCode.split('\n')
   const label = normalizeLanguage(language)
 
   return (
     <CodeArtifactShell label={label} copyText={normalizedCode} ariaLabel={`${label} 代码块`}>
-      <div className="code-artifact-code">
-        {lines.map((line, index) => (
-          <div className="code-artifact-line" key={index}>
-            <span className="code-artifact-line-number" aria-hidden>
-              {index + 1}
-            </span>
-            <code className="code-artifact-line-text">{line || ' '}</code>
-          </div>
-        ))}
-      </div>
+      <ArtifactCodeLines code={normalizedCode} />
     </CodeArtifactShell>
   )
 }
