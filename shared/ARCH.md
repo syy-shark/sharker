@@ -66,7 +66,9 @@
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表 |
 | `approval-session.test.ts` | 审批决策与会话授权单测 |
-| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑） |
+| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队 |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行 |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
 | `turn-meta.ts` | 工具活动 label；写盘工具相对路径（本轮审查） |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |

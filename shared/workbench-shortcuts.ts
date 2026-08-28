@@ -14,6 +14,11 @@ export type WorkbenchShortcutAction =
   | 'command_palette'
   | 'prev_thread'
   | 'next_thread'
+  | 'toggle_files'
+  | 'toggle_browser'
+  | 'pick_model'
+  | 'shortcut_help'
+  | 'select_chat'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -36,7 +41,15 @@ export function matchWorkbenchShortcut(event: {
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
   if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
+  if ((key === '`' || code === 'Backquote') && !event.altKey && !event.shiftKey) {
+    return 'toggle_terminal'
+  }
   if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_terminal'
+  if (key === 'e' && event.shiftKey && !event.altKey) return 'toggle_files'
+  if (key === 'b' && event.shiftKey && !event.altKey) return 'toggle_browser'
+  if (key === 'm' && event.shiftKey && !event.altKey) return 'pick_model'
+  if (key === '/' && !event.altKey && !event.shiftKey) return 'shortcut_help'
+  if (!event.altKey && !event.shiftKey && /^[1-9]$/.test(key)) return 'select_chat'
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
   if (key === 'o' && !event.altKey && !event.shiftKey) return 'open_folder'
@@ -69,3 +82,22 @@ export function adjacentConversationId(
   if (idx < 0) return ids[0] ?? null
   return ids[(idx + direction + ids.length) % ids.length] ?? null
 }
+
+/** ⌘/ 快捷键一览（对标 Codex Shortcuts window） */
+export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
+  { keys: '⌘B', title: '切换侧栏' },
+  { keys: '⌘⌥B', title: '打开审查' },
+  { keys: '⌘J / Ctrl+`', title: '打开终端' },
+  { keys: '⌘⇧E', title: '打开文件树' },
+  { keys: '⌘⇧B', title: '打开内置浏览器' },
+  { keys: '⌘K', title: '命令面板' },
+  { keys: '⌘N', title: '新对话' },
+  { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
+  { keys: '⌘1–9', title: '跳到第 N 条对话' },
+  { keys: '⌘/', title: '快捷键一览' },
+  { keys: '⌘F', title: '在对话中查找' },
+  { keys: 'Ctrl⇧M', title: '模型选择' },
+  { keys: 'Enter', title: '发送；忙时注入当前回合' },
+  { keys: 'Tab', title: '忙时排队下一条' },
+  { keys: 'Shift+Enter', title: '换行' }
+]

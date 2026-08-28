@@ -112,6 +112,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘B',
     keywords: 'sidebar 侧栏',
     action: 'toggle_sidebar'
+  },
+  {
+    id: 'shortcuts',
+    title: '快捷键一览',
+    shortcut: '⌘/',
+    keywords: 'shortcuts keymap help 快捷键',
+    action: 'shortcut_help'
   }
 ]
 

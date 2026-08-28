@@ -42,6 +42,15 @@ describe('workbench shortcuts', () => {
     expect(
       matchWorkbenchShortcut(ev({ key: '}', code: 'BracketRight', metaKey: true, shiftKey: true }))
     ).toBe('next_thread')
+    expect(matchWorkbenchShortcut(ev({ key: 'e', metaKey: true, shiftKey: true }))).toBe(
+      'toggle_files'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'b', metaKey: true, shiftKey: true }))).toBe(
+      'toggle_browser'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: '/', metaKey: true }))).toBe('shortcut_help')
+    expect(matchWorkbenchShortcut(ev({ key: '3', metaKey: true }))).toBe('select_chat')
+    expect(matchWorkbenchShortcut(ev({ key: '`', ctrlKey: true }))).toBe('toggle_terminal')
   })
 
   it('cycles conversation ids', () => {

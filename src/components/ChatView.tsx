@@ -28,6 +28,7 @@ import {
   type SkillListItem
 } from '../../shared/skill-mention'
 import { findInThread } from '../../shared/thread-search'
+import { resolveComposerSubmit } from '../../shared/composer-submit'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
 
@@ -118,9 +119,12 @@ interface Props {
   onThreadModeChange?: (mode: ThreadMode) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
-  /** 命令面板「引用文件」/「引用 Skill」/「查找」 */
-  composerIntent?: 'mention' | 'skill' | 'find' | null
+  /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
+  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | null
   onComposerIntentHandled?: () => void
+  /** 暂停自动出队（对标 Codex hold queue） */
+  queueHeld?: boolean
+  onQueueHeldChange?: (held: boolean) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -159,7 +163,9 @@ export function ChatView({
   onThreadModeChange,
   fileSearchRoot = '',
   composerIntent = null,
-  onComposerIntentHandled
+  onComposerIntentHandled,
+  queueHeld = false,
+  onQueueHeldChange
 }: Props) {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
@@ -187,6 +193,7 @@ export function ChatView({
   const [skillCatalog, setSkillCatalog] = useState<SkillListItem[]>([])
   const [skillActiveIndex, setSkillActiveIndex] = useState(0)
   const skillActiveIndexRef = useRef(0)
+  const [modelOpenSignal, setModelOpenSignal] = useState(0)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
@@ -454,6 +461,11 @@ export function ChatView({
   }
 
   useEffect(() => {
+    if (composerIntent === 'model') {
+      setModelOpenSignal((n) => n + 1)
+      onComposerIntentHandled?.()
+      return
+    }
     if (composerIntent === 'find') {
       setFindOpen(true)
       onComposerIntentHandled?.()
@@ -1161,9 +1173,16 @@ export function ChatView({
               return
             }
           }
-          if (e.key === 'Enter' && !e.shiftKey) {
+          const menuOpen = showMentionMenu || showSkillMenu || showSlashMenu || historyMounted
+          const mode = resolveComposerSubmit({
+            key: e.key,
+            shiftKey: e.shiftKey,
+            loading,
+            menuOpen
+          })
+          if (mode) {
             e.preventDefault()
-            submit(loading ? 'queue' : 'send')
+            submit(mode)
           }
         }}
         onPaste={(e) => {
@@ -1185,7 +1204,11 @@ export function ChatView({
             e.preventDefault()
           }
         }}
-        placeholder={loading ? '可继续输入，Enter 排队…' : '输入消息，/ 命令，@ 引用文件…'}
+        placeholder={
+          loading
+            ? 'Enter 注入当前回合，Tab 排队下一条…'
+            : '输入消息，/ 命令，@ 文件，$ Skill…'
+        }
         rows={1}
       />
       {pendingAttachments.length > 0 || attachmentError ? (
@@ -1252,16 +1275,28 @@ export function ChatView({
             activeProviderId={activeProviderId}
             onSelect={onSelectProvider}
             onThinkingLevelChange={onThinkingLevelChange}
+            openSignal={modelOpenSignal}
           />
+          {onQueueHeldChange && (loading || queuedPrompts.length > 0 || queueHeld) ? (
+            <button
+              type="button"
+              className={`composer-jump${queueHeld ? ' is-active' : ''}`}
+              onClick={() => onQueueHeldChange(!queueHeld)}
+              title={queueHeld ? '恢复回合结束后自动执行排队' : '暂停：当前回合结束后不要自动执行排队'}
+              aria-pressed={queueHeld}
+            >
+              {queueHeld ? '继续队列' : '暂停队列'}
+            </button>
+          ) : null}
           {loading && canSend ? (
             <button
               type="button"
               className="composer-jump"
               onClick={() => submit('jump')}
-              title="插队：中止当前任务并立即执行本条"
-              aria-label="插队执行"
+              title="注入：中止当前任务并立即执行本条（Enter）"
+              aria-label="注入当前回合"
             >
-              插队
+              注入
             </button>
           ) : null}
           <span className="composer-send-slot" data-mode={loading ? 'stop' : 'send'}>

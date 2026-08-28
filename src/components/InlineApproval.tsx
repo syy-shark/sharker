@@ -35,7 +35,9 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
   const busy = responding || submitted
 
   useEffect(() => {
-    rootRef.current?.scrollIntoView({ block: 'nearest' })
+    const el = rootRef.current
+    el?.scrollIntoView({ block: 'nearest' })
+    el?.focus()
   }, [request.id])
 
   const respond = (choice: ApprovalDecision) => {
@@ -66,6 +68,18 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       aria-busy={busy}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (busy) return
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault()
+          respond('once')
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          respond('deny')
+        }
+      }}
     >
       <div className="inline-approval__heading">
         <span className="inline-approval__icon" aria-hidden="true">

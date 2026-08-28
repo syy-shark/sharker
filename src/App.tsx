@@ -69,6 +69,7 @@ import {
 import type { AutomationQueueItem, QueueTriageAction } from '../shared/automation-queue'
 import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
+import { ShortcutsHelp } from './components/ShortcutsHelp'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
@@ -248,7 +249,12 @@ export default function App() {
   }, [])
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
-  const [composerIntent, setComposerIntent] = useState<'mention' | 'skill' | 'find' | null>(null)
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
+  const [composerIntent, setComposerIntent] = useState<'mention' | 'skill' | 'find' | 'model' | null>(
+    null
+  )
+  const [queueHeld, setQueueHeld] = useState(false)
+  const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
   const [queueUnread, setQueueUnread] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
@@ -841,6 +847,7 @@ export default function App() {
     setThreadMode(runtime.mode)
     setThreadWorktreePath(runtime.worktreePath)
     threadRuntimeRef.current = runtime
+    setQueueHeld(Boolean(activeConversationId && queueHeldByConvRef.current.has(activeConversationId)))
   }, [activeConversationId])
 
   useEffect(() => {
@@ -1190,7 +1197,10 @@ export default function App() {
           if (streamOwnerRef.current === ownerId) streamOwnerRef.current = null
           const wsId = settingsRef.current.activeWorkspaceId
           if (wsId) void refreshConversationList(wsId)
-          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, ownerId)
+          const held = Boolean(ownerId && queueHeldByConvRef.current.has(ownerId))
+          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, ownerId, {
+            held
+          })
           sessionQueuesRef.current = queues
           if (activeConversationIdRef.current === ownerId) {
             syncActiveQueueUi(queues, ownerId)
@@ -1434,7 +1444,10 @@ export default function App() {
         const wsId = settingsRef.current.activeWorkspaceId
         if (wsId) void refreshConversationList(wsId)
         if (completedId) {
-          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, completedId)
+          const held = queueHeldByConvRef.current.has(completedId)
+          const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, completedId, {
+            held
+          })
           syncActiveQueueUi(queues, activeConversationIdRef.current)
           if (next) {
             void dispatchTurnRef.current(next.text, next.attachments, next.conversationId)
@@ -1903,6 +1916,22 @@ export default function App() {
       await dispatchTurn(trimmed, attachments, convId ?? undefined)
     },
     [commitAssistantReply, dispatchTurn, flushSettingsDraftIfNeeded, loading, syncActiveQueueUi]
+  )
+
+  /** 暂停 / 恢复当前会话的排队自动出队 */
+  const handleQueueHeldChange = useCallback(
+    (held: boolean) => {
+      const convId = activeConversationIdRef.current
+      if (!convId) return
+      if (held) queueHeldByConvRef.current.add(convId)
+      else queueHeldByConvRef.current.delete(convId)
+      setQueueHeld(held)
+      if (held || sendInFlightRef.current) return
+      const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, convId)
+      syncActiveQueueUi(queues, convId)
+      if (next) void dispatchTurnRef.current(next.text, next.attachments, convId)
+    },
+    [syncActiveQueueUi]
   )
 
   /** 取消排队中的消息（仅当前会话） */
@@ -2730,6 +2759,15 @@ export default function App() {
         setComposerIntent('find')
         return
       }
+      if (cmd.action === 'shortcut_help') {
+        setShortcutsHelpOpen(true)
+        return
+      }
+      if (cmd.action === 'pick_model') {
+        setPage('chat')
+        setComposerIntent('model')
+        return
+      }
       if (cmd.action === 'show_history') {
         setPage('chat')
         setShowHistoryPicker(true)
@@ -2772,6 +2810,33 @@ export default function App() {
       }
       if (action === 'toggle_terminal') {
         handleShortcutPanel('terminal')
+        return
+      }
+      if (action === 'toggle_files') {
+        handleShortcutPanel('files')
+        return
+      }
+      if (action === 'toggle_browser') {
+        handleShortcutPanel('browser')
+        return
+      }
+      if (action === 'pick_model') {
+        setPage('chat')
+        setComposerIntent('model')
+        return
+      }
+      if (action === 'shortcut_help') {
+        setShortcutsHelpOpen((open) => !open)
+        return
+      }
+      if (action === 'select_chat') {
+        const n = Number(e.key)
+        const nextId = conversationListRef.current[n - 1]?.id
+        const wsId = settingsRef.current.activeWorkspaceId
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
         return
       }
       if (action === 'new_conversation') {
@@ -3567,6 +3632,13 @@ export default function App() {
       if (action === 'approve' && cwd && paths.length && window.sharker.applyGitReviewAction) {
         const result = await window.sharker.applyGitReviewAction(cwd, 'stage', paths)
         if (!result.ok) console.warn('[queue] approve stage failed', result.error)
+        else if (window.sharker.commitGitChanges) {
+          const committed = await window.sharker.commitGitChanges(
+            cwd,
+            item.title.trim() || '自动化'
+          )
+          if (!committed.ok) console.warn('[queue] approve commit failed', committed.error)
+        }
       }
       if (action === 'approve') {
         setSuggestedCommit(item.title.trim() || '自动化')
@@ -3686,6 +3758,8 @@ export default function App() {
               }
               composerIntent={composerIntent}
               onComposerIntentHandled={() => setComposerIntent(null)}
+              queueHeld={queueHeld}
+              onQueueHeldChange={handleQueueHeldChange}
               onRetry={(userMessageId) => void handleRetry(userMessageId)}
               approval={approval}
               approvalResponding={approvalResponding}
@@ -3741,6 +3815,7 @@ export default function App() {
             void dispatchTurnRef.current(prompt)
           }}
         />
+        <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
         <CommandPalette
           open={commandPaletteOpen}
           onClose={() => setCommandPaletteOpen(false)}

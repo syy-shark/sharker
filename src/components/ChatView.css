@@ -901,6 +901,12 @@ html.theme-dark .composer-thread-chip.is-active {
     box-shadow var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
+.composer-jump.is-active {
+  color: var(--text);
+  border-color: var(--glass-edge);
+  background: var(--glass-fill-raised);
+}
+
 .composer-jump:hover {
   background: var(--glass-fill-nested-hover);
   color: var(--text);

@@ -111,12 +111,14 @@ export function shouldApplyStreamToActive(
 
 /**
  * 回合结束后应派发的下一跳：只从 **完成回合所属会话** 的队列取。
- * 防止 A 的 done 触发 B 队列里的 follow-up。
+ * `held` 时保留队列、不自动出队（对标 Codex hold queue）。
  */
 export function nextFollowUpAfterTurn(
   queues: SessionQueueMap,
-  completedConversationId: string
+  completedConversationId: string,
+  options?: { held?: boolean }
 ): { next: SessionQueuedPrompt | null; queues: SessionQueueMap } {
+  if (options?.held) return { next: null, queues }
   return dequeueForConversation(queues, completedConversationId)
 }
 

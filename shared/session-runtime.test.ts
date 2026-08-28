@@ -90,6 +90,18 @@ describe('session / queue isolation', () => {
     queues = cancelQueuedPrompt(queues, 'conv-a', 'drop')
     expect(listQueuedForConversation(queues, 'conv-a').map((q) => q.id)).toEqual(['keep'])
   })
+
+  it('does not drain the follow-up queue while held', () => {
+    let queues = {}
+    queues = enqueueForConversation(
+      queues,
+      'conv-a',
+      createQueuedPrompt('conv-a', 'later', undefined, 'q1')
+    )
+    const held = nextFollowUpAfterTurn(queues, 'conv-a', { held: true })
+    expect(held.next).toBeNull()
+    expect(listQueuedForConversation(held.queues, 'conv-a')).toHaveLength(1)
+  })
 })
 
 describe('stop / done ownership (Stop while other session queued)', () => {

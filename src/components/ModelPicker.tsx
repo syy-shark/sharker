@@ -28,6 +28,8 @@ interface Props {
   onThinkingLevelChange?: (providerId: string, level: string) => void
   dismissWhenPeerOpen?: boolean
   onOpenChange?: (open: boolean) => void
+  /** 递增时强制打开（Ctrl⇧M / 命令面板） */
+  openSignal?: number
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -58,7 +60,8 @@ export function ModelPicker({
   onSelect,
   onThinkingLevelChange,
   dismissWhenPeerOpen = false,
-  onOpenChange
+  onOpenChange,
+  openSignal = 0
 }: Props) {
   /* 退出动画 200ms + 展开 340ms 对齐，卸载略留余量 */
   const pop = usePopoverAnimation(180)
@@ -96,6 +99,10 @@ export function ModelPicker({
   useEffect(() => {
     onOpenChange?.(pop.open)
   }, [pop.open, onOpenChange])
+
+  useEffect(() => {
+    if (openSignal > 0) pop.show()
+  }, [openSignal, pop.show])
 
   useEffect(() => {
     if (dismissWhenPeerOpen && pop.open) pop.hide()
