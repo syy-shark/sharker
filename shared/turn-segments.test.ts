@@ -114,6 +114,34 @@ describe('turn segment event state machine', () => {
     })
     const liveParts = buildAnswerParts(segments, { isStreaming: true })
     expect(liveParts.some((part) => part.type === 'diff' && part.diff.path === 'a.ts')).toBe(true)
+
+    let demoSegs: TurnSegment[] = []
+    demoSegs = applyStreamChunk(demoSegs, {
+      type: 'token',
+      content: 'See this.\n```demo\n<div>Hi',
+      timestamp: 10
+    })
+    const demoId = demoSegs[0]!.id
+    const openDemo = buildAnswerParts(demoSegs, { isStreaming: true })
+    expect(openDemo.map((part) => `${part.type}:${part.id}`)).toEqual([
+      `text:${demoId}`,
+      `demo:${demoId}-demo-stream`
+    ])
+    demoSegs = applyStreamChunk(demoSegs, {
+      type: 'token',
+      content: '</div>\n```\nNext',
+      timestamp: 11
+    })
+    const closedLive = buildAnswerParts(demoSegs, { isStreaming: true })
+    expect(closedLive.map((part) => `${part.type}:${part.id}`)).toEqual([
+      `text:${demoId}`,
+      `demo:${demoId}-demo-stream`,
+      `text:${demoId}-post`
+    ])
+    expect(closedLive[1]).toMatchObject({ type: 'demo', streaming: false })
+    expect(buildAnswerParts(demoSegs, { isStreaming: false }).map((part) => `${part.type}:${part.id}`)).toEqual(
+      [`text:${demoId}`, `demo:${demoId}-demo-stream`, `text:${demoId}-post`]
+    )
   })
 
   it('keeps finished tool segment identity across token appends', () => {

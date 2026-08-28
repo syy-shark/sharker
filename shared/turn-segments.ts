@@ -795,32 +795,38 @@ export type AnswerPart =
   | { type: 'demo'; id: string; html: string; caption?: string; streaming?: boolean }
   | { type: 'diff'; id: string; diff: FileDiff }
 
-/** 直播中未闭合的 ```demo 围栏 → 提前抽出 html 做渐进渲染 */
-function extractOpenDemoFence(text: string): {
+/** 正文里的 ```demo 围栏：开闭都抽出，避免 text key 从 `s.id` 换成 `-pre` 再换回来 */
+function extractStreamingDemoFence(text: string): {
   before: string
   html: string
+  after: string
   caption?: string
+  closed: boolean
 } | null {
   const re =
-    /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)([^\n]*)\n([\s\S]*)$/i
+    /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)([^\n]*)\n/i
   const m = text.match(re)
   if (!m || m.index == null) return null
-  const body = m[2] ?? ''
-  // 已闭合则交给 MarkdownBody 正常解析
-  if (/```/.test(body)) return null
+  const afterOpen = text.slice(m.index + m[0].length)
   const info = (m[1] ?? '').trim()
   const capMatch = info.match(/(?:caption|title)\s*=\s*["']([^"']+)["']/i)
-  return {
-    before: text.slice(0, m.index),
-    html: body,
-    caption: capMatch?.[1]?.trim() || undefined
+  const caption = capMatch?.[1]?.trim() || undefined
+  const before = text.slice(0, m.index)
+  const closeIdx = afterOpen.indexOf('```')
+  if (closeIdx === -1) {
+    return { before, html: afterOpen, after: '', caption, closed: false }
   }
+  const html = afterOpen.slice(0, closeIdx).replace(/\n$/, '')
+  const afterClose = afterOpen.slice(closeIdx + 3)
+  const nl = afterClose.indexOf('\n')
+  const after = nl === -1 ? '' : afterClose.slice(nl + 1)
+  return { before, html, after, caption, closed: true }
 }
 
 /**
  * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo + 写盘 diff，按先后顺序。
  * 供结束后与直播时主区融合渲染（文字可在 demo 上/下）。
- * 直播时含 tool_preview / 未闭合 ```demo 的渐进 HTML；工具完成后立刻画出 fileDiff（对标 Codex 回合中逐文件 diff）。
+ * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；工具完成后立刻画出 fileDiff（对标 Codex 回合中逐文件 diff）。
  */
 export function buildAnswerParts(
   segments: TurnSegment[],
@@ -855,26 +861,31 @@ export function buildAnswerParts(
 
     if (s.kind !== 'text' || !s.content?.trim()) continue
 
-    // 直播：正文里正在写的 ```demo 围栏 → 拆成「前文 + 渐进演示」
-    if (isStreaming && s.status === 'active') {
-      const open = extractOpenDemoFence(s.content)
-      if (open && open.html.trim()) {
-        if (open.before.trim()) {
-          const normBefore = normalizeForCompare(open.before)
-          if (!seenText.has(normBefore)) {
-            seenText.add(normBefore)
-            parts.push({ type: 'text', id: `${s.id}-pre`, content: open.before })
-          }
+    // ```demo 开闭都拆成稳定槽：前文保持 s.id，演示保持 s.id-demo-stream，收束不搬回 Markdown
+    const demo = extractStreamingDemoFence(s.content)
+    if (demo && (demo.html.trim() || (isStreaming && !demo.closed))) {
+      if (demo.before.trim()) {
+        const normBefore = normalizeForCompare(demo.before)
+        if (!seenText.has(normBefore)) {
+          seenText.add(normBefore)
+          parts.push({ type: 'text', id: s.id, content: demo.before })
         }
-        parts.push({
-          type: 'demo',
-          id: `${s.id}-demo-stream`,
-          html: open.html,
-          caption: open.caption,
-          streaming: true
-        })
-        continue
       }
+      parts.push({
+        type: 'demo',
+        id: `${s.id}-demo-stream`,
+        html: demo.html || '<!-- streaming -->',
+        caption: demo.caption,
+        streaming: isStreaming && !demo.closed
+      })
+      if (demo.after.trim()) {
+        const normAfter = normalizeForCompare(demo.after)
+        if (!seenText.has(normAfter)) {
+          seenText.add(normAfter)
+          parts.push({ type: 'text', id: `${s.id}-post`, content: demo.after })
+        }
+      }
+      continue
     }
 
     // 直播：末尾 active 的正在生成文本要进主区
