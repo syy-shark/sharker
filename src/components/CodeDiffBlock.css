@@ -117,10 +117,30 @@
   word-break: normal;
 }
 
+.code-diff-block--wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.code-diff-block--wrap .code-diff-code {
+  min-width: 0;
+  width: 100%;
+}
+
+.code-diff-block--wrap .code-diff-line {
+  min-width: 0;
+  width: 100%;
+  grid-template-columns: 86px minmax(0, 1fr);
+}
+
 .code-diff-block--wrap .code-diff-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.code-diff-block--wrap .code-artifact-scroll {
+  overflow-x: hidden;
 }
 
 .code-diff-expand {

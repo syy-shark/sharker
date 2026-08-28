@@ -134,7 +134,7 @@
 }
 
 .inline-approval__args pre {
-  min-width: max-content;
+  min-width: 0;
   margin: 0;
   padding: 10px;
   color: var(--text-secondary);
@@ -142,7 +142,9 @@
   font-size: 11px;
   line-height: 1.55;
   tab-size: 2;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .inline-approval__args pre:focus-visible {

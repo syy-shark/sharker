@@ -26,13 +26,13 @@
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出）；命令输出按 `toolOutputDisplay` 截尾/折叠；正文已上屏时隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动 |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |
-| `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
+| `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸；参数长行换行以免横向撑开直播柱 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览；保住 GFM 任务列表 class；元素子节点不套 span，避免收束跳动 |
 | `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`（开闭至少三连，更长围栏可包住内部 \`\`\`）；散文尾廉价 ATX/Setext 标题（含行尾 `#`）/列表（含 `1)`、`ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内表格 / 围栏 / 引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码（嵌套层自己松））/任务项/嵌套引用（`blockquote>p`、引用围栏与懒续行含硬换行；未闭合围栏不吃懒续行）/表格对齐与单列 / 无两侧 `|` 与 `\\|` / 分隔行未到先画表/分隔线（含 `* * *`）/缩进代码/脚注区（缩进续行与多段）/http 图（含 title、`![alt][id]` 相对 dest、alt 去标记）/dest 内成对括号 / 未闭合 `](` 先画链接/未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画/`[![img]](url)`/多反引号代码/链接标签内强调与代码/HTML 实体/删除线套粗体（两侧无空白才画）/标记内混排与链接/下划线强调/`***` 嵌套强调/反斜杠转义/引用式链接含定义 title 与次行标题/邮箱/`www.`（不当文件芯片）/危险协议清空/硬换行与可点 http / 文件引用；全文引用定义挂到已闭合块；任务项用 GFM `contains-task-list` / `task-list-item`；`continueCheapProseBlocks` 保住已闭合项，不每 token 跑 remark |
 | `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 与收束后共用行节点（已闭合行 memo）；长行在对话柱内换行（不再 `min-width: max-content` 横向撑开直播贴底）；头栏同为语言标签 + 复制按钮位（不再写「写入中」），闭合围栏不再换一套 DOM |
-| `CodeDiffBlock.tsx` / `.css` | 行级 diff；默认换行长行（对标 Codex Wrap long diff lines）；审查模式 hunk 暂存/还原 + 行内评论；⌘/Ctrl+单击行打开预览 |
+| `CodeDiffBlock.tsx` / `.css` | 行级 diff；默认换行长行（对标 Codex Wrap long diff lines）；`--wrap` 把行网格收成 `minmax(0,1fr)`，不再 `max-content` 横向撑开直播柱；审查模式 hunk 暂存/还原 + 行内评论；⌘/Ctrl+单击行打开预览 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |
 | `ShortcutsHelp.tsx` / `.css` | ⌘/ 快捷键一览 |
 | `CompareBlock.tsx` / `.css` | 旧/新对比行布局 |
