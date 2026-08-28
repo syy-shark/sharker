@@ -88,7 +88,7 @@ export function AutomationsPage({ onBack, onOpenConversation, onTriage }: Props)
             ← 返回
           </button>
           <h1>自动化</h1>
-          <p>定时任务跑完进入审查队列，不打断当前对话（对标 Codex Triage）</p>
+          <p>定时任务在隔离 worktree 后台跑，结果进审查队列，不打断当前对话</p>
         </header>
 
         <section className="automations-queue" aria-label="审查队列">

@@ -39,3 +39,16 @@ export function loadThreadRuntime(conversationId: string | null | undefined): Th
 export function saveThreadRuntime(conversationId: string, runtime: ThreadRuntime): void {
   localStorage.setItem(storageKey(conversationId), JSON.stringify(runtime))
 }
+
+/**
+ * 派发 turn 时取目标会话的线程模式：当前会话用内存态，后台会话读本机记录。
+ * 避免自动化后台跑时误用正在看的那条线程的 worktree。
+ */
+export function runtimeForConversation(
+  conversationId: string | null | undefined,
+  activeId: string | null | undefined,
+  activeRuntime: ThreadRuntime
+): ThreadRuntime {
+  if (conversationId && conversationId === activeId) return activeRuntime
+  return loadThreadRuntime(conversationId)
+}

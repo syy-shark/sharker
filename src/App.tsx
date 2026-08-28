@@ -74,7 +74,12 @@ import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
 import type { ApprovalDecision } from '../shared/approval-session'
-import { loadThreadRuntime, saveThreadRuntime, type ThreadMode } from './lib/thread-runtime'
+import {
+  loadThreadRuntime,
+  runtimeForConversation,
+  saveThreadRuntime,
+  type ThreadMode
+} from './lib/thread-runtime'
 import {
   appendAssistantMessage,
   cancelQueuedPrompt,
@@ -849,6 +854,19 @@ export default function App() {
           return
         }
         const conv = await window.sharker.createConversation(wsId)
+        const cwd = getActiveWorkspacePath(settingsRef.current)
+        let workspacePath = cwd || undefined
+        if (cwd && window.sharker.prepareWorktree) {
+          saveThreadRuntime(conv.id, { mode: 'worktree' })
+          const prepared = await window.sharker.prepareWorktree(cwd, conv.id)
+          if (prepared.ok) {
+            saveThreadRuntime(conv.id, { mode: 'worktree', worktreePath: prepared.path })
+            workspacePath = prepared.path
+          } else {
+            saveThreadRuntime(conv.id, { mode: 'local' })
+            console.warn('[automation] worktree fallback', prepared.error)
+          }
+        }
         if (window.sharker.listAutomationQueue && window.sharker.saveAutomationQueue) {
           const prev = await window.sharker.listAutomationQueue()
           const item = enqueueAutomationRun(
@@ -857,7 +875,7 @@ export default function App() {
             new Date(),
             {
               workspaceId: wsId,
-              workspacePath: getActiveWorkspacePath(settingsRef.current) || undefined
+              workspacePath
             }
           )
           await window.sharker.saveAutomationQueue([item, ...prev])
@@ -1490,7 +1508,8 @@ export default function App() {
   const worktreeWarningRef = useRef<string | null>(null)
 
   const ensureWorktreeForTurn = useCallback(async (convId: string | null | undefined) => {
-    const runtime = threadRuntimeRef.current
+    const isActive = Boolean(convId && convId === activeConversationIdRef.current)
+    const runtime = runtimeForConversation(convId, activeConversationIdRef.current, threadRuntimeRef.current)
     worktreeWarningRef.current = null
     if (runtime.mode !== 'worktree') return undefined
     if (runtime.worktreePath) return runtime.worktreePath
@@ -1503,9 +1522,11 @@ export default function App() {
       return undefined
     }
     const next = { mode: 'worktree' as const, worktreePath: result.path }
-    threadRuntimeRef.current = next
-    setThreadWorktreePath(result.path)
     saveThreadRuntime(convId, next)
+    if (isActive) {
+      threadRuntimeRef.current = next
+      setThreadWorktreePath(result.path)
+    }
     return result.path
   }, [])
 

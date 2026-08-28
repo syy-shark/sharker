@@ -13,5 +13,6 @@
 | 文件 | 说明 |
 |------|------|
 | `format-time.ts` | 对话列表相对时间（刚刚 / 分钟前 / 月日） |
-| `thread-runtime.ts` | 会话线程模式（本地 / Worktree）本机记忆 |
+| `thread-runtime.ts` | 会话线程模式（本地 / Worktree）本机记忆；后台 turn 按 conversationId 取模式 |
+| `thread-runtime.test.ts` | 当前会话用内存态、后台会话读落盘 |
 | `ARCH.md` | 本层架构说明 |
