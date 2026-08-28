@@ -17,7 +17,9 @@
 }
 
 .thinking-indicator-time {
-  min-width: 4.5ch;
+  min-width: 7ch;
+  text-align: right;
+  flex-shrink: 0;
   margin-left: auto;
   color: var(--text-muted);
   font-family: var(--mono);

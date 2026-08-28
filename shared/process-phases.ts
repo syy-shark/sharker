@@ -3,6 +3,7 @@
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
+import { isToolProgressSummary } from './tool-output-display'
 
 function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
   for (let i = items.length - 1; i >= 0; i--) {
@@ -203,14 +204,11 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
           : undefined
       // 进度心跳只进 resultSummary；标题优先 toolArgs / 非进度 toolDetail
       const detailCandidate = segment.toolDetail
-      const detailLooksProgress =
-        !!detailCandidate &&
-        (/^(已启动|执行中|运行中|处理中)/.test(detailCandidate.trim()) ||
-          /执行中…\s*\d+s/.test(detailCandidate) ||
-          /·\s*\d+s$/.test(detailCandidate.trim()))
       const cmd =
         fromArgs ||
-        (!detailLooksProgress ? commandSummaryFromDetail(detailCandidate) : undefined)
+        (!isToolProgressSummary(detailCandidate)
+          ? commandSummaryFromDetail(detailCandidate)
+          : undefined)
       if (cmd && !/^(已启动|执行中|运行中|处理中)/.test(cmd) && !base.includes(cmd)) {
         return `${base} · ${cmd}`
       }
@@ -382,12 +380,15 @@ function buildStepsFromSource(
             (() => {
               const summary = segment.resultSummary?.trim()
               const toolDetail = segment.toolDetail
-              const progressLike =
-                !!summary &&
-                (/^(已启动|执行中|运行中|处理中|已停止)/.test(summary) ||
-                  /执行中…\s*\d+s/.test(summary) ||
-                  /·\s*\d+s$/.test(summary))
-              // 直播中：进度心跳写 summary，优先展示
+              const progressLike = Boolean(summary) && isToolProgressSummary(summary)
+              const stableDetail =
+                toolDetail && !isToolProgressSummary(toolDetail) ? toolDetail : undefined
+              // 秒表心跳只走预留宽时钟，不进过程行 / 直播头（对标 Codex #19260）
+              if (progressLike || summary === '已停止') {
+                if (summary === '已停止') return '已停止'
+                return stableDetail
+              }
+              // 直播中：真正状态字（如「通过 12 个测试」）可以上 detail
               if (
                 segment.status === 'active' &&
                 summary &&
@@ -395,25 +396,15 @@ function buildStepsFromSource(
               ) {
                 return summary
               }
-              // 结束后：进度心跳不作为永久详情
-              if (progressLike) {
-                if (summary === '已停止') return '已停止'
-                return undefined
-              }
-              return toolDetail || summary
+              return stableDetail || summary
             })(),
             120
           )
         : segment.kind === 'tool' && segment.toolName === 'present_inline_demo'
           ? cleanInlineText(segment.toolDetail, 80)
           : undefined
-    // 标题已含 path/command 时不再重复 detail（避免“运行命令 · sleep… sleep…”）
-    if (
-      detail &&
-      segment.kind === 'tool' &&
-      segment.status !== 'active' &&
-      title.includes(detail)
-    ) {
+    // 标题已含 path/command 时不再重复 detail（直播中也不另起一行顶过程区）
+    if (detail && segment.kind === 'tool' && title.includes(detail)) {
       detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
     }
 

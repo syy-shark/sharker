@@ -4,7 +4,7 @@
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
- * - 直播中不挂「查看输出」/ 退出码 / 进度摘要；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
+ * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -38,6 +38,8 @@ import {
   shouldMountToolExitCode,
   shouldMountToolOutputDetails,
   shouldMountToolResultSummary,
+  shouldMountToolStepDetail,
+  isToolProgressSummary,
   type ToolOutputDisplay
 } from '../../shared/tool-output-display'
 import './TurnFlow.css'
@@ -85,6 +87,7 @@ function isNoisyLiveDetail(label: string, detail?: string): boolean {
   if (!d) return true
   if (d === l) return true
   if (l.includes(d) || d.includes(l)) return true
+  if (isToolProgressSummary(d)) return true
   return /分析任务|规划下一步|正在推进|连接模型|整理结果|处理中|思考中/.test(d)
 }
 
@@ -425,7 +428,11 @@ const ProcessStepRow = memo(function ProcessStepRow({
           ) : (
             <span className="turn-flow-step-title">{title}</span>
           )}
-          {step.detail && !isDemo ? (
+          {shouldMountToolStepDetail({
+            detail: step.detail,
+            title,
+            isStreaming
+          }) && !isDemo ? (
             <code className="turn-flow-step-detail" title={step.detail || segment?.toolDetail}>
               {step.detail}
             </code>

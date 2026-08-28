@@ -99,8 +99,8 @@
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
-| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不挂「查看输出」/ 退出码 / 结果摘要、也不自动展开 verbose（对标 Codex command output behind expand） |
-| `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 |
+| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不挂「查看输出」/ 退出码 / 结果摘要 / 秒表心跳 detail、也不自动展开 verbose（对标 Codex command output behind expand / #19260） |
+| `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 detail |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮 |
@@ -118,7 +118,7 @@
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
-| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
+| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；写入/补丁 `tool_preview` 先占同一 tool 段与 `s.id-diff-N`（`isWritePreviewTool`），参数流把已解析的 +/- 填进同一槽（对标 Codex 约 0.5s 逐文件 diff），`tool_start` / `tool_done` 合并不换 id；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程；`buildAnswerParts` 写入一开始用 `editPreview` 占 `s.id-diff-N`，完成后填 `fileDiff`；正文 ```demo 开闭都拆成 `s.id` / `s.id-demo-stream` / `s.id-post`（直播未写完 `dem` / `viz` 就占槽，不认 ```diff / ```html / ```vim），收束不把演示搬回 Markdown 重挂 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N` |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |

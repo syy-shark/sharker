@@ -5,7 +5,9 @@ import {
   shouldExpandToolOutput,
   shouldMountToolExitCode,
   shouldMountToolOutputDetails,
-  shouldMountToolResultSummary
+  shouldMountToolResultSummary,
+  shouldMountToolStepDetail,
+  isToolProgressSummary
 } from './tool-output-display'
 
 describe('tool output display', () => {
@@ -92,5 +94,29 @@ describe('tool output display', () => {
         isStreaming: false
       })
     ).toBe(false)
+    expect(isToolProgressSummary('执行中… 9s')).toBe(true)
+    expect(isToolProgressSummary('已启动')).toBe(true)
+    expect(isToolProgressSummary('通过 12 个测试…')).toBe(false)
+    expect(
+      shouldMountToolStepDetail({
+        detail: '执行中… 4s',
+        title: '运行命令 · npm test',
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolStepDetail({
+        detail: 'npm test',
+        title: '运行命令 · npm test',
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolStepDetail({
+        detail: '通过 12 个测试…',
+        title: '运行命令 · npm test',
+        isStreaming: true
+      })
+    ).toBe(true)
   })
 })

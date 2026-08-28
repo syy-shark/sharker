@@ -93,6 +93,16 @@ describe('live process seed', () => {
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
     expect(active?.detail).toContain('测试')
+    segments = applyStreamChunk(segments, {
+      type: 'status',
+      toolName: 'run_terminal_cmd',
+      content: '执行中… 3s',
+      timestamp: 3
+    })
+    const clocked = deriveChronologicalSteps(segments, { isStreaming: true }).find(
+      (s) => s.status === 'active'
+    )
+    expect(clocked?.detail || '').not.toMatch(/执行中/)
   })
 
 
@@ -204,7 +214,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.detail || '').toMatch(/package\.json|读取/)
+    expect(active?.title || '').toMatch(/package\.json|读取/)
     expect(active?.detail || '').not.toMatch(/^L1:/)
   })
 
@@ -359,7 +369,7 @@ describe('terminal progress title stability', () => {
     expect(active?.title).toMatch(/运行命令/)
     expect(active?.title).toMatch(/sleep/)
     expect(active?.title).not.toMatch(/执行中/)
-    expect(active?.detail).toMatch(/执行中|已启动/)
+    expect(active?.detail || '').not.toMatch(/执行中|已启动/)
   })
 
   it('cleanInlineText keeps shell flags in command detail path', () => {
@@ -393,7 +403,7 @@ describe('terminal progress title stability', () => {
     const active = steps.find((s) => s.status === 'active')
     expect(active?.title).toContain('STOP_TEST_DONE')
     expect(active?.title).not.toContain('STOP TEST DONE')
-    expect(active?.detail).toMatch(/执行中/)
+    expect(active?.detail || '').not.toMatch(/执行中/)
   })
 })
 

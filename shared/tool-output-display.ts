@@ -78,6 +78,12 @@ export function shouldMountToolExitCode(options: {
 const PROGRESS_SUMMARY =
   /^(已启动|执行中|运行中|处理中)|执行中…\s*\d+s|·\s*\d+s$/
 
+/** 「执行中… Ns」一类秒表心跳：只走预留宽时钟，不进过程行 / 直播头 */
+export function isToolProgressSummary(text: string | null | undefined): boolean {
+  const value = String(text || '').trim()
+  return Boolean(value) && PROGRESS_SUMMARY.test(value)
+}
+
 /**
  * 直播中不挂结果摘要：「执行中… Ns」每秒更新还会另起一行顶过程区。
  * 进度只留在直播头秒表；收束后点开「工作了」再看真正摘要。
@@ -95,5 +101,22 @@ export function shouldMountToolResultSummary(options: {
   if (summary === String(options.detail || '').trim()) return false
   if (/^(L\d+:|[{}\[\]]|```)/.test(summary)) return false
   if (options.isStreaming) return false
-  return !PROGRESS_SUMMARY.test(summary)
+  return !isToolProgressSummary(summary)
+}
+
+/**
+ * 过程行 / 直播头 detail：秒表心跳与标题里已有的 path/command 都不另起一行
+ * （对标 Codex #19260：进度只留预留宽时钟，不闪第二行）。
+ */
+export function shouldMountToolStepDetail(options: {
+  detail?: string | null
+  title?: string | null
+  isStreaming?: boolean
+}): boolean {
+  const detail = String(options.detail || '').trim()
+  if (!detail) return false
+  if (isToolProgressSummary(detail)) return false
+  const title = String(options.title || '')
+  if (title && title.includes(detail)) return false
+  return true
 }
