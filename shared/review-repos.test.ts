@@ -4,11 +4,16 @@ import {
   fileInLastTurnForRepo,
   formatReviewLineStats,
   resolveReviewRepoId,
+  expandAllReviewDiffKeys,
+  parseReviewDiffKey,
+  pruneReviewDiffKeys,
+  reviewDiffKey,
   reviewFileOpenPath,
   reviewProbeRoots,
   reviewRepoLabel,
   shouldShowReviewRepoSelector,
   sumReviewLineStats,
+  toggleReviewDiffKey,
   uniqueReviewRepos
 } from './review-repos'
 
@@ -75,5 +80,21 @@ describe('review repos', () => {
     expect(fileInLastTurnForRepo('lib/b.ts', ['extra/lib/b.ts'], '/extra', '/proj')).toBe(true)
     expect(fileInLastTurnForRepo('src/a.ts', ['/extra/lib/b.ts'], '/proj', '/proj')).toBe(false)
     expect(fileInLastTurnForRepo('lib/b.ts', ['src/a.ts'], '/extra', '/proj')).toBe(false)
+    expect(reviewDiffKey('/proj', 'src/a.ts')).toBe('/proj\0src/a.ts')
+    expect(parseReviewDiffKey('/proj\0src/a.ts')).toEqual({ repoRoot: '/proj', path: 'src/a.ts' })
+    expect(parseReviewDiffKey('src/a.ts')).toBe(null)
+    expect(toggleReviewDiffKey(['/proj\0a.ts'], '/proj\0b.ts')).toEqual(['/proj\0a.ts', '/proj\0b.ts'])
+    expect(toggleReviewDiffKey(['/proj\0a.ts', '/proj\0b.ts'], '/proj\0a.ts')).toEqual(['/proj\0b.ts'])
+    expect(
+      expandAllReviewDiffKeys(
+        [
+          { path: 'src/a.ts', repoRoot: '/proj' },
+          { path: 'lib/b.ts', repoRoot: '/extra' },
+          { path: 'src/a.ts', repoRoot: '/proj' }
+        ],
+        '/proj'
+      )
+    ).toEqual(['/proj\0src/a.ts', '/extra\0lib/b.ts'])
+    expect(pruneReviewDiffKeys(['/proj\0a.ts', '/proj\0gone.ts'], ['/proj\0a.ts'])).toEqual(['/proj\0a.ts'])
   })
 })

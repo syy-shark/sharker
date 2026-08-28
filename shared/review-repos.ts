@@ -103,6 +103,51 @@ export function shouldShowReviewRepoSelector(repoCount: number): boolean {
   return repoCount > 1
 }
 
+/** 审查列表里一份文件的稳定键（仓根 + 相对路径） */
+export function reviewDiffKey(repoRoot: string, path: string): string {
+  return `${posixPath(repoRoot)}\0${posixPath(path)}`
+}
+
+export function parseReviewDiffKey(key: string): { repoRoot: string; path: string } | null {
+  const raw = String(key ?? '')
+  const split = raw.indexOf('\0')
+  if (split <= 0) return null
+  const repoRoot = posixPath(raw.slice(0, split))
+  const path = posixPath(raw.slice(split + 1))
+  if (!repoRoot || !path) return null
+  return { repoRoot, path }
+}
+
+export function toggleReviewDiffKey(keys: string[], key: string): string[] {
+  const next = String(key ?? '')
+  if (!next) return keys.slice()
+  return keys.includes(next) ? keys.filter((item) => item !== next) : [...keys, next]
+}
+
+export function expandAllReviewDiffKeys(
+  files: Array<{ path: string; repoRoot?: string }>,
+  fallbackRoot: string
+): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const fallback = posixPath(fallbackRoot)
+  for (const file of files) {
+    const path = posixPath(file.path)
+    const repo = posixPath(file.repoRoot || fallback)
+    if (!path || !repo) continue
+    const key = reviewDiffKey(repo, path)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(key)
+  }
+  return out
+}
+
+export function pruneReviewDiffKeys(keys: string[], allowed: string[]): string[] {
+  const allow = new Set(allowed)
+  return keys.filter((key) => allow.has(key))
+}
+
 export function formatReviewLineStats(added: number, removed: number): string {
   if (!added && !removed) return ''
   return `+${Math.max(0, added)} −${Math.max(0, removed)}`

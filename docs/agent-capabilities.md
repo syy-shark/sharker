@@ -72,7 +72,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **创建仓库**：项目还不是 Git 仓库时，审查面板提示并一键 `git init`（对标 Codex Review：prompt you to create one）；建在主文件夹，默认 `main`
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
-- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；点 **行背景** 展开或收起 diff；**⌘/Ctrl+单击** 某一行跳到该行预览；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
+- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**

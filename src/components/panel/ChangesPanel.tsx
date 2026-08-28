@@ -27,13 +27,18 @@ import {
 } from '../../../shared/review-file-click'
 import {
   ALL_REPOS_ID,
+  expandAllReviewDiffKeys,
   fileInLastTurnForRepo,
   formatReviewLineStats,
+  parseReviewDiffKey,
+  pruneReviewDiffKeys,
   resolveReviewRepoId,
+  reviewDiffKey,
   reviewFileOpenPath,
   reviewProbeRoots,
   shouldShowReviewRepoSelector,
   sumReviewLineStats,
+  toggleReviewDiffKey,
   uniqueReviewRepos,
   type ReviewRepo
 } from '../../../shared/review-repos'
@@ -108,7 +113,6 @@ export function ChangesPanel({
   const [isRepo, setIsRepo] = useState(true)
   const [repoSnapshots, setRepoSnapshots] = useState<RepoSnapshot[]>([])
   const [repoId, setRepoId] = useState('')
-  const [selectedRepoRoot, setSelectedRepoRoot] = useState<string | null>(null)
   const [files, setFiles] = useState<ChangeFile[]>([])
   const [branchFiles, setBranchFiles] = useState<ChangeFile[]>([])
   const [branchBase, setBranchBase] = useState<string | null>(null)
@@ -120,10 +124,10 @@ export function ChangesPanel({
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedPath, setSelectedPath] = useState<string | null>(null)
-  const [diff, setDiff] = useState<FileDiffModel | null>(null)
-  const [diffError, setDiffError] = useState<string | null>(null)
-  const [diffLoading, setDiffLoading] = useState(false)
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([])
+  const [diffs, setDiffs] = useState<Record<string, FileDiffModel>>({})
+  const [diffErrors, setDiffErrors] = useState<Record<string, string>>({})
+  const [diffLoadingKeys, setDiffLoadingKeys] = useState<string[]>([])
   const [comments, setComments] = useState<ReviewLineComment[]>([])
   const [commitMessage, setCommitMessage] = useState('')
   const [commitHint, setCommitHint] = useState<string | null>(null)
@@ -247,17 +251,14 @@ export function ChangesPanel({
       setIsRepo(nextRepos.length > 0)
       setBranch(nextActive?.branch ?? '')
       setFiles(nextActive?.files ?? [])
-      if (!nextAll && nextActive?.root) setSelectedRepoRoot(nextActive.root)
 
       if (!nextAll && window.sharker.getGitBranchChanges) {
         const branchResult = await window.sharker.getGitBranchChanges(cwd)
         setBranchBase(branchResult.base)
         setBranchFiles(branchResult.files)
         if (compare === 'branch') {
-          setSelectedPath((prev) => {
-            if (prev && branchResult.files.some((f) => f.path === prev)) return prev
-            return branchResult.files[0]?.path ?? null
-          })
+          const allowed = expandAllReviewDiffKeys(branchResult.files, cwd)
+          setExpandedKeys((prev) => pruneReviewDiffKeys(prev, allowed))
         }
       } else if (nextAll) {
         setBranchBase(null)
@@ -269,10 +270,8 @@ export function ChangesPanel({
         setCommitSha(commitResult.sha)
         setCommitFiles(commitResult.files)
         if (compare === 'commit') {
-          setSelectedPath((prev) => {
-            if (prev && commitResult.files.some((f) => f.path === prev)) return prev
-            return commitResult.files[0]?.path ?? null
-          })
+          const allowed = expandAllReviewDiffKeys(commitResult.files, cwd)
+          setExpandedKeys((prev) => pruneReviewDiffKeys(prev, allowed))
         }
       }
       if (compare !== 'branch' && compare !== 'commit') {
@@ -293,13 +292,8 @@ export function ChangesPanel({
               }
               return scope === 'staged' ? isStaged(f) : isUnstaged(f)
             })
-        setSelectedPath((prev) => {
-          if (prev && nextList.some((f) => f.path === prev)) return prev
-          return nextList[0]?.path ?? nextActive?.files[0]?.path ?? null
-        })
-        if (nextAll) {
-          setSelectedRepoRoot(nextList[0]?.repoRoot ?? null)
-        }
+        const allowed = expandAllReviewDiffKeys(nextList, cwd)
+        setExpandedKeys((prev) => pruneReviewDiffKeys(prev, allowed))
       }
       if (!nextAll && window.sharker.getPullRequestContext) {
         const pr = await window.sharker.getPullRequestContext(cwd)
@@ -361,33 +355,23 @@ export function ChangesPanel({
 
   /** hunk 级暂存 / 取消暂存 / 还原 */
   const runHunkAction = useCallback(
-    async (hunk: DiffHunk, action: GitReviewAction) => {
-      if (
-        !reviewCwd ||
-        !selectedPath ||
-        !window.sharker?.applyGitHunkAction ||
-        acting ||
-        readOnly
-      ) {
+    async (file: ChangeFile, hunk: DiffHunk, action: GitReviewAction) => {
+      const gitRoot = file.repoRoot ?? reviewCwd
+      if (!gitRoot || !file.path || !window.sharker?.applyGitHunkAction || acting || readOnly) {
         return
       }
-      const gitRoot = selectedRepoRoot || reviewCwd
       setActing(true)
       setError(null)
       try {
         const result = await window.sharker.applyGitHunkAction(gitRoot, {
           action,
-          path: selectedPath,
+          path: file.path,
           scope,
           patch: buildHunkPatch({
-            path: selectedPath,
+            path: file.path,
             hunk,
-            isNew: isNewGitChange(
-              sourceFiles.find((f) => f.path === selectedPath)?.status ?? ''
-            ),
-            isDeleted: isDeletedGitChange(
-              sourceFiles.find((f) => f.path === selectedPath)?.status ?? ''
-            )
+            isNew: isNewGitChange(file.status),
+            isDeleted: isDeletedGitChange(file.status)
           })
         })
         if (!result.ok) setError(result.error || 'hunk 操作失败')
@@ -398,7 +382,7 @@ export function ChangesPanel({
         setActing(false)
       }
     },
-    [acting, readOnly, refresh, reviewCwd, scope, selectedPath, selectedRepoRoot, sourceFiles]
+    [acting, readOnly, refresh, reviewCwd, scope]
   )
 
   const runCommit = useCallback(async () => {
@@ -515,50 +499,87 @@ export function ChangesPanel({
   }, [refresh, revision])
 
   useEffect(() => {
-    const gitRoot = selectedRepoRoot || reviewCwd
-    if (!gitRoot || !selectedPath || !window.sharker?.getGitFileDiff) {
-      setDiff(null)
-      setDiffError(null)
+    if (!window.sharker?.getGitFileDiff) {
+      setDiffs({})
+      setDiffErrors({})
+      setDiffLoadingKeys([])
       return
     }
-    const file = sourceFiles.find(
-      (f) => f.path === selectedPath && (!selectedRepoRoot || f.repoRoot === selectedRepoRoot)
-    )
+    const allowed = new Set(expandedKeys)
+    setDiffs((prev) => {
+      const next: Record<string, FileDiffModel> = {}
+      for (const key of expandedKeys) {
+        if (prev[key]) next[key] = prev[key]
+      }
+      return next
+    })
+    setDiffErrors((prev) => {
+      const next: Record<string, string> = {}
+      for (const key of expandedKeys) {
+        if (prev[key]) next[key] = prev[key]
+      }
+      return next
+    })
+    if (expandedKeys.length === 0) {
+      setDiffLoadingKeys([])
+      return
+    }
     let cancelled = false
-    setDiffLoading(true)
-    setDiffError(null)
     const diffScope = compare === 'branch' ? 'branch' : compare === 'commit' ? 'commit' : scope
-    void window.sharker
-      .getGitFileDiff(
-        gitRoot,
-        selectedPath,
-        file?.status ?? 'M',
-        diffScope,
-        compare === 'commit' ? commitSha : undefined
-      )
-      .then((result) => {
-        if (cancelled) return
-        if (!result.ok || !result.diff) {
-          setDiff(null)
-          setDiffError(result.error || '无法加载 diff')
-          return
+    setDiffLoadingKeys(expandedKeys.slice())
+    void Promise.all(
+      expandedKeys.map(async (key) => {
+        const parsed = parseReviewDiffKey(key)
+        if (!parsed) return
+        const file = sourceFiles.find(
+          (row) =>
+            row.path === parsed.path && (row.repoRoot ?? reviewCwd) === parsed.repoRoot
+        )
+        try {
+          const result = await window.sharker.getGitFileDiff(
+            parsed.repoRoot,
+            parsed.path,
+            file?.status ?? 'M',
+            diffScope,
+            compare === 'commit' ? commitSha : undefined
+          )
+          if (cancelled || !allowed.has(key)) return
+          if (!result.ok || !result.diff) {
+            setDiffs((prev) => {
+              const next = { ...prev }
+              delete next[key]
+              return next
+            })
+            setDiffErrors((prev) => ({ ...prev, [key]: result.error || '无法加载 diff' }))
+            return
+          }
+          setDiffs((prev) => ({ ...prev, [key]: result.diff }))
+          setDiffErrors((prev) => {
+            if (!prev[key]) return prev
+            const next = { ...prev }
+            delete next[key]
+            return next
+          })
+        } catch (e) {
+          if (cancelled || !allowed.has(key)) return
+          setDiffs((prev) => {
+            const next = { ...prev }
+            delete next[key]
+            return next
+          })
+          setDiffErrors((prev) => ({
+            ...prev,
+            [key]: e instanceof Error ? e.message : String(e)
+          }))
         }
-        setDiff(result.diff)
-        setDiffError(null)
       })
-      .catch((e) => {
-        if (!cancelled) {
-          setDiff(null)
-          setDiffError(e instanceof Error ? e.message : String(e))
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setDiffLoading(false)
-      })
+    ).finally(() => {
+      if (!cancelled) setDiffLoadingKeys([])
+    })
     return () => {
       cancelled = true
     }
-  }, [sourceFiles, selectedPath, selectedRepoRoot, reviewCwd, revision, scope, compare, commitSha])
+  }, [sourceFiles, expandedKeys, reviewCwd, revision, scope, compare, commitSha])
 
   if (!workspacePath) {
     return (
@@ -568,9 +589,6 @@ export function ChangesPanel({
     )
   }
 
-  const selected = sourceFiles.find(
-    (f) => f.path === selectedPath && (!selectedRepoRoot || f.repoRoot === selectedRepoRoot)
-  )
   const emptyCopy =
     compare === 'last_turn'
       ? lastTurnPaths.length === 0
@@ -605,6 +623,22 @@ export function ChangesPanel({
           ) : null}
         </div>
         <div className="changes-panel__head-actions">
+          {visible.length > 0 ? (
+            <button
+              type="button"
+              className="changes-panel__refresh"
+              title={expandedKeys.length === visible.length ? '收起全部 diff' : '展开全部 diff'}
+              aria-label={expandedKeys.length === visible.length ? '收起全部 diff' : '展开全部 diff'}
+              onClick={() => {
+                const all = expandAllReviewDiffKeys(visible, reviewCwd)
+                setExpandedKeys((prev) =>
+                  prev.length === all.length && all.every((key) => prev.includes(key)) ? [] : all
+                )
+              }}
+            >
+              {expandedKeys.length === visible.length ? '收起全部' : '展开全部'}
+            </button>
+          ) : null}
           <button
             type="button"
             className={`changes-panel__refresh changes-panel__wrap${wrapLines ? ' is-pressed' : ''}`}
@@ -946,24 +980,27 @@ export function ChangesPanel({
               const gitRoot = f.repoRoot ?? reviewCwd
               const openPath = reviewFileOpenPath(f.path, gitRoot, workspacePath)
               const displayPath = isAllRepos ? openPath : f.path
-              const selected =
-                selectedPath === f.path && (!selectedRepoRoot || selectedRepoRoot === gitRoot)
+              const key = reviewDiffKey(gitRoot, f.path)
+              const expanded = expandedKeys.includes(key)
+              const fileDiff = diffs[key]
+              const fileError = diffErrors[key]
+              const fileLoading = diffLoadingKeys.includes(key)
               return (
               <li key={`${gitRoot}:${f.raw}:${f.path}`}>
-                <div className={`changes-panel__row${selected ? ' is-selected' : ''}`}>
+                <div className={`changes-panel__row${expanded ? ' is-selected' : ''}`}>
                   <button
                     type="button"
                     className="changes-panel__item"
                     title="展开或收起 diff"
-                    aria-selected={selected}
+                    aria-selected={expanded}
+                    aria-expanded={expanded}
                     onClick={(e) => {
                       const intent = resolveReviewFileClick(reviewFileClickTargetFromElement(e.target))
                       if (intent === 'open') {
                         dispatchOpenWorkspaceFile({ path: openPath })
                         return
                       }
-                      setSelectedRepoRoot(gitRoot)
-                      setSelectedPath((prev) => (prev === f.path && selectedRepoRoot === gitRoot ? null : f.path))
+                      setExpandedKeys((prev) => toggleReviewDiffKey(prev, key))
                     }}
                   >
                     <span className={`changes-panel__status status-${f.status.trim().charAt(0) || 'M'}`}>
@@ -1006,147 +1043,102 @@ export function ChangesPanel({
                     </div>
                   ) : null}
                 </div>
+                {expanded ? (
+                  <div className="changes-panel__diff">
+                    {fileLoading && !fileDiff ? (
+                      <p className="changes-panel__hint">正在加载 diff…</p>
+                    ) : fileError ? (
+                      <p className="changes-panel__error">{fileError}</p>
+                    ) : fileDiff ? (
+                      <CodeDiffBlock
+                        diff={fileDiff}
+                        defaultExpanded
+                        showHeader
+                        wrapLines={wrapLines}
+                        onOpenLine={(line) =>
+                          dispatchOpenWorkspaceFile({
+                            path: openPath,
+                            line
+                          })
+                        }
+                        review={{
+                          scope: readOnly ? 'unstaged' : scope,
+                          acting,
+                          readOnly,
+                          comments: comments.filter((c) => c.path === f.path),
+                          onHunkAction: readOnly
+                            ? undefined
+                            : (hunk, action) => void runHunkAction(f, hunk, action),
+                          onAddComment: (comment) =>
+                            setComments((prev) => [
+                              ...prev,
+                              { ...comment, id: crypto.randomUUID(), path: f.path }
+                            ])
+                        }}
+                      />
+                    ) : (
+                      <p className="changes-panel__hint">正在加载 diff…</p>
+                    )}
+                  </div>
+                ) : null}
               </li>
               )
             })}
           </ul>
-          <div className="changes-panel__diff">
-            {selected && !readOnly && (isStaged(selected) || isUnstaged(selected)) ? (
-              <div className="changes-panel__file-actions">
-                {isUnstaged(selected) ? (
-                  <button
-                    type="button"
-                    className="changes-panel__action"
-                    disabled={acting}
-                    onClick={() =>
-                      void runAction('stage', [selected.path], selected.repoRoot ?? reviewCwd)
-                    }
-                  >
-                    暂存此文件
-                  </button>
-                ) : null}
-                {isStaged(selected) ? (
-                  <button
-                    type="button"
-                    className="changes-panel__action"
-                    disabled={acting}
-                    onClick={() =>
-                      void runAction('unstage', [selected.path], selected.repoRoot ?? reviewCwd)
-                    }
-                  >
-                    取消暂存此文件
-                  </button>
-                ) : null}
+          {comments.length > 0 && onSendComments ? (
+            <div className="changes-panel__comments-bar">
+              <span>{comments.length} 条行内评论</span>
+              <button
+                type="button"
+                className="changes-panel__action"
+                onClick={() => {
+                  onSendComments(formatReviewCommentsPrompt(comments))
+                  setComments([])
+                }}
+              >
+                发送评论
+              </button>
+              {prContext && window.sharker.postPullRequestReview ? (
                 <button
                   type="button"
-                  className="changes-panel__action changes-panel__action--danger"
-                  disabled={acting}
-                  onClick={() =>
-                    void runAction('revert', [selected.path], selected.repoRoot ?? reviewCwd)
-                  }
-                >
-                  还原此文件
-                </button>
-              </div>
-            ) : null}
-            {diffLoading && !diff ? (
-              <p className="changes-panel__hint">正在加载 diff…</p>
-            ) : diffError ? (
-              <p className="changes-panel__error">{diffError}</p>
-            ) : diff ? (
-              <>
-                <CodeDiffBlock
-                  diff={diff}
-                  defaultExpanded
-                  showHeader
-                  wrapLines={wrapLines}
-                  onOpenLine={
-                    selectedPath
-                      ? (line) =>
-                          dispatchOpenWorkspaceFile({
-                            path: reviewFileOpenPath(
-                              selectedPath,
-                              selectedRepoRoot || reviewCwd,
-                              workspacePath
-                            ),
-                            line
-                          })
-                      : undefined
-                  }
-                  review={{
-                    scope: readOnly ? 'unstaged' : scope,
-                    acting,
-                    readOnly,
-                    comments: comments.filter((c) => c.path === selectedPath),
-                    onHunkAction: readOnly
-                      ? undefined
-                      : (hunk, action) => void runHunkAction(hunk, action),
-                    onAddComment: (comment) =>
-                      setComments((prev) => [
-                        ...prev,
-                        { ...comment, id: crypto.randomUUID() }
-                      ])
+                  className="changes-panel__action"
+                  disabled={acting || localCommentsForGithub(comments).length === 0}
+                  onClick={() => {
+                    void (async () => {
+                      if (!reviewCwd || isAllRepos) return
+                      setActing(true)
+                      setError(null)
+                      try {
+                        const result = await window.sharker.postPullRequestReview(
+                          reviewCwd,
+                          comments
+                        )
+                        if (!result.ok) {
+                          setError(result.error || '发布到 GitHub 失败')
+                          return
+                        }
+                        setCommitHint(`已发布 ${result.posted} 条评论到 PR #${prContext.number}`)
+                        setComments((prev) => prev.filter((c) => String(c.id).startsWith('gh-')))
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : String(e))
+                      } finally {
+                        setActing(false)
+                      }
+                    })()
                   }}
-                />
-                {comments.length > 0 && onSendComments ? (
-                  <div className="changes-panel__comments-bar">
-                    <span>{comments.length} 条行内评论</span>
-                    <button
-                      type="button"
-                      className="changes-panel__action"
-                      onClick={() => {
-                        onSendComments(formatReviewCommentsPrompt(comments))
-                        setComments([])
-                      }}
-                    >
-                      发送评论
-                    </button>
-                    {prContext && window.sharker.postPullRequestReview ? (
-                      <button
-                        type="button"
-                        className="changes-panel__action"
-                        disabled={acting || localCommentsForGithub(comments).length === 0}
-                        onClick={() => {
-                          void (async () => {
-                            if (!reviewCwd || isAllRepos) return
-                            setActing(true)
-                            setError(null)
-                            try {
-                              const result = await window.sharker.postPullRequestReview(
-                                reviewCwd,
-                                comments
-                              )
-                              if (!result.ok) {
-                                setError(result.error || '发布到 GitHub 失败')
-                                return
-                              }
-                              setCommitHint(`已发布 ${result.posted} 条评论到 PR #${prContext.number}`)
-                              setComments((prev) => prev.filter((c) => String(c.id).startsWith('gh-')))
-                            } catch (e) {
-                              setError(e instanceof Error ? e.message : String(e))
-                            } finally {
-                              setActing(false)
-                            }
-                          })()
-                        }}
-                      >
-                        发布到 GitHub
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="changes-panel__action"
-                      onClick={() => setComments([])}
-                    >
-                      清空
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <p className="changes-panel__hint">选择一个文件查看 diff</p>
-            )}
-          </div>
+                >
+                  发布到 GitHub
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="changes-panel__action"
+                onClick={() => setComments([])}
+              >
+                清空
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
