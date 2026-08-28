@@ -2,7 +2,7 @@
 
 ## 职责
 
-- 文件树、**变更（git）**、集成终端、**内置浏览器**四个 Tab 的内容区
+- 文件树、**变更（git）**、集成终端、**内置浏览器**、**子 Agent 活动**五个 Tab 的内容区
 - 由上层 [`RightPanel.tsx`](../RightPanel.tsx) 挂载；本目录不负责面板壳（宽、全屏、Tab 切换）
 - **不管**：系统默认浏览器（`open_url`）、无头 `browser_*`（Playwright）、Chrome 扩展 host
 
@@ -18,6 +18,7 @@
 | `ChangesPanel.tsx` / `.css` | Git 变更审查：未提交 / 本轮 / 分支对比、未暂存/已暂存、文件/hunk 暂存还原、提交/推送/创建 PR、detached 上创建分支、行内评论 + `/review` 发现 + GitHub PR 评论挂到 diff，本地评论可发布到 GitHub；`revision` 随工具写盘刷新 |
 | `EmbeddedTerminal.tsx` / `.css` | 集成终端；挂载 view-enter |
 | `EmbeddedBrowser.tsx` / `.css` | 内置浏览器；起始页主题跟随 App；避免 data URL 自激 reload |
+| `AgentsPanel.tsx` / `.css` | 当前线程的子 Agent：进行中/已结束、直播正文、停止、转向 |
 | `browser-start-page.ts` | 新标签起始页 HTML（data URL）；跟随 App light/dark，仅 Logo + 搜索 |
 | `browser-glass-css.ts` | 访客页水滴玻璃注入 CSS（Dark Reader 式 `insertCSS`）+ 是否注入判断 |
 | `ARCH.md` | 本层架构说明 |

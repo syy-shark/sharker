@@ -62,6 +62,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'toggle_browser'
   },
   {
+    id: 'agents',
+    title: '打开子 Agent 活动',
+    shortcut: '⌘⌥U',
+    keywords: 'agents subagent activity 活动 子代理',
+    action: 'toggle_agents'
+  },
+  {
     id: 'mention',
     title: '引用工作区文件',
     keywords: 'mention file @ 引用 文件',

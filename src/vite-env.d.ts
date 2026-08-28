@@ -223,6 +223,15 @@ export interface SharkerApi {
   listAutomationQueue: () => Promise<AutomationQueueItem[]>
   saveAutomationQueue: (queue: AutomationQueueItem[]) => Promise<boolean>
   onAutomationRun: (cb: (job: AutomationJob) => void) => () => void
+  listSubAgents: (
+    parentConversationId?: string
+  ) => Promise<import('../shared/subagent').SubAgentSnapshot[]>
+  stopSubAgent: (id: string) => Promise<boolean>
+  steerSubAgent: (
+    id: string,
+    message: string
+  ) => Promise<{ ok: true; note: string } | { ok: false; error: string }>
+  onSubAgentUpdate: (cb: (snapshot: import('../shared/subagent').SubAgentSnapshot) => void) => () => void
 }
 
 declare global {

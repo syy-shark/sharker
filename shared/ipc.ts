@@ -85,5 +85,8 @@ export const IPC = {
   LIST_AUTOMATIONS: 'automations:list',
   SAVE_AUTOMATIONS: 'automations:save',
   LIST_AUTOMATION_QUEUE: 'automations:queue-list',
-  SAVE_AUTOMATION_QUEUE: 'automations:queue-save'
+  SAVE_AUTOMATION_QUEUE: 'automations:queue-save',
+  AGENTS_LIST: 'agents:list',
+  AGENTS_STOP: 'agents:stop',
+  AGENTS_STEER: 'agents:steer'
 } as const

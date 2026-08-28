@@ -56,6 +56,8 @@
 | `git-pr-review.test.ts` | 跳过 gh- 导入评论、拼 api 参数 |
 | `thread-window.ts` | 弹出线程窗 `#thread/<ws>/<id>` |
 | `thread-window.test.ts` | hash 往返 |
+| `subagent.ts` | 子 Agent 快照过滤 / 排序（不进侧栏） |
+| `subagent.test.ts` | 按父线程过滤、进行中优先 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支 |
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |

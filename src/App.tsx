@@ -1068,6 +1068,10 @@ export default function App() {
         buf.changedRelPaths ??= []
         collectWrites(buf.changedRelPaths, chunk.toolName, chunk.toolArgs)
       }
+      if (chunk.type === 'tool_start' && chunk.toolName === 'agent_spawn') {
+        setRightPanelTab('agents')
+        setRightPanelOpen(true)
+      }
       if (chunk.type === 'tool_start' && chunk.toolName) {
         for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
           if (!buf.turnMeta.browsedFiles.includes(p)) buf.turnMeta.browsedFiles.push(p)
@@ -2798,6 +2802,9 @@ export default function App() {
         case 'toggle_browser':
           handleTogglePanel('browser')
           break
+        case 'toggle_agents':
+          handleTogglePanel('agents')
+          break
         case 'open_automations':
           setPage('automations')
           break
@@ -2914,6 +2921,10 @@ export default function App() {
       }
       if (action === 'toggle_browser') {
         handleShortcutPanel('browser')
+        return
+      }
+      if (action === 'toggle_agents') {
+        handleShortcutPanel('agents')
         return
       }
       if (action === 'pick_model') {
@@ -3955,6 +3966,7 @@ export default function App() {
           lastTurnPaths={lastTurnPaths}
           agentFindings={reviewFindings}
           suggestedCommit={suggestedCommit}
+          conversationId={activeConversationId}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

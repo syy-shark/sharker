@@ -31,7 +31,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` | 打开 `$` Skill 选择器 |
-| `/files` `/terminal` `/browser` | 打开右侧对应面板 |
+| `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 
 ### @file 引用
 
@@ -73,7 +73,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 命令面板
 
-`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；`Ctrl⇧V` 或「语音」进入语音对话（听写自动发送，回复用系统 TTS 朗读）。顶栏可 **弹出当前对话** 到独立窗看直播（chunk 广播到所有窗）。空输入时 `↑` 恢复上一条用户提示。
+`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`⌘⌥U` / `/agents` 子 Agent 活动、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；`Ctrl⇧V` 或「语音」进入语音对话（听写自动发送，回复用系统 TTS 朗读）。顶栏可 **弹出当前对话** 到独立窗看直播（chunk 广播到所有窗）。空输入时 `↑` 恢复上一条用户提示。
 
 ### 排队与插队
 
@@ -120,7 +120,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### Git / Tasks / Sub-agents
 
-见 `tools/ARCH.md` 完整列表。
+见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥U`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。
+
+### 子 Agent 活动
+
+对标 Codex Activity / Subagents：只挂在当前对话下；审批沿用父 turn，避免权限请求丢失。
 
 ### Web
 

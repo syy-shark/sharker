@@ -7,10 +7,11 @@ import { FileTree } from './panel/FileTree'
 import { EmbeddedTerminal } from './panel/EmbeddedTerminal'
 import { EmbeddedBrowser } from './panel/EmbeddedBrowser'
 import { ChangesPanel } from './panel/ChangesPanel'
+import { AgentsPanel } from './panel/AgentsPanel'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 
-export type RightPanelTab = 'files' | 'changes' | 'terminal' | 'browser'
+export type RightPanelTab = 'files' | 'changes' | 'terminal' | 'browser' | 'agents'
 
 const PANEL_WIDTH_KEY = 'sharker-right-panel-width'
 const PANEL_DEFAULT_WIDTH = RIGHT_PANEL_LAYOUT.default
@@ -34,6 +35,8 @@ interface Props {
   agentFindings?: import('../../shared/review-comment').ReviewLineComment[]
   /** 审查队列「接受」预填的提交说明 */
   suggestedCommit?: string
+  /** 当前对话：子 Agent 只挂在父线程下 */
+  conversationId?: string | null
 }
 
 /** Codex 风格右侧面板 */
@@ -48,7 +51,8 @@ export function RightPanel({
   onSendReviewComments,
   lastTurnPaths = [],
   agentFindings = [],
-  suggestedCommit = ''
+  suggestedCommit = '',
+  conversationId = null
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -282,7 +286,8 @@ export function RightPanel({
               ['files', '文件'],
               ['changes', '变更'],
               ['terminal', '终端'],
-              ['browser', '浏览器']
+              ['browser', '浏览器'],
+              ['agents', '活动']
             ] as const
           ).map(([id, label]) => (
             <button
@@ -332,6 +337,7 @@ export function RightPanel({
         )}
         {tab === 'terminal' && <EmbeddedTerminal workspacePath={workspacePath} />}
         {tab === 'browser' && <EmbeddedBrowser />}
+        {tab === 'agents' && <AgentsPanel conversationId={conversationId} />}
       </div>
     </aside>
   )

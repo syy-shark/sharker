@@ -196,5 +196,15 @@ contextBridge.exposeInMainWorld('sharker', {
     const handler = (_: unknown, job: unknown) => cb(job)
     ipcRenderer.on('automation:run', handler)
     return () => ipcRenderer.removeListener('automation:run', handler)
+  },
+  listSubAgents: (parentConversationId?: string) =>
+    ipcRenderer.invoke(IPC.AGENTS_LIST, parentConversationId),
+  stopSubAgent: (id: string) => ipcRenderer.invoke(IPC.AGENTS_STOP, id),
+  steerSubAgent: (id: string, message: string) => ipcRenderer.invoke(IPC.AGENTS_STEER, id, message),
+  onSubAgentUpdate: (cb: (snapshot: import('../../shared/subagent').SubAgentSnapshot) => void) => {
+    const handler = (_: unknown, snapshot: import('../../shared/subagent').SubAgentSnapshot) =>
+      cb(snapshot)
+    ipcRenderer.on('agents:update', handler)
+    return () => ipcRenderer.removeListener('agents:update', handler)
   }
 })

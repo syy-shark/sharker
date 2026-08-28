@@ -20,6 +20,7 @@ import {
   providerSupportsVision
 } from './vision-feedback'
 import type { ApprovalHandler } from './loop'
+import { setParentApprovalHandler } from './approval-bridge'
 import {
   isApprovalGranted,
   normalizeApprovalDecision,
@@ -368,6 +369,7 @@ export async function* queryLoop(
   signal: AbortSignal | undefined,
   opts: QueryLoopOptions
 ): AsyncGenerator<StreamChunk> {
+  setParentApprovalHandler(onApproval)
   const {
     userText,
     history,

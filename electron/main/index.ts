@@ -17,6 +17,12 @@ import type {
   StreamChunk
 } from '../../shared/types'
 import { generateTitle, type ApprovalHandler } from '../../agent/loop'
+import {
+  listSubAgentSnapshots,
+  sendSubAgentMessage,
+  setSubAgentListener,
+  stopSubAgent
+} from '../../agent/coordinator'
 import { executeUserInput, abortActiveTurn } from '../../agent/pipeline'
 import {
   ConversationApprovalRegistry,
@@ -553,6 +559,9 @@ const approvalHandler: ApprovalHandler = (req) => {
 
 /** 注册全部 IPC handler（设置、对话、窗口、聊天等）。 */
 function registerIpc(): void {
+  setSubAgentListener((snapshot) => {
+    broadcastToRenderers('agents:update', snapshot)
+  })
   ipcMain.handle(IPC.GET_SETTINGS, async () => settings)
 
   ipcMain.handle(IPC.SAVE_SETTINGS, async (_e, next: AppSettings) => {
@@ -1086,6 +1095,21 @@ function registerIpc(): void {
   ipcMain.handle(IPC.SAVE_AUTOMATION_QUEUE, async (_e, queue) => {
     await saveAutomationQueue(Array.isArray(queue) ? queue : [])
     return true
+  })
+
+  ipcMain.handle(IPC.AGENTS_LIST, async (_e, parentConversationId?: string) => {
+    return listSubAgentSnapshots(String(parentConversationId || ''))
+  })
+  ipcMain.handle(IPC.AGENTS_STOP, async (_e, id: string) => stopSubAgent(String(id || '')))
+  ipcMain.handle(IPC.AGENTS_STEER, async (_e, id: string, message: string) => {
+    const text = String(message || '').trim()
+    if (!text) return { ok: false as const, error: '缺少转向说明' }
+    try {
+      const note = await sendSubAgentMessage(settings, String(id || ''), text)
+      return { ok: true as const, note }
+    } catch (e) {
+      return { ok: false as const, error: e instanceof Error ? e.message : String(e) }
+    }
   })
 
   /** chat:send — 转发至 Turn 管线 executeUserInput，流式推送 chunk。 */

@@ -20,6 +20,7 @@ export type WorkbenchShortcutAction =
   | 'shortcut_help'
   | 'select_chat'
   | 'search_chats'
+  | 'toggle_agents'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -38,6 +39,7 @@ export function matchWorkbenchShortcut(event: {
   const code = event.code ?? ''
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
+  if (key === 'u' && event.altKey && !event.shiftKey) return 'toggle_agents'
   if (key === 'g' && event.shiftKey && !event.altKey) return 'toggle_review'
   if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
@@ -89,6 +91,7 @@ export function adjacentConversationId(
 export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘B', title: '切换侧栏' },
   { keys: '⌘⌥B', title: '打开审查' },
+  { keys: '⌘⌥U', title: '子 Agent 活动' },
   { keys: '⌘J / Ctrl+`', title: '打开终端' },
   { keys: '⌘⇧E', title: '打开文件树' },
   { keys: '⌘⇧B', title: '打开内置浏览器' },

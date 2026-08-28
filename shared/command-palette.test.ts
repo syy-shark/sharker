@@ -13,6 +13,7 @@ describe('command palette', () => {
     expect(ids).toContain('dictate')
     expect(ids).toContain('voice-chat')
     expect(ids).toContain('popout')
+    expect(ids).toContain('agents')
     expect(ids).toContain('personality')
     expect(ids).toContain('shortcuts')
   })

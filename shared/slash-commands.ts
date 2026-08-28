@@ -159,6 +159,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'panel'
   },
   {
+    name: 'agents',
+    description: '打开子 Agent 活动',
+    scope: 'ui',
+    action: 'toggle_agents',
+    category: 'panel'
+  },
+  {
     name: 'automations',
     description: '打开自动化（定时任务）',
     scope: 'ui',
