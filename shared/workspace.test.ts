@@ -4,18 +4,18 @@ import { filterWorkspaces, normalizeSettings } from './workspace'
 
 describe('workspace settings', () => {
   it('migrates requireModEnter into composerEnterBehavior', () => {
+    expect(normalizeSettings({ requireModEnter: true }, '/home/u').composerEnterBehavior).toBe(
+      'cmdAlways'
+    )
+    expect(normalizeSettings({ requireModEnter: true }, '/home/u').requireModEnter).toBe(true)
     expect(
-      normalizeSettings({ ...DEFAULT_SETTINGS, requireModEnter: true }, '/home/u').composerEnterBehavior
-    ).toBe('cmdAlways')
+      normalizeSettings({ composerEnterBehavior: 'cmdIfMultiline', requireModEnter: true }, '/home/u')
+        .composerEnterBehavior
+    ).toBe('cmdIfMultiline')
     expect(
-      normalizeSettings({ ...DEFAULT_SETTINGS, requireModEnter: true }, '/home/u').requireModEnter
-    ).toBe(true)
-    expect(
-      normalizeSettings(
-        { ...DEFAULT_SETTINGS, composerEnterBehavior: 'cmdIfMultiline' },
-        '/home/u'
-      ).requireModEnter
+      normalizeSettings({ composerEnterBehavior: 'cmdIfMultiline' }, '/home/u').requireModEnter
     ).toBe(false)
+    expect(normalizeSettings({}, '/home/u').composerEnterBehavior).toBe('enter')
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').composerEnterBehavior).toBe('enter')
   })
 })
