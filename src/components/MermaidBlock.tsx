@@ -1,10 +1,11 @@
 /**
- * 闭合 ```mermaid 围栏内联成图（对标 Codex transcript Mermaid）。
- * 未闭合直播仍走 LiveFenceTail，避免每 token 跑解析。
+ * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合不解析。
+ * 成图前继续 LiveFenceTail，避免闭合瞬间卸掉代码尾再挂一套。
  * @see src/components/ARCH.md
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import {
+  isMermaidLang,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   writeCachedMermaidSvg,
@@ -50,16 +51,32 @@ function useUiMermaidTheme(): MermaidUiTheme {
   return theme
 }
 
-export function MermaidBlock({ code }: { code: string }) {
+export function MermaidBlock({
+  code,
+  closed = true,
+  language = 'mermaid'
+}: {
+  code: string
+  /** 未闭合时只画代码尾，不跑 mermaid.render */
+  closed?: boolean
+  language?: string
+}) {
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const theme = useUiMermaidTheme()
   const source = code.replace(/\n$/, '')
   const paintedSource = useRef(source.trim())
   const renderGen = useRef(0)
-  const [svg, setSvg] = useState(() => readCachedMermaidSvg(source, theme) ?? '')
+  const [svg, setSvg] = useState(() =>
+    closed ? (readCachedMermaidSvg(source, theme) ?? '') : ''
+  )
   const [failed, setFailed] = useState(false)
+  const fenceLang = isMermaidLang(language) ? language : 'mermaid'
 
   useEffect(() => {
+    if (!closed) {
+      setFailed(false)
+      return
+    }
     const text = source.trim()
     if (!text) {
       paintedSource.current = ''
@@ -105,13 +122,16 @@ export function MermaidBlock({ code }: { code: string }) {
     return () => {
       cancelled = true
     }
-  }, [source, theme, reactId])
+  }, [closed, source, theme, reactId])
 
+  if (!closed) {
+    return <LiveFenceTail code={source} language={fenceLang} />
+  }
   if (!source.trim() || failed) {
-    return <CodeArtifactBlock code={source} language="mermaid" />
+    return <CodeArtifactBlock code={source} language={fenceLang} />
   }
   if (!svg) {
-    return <LiveFenceTail code={source} language="mermaid" />
+    return <LiveFenceTail code={source} language={fenceLang} />
   }
   const aspect = mermaidSvgAspectStyle(svg)
   return (

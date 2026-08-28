@@ -95,6 +95,16 @@ describe('splitStreamingMarkdown', () => {
       'fence:live-fence-0',
       'prose:prose-run-1'
     ])
+    expect(
+      streamingRenderSlots(splitStreamingMarkdown('```mermaid\ngraph TD\nA-->B')).map(
+        (slot) => `${slot.kind}:${slot.key}:${String(slot.closed)}`
+      )
+    ).toEqual(['fence:live-fence-0:false'])
+    expect(
+      streamingRenderSlots(splitStreamingMarkdown('```mermaid\ngraph TD\nA-->B\n```')).map(
+        (slot) => `${slot.kind}:${slot.key}:${String(slot.closed)}`
+      )
+    ).toEqual(['fence:live-fence-0:true'])
   })
 
   it('treats CRLF like LF so an open fence stays in the tail', () => {

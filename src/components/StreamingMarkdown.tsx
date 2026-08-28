@@ -309,8 +309,8 @@ function renderLiveFenceSlot(
   if (isInlineDemoLang(lang) && isInlineDemoPaintable(body)) {
     return <InlineDemo key={key} html={body} streaming />
   }
-  if (closed && isMermaidLang(lang)) {
-    return <MermaidBlock key={key} code={body} />
+  if (isMermaidLang(lang)) {
+    return <MermaidBlock key={key} code={body} closed={closed} language={lang} />
   }
   return <LiveFenceTail key={key} code={body} language={lang} />
 }
