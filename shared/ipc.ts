@@ -18,6 +18,8 @@ export const IPC = {
   READ_ATTACHMENT_DATA_URL: 'chat:read-attachment-data-url',
   /** 后台回合完成：系统通知 */
   NOTIFY_TURN_COMPLETE: 'app:notify-turn',
+  /** 设置页主动请求系统通知权限（对标 Codex Notifications permission prompt） */
+  REQUEST_NOTIFY_PERMISSION: 'app:request-notify-permission',
   /** 点击系统通知 → 打开对应对话 */
   NOTIFY_TURN_CLICK: 'app:notify-turn-click',
   /** macOS Dock 未读数字（本机对话，不拉 Cloud） */

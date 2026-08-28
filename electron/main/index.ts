@@ -1060,6 +1060,16 @@ function registerIpc(): void {
     }
   )
 
+  ipcMain.handle(IPC.REQUEST_NOTIFY_PERMISSION, () => {
+    if (!Notification.isSupported()) return { ok: false as const, permission: 'unsupported' }
+    const n = new Notification({
+      title: 'Sharker',
+      body: '已请求系统通知权限。回合完成和批准会在这里提醒。'
+    })
+    n.show()
+    return { ok: true as const, permission: 'prompted' }
+  })
+
   ipcMain.handle(IPC.SET_DOCK_BADGE, (_e, count: number) => {
     const n = Math.max(0, Math.floor(Number(count) || 0))
     app.dock?.setBadge(n > 0 ? String(n) : '')

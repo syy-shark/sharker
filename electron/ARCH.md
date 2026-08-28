@@ -30,6 +30,7 @@
 |---------|------|
 | `chat:send` / `chat:abort` | 跑 / 中止 Turn |
 | `app:notify-turn` / `app:notify-turn-click` | 后台回合系统通知与点击回跳 |
+| `app:request-notify-permission` | 设置页主动申请系统通知权限 |
 | `app:set-dock-badge` | macOS Dock 本机未读数字 |
 | `app:deeplink` / `app:deeplink-take` | `sharker://` 深链投递与启动队列 |
 | `app:menu-action` | 应用菜单点击（不注册加速键） |

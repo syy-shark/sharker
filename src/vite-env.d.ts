@@ -96,6 +96,7 @@ export interface SharkerApi {
     dataUrl: string
   }) => Promise<ChatAttachment>
   readAttachmentDataUrl: (filePath: string) => Promise<string>
+  requestNotifyPermission: () => Promise<{ ok: boolean; permission: string }>
   notifyTurnComplete: (payload: {
     title: string
     body: string

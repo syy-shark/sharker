@@ -255,7 +255,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           <SettingsRow
             title="批准通知"
             description="对标 Codex permission notifications：后台或失焦时高危操作需要批准会弹系统通知。"
-            last
           >
             <SettingsToggle
               checked={draft.approvalNotify !== false}
@@ -264,6 +263,21 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               }}
               label="批准通知"
             />
+          </SettingsRow>
+          <SettingsRow
+            title="系统通知权限"
+            description="对标 Codex：向 macOS 申请通知权限。会发一条测试通知。"
+            last
+          >
+            <button
+              type="button"
+              className="appearance-font-btn appearance-permission-btn"
+              onClick={() => {
+                void window.sharker.requestNotifyPermission?.()
+              }}
+            >
+              请求权限
+            </button>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

@@ -171,6 +171,14 @@ html.theme-dark .appearance-theme-card.is-selected .appearance-theme-check {
   outline-offset: 2px;
 }
 
+.appearance-permission-btn {
+  width: auto;
+  min-width: 72px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .appearance-font-value {
   min-width: 48px;
   text-align: center;

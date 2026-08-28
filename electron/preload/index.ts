@@ -94,6 +94,7 @@ contextBridge.exposeInMainWorld('sharker', {
   }): Promise<ChatAttachment> => ipcRenderer.invoke(IPC.SAVE_ATTACHMENT, input),
   readAttachmentDataUrl: (filePath: string): Promise<string> =>
     ipcRenderer.invoke(IPC.READ_ATTACHMENT_DATA_URL, filePath),
+  requestNotifyPermission: () => ipcRenderer.invoke(IPC.REQUEST_NOTIFY_PERMISSION),
   notifyTurnComplete: (payload: {
     title: string
     body: string
