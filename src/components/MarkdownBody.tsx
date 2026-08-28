@@ -1,5 +1,5 @@
 /**
- * 聊天 Markdown 渲染：http(s) 链接在系统浏览器打开，避免在 Electron 窗口内跳转。
+ * 聊天 Markdown 渲染：http(s) 外开；本地文件引用打开右侧预览。
  * 支持 ```demo 对话原生内联演示（无浏览器外壳）。
  * @see src/ARCH.md
  */
@@ -7,15 +7,57 @@ import { memo, isValidElement, type ReactNode } from 'react'
 import type { Components } from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { matchFileCitationAt, parseFileCitation } from '../../shared/file-citation'
 import { parseUnifiedDiff } from '../../shared/line-diff'
 import { CodeArtifactBlock } from './CodeArtifactBlock'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { CompareBlock, parseCompareRows } from './CompareBlock'
+import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
   return href.startsWith('http://') || href.startsWith('https://')
+}
+
+/** 纯文本里的 path:line / #L 做成可点引用 */
+function linkifyFileCitations(text: string): ReactNode {
+  const parts: ReactNode[] = []
+  let i = 0
+  let buf = ''
+  while (i < text.length) {
+    const hit = matchFileCitationAt(text, i)
+    if (hit) {
+      if (buf) parts.push(buf)
+      buf = ''
+      parts.push(
+        <FileCiteLink
+          key={`${hit.citation.path}:${hit.citation.line ?? 0}:${i}`}
+          path={hit.citation.path}
+          line={hit.citation.line}
+          column={hit.citation.column}
+        >
+          {hit.text}
+        </FileCiteLink>
+      )
+      i = hit.end
+      continue
+    }
+    buf += text[i]
+    i += 1
+  }
+  if (buf) parts.push(buf)
+  return parts.length === 1 ? parts[0] : parts
+}
+
+/** 递归处理 remark 子节点里的纯文本 */
+function withFileCitations(children: ReactNode): ReactNode {
+  if (typeof children === 'string') return linkifyFileCitations(children)
+  if (typeof children === 'number') return children
+  if (Array.isArray(children)) {
+    return children.map((child, index) => <span key={index}>{withFileCitations(child)}</span>)
+  }
+  return children
 }
 
 /** 从 react-markdown code 子节点提取纯文本 */
@@ -66,12 +108,26 @@ const markdownComponents: Components = {
         </a>
       )
     }
+    const file = href ? parseFileCitation(href) : null
+    if (file) {
+      return (
+        <FileCiteLink path={file.path} line={file.line} column={file.column}>
+          {children}
+        </FileCiteLink>
+      )
+    }
     return (
       <a href={href} {...rest}>
         {children}
       </a>
     )
   },
+  p: ({ children }) => <p>{withFileCitations(children)}</p>,
+  li: ({ children }) => <li>{withFileCitations(children)}</li>,
+  td: ({ children }) => <td>{withFileCitations(children)}</td>,
+  h1: ({ children }) => <h1>{withFileCitations(children)}</h1>,
+  h2: ({ children }) => <h2>{withFileCitations(children)}</h2>,
+  h3: ({ children }) => <h3>{withFileCitations(children)}</h3>,
   code: ({ className, children, ...rest }) => {
     const match = /language-([^\s]+)/.exec(className ?? '')
     const lang = match?.[1]
@@ -79,6 +135,19 @@ const markdownComponents: Components = {
       const text = extractCodeText(children)
       const special = trySpecialCodeBlock(text, lang, className)
       if (special) return special
+    }
+    if (!lang) {
+      const text = extractCodeText(children)
+      const file = parseFileCitation(text)
+      if (file) {
+        return (
+          <FileCiteLink path={file.path} line={file.line} column={file.column}>
+            <code className={className} {...rest}>
+              {children}
+            </code>
+          </FileCiteLink>
+        )
+      }
     }
     return (
       <code className={className} {...rest}>

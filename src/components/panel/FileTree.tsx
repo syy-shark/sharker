@@ -1,13 +1,16 @@
 /**
- * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览。
+ * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { resolveCitationPath } from '../../../shared/file-citation'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
 
 interface Props {
   workspacePath: string
   isHome?: boolean
+  /** 对话文件引用：打开预览并跳行 */
+  previewRequest?: { path: string; line?: number; token: number } | null
 }
 
 function TreeNodeView({
@@ -71,17 +74,21 @@ function TreeNodeView({
 }
 
 /** 文件树面板 */
-export function FileTree({ workspacePath, isHome = false }: Props) {
+export function FileTree({ workspacePath, isHome = false, previewRequest = null }: Props) {
   const [tree, setTree] = useState<WorkspaceTreeNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [loading, setLoading] = useState(false)
-  const [openFile, setOpenFile] = useState<{ path: string; content: string } | null>(null)
+  const [openFile, setOpenFile] = useState<{
+    path: string
+    content: string
+    line?: number
+  } | null>(null)
   const [fileError, setFileError] = useState('')
+  const lineTargetRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(async () => {
     if (!workspacePath || !window.sharker?.getWorkspaceTree) return
     setLoading(true)
-    setOpenFile(null)
     setFileError('')
     try {
       const nodes = await window.sharker.getWorkspaceTree(workspacePath, isHome)
@@ -93,6 +100,7 @@ export function FileTree({ workspacePath, isHome = false }: Props) {
   }, [workspacePath, isHome])
 
   useEffect(() => {
+    setOpenFile(null)
     void load()
   }, [load])
 
@@ -118,17 +126,27 @@ export function FileTree({ workspacePath, isHome = false }: Props) {
     })
   }
 
-  const onOpenFile = async (path: string) => {
+  const onOpenFile = useCallback(async (path: string, line?: number) => {
     if (!window.sharker?.readTextFile) return
     setFileError('')
-    const res = await window.sharker.readTextFile(path)
+    const abs = resolveCitationPath(path, workspacePath)
+    const res = await window.sharker.readTextFile(abs)
     if (!res.ok) {
       setFileError(res.error)
       setOpenFile(null)
       return
     }
-    setOpenFile({ path: res.path, content: res.content })
-  }
+    setOpenFile({ path: res.path, content: res.content, line })
+  }, [workspacePath])
+
+  useEffect(() => {
+    if (!previewRequest?.path || isHome) return
+    void onOpenFile(previewRequest.path, previewRequest.line)
+  }, [isHome, onOpenFile, previewRequest])
+
+  useEffect(() => {
+    lineTargetRef.current?.scrollIntoView({ block: 'center' })
+  }, [openFile?.path, openFile?.line, openFile?.content])
 
   if (!workspacePath) {
     return <p className="file-tree-empty">请先选择工作区</p>
@@ -141,12 +159,30 @@ export function FileTree({ workspacePath, isHome = false }: Props) {
           <div className="file-tree-viewer-head">
             <span className="file-tree-viewer-name" title={openFile.path}>
               {openFile.path.split('/').pop()}
+              {openFile.line ? `:${openFile.line}` : ''}
             </span>
             <button type="button" className="file-tree-viewer-close" onClick={() => setOpenFile(null)}>
               关闭
             </button>
           </div>
-          <pre className="file-tree-viewer-body">{openFile.content}</pre>
+          <pre className="file-tree-viewer-body">
+            {openFile.content.split('\n').map((text, index) => {
+              const lineNo = index + 1
+              const target = openFile.line === lineNo
+              return (
+                <div
+                  key={lineNo}
+                  ref={target ? lineTargetRef : undefined}
+                  className={`file-tree-viewer-line${target ? ' is-target' : ''}`}
+                >
+                  <span className="file-tree-viewer-gutter" aria-hidden>
+                    {lineNo}
+                  </span>
+                  <span className="file-tree-viewer-text">{text || ' '}</span>
+                </div>
+              )
+            })}
+          </pre>
         </div>
       ) : null}
       {fileError ? <p className="file-tree-error">{fileError}</p> : null}

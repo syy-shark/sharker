@@ -1,8 +1,9 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接与裸 URL。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用与标题/列表。
  * @see shared/ARCH.md
  */
+import { matchFileCitationAt, parseFileCitation } from './file-citation'
 
 /** 已闭合、可用稳定 key 渲染的 Markdown 块 */
 export type StreamingMarkdownBlock = {
@@ -170,6 +171,14 @@ export type CheapInlineNode =
   | { type: 'strong'; text: string }
   | { type: 'em'; text: string }
   | { type: 'link'; text: string; href: string }
+  | { type: 'file'; text: string; path: string; line?: number; column?: number }
+
+/** 直播散文尾的廉价块：标题 / 列表 / 引用 / 段落，避免一律 `<p>` 收束时跳一下 */
+export type CheapProseBlock =
+  | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; nodes: CheapInlineNode[] }
+  | { type: 'list'; ordered: boolean; items: CheapInlineNode[][] }
+  | { type: 'quote'; nodes: CheapInlineNode[] }
+  | { type: 'p'; nodes: CheapInlineNode[] }
 
 const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
 
@@ -179,7 +188,7 @@ function trimBareUrl(raw: string): string {
 }
 
 /**
- * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](http…)` 与裸 http(s) 链接。
+ * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](url)`、裸 http(s) 与文件引用。
  * 未闭合标记留在原文，避免直播时闪烁。
  */
 export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
@@ -201,7 +210,10 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
         break
       }
       flush()
-      nodes.push({ type: 'code', text: src.slice(i + 1, end) })
+      const code = src.slice(i + 1, end)
+      const file = parseFileCitation(code)
+      if (file) nodes.push({ type: 'file', text: code, path: file.path, line: file.line, column: file.column })
+      else nodes.push({ type: 'code', text: code })
       i = end + 1
       continue
     }
@@ -247,7 +259,27 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
           i = urlEnd + 1
           continue
         }
+        const file = parseFileCitation(href)
+        if (file) {
+          flush()
+          nodes.push({ type: 'file', text: label, path: file.path, line: file.line, column: file.column })
+          i = urlEnd + 1
+          continue
+        }
       }
+    }
+    const fileHit = matchFileCitationAt(src, i)
+    if (fileHit) {
+      flush()
+      nodes.push({
+        type: 'file',
+        text: fileHit.text,
+        path: fileHit.citation.path,
+        line: fileHit.citation.line,
+        column: fileHit.citation.column
+      })
+      i = fileHit.end
+      continue
     }
     const urlMatch = BARE_URL_RE.exec(src.slice(i))
     if (urlMatch) {
@@ -272,6 +304,9 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'em') return `*${node.text}*`
   if (node.type === 'link') {
     return node.text === node.href ? node.href : `[${node.text}](${node.href})`
+  }
+  if (node.type === 'file') {
+    return node.text
   }
   return node.text
 }
@@ -298,4 +333,94 @@ export function continueCheapInlineMarkdown(
   if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText)
   const rest = parseCheapInlineMarkdown(nextText.slice(prefix.length))
   return stable.length ? [...stable, ...rest] : rest
+}
+
+const HEADING_RE = /^(#{1,6})\s+(.*)$/
+const UL_RE = /^[-+]\s+(.*)$/
+const STAR_UL_RE = /^\*\s+(.*)$/
+const OL_RE = /^(\d+)\.\s+(.*)$/
+const QUOTE_RE = /^>\s?(.*)$/
+
+/** 把散文尾拆成标题 / 列表 / 引用 / 段落，直播时用对应标签减少收束跳动 */
+export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
+  const src = normalizeStreamingText(text)
+  if (!src) return []
+  const lines = src.split('\n')
+  const blocks: CheapProseBlock[] = []
+  let para: string[] = []
+  let list: { ordered: boolean; items: string[] } | null = null
+  let quote: string[] = []
+
+  const flushPara = () => {
+    if (!para.length) return
+    blocks.push({ type: 'p', nodes: parseCheapInlineMarkdown(para.join('\n')) })
+    para = []
+  }
+  const flushList = () => {
+    if (!list) return
+    blocks.push({
+      type: 'list',
+      ordered: list.ordered,
+      items: list.items.map((item) => parseCheapInlineMarkdown(item))
+    })
+    list = null
+  }
+  const flushQuote = () => {
+    if (!quote.length) return
+    blocks.push({ type: 'quote', nodes: parseCheapInlineMarkdown(quote.join('\n')) })
+    quote = []
+  }
+  const flushAll = () => {
+    flushPara()
+    flushList()
+    flushQuote()
+  }
+
+  for (const line of lines) {
+    const heading = HEADING_RE.exec(line)
+    if (heading) {
+      flushAll()
+      const level = Math.min(6, heading[1].length) as 1 | 2 | 3 | 4 | 5 | 6
+      blocks.push({ type: 'heading', level, nodes: parseCheapInlineMarkdown(heading[2]) })
+      continue
+    }
+    const ul = UL_RE.exec(line) || STAR_UL_RE.exec(line)
+    if (ul) {
+      flushPara()
+      flushQuote()
+      if (!list || list.ordered) {
+        flushList()
+        list = { ordered: false, items: [] }
+      }
+      list.items.push(ul[1])
+      continue
+    }
+    const ol = OL_RE.exec(line)
+    if (ol) {
+      flushPara()
+      flushQuote()
+      if (!list || !list.ordered) {
+        flushList()
+        list = { ordered: true, items: [] }
+      }
+      list.items.push(ol[2])
+      continue
+    }
+    const q = QUOTE_RE.exec(line)
+    if (q) {
+      flushPara()
+      flushList()
+      quote.push(q[1])
+      continue
+    }
+    if (line.trim() === '') {
+      flushAll()
+      continue
+    }
+    flushList()
+    flushQuote()
+    para.push(line)
+  }
+  flushAll()
+  return blocks
 }

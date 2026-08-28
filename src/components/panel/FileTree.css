@@ -185,14 +185,36 @@
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 8px 10px;
+  padding: 4px 0;
   overflow: auto;
   font-size: 11px;
   line-height: 1.45;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
   background: var(--glass-fill-nested);
+}
+
+.file-tree-viewer-line {
+  display: flex;
+  gap: 8px;
+  padding: 0 10px;
+  min-width: max-content;
+}
+
+.file-tree-viewer-line.is-target {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.file-tree-viewer-gutter {
+  flex-shrink: 0;
+  width: 3em;
+  text-align: right;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.file-tree-viewer-text {
+  white-space: pre;
 }
 
 

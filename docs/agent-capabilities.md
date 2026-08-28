@@ -107,6 +107,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 外观 → **记忆** 注入/写入（对标 Codex Settings → Personalization；`/memories` 仍打印本机记忆清单）
 - 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
+- 对话与直播正文里的本地文件引用（`src/foo.ts:12`、`#L12`、`` `foo.ts` ``、`(line N)`）可点开右侧文件预览并跳到该行（对标 Codex View Code）
 - 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）
 - 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
 - Composer 「注入」按钮始终注入当前回合

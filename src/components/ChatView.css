@@ -427,14 +427,80 @@
 }
 
 .live-prose-tail {
-  margin: 0 0 10px;
-  white-space: pre-wrap;
+  margin: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.live-prose-tail:last-child {
+.live-prose-tail > p,
+.live-prose-tail > ul,
+.live-prose-tail > ol,
+.live-prose-tail > blockquote {
+  margin: 0 0 10px;
+}
+
+.live-prose-tail > h1,
+.live-prose-tail > h2,
+.live-prose-tail > h3,
+.live-prose-tail > h4,
+.live-prose-tail > h5,
+.live-prose-tail > h6 {
+  margin: 0 0 10px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.live-prose-tail > h1 { font-size: 1.45em; }
+.live-prose-tail > h2 { font-size: 1.25em; }
+.live-prose-tail > h3 { font-size: 1.1em; }
+.live-prose-tail > h4,
+.live-prose-tail > h5,
+.live-prose-tail > h6 { font-size: 1em; }
+
+.live-prose-tail > ul,
+.live-prose-tail > ol {
+  padding-left: 1.4em;
+}
+
+.live-prose-tail > blockquote {
+  padding-left: 0.8em;
+  border-left: 2px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.live-prose-tail > :last-child {
   margin-bottom: 0;
+}
+
+.message-body--assistant h1,
+.message-body--assistant h2,
+.message-body--assistant h3,
+.message-body--assistant h4,
+.message-body--assistant h5,
+.message-body--assistant h6 {
+  margin: 0 0 10px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.message-body--assistant h1 { font-size: 1.45em; }
+.message-body--assistant h2 { font-size: 1.25em; }
+.message-body--assistant h3 { font-size: 1.1em; }
+.message-body--assistant h4,
+.message-body--assistant h5,
+.message-body--assistant h6 { font-size: 1em; }
+
+.message-body--assistant ul,
+.message-body--assistant ol {
+  margin: 0 0 10px;
+  padding-left: 1.4em;
+}
+
+.message-body--assistant blockquote {
+  margin: 0 0 10px;
+  padding-left: 0.8em;
+  border-left: 2px solid var(--border-subtle);
+  color: var(--text-secondary);
 }
 
 .message-body--assistant pre {

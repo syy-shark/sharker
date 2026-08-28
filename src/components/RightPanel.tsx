@@ -46,6 +46,8 @@ interface Props {
   terminalClearTick?: number
   /** Settings → Git 分支名前缀，审查面板创建分支占位提示 */
   gitBranchPrefix?: string
+  /** 对话文件引用要打开的预览 */
+  filePreview?: { path: string; line?: number; token: number } | null
 }
 
 /** Codex 风格右侧面板 */
@@ -66,7 +68,8 @@ export function RightPanel({
   pendingTerminalCommand = null,
   onPendingTerminalCommandSent,
   terminalClearTick = 0,
-  gitBranchPrefix = ''
+  gitBranchPrefix = '',
+  filePreview = null
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -338,7 +341,9 @@ export function RightPanel({
         </div>
       </div>
       <div className="right-panel-body view-enter" key={tab}>
-        {tab === 'files' && <FileTree workspacePath={workspacePath} isHome={isHome} />}
+        {tab === 'files' && (
+          <FileTree workspacePath={workspacePath} isHome={isHome} previewRequest={filePreview} />
+        )}
         {tab === 'changes' && (
           <ChangesPanel
             workspacePath={workspacePath}

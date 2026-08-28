@@ -28,8 +28,9 @@
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
-| `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流 |
-| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价行内（含可点 http 链接），不每 token 跑 remark |
+| `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览 |
+| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价标题/列表/引用与可点 http / 文件引用，不每 token 跑 remark |
+| `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏（无行号节点） |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |
@@ -38,7 +39,7 @@
 | `MessageActions.tsx` / `.css` | 消息复制 / 用户气泡编辑重发 / 失败重试 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
-| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix`；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
+| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix`；文件树传入对话引用预览；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |

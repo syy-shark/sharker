@@ -83,6 +83,7 @@ import {
   UI_FONT_SCALE_DEFAULT
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
+import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
 import {
   REVIEW_BRANCH_PROMPT,
   REVIEW_WORKING_TREE_PROMPT,
@@ -2269,6 +2270,25 @@ export default function App() {
     setRightPanelOpen(true)
     setPage('chat')
   }, [])
+
+  const [filePreview, setFilePreview] = useState<{
+    path: string
+    line?: number
+    token: number
+  } | null>(null)
+
+  useEffect(() => {
+    const onCite = (event: Event) => {
+      const detail = (event as CustomEvent<{ path?: string; line?: number }>).detail
+      if (!detail?.path || popoutRoute) return
+      setFilePreview({ path: detail.path, line: detail.line, token: Date.now() })
+      setRightPanelTab('files')
+      setRightPanelOpen(true)
+      setPage('chat')
+    }
+    window.addEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
+    return () => window.removeEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
+  }, [popoutRoute])
 
   const handleOpenSubAgent = useCallback((id: string | null) => {
     setFocusSubAgentId(id)
@@ -6259,6 +6279,7 @@ export default function App() {
           onPendingTerminalCommandSent={() => setPendingTerminalCommand(null)}
           terminalClearTick={terminalClearTick}
           gitBranchPrefix={settings.gitBranchPrefix ?? ''}
+          filePreview={filePreview}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

@@ -4,6 +4,7 @@ import {
   continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapInlineMarkdown,
+  parseCheapProseBlocks,
   splitStreamingMarkdown
 } from './streaming-markdown'
 
@@ -83,6 +84,24 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapInlineMarkdown('半截 [未闭](https://x')).toEqual([
       { type: 'text', text: '半截 [未闭](https://x' }
     ])
+    expect(parseCheapInlineMarkdown('改 src/App.tsx:12 与 `foo.ts:3`')).toEqual([
+      { type: 'text', text: '改 ' },
+      { type: 'file', text: 'src/App.tsx:12', path: 'src/App.tsx', line: 12, column: undefined },
+      { type: 'text', text: ' 与 ' },
+      { type: 'file', text: 'foo.ts:3', path: 'foo.ts', line: 3, column: undefined }
+    ])
+  })
+
+  it('renders live headings and lists instead of a single paragraph', () => {
+    const blocks = parseCheapProseBlocks('# 标题\n- 一项 `src/a.ts:1`\n- 二项')
+    expect(blocks.map((b) => b.type)).toEqual(['heading', 'list'])
+    expect(blocks[0]).toMatchObject({ type: 'heading', level: 1 })
+    expect(blocks[1]?.type).toBe('list')
+    if (blocks[1]?.type === 'list') {
+      expect(blocks[1].ordered).toBe(false)
+      expect(blocks[1].items).toHaveLength(2)
+      expect(blocks[1].items[0]?.some((n) => n.type === 'file')).toBe(true)
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
