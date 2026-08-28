@@ -22,7 +22,7 @@
 | `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`（`@` 菜单含 Skill，发送前 `$name` 芯片确认）、历史（标题/正文/分支扩匹配）、项目选择器、附件、听写/语音、忙时 Enter 按 `followUpBehavior`（默认排队）/ ⌘⇧Enter 反转 / Tab 排队（⌃Tab / ⌘Tab 不补全也不排队）、`composerEnterBehavior` 三档（对标 Codex Enter 发送）、审批打开时 Enter 允许一次 / Esc 拒绝、计划 / 本地 / 隔离芯片（计划不跟直播 token 变、不自动开一轮）；`/` 列表并入已安装 Skill（选中写入 `$name`，不盖内置命令）；切对话 / 工作区时恢复未发送草稿与附件（对标 Codex restore unsent prompts）；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；空输入 Esc+Esc 回编上一条用户气泡（不把草稿填回输入框）；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘；有目标时在输入框上方挂 `GoalProgressRow` |
 | `ComposerQueue.tsx` / `.css` | 输入框上方排队条（对标 Codex）：编辑 / 重排 / 发送 / 删除；不进对话滚动区，避免直播贴底跳动 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、Hand off 交接本地/隔离（对标 Codex header）、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
-| `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上（对标 Codex 时序）；过程区间距固定，不在正文出现时再加分隔；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
+| `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上（对标 Codex 时序）；过程区间距固定，不在正文出现时再加分隔；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示/写盘 diff 在下且仅可绘时上屏（工具完成后立刻画 diff，对标 Codex 回合中逐文件变更）；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出；回答刚上屏时收回已展开的 Thought / Worked for）；命令输出按 `toolOutputDisplay` 截尾/折叠；正文已上屏时隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动 |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |

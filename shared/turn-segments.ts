@@ -789,10 +789,11 @@ export function shouldDisplayFinalBody(
   return { show: true, content: text }
 }
 
-/** 对话主区回答部件：文字与内联演示按时间顺序交错 */
+/** 对话主区回答部件：文字、内联演示与写盘 diff 按时间顺序交错 */
 export type AnswerPart =
   | { type: 'text'; id: string; content: string }
   | { type: 'demo'; id: string; html: string; caption?: string; streaming?: boolean }
+  | { type: 'diff'; id: string; diff: FileDiff }
 
 /** 直播中未闭合的 ```demo 围栏 → 提前抽出 html 做渐进渲染 */
 function extractOpenDemoFence(text: string): {
@@ -817,9 +818,9 @@ function extractOpenDemoFence(text: string): {
 }
 
 /**
- * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo，按先后顺序。
+ * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo + 写盘 diff，按先后顺序。
  * 供结束后与直播时主区融合渲染（文字可在 demo 上/下）。
- * 直播时含 tool_preview / 未闭合 ```demo 的渐进 HTML。
+ * 直播时含 tool_preview / 未闭合 ```demo 的渐进 HTML；工具完成后立刻画出 fileDiff（对标 Codex 回合中逐文件 diff）。
  */
 export function buildAnswerParts(
   segments: TurnSegment[],
@@ -830,6 +831,13 @@ export function buildAnswerParts(
   const seenText = new Set<string>()
 
   for (const s of segments) {
+    if (s.kind === 'tool' && s.toolName !== 'present_inline_demo') {
+      const diffs = s.fileDiffs ?? (s.fileDiff ? [s.fileDiff] : [])
+      diffs.forEach((diff, index) => {
+        if (!diff?.path || !diff.lines?.length) return
+        parts.push({ type: 'diff', id: `${s.id}-diff-${index}`, diff })
+      })
+    }
     if (s.kind === 'tool' && s.toolName === 'present_inline_demo') {
       if (s.status === 'error') continue
       // 直播占位：尚无 html 也出 demo 壳，避免只显示「处理中」

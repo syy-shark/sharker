@@ -24,6 +24,8 @@ import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
 import { StreamingMarkdown } from './StreamingMarkdown'
+import { CodeDiffBlock } from './CodeDiffBlock'
+import { dispatchOpenWorkspaceFile } from '../lib/open-workspace-file'
 import './AssistantMessage.css'
 import './TurnFlow.css'
 
@@ -187,6 +189,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   )
   const hasAnswerStream = answerParts.length > 0
   const hasLiveProse = answerParts.some((p) => p.type === 'text' && p.content.trim())
+  const hasLiveDiffs = answerParts.some((p) => p.type === 'diff')
   const hasPaintableDemo = answerParts.some(
     (p) => p.type === 'demo' && isInlineDemoPaintable(p.html)
   )
@@ -196,7 +199,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   const liveThinkText = useSegmentFlow ? liveThinkingText(segments!) : ''
   const showFinalBody =
     Boolean(children) ||
-    (isStreaming ? hasLiveProse || hasPaintableDemo : hasAnswerStream) ||
+    (isStreaming ? hasLiveProse || hasPaintableDemo || hasLiveDiffs : hasAnswerStream) ||
     (Boolean(displayContent) &&
       (isError || isAborted || finalDecision.show) &&
       !useSegmentFlow)
@@ -404,6 +407,21 @@ export const AssistantMessage = memo(function AssistantMessage({
                       caption={part.caption}
                       streaming={Boolean(isStreaming && part.streaming)}
                     />
+                  )
+                }
+                if (part.type === 'diff') {
+                  return (
+                    <div key={part.id} className="assistant-live-diff">
+                      <CodeDiffBlock
+                        diff={part.diff}
+                        showHeader
+                        wrapLines
+                        maxPreviewLines={isStreaming ? 20 : 40}
+                        onOpenLine={(line) =>
+                          dispatchOpenWorkspaceFile({ path: part.diff.path, line })
+                        }
+                      />
+                    </div>
                   )
                 }
                 return isStreaming ? (

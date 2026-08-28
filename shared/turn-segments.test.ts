@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   applyStreamChunk,
+  buildAnswerParts,
   extractFinalContent,
   finalizeSegments,
   hasProcessFlow,
@@ -94,6 +95,25 @@ describe('turn segment event state machine', () => {
     expect(first.content).toBe(snapshot)
     expect(first).not.toBe(segments[0])
     expect(segments[0].content).toBe('你好世界')
+    segments = applyStreamChunk(segments, {
+      type: 'tool_start',
+      toolName: 'write_file',
+      toolCallId: 'w1',
+      timestamp: 3
+    })
+    segments = applyStreamChunk(segments, {
+      type: 'tool_done',
+      toolName: 'write_file',
+      toolCallId: 'w1',
+      timestamp: 4,
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi', newLine: 1 }],
+        stats: { added: 1, removed: 0 }
+      }
+    })
+    const liveParts = buildAnswerParts(segments, { isStreaming: true })
+    expect(liveParts.some((part) => part.type === 'diff' && part.diff.path === 'a.ts')).toBe(true)
   })
 
   it('keeps finished tool segment identity across token appends', () => {

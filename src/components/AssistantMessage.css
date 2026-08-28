@@ -254,6 +254,11 @@ html.theme-dark .assistant-process-below--separated {
   line-height: 1.65;
 }
 
+.assistant-live-diff {
+  min-width: 0;
+  margin: 8px 0 12px;
+}
+
 .assistant-message-meta { border-bottom-color: var(--border-subtle); }
 
 .assistant-message-meta-panel {
