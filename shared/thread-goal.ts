@@ -93,3 +93,10 @@ export function formatGoalChip(goal: ThreadGoal | null | undefined): string | nu
   const short = text.length > 24 ? `${text.slice(0, 23)}…` : text
   return `${prefix} · ${short}`
 }
+
+/** 进度条状态字（对标 Codex Goal 进度行） */
+export function formatGoalProgressLabel(goal: ThreadGoal | null | undefined): string | null {
+  const text = goal?.text?.trim()
+  if (!text) return null
+  return goal.status === 'paused' ? '已暂停' : '进行中'
+}

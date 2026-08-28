@@ -53,7 +53,8 @@ import {
   type ChatSearchItem
 } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
-import { formatGoalChip, type ThreadGoal } from '../../shared/thread-goal'
+import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
+import { GoalProgressRow } from './GoalProgressRow'
 import './ChatView.css'
 
 type MentionOption = { kind: 'file' | 'chat'; name: string; value: string; detail: string }
@@ -138,7 +139,7 @@ export interface ComposerDockProps {
   onSelectWorkspace?: (id: string) => void
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
-  onClearThreadGoal?: () => void
+  onGoalCommand?: (command: GoalCommand) => void
   onThreadModeChange?: (mode: ThreadMode) => void
   worktreeBaseRef?: string
   onWorktreeBaseRefChange?: (ref: string) => void
@@ -176,7 +177,7 @@ export const ComposerDock = memo(
       onSelectWorkspace,
       threadMode = 'local',
       threadGoal = null,
-      onClearThreadGoal,
+      onGoalCommand,
       onThreadModeChange,
       worktreeBaseRef = '',
       onWorktreeBaseRefChange,
@@ -1005,6 +1006,10 @@ export const ComposerDock = memo(
     }
 
     return (
+      <>
+      {threadGoal && onGoalCommand ? (
+        <GoalProgressRow goal={threadGoal} onCommand={onGoalCommand} />
+      ) : null}
       <div
         className={`composer-box composer-box--focus-${composerFocus}`}
         onFocusCapture={() => setComposerFocus(composerFocusOriginRef.current)}
@@ -1652,17 +1657,6 @@ export const ComposerDock = memo(
                 </button>
               </div>
             ) : null}
-            {formatGoalChip(threadGoal) ? (
-              <button
-                type="button"
-                className={`composer-thread-chip${threadGoal?.status === 'paused' ? '' : ' is-active'}`}
-                title={threadGoal?.text}
-                onClick={() => onClearThreadGoal?.()}
-                aria-label="清除线程目标"
-              >
-                {formatGoalChip(threadGoal)}
-              </button>
-            ) : null}
             {onThreadModeChange && threadMode === 'worktree' ? (
               <label className="composer-worktree-base">
                 <span className="composer-worktree-base-label">起点</span>
@@ -1763,6 +1757,7 @@ export const ComposerDock = memo(
           </div>
         </div>
       </div>
+      </>
     )
   })
 )

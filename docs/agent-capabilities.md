@@ -35,7 +35,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
 | `/status` | 显示模型、权限、线程模式、分支与上下文占用 |
 | `/diff` | 打开右侧变更审查看本地 diff |
-| `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；Composer 显示芯片 |
+| `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；输入框上方进度行可暂停 / 继续 / 编辑 / 清除（对标 Codex Goal） |
 | `/plan-mode` | `/plan` 的桌面端别名 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |

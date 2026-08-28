@@ -23,7 +23,7 @@ import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread } from '../../shared/thread-search'
 import { textForSpeech } from '../../shared/composer-dictation'
 import type { ThreadMode } from '../lib/thread-runtime'
-import { type ThreadGoal } from '../../shared/thread-goal'
+import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
@@ -205,7 +205,7 @@ interface Props {
   /** Codex 式线程目标：本地工作区或隔离 worktree */
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
-  onClearThreadGoal?: () => void
+  onGoalCommand?: (command: GoalCommand) => void
   onThreadModeChange?: (mode: ThreadMode) => void
   /** 首次创建隔离 worktree 的起点分支 */
   worktreeBaseRef?: string
@@ -260,7 +260,7 @@ export function ChatView({
   onOpenSubAgent,
   threadMode = 'local',
   threadGoal = null,
-  onClearThreadGoal,
+  onGoalCommand,
   onThreadModeChange,
   worktreeBaseRef = '',
   onWorktreeBaseRefChange,
@@ -843,7 +843,7 @@ export function ChatView({
             onSelectWorkspace={onSelectWorkspace}
             threadMode={threadMode}
             threadGoal={threadGoal}
-            onClearThreadGoal={onClearThreadGoal}
+            onGoalCommand={onGoalCommand}
             onThreadModeChange={onThreadModeChange}
             worktreeBaseRef={worktreeBaseRef}
             onWorktreeBaseRefChange={onWorktreeBaseRefChange}

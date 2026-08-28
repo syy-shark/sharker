@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyGoalCommand,
   formatGoalChip,
+  formatGoalProgressLabel,
   goalPromptBlock,
   parseGoalCommand
 } from './thread-goal'
@@ -30,5 +31,8 @@ describe('thread goal', () => {
     expect(formatGoalChip(null)).toBeNull()
     expect(formatGoalChip({ text: '短', status: 'active' })).toBe('目标 · 短')
     expect(formatGoalChip({ text: '短', status: 'paused' })).toBe('目标已暂停 · 短')
+    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'active' })).toBe('进行中')
+    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'paused' })).toBe('已暂停')
+    expect(formatGoalProgressLabel(null)).toBeNull()
   })
 })

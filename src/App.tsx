@@ -123,6 +123,7 @@ import { goalTextForConversation, loadThreadGoal, saveThreadGoal } from './lib/t
 import {
   applyGoalCommand,
   parseGoalCommand,
+  type GoalCommand,
   type ThreadGoal
 } from '../shared/thread-goal'
 import { formatThreadStatus } from '../shared/thread-status'
@@ -5678,11 +5679,12 @@ export default function App() {
     setShowHistoryPicker(false)
   }, [])
 
-  const handleClearThreadGoal = useCallback(() => {
+  const handleGoalCommand = useCallback((command: GoalCommand) => {
     const convId = activeConversationIdRef.current
-    threadGoalRef.current = null
-    setThreadGoal(null)
-    if (convId) saveThreadGoal(convId, null)
+    const next = applyGoalCommand(threadGoalRef.current, command)
+    threadGoalRef.current = next.goal
+    setThreadGoal(next.goal)
+    if (convId) saveThreadGoal(convId, next.goal)
   }, [])
 
   const handleComposerIntentHandled = useCallback(() => {
@@ -5822,7 +5824,7 @@ export default function App() {
               onPickConversation={handlePickConversation}
               threadMode={threadMode}
               threadGoal={threadGoal}
-              onClearThreadGoal={handleClearThreadGoal}
+              onGoalCommand={handleGoalCommand}
               onThreadModeChange={handleThreadModeChange}
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
