@@ -64,9 +64,15 @@ import { buildWorkspaceTree, searchWorkspaceFiles } from '../../shared/workspace
 import { runGit } from '../../tools/shared/git-runner'
 import { prepareThreadWorktree } from '../../tools/thread-worktree'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
-import { applyGitReviewAction, type GitReviewAction } from '../../shared/git-review-actions'
+import {
+  applyGitReviewAction,
+  type GitReviewAction,
+  type GitReviewIo
+} from '../../shared/git-review-actions'
 import { applyGitHunkAction } from '../../shared/git-hunk-actions'
 import { parseGitStatusPorcelain } from '../../shared/git-status'
+import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
+import { listBranchChanges } from '../../shared/git-compare'
 import { readFile, rm, stat, unlink } from 'fs/promises'
 import {
   createTerminal,
@@ -1028,6 +1034,20 @@ function registerIpc(): void {
     }
   )
 
+  const reviewIo = (): GitReviewIo => ({
+    runGit,
+    unlink,
+    rmDir: (abs) => rm(abs, { recursive: true, force: true }),
+    stat: async (abs) => {
+      try {
+        const s = await stat(abs)
+        return { isFile: s.isFile(), isDirectory: s.isDirectory() }
+      } catch {
+        return null
+      }
+    }
+  })
+
   /** 工作区 git 变更列表（右侧 Changes 面板） */
   ipcMain.handle(IPC.GIT_STATUS_CHANGES, async (_e, cwd: string) => {
     try {
@@ -1042,7 +1062,13 @@ function registerIpc(): void {
 
   ipcMain.handle(
     IPC.GIT_FILE_DIFF,
-    async (_e, cwd: string, filePath: string, status = 'M', scope: 'unstaged' | 'staged' = 'unstaged') => {
+    async (
+      _e,
+      cwd: string,
+      filePath: string,
+      status = 'M',
+      scope: 'unstaged' | 'staged' | 'branch' = 'unstaged'
+    ) => {
       const root = path.resolve(String(cwd || ''))
       const rel = String(filePath || '').replace(/^[/\\]+/, '')
       if (!root || !rel) {
@@ -1074,6 +1100,21 @@ function registerIpc(): void {
         worktreeText = buf.toString('utf8')
       } catch {
         worktreeText = null
+      }
+
+      if (scope === 'branch') {
+        const { base } = await listBranchChanges({ cwd: root, runGit })
+        if (!base) {
+          return { ok: false, path: rel, status, error: '无法检测基线分支' }
+        }
+        const oldText = (await show(`${base}:${posix}`)) ?? ''
+        const newText = (await show(`HEAD:${posix}`)) ?? ''
+        return {
+          ok: true,
+          path: rel,
+          status,
+          diff: diffFromGitTexts({ path: rel, status, oldText, newText })
+        }
       }
 
       const oldText = scope === 'staged' ? headText : (indexText ?? headText)
@@ -1112,19 +1153,7 @@ function registerIpc(): void {
         cwd: root,
         action,
         paths: Array.isArray(paths) ? paths.map(String) : undefined,
-        io: {
-          runGit,
-          unlink,
-          rmDir: (abs) => rm(abs, { recursive: true, force: true }),
-          stat: async (abs) => {
-            try {
-              const s = await stat(abs)
-              return { isFile: s.isFile(), isDirectory: s.isDirectory() }
-            } catch {
-              return null
-            }
-          }
-        }
+        io: reviewIo()
       })
     }
   )
@@ -1153,22 +1182,33 @@ function registerIpc(): void {
         path: String(payload.path || ''),
         patch: String(payload.patch || ''),
         scope: payload.scope === 'staged' ? 'staged' : 'unstaged',
-        io: {
-          runGit,
-          unlink,
-          rmDir: (abs) => rm(abs, { recursive: true, force: true }),
-          stat: async (abs) => {
-            try {
-              const s = await stat(abs)
-              return { isFile: s.isFile(), isDirectory: s.isDirectory() }
-            } catch {
-              return null
-            }
-          }
-        }
+        io: reviewIo()
       })
     }
   )
+
+  ipcMain.handle(IPC.GIT_COMMIT, async (_e, cwd: string, message: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { ok: false as const, error: '缺少工作区' }
+    return commitStagedChanges({ cwd: root, message: String(message || ''), io: reviewIo() })
+  })
+
+  ipcMain.handle(IPC.GIT_PUSH, async (_e, cwd: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { ok: false as const, error: '缺少工作区' }
+    return pushCurrentBranch({ cwd: root, io: reviewIo() })
+  })
+
+  ipcMain.handle(IPC.GIT_BRANCH_CHANGES, async (_e, cwd: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { base: null, files: [] }
+    try {
+      await runGit(root, ['rev-parse', '--is-inside-work-tree'])
+    } catch {
+      return { base: null, files: [] }
+    }
+    return listBranchChanges({ cwd: root, runGit })
+  })
 
   ipcMain.handle(IPC.WORKSPACE_PREPARE_WORKTREE, async (_e, cwd: string, conversationId: string) => {
     return prepareThreadWorktree({

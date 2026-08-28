@@ -1,5 +1,5 @@
 /**
- * 右侧「变更」审查：文件列表 + 点选 unified diff + 暂存/还原（对标 Codex Review）。
+ * 右侧「变更」审查：对比范围 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
  * @see ./ARCH.md
  */
 import { useCallback, useEffect, useState } from 'react'
@@ -7,6 +7,7 @@ import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
 import type { GitReviewAction } from '../../../shared/git-review-actions'
+import { fileInLastTurn } from '../../../shared/git-compare'
 import {
   formatReviewCommentsPrompt,
   type ReviewLineComment
@@ -24,12 +25,15 @@ interface ChangeFile {
   untracked?: boolean
 }
 
+type CompareMode = 'uncommitted' | 'last_turn' | 'branch'
 type ReviewScope = 'unstaged' | 'staged'
 
 interface Props {
   workspacePath: string
   /** 工具写盘后递增，立刻刷新审查列表 */
   revision?: number
+  /** 上一轮助手写过的相对路径（Codex Last turn） */
+  lastTurnPaths?: string[]
   /** 把行内评论派发给当前对话 */
   onSendComments?: (prompt: string) => void
 }
@@ -52,11 +56,19 @@ function isUnstaged(file: ChangeFile): boolean {
   return file.unstaged ?? file.untracked ?? file.raw.slice(1, 2) !== ' '
 }
 
-/** Codex 式变更审查：列表 + 当前文件 diff + 文件级 Git 动作 */
-export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Props) {
+/** Codex 式变更审查：对比范围 + 当前文件 diff + Git 动作 */
+export function ChangesPanel({
+  workspacePath,
+  revision = 0,
+  lastTurnPaths = [],
+  onSendComments
+}: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
   const [files, setFiles] = useState<ChangeFile[]>([])
+  const [branchFiles, setBranchFiles] = useState<ChangeFile[]>([])
+  const [branchBase, setBranchBase] = useState<string | null>(null)
+  const [compare, setCompare] = useState<CompareMode>('uncommitted')
   const [scope, setScope] = useState<ReviewScope>('unstaged')
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState(false)
@@ -66,13 +78,23 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
   const [diffError, setDiffError] = useState<string | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
   const [comments, setComments] = useState<ReviewLineComment[]>([])
+  const [commitMessage, setCommitMessage] = useState('')
+  const [commitHint, setCommitHint] = useState<string | null>(null)
 
-  const visible = files.filter((f) => (scope === 'staged' ? isStaged(f) : isUnstaged(f)))
+  const sourceFiles = compare === 'branch' ? branchFiles : files
+  const readOnly = compare === 'branch'
+  const visible = sourceFiles.filter((f) => {
+    if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
+    if (compare === 'branch') return true
+    return scope === 'staged' ? isStaged(f) : isUnstaged(f)
+  })
+  const stagedCount = files.filter(isStaged).length
 
   const refresh = useCallback(async () => {
     if (!workspacePath || !window.sharker?.getGitStatusChanges) {
       setIsRepo(false)
       setFiles([])
+      setBranchFiles([])
       return
     }
     setLoading(true)
@@ -82,25 +104,37 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
       setIsRepo(result.isRepo)
       setBranch(result.branch)
       setFiles(result.files)
-      setSelectedPath((prev) => {
-        const nextList = result.files.filter((f) =>
-          scope === 'staged' ? isStaged(f) : isUnstaged(f)
-        )
-        if (prev && nextList.some((f) => f.path === prev)) return prev
-        return nextList[0]?.path ?? result.files[0]?.path ?? null
-      })
+      if (compare === 'branch' && window.sharker.getGitBranchChanges) {
+        const branchResult = await window.sharker.getGitBranchChanges(workspacePath)
+        setBranchBase(branchResult.base)
+        setBranchFiles(branchResult.files)
+        setSelectedPath((prev) => {
+          if (prev && branchResult.files.some((f) => f.path === prev)) return prev
+          return branchResult.files[0]?.path ?? null
+        })
+      } else {
+        setSelectedPath((prev) => {
+          const nextList = result.files.filter((f) => {
+            if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
+            return scope === 'staged' ? isStaged(f) : isUnstaged(f)
+          })
+          if (prev && nextList.some((f) => f.path === prev)) return prev
+          return nextList[0]?.path ?? result.files[0]?.path ?? null
+        })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
       setFiles([])
+      setBranchFiles([])
     } finally {
       setLoading(false)
     }
-  }, [workspacePath, scope])
+  }, [workspacePath, scope, compare, lastTurnPaths])
 
   /** 执行暂存 / 取消暂存 / 还原；还原前确认 */
   const runAction = useCallback(
     async (action: 'stage' | 'unstage' | 'revert', paths?: string[]) => {
-      if (!workspacePath || !window.sharker?.applyGitReviewAction || acting) return
+      if (!workspacePath || !window.sharker?.applyGitReviewAction || acting || readOnly) return
       if (action === 'revert') {
         const label = paths?.length === 1 ? paths[0] : '全部未提交变更'
         if (!window.confirm(`确定还原 ${label}？此操作不可撤销。`)) return
@@ -117,13 +151,21 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
         setActing(false)
       }
     },
-    [acting, refresh, workspacePath]
+    [acting, readOnly, refresh, workspacePath]
   )
 
   /** hunk 级暂存 / 取消暂存 / 还原 */
   const runHunkAction = useCallback(
     async (hunk: DiffHunk, action: GitReviewAction) => {
-      if (!workspacePath || !selectedPath || !window.sharker?.applyGitHunkAction || acting) return
+      if (
+        !workspacePath ||
+        !selectedPath ||
+        !window.sharker?.applyGitHunkAction ||
+        acting ||
+        readOnly
+      ) {
+        return
+      }
       setActing(true)
       setError(null)
       try {
@@ -146,8 +188,48 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
         setActing(false)
       }
     },
-    [acting, files, refresh, scope, selectedPath, workspacePath]
+    [acting, files, readOnly, refresh, scope, selectedPath, workspacePath]
   )
+
+  const runCommit = useCallback(async () => {
+    if (!workspacePath || !window.sharker?.commitGitChanges || acting) return
+    setActing(true)
+    setError(null)
+    setCommitHint(null)
+    try {
+      const result = await window.sharker.commitGitChanges(workspacePath, commitMessage)
+      if (!result.ok) {
+        setError(result.error || '提交失败')
+        return
+      }
+      setCommitMessage('')
+      setCommitHint(`已提交 ${result.sha}`)
+      await refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing(false)
+    }
+  }, [acting, commitMessage, refresh, workspacePath])
+
+  const runPush = useCallback(async () => {
+    if (!workspacePath || !window.sharker?.pushGitBranch || acting) return
+    setActing(true)
+    setError(null)
+    setCommitHint(null)
+    try {
+      const result = await window.sharker.pushGitBranch(workspacePath)
+      if (!result.ok) {
+        setError(result.error || '推送失败')
+        return
+      }
+      setCommitHint('已推送到上游')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing(false)
+    }
+  }, [acting, workspacePath])
 
   useEffect(() => {
     void refresh()
@@ -163,12 +245,13 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
       setDiffError(null)
       return
     }
-    const file = files.find((f) => f.path === selectedPath)
+    const file = sourceFiles.find((f) => f.path === selectedPath)
     let cancelled = false
     setDiffLoading(true)
     setDiffError(null)
+    const diffScope = compare === 'branch' ? 'branch' : scope
     void window.sharker
-      .getGitFileDiff(workspacePath, selectedPath, file?.status ?? 'M', scope)
+      .getGitFileDiff(workspacePath, selectedPath, file?.status ?? 'M', diffScope)
       .then((result) => {
         if (cancelled) return
         if (!result.ok || !result.diff) {
@@ -191,7 +274,7 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
     return () => {
       cancelled = true
     }
-  }, [files, selectedPath, workspacePath, revision, scope])
+  }, [sourceFiles, selectedPath, workspacePath, revision, scope, compare])
 
   if (!workspacePath) {
     return (
@@ -201,7 +284,19 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
     )
   }
 
-  const selected = files.find((f) => f.path === selectedPath)
+  const selected = sourceFiles.find((f) => f.path === selectedPath)
+  const emptyCopy =
+    compare === 'last_turn'
+      ? lastTurnPaths.length === 0
+        ? '本轮还没有改文件'
+        : '本轮改动已提交或不在工作区'
+      : compare === 'branch'
+        ? branchBase
+          ? `相对 ${branchBase} 没有已提交变更`
+          : '无法检测基线分支（main / master）'
+        : scope === 'staged'
+          ? '没有已暂存变更'
+          : '没有未暂存变更'
 
   return (
     <div className="changes-panel">
@@ -215,8 +310,8 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
               {branch}
             </span>
           ) : null}
-          {files.length > 0 ? (
-            <span className="changes-panel__count">{files.length}</span>
+          {visible.length > 0 ? (
+            <span className="changes-panel__count">{visible.length}</span>
           ) : null}
         </div>
         <button
@@ -231,7 +326,39 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
         </button>
       </div>
 
-      {isRepo && files.length > 0 ? (
+      {isRepo ? (
+        <div className="changes-panel__compare" role="tablist" aria-label="对比范围">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={compare === 'uncommitted'}
+            className={`changes-panel__scope${compare === 'uncommitted' ? ' is-active' : ''}`}
+            onClick={() => setCompare('uncommitted')}
+          >
+            未提交
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={compare === 'last_turn'}
+            className={`changes-panel__scope${compare === 'last_turn' ? ' is-active' : ''}`}
+            onClick={() => setCompare('last_turn')}
+          >
+            本轮
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={compare === 'branch'}
+            className={`changes-panel__scope${compare === 'branch' ? ' is-active' : ''}`}
+            onClick={() => setCompare('branch')}
+          >
+            分支{branchBase ? ` · ${branchBase}` : ''}
+          </button>
+        </div>
+      ) : null}
+
+      {isRepo && !readOnly && files.length > 0 && compare === 'uncommitted' ? (
         <div className="changes-panel__toolbar">
           <div className="changes-panel__scopes" role="tablist" aria-label="暂存范围">
             <button
@@ -290,6 +417,41 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
         </div>
       ) : null}
 
+      {isRepo && !readOnly ? (
+        <form
+          className="changes-panel__commit"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void runCommit()
+          }}
+        >
+          <input
+            className="changes-panel__commit-input"
+            value={commitMessage}
+            placeholder="提交说明"
+            aria-label="提交说明"
+            disabled={acting}
+            onChange={(e) => setCommitMessage(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="changes-panel__action"
+            disabled={acting || stagedCount === 0 || !commitMessage.trim()}
+          >
+            提交{stagedCount ? ` ${stagedCount}` : ''}
+          </button>
+          <button
+            type="button"
+            className="changes-panel__action"
+            disabled={acting}
+            onClick={() => void runPush()}
+          >
+            推送
+          </button>
+        </form>
+      ) : null}
+
+      {commitHint ? <p className="changes-panel__hint changes-panel__hint--bar">{commitHint}</p> : null}
       {error ? <p className="changes-panel__error">{error}</p> : null}
 
       {!isRepo ? (
@@ -297,14 +459,14 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
           <p>当前工作区不是 git 仓库</p>
           <p className="changes-panel__hint">会话内文件 diff 仍显示在助手消息中</p>
         </div>
-      ) : files.length === 0 ? (
+      ) : compare !== 'branch' && files.length === 0 && compare === 'uncommitted' ? (
         <div className="changes-panel--empty">
           <p>工作区干净，无未提交变更</p>
           <p className="changes-panel__hint">Agent 改文件后，点左侧文件即可审查 diff</p>
         </div>
       ) : visible.length === 0 ? (
         <div className="changes-panel--empty">
-          <p>{scope === 'staged' ? '没有已暂存变更' : '没有未暂存变更'}</p>
+          <p>{emptyCopy}</p>
         </div>
       ) : (
         <div className="changes-panel__body">
@@ -324,42 +486,44 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
                     </span>
                     <span className="changes-panel__path">{f.path}</span>
                   </button>
-                  <div className="changes-panel__row-actions">
-                    {isUnstaged(f) ? (
+                  {!readOnly ? (
+                    <div className="changes-panel__row-actions">
+                      {isUnstaged(f) ? (
+                        <button
+                          type="button"
+                          className="changes-panel__action"
+                          disabled={acting}
+                          onClick={() => void runAction('stage', [f.path])}
+                        >
+                          暂存
+                        </button>
+                      ) : null}
+                      {isStaged(f) ? (
+                        <button
+                          type="button"
+                          className="changes-panel__action"
+                          disabled={acting}
+                          onClick={() => void runAction('unstage', [f.path])}
+                        >
+                          取消暂存
+                        </button>
+                      ) : null}
                       <button
                         type="button"
-                        className="changes-panel__action"
+                        className="changes-panel__action changes-panel__action--danger"
                         disabled={acting}
-                        onClick={() => void runAction('stage', [f.path])}
+                        onClick={() => void runAction('revert', [f.path])}
                       >
-                        暂存
+                        还原
                       </button>
-                    ) : null}
-                    {isStaged(f) ? (
-                      <button
-                        type="button"
-                        className="changes-panel__action"
-                        disabled={acting}
-                        onClick={() => void runAction('unstage', [f.path])}
-                      >
-                        取消暂存
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="changes-panel__action changes-panel__action--danger"
-                      disabled={acting}
-                      onClick={() => void runAction('revert', [f.path])}
-                    >
-                      还原
-                    </button>
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
               </li>
             ))}
           </ul>
           <div className="changes-panel__diff">
-            {selected && (isStaged(selected) || isUnstaged(selected)) ? (
+            {selected && !readOnly && (isStaged(selected) || isUnstaged(selected)) ? (
               <div className="changes-panel__file-actions">
                 {isUnstaged(selected) ? (
                   <button
@@ -402,10 +566,13 @@ export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Pr
                   defaultExpanded
                   showHeader
                   review={{
-                    scope,
+                    scope: readOnly ? 'unstaged' : scope,
                     acting,
+                    readOnly,
                     comments: comments.filter((c) => c.path === selectedPath),
-                    onHunkAction: (hunk, action) => void runHunkAction(hunk, action),
+                    onHunkAction: readOnly
+                      ? undefined
+                      : (hunk, action) => void runHunkAction(hunk, action),
                     onAddComment: (comment) =>
                       setComments((prev) => [
                         ...prev,

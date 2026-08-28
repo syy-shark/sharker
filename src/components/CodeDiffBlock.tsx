@@ -28,6 +28,8 @@ function DiffStat({ kind, value }: { kind: 'add' | 'del'; value: number }) {
 export interface CodeDiffReviewProps {
   scope: 'unstaged' | 'staged'
   acting?: boolean
+  /** 分支对比只读：保留评论，隐藏暂存/还原 */
+  readOnly?: boolean
   comments?: ReviewLineComment[]
   onHunkAction?: (hunk: DiffHunk, action: GitReviewAction) => void
   onAddComment?: (comment: Omit<ReviewLineComment, 'id'>) => void
@@ -237,39 +239,41 @@ export function CodeDiffBlock({
                   <span className="code-diff-hunk-label">
                     @@ -{hunk.oldStart},{hunk.oldCount} +{hunk.newStart},{hunk.newCount} @@
                   </span>
-                  <div className="code-diff-hunk-actions">
-                    {review.scope === 'unstaged' ? (
+                  {review.readOnly || !review.onHunkAction ? null : (
+                    <div className="code-diff-hunk-actions">
+                      {review.scope === 'unstaged' ? (
+                        <button
+                          type="button"
+                          className="code-diff-hunk-btn"
+                          disabled={review.acting}
+                          onClick={() => review.onHunkAction?.(hunk, 'stage')}
+                        >
+                          暂存此块
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="code-diff-hunk-btn"
+                          disabled={review.acting}
+                          onClick={() => review.onHunkAction?.(hunk, 'unstage')}
+                        >
+                          取消暂存此块
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="code-diff-hunk-btn"
+                        className="code-diff-hunk-btn code-diff-hunk-btn--danger"
                         disabled={review.acting}
-                        onClick={() => review.onHunkAction?.(hunk, 'stage')}
+                        onClick={() => {
+                          if (window.confirm('确定还原此 hunk？此操作不可撤销。')) {
+                            review.onHunkAction?.(hunk, 'revert')
+                          }
+                        }}
                       >
-                        暂存此块
+                        还原此块
                       </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="code-diff-hunk-btn"
-                        disabled={review.acting}
-                        onClick={() => review.onHunkAction?.(hunk, 'unstage')}
-                      >
-                        取消暂存此块
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="code-diff-hunk-btn code-diff-hunk-btn--danger"
-                      disabled={review.acting}
-                      onClick={() => {
-                        if (window.confirm('确定还原此 hunk？此操作不可撤销。')) {
-                          review.onHunkAction?.(hunk, 'revert')
-                        }
-                      }}
-                    >
-                      还原此块
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
                 {hunk.lines.map((line, i) => renderLine(line, hunk.index * 1000 + i))}
               </section>

@@ -54,6 +54,12 @@ export const IPC = {
   GIT_REVIEW_ACTION: 'git:review-action',
   /** 审查面板：单个 hunk 暂存 / 取消暂存 / 还原 */
   GIT_HUNK_ACTION: 'git:hunk-action',
+  /** 审查面板：提交已暂存变更 */
+  GIT_COMMIT: 'git:commit',
+  /** 审查面板：推送当前分支 */
+  GIT_PUSH: 'git:push',
+  /** 相对基线分支的已提交变更 */
+  GIT_BRANCH_CHANGES: 'git:branch-changes',
   /** Composer `@` 工作区文件模糊搜索 */
   WORKSPACE_SEARCH_FILES: 'workspace:search-files',
   /** 为会话准备隔离 Git worktree */

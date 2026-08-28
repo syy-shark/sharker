@@ -2,6 +2,7 @@
  * 工具活动的侧栏 label 格式化。
  * 详见 shared/ARCH.md
  */
+import { parsePatch } from './patch'
 
 const PATH_TOOLS = new Set([
   'read_file',
@@ -13,6 +14,15 @@ const PATH_TOOLS = new Set([
   'grep',
   'glob_file_search',
   'create_directory'
+])
+
+/** 会改工作区文件的工具（供「本轮」审查范围） */
+const WRITE_TOOLS = new Set([
+  'write_file',
+  'search_replace',
+  'delete_path',
+  'move_path',
+  'apply_patch'
 ])
 
 /** 取路径 basename（统一斜杠） */
@@ -30,6 +40,42 @@ export function extractBrowsedPaths(
   const raw = args.path ?? args.target_path ?? args.source_path
   if (typeof raw !== 'string' || !raw.trim()) return []
   return [basenamePath(raw.trim())]
+}
+
+/**
+ * 从写盘工具参数取出工作区相对路径（对标 Codex Last turn）。
+ * `workspace` 为空时返回原路径的 posix 形式。
+ */
+export function extractChangedRelPaths(
+  toolName: string,
+  args: Record<string, unknown> | undefined,
+  workspace = ''
+): string[] {
+  if (!args || !WRITE_TOOLS.has(toolName)) return []
+  const root = workspace.replaceAll('\\', '/').replace(/\/$/, '')
+  const toRel = (raw: string): string | null => {
+    const posix = raw.trim().replaceAll('\\', '/')
+    if (!posix) return null
+    if (root && posix.startsWith(`${root}/`)) return posix.slice(root.length + 1)
+    if (root && posix === root) return null
+    return posix.replace(/^\.\//, '')
+  }
+  if (toolName === 'apply_patch' && typeof args.patch === 'string') {
+    const seen = new Set<string>()
+    for (const hunk of parsePatch(args.patch)) {
+      const rel = toRel(hunk.path)
+      if (rel) seen.add(rel)
+    }
+    return [...seen]
+  }
+  const raws = [args.path, args.target_path, args.source_path]
+  const seen = new Set<string>()
+  for (const raw of raws) {
+    if (typeof raw !== 'string') continue
+    const rel = toRel(raw)
+    if (rel) seen.add(rel)
+  }
+  return [...seen]
 }
 
 /** 格式化工具活动侧栏 label（含路径/命令摘要） */

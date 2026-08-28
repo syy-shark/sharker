@@ -147,11 +147,27 @@ export interface SharkerApi {
       scope?: 'unstaged' | 'staged'
     }
   ) => Promise<{ ok: boolean; error?: string }>
+  commitGitChanges: (
+    cwd: string,
+    message: string
+  ) => Promise<{ ok: true; sha: string } | { ok: false; error: string }>
+  pushGitBranch: (cwd: string) => Promise<{ ok: true } | { ok: false; error: string }>
+  getGitBranchChanges: (cwd: string) => Promise<{
+    base: string | null
+    files: {
+      status: string
+      path: string
+      raw: string
+      staged?: boolean
+      unstaged?: boolean
+      untracked?: boolean
+    }[]
+  }>
   getGitFileDiff: (
     cwd: string,
     filePath: string,
     status?: string,
-    scope?: 'unstaged' | 'staged'
+    scope?: 'unstaged' | 'staged' | 'branch'
   ) => Promise<{
     ok: boolean
     path: string

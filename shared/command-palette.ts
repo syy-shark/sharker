@@ -68,6 +68,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'mention_file'
   },
   {
+    id: 'find',
+    title: '在对话中查找',
+    shortcut: '⌘F',
+    keywords: 'find search thread 查找 搜索',
+    action: 'find_in_thread'
+  },
+  {
     id: 'settings',
     title: '打开设置',
     shortcut: '⌘,',

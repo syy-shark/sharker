@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡与输入区
  * @see src/ARCH.md
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUp, Folder } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type {
@@ -21,6 +21,7 @@ import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
+import { findInThread } from '../../shared/thread-search'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
 
@@ -111,8 +112,8 @@ interface Props {
   onThreadModeChange?: (mode: ThreadMode) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
-  /** 命令面板「引用文件」：打开 `@` 选择器 */
-  composerIntent?: 'mention' | null
+  /** 命令面板「引用文件」/「查找」 */
+  composerIntent?: 'mention' | 'find' | null
   onComposerIntentHandled?: () => void
 }
 
@@ -176,6 +177,10 @@ export function ChatView({
   const [mentionHits, setMentionHits] = useState<Array<{ name: string; relativePath: string }>>([])
   const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
   const mentionActiveIndexRef = useRef(0)
+  const [findOpen, setFindOpen] = useState(false)
+  const [findQuery, setFindQuery] = useState('')
+  const [findHit, setFindHit] = useState(0)
+  const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -391,6 +396,12 @@ export function ChatView({
   }
 
   useEffect(() => {
+    if (composerIntent === 'find') {
+      setFindOpen(true)
+      onComposerIntentHandled?.()
+      requestAnimationFrame(() => findInputRef.current?.focus())
+      return
+    }
     if (composerIntent !== 'mention') return
     setInput('@')
     setCursor(1)
@@ -405,6 +416,41 @@ export function ChatView({
       syncTextareaHeight()
     })
   }, [composerIntent, onComposerIntentHandled])
+
+  const findHits = useMemo(() => findInThread(messages, findQuery), [messages, findQuery])
+
+  useEffect(() => {
+    if (findHit >= findHits.length) setFindHit(0)
+  }, [findHit, findHits.length])
+
+  useEffect(() => {
+    const current = findHits[findHit]
+    if (!findOpen || !current) return
+    const el = document.getElementById(`msg-${current.messageId}`)
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [findHit, findHits, findOpen])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      const mod = e.metaKey || e.ctrlKey
+      if (mod && e.key.toLowerCase() === 'f' && !e.altKey && !e.shiftKey) {
+        const target = e.target
+        if (target instanceof HTMLElement && target.closest('input, textarea, [contenteditable=true]')) {
+          if (target === findInputRef.current) {
+            e.preventDefault()
+            return
+          }
+          if (target !== textareaRef.current) return
+        }
+        e.preventDefault()
+        setFindOpen(true)
+        requestAnimationFrame(() => findInputRef.current?.focus())
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const pickSlashCommand = (cmd: SlashCommandMeta) => {
     if (cmd.action === 'mention_file') {
@@ -1095,10 +1141,87 @@ export function ChatView({
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
         <div className="messages-scroll" ref={messagesRef}>
+          {findOpen ? (
+            <div className="chat-find glass-tile" role="search">
+              <input
+                ref={findInputRef}
+                className="chat-find__input"
+                value={findQuery}
+                placeholder="在对话中查找"
+                aria-label="在对话中查找"
+                onChange={(e) => {
+                  setFindQuery(e.target.value)
+                  setFindHit(0)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setFindOpen(false)
+                    setFindQuery('')
+                    textareaRef.current?.focus()
+                    return
+                  }
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    if (!findHits.length) return
+                    setFindHit((i) =>
+                      e.shiftKey
+                        ? (i - 1 + findHits.length) % findHits.length
+                        : (i + 1) % findHits.length
+                    )
+                  }
+                }}
+              />
+              <span className="chat-find__count">
+                {findQuery.trim()
+                  ? findHits.length
+                    ? `${findHit + 1}/${findHits.length}`
+                    : '无结果'
+                  : ''}
+              </span>
+              <button
+                type="button"
+                className="chat-find__nav"
+                disabled={findHits.length === 0}
+                onClick={() =>
+                  setFindHit((i) => (i - 1 + findHits.length) % findHits.length)
+                }
+                aria-label="上一条"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="chat-find__nav"
+                disabled={findHits.length === 0}
+                onClick={() => setFindHit((i) => (i + 1) % findHits.length)}
+                aria-label="下一条"
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                className="chat-find__nav"
+                onClick={() => {
+                  setFindOpen(false)
+                  setFindQuery('')
+                }}
+                aria-label="关闭查找"
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
           <div className="messages" ref={messagesInnerRef}>
             {messages.map((m, index) =>
               m.role === 'user' ? (
-                <div key={m.id} className="message-row message-row--user">
+                <div
+                  key={m.id}
+                  id={`msg-${m.id}`}
+                  className={`message-row message-row--user${
+                    findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
+                  }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
+                >
                   <div className="message-user-wrap">
                     <div className="message-bubble message-bubble--user">
                       <MessageAttachments attachments={m.attachments} />
@@ -1108,7 +1231,13 @@ export function ChatView({
                   </div>
                 </div>
               ) : (
-                <div key={m.id} className="message-row message-row--assistant">
+                <div
+                  key={m.id}
+                  id={`msg-${m.id}`}
+                  className={`message-row message-row--assistant${
+                    findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
+                  }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
+                >
                   <AssistantMessage
                     messageId={m.id}
                     content={m.content}

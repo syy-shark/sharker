@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `FileTree.tsx` / `.css` | 工作区文件树；打开预览 view-enter；子目录展开 list-item-in |
-| `ChangesPanel.tsx` / `.css` | Git 变更审查：未暂存/已暂存、文件/hunk 暂存还原、行内评论发送给对话；`revision` 随工具写盘刷新 |
+| `ChangesPanel.tsx` / `.css` | Git 变更审查：未提交 / 本轮 / 分支对比、未暂存/已暂存、文件/hunk 暂存还原、提交/推送、行内评论发送给对话；`revision` 随工具写盘刷新 |
 | `EmbeddedTerminal.tsx` / `.css` | 集成终端；挂载 view-enter |
 | `EmbeddedBrowser.tsx` / `.css` | 内置浏览器；起始页主题跟随 App；避免 data URL 自激 reload |
 | `browser-start-page.ts` | 新标签起始页 HTML（data URL）；跟随 App light/dark，仅 Logo + 搜索 |

@@ -43,9 +43,15 @@
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
 | `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
 | `git-hunk-actions.test.ts` | 只暂存第一个 hunk |
+| `git-commit.ts` | 审查面板提交已暂存 / 推送当前分支 |
+| `git-commit.test.ts` | 只提交暂存、拒绝空说明、无远程推送失败 |
+| `git-compare.ts` | 相对基线分支的 name-status + 本轮路径匹配 |
+| `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
+| `thread-search.ts` | 线程内查找（大小写不敏感） |
+| `thread-search.test.ts` | 命中消息 id |
 | `review-comment.ts` | 行内评论 → Agent 提示 |
 | `review-comment.test.ts` | 评论锚定路径与行号 |
-| `command-palette.ts` | ⌘K 命令面板目录 |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
@@ -56,7 +62,7 @@
 | `approval-session.test.ts` | 审批决策与会话授权单测 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑） |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
-| `turn-meta.ts` | 工具活动 label 格式化 |
+| `turn-meta.ts` | 工具活动 label；写盘工具相对路径（本轮审查） |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |

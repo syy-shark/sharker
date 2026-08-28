@@ -28,6 +28,8 @@ interface Props {
   changesRevision?: number
   /** 审查行内评论 → 当前对话 */
   onSendReviewComments?: (prompt: string) => void
+  /** 上一轮助手写过的相对路径 */
+  lastTurnPaths?: string[]
 }
 
 /** Codex 风格右侧面板 */
@@ -39,7 +41,8 @@ export function RightPanel({
   onTabChange,
   onClose,
   changesRevision = 0,
-  onSendReviewComments
+  onSendReviewComments,
+  lastTurnPaths = []
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -315,6 +318,7 @@ export function RightPanel({
           <ChangesPanel
             workspacePath={workspacePath}
             revision={changesRevision}
+            lastTurnPaths={lastTurnPaths}
             onSendComments={onSendReviewComments}
           />
         )}

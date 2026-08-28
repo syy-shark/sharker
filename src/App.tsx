@@ -19,6 +19,7 @@ import type {
 } from '../shared/types'
 import {
   extractBrowsedPaths,
+  extractChangedRelPaths,
   formatToolActivity
 } from '../shared/turn-meta'
 import {
@@ -92,6 +93,8 @@ interface SessionLiveBuffer {
   turnOutcome: 'success' | 'error' | 'aborted'
   activeUserMessageId?: string
   turnMeta: AssistantMeta
+  changedRelPaths?: string[]
+  lastTurnPaths?: string[]
 }
 
 /** DEV 专用：把审批/错误/直播态注入真实 React 树，供 CDP 与本地验收 */
@@ -221,7 +224,11 @@ export default function App() {
   }, [])
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
-  const [composerIntent, setComposerIntent] = useState<'mention' | null>(null)
+  const [composerIntent, setComposerIntent] = useState<'mention' | 'find' | null>(null)
+  const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
+  const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
+  const turnChangedPathsRef = useRef<string[]>([])
+  const threadWorktreePathRef = useRef<string | undefined>(undefined)
   const sendInFlightRef = useRef(false)
   /** 回合序号：finally 只清理自己这一轮，避免排队续跑被误清 loading */
   const turnGenRef = useRef(0)
@@ -300,6 +307,8 @@ export default function App() {
     )
     setTurnStartedAt(buf.turnStartedAt)
     if (buf.turnStartedAt) turnStartedAtRef.current = buf.turnStartedAt
+    turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
+    setLastTurnPaths(buf.lastTurnPaths ?? lastTurnPathsByConvRef.current.get(activeConversationIdRef.current ?? '') ?? [])
   }, [])
 
   const activeWorkspaceId = settings.activeWorkspaceId
@@ -307,6 +316,10 @@ export default function App() {
   useEffect(() => {
     settingsRef.current = settings
   }, [settings])
+
+  useEffect(() => {
+    threadWorktreePathRef.current = threadWorktreePath
+  }, [threadWorktreePath])
 
   useEffect(() => {
     messagesRef.current = messages
@@ -442,6 +455,7 @@ export default function App() {
   /** 清空本轮助手元信息 */
   const resetTurnMeta = useCallback(() => {
     turnMetaRef.current = { browsedFiles: [], activities: [] }
+    turnChangedPathsRef.current = []
     setLiveTurnMeta(null)
     setTurnStartedAt(null)
   }, [])
@@ -457,6 +471,7 @@ export default function App() {
     setApprovalResponding(false)
     setTurnHadThinking(false)
     turnMetaRef.current = { browsedFiles: [], activities: [] }
+    turnChangedPathsRef.current = []
     setTurnStartedAt(now)
     setLiveTurnMeta({ browsedFiles: [], activities: [] })
   }, [])
@@ -494,7 +509,9 @@ export default function App() {
       turnMeta: {
         browsedFiles: [...turnMetaRef.current.browsedFiles],
         activities: [...turnMetaRef.current.activities]
-      }
+      },
+      changedRelPaths: [...turnChangedPathsRef.current],
+      lastTurnPaths: lastTurnPathsByConvRef.current.get(prevId) ?? []
     })
     return prevId
   }, [])
@@ -914,11 +931,33 @@ export default function App() {
           sendInFlight: true,
           doneCommitted: false,
           turnOutcome: 'success',
-          turnMeta: { browsedFiles: [], activities: [] }
+          turnMeta: { browsedFiles: [], activities: [] },
+          changedRelPaths: [],
+          lastTurnPaths: lastTurnPathsByConvRef.current.get(convId) ?? []
         }
         sessionBuffersRef.current.set(convId, buf)
       }
       return buf
+    }
+
+    const writeWorkspace = () =>
+      threadWorktreePathRef.current || getActiveWorkspacePath(settingsRef.current) || ''
+
+    const collectWrites = (
+      dest: string[],
+      toolName?: string,
+      args?: Record<string, unknown>
+    ) => {
+      if (!toolName) return
+      for (const p of extractChangedRelPaths(toolName, args, writeWorkspace())) {
+        if (!dest.includes(p)) dest.push(p)
+      }
+    }
+
+    const rememberLastTurn = (convId: string | null | undefined, paths: string[]) => {
+      if (!convId) return
+      lastTurnPathsByConvRef.current.set(convId, paths)
+      if (activeConversationIdRef.current === convId) setLastTurnPaths(paths)
     }
 
     const applyChunkToBuffer = (buf: SessionLiveBuffer, chunk: import('../shared/types').StreamChunk) => {
@@ -931,6 +970,10 @@ export default function App() {
         buf.streaming += chunk.content
       }
       buf.segments = applyStreamChunk(buf.segments, chunk)
+      if (chunk.type === 'tool_start' || chunk.type === 'tool_done') {
+        buf.changedRelPaths ??= []
+        collectWrites(buf.changedRelPaths, chunk.toolName, chunk.toolArgs)
+      }
       if (chunk.type === 'tool_start' && chunk.toolName) {
         for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
           if (!buf.turnMeta.browsedFiles.includes(p)) buf.turnMeta.browsedFiles.push(p)
@@ -1059,6 +1102,9 @@ export default function App() {
           }
           buf.messages = appendAssistantMessage(buf.messages, assistant)
           buf.streaming = ''
+          buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
+          buf.changedRelPaths = []
+          rememberLastTurn(ownerId, buf.lastTurnPaths)
           patchConversationSummary(ownerId, buf.messages)
           bumpSessionLive()
           void persistActiveConversation(buf.messages, ownerId)
@@ -1128,6 +1174,7 @@ export default function App() {
         // 同步 turnMeta 供侧栏/旧逻辑
         if (chunk.type === 'tool_done' || chunk.type === 'tool_start') {
           setChangesRevision((n) => n + 1)
+          collectWrites(turnChangedPathsRef.current, chunk.toolName, chunk.toolArgs)
         }
         if (chunk.type === 'tool_start' && chunk.toolName) {
           for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
@@ -1262,6 +1309,9 @@ export default function App() {
             }
             buf.messages = appendAssistantMessage(buf.messages, assistant)
             buf.streaming = ''
+            buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
+            buf.changedRelPaths = []
+            rememberLastTurn(completedId, buf.lastTurnPaths)
             sessionBuffersRef.current.set(completedId!, buf)
             void persistActiveConversation(buf.messages, completedId)
           }
@@ -1290,6 +1340,8 @@ export default function App() {
         setStreaming(extractFinalContent(segmentsRef.current))
         setActiveTool(null)
         sendInFlightRef.current = false
+        rememberLastTurn(completedId, [...turnChangedPathsRef.current])
+        turnChangedPathsRef.current = []
         commitAssistantReply(streamingRef.current, '', turnOutcomeRef.current, completedId)
         segmentsRef.current = []
         setLiveSegments([])
@@ -2026,6 +2078,7 @@ export default function App() {
 
     setActiveConversationId(conversationId)
     activeConversationIdRef.current = conversationId
+    setLastTurnPaths(lastTurnPathsByConvRef.current.get(conversationId) ?? [])
     setPage('chat')
     syncActiveQueueUi(sessionQueuesRef.current, conversationId)
 
@@ -2553,6 +2606,11 @@ export default function App() {
       if (cmd.action === 'mention_file') {
         setPage('chat')
         setComposerIntent('mention')
+        return
+      }
+      if (cmd.action === 'find_in_thread') {
+        setPage('chat')
+        setComposerIntent('find')
         return
       }
       if (cmd.action === 'show_history') {
@@ -3487,6 +3545,7 @@ export default function App() {
           onTabChange={setRightPanelTab}
           onClose={() => setRightPanelOpen(false)}
           changesRevision={changesRevision}
+          lastTurnPaths={lastTurnPaths}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

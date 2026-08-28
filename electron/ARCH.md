@@ -34,6 +34,8 @@
 | `approval:response` | 高危操作确认 |
 | `git:review-action` | 审查面板暂存 / 取消暂存 / 还原 |
 | `git:hunk-action` | 审查面板单个 hunk 暂存 / 取消暂存 / 还原 |
+| `git:commit` / `git:push` | 审查面板提交已暂存 / 推送当前分支 |
+| `git:branch-changes` | 相对基线分支的已提交变更 |
 | `workspace:search-files` | Composer `@` 工作区文件搜索 |
 
 ## 数据流
