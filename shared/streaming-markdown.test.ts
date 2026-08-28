@@ -118,6 +118,28 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '见 ' },
       { type: 'link', text: '文档', href: 'https://a.test/x', title: '题' }
     ])
+    expect(parseCheapInlineMarkdown('见 [**粗**](https://a.test/x) 后')).toEqual([
+      { type: 'text', text: '见 ' },
+      {
+        type: 'link',
+        text: '**粗**',
+        href: 'https://a.test/x',
+        children: [{ type: 'strong', text: '粗' }]
+      },
+      { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('见 [`code`](https://a.test/x)')).toEqual([
+      { type: 'text', text: '见 ' },
+      {
+        type: 'link',
+        text: '`code`',
+        href: 'https://a.test/x',
+        children: [{ type: 'code', text: 'code' }]
+      }
+    ])
+    expect(parseCheapInlineMarkdown('[text](https://a.test/x (题))')).toEqual([
+      { type: 'link', text: 'text', href: 'https://a.test/x', title: '题' }
+    ])
     expect(parseCheapInlineMarkdown('见 [文档](https://a.test/x(1)) 后')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'link', text: '文档', href: 'https://a.test/x(1)' },
@@ -318,6 +340,12 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapProseBlocks('Overview\n--- | ---\na | b').map((b) => b.type)).toEqual(['p'])
     expect(parseCheapProseBlocks('* * *').map((b) => b.type)).toEqual(['hr'])
     expect(parseCheapProseBlocks('- - -').map((b) => b.type)).toEqual(['hr'])
+    expect(parseCheapProseBlocks('***').map((b) => b.type)).toEqual(['hr'])
+    const quoteParas = parseCheapProseBlocks('> 一段\n>\n> 二段')
+    expect(quoteParas.map((b) => b.type)).toEqual(['quote'])
+    if (quoteParas[0]?.type === 'quote') {
+      expect(quoteParas[0].blocks.map((b) => b.type)).toEqual(['p', 'p'])
+    }
     const quotedPipeless = parseCheapProseBlocks(
       '> Name | Value\n> --- | ---\n> foo | bar'
     )

@@ -70,7 +70,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
             }
           }}
         >
-          {node.text}
+          {node.children ? renderCheapInline(node.children) : node.text}
         </a>
       )
     }

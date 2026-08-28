@@ -171,7 +171,7 @@ export type CheapInlineNode =
   | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' }
   | { type: 'del'; text: string }
   | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' }
-  | { type: 'link'; text: string; href: string; raw?: string; title?: string }
+  | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
   | { type: 'fn'; id: string }
@@ -472,9 +472,27 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 
 /**
  * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合 `[text](url)` /
- * `[text][id]` / `![alt](url)` / `![alt][id]`、dest 内成对括号、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
+ * `[text][id]` / `![alt](url)` / `![alt][id]`、dest 内成对括号、标签内强调/代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
  * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
+/** 链接标签里的 `**` / `*` / `` ` `` / `~~` 直播就画，避免收束从纯文本跳成 <a><strong> */
+function linkWithLabel(
+  label: string,
+  href: string,
+  opts?: { title?: string; raw?: string }
+): Extract<CheapInlineNode, { type: 'link' }> {
+  const children = parseCheapInlineMarkdown(label)
+  const node: Extract<CheapInlineNode, { type: 'link' }> = {
+    type: 'link',
+    text: decodeHtmlEntities(label),
+    href
+  }
+  if (opts?.title) node.title = opts.title
+  if (opts?.raw) node.raw = opts.raw
+  if (children.some((child) => child.type !== 'text')) node.children = children
+  return node
+}
+
 export function parseCheapInlineMarkdown(
   text: string,
   defs: ReadonlyMap<string, string> = EMPTY_LINK_DEFS
@@ -667,8 +685,9 @@ export function parseCheapInlineMarkdown(
           }
           if (!image && (/^https?:\/\//i.test(href) || href.startsWith('mailto:'))) {
             flush()
-            const text = decodeHtmlEntities(label)
-            nodes.push(title ? { type: 'link', text, href, title: decodeHtmlEntities(title) } : { type: 'link', text, href })
+            nodes.push(
+              linkWithLabel(label, href, title ? { title: decodeHtmlEntities(title) } : undefined)
+            )
             i = urlEnd + 1
             continue
           }
@@ -706,12 +725,7 @@ export function parseCheapInlineMarkdown(
               }
               if (!image) {
                 flush()
-                nodes.push({
-                  type: 'link',
-                  text: decodeHtmlEntities(label),
-                  href,
-                  raw: src.slice(i, idEnd + 1)
-                })
+                nodes.push(linkWithLabel(label, href, { raw: src.slice(i, idEnd + 1) }))
                 i = idEnd + 1
                 continue
               }
@@ -734,12 +748,7 @@ export function parseCheapInlineMarkdown(
           const href = defs.get(normalizeLinkLabel(label))
           if (href) {
             flush()
-            nodes.push({
-              type: 'link',
-              text: decodeHtmlEntities(label),
-              href,
-              raw: src.slice(i, labelEnd + 1)
-            })
+            nodes.push(linkWithLabel(label, href, { raw: src.slice(i, labelEnd + 1) }))
             i = labelEnd + 1
             continue
           }
@@ -838,7 +847,8 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'link') {
     if (node.raw) return node.raw
     const dest = node.title ? `${node.href} "${node.title}"` : node.href
-    return node.text === node.href && !node.title ? node.href : `[${node.text}](${dest})`
+    const inner = node.children ? cheapInlineSourceAll(node.children) : node.text
+    return inner === node.href && !node.title ? node.href : `[${inner}](${dest})`
   }
   if (node.type === 'image') {
     if (node.raw) return node.raw
