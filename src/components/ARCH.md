@@ -24,7 +24,7 @@
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
-| `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；子 Agent 步骤可点开活动 |
+| `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；命令输出按 `toolOutputDisplay` 截尾/折叠；子 Agent 步骤可点开活动 |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |

@@ -113,6 +113,11 @@ export interface AppSettings {
   /** 新建分支名前缀（对标 Codex Git branch naming）；空则不加。无尾斜杠时补 `/` */
   gitBranchPrefix?: string
   /**
+   * 对话里命令/工具输出展示量（对标 Codex how much command output appears in chats）。
+   * brief：不展开；standard（默认）：折叠短尾；verbose：完成后默认展开。
+   */
+  toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -367,6 +372,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitPrPrompt: '',
   gitForceWithLease: false,
   gitBranchPrefix: '',
+  toolOutputDisplay: 'standard',
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

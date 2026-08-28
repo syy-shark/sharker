@@ -22,6 +22,12 @@ import {
 } from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
+import {
+  clipToolOutput,
+  parseToolOutputDisplay,
+  shouldExpandToolOutput,
+  type ToolOutputDisplay
+} from '../../shared/tool-output-display'
 import './TurnFlow.css'
 
 interface Props {
@@ -45,6 +51,8 @@ interface Props {
   generatingDemo?: boolean
   /** 对标 Codex：主线程活动点开子 Agent */
   onOpenSubAgent?: (id: string | null) => void
+  /** 对话里命令输出展示量 */
+  toolOutputDisplay?: ToolOutputDisplay
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -316,11 +324,13 @@ export function ThoughtDisclosure({
 function ProcessStepRow({
   step,
   isLast,
-  onOpenSubAgent
+  onOpenSubAgent,
+  outputMode
 }: {
   step: DisplayStep
   isLast: boolean
   onOpenSubAgent?: (id: string | null) => void
+  outputMode: ToolOutputDisplay
 }) {
   const segment = step.source?.segment
   const isDemo =
@@ -336,6 +346,7 @@ function ProcessStepRow({
     step.detail
   )
   const openable = Boolean(onOpenSubAgent && isSubAgentInspectTool(segment?.toolName))
+  const clip = clipToolOutput(segment?.resultOutput || '', outputMode)
 
   return (
     <li
@@ -410,10 +421,16 @@ function ProcessStepRow({
         {step.status === 'error' ? (
           <span className="turn-flow-step-error">{segment?.errorMessage || '操作失败'}</span>
         ) : null}
-        {!isDemo && segment?.resultOutput && segment.resultOutput !== segment.resultSummary ? (
-          <details className="turn-flow-step-output">
-            <summary>查看输出</summary>
-            <pre>{segment.resultOutput}</pre>
+        {!isDemo &&
+        outputMode !== 'brief' &&
+        segment?.resultOutput &&
+        segment.resultOutput !== segment.resultSummary ? (
+          <details
+            className="turn-flow-step-output"
+            defaultOpen={shouldExpandToolOutput(outputMode, step.status)}
+          >
+            <summary>{clip.clipped ? '查看输出（已截尾）' : '查看输出'}</summary>
+            <pre>{clip.text}</pre>
           </details>
         ) : null}
       </div>
@@ -432,8 +449,10 @@ export function TurnFlow({
   thinkText,
   contentStreaming = false,
   generatingDemo = false,
-  onOpenSubAgent
+  onOpenSubAgent,
+  toolOutputDisplay
 }: Props) {
+  const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
   const [stickyLive, setStickyLive] = useState<{ label: string; detail?: string }>({
     label: '处理中'
@@ -696,6 +715,7 @@ export function TurnFlow({
               step={step}
               isLast={i === listSteps.length - 1}
               onOpenSubAgent={onOpenSubAgent}
+              outputMode={outputMode}
             />
           ))}
         </ol>

@@ -48,6 +48,8 @@ interface Props {
   onOpenSubAgent?: (id: string | null) => void
   /** 完成后「已改 N 个文件」打开审查（对标 Codex 变更摘要） */
   onOpenChangedFiles?: (paths: string[]) => void
+  /** 对话里命令输出展示量 */
+  toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   children?: React.ReactNode
 }
 
@@ -75,6 +77,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   onApproval,
   onOpenSubAgent,
   onOpenChangedFiles,
+  toolOutputDisplay = 'standard',
   children
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
@@ -318,6 +321,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 generatingDemo={generatingDemo}
                 answerStreaming={Boolean(finalContentRaw.trim() || hasLiveProse)}
                 onOpenSubAgent={onOpenSubAgent}
+                toolOutputDisplay={toolOutputDisplay}
               />
             </div>
           ) : (
@@ -332,6 +336,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 generatingDemo={false}
                 answerStreaming={Boolean(finalContentRaw.trim())}
                 onOpenSubAgent={onOpenSubAgent}
+                toolOutputDisplay={toolOutputDisplay}
               />
             </div>
           )}
@@ -469,6 +474,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                   segments={processForFlow}
                   isStreaming={false}
                   onOpenSubAgent={onOpenSubAgent}
+                  toolOutputDisplay={toolOutputDisplay}
                 />
               </div>
             </div>

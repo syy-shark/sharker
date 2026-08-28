@@ -1223,6 +1223,7 @@ export default function App() {
           gitPrPrompt: updated.gitPrPrompt,
           gitForceWithLease: updated.gitForceWithLease,
           gitBranchPrefix: updated.gitBranchPrefix,
+          toolOutputDisplay: updated.toolOutputDisplay,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -1286,6 +1287,7 @@ export default function App() {
       gitPrPrompt: draft.gitPrPrompt,
       gitForceWithLease: draft.gitForceWithLease,
       gitBranchPrefix: draft.gitBranchPrefix,
+      toolOutputDisplay: draft.toolOutputDisplay,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -2758,6 +2760,7 @@ export default function App() {
       gitPrPrompt: next.gitPrPrompt,
       gitForceWithLease: next.gitForceWithLease,
       gitBranchPrefix: next.gitBranchPrefix,
+      toolOutputDisplay: next.toolOutputDisplay,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -6224,6 +6227,7 @@ export default function App() {
               onApproval={handleApproval}
               onOpenSubAgent={handleOpenSubAgent}
               onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
+              toolOutputDisplay={settings.toolOutputDisplay}
             />
             </div>
           ) : page === 'automations' ? (

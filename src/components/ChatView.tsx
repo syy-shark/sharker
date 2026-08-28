@@ -258,6 +258,8 @@ interface Props {
   /** 计划模式芯片（对标 Codex /plan） */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
+  /** 对话里命令输出展示量（对标 Codex command output） */
+  toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -317,7 +319,8 @@ export function ChatView({
   onRestoreWorktree,
   composerSeed = null,
   planMode = false,
-  onPlanModeChange
+  onPlanModeChange,
+  toolOutputDisplay = 'standard'
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -724,6 +727,7 @@ export function ChatView({
               modelLabel={m.meta?.model ?? modelLabel}
               onOpenSubAgent={onOpenSubAgent}
               onOpenChangedFiles={onOpenChangedFiles}
+              toolOutputDisplay={toolOutputDisplay}
               onRetry={
                 index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
                   ? () => onRetry(m.meta!.retryOfUserMessageId!)
@@ -743,7 +747,8 @@ export function ChatView({
       onOpenSubAgent,
       onOpenChangedFiles,
       onRetry,
-      onEditUserMessage
+      onEditUserMessage,
+      toolOutputDisplay
     ]
   )
 
@@ -853,6 +858,7 @@ export function ChatView({
                   approvalResponding={approvalResponding}
                   onApproval={onApproval}
                   onOpenSubAgent={onOpenSubAgent}
+                  toolOutputDisplay={toolOutputDisplay}
                 />
               </div>
             )}

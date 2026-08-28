@@ -5,6 +5,10 @@
 import { useEffect, useRef } from 'react'
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
 import { parseReviewDelivery, type ReviewDelivery } from '../../../shared/review-prompt'
+import {
+  parseToolOutputDisplay,
+  type ToolOutputDisplay
+} from '../../../shared/tool-output-display'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
 import {
   FullModeIcon,
@@ -195,6 +199,39 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
               onChange={(e) => scheduleGitPromptSave({ gitBranchPrefix: e.target.value })}
             />
           </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="项目与终端">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parseToolOutputDisplay(draft.toolOutputDisplay)}
+            onChange={(toolOutputDisplay: ToolOutputDisplay) => {
+              const next = { ...draft, toolOutputDisplay }
+              setDraft(next)
+              void onSave(next)
+            }}
+            options={[
+              {
+                value: 'brief',
+                title: '简要',
+                description: '对话里不展开命令输出，只保留步骤摘要。',
+                icon: <span aria-hidden>简</span>
+              },
+              {
+                value: 'standard',
+                title: '标准',
+                description: '折叠查看，只画输出尾部，避免直播贴底跳动。',
+                icon: <span aria-hidden>标</span>
+              },
+              {
+                value: 'verbose',
+                title: '详细',
+                description: '完成后默认展开更长尾部。直播中仍折叠。',
+                icon: <span aria-hidden>详</span>
+              }
+            ]}
+          />
         </SettingsCard>
       </SettingsSection>
 
