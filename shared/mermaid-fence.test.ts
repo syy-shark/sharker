@@ -4,6 +4,7 @@ import {
   clearMermaidSvgCache,
   estimateMermaidPlaceholderHeight,
   isMermaidLang,
+  isMermaidLangPrefix,
   mermaidSlotHeight,
   mermaidSvgAspectStyle,
   mermaidSvgCacheKey,
@@ -23,6 +24,12 @@ describe('mermaid-fence', () => {
     expect(isMermaidLang('diff')).toBe(false)
     expect(isMermaidLang('')).toBe(false)
     expect(isMermaidLang(undefined)).toBe(false)
+    expect(isMermaidLangPrefix('mer')).toBe(true)
+    expect(isMermaidLangPrefix('merm')).toBe(true)
+    expect(isMermaidLangPrefix('mmd')).toBe(true)
+    expect(isMermaidLangPrefix('md')).toBe(false)
+    expect(isMermaidLangPrefix('mm')).toBe(false)
+    expect(isMermaidLangPrefix('js')).toBe(false)
 
     clearMermaidSvgCache()
     expect(mermaidSvgCacheKey('graph TD\nA-->B\n', 'dark')).toBe('dark\ngraph TD\nA-->B')

@@ -11,6 +11,15 @@ export function isMermaidLang(lang?: string | null): boolean {
   return value === 'mermaid' || value === 'mmd'
 }
 
+/** 直播未写完 `mermaid`：`mer` 起就挂 MermaidBlock，不认 `md` / `mm` */
+export function isMermaidLangPrefix(lang?: string | null): boolean {
+  const value = lang?.trim().toLowerCase().split(/[\s{]/)[0] ?? ''
+  if (!value) return false
+  if (isMermaidLang(value)) return true
+  if (value.length < 3) return false
+  return 'mermaid'.startsWith(value)
+}
+
 const MERMAID_SVG_CACHE_LIMIT = 32
 const mermaidSvgCache = new Map<string, string>()
 
