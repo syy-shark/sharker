@@ -8,9 +8,13 @@ import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
 import {
+  collectLinkDefinitions,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
+  isOnlyLinkDefinitions,
+  linkDefinitionBlob,
+  markdownBlockWithDefs,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
   type CheapInlineNode,
@@ -50,7 +54,11 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
           rel="noopener noreferrer"
           onClick={(event) => {
             event.preventDefault()
-            if (node.href.startsWith('http://') || node.href.startsWith('https://')) {
+            if (
+              node.href.startsWith('http://') ||
+              node.href.startsWith('https://') ||
+              node.href.startsWith('mailto:')
+            ) {
               void window.sharker.openExternal?.(node.href)
             }
           }}
@@ -139,17 +147,26 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     )
   }
   if (block.type === 'hr') return <hr key={index} />
+  if (block.type === 'pre') {
+    return <LiveFenceTail key={index} code={block.text} />
+  }
   return <p key={index}>{renderCheapInline(block.nodes)}</p>
 }
 
 /** 增长中的散文尾：廉价块 + 行内，不跑 remark */
-const LiveProseTail = memo(function LiveProseTail({ text }: { text: string }) {
+const LiveProseTail = memo(function LiveProseTail({
+  text,
+  defs
+}: {
+  text: string
+  defs?: ReadonlyMap<string, string>
+}) {
   const prevRef = useRef({ text: '', blocks: parseCheapProseBlocks('') })
   const blocks = useMemo(() => {
-    const next = continueCheapProseBlocks(prevRef.current.text, prevRef.current.blocks, text)
+    const next = continueCheapProseBlocks(prevRef.current.text, prevRef.current.blocks, text, defs)
     prevRef.current = { text, blocks: next }
     return next
-  }, [text])
+  }, [text, defs])
   return <div className="live-prose-tail">{blocks.map(renderCheapBlock)}</div>
 })
 
@@ -165,11 +182,15 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
     () => (split.tailKind === 'fence' ? extractOpenFenceBody(split.tail) : ''),
     [split.tail, split.tailKind]
   )
+  const defsBlob = useMemo(() => linkDefinitionBlob(text), [text])
+  const defs = useMemo(() => collectLinkDefinitions(text), [defsBlob])
   return (
     <div className="streaming-markdown">
-      {split.blocks.map((block) => (
-        <MarkdownBody key={block.id}>{block.text}</MarkdownBody>
-      ))}
+      {split.blocks.map((block) =>
+        isOnlyLinkDefinitions(block.text) ? null : (
+          <MarkdownBody key={block.id}>{markdownBlockWithDefs(block.text, defsBlob)}</MarkdownBody>
+        )
+      )}
       {split.tail ? (
         split.tailKind === 'fence' ? (
           isInlineDemoLang(split.tailLang) && isInlineDemoPaintable(fenceBody) ? (
@@ -178,7 +199,7 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
             <LiveFenceTail code={fenceBody} language={split.tailLang} />
           )
         ) : (
-          <LiveProseTail text={split.tail} />
+          <LiveProseTail text={split.tail} defs={defs} />
         )
       ) : null}
     </div>

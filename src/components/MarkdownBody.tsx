@@ -18,7 +18,7 @@ import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
-  return href.startsWith('http://') || href.startsWith('https://')
+  return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')
 }
 
 /** 纯文本里的 path:line / #L 做成可点引用 */

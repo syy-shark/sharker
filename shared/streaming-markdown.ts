@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、`<https>`、裸 URL、文件引用、标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱、裸 URL、下划线强调、文件引用、标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线 / 缩进代码。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -168,10 +168,10 @@ export function extractOpenFenceBody(tail: string): string {
 export type CheapInlineNode =
   | { type: 'text'; text: string }
   | { type: 'code'; text: string }
-  | { type: 'strong'; text: string }
+  | { type: 'strong'; text: string; mark?: '**' | '__' }
   | { type: 'del'; text: string }
-  | { type: 'em'; text: string }
-  | { type: 'link'; text: string; href: string }
+  | { type: 'em'; text: string; mark?: '*' | '_' }
+  | { type: 'link'; text: string; href: string; raw?: string }
   | { type: 'image'; alt: string; href: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
 
@@ -188,20 +188,86 @@ export type CheapProseBlock =
   | { type: 'quote'; nodes: CheapInlineNode[] }
   | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][] }
   | { type: 'hr' }
+  | { type: 'pre'; text: string }
   | { type: 'p'; nodes: CheapInlineNode[] }
 
 const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
+const BARE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+const EMPTY_LINK_DEFS: ReadonlyMap<string, string> = new Map()
 
 /** 去掉裸链接尾部标点，避免句号/括号被吃进 href */
 function trimBareUrl(raw: string): string {
   return raw.replace(/[.,;:!?)]+$/, '')
 }
 
+function isWordChar(ch: string | undefined): boolean {
+  return ch !== undefined && /[A-Za-z0-9]/.test(ch)
+}
+
+function canOpenUnderscore(src: string, i: number): boolean {
+  return !isWordChar(src[i - 1])
+}
+
+function canCloseUnderscore(src: string, lastIndex: number): boolean {
+  return !isWordChar(src[lastIndex + 1])
+}
+
+/** GFM 链接标签：去首尾空白、折叠空白、小写 */
+export function normalizeLinkLabel(label: string): string {
+  return label.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** `[id]: https://…` / `[id]: <https://…>` 定义行（对标 CommonMark / remark-gfm） */
+export function parseLinkDefinitionLine(line: string): { id: string; href: string } | null {
+  const match =
+    /^\s{0,3}\[([^\]]+)\]:\s*(<[^>\s]+>|\S+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$/.exec(line)
+  if (!match) return null
+  let href = match[2] ?? ''
+  if (href.startsWith('<') && href.endsWith('>')) href = href.slice(1, -1)
+  if (!/^https?:\/\//i.test(href) && !href.startsWith('mailto:')) return null
+  return { id: normalizeLinkLabel(match[1] ?? ''), href }
+}
+
+/** 从全文收集引用定义，供直播尾与已闭合块共用 */
+export function collectLinkDefinitions(text: string): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const line of normalizeStreamingText(text).split('\n')) {
+    const def = parseLinkDefinitionLine(line)
+    if (def && !map.has(def.id)) map.set(def.id, def.href)
+  }
+  return map
+}
+
+/** 把定义行拼回 Markdown，挂到已闭合块上让 remark 也能解析引用 */
+export function linkDefinitionBlob(text: string): string {
+  return normalizeStreamingText(text)
+    .split('\n')
+    .filter((line) => parseLinkDefinitionLine(line))
+    .join('\n')
+}
+
+/** 整段只有引用定义时不要画成段落（remark 会吃掉，直播也不画） */
+export function isOnlyLinkDefinitions(text: string): boolean {
+  const lines = normalizeStreamingText(text)
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+  return lines.length > 0 && lines.every((line) => parseLinkDefinitionLine(line))
+}
+
+export function markdownBlockWithDefs(blockText: string, defsBlob: string): string {
+  if (!defsBlob || !blockText.includes('[')) return blockText
+  return `${blockText.replace(/\s+$/, '')}\n\n${defsBlob}`
+}
+
 /**
- * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](url)` / `![alt](url)`、裸 http(s) 与文件引用。
- * 未闭合标记留在原文，避免直播时闪烁。
+ * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合 `[text](url)` /
+ * `[text][id]` / `![alt](url)`、`<https>` / 邮箱、裸 http(s)、文件引用。
+ * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
-export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
+export function parseCheapInlineMarkdown(
+  text: string,
+  defs: ReadonlyMap<string, string> = EMPTY_LINK_DEFS
+): CheapInlineNode[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
   const nodes: CheapInlineNode[] = []
@@ -238,6 +304,15 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
       i = end + 2
       continue
     }
+    if (src.startsWith('__', i) && canOpenUnderscore(src, i)) {
+      const end = src.indexOf('__', i + 2)
+      if (end !== -1 && end > i + 2 && canCloseUnderscore(src, end + 1)) {
+        flush()
+        nodes.push({ type: 'strong', text: src.slice(i + 2, end), mark: '__' })
+        i = end + 2
+        continue
+      }
+    }
     if (src.startsWith('~~', i)) {
       const end = src.indexOf('~~', i + 2)
       if (end === -1) {
@@ -260,13 +335,36 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
       i = end + 1
       continue
     }
-    if (src[i] === '<' && /^https?:\/\//i.test(src.slice(i + 1, i + 9))) {
+    if (src[i] === '_' && canOpenUnderscore(src, i)) {
+      let from = i + 1
+      let matched = false
+      while (from < src.length) {
+        const end = src.indexOf('_', from)
+        if (end === -1) break
+        if (end > i + 1 && canCloseUnderscore(src, end)) {
+          flush()
+          nodes.push({ type: 'em', text: src.slice(i + 1, end), mark: '_' })
+          i = end + 1
+          matched = true
+          break
+        }
+        from = end + 1
+      }
+      if (matched) continue
+    }
+    if (src[i] === '<') {
       const end = src.indexOf('>', i + 1)
       if (end !== -1) {
-        const href = src.slice(i + 1, end).trim()
-        if (/^https?:\/\/\S+$/i.test(href)) {
+        const inner = src.slice(i + 1, end).trim()
+        if (/^https?:\/\/\S+$/i.test(inner)) {
           flush()
-          nodes.push({ type: 'link', text: href, href })
+          nodes.push({ type: 'link', text: inner, href: inner })
+          i = end + 1
+          continue
+        }
+        if (BARE_EMAIL_RE.test(inner) && inner === (BARE_EMAIL_RE.exec(inner)?.[0] ?? '')) {
+          flush()
+          nodes.push({ type: 'link', text: inner, href: `mailto:${inner}`, raw: `<${inner}>` })
           i = end + 1
           continue
         }
@@ -275,37 +373,70 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
     if (src.startsWith('![', i) || src[i] === '[') {
       const image = src.startsWith('![', i)
       const labelStart = i + (image ? 2 : 1)
-      const mid = src.indexOf('](', labelStart)
-      if (mid === -1) {
+      const labelEnd = src.indexOf(']', labelStart)
+      if (labelEnd === -1) {
         buf += src.slice(i)
         break
       }
-      const label = src.slice(labelStart, mid)
+      const label = src.slice(labelStart, labelEnd)
       if (!label.includes('\n')) {
-        const urlEnd = src.indexOf(')', mid + 2)
-        if (urlEnd === -1) {
-          buf += src.slice(i)
-          break
-        }
-        const href = src.slice(mid + 2, urlEnd).trim()
-        if (image && /^https?:\/\//i.test(href)) {
-          flush()
-          nodes.push({ type: 'image', alt: label, href })
-          i = urlEnd + 1
-          continue
-        }
-        if (!image && /^https?:\/\//i.test(href)) {
-          flush()
-          nodes.push({ type: 'link', text: label, href })
-          i = urlEnd + 1
-          continue
-        }
-        if (!image) {
-          const file = parseFileCitation(href)
-          if (file) {
+        if (src[labelEnd + 1] === '(') {
+          const urlEnd = src.indexOf(')', labelEnd + 2)
+          if (urlEnd === -1) {
+            buf += src.slice(i)
+            break
+          }
+          const href = src.slice(labelEnd + 2, urlEnd).trim()
+          if (image && /^https?:\/\//i.test(href)) {
             flush()
-            nodes.push({ type: 'file', text: label, path: file.path, line: file.line, column: file.column })
+            nodes.push({ type: 'image', alt: label, href })
             i = urlEnd + 1
+            continue
+          }
+          if (!image && /^https?:\/\//i.test(href)) {
+            flush()
+            nodes.push({ type: 'link', text: label, href })
+            i = urlEnd + 1
+            continue
+          }
+          if (!image) {
+            const file = parseFileCitation(href)
+            if (file) {
+              flush()
+              nodes.push({
+                type: 'file',
+                text: label,
+                path: file.path,
+                line: file.line,
+                column: file.column
+              })
+              i = urlEnd + 1
+              continue
+            }
+          }
+        } else if (!image && src[labelEnd + 1] === '[') {
+          const idEnd = src.indexOf(']', labelEnd + 2)
+          if (idEnd !== -1 && !src.slice(labelEnd + 2, idEnd).includes('\n')) {
+            const id = src.slice(labelEnd + 2, idEnd)
+            const href = defs.get(normalizeLinkLabel(id || label))
+            if (href) {
+              flush()
+              nodes.push({
+                type: 'link',
+                text: label,
+                href,
+                raw: `${src.slice(i, idEnd + 1)}`
+              })
+              i = idEnd + 1
+              continue
+            }
+          }
+        } else if (!image) {
+          const href = defs.get(normalizeLinkLabel(label))
+          if (href) {
+            flush()
+            nodes.push({ type: 'link', text: label, href, raw: src.slice(i, labelEnd + 1) })
+            i = labelEnd + 1
             continue
           }
         }
@@ -334,6 +465,18 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
         continue
       }
     }
+    if (!isWordChar(src[i - 1])) {
+      const emailMatch = BARE_EMAIL_RE.exec(src.slice(i))
+      if (emailMatch) {
+        const email = emailMatch[0].replace(/[.,;:!?)]+$/, '')
+        if (email.includes('.') && email.length > 5) {
+          flush()
+          nodes.push({ type: 'link', text: email, href: `mailto:${email}`, raw: email })
+          i += email.length
+          continue
+        }
+      }
+    }
     buf += src[i]
     i += 1
   }
@@ -343,10 +486,17 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
 
 function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'code') return `\`${node.text}\``
-  if (node.type === 'strong') return `**${node.text}**`
+  if (node.type === 'strong') {
+    const mark = node.mark ?? '**'
+    return `${mark}${node.text}${mark}`
+  }
   if (node.type === 'del') return `~~${node.text}~~`
-  if (node.type === 'em') return `*${node.text}*`
+  if (node.type === 'em') {
+    const mark = node.mark ?? '*'
+    return `${mark}${node.text}${mark}`
+  }
   if (node.type === 'link') {
+    if (node.raw) return node.raw
     return node.text === node.href ? node.href : `[${node.text}](${node.href})`
   }
   if (node.type === 'image') {
@@ -368,17 +518,18 @@ function cheapInlineSourceAll(nodes: CheapInlineNode[]): string {
 export function continueCheapInlineMarkdown(
   prevText: string,
   prevNodes: CheapInlineNode[],
-  text: string
+  text: string,
+  defs: ReadonlyMap<string, string> = EMPTY_LINK_DEFS
 ): CheapInlineNode[] {
   const nextText = normalizeStreamingText(text)
   const prevNorm = normalizeStreamingText(prevText)
   if (!nextText) return []
   if (nextText === prevNorm && prevNodes.length) return prevNodes
-  if (!prevNodes.length) return parseCheapInlineMarkdown(nextText)
+  if (!prevNodes.length) return parseCheapInlineMarkdown(nextText, defs)
   const stable = prevNodes.slice(0, -1)
   const prefix = cheapInlineSourceAll(stable)
-  if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText)
-  const rest = parseCheapInlineMarkdown(nextText.slice(prefix.length))
+  if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText, defs)
+  const rest = parseCheapInlineMarkdown(nextText.slice(prefix.length), defs)
   return stable.length ? [...stable, ...rest] : rest
 }
 
@@ -409,16 +560,22 @@ function parseListLine(line: string): { indent: number; ordered: boolean; text: 
 }
 
 /** 把更缩进的列表项挂到当前项的嵌套列表 */
-function appendNestedListItem(item: CheapListItem, ordered: boolean, indent: number, text: string): void {
+function appendNestedListItem(
+  item: CheapListItem,
+  ordered: boolean,
+  indent: number,
+  text: string,
+  defs: ReadonlyMap<string, string>
+): void {
   if (!item.nested) {
     item.nested = { ordered, indent, items: [] }
   } else if (indent > item.nested.indent && item.nested.items.length) {
-    appendNestedListItem(item.nested.items[item.nested.items.length - 1]!, ordered, indent, text)
+    appendNestedListItem(item.nested.items[item.nested.items.length - 1]!, ordered, indent, text, defs)
     return
   } else if (item.nested.ordered !== ordered && indent <= item.nested.indent) {
     item.nested = { ordered, indent, items: [] }
   }
-  item.nested.items.push({ nodes: parseCheapInlineMarkdown(text) })
+  item.nested.items.push({ nodes: parseCheapInlineMarkdown(text, defs) })
 }
 
 /** 列表项续行：缩进或 CommonMark lazy continuation，避免收束时从段落跳回 li */
@@ -450,10 +607,18 @@ function splitGfmTableCells(line: string): string[] {
   return text.split('|').map((cell) => cell.trim())
 }
 
+function isIndentCodeLine(line: string): boolean {
+  return /^(?:    |\t)/.test(line) && !parseListLine(line) && !parseLinkDefinitionLine(line)
+}
+
 /** 把散文尾拆成标题 / 列表 / 引用 / 段落，直播时用对应标签减少收束跳动 */
-export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
+export function parseCheapProseBlocks(
+  text: string,
+  defs?: ReadonlyMap<string, string>
+): CheapProseBlock[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
+  const linkDefs = defs ?? collectLinkDefinitions(src)
   const lines = src.split('\n')
   const blocks: CheapProseBlock[] = []
   let para: string[] = []
@@ -461,11 +626,19 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     null
   let quote: string[] = []
   let table: string[] | null = null
+  let pre: string[] | null = null
+
+  const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
 
   const flushPara = () => {
     if (!para.length) return
-    blocks.push({ type: 'p', nodes: parseCheapInlineMarkdown(para.join('\n')) })
+    blocks.push({ type: 'p', nodes: inline(para.join('\n')) })
     para = []
+  }
+  const flushPre = () => {
+    if (!pre) return
+    blocks.push({ type: 'pre', text: pre.map((line) => line.replace(/^(?:    |\t)/, '')).join('\n') })
+    pre = null
   }
   const flushList = () => {
     if (!list) return
@@ -478,7 +651,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
   }
   const flushQuote = () => {
     if (!quote.length) return
-    blocks.push({ type: 'quote', nodes: parseCheapInlineMarkdown(quote.join('\n')) })
+    blocks.push({ type: 'quote', nodes: inline(quote.join('\n')) })
     quote = []
   }
   const flushTable = () => {
@@ -495,27 +668,39 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     }
     for (const line of raw.slice(0, sepIdx - 1)) {
       if (!isGfmTableSep(line)) {
-        blocks.push({ type: 'p', nodes: parseCheapInlineMarkdown(line) })
+        blocks.push({ type: 'p', nodes: inline(line) })
       }
     }
-    const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) =>
-      parseCheapInlineMarkdown(cell)
-    )
+    const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) => inline(cell))
     const rows = raw
       .slice(sepIdx + 1)
       .filter((line) => !isGfmTableSep(line))
-      .map((line) => splitGfmTableCells(line).map((cell) => parseCheapInlineMarkdown(cell)))
+      .map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
     blocks.push({ type: 'table', header, rows })
   }
   const flushAll = () => {
     flushTable()
+    flushPre()
     flushPara()
     flushList()
     flushQuote()
   }
 
   for (const line of lines) {
+    if (parseLinkDefinitionLine(line)) {
+      flushAll()
+      continue
+    }
+    if (pre && !isIndentCodeLine(line)) {
+      flushPre()
+    }
+    if (!para.length && !list && !quote.length && !table && isIndentCodeLine(line)) {
+      if (!pre) pre = []
+      pre.push(line)
+      continue
+    }
     if (isGfmTableRow(line)) {
+      flushPre()
       flushPara()
       flushList()
       flushQuote()
@@ -532,12 +717,13 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     if (heading) {
       flushAll()
       const level = Math.min(6, heading[1].length) as 1 | 2 | 3 | 4 | 5 | 6
-      blocks.push({ type: 'heading', level, nodes: parseCheapInlineMarkdown(heading[2]) })
+      blocks.push({ type: 'heading', level, nodes: inline(heading[2]) })
       continue
     }
     const listLine = parseListLine(line)
     if (listLine) {
       flushTable()
+      flushPre()
       flushPara()
       flushQuote()
       if (list && listLine.indent > list.indent && list.items.length) {
@@ -545,7 +731,8 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
           list.items[list.items.length - 1]!,
           listLine.ordered,
           listLine.indent,
-          listLine.text
+          listLine.text,
+          linkDefs
         )
         list.afterBlank = false
         continue
@@ -554,7 +741,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
         flushList()
         list = { ordered: listLine.ordered, indent: listLine.indent, items: [], afterBlank: false }
       }
-      list.items.push({ nodes: parseCheapInlineMarkdown(listLine.text) })
+      list.items.push({ nodes: inline(listLine.text) })
       list.afterBlank = false
       continue
     }
@@ -573,6 +760,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     const q = QUOTE_RE.exec(line)
     if (q) {
       flushTable()
+      flushPre()
       flushPara()
       flushList()
       quote.push(q[1])
@@ -580,6 +768,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     }
     if (line.trim() === '') {
       flushTable()
+      flushPre()
       flushPara()
       flushQuote()
       if (list) list.afterBlank = true
@@ -587,6 +776,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
       continue
     }
     flushTable()
+    flushPre()
     flushList()
     flushQuote()
     para.push(line)
@@ -595,11 +785,24 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
   return blocks
 }
 
+function sameInlineShape(prev: CheapInlineNode[], next: CheapInlineNode[]): boolean {
+  if (prev.length !== next.length) return false
+  return prev.every((node, i) => {
+    const other = next[i]
+    if (!other || node.type !== other.type) return false
+    if (node.type === 'link' && other.type === 'link') return node.href === other.href
+    return true
+  })
+}
+
 function reuseInlineNodes(prev: CheapInlineNode[], next: CheapInlineNode[]): CheapInlineNode[] {
   const prevSrc = cheapInlineSourceAll(prev)
   const nextSrc = cheapInlineSourceAll(next)
-  if (prevSrc === nextSrc) return prev
-  if (nextSrc.startsWith(prevSrc)) return continueCheapInlineMarkdown(prevSrc, prev, nextSrc)
+  if (prevSrc === nextSrc) return sameInlineShape(prev, next) ? prev : next
+  if (nextSrc.startsWith(prevSrc)) {
+    const grown = continueCheapInlineMarkdown(prevSrc, prev, nextSrc)
+    return sameInlineShape(grown, next) ? grown : next
+  }
   return next
 }
 
@@ -639,6 +842,9 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
 function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): CheapProseBlock | null {
   if (prev.type !== next.type) return null
   if (prev.type === 'hr' && next.type === 'hr') return prev
+  if (prev.type === 'pre' && next.type === 'pre') {
+    return prev.text === next.text ? prev : next
+  }
   if (prev.type === 'heading' && next.type === 'heading') {
     if (prev.level !== next.level) return null
     const nodes = reuseInlineNodes(prev.nodes, next.nodes)
@@ -683,13 +889,14 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
 export function continueCheapProseBlocks(
   prevText: string,
   prevBlocks: CheapProseBlock[],
-  text: string
+  text: string,
+  defs?: ReadonlyMap<string, string>
 ): CheapProseBlock[] {
   const nextText = normalizeStreamingText(text)
   const prevNorm = normalizeStreamingText(prevText)
   if (!nextText) return []
   if (nextText === prevNorm && prevBlocks.length) return prevBlocks
-  const parsed = parseCheapProseBlocks(nextText)
+  const parsed = parseCheapProseBlocks(nextText, defs)
   if (!prevBlocks.length) return parsed
   const out: CheapProseBlock[] = []
   const shared = Math.min(prevBlocks.length, parsed.length)

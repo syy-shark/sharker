@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  collectLinkDefinitions,
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
+  isOnlyLinkDefinitions,
+  markdownBlockWithDefs,
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
   splitStreamingMarkdown
@@ -106,6 +109,50 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
       { type: 'text', text: '半截 ![未闭](https://x' }
     ])
+    expect(parseCheapInlineMarkdown('见 __粗__ 与 _斜_ ，但 foo_bar_baz 不动')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'strong', text: '粗', mark: '__' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'em', text: '斜', mark: '_' },
+      { type: 'text', text: ' ，但 foo_bar_baz 不动' }
+    ])
+    expect(parseCheapInlineMarkdown('见 [文档][d] 与 **bar**')).toEqual([
+      { type: 'text', text: '见 [文档][d] 与 ' },
+      { type: 'strong', text: 'bar' }
+    ])
+    const defs = new Map([['d', 'https://a.test/x']])
+    expect(parseCheapInlineMarkdown('见 [文档][d] 与 **bar**', defs)).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://a.test/x', raw: '[文档][d]' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'strong', text: 'bar' }
+    ])
+    expect(parseCheapInlineMarkdown('写给 <dev@a.test> 和 user@a.test 后')).toEqual([
+      { type: 'text', text: '写给 ' },
+      { type: 'link', text: 'dev@a.test', href: 'mailto:dev@a.test', raw: '<dev@a.test>' },
+      { type: 'text', text: ' 和 ' },
+      { type: 'link', text: 'user@a.test', href: 'mailto:user@a.test', raw: 'user@a.test' },
+      { type: 'text', text: ' 后' }
+    ])
+  })
+
+  it('hides reference definitions and paints indented code in the live tail', () => {
+    const withDef = parseCheapProseBlocks('见 [文档][d]。\n[d]: https://a.test/x')
+    expect(withDef.map((b) => b.type)).toEqual(['p'])
+    if (withDef[0]?.type === 'p') {
+      expect(withDef[0].nodes.some((n) => n.type === 'link' && n.href === 'https://a.test/x')).toBe(
+        true
+      )
+    }
+    const indented = parseCheapProseBlocks('    const x = 1')
+    expect(indented).toEqual([{ type: 'pre', text: 'const x = 1' }])
+    expect(collectLinkDefinitions('见 [文档][D]。\n[D]: https://a.test/x').get('d')).toBe(
+      'https://a.test/x'
+    )
+    expect(isOnlyLinkDefinitions('[d]: https://a.test/x\n')).toBe(true)
+    expect(markdownBlockWithDefs('见 [文档][d]。\n', '[d]: https://a.test/x')).toBe(
+      '见 [文档][d]。\n\n[d]: https://a.test/x'
+    )
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {
