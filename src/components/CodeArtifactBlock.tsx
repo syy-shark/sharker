@@ -137,7 +137,6 @@ export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
     >
       <div className="code-artifact-head">
         <span className="code-artifact-label">{label}</span>
-        <span className="code-artifact-detail">写入中</span>
         <span className="code-artifact-copy-slot" aria-hidden />
       </div>
       <div className="code-artifact-scroll">
