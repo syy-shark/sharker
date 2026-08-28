@@ -10,6 +10,7 @@ import {
   Archive,
   Folder,
   Inbox,
+  ListFilter,
   MoreHorizontal,
   Keyboard,
   Palette,
@@ -20,7 +21,13 @@ import {
   SquarePen
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
-import { splitLiveConversations, splitPinnedConversations } from '../../shared/conversation'
+import {
+  filterSidebarChats,
+  SIDEBAR_CHAT_FILTERS,
+  splitLiveConversations,
+  splitPinnedConversations,
+  type SidebarChatFilter
+} from '../../shared/conversation'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { AppPage, SettingsTab } from '../types/navigation'
@@ -62,7 +69,16 @@ interface Props {
   onPeekChange?: (peeking: boolean) => void
 }
 
+const SIDEBAR_CHAT_FILTER_KEY = 'sharker-sidebar-chat-filter'
 const SIDEBAR_WIDTH_KEY = 'sharker-sidebar-width'
+
+function readSidebarChatFilter(): SidebarChatFilter {
+  const raw = localStorage.getItem(SIDEBAR_CHAT_FILTER_KEY)
+  if (raw === 'live' || raw === 'unread' || raw === 'pinned' || raw === 'chronological') {
+    return raw
+  }
+  return 'chronological'
+}
 const SIDEBAR_DEFAULT_WIDTH = SIDEBAR_LAYOUT.default
 const SIDEBAR_MIN_WIDTH = SIDEBAR_LAYOUT.min
 const SIDEBAR_MAX_WIDTH = SIDEBAR_LAYOUT.max
@@ -236,14 +252,46 @@ export function Sidebar({
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, 60)
   }, [conversations])
+  const [chatFilter, setChatFilter] = useState<SidebarChatFilter>(readSidebarChatFilter)
+  const [chatFilterOpen, setChatFilterOpen] = useState(false)
+  const chatFilterRef = useRef<HTMLDivElement>(null)
+  const groupedChats = chatFilter === 'chronological'
+  const filteredConvs = useMemo(
+    () => filterSidebarChats(dialogConvs, chatFilter, liveIdSet),
+    [chatFilter, dialogConvs, liveIdSet]
+  )
   const { live: liveConvs, rest: restConvs } = useMemo(
-    () => splitLiveConversations(dialogConvs, liveIdSet),
-    [dialogConvs, liveIdSet]
+    () => splitLiveConversations(groupedChats ? dialogConvs : [], liveIdSet),
+    [dialogConvs, groupedChats, liveIdSet]
   )
   const { pinned: pinnedConvs, rest: recentConvs } = useMemo(
     () => splitPinnedConversations(restConvs),
     [restConvs]
   )
+
+  useEffect(() => {
+    if (!chatFilterOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (chatFilterRef.current && !chatFilterRef.current.contains(e.target as Node)) {
+        setChatFilterOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setChatFilterOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [chatFilterOpen])
+
+  const applyChatFilter = (next: SidebarChatFilter) => {
+    setChatFilter(next)
+    localStorage.setItem(SIDEBAR_CHAT_FILTER_KEY, next)
+    setChatFilterOpen(false)
+  }
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -705,14 +753,14 @@ export function Sidebar({
             )}
           </section>
 
-          {liveConvs.length > 0 ? (
+          {groupedChats && liveConvs.length > 0 ? (
             <section className="sidebar-section" aria-label="进行中">
               <h3 className="sidebar-section-label">进行中</h3>
               {liveConvs.map((c) => renderConvRow(c))}
             </section>
           ) : null}
 
-          {pinnedConvs.length > 0 ? (
+          {groupedChats && pinnedConvs.length > 0 ? (
             <section className="sidebar-section" aria-label="置顶">
               <h3 className="sidebar-section-label">置顶</h3>
               {pinnedConvs.map((c) => renderConvRow(c))}
@@ -720,11 +768,51 @@ export function Sidebar({
           ) : null}
 
           <section className="sidebar-section">
-            <h3 className="sidebar-section-label">对话</h3>
+            <div className="sidebar-section-head">
+              <h3 className="sidebar-section-label">
+                {groupedChats
+                  ? '对话'
+                  : `对话 · ${SIDEBAR_CHAT_FILTERS.find((f) => f.id === chatFilter)?.label ?? ''}`}
+              </h3>
+              <div className="sidebar-chat-filter" ref={chatFilterRef}>
+                <button
+                  type="button"
+                  className={`sidebar-section-action${chatFilterOpen || !groupedChats ? ' sidebar-section-action--active' : ''}`}
+                  title="筛选对话（对标 Codex：找不到时选「按时间」）"
+                  aria-label="筛选对话"
+                  aria-expanded={chatFilterOpen}
+                  onClick={() => setChatFilterOpen((open) => !open)}
+                >
+                  <ListFilter size={14} aria-hidden />
+                </button>
+                {chatFilterOpen ? (
+                  <div className="sidebar-project-menu sidebar-chat-filter-menu popover-enter" role="menu">
+                    {SIDEBAR_CHAT_FILTERS.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={chatFilter === item.id}
+                        className={chatFilter === item.id ? 'is-active' : undefined}
+                        onClick={() => applyChatFilter(item.id)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
             {dialogConvs.length === 0 ? (
               <p className="sidebar-section-empty">暂无对话</p>
-            ) : recentConvs.length === 0 ? null : (
-              recentConvs.map((c) => renderConvRow(c))
+            ) : groupedChats ? (
+              recentConvs.length === 0 ? null : (
+                recentConvs.map((c) => renderConvRow(c))
+              )
+            ) : filteredConvs.length === 0 ? (
+              <p className="sidebar-section-empty">没有匹配的对话。选「按时间」可看到全部。</p>
+            ) : (
+              filteredConvs.map((c) => renderConvRow(c))
             )}
           </section>
         </div>

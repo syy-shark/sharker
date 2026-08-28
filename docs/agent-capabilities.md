@@ -30,10 +30,10 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/review` | 打开审查并在**新线程**只读评审（对标 detached）；`/review here` 在当前线程；`/review branch` 相对基线 |
 | `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
-| `/skill` | 打开 `$` Skill 选择器；已安装 Skill 也会出现在 `/` 列表（对标 Codex），选中写入 `$name` |
+| `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 | `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
-| `/status` | 显示模型、权限、线程模式、分支与上下文占用 |
+| `/status` | 显示对话 ID、模型、权限、线程模式、分支与上下文占用 |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；输入框上方进度行可暂停 / 继续 / 编辑 / 清除（对标 Codex Goal） |
 | `/plan-mode` | `/plan` 的桌面端别名 |
@@ -71,7 +71,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 或 Ctrl+O 复制上一条助手回复，`/delete` 删除当前对话，`/theme` 打开外观，`/debug-config` 打印本机配置（不含 Key），直播中 Esc 停止当前回合，`/fast` 降思考档位，`/skills` 列出已安装 Skill，`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；`/rename [标题]` 或 ⌘⌥R / 侧栏双击写入 `customTitle`；`/pin` 或 ⌘⌥P 置顶；`/unread` 或 ⌘⇧U 标未读（打开对话或 ⇧Esc 清除）；`/usage daily|weekly|cumulative` 看本机 Token 用量；⌘⌥O 独立新对话（弹出窗、不拷目标、不切走当前线程）；⌘⌥⇧O 打开项目选择器；⌘⇧C 复制工作目录（内置浏览器聚焦时仍复制网址）；⌘⌥C 复制会话 ID；⌘⌥⇧C 复制对话路径（隔离 worktree 优先，否则工作区 cwd）。查找栏打开时 ⌘G / ⌘⇧G 跳到下一条/上一条命中。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。`/task` 在全局工作区开无项目新对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督；对话旁可按时间 / 进行中 / 未读 / 置顶筛选（找不到时选「按时间」）。空输入连按 Esc 回编上一条用户气泡并分叉。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 或 Ctrl+O 复制上一条助手回复，`/delete` 删除当前对话，`/theme` 打开外观，`/debug-config` 打印本机配置（不含 Key），直播中 Esc 停止当前回合，`/fast` 降思考档位，`/skills` 打开 Skill 选择器（带过滤参数则列出匹配项），`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；`/rename [标题]` 或 ⌘⌥R / 侧栏双击写入 `customTitle`；`/pin` 或 ⌘⌥P 置顶；`/unread` 或 ⌘⇧U 标未读（打开对话或 ⇧Esc 清除）；`/usage daily|weekly|cumulative` 看本机 Token 用量；⌘⌥O 独立新对话（弹出窗、不拷目标、不切走当前线程）；⌘⌥⇧O 打开项目选择器；⌘⇧C 复制工作目录（内置浏览器聚焦时仍复制网址）；⌘⌥C 复制会话 ID；⌘⌥⇧C 复制对话路径（隔离 worktree 优先，否则工作区 cwd）。查找栏打开时 ⌘G / ⌘⇧G 跳到下一条/上一条命中。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。`/task` 在全局工作区开无项目新对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
 
 ### 线程内查找
 

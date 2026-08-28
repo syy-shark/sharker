@@ -36,7 +36,7 @@ export function restorePreviousComposerPrompt(options: {
   return lastUserPrompt(options.messages)
 }
 
-/** 最近一条非空用户提示（Esc+Esc 回编） */
+/** 最近一条非空用户提示（↑ 恢复 / Ctrl+R） */
 export function lastUserPrompt(messages: Array<{ role: string; content: string }>): string | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const row = messages[i]
@@ -45,6 +45,35 @@ export function lastUserPrompt(messages: Array<{ role: string; content: string }
     if (text.trim()) return text
   }
   return null
+}
+
+/** 最近一条非空用户消息 id（Esc+Esc 就地回编并分叉） */
+export function lastUserMessageId(
+  messages: Array<{ id?: string; role: string; content: string }>
+): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const row = messages[i]
+    if (row.role !== 'user' || !String(row.content || '').trim()) continue
+    const id = String(row.id || '').trim()
+    if (id) return id
+  }
+  return null
+}
+
+/**
+ * 空输入框连按 Esc：回编上一条用户气泡并分叉（对标 Codex Esc+Esc）。
+ * 忙时 / 菜单开着 / 输入框有字都不触发；↑ 才负责恢复草稿。
+ */
+export function shouldEditLastUserOnEscape(options: {
+  input: string
+  loading: boolean
+  menuOpen?: boolean
+  prevEscAt: number
+  now: number
+}): boolean {
+  if (options.loading || options.menuOpen) return false
+  if (options.input.length > 0) return false
+  return isDoubleEscape(options.prevEscAt, options.now)
 }
 
 /** 倒序去重的用户提示，供 Ctrl+R 反查 */

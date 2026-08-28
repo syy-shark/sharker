@@ -5,6 +5,8 @@
 
 /** `/status` 展示所需的当前线程快照 */
 export interface ThreadStatusInfo {
+  /** 当前对话 id（对标 Codex /status chat ID） */
+  conversationId?: string
   modelLabel: string
   permissionMode: string
   networkMode: string
@@ -32,6 +34,7 @@ export function formatThreadStatus(info: ThreadStatusInfo): string {
   return [
     '**会话状态**',
     '',
+    line('对话 ID', info.conversationId),
     line('模型', info.modelLabel),
     line('权限', info.permissionMode),
     line('网络', info.networkMode),

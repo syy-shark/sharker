@@ -4,6 +4,7 @@ import { formatThreadStatus } from './thread-status'
 describe('thread status', () => {
   it('lists local thread fields and hides worktree path', () => {
     const text = formatThreadStatus({
+      conversationId: 'conv-live',
       modelLabel: 'DeepSeek / deepseek-chat',
       permissionMode: 'sandbox',
       networkMode: 'open',
@@ -19,6 +20,7 @@ describe('thread status', () => {
     expect(text).toContain('DeepSeek / deepseek-chat')
     expect(text).toContain('修好滚动')
     expect(text).toContain('1200 / 128000')
+    expect(text).toContain('conv-live')
     expect(text).not.toContain('/hidden')
   })
 

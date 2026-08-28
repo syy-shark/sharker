@@ -3,9 +3,11 @@ import {
   collectUserPrompts,
   filterPromptHistory,
   isDoubleEscape,
+  lastUserMessageId,
   lastUserPrompt,
   resolveComposerSubmit,
-  restorePreviousComposerPrompt
+  restorePreviousComposerPrompt,
+  shouldEditLastUserOnEscape
 } from './composer-submit'
 
 describe('composer submit', () => {
@@ -50,5 +52,39 @@ describe('composer submit', () => {
     expect(filterPromptHistory(collectUserPrompts(messages), '滚动')).toEqual(['先看滚动'])
     expect(isDoubleEscape(1000, 1300)).toBe(true)
     expect(isDoubleEscape(1000, 1600)).toBe(false)
+  })
+
+  it('uses Esc Esc on an empty composer to edit the last user turn', () => {
+    const messages = [
+      { id: 'u1', role: 'user', content: '先看滚动' },
+      { id: 'a1', role: 'assistant', content: '好' },
+      { id: 'u2', role: 'user', content: '再修卡顿' }
+    ]
+    expect(lastUserMessageId(messages)).toBe('u2')
+    expect(lastUserMessageId([])).toBeNull()
+    expect(
+      shouldEditLastUserOnEscape({
+        input: '',
+        loading: false,
+        prevEscAt: 1000,
+        now: 1300
+      })
+    ).toBe(true)
+    expect(
+      shouldEditLastUserOnEscape({
+        input: '草稿',
+        loading: false,
+        prevEscAt: 1000,
+        now: 1300
+      })
+    ).toBe(false)
+    expect(
+      shouldEditLastUserOnEscape({
+        input: '',
+        loading: true,
+        prevEscAt: 1000,
+        now: 1300
+      })
+    ).toBe(false)
   })
 })

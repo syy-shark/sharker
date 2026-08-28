@@ -163,3 +163,21 @@ export function shouldSynthesizePlanning(options: {
   if (last.includes('规划下一步')) return false
   return true
 }
+
+/**
+ * 贴底附近的历史行保持真实高度。
+ * 不用 `:nth-last-child`：排队气泡与 `.messages-end` 会把旧消息挤进
+ * `content-visibility: auto`，直播增高时滚动会跳。
+ */
+export const NEAR_LIVE_ROW_WINDOW = 8
+
+/** 该历史行是否落在贴底窗口内（0-based index） */
+export function isNearLiveMessageRow(
+  index: number,
+  total: number,
+  window = NEAR_LIVE_ROW_WINDOW
+): boolean {
+  if (total <= 0 || window <= 0) return false
+  if (index < 0 || index >= total) return false
+  return index >= Math.max(0, total - window)
+}

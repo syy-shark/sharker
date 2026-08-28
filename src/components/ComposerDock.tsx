@@ -30,10 +30,10 @@ import {
 import {
   collectUserPrompts,
   filterPromptHistory,
-  isDoubleEscape,
   lastUserPrompt,
   resolveComposerSubmit,
-  restorePreviousComposerPrompt
+  restorePreviousComposerPrompt,
+  shouldEditLastUserOnEscape
 } from '../../shared/composer-submit'
 import {
   decideClipboardPaste,
@@ -152,6 +152,8 @@ export interface ComposerDockProps {
   onSubmitted?: () => void
   /** 深链 `prompt=`：只在 nonce 变化时写入，不跟直播 token 重绘 */
   composerSeed?: { nonce: number; text: string } | null
+  /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
+  onEditLastUser?: () => void
 }
 
 export const ComposerDock = memo(
@@ -188,7 +190,8 @@ export const ComposerDock = memo(
       onQueueHeldChange,
       speechHint = '',
       onSubmitted,
-      composerSeed = null
+      composerSeed = null,
+      onEditLastUser
     },
     ref
   ) {
@@ -1503,9 +1506,21 @@ export const ComposerDock = memo(
             }
             if (e.key === 'Escape' && !menuOpen && !loading) {
               const now = Date.now()
-              if (isDoubleEscape(lastEscAtRef.current, now)) {
+              if (
+                shouldEditLastUserOnEscape({
+                  input,
+                  loading,
+                  menuOpen,
+                  prevEscAt: lastEscAtRef.current,
+                  now
+                })
+              ) {
                 e.preventDefault()
                 lastEscAtRef.current = 0
+                if (onEditLastUser) {
+                  onEditLastUser()
+                  return
+                }
                 const prev = lastUserPrompt(messages)
                 if (prev) pickPromptHistory(prev)
                 return

@@ -1253,16 +1253,20 @@ html.theme-dark .chat-scroll-bottom {
 .message-row {
   margin-bottom: 22px;
 }
-/* 远离底部的旧消息才跳过布局，贴底直播附近保持真实高度以免滚动跳动 */
-.message-row:not(.message-row--live):not(:nth-last-child(-n+5)):not(.is-find-hit):not(.is-find-current) {
+/* 远离底部的旧消息才跳过布局；贴底附近用 class，不受排队行 / .messages-end 影响 */
+.message-row:not(.message-row--live):not(.message-row--near-live):not(.message-row--queued):not(.is-find-hit):not(.is-find-current) {
   content-visibility: auto;
   contain-intrinsic-size: auto 112px;
 }
-.chat--active .message-row:not(.message-row--live):not(:nth-last-child(-n+8)):not(.is-find-hit):not(.is-find-current) {
+.chat--active .message-row:not(.message-row--live):not(.message-row--near-live):not(.message-row--queued):not(.is-find-hit):not(.is-find-current) {
   content-visibility: auto;
   contain-intrinsic-size: auto 160px;
 }
-.chat--active .message-row:not(.message-row--live):nth-last-child(-n+8) {
+.message-row--near-live,
+.message-row--live,
+.message-row--queued,
+.message-row.is-find-hit,
+.message-row.is-find-current {
   content-visibility: visible;
   contain-intrinsic-size: auto;
 }

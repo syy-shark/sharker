@@ -333,6 +333,7 @@ html.window-rounded .sidebar {
   margin-bottom: 4px;
 }
 
+.sidebar-section-head .sidebar-section-label,
 .sidebar-section-label {
   margin: 0 0 4px;
   padding: 0 12px;
@@ -343,6 +344,9 @@ html.window-rounded .sidebar {
 }
 
 .sidebar-section-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   margin-right: 8px;
@@ -357,6 +361,23 @@ html.window-rounded .sidebar {
     color var(--motion-duration-fast) var(--motion-ease-soft),
     background-color var(--motion-duration-fast) var(--motion-ease-soft),
     transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.sidebar-section-action--active {
+  color: var(--text);
+  background: var(--sidebar-surface-hover, var(--glass-fill-nested));
+}
+
+.sidebar-chat-filter {
+  position: relative;
+}
+
+.sidebar-chat-filter-menu {
+  right: 8px;
+}
+
+.sidebar-chat-filter-menu button.is-active {
+  background: var(--glass-fill-raised);
 }
 
 .sidebar-section-action:active {

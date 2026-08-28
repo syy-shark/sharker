@@ -7,6 +7,7 @@ import {
   chatSearchMatchHint,
   conversationPreview,
   filterChatList,
+  filterSidebarChats,
   forkConversationTitle,
   formatPinNote,
   formatRenameNote,
@@ -108,5 +109,21 @@ describe('conversation search', () => {
       live: [{ id: 'b' }, { id: 'c' }],
       rest: [{ id: 'a' }]
     })
+  })
+
+  it('filters sidebar chats like Codex chronological / state filters', () => {
+    const items = [
+      { id: 'a', unread: true },
+      { id: 'b', pinned: true },
+      { id: 'c' }
+    ]
+    expect(filterSidebarChats(items, 'chronological', ['c']).map((c) => c.id)).toEqual([
+      'a',
+      'b',
+      'c'
+    ])
+    expect(filterSidebarChats(items, 'live', ['c']).map((c) => c.id)).toEqual(['c'])
+    expect(filterSidebarChats(items, 'unread', []).map((c) => c.id)).toEqual(['a'])
+    expect(filterSidebarChats(items, 'pinned', []).map((c) => c.id)).toEqual(['b'])
   })
 })

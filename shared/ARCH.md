@@ -18,7 +18,7 @@
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / `sharker://` 深链与应用菜单） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 下一条进行中、侧栏 Chronological / 进行中 / 未读 / 置顶筛选、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
@@ -31,7 +31,7 @@
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案（渲染进程可 import） |
 | `token-usage-format.test.ts` | 用量窗口与汇总 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
-| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用 |
+| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child） |
 | `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部，避免每 token 重解析全文 |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
@@ -93,7 +93,7 @@
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
 | `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字 |
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
-| `thread-status.ts` | `/status` Markdown 快照 |
+| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文） |
 | `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径 |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
@@ -101,8 +101,8 @@
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队（⌃Tab / ⌘Tab 不排队）；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；Esc+Esc 回编 |
-| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队（⌃Tab / ⌘Tab 不排队）；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条、空输入 Esc+Esc 回编 |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知 / 未读 / Dock 徽标（正在看且窗口在前台不打扰） |

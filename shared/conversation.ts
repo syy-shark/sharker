@@ -239,6 +239,31 @@ export function formatUnreadNote(): string {
   return '已将此对话标为未读。打开后会自动清未读。'
 }
 
+/** 侧栏对话筛选（对标 Codex：Chats 旁过滤器，Chronological 显示全部） */
+export type SidebarChatFilter = 'chronological' | 'live' | 'unread' | 'pinned'
+
+export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string }> = [
+  { id: 'chronological', label: '按时间' },
+  { id: 'live', label: '进行中' },
+  { id: 'unread', label: '未读' },
+  { id: 'pinned', label: '置顶' }
+]
+
+/** 按侧栏过滤器收对话；`chronological` 原样返回 */
+export function filterSidebarChats<T extends { id: string; unread?: boolean; pinned?: boolean }>(
+  items: T[],
+  filter: SidebarChatFilter,
+  liveIds: Iterable<string>
+): T[] {
+  if (filter === 'chronological') return items
+  if (filter === 'live') {
+    const liveSet = liveIds instanceof Set ? liveIds : new Set(liveIds)
+    return items.filter((item) => liveSet.has(item.id))
+  }
+  if (filter === 'unread') return items.filter((item) => item.unread)
+  return items.filter((item) => item.pinned)
+}
+
 /** 侧栏：置顶组与其余（进行中拆分之后再用） */
 export function splitPinnedConversations<T extends { pinned?: boolean }>(
   items: T[]

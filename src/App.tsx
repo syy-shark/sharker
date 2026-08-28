@@ -3817,6 +3817,7 @@ export default function App() {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
             content: formatThreadStatus({
+              conversationId: activeConversationIdRef.current || undefined,
               modelLabel: provider ? `${provider.name} / ${model}` : model,
               permissionMode: settingsNow.permissionMode,
               networkMode: settingsNow.networkMode ?? 'open',
@@ -4192,6 +4193,11 @@ export default function App() {
           break
         }
         case 'show_skills': {
+          if (!args.trim()) {
+            setPage('chat')
+            setComposerIntent('skill')
+            break
+          }
           const cwd = getActiveWorkspacePath(settingsRef.current) || ''
           const items = window.sharker.listSkills ? await window.sharker.listSkills(cwd) : []
           const note = {

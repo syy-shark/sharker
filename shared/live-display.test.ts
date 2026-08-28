@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
   isInlineDemoPaintable,
+  isNearLiveMessageRow,
   liveThoughtBody,
   liveThinkingText,
   rollingThinkPreview,
@@ -119,5 +120,16 @@ describe('inline demo paintability', () => {
         '<style>body{color:#fff}</style><div class="scene"><h1>广义相对论</h1></div>'
       )
     ).toBe(true)
+  })
+})
+
+describe('near-live message rows', () => {
+  it('keeps only the last window of history rows tall', () => {
+    expect(isNearLiveMessageRow(11, 20, 8)).toBe(false)
+    expect(isNearLiveMessageRow(12, 20, 8)).toBe(true)
+    expect(isNearLiveMessageRow(19, 20, 8)).toBe(true)
+    expect(isNearLiveMessageRow(0, 3, 8)).toBe(true)
+    expect(isNearLiveMessageRow(-1, 3, 8)).toBe(false)
+    expect(isNearLiveMessageRow(0, 0, 8)).toBe(false)
   })
 })

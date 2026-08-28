@@ -18,6 +18,8 @@ import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
 import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
 import type { ChatSearchItem } from '../../shared/conversation'
+import { lastUserMessageId } from '../../shared/composer-submit'
+import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread } from '../../shared/thread-search'
@@ -78,6 +80,9 @@ const UserMessageRow = memo(function UserMessageRow({
   attachments,
   findHit,
   findCurrent,
+  nearLive,
+  editRequested,
+  onEditRequestHandled,
   onEdit
 }: {
   id: string
@@ -85,16 +90,32 @@ const UserMessageRow = memo(function UserMessageRow({
   attachments?: ChatAttachment[]
   findHit: boolean
   findCurrent: boolean
+  nearLive?: boolean
+  editRequested?: boolean
+  onEditRequestHandled?: () => void
   onEdit?: (text: string) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(content)
+  const editInputRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!editRequested) return
+    setDraft(content)
+    setEditing(true)
+    onEditRequestHandled?.()
+    requestAnimationFrame(() => {
+      const el = editInputRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    })
+  }, [content, editRequested, onEditRequestHandled])
   return (
     <div
       id={`msg-${id}`}
-      className={`message-row message-row--user${findHit ? ' is-find-hit' : ''}${
-        findCurrent ? ' is-find-current' : ''
-      }`}
+      className={`message-row message-row--user${nearLive ? ' message-row--near-live' : ''}${
+        findHit ? ' is-find-hit' : ''
+      }${findCurrent ? ' is-find-current' : ''}`}
     >
       <div className="message-user-wrap">
         <div className="message-bubble message-bubble--user">
@@ -102,6 +123,7 @@ const UserMessageRow = memo(function UserMessageRow({
           {editing ? (
             <div className="message-user-edit">
               <textarea
+                ref={editInputRef}
                 className="message-user-edit-input"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -280,6 +302,11 @@ export function ChatView({
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
+  const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setEditUserMessageId(null)
+  }, [sessionKey])
   const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
@@ -617,10 +644,24 @@ export function ChatView({
     scrollToBottom('auto')
   }, [messages, isEmpty, loading, scrollToBottom])
 
+  const handleEditLastUser = useCallback(() => {
+    const id = lastUserMessageId(messages)
+    if (!id) return
+    setEditUserMessageId(id)
+    requestAnimationFrame(() => {
+      document.getElementById(`msg-${id}`)?.scrollIntoView({ block: 'center' })
+    })
+  }, [messages])
+
+  const handleEditRequestHandled = useCallback(() => {
+    setEditUserMessageId(null)
+  }, [])
+
   const historicalRows = useMemo(
     () =>
-      messages.map((m, index) =>
-        m.role === 'user' ? (
+      messages.map((m, index) => {
+        const nearLive = isNearLiveMessageRow(index, messages.length)
+        return m.role === 'user' ? (
           <UserMessageRow
             key={m.id}
             id={m.id}
@@ -628,6 +669,9 @@ export function ChatView({
             attachments={m.attachments}
             findHit={findHits.some((h) => h.messageId === m.id)}
             findCurrent={findHits[findHit]?.messageId === m.id}
+            nearLive={nearLive}
+            editRequested={editUserMessageId === m.id}
+            onEditRequestHandled={handleEditRequestHandled}
             onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
           />
         ) : (
@@ -635,8 +679,10 @@ export function ChatView({
             key={m.id}
             id={`msg-${m.id}`}
             className={`message-row message-row--assistant${
-              findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
-            }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
+              nearLive ? ' message-row--near-live' : ''
+            }${findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''}${
+              findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''
+            }`}
           >
             <AssistantMessage
               messageId={m.id}
@@ -652,8 +698,18 @@ export function ChatView({
             />
           </div>
         )
-      ),
-    [findHit, findHits, messages, modelLabel, onOpenSubAgent, onRetry, onEditUserMessage]
+      }),
+    [
+      editUserMessageId,
+      findHit,
+      findHits,
+      handleEditRequestHandled,
+      messages,
+      modelLabel,
+      onOpenSubAgent,
+      onRetry,
+      onEditUserMessage
+    ]
   )
 
   const showLiveAssistant = loading
@@ -855,6 +911,7 @@ export function ChatView({
             speechHint={speechHint}
             onSubmitted={handleComposerSubmitted}
             composerSeed={composerSeed}
+            onEditLastUser={handleEditLastUser}
           />
         </div>
       </div>
