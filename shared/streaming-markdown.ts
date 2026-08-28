@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码 / 引用围栏与懒续行。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -826,6 +826,11 @@ export function continueCheapInlineMarkdown(
 }
 
 const HEADING_RE = /^ {0,3}(#{1,6})\s+(.*)$/
+
+/** CommonMark：标题行尾的 ` #` 闭合标记不进入正文 */
+function stripAtxClosingHashes(text: string): string {
+  return text.replace(/[ \t]+#+[ \t]*$/, '')
+}
 const LIST_LINE_RE = /^(\s*)(?:[-+]|\*|\d+\.)\s+(.*)$/
 
 /** 行首空白：tab 按 2 空格算，用来判断列表嵌套 */
@@ -894,7 +899,8 @@ function appendListContinuation(
 }
 
 const QUOTE_RE = /^ {0,3}>\s?(.*)$/
-const HR_RE = /^ {0,3}(?:[-*_]){3,}\s*$/
+/** CommonMark thematic break：`---` / `* * *` / `- - -`（标记之间可空） */
+const HR_RE = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})[ \t]*$/
 const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/
 const TABLE_ROW_RE = /^\s*\|.+\|\s*$/
 
@@ -904,6 +910,13 @@ function isGfmTableSep(line: string): boolean {
 
 function isGfmTableRow(line: string): boolean {
   return TABLE_ROW_RE.test(line) || isGfmTableSep(line)
+}
+
+/** GFM 允许不写两侧 `|`：`Name | Value` / `--- | ---` */
+function looksLikeGfmTableCells(line: string): boolean {
+  if (isGfmTableSep(line)) return true
+  if (!line.includes('|')) return false
+  return splitGfmTableCells(line).length >= 2
 }
 
 function splitGfmTableCells(line: string): string[] {
@@ -1072,7 +1085,18 @@ export function parseCheapProseBlocks(
       pre.push(line)
       continue
     }
-    if (isGfmTableRow(line)) {
+    if (isGfmTableSep(line) && !table && para.length === 1 && looksLikeGfmTableCells(para[0]!)) {
+      flushPre()
+      flushList()
+      flushQuote()
+      table = [para[0]!, line]
+      para = []
+      continue
+    }
+    if (
+      (isGfmTableRow(line) && !(isGfmTableSep(line) && !table)) ||
+      (table && looksLikeGfmTableCells(line))
+    ) {
       flushPre()
       flushPara()
       flushList()
@@ -1117,7 +1141,7 @@ export function parseCheapProseBlocks(
     if (heading) {
       flushAll()
       const level = Math.min(6, heading[1].length) as 1 | 2 | 3 | 4 | 5 | 6
-      blocks.push({ type: 'heading', level, nodes: inline(heading[2]) })
+      blocks.push({ type: 'heading', level, nodes: inline(stripAtxClosingHashes(heading[2] ?? '')) })
       continue
     }
     const listLine = parseListLine(line)

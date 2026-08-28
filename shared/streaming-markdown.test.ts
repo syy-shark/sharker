@@ -265,6 +265,14 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapProseBlocks('> foo\n\nbar').map((b) => b.type)).toEqual(['quote', 'p'])
     expect(parseCheapProseBlocks('   > 缩进引用').map((b) => b.type)).toEqual(['quote'])
     expect(parseCheapProseBlocks('   # 标题')[0]).toMatchObject({ type: 'heading', level: 1 })
+    expect(parseCheapProseBlocks('### 标题 ##')[0]).toMatchObject({ type: 'heading', level: 3 })
+    if (parseCheapProseBlocks('### 标题 ##')[0]?.type === 'heading') {
+      expect(parseCheapProseBlocks('### 标题 ##')[0].nodes).toEqual([{ type: 'text', text: '标题' }])
+    }
+    expect(parseCheapProseBlocks('# 标题#')[0]).toMatchObject({
+      type: 'heading',
+      nodes: [{ type: 'text', text: '标题#' }]
+    })
     expect(parseCheapProseBlocks('Title\n   ---').map((b) => b.type)).toEqual(['heading'])
     const quoteTable = parseCheapProseBlocks('> | A | B |\n> | --- | --- |\n> | 1 | 2 |')
     expect(quoteTable.map((b) => b.type)).toEqual(['quote'])
@@ -285,6 +293,23 @@ describe('splitStreamingMarkdown', () => {
     const aligned = parseCheapProseBlocks('| A | B |\n| ---: | :---: |\n| 1 | 2 |')
     if (aligned[0]?.type === 'table') {
       expect(aligned[0].align).toEqual(['right', 'center'])
+    }
+    const pipeless = parseCheapProseBlocks('Name | Value\n--- | ---\nfoo | bar')
+    expect(pipeless.map((b) => b.type)).toEqual(['table'])
+    if (pipeless[0]?.type === 'table') {
+      expect(pipeless[0].header).toHaveLength(2)
+      expect(pipeless[0].rows).toHaveLength(1)
+    }
+    expect(parseCheapProseBlocks('see a | b in logs').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('Overview\n--- | ---\na | b').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('* * *').map((b) => b.type)).toEqual(['hr'])
+    expect(parseCheapProseBlocks('- - -').map((b) => b.type)).toEqual(['hr'])
+    const quotedPipeless = parseCheapProseBlocks(
+      '> Name | Value\n> --- | ---\n> foo | bar'
+    )
+    expect(quotedPipeless.map((b) => b.type)).toEqual(['quote'])
+    if (quotedPipeless[0]?.type === 'quote') {
+      expect(quotedPipeless[0].blocks.map((b) => b.type)).toEqual(['table'])
     }
   })
 
