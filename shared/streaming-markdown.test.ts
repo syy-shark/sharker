@@ -145,6 +145,27 @@ describe('splitStreamingMarkdown', () => {
       { type: 'br' },
       { type: 'text', text: '下' }
     ])
+    expect(parseCheapInlineMarkdown('见 ***粗斜*** 与 **粗**')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'em', text: '粗斜', mark: '***', inner: 'strong' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'strong', text: '粗' }
+    ])
+    expect(parseCheapInlineMarkdown('见 ___粗斜___ 尾')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'em', text: '粗斜', mark: '___', inner: 'strong' },
+      { type: 'text', text: ' 尾' }
+    ])
+    expect(parseCheapInlineMarkdown('见 **_粗斜_** 尾')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'strong', text: '粗斜', inner: 'em' },
+      { type: 'text', text: ' 尾' }
+    ])
+    expect(parseCheapInlineMarkdown('见 *__粗斜__* 尾')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'em', text: '粗斜', inner: 'strong' },
+      { type: 'text', text: ' 尾' }
+    ])
   })
 
   it('hides reference definitions and paints indented code in the live tail', () => {

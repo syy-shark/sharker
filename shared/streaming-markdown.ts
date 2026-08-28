@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -168,9 +168,9 @@ export function extractOpenFenceBody(tail: string): string {
 export type CheapInlineNode =
   | { type: 'text'; text: string }
   | { type: 'code'; text: string }
-  | { type: 'strong'; text: string; mark?: '**' | '__' }
+  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' }
   | { type: 'del'; text: string }
-  | { type: 'em'; text: string; mark?: '*' | '_' }
+  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' }
   | { type: 'link'; text: string; href: string; raw?: string }
   | { type: 'image'; alt: string; href: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
@@ -373,6 +373,43 @@ export function parseCheapInlineMarkdown(
       else nodes.push({ type: 'code', text: code })
       i = end + 1
       continue
+    }
+    // `***foo***` / `___foo___` / `**_foo_**` / `*__foo__*` 对标 remark em+strong，避免收束跳标签
+    if (src.startsWith('***', i)) {
+      const end = src.indexOf('***', i + 3)
+      if (end !== -1 && end > i + 3) {
+        flush()
+        nodes.push({ type: 'em', text: src.slice(i + 3, end), mark: '***', inner: 'strong' })
+        i = end + 3
+        continue
+      }
+    }
+    if (src.startsWith('___', i) && canOpenUnderscore(src, i)) {
+      const end = src.indexOf('___', i + 3)
+      if (end !== -1 && end > i + 3 && canCloseUnderscore(src, end + 2)) {
+        flush()
+        nodes.push({ type: 'em', text: src.slice(i + 3, end), mark: '___', inner: 'strong' })
+        i = end + 3
+        continue
+      }
+    }
+    if (src.startsWith('**_', i)) {
+      const end = src.indexOf('_**', i + 3)
+      if (end !== -1 && end > i + 3) {
+        flush()
+        nodes.push({ type: 'strong', text: src.slice(i + 3, end), inner: 'em' })
+        i = end + 3
+        continue
+      }
+    }
+    if (src.startsWith('*__', i)) {
+      const end = src.indexOf('__*', i + 3)
+      if (end !== -1 && end > i + 3) {
+        flush()
+        nodes.push({ type: 'em', text: src.slice(i + 3, end), inner: 'strong' })
+        i = end + 3
+        continue
+      }
     }
     if (src.startsWith('**', i)) {
       const end = src.indexOf('**', i + 2)
@@ -612,11 +649,17 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'fn') return `[^${node.id}]`
   if (node.type === 'code') return `\`${node.text}\``
   if (node.type === 'strong') {
+    if (node.inner === 'em') return `**_${node.text}_**`
     const mark = node.mark ?? '**'
     return `${mark}${node.text}${mark}`
   }
   if (node.type === 'del') return `~~${node.text}~~`
   if (node.type === 'em') {
+    if (node.inner === 'strong') {
+      if (node.mark === '___') return `___${node.text}___`
+      if (node.mark === '***') return `***${node.text}***`
+      return `*__${node.text}__*`
+    }
     const mark = node.mark ?? '*'
     return `${mark}${node.text}${mark}`
   }
