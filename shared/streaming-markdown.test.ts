@@ -521,6 +521,37 @@ describe('splitStreamingMarkdown', () => {
       expect(parseCheapProseBlocks('| only | row |')[0].header).toHaveLength(2)
       expect(parseCheapProseBlocks('| only | row |')[0].rows).toEqual([])
     }
+    expect(parseCheapProseBlocks('| A | B').map((b) => b.type)).toEqual(['table'])
+    if (parseCheapProseBlocks('| A | B')[0]?.type === 'table') {
+      expect(parseCheapProseBlocks('| A | B')[0].header).toHaveLength(2)
+      expect(parseCheapProseBlocks('| A | B')[0].rows).toEqual([])
+    }
+    const pendingSep = parseCheapProseBlocks('| A | B |\n|')
+    expect(pendingSep.map((b) => b.type)).toEqual(['table'])
+    if (pendingSep[0]?.type === 'table') {
+      expect(pendingSep[0].header).toHaveLength(2)
+      expect(pendingSep[0].rows).toEqual([])
+    }
+    const pendingSepColon = parseCheapProseBlocks('| A | B |\n|:')
+    if (pendingSepColon[0]?.type === 'table') {
+      expect(pendingSepColon[0].rows).toEqual([])
+    }
+    const pendingThenData = continueCheapProseBlocks(
+      '| A | B |\n|',
+      pendingSep,
+      '| A | B |\n| 1 | 2 |'
+    )
+    if (pendingThenData[0]?.type === 'table') {
+      expect(pendingThenData[0].rows).toHaveLength(1)
+    }
+    const pendingThenSep = continueCheapProseBlocks(
+      '| A | B |\n|',
+      pendingSep,
+      '| A | B |\n| --- | --- |'
+    )
+    if (pendingThenSep[0]?.type === 'table') {
+      expect(pendingThenSep[0].rows).toEqual([])
+    }
     expect(parseCheapProseBlocks('---').map((b) => b.type)).toEqual(['hr'])
     const quoted = parseCheapProseBlocks('> 外层\n> > 内层')
     expect(quoted.map((b) => b.type)).toEqual(['quote'])
@@ -702,6 +733,17 @@ describe('splitStreamingMarkdown', () => {
     if (taskOl[0]?.type === 'list') {
       expect(taskOl[0].ordered).toBe(true)
       expect(taskOl[0].items[0]?.nodes).toEqual([{ type: 'text', text: '[ ] do' }])
+    }
+    const pendingMarker = parseCheapProseBlocks('- 一项\n-')
+    expect(pendingMarker.map((b) => b.type)).toEqual(['list'])
+    if (pendingMarker[0]?.type === 'list') {
+      expect(pendingMarker[0].items).toHaveLength(1)
+      expect(pendingMarker[0].items[0]?.nodes).toEqual([{ type: 'text', text: '一项' }])
+    }
+    const pendingMarkerDone = continueCheapProseBlocks('- 一项\n-', pendingMarker, '- 一项\n- 二项')
+    if (pendingMarker[0]?.type === 'list' && pendingMarkerDone[0]?.type === 'list') {
+      expect(pendingMarkerDone[0].items).toHaveLength(2)
+      expect(pendingMarkerDone[0].items[0]).toBe(pendingMarker[0].items[0])
     }
     expect(matchLiveTaskMarker('[x')).toEqual({ checked: true, rest: '' })
     expect(matchLiveTaskMarker('[ ]')).toEqual({ checked: false, rest: '' })

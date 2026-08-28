@@ -1716,6 +1716,21 @@ function looksLikeGfmTableCells(line: string): boolean {
   return /^\s*\|/.test(line) && cells.length === 1
 }
 
+/**
+ * 分隔行还在 `|` / `| -` 前缀时先不当数据行，避免 tbody 先挂一行再拆掉跳贴底。
+ * `| 1 |` 这种已有非分隔内容的行仍立刻画。
+ */
+function isPendingGfmTableSepLine(line: string): boolean {
+  if (isGfmTableSep(line) || !line.includes('|')) return false
+  const cells = splitGfmTableCells(line)
+  return cells.length > 0 && cells.every((cell) => /^:?-*:?$/.test(cell))
+}
+
+/** 下一项只打了 `-` / `1.`，还没到 GFM 要求的空格：先不并进当前项 */
+function isPendingListMarkerLine(line: string): boolean {
+  return /^\s*(?:[-+*]|\d+[.)])\s*$/.test(line)
+}
+
 function endsWithUnescapedPipe(text: string): boolean {
   if (!text.endsWith('|')) return false
   let slashes = 0
@@ -1785,13 +1800,17 @@ function tableBlockFromLines(
 ): Extract<CheapProseBlock, { type: 'table' }> | null {
   const sepIdx = raw.findIndex(isGfmTableSep)
   if (sepIdx <= 0) {
-    // 直播时分隔行还没到：两侧带 `|` 的行先画成表，避免先段落再跳成 table
-    if (!raw.length || !raw.some(isGfmTableRow)) return null
-    if (!raw.every((line) => isGfmTableRow(line) || looksLikeGfmTableCells(line))) return null
+    // 直播时分隔行还没到：左侧 `|` 的行先画成表，避免先段落再跳成 table
+    const cellLine = (line: string) => isGfmTableRow(line) || looksLikeGfmTableCells(line)
+    if (!raw.length || !raw.some(cellLine)) return null
+    if (!raw.every(cellLine)) return null
     return {
       type: 'table',
       header: splitGfmTableCells(raw[0] ?? '').map((cell) => inline(cell)),
-      rows: raw.slice(1).map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
+      rows: raw
+        .slice(1)
+        .filter((line) => !isPendingGfmTableSepLine(line))
+        .map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
     }
   }
   const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) => inline(cell))
@@ -2117,7 +2136,9 @@ export function parseCheapProseBlocks(
     }
     if (
       (isGfmTableRow(line) && !(isGfmTableSep(line) && !table)) ||
-      (table && looksLikeGfmTableCells(line))
+      (looksLikeGfmTableCells(line) &&
+        (Boolean(table) || /^\s*\|/.test(line)) &&
+        !(isGfmTableSep(line) && !table))
     ) {
       if (!(list && list.items.length && leadingIndent(line) > list.indent && !table)) {
         flushPre()
@@ -2283,6 +2304,9 @@ export function parseCheapProseBlocks(
       list.items.push(item)
       startItemOpener(item, listLine.text, listLine.contentIndent)
       list.afterBlank = false
+      continue
+    }
+    if (list && isPendingListMarkerLine(line)) {
       continue
     }
     if (
