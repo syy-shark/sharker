@@ -4,10 +4,10 @@
  * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useRef, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
 import { shouldOpenReviewLine } from '../../shared/review-file-click'
-import { statsFromLines } from '../../shared/line-diff'
+import { estimateDiffBodyHeight, liveDiffBodyMinHeight, statsFromLines } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
 import type { ReviewLineComment } from '../../shared/review-comment'
@@ -51,6 +51,8 @@ interface Props {
   onOpenLine?: (line: number) => void
   /** 长行换行（对标 Codex Wrap long diff lines；默认开，避免横向撑开直播贴底） */
   wrapLines?: boolean
+  /** 直播写入槽：不播进入动画，占位→行只升不降 */
+  live?: boolean
   review?: CodeDiffReviewProps
 }
 
@@ -146,11 +148,13 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   showHeader = true,
   onOpenLine,
   wrapLines = true,
+  live = false,
   review
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [commentingKey, setCommentingKey] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+  const pendingFloorRef = useRef(0)
   const displayLines = diff?.lines ?? lines ?? []
   const hunks = useMemo(() => (review ? splitDiffHunks(displayLines) : []), [displayLines, review])
   const stats = diff?.stats ?? statsFromLines(displayLines)
@@ -165,6 +169,14 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
       : 0
   const needsCollapse = !review && displayLines.length > previewLimit
   const visible = expanded || !needsCollapse ? displayLines : displayLines.slice(0, previewLimit)
+  if (live && pendingRows > 0) {
+    pendingFloorRef.current = Math.max(pendingFloorRef.current, estimateDiffBodyHeight(pendingRows))
+  }
+  const bodyMinHeight = live
+    ? liveDiffBodyMinHeight(pendingFloorRef.current, pendingRows, pendingRows > 0 ? 0 : visible.length)
+    : pendingRows
+      ? estimateDiffBodyHeight(pendingRows)
+      : undefined
 
   const submitComment = (line: FileDiffLine) => {
     const text = draft.trim()
@@ -250,70 +262,68 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     <CodeArtifactShell
       label={label}
       detail={detail}
-      copyText={displayLines.length ? serializeDiff(displayLines) : undefined}
-      className={`code-diff-block${pendingRows ? ' code-diff-block--pending' : ''}${wrapLines ? ' code-diff-block--wrap' : ''}`}
+      copyText={displayLines.length ? serializeDiff(displayLines) : live ? '' : undefined}
+      className={`code-diff-block${pendingRows ? ' code-diff-block--pending' : ''}${live ? ' code-diff-block--live' : ''}${wrapLines ? ' code-diff-block--wrap' : ''}`}
       bodyClassName="code-diff-body"
       footer={footer}
       showHeader={showHeader}
       ariaLabel={filePath ? `${filePath} 文件差异` : '代码差异'}
     >
-      {pendingRows ? (
-        <div
-          className="code-diff-code code-diff-code--pending"
-          style={{ minHeight: pendingRows * 19 + 14 }}
-          aria-hidden
-        />
-      ) : (
-      <div className="code-diff-code">
-        {review && hunks.length > 0
-          ? hunks.map((hunk) => (
-              <section key={hunk.index} className="code-diff-hunk" aria-label={`变更块 ${hunk.index + 1}`}>
-                <div className="code-diff-hunk-bar">
-                  <span className="code-diff-hunk-label">
-                    @@ -{hunk.oldStart},{hunk.oldCount} +{hunk.newStart},{hunk.newCount} @@
-                  </span>
-                  {review.readOnly || !review.onHunkAction ? null : (
-                    <div className="code-diff-hunk-actions">
-                      {review.scope === 'unstaged' ? (
+      <div
+        className={`code-diff-code${pendingRows ? ' code-diff-code--pending' : ''}`}
+        style={bodyMinHeight ? { minHeight: bodyMinHeight } : undefined}
+        aria-hidden={pendingRows ? true : undefined}
+      >
+        {pendingRows
+          ? null
+          : review && hunks.length > 0
+            ? hunks.map((hunk) => (
+                <section key={hunk.index} className="code-diff-hunk" aria-label={`变更块 ${hunk.index + 1}`}>
+                  <div className="code-diff-hunk-bar">
+                    <span className="code-diff-hunk-label">
+                      @@ -{hunk.oldStart},{hunk.oldCount} +{hunk.newStart},{hunk.newCount} @@
+                    </span>
+                    {review.readOnly || !review.onHunkAction ? null : (
+                      <div className="code-diff-hunk-actions">
+                        {review.scope === 'unstaged' ? (
+                          <button
+                            type="button"
+                            className="code-diff-hunk-btn"
+                            disabled={review.acting}
+                            onClick={() => review.onHunkAction?.(hunk, 'stage')}
+                          >
+                            暂存此块
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="code-diff-hunk-btn"
+                            disabled={review.acting}
+                            onClick={() => review.onHunkAction?.(hunk, 'unstage')}
+                          >
+                            取消暂存此块
+                          </button>
+                        )}
                         <button
                           type="button"
-                          className="code-diff-hunk-btn"
+                          className="code-diff-hunk-btn code-diff-hunk-btn--danger"
                           disabled={review.acting}
-                          onClick={() => review.onHunkAction?.(hunk, 'stage')}
+                          onClick={() => {
+                            if (window.confirm('确定还原此 hunk？此操作不可撤销。')) {
+                              review.onHunkAction?.(hunk, 'revert')
+                            }
+                          }}
                         >
-                          暂存此块
+                          还原此块
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="code-diff-hunk-btn"
-                          disabled={review.acting}
-                          onClick={() => review.onHunkAction?.(hunk, 'unstage')}
-                        >
-                          取消暂存此块
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="code-diff-hunk-btn code-diff-hunk-btn--danger"
-                        disabled={review.acting}
-                        onClick={() => {
-                          if (window.confirm('确定还原此 hunk？此操作不可撤销。')) {
-                            review.onHunkAction?.(hunk, 'revert')
-                          }
-                        }}
-                      >
-                        还原此块
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {hunk.lines.map((line, i) => renderLine(line, hunk.index * 1000 + i))}
-              </section>
-            ))
-          : visible.map((line, index) => renderLine(line, index))}
+                      </div>
+                    )}
+                  </div>
+                  {hunk.lines.map((line, i) => renderLine(line, hunk.index * 1000 + i))}
+                </section>
+              ))
+            : visible.map((line, index) => renderLine(line, index))}
       </div>
-      )}
     </CodeArtifactShell>
   )
 })

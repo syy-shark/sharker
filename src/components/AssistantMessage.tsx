@@ -61,6 +61,7 @@ const LiveFileDiff = memo(function LiveFileDiff({ diff }: { diff: FileDiff }) {
     <div className="assistant-live-diff">
       <CodeDiffBlock
         diff={diff}
+        live
         showHeader
         wrapLines
         maxPreviewLines={20}

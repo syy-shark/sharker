@@ -39,6 +39,32 @@ export function languageFromPath(filePath: string): string | undefined {
   return map[ext]
 }
 
+/** 与 `.code-diff-line` min-height、`.code-diff-code` padding 对齐，供直播占位高水位 */
+export const DIFF_LINE_PX = 19
+export const DIFF_BODY_PAD_PX = 14
+
+/** 按行数估 diff 体高度；0 行不占位 */
+export function estimateDiffBodyHeight(rows: number): number {
+  if (rows <= 0) return 0
+  return rows * DIFF_LINE_PX + DIFF_BODY_PAD_PX
+}
+
+/**
+ * 直播 diff 体 min-height：记住 pending 估高，换成真实行后只升不降，
+ * 避免 stats 高估时占位卸掉把贴底顶跳（对标 Codex #38695 / #22860）。
+ */
+export function liveDiffBodyMinHeight(
+  pendingFloorPx: number,
+  pendingRows: number,
+  paintedLineCount: number
+): number {
+  return Math.max(
+    Math.max(0, pendingFloorPx),
+    estimateDiffBodyHeight(pendingRows),
+    estimateDiffBodyHeight(paintedLineCount)
+  )
+}
+
 /** 统计 add/del 行数 */
 export function statsFromLines(lines: FileDiffLine[]): { added: number; removed: number } {
   let added = 0

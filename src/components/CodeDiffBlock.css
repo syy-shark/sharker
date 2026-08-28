@@ -3,7 +3,9 @@
   animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
-.code-diff-block--pending {
+.code-diff-block--pending,
+.code-artifact-shell.code-diff-block--live,
+.code-diff-block.code-diff-block--live {
   animation: none;
 }
 

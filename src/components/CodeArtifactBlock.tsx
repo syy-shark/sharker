@@ -41,7 +41,7 @@ export function CodeArtifactShell({
   )
 
   const handleCopy = async () => {
-    if (copyText == null) return
+    if (!copyText) return
     try {
       await navigator.clipboard.writeText(copyText)
       setCopied(true)
@@ -68,6 +68,7 @@ export function CodeArtifactShell({
             <button
               type="button"
               className="code-artifact-copy"
+              disabled={!copyText}
               onClick={() => void handleCopy()}
               aria-label={copied ? '已复制代码' : '复制代码'}
               title={copied ? '已复制' : '复制'}

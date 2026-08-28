@@ -9,6 +9,7 @@ import {
   processSegments
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
+import { estimateDiffBodyHeight, liveDiffBodyMinHeight } from './line-diff'
 
 describe('turn segment event state machine', () => {
   it('keeps event order, timestamps and real derived phases', () => {
@@ -255,6 +256,11 @@ describe('turn segment event state machine', () => {
         stats: { added: 1, removed: 1 }
       }
     })
+    expect(estimateDiffBodyHeight(0)).toBe(0)
+    expect(estimateDiffBodyHeight(3)).toBe(71)
+    expect(liveDiffBodyMinHeight(0, 3, 0)).toBe(71)
+    expect(liveDiffBodyMinHeight(71, 0, 1)).toBe(71)
+    expect(liveDiffBodyMinHeight(33, 0, 5)).toBe(109)
 
     let demoSegs: TurnSegment[] = []
     demoSegs = applyStreamChunk(demoSegs, {

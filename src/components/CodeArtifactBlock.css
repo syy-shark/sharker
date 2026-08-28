@@ -60,6 +60,11 @@
     transform var(--motion-duration-fast) var(--motion-ease-spring);
 }
 
+.code-artifact-copy:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .code-artifact-copy:hover {
   background: var(--glass-fill-nested-hover);
   color: var(--text);
