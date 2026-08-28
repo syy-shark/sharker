@@ -122,7 +122,7 @@ function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
   return [...(item.nodes.length ? [item.nodes] : []), ...(item.extra ?? [])]
 }
 
-/** 廉价列表（含嵌套），任务项用 GFM class；松散列表对标 remark `li>p` */
+/** 廉价列表（含嵌套），任务项用 GFM class；项内始终 `li>p`，变松时不重挂已画行内 */}
 function renderCheapList(
   ordered: boolean,
   items: CheapListItem[],
