@@ -253,7 +253,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'feedback',
-    description: '生成本地诊断（不外发）',
+    description: '打开反馈对话框（仅本机复制，不外发）',
     scope: 'ui',
     action: 'show_feedback',
     category: 'other'

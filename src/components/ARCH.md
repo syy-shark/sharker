@@ -42,5 +42,6 @@
 | `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix` 与 `/review` 对比焦点；文件树传入对话引用预览；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
+| `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
 | `ARCH.md` | 本层架构说明 |

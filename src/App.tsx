@@ -110,6 +110,7 @@ import type { AutomationQueueItem, QueueTriageAction } from '../shared/automatio
 import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
+import { FeedbackDialog } from './components/FeedbackDialog'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import { applyAppearanceDom } from './components/settings/AppearanceSettings'
@@ -133,7 +134,7 @@ import {
 } from '../shared/thread-goal'
 import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
-import { formatFeedbackBundle } from '../shared/feedback-bundle'
+import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts } from '../shared/suggested-prompts'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
@@ -368,6 +369,8 @@ export default function App() {
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackInfo, setFeedbackInfo] = useState<FeedbackBundleInfo | null>(null)
   const [composerIntent, setComposerIntent] = useState<
     'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | 'project' | null
   >(null)
@@ -4205,6 +4208,8 @@ export default function App() {
           break
         }
         case 'show_feedback': {
+          setFeedbackOpen(true)
+          setFeedbackInfo(null)
           const settingsNow = settingsRef.current
           const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
           const model = provider?.model || settingsNow.activeProviderId
@@ -4226,7 +4231,7 @@ export default function App() {
           const mcpCount = window.sharker.listMcpStatus
             ? (await window.sharker.listMcpStatus(getActiveWorkspacePath(settingsNow) || '')).length
             : 0
-          const text = formatFeedbackBundle({
+          setFeedbackInfo({
             modelLabel: provider ? `${provider.name} / ${model}` : model,
             permissionMode: settingsNow.permissionMode,
             networkMode: settingsNow.networkMode ?? 'open',
@@ -4240,22 +4245,6 @@ export default function App() {
             conversationId: activeConversationIdRef.current ?? undefined,
             mcpServerCount: mcpCount,
             appVersion: '0.1.0'
-          })
-          try {
-            await navigator.clipboard.writeText(text)
-          } catch {
-            /* ignore */
-          }
-          const note = {
-            id: crypto.randomUUID(),
-            role: 'assistant' as const,
-            content: `${text}\n\n已尝试复制到剪贴板。`
-          }
-          setMessages((msgs) => {
-            const nextMsgs = [...msgs, note]
-            messagesRef.current = nextMsgs
-            void persistActiveConversation(nextMsgs)
-            return nextMsgs
           })
           break
         }
@@ -6361,6 +6350,14 @@ export default function App() {
         />
         )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
+        <FeedbackDialog
+          open={feedbackOpen}
+          info={feedbackInfo}
+          onClose={() => {
+            setFeedbackOpen(false)
+            setFeedbackInfo(null)
+          }}
+        />
         <CommandPalette
           open={commandPaletteOpen}
           onClose={() => setCommandPaletteOpen(false)}

@@ -160,8 +160,8 @@
 | `memory-command.test.ts` | on/off、inject、空列表 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案 |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表 |
-| `feedback-bundle.ts` | `/feedback` 本地诊断包 |
-| `feedback-bundle.test.ts` | 含状态且声明不外发 |
+| `feedback-bundle.ts` | `/feedback` 本地诊断包（分类 / 说明 / 可否附带会话；不外发） |
+| `feedback-bundle.test.ts` | 含状态、分类/说明、可省略会话诊断，且声明不外发 |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |

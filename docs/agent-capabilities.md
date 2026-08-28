@@ -39,7 +39,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
-| `/feedback` | 生成本地诊断并尝试复制（不外发） |
+| `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/compact` | 本地压缩当前对话上下文 |
 | `/resume` | 打开历史对话选择器 |
 | `/title` | `/rename` 别名 |

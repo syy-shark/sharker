@@ -1,0 +1,165 @@
+.feedback-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+}
+
+.feedback-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, #000 28%, transparent);
+  cursor: default;
+}
+
+.feedback-dialog {
+  position: relative;
+  width: min(440px, 100%);
+  max-height: min(560px, 78vh);
+  overflow: auto;
+  padding: 16px 16px 12px;
+  border-radius: 18px;
+}
+
+.feedback-dialog-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.feedback-dialog-head p {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.feedback-dialog-kinds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.feedback-dialog-kinds button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 12px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.feedback-dialog-kinds button.is-on {
+  border-color: var(--accent-ring);
+  box-shadow: 0 0 0 1px var(--accent-ring);
+}
+
+.feedback-dialog-kinds strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback-dialog-kinds span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.feedback-dialog-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.feedback-dialog-reason textarea {
+  resize: vertical;
+  min-height: 88px;
+  padding: 8px 10px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+}
+
+.feedback-dialog-reason textarea:focus {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+.feedback-dialog-session {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.feedback-dialog-session input {
+  margin-top: 2px;
+}
+
+.feedback-dialog-id,
+.feedback-dialog-ok,
+.feedback-dialog-err {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.feedback-dialog-id {
+  color: var(--text-muted);
+}
+
+.feedback-dialog-id code {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.feedback-dialog-ok {
+  color: var(--text);
+}
+
+.feedback-dialog-err {
+  color: var(--danger, #c43);
+}
+
+.feedback-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.feedback-dialog-actions button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.feedback-dialog-actions button.is-primary {
+  border-color: var(--accent-ring);
+  background: color-mix(in srgb, var(--accent-ring) 18%, var(--glass-fill-nested));
+}
+
+.feedback-dialog-actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

@@ -189,8 +189,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'feedback',
-    title: '复制诊断反馈',
-    keywords: 'feedback diagnose 反馈 诊断',
+    title: '打开反馈',
+    keywords: 'feedback diagnose 反馈 诊断 问题',
     action: 'show_feedback'
   },
   {
