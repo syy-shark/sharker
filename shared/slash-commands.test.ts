@@ -32,6 +32,7 @@ describe('slash commands', () => {
     expect(names).toContain('unread')
     expect(names).toContain('usage')
     expect(names).toContain('keymap')
+    expect(names).toContain('project')
     expect(names).toContain('delete')
     expect(names).toContain('theme')
     expect(names).toContain('debug-config')
@@ -66,6 +67,7 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'pin')?.action).toBe('pin_conversation')
     expect(SLASH_COMMANDS.find((c) => c.name === 'unread')?.action).toBe('mark_unread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'usage')?.action).toBe('show_usage')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'project')?.action).toBe('open_project_picker')
   })
 
   it('filters by prefix and description', () => {

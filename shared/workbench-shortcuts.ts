@@ -46,6 +46,8 @@ export type WorkbenchShortcutAction =
   | 'copy_last_output'
   | 'thinking_lower'
   | 'thinking_higher'
+  | 'undo_app'
+  | 'redo_app'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -83,8 +85,18 @@ export function matchDefaultWorkbenchShortcut(event: {
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
   if (key === 'u' && event.altKey && !event.shiftKey) return 'toggle_agents'
-  if (key === 'g' && event.shiftKey && !event.altKey) return 'toggle_review'
+  if (
+    key === 'g' &&
+    event.shiftKey &&
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  ) {
+    return 'toggle_review'
+  }
   if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
+  if (key === 'z' && event.shiftKey && !event.altKey) return 'redo_app'
+  if (key === 'z' && !event.shiftKey && !event.altKey) return 'undo_app'
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
   if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
   if (key === 'p' && !event.altKey && !event.shiftKey) return 'search_files'
@@ -184,7 +196,8 @@ export function adjacentConversationId(
 /** ⌘/ 快捷键一览（对标 Codex Shortcuts window） */
 export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘B', title: '切换侧栏' },
-  { keys: '⌘⌥B', title: '打开审查' },
+  { keys: '⌘⌥B / ⌃⇧G', title: '打开审查' },
+  { keys: '⌘Z / ⌘⇧Z', title: '撤销 / 重做上一次应用操作' },
   { keys: '⌘⌥U', title: '子 Agent 活动' },
   { keys: '⌘J / Ctrl+`', title: '打开终端' },
   { keys: '⌘⇧E', title: '打开文件树' },
@@ -251,7 +264,19 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'font_smaller', title: '缩小字号', defaultKeys: '⌘-', defaultChord: 'mod+-' },
   { action: 'font_reset', title: '重置字号', defaultKeys: '⌘0', defaultChord: 'mod+0' },
   { action: 'toggle_sidebar', title: '切换侧栏', defaultKeys: '⌘B', defaultChord: 'mod+b' },
-  { action: 'toggle_review', title: '打开审查', defaultKeys: '⌘⌥B', defaultChord: 'mod+alt+b' },
+  {
+    action: 'toggle_review',
+    title: '打开审查',
+    defaultKeys: '⌘⌥B / ⌃⇧G',
+    defaultChord: ['mod+alt+b', 'mod+ctrl+shift+g']
+  },
+  { action: 'undo_app', title: '撤销上一次应用操作', defaultKeys: '⌘Z', defaultChord: 'mod+z' },
+  {
+    action: 'redo_app',
+    title: '重做上一次应用操作',
+    defaultKeys: '⌘⇧Z',
+    defaultChord: 'mod+shift+z'
+  },
   { action: 'toggle_terminal', title: '打开终端', defaultKeys: '⌘J', defaultChord: ['mod+j', 'mod+`'] },
   {
     action: 'clear_terminal',

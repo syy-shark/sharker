@@ -124,6 +124,12 @@ import { formatFeedbackBundle } from '../shared/feedback-bundle'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
 import {
+  createAppUndoStack,
+  execNativeUndoRedo,
+  isNativeUndoTarget,
+  type AppUndoRecord
+} from '../shared/app-undo'
+import {
   shouldMarkConversationUnread,
   shouldNotifyTurnComplete,
   turnNotifyPreview,
@@ -308,6 +314,8 @@ export default function App() {
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const [worktreeMissing, setWorktreeMissing] = useState(false)
   const [workspaceBranch, setWorkspaceBranch] = useState('')
+  const appUndoRef = useRef(createAppUndoStack())
+  const appUndoSilentRef = useRef(false)
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
   const [terminalClearTick, setTerminalClearTick] = useState(0)
   const navStackRef = useRef<NavEntry[]>([{ page: 'chat' }])
@@ -2758,6 +2766,9 @@ export default function App() {
 
     try {
       await window.sharker.archiveConversation(workspaceId, conversationId, true)
+      if (!appUndoSilentRef.current) {
+        appUndoRef.current.push({ kind: 'archive', workspaceId, conversationId })
+      }
       const cwd = settingsRef.current.workspaces.find((w) => w.id === workspaceId)?.path
       if (cwd && window.sharker.removeManagedWorktree) {
         const cleaned = await window.sharker.removeManagedWorktree(cwd, conversationId)
@@ -3332,10 +3343,20 @@ export default function App() {
     async (workspaceId: string, conversationId: string, raw: string) => {
       if (!window.sharker.patchConversationMeta) return
       const title = applyCustomTitle(raw)
+      const before = conversationListRef.current.find((c) => c.id === conversationId)?.customTitle
       const next = await window.sharker.patchConversationMeta(workspaceId, conversationId, {
         customTitle: title ?? null
       })
       if (!next) return
+      if (!appUndoSilentRef.current && before !== title) {
+        appUndoRef.current.push({
+          kind: 'rename',
+          workspaceId,
+          conversationId,
+          before,
+          after: title
+        })
+      }
       setConversationList((list) =>
         sortConversationsByCreatedAt(list.map((c) => (c.id === conversationId ? { ...c, ...next } : c)))
       )
@@ -3349,6 +3370,14 @@ export default function App() {
     const pinned = !current?.pinned
     const next = await window.sharker.patchConversationMeta(workspaceId, conversationId, { pinned })
     if (!next) return pinned
+    if (!appUndoSilentRef.current) {
+      appUndoRef.current.push({
+        kind: 'pin',
+        workspaceId,
+        conversationId,
+        afterPinned: Boolean(next.pinned)
+      })
+    }
     setConversationList((list) =>
       sortConversationsByCreatedAt(list.map((c) => (c.id === conversationId ? { ...c, ...next } : c)))
     )
@@ -3361,8 +3390,90 @@ export default function App() {
     if (!ws || !id || !window.sharker.patchConversationMeta) return
     const next = await window.sharker.patchConversationMeta(ws, id, { unread: true })
     if (!next) return
+    if (!appUndoSilentRef.current) {
+      appUndoRef.current.push({ kind: 'unread', workspaceId: ws, conversationId: id })
+    }
     setConversationList((list) => list.map((c) => (c.id === id ? { ...c, ...next } : c)))
   }, [])
+
+  const applyAppUndoRecord = useCallback(
+    async (record: AppUndoRecord, direction: 'undo' | 'redo') => {
+      appUndoSilentRef.current = true
+      try {
+        if (record.kind === 'archive') {
+          if (direction === 'undo') {
+            if (typeof window.sharker.archiveConversation !== 'function') return
+            await window.sharker.archiveConversation(record.workspaceId, record.conversationId, false)
+            await refreshConversationList(record.workspaceId)
+            await handleSelectConversation(record.workspaceId, record.conversationId)
+            return
+          }
+          await handleArchiveConversation(record.workspaceId, record.conversationId)
+          return
+        }
+        if (record.kind === 'pin') {
+          const pinned = direction === 'undo' ? !record.afterPinned : record.afterPinned
+          if (!window.sharker.patchConversationMeta) return
+          const next = await window.sharker.patchConversationMeta(
+            record.workspaceId,
+            record.conversationId,
+            { pinned }
+          )
+          if (next) {
+            setConversationList((list) =>
+              sortConversationsByCreatedAt(
+                list.map((c) => (c.id === record.conversationId ? { ...c, ...next } : c))
+              )
+            )
+          }
+          return
+        }
+        if (record.kind === 'rename') {
+          const title = direction === 'undo' ? record.before : record.after
+          await handleRenameConversation(record.workspaceId, record.conversationId, title ?? '')
+          return
+        }
+        if (!window.sharker.patchConversationMeta) return
+        const unread = direction !== 'undo'
+        const next = await window.sharker.patchConversationMeta(
+          record.workspaceId,
+          record.conversationId,
+          { unread }
+        )
+        if (next) {
+          setConversationList((list) =>
+            list.map((c) => (c.id === record.conversationId ? { ...c, ...next } : c))
+          )
+        }
+      } finally {
+        appUndoSilentRef.current = false
+      }
+    },
+    [handleRenameConversation, handleSelectConversation, refreshConversationList]
+  )
+
+  const performAppUndo = useCallback(async () => {
+    const record = appUndoRef.current.popUndo()
+    if (!record) return
+    await applyAppUndoRecord(record, 'undo')
+  }, [applyAppUndoRecord])
+
+  const performAppRedo = useCallback(async () => {
+    const record = appUndoRef.current.popRedo()
+    if (!record) return
+    await applyAppUndoRecord(record, 'redo')
+  }, [applyAppUndoRecord])
+
+  const handleNativeOrAppUndo = useCallback(
+    (kind: 'undo' | 'redo') => {
+      if (isNativeUndoTarget(document.activeElement)) {
+        execNativeUndoRedo(kind)
+        return
+      }
+      void (kind === 'undo' ? performAppUndo() : performAppRedo())
+    },
+    [performAppRedo, performAppUndo]
+  )
 
   const handleStandaloneConversation = useCallback(async () => {
     const ws = settingsRef.current.activeWorkspaceId
@@ -3541,6 +3652,18 @@ export default function App() {
           appendLocalNote(ok && href ? `已复制对话深链：\n\n\`${href}\`` : '没有当前会话。')
           break
         }
+        case 'open_project_picker': {
+          setPage('chat')
+          setShowHistoryPicker(false)
+          setComposerIntent('project')
+          break
+        }
+        case 'undo_app':
+          handleNativeOrAppUndo('undo')
+          break
+        case 'redo_app':
+          handleNativeOrAppUndo('redo')
+          break
         case 'copy_conversation_path': {
           const runtime = runtimeForConversation(
             activeConversationIdRef.current,
@@ -4073,6 +4196,7 @@ export default function App() {
       handleCreateBranchHere,
       handleDeleteConversation,
       handleNavigate,
+      handleNativeOrAppUndo,
       handleMarkUnread,
       handleOpenWorktree,
       handleRenameConversation,
@@ -4136,6 +4260,10 @@ export default function App() {
         setPage('chat')
         setShowHistoryPicker(false)
         setComposerIntent('project')
+        return
+      }
+      if (cmd.action === 'undo_app' || cmd.action === 'redo_app') {
+        handleNativeOrAppUndo(cmd.action === 'undo_app' ? 'undo' : 'redo')
         return
       }
       if (cmd.action === 'start_dictation') {
@@ -4282,6 +4410,12 @@ export default function App() {
         settingsRef.current.keyboardShortcuts
       )
       if (!action) return
+      if (action === 'undo_app' || action === 'redo_app') {
+        if (isNativeUndoTarget(e.target)) return
+        e.preventDefault()
+        void (action === 'undo_app' ? performAppUndo() : performAppRedo())
+        return
+      }
       if (action === 'copy_cwd') {
         const t = e.target
         if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
@@ -4563,7 +4697,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -4609,10 +4743,15 @@ export default function App() {
       }
       if (action === 'command_palette') {
         setCommandPaletteOpen((open) => !open)
+        return
+      }
+      if (action === 'undo_app' || action === 'redo_app') {
+        handleNativeOrAppUndo(action === 'undo_app' ? 'undo' : 'redo')
       }
     })
   }, [
     handleAddWorkspace,
+    handleNativeOrAppUndo,
     handleNavigate,
     handleNewConversation,
     handleShortcutPanel,

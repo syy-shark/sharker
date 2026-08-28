@@ -450,6 +450,20 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥⇧C',
     keywords: 'copy conversation path worktree 对话路径 隔离',
     action: 'copy_conversation_path'
+  },
+  {
+    id: 'undo-app',
+    title: '撤销上一次应用操作',
+    shortcut: '⌘Z',
+    keywords: 'undo archive pin rename 撤销 归档 置顶 重命名',
+    action: 'undo_app'
+  },
+  {
+    id: 'redo-app',
+    title: '重做上一次应用操作',
+    shortcut: '⌘⇧Z',
+    keywords: 'redo 重做',
+    action: 'redo_app'
   }
 ]
 

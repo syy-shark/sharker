@@ -151,6 +151,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'project',
+    description: '打开项目选择器（对标 Codex /project）',
+    scope: 'ui',
+    action: 'open_project_picker',
+    category: 'workspace'
+  },
+  {
     name: 'archive',
     description: '归档当前对话（保留记录，清托管 worktree）',
     scope: 'ui',

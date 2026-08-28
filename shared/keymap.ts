@@ -51,7 +51,9 @@ const ACTION_SET = new Set<string>([
   'open_project_picker',
   'copy_last_output',
   'thinking_lower',
-  'thinking_higher'
+  'thinking_higher',
+  'undo_app',
+  'redo_app'
 ])
 
 function normalizeKeyName(key: string, code?: string): string {

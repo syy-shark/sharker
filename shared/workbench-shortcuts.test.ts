@@ -29,6 +29,11 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'g', ctrlKey: true, shiftKey: true }))).toBe(
       'toggle_review'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true, shiftKey: true }))).toBeNull()
+    expect(matchWorkbenchShortcut(ev({ key: 'z', metaKey: true }))).toBe('undo_app')
+    expect(matchWorkbenchShortcut(ev({ key: 'z', metaKey: true, shiftKey: true }))).toBe(
+      'redo_app'
+    )
     expect(matchWorkbenchShortcut(ev({ key: 'j', metaKey: true }))).toBe('toggle_terminal')
     expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true }))).toBe('new_conversation')
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, shiftKey: true }))).toBe(

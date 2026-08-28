@@ -69,8 +69,18 @@ export function installApplicationMenu(): void {
     {
       label: '编辑',
       submenu: [
-        { role: 'undo', label: '撤销' },
-        { role: 'redo', label: '重做' },
+        {
+          label: '撤销',
+          accelerator: 'Command+Z',
+          registerAccelerator: false,
+          ...send('undo_app')
+        },
+        {
+          label: '重做',
+          accelerator: 'Command+Shift+Z',
+          registerAccelerator: false,
+          ...send('redo_app')
+        },
         { type: 'separator' },
         { role: 'cut', label: '剪切' },
         { role: 'copy', label: '复制' },

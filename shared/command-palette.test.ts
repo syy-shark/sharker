@@ -58,6 +58,8 @@ describe('command palette', () => {
     expect(ids).toContain('copy-deeplink')
     expect(ids).toContain('project-picker')
     expect(ids).toContain('copy-conversation-path')
+    expect(ids).toContain('undo-app')
+    expect(ids).toContain('redo-app')
   })
 
   it('filters by title and keywords', () => {
