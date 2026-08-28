@@ -73,9 +73,7 @@ export function MermaidBlock({ code }: { code: string }) {
       setFailed(false)
       return
     }
-    if (paintedSource.current !== text) {
-      setSvg('')
-    }
+    // 源码改了仍先留着上一张 SVG，避免闪回源码再跳成图（贴底会跟着跳）
     let cancelled = false
     setFailed(false)
     renderGen.current += 1

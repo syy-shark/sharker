@@ -21,11 +21,15 @@ export function clearFindHighlight(): void {
   highlightStore()?.delete(FIND_HIGHLIGHT)
 }
 
+/** 只扫气泡正文，避开直播过程区（每 token 重绘时少走一棵大树） */
+export const FIND_HIGHLIGHT_SCOPE = '.message-body--assistant, .message-bubble--user'
+
 /** 在消息根节点里标第 occurrence 处可见命中 */
 export function paintFindHighlight(root: Element, query: string, occurrence: number): void {
   const store = highlightStore()
   if (!store) return
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const scope = root.querySelector(FIND_HIGHLIGHT_SCOPE) ?? root
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT)
   const nodes: Text[] = []
   let flat = ''
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {

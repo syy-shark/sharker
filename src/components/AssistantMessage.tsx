@@ -55,21 +55,15 @@ interface Props {
   children?: React.ReactNode
 }
 
-/** 直播文件 diff：同一份 diff 引用不跟后续 token 重绘 */
-const LiveFileDiff = memo(function LiveFileDiff({
-  diff,
-  streaming
-}: {
-  diff: FileDiff
-  streaming: boolean
-}) {
+/** 直播文件 diff：同一份 diff 引用不跟后续 token 重绘；预览行数收束前后不变，避免贴底跳 */
+const LiveFileDiff = memo(function LiveFileDiff({ diff }: { diff: FileDiff }) {
   return (
     <div className="assistant-live-diff">
       <CodeDiffBlock
         diff={diff}
         showHeader
         wrapLines
-        maxPreviewLines={streaming ? 20 : 40}
+        maxPreviewLines={20}
         onOpenLine={(line) => dispatchOpenWorkspaceFile({ path: diff.path, line })}
       />
     </div>
@@ -224,15 +218,8 @@ export const AssistantMessage = memo(function AssistantMessage({
     (Boolean(displayContent) &&
       (isError || isAborted || finalDecision.show) &&
       !useSegmentFlow)
-  // 正文在上、过程在下：分隔线画在过程区顶部
-  const showLiveProcess = Boolean(isStreaming) // 直播时始终有呼吸过程区
   const showCompletedProcess =
     !isStreaming && (hasExpandableProcess || (!useSegmentFlow && legacyExpandable))
-  const showProcessBelowAnswer =
-    showFinalBody &&
-    (showLiveProcess ||
-      hasExpandableProcess ||
-      (!useSegmentFlow && legacyExpandable && flowOpen))
   const phaseModel = useMemo(
     () => (useSegmentFlow ? deriveProcessPhases(segments!, { isStreaming }) : null),
     [isStreaming, segments, useSegmentFlow]
@@ -372,6 +359,64 @@ export const AssistantMessage = memo(function AssistantMessage({
         />
       ) : null}
 
+      {/* 结束后过程仍留在回答上方，避免直播收束时整块对调把贴底拽走 */}
+      {showCompletedProcess ? (
+        <div className="assistant-process-below assistant-process-below--live-top">
+          {useSegmentFlow && hasExpandableProcess && summary ? (
+            <button
+              type="button"
+              className={`turn-flow-summary-chip turn-flow-summary-chip--${
+                isError ? 'error' : isAborted ? 'aborted' : 'success'
+              }`}
+              onClick={() => {
+                userToggledFlow.current = true
+                setFlowOpen((o) => !o)
+              }}
+              aria-expanded={flowOpen}
+              aria-label={`展开过程，${summary}`}
+            >
+              <span>{summary}</span>
+              <ChevronDown
+                size={11}
+                className={`assistant-meta-chevron ${flowOpen ? 'assistant-meta-chevron--open' : ''}`}
+                aria-hidden
+              />
+            </button>
+          ) : null}
+
+          {useSegmentFlow && hasExpandableProcess ? (
+            <div
+              className={`turn-flow-collapse ${showFlowPanel ? 'turn-flow-collapse--open' : ''}`}
+              aria-hidden={!showFlowPanel}
+              inert={showFlowPanel ? undefined : true}
+            >
+              <div className="turn-flow-collapse-inner">
+                <TurnFlow
+                  segments={processForFlow}
+                  isStreaming={false}
+                  onOpenSubAgent={onOpenSubAgent}
+                  toolOutputDisplay={toolOutputDisplay}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {legacyExpandable && !useSegmentFlow ? (
+            <div
+              className={`assistant-process-wrap ${flowOpen ? 'assistant-process-wrap--open' : ''}`}
+              aria-hidden={!flowOpen}
+              inert={flowOpen ? undefined : true}
+            >
+              <div className="assistant-process-inner">
+                <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
+                  <ProcessTimeline steps={processSteps} onOpenSubAgent={onOpenSubAgent} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* 正文 / 错误 / 中止 */}
       {isAborted ? (
         <div className="assistant-aborted" role="status">
@@ -431,7 +476,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                   )
                 }
                 if (part.type === 'diff') {
-                  return <LiveFileDiff key={part.id} diff={part.diff} streaming={Boolean(isStreaming)} />
+                  return <LiveFileDiff key={part.id} diff={part.diff} />
                 }
                 return isStreaming ? (
                   <StreamingMarkdown key={part.id} text={part.content} />
@@ -455,68 +500,6 @@ export const AssistantMessage = memo(function AssistantMessage({
           responding={approvalResponding}
           onRespond={onApproval}
         />
-      ) : null}
-
-      {/* 结束后：有真实工具步骤才给可展开摘要；闲聊/演示不占位 */}
-      {showCompletedProcess ? (
-        <div
-          className={`assistant-process-below ${
-            showProcessBelowAnswer ? 'assistant-process-below--quiet' : ''
-          }`}
-        >
-          {useSegmentFlow && hasExpandableProcess && summary ? (
-            <button
-              type="button"
-              className={`turn-flow-summary-chip turn-flow-summary-chip--${
-                isError ? 'error' : isAborted ? 'aborted' : 'success'
-              }`}
-              onClick={() => {
-                userToggledFlow.current = true
-                setFlowOpen((o) => !o)
-              }}
-              aria-expanded={flowOpen}
-              aria-label={`展开过程，${summary}`}
-            >
-              <span>{summary}</span>
-              <ChevronDown
-                size={11}
-                className={`assistant-meta-chevron ${flowOpen ? 'assistant-meta-chevron--open' : ''}`}
-                aria-hidden
-              />
-            </button>
-          ) : null}
-
-          {useSegmentFlow && hasExpandableProcess ? (
-            <div
-              className={`turn-flow-collapse ${showFlowPanel ? 'turn-flow-collapse--open' : ''}`}
-              aria-hidden={!showFlowPanel}
-              inert={showFlowPanel ? undefined : true}
-            >
-              <div className="turn-flow-collapse-inner">
-                <TurnFlow
-                  segments={processForFlow}
-                  isStreaming={false}
-                  onOpenSubAgent={onOpenSubAgent}
-                  toolOutputDisplay={toolOutputDisplay}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {legacyExpandable && !useSegmentFlow ? (
-            <div
-              className={`assistant-process-wrap ${flowOpen ? 'assistant-process-wrap--open' : ''}`}
-              aria-hidden={!flowOpen}
-              inert={flowOpen ? undefined : true}
-            >
-              <div className="assistant-process-inner">
-                <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
-                  <ProcessTimeline steps={processSteps} onOpenSubAgent={onOpenSubAgent} />
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
       ) : null}
 
       {!isStreaming && changedFiles.length > 0 ? (

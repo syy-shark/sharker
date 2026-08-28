@@ -647,8 +647,8 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
-    scrollToBottom('smooth')
-  }, [scrollToBottom])
+    scrollToBottom(loading ? 'auto' : 'smooth')
+  }, [loading, scrollToBottom])
 
   const handleComposerSubmitted = useCallback(() => {
     userScrollLockRef.current = false
