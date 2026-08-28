@@ -488,6 +488,16 @@ describe('splitStreamingMarkdown', () => {
     )
     expect(parseCheapProseBlocks('Overview\n---').map((b) => b.type)).toEqual(['heading'])
     expect(parseCheapProseBlocks('Title\n===')[0]).toMatchObject({ type: 'heading', level: 1 })
+    expect(parseCheapProseBlocks('Title\n=').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('Title\n==').map((b) => b.type)).toEqual(['p'])
+    const setextFirst = parseCheapProseBlocks('Title')
+    const setextPending = continueCheapProseBlocks('Title', setextFirst, 'Title\n==')
+    expect(setextPending.map((b) => b.type)).toEqual(['p'])
+    if (setextFirst[0]?.type === 'p' && setextPending[0]?.type === 'p') {
+      expect(setextPending[0]).toBe(setextFirst[0])
+    }
+    const setextDone = continueCheapProseBlocks('Title\n==', setextPending, 'Title\n===')
+    expect(setextDone[0]).toMatchObject({ type: 'heading', level: 1 })
     const notes = parseCheapProseBlocks('见注[^1]。\n[^1]: 说明')
     expect(notes.map((b) => b.type)).toEqual(['p', 'footnotes'])
     if (notes[0]?.type === 'p') {
@@ -823,6 +833,11 @@ describe('splitStreamingMarkdown', () => {
     expect(setextInList.map((b) => b.type)).toEqual(['list'])
     if (setextInList[0]?.type === 'list') {
       expect(setextInList[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'heading', level: 1 })
+    }
+    const setextInListPending = parseCheapProseBlocks('- Title\n  =')
+    if (setextInListPending[0]?.type === 'list') {
+      expect(setextInListPending[0].items[0]?.blocks).toBeUndefined()
+      expect(setextInListPending[0].items[0]?.nodes).toEqual([{ type: 'text', text: 'Title' }])
     }
     const setextHr = parseCheapProseBlocks('- Overview\n  ---')
     expect(setextHr.map((b) => b.type)).toEqual(['list'])

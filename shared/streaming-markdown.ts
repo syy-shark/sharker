@@ -1675,6 +1675,7 @@ function stealItemSetext(
   const src = cheapInlineSourceAll(item.nodes)
   const title = src.split('\n').pop() ?? ''
   if (!title) return false
+  if (isPendingSetextUnderline(line)) return false
   if (marker === '-' && looksLikeGfmTableCells(title)) return false
   if (src === title) item.nodes = []
   else item.nodes = inline(src.slice(0, -(title.length + 1)))
@@ -1730,6 +1731,12 @@ function isPendingGfmTableSepLine(line: string): boolean {
 /** 下一项只打了 `-` / `1.`，还没到 GFM 要求的空格：先不并进当前项 */
 function isPendingListMarkerLine(line: string): boolean {
   return /^\s*(?:[-+*]|\d+[.)])\s*$/.test(line)
+}
+
+/** Setext 下划线还不到三连时先当段落，避免第一个 `=` / `-` 就把 `<p>` 换成标题跳贴底 */
+function isPendingSetextUnderline(line: string): boolean {
+  const trimmed = line.trim()
+  return /^(?:=+|-+)$/.test(trimmed) && trimmed.length < 3
 }
 
 function endsWithUnescapedPipe(text: string): boolean {
@@ -2167,6 +2174,9 @@ export function parseCheapProseBlocks(
     }
     if (para.length && !list && !quote.length && !table && !pre && SETEXT_RE.test(line)) {
       const marker = line.trim()[0]
+      if (isPendingSetextUnderline(line)) {
+        continue
+      }
       if (
         marker === '-' &&
         para.length === 1 &&
@@ -2186,6 +2196,9 @@ export function parseCheapProseBlocks(
       }
     }
     if (list && list.items.length && leadingIndent(line) > list.indent && SETEXT_RE.test(line)) {
+      if (isPendingSetextUnderline(line)) {
+        continue
+      }
       const item = deepestItemForIndent(list.items, leadingIndent(line))
       if (item && stealItemSetext(item, line, inline)) {
         list.afterBlank = false
