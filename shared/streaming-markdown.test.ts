@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   continueCheapInlineMarkdown,
+  continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapInlineMarkdown,
@@ -113,6 +114,26 @@ describe('splitStreamingMarkdown', () => {
       expect(blocks[1].ordered).toBe(false)
       expect(blocks[1].items).toHaveLength(2)
       expect(blocks[1].items[0]?.some((n) => n.type === 'file')).toBe(true)
+    }
+  })
+
+  it('reuses closed cheap blocks when a list or table grows', () => {
+    const listText = '- 一项\n- 二项'
+    const first = parseCheapProseBlocks(listText)
+    const grown = continueCheapProseBlocks(listText, first, '- 一项\n- 二项更长')
+    expect(grown[0]).not.toBe(first[0])
+    if (grown[0]?.type === 'list' && first[0]?.type === 'list') {
+      expect(grown[0].items[0]).toBe(first[0].items[0])
+      expect(grown[0].items[1]).not.toBe(first[0].items[1])
+    }
+    const tableText = '| A | B |\n| --- | --- |\n| 1 | 2 |'
+    const table = parseCheapProseBlocks(tableText)
+    const tableGrown = continueCheapProseBlocks(tableText, table, `${tableText}\n| 3 | 4 |`)
+    if (table[0]?.type === 'table' && tableGrown[0]?.type === 'table') {
+      expect(tableGrown[0].header[0]).toBe(table[0].header[0])
+      expect(tableGrown[0].rows[0]).not.toBeUndefined()
+      expect(tableGrown[0].rows[0]?.[0]).toBe(table[0].rows[0]?.[0])
+      expect(tableGrown[0].rows).toHaveLength(2)
     }
   })
 

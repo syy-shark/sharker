@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用、标题/列表/表格/分隔线。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用、标题/列表/任务项/表格/分隔线。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -488,4 +488,86 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
   }
   flushAll()
   return blocks
+}
+
+function reuseInlineNodes(prev: CheapInlineNode[], next: CheapInlineNode[]): CheapInlineNode[] {
+  const prevSrc = cheapInlineSourceAll(prev)
+  const nextSrc = cheapInlineSourceAll(next)
+  if (prevSrc === nextSrc) return prev
+  if (nextSrc.startsWith(prevSrc)) return continueCheapInlineMarkdown(prevSrc, prev, nextSrc)
+  return next
+}
+
+function reuseInlineLists(prev: CheapInlineNode[][], next: CheapInlineNode[][]): CheapInlineNode[][] {
+  const out: CheapInlineNode[][] = []
+  const shared = Math.min(prev.length, next.length)
+  for (let i = 0; i < shared; i++) out.push(reuseInlineNodes(prev[i]!, next[i]!))
+  if (next.length > prev.length) out.push(...next.slice(prev.length))
+  return out
+}
+
+function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): CheapProseBlock | null {
+  if (prev.type !== next.type) return null
+  if (prev.type === 'hr' && next.type === 'hr') return prev
+  if (prev.type === 'heading' && next.type === 'heading') {
+    if (prev.level !== next.level) return null
+    const nodes = reuseInlineNodes(prev.nodes, next.nodes)
+    return nodes === prev.nodes ? prev : { type: 'heading', level: prev.level, nodes }
+  }
+  if (prev.type === 'p' && next.type === 'p') {
+    const nodes = reuseInlineNodes(prev.nodes, next.nodes)
+    return nodes === prev.nodes ? prev : { type: 'p', nodes }
+  }
+  if (prev.type === 'quote' && next.type === 'quote') {
+    const nodes = reuseInlineNodes(prev.nodes, next.nodes)
+    return nodes === prev.nodes ? prev : { type: 'quote', nodes }
+  }
+  if (prev.type === 'list' && next.type === 'list') {
+    if (prev.ordered !== next.ordered) return null
+    const items = reuseInlineLists(prev.items, next.items)
+    const same =
+      items.length === prev.items.length && items.every((item, i) => item === prev.items[i])
+    return same ? prev : { type: 'list', ordered: prev.ordered, items }
+  }
+  if (prev.type === 'table' && next.type === 'table') {
+    const header = reuseInlineLists(prev.header, next.header)
+    const rows = next.rows.map((row, i) => {
+      const prevRow = prev.rows[i]
+      return prevRow ? reuseInlineLists(prevRow, row) : row
+    })
+    const headerSame = header.length === prev.header.length && header.every((c, i) => c === prev.header[i])
+    const rowsSame =
+      rows.length === prev.rows.length &&
+      rows.every(
+        (row, i) =>
+          row.length === prev.rows[i]?.length && row.every((cell, c) => cell === prev.rows[i]?.[c])
+      )
+    return headerSame && rowsSame ? prev : { type: 'table', header, rows }
+  }
+  return null
+}
+
+/**
+ * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
+ */
+export function continueCheapProseBlocks(
+  prevText: string,
+  prevBlocks: CheapProseBlock[],
+  text: string
+): CheapProseBlock[] {
+  const nextText = normalizeStreamingText(text)
+  const prevNorm = normalizeStreamingText(prevText)
+  if (!nextText) return []
+  if (nextText === prevNorm && prevBlocks.length) return prevBlocks
+  const parsed = parseCheapProseBlocks(nextText)
+  if (!prevBlocks.length) return parsed
+  const out: CheapProseBlock[] = []
+  const shared = Math.min(prevBlocks.length, parsed.length)
+  for (let i = 0; i < shared; i++) {
+    const reused = reuseCheapProseBlock(prevBlocks[i]!, parsed[i]!)
+    if (!reused) return [...out, ...parsed.slice(i)]
+    out.push(reused)
+  }
+  if (parsed.length > prevBlocks.length) out.push(...parsed.slice(prevBlocks.length))
+  return out
 }

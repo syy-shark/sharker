@@ -464,6 +464,16 @@
   padding-left: 1.4em;
 }
 
+.live-prose-tail .live-prose-task {
+  list-style: none;
+  margin-left: -1.15em;
+}
+
+.live-prose-tail .live-prose-task input {
+  margin-right: 0.4em;
+  vertical-align: middle;
+}
+
 .live-prose-tail > blockquote {
   padding-left: 0.8em;
   border-left: 2px solid var(--border-subtle);

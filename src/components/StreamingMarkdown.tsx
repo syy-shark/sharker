@@ -8,6 +8,7 @@ import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
 import {
+  continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapProseBlocks,
@@ -16,6 +17,21 @@ import {
   type CheapProseBlock
 } from '../../shared/streaming-markdown'
 import { isInlineDemoPaintable } from '../../shared/live-display'
+
+/** GFM 任务项：直播时就画 checkbox，收束后不从普通 li 跳成任务列表 */
+function parseCheapTaskItem(
+  nodes: CheapInlineNode[]
+): { checked: boolean; nodes: CheapInlineNode[] } | null {
+  const first = nodes[0]
+  if (!first || first.type !== 'text') return null
+  const match = /^\[([ xX])\]\s+(.*)$/.exec(first.text)
+  if (!match) return null
+  const restText = match[2]
+  const rest: CheapInlineNode[] = restText
+    ? [{ type: 'text', text: restText }, ...nodes.slice(1)]
+    : nodes.slice(1)
+  return { checked: match[1] !== ' ', nodes: rest }
+}
 
 /** 廉价行内节点 → 元素（含可点文件引用） */
 function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
@@ -62,9 +78,16 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     const Tag = block.ordered ? 'ol' : 'ul'
     return (
       <Tag key={index}>
-        {block.items.map((item, i) => (
-          <li key={i}>{renderCheapInline(item)}</li>
-        ))}
+        {block.items.map((item, i) => {
+          const task = parseCheapTaskItem(item)
+          if (!task) return <li key={i}>{renderCheapInline(item)}</li>
+          return (
+            <li key={i} className="live-prose-task">
+              <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+              {renderCheapInline(task.nodes)}
+            </li>
+          )
+        })}
       </Tag>
     )
   }
@@ -101,7 +124,12 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
 
 /** 增长中的散文尾：廉价块 + 行内，不跑 remark */
 const LiveProseTail = memo(function LiveProseTail({ text }: { text: string }) {
-  const blocks = useMemo(() => parseCheapProseBlocks(text), [text])
+  const prevRef = useRef({ text: '', blocks: parseCheapProseBlocks('') })
+  const blocks = useMemo(() => {
+    const next = continueCheapProseBlocks(prevRef.current.text, prevRef.current.blocks, text)
+    prevRef.current = { text, blocks: next }
+    return next
+  }, [text])
   return <div className="live-prose-tail">{blocks.map(renderCheapBlock)}</div>
 })
 
