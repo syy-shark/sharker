@@ -185,8 +185,8 @@ export function continueStreamingMarkdown(
 }
 
 /**
- * 收束后把增长尾收成稳定块，已闭合块保持同一对象。
- * 直播结束后仍走 StreamingMarkdown，避免 mermaid / 代码块整树卸掉重挂。
+ * 把增长尾收成稳定块，已闭合块保持同一对象。
+ * 收束后的正文仍走整段 MarkdownBody（脚注等跨块语法）；本函数给测试与拆分契约用。
  */
 export function finalizeStreamingMarkdownSplit(
   split: StreamingMarkdownSplit
