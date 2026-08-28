@@ -86,6 +86,21 @@ export function createEmptyConversation(workspaceId: string): Conversation {
   }
 }
 
+/** 把进行中的对话抽成侧栏「进行中」任务行（对标 Codex 并行线程） */
+export function splitLiveConversations<T extends { id: string }>(
+  items: T[],
+  liveIds: Iterable<string>
+): { live: T[]; rest: T[] } {
+  const liveSet = liveIds instanceof Set ? liveIds : new Set(liveIds)
+  const live: T[] = []
+  const rest: T[] = []
+  for (const item of items) {
+    if (liveSet.has(item.id)) live.push(item)
+    else rest.push(item)
+  }
+  return { live, rest }
+}
+
 /** ⌘G 搜索对话：按标题或 id 过滤（对标 Codex Search chats） */
 export function filterChatList<T extends { id: string; title?: string }>(
   items: T[],

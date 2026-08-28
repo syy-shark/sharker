@@ -53,7 +53,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板 **创建分支**（对标 Codex Create branch here）
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。
 
 ### 线程内查找
 

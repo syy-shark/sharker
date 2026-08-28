@@ -16,8 +16,8 @@
 
 | 文件 | 说明 |
 |------|------|
-| `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；审查队列入口与未读徽标；进行中会话呼吸点；隔离 Worktree 线程小标；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
-| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；远离底部的旧消息才 `content-visibility`，贴底附近保持真实高度；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（不进全局快捷键，避免抢输入框）；Ctrl⇧D / 麦克风听写；Ctrl⇧V 语音对话（听写自动发送 + TTS）；空输入 ↑ 恢复上一条；⌘G 搜索对话；提交时拦截 UI 斜杠命令；忙时 Enter 注入 / Tab 排队 / 暂停队列；`/` 斜杠目录、`@` 文件或其它对话、`$` Skill 与历史选择弹层；composer 本地/隔离线程模式（切换即交接）；主线程子 Agent 步骤点开活动 |
+| `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；审查队列入口与未读徽标；**进行中**任务行（并行线程置顶）；进行中会话呼吸点；隔离 Worktree 线程小标；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
+| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；远离底部的旧消息才 `content-visibility`，贴底附近保持真实高度；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（不进全局快捷键，避免抢输入框）；Ctrl⇧D / 麦克风听写；Ctrl⇧V 语音对话（听写自动发送 + TTS）；空输入 ↑ 恢复上一条；⌘G 搜索对话；提交时拦截 UI 斜杠命令；忙时 Enter 注入 / Tab 排队 / 暂停队列；`/` 斜杠目录、`@` 文件或其它对话、`$` Skill 与历史选择弹层；composer 本地/隔离线程模式（切换即交接，隔离可选起点分支）；主线程子 Agent 步骤点开活动 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时；生成演示时改头标签；有工具才展开时间线；子 Agent 步骤可点开活动 |

@@ -19,6 +19,7 @@ import {
   SquarePen
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
+import { splitLiveConversations } from '../../shared/conversation'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { AppPage, SettingsTab } from '../types/navigation'
@@ -222,6 +223,10 @@ export function Sidebar({
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .slice(0, 60)
   }, [conversations])
+  const { live: liveConvs, rest: restConvs } = useMemo(
+    () => splitLiveConversations(dialogConvs, liveIdSet),
+    [dialogConvs, liveIdSet]
+  )
 
   const getSettingsNavEl = useCallback(
     (id: string) => settingsNavItemRefs.current.get(id as SettingsTab),
@@ -579,12 +584,19 @@ export function Sidebar({
             )}
           </section>
 
+          {liveConvs.length > 0 ? (
+            <section className="sidebar-section" aria-label="进行中">
+              <h3 className="sidebar-section-label">进行中</h3>
+              {liveConvs.map((c) => renderConvRow(c))}
+            </section>
+          ) : null}
+
           <section className="sidebar-section">
             <h3 className="sidebar-section-label">对话</h3>
             {dialogConvs.length === 0 ? (
               <p className="sidebar-section-empty">暂无对话</p>
-            ) : (
-              dialogConvs.map((c) => renderConvRow(c))
+            ) : restConvs.length === 0 ? null : (
+              restConvs.map((c) => renderConvRow(c))
             )}
           </section>
         </div>

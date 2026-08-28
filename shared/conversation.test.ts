@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterChatList } from './conversation'
+import { filterChatList, splitLiveConversations } from './conversation'
 
 describe('conversation search', () => {
   it('filters chats by title or id', () => {
@@ -11,5 +11,13 @@ describe('conversation search', () => {
     expect(filterChatList(items, 'c2').map((c) => c.id)).toEqual(['c2'])
     expect(filterChatList(items, '')).toEqual(items)
     expect(filterChatList(items, 'zzz')).toEqual([])
+  })
+
+  it('splits live conversations into a first-class task list', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+    expect(splitLiveConversations(items, ['b', 'c'])).toEqual({
+      live: [{ id: 'b' }, { id: 'c' }],
+      rest: [{ id: 'a' }]
+    })
   })
 })

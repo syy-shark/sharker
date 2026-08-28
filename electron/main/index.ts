@@ -1427,12 +1427,16 @@ function registerIpc(): void {
     return listBranchChanges({ cwd: root, runGit })
   })
 
-  ipcMain.handle(IPC.WORKSPACE_PREPARE_WORKTREE, async (_e, cwd: string, conversationId: string) => {
-    return prepareThreadWorktree({
-      workspacePath: String(cwd || ''),
-      conversationId: String(conversationId || '')
-    })
-  })
+  ipcMain.handle(
+    IPC.WORKSPACE_PREPARE_WORKTREE,
+    async (_e, cwd: string, conversationId: string, opts?: { baseRef?: string }) => {
+      return prepareThreadWorktree({
+        workspacePath: String(cwd || ''),
+        conversationId: String(conversationId || ''),
+        baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined
+      })
+    }
+  )
 
   ipcMain.handle(
     IPC.GIT_HANDOFF,

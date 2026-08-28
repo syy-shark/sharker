@@ -10,6 +10,8 @@ export type ThreadMode = 'local' | 'worktree'
 export type ThreadRuntime = {
   mode: ThreadMode
   worktreePath?: string
+  /** 首次创建隔离 worktree 时的起点（分支 / HEAD） */
+  baseRef?: string
 }
 
 function storageKey(conversationId: string): string {
@@ -25,10 +27,11 @@ export function loadThreadRuntime(conversationId: string | null | undefined): Th
     const parsed = JSON.parse(raw) as Partial<ThreadRuntime>
     const worktreePath =
       typeof parsed.worktreePath === 'string' ? parsed.worktreePath : undefined
+    const baseRef = typeof parsed.baseRef === 'string' ? parsed.baseRef : undefined
     if (parsed.mode === 'worktree') {
-      return { mode: 'worktree', worktreePath }
+      return { mode: 'worktree', worktreePath, baseRef }
     }
-    return { mode: 'local', worktreePath }
+    return { mode: 'local', worktreePath, baseRef }
   } catch {
     /* ignore broken localStorage */
   }

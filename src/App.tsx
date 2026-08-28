@@ -239,6 +239,7 @@ export default function App() {
   const [changesRevision, setChangesRevision] = useState(0)
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
+  const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const threadRuntimeRef = useRef<{ mode: ThreadMode; worktreePath?: string }>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
@@ -857,6 +858,7 @@ export default function App() {
     const runtime = loadThreadRuntime(activeConversationId)
     setThreadMode(runtime.mode)
     setThreadWorktreePath(runtime.worktreePath)
+    setWorktreeBaseRef(runtime.baseRef || '')
     threadRuntimeRef.current = runtime
     setQueueHeld(Boolean(activeConversationId && queueHeldByConvRef.current.has(activeConversationId)))
   }, [activeConversationId])
@@ -1571,7 +1573,9 @@ export default function App() {
 
     if (mode === 'worktree') {
       if (!worktreePath && localCwd && convId && window.sharker.prepareWorktree) {
-        const prepared = await window.sharker.prepareWorktree(localCwd, convId)
+        const prepared = await window.sharker.prepareWorktree(localCwd, convId, {
+          baseRef: worktreeBaseRef || prev.baseRef
+        })
         if (!prepared.ok) {
           note(`**交接失败**：${prepared.error}`)
           return
@@ -1601,13 +1605,17 @@ export default function App() {
       }
     }
 
-    const next = { mode, worktreePath }
+    const next = {
+      mode,
+      worktreePath,
+      baseRef: worktreeBaseRef || prev.baseRef
+    }
     threadRuntimeRef.current = next
     setThreadMode(mode)
     setThreadWorktreePath(worktreePath)
     if (convId) saveThreadRuntime(convId, next)
     note(mode === 'worktree' ? '已交接进隔离 worktree。' : '已交接到本地工作区。')
-  }, [persistActiveConversation])
+  }, [persistActiveConversation, worktreeBaseRef])
 
   const worktreeWarningRef = useRef<string | null>(null)
 
@@ -1619,13 +1627,19 @@ export default function App() {
     if (runtime.worktreePath) return runtime.worktreePath
     const cwd = getActiveWorkspacePath(settingsRef.current)
     if (!cwd || !convId || !window.sharker?.prepareWorktree) return undefined
-    const result = await window.sharker.prepareWorktree(cwd, convId)
+    const result = await window.sharker.prepareWorktree(cwd, convId, {
+      baseRef: runtime.baseRef
+    })
     if (!result.ok) {
       worktreeWarningRef.current = result.error
       console.warn('[worktree]', result.error)
       return undefined
     }
-    const next = { mode: 'worktree' as const, worktreePath: result.path }
+    const next = {
+      mode: 'worktree' as const,
+      worktreePath: result.path,
+      baseRef: runtime.baseRef
+    }
     saveThreadRuntime(convId, next)
     if (isActive) {
       threadRuntimeRef.current = next
@@ -1902,6 +1916,14 @@ export default function App() {
       cancelled = true
     }
   }, [reviewCwd, changesRevision])
+
+  const handleWorktreeBaseRefChange = useCallback((ref: string) => {
+    setWorktreeBaseRef(ref)
+    const convId = activeConversationIdRef.current
+    const next = { ...threadRuntimeRef.current, baseRef: ref }
+    threadRuntimeRef.current = next
+    if (convId) saveThreadRuntime(convId, next)
+  }, [])
 
   const handleOpenPullRequest = useCallback(() => {
     setRightPanelTab('changes')
@@ -3979,6 +4001,8 @@ export default function App() {
               }}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
+              worktreeBaseRef={worktreeBaseRef}
+              onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
               fileSearchRoot={
                 threadMode === 'worktree' && threadWorktreePath
                   ? threadWorktreePath

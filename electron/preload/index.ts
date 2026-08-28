@@ -165,8 +165,8 @@ contextBridge.exposeInMainWorld('sharker', {
     action: 'stage' | 'unstage' | 'revert',
     paths?: string[]
   ) => ipcRenderer.invoke(IPC.GIT_REVIEW_ACTION, cwd, action, paths),
-  prepareWorktree: (cwd: string, conversationId: string) =>
-    ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId),
+  prepareWorktree: (cwd: string, conversationId: string, opts?: { baseRef?: string }) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId, opts),
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'
     localCwd: string

@@ -783,6 +783,34 @@ html.theme-dark .composer-thread-chip.is-active {
   background: var(--metal-control-fill-soft);
 }
 
+.composer-worktree-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.composer-worktree-base-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.composer-worktree-base-select {
+  max-width: 140px;
+  height: 22px;
+  padding: 0 6px;
+  border: 0.5px solid var(--glass-edge-soft);
+  border-radius: 999px;
+  background: var(--glass-fill-nested);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.composer-worktree-base-select:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
 .composer-footer-right {
   flex: 0 1 auto;
   min-width: 0;
@@ -1097,6 +1125,14 @@ html.theme-dark .chat-scroll-bottom {
 .message-row:not(.message-row--live):not(:nth-last-child(-n+5)):not(.is-find-hit):not(.is-find-current) {
   content-visibility: auto;
   contain-intrinsic-size: auto 112px;
+}
+.chat--active .message-row:not(.message-row--live):not(:nth-last-child(-n+8)):not(.is-find-hit):not(.is-find-current) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 160px;
+}
+.chat--active .message-row:not(.message-row--live):nth-last-child(-n+8) {
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 .message-user-wrap { max-width: min(78%, 600px); }
 

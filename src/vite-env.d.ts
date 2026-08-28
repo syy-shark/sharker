@@ -205,7 +205,8 @@ export interface SharkerApi {
   }>
   prepareWorktree: (
     cwd: string,
-    conversationId: string
+    conversationId: string,
+    opts?: { baseRef?: string }
   ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'

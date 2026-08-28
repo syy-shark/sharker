@@ -149,6 +149,9 @@ interface Props {
   /** Codex 式线程目标：本地工作区或隔离 worktree */
   threadMode?: ThreadMode
   onThreadModeChange?: (mode: ThreadMode) => void
+  /** 首次创建隔离 worktree 的起点分支 */
+  worktreeBaseRef?: string
+  onWorktreeBaseRefChange?: (ref: string) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
   /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
@@ -194,6 +197,8 @@ export function ChatView({
   onOpenSubAgent,
   threadMode = 'local',
   onThreadModeChange,
+  worktreeBaseRef = '',
+  onWorktreeBaseRefChange,
   fileSearchRoot = '',
   composerIntent = null,
   onComposerIntentHandled,
@@ -235,6 +240,7 @@ export function ChatView({
   const [dictateInterim, setDictateInterim] = useState('')
   const [dictateError, setDictateError] = useState('')
   const [voiceChat, setVoiceChat] = useState(false)
+  const [worktreeBranches, setWorktreeBranches] = useState<string[]>([])
   const voiceChatRef = useRef(false)
   const inputRef = useRef('')
   const loadingRef = useRef(false)
@@ -910,6 +916,25 @@ export function ChatView({
   }, [loading])
 
   useEffect(() => {
+    if (threadMode !== 'worktree' || !fileSearchRoot || !window.sharker.listGitBranches) {
+      setWorktreeBranches([])
+      return
+    }
+    let cancelled = false
+    void window.sharker
+      .listGitBranches(fileSearchRoot)
+      .then((result) => {
+        if (!cancelled) setWorktreeBranches(result.isRepo ? result.branches : [])
+      })
+      .catch(() => {
+        if (!cancelled) setWorktreeBranches([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [threadMode, fileSearchRoot])
+
+  useEffect(() => {
     if (wasLoadingRef.current && !loading && voiceChatRef.current) {
       const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.content.trim())
       const spoken = textForSpeech(last?.content || streaming)
@@ -1558,6 +1583,24 @@ export function ChatView({
                 隔离
               </button>
             </div>
+          ) : null}
+          {onThreadModeChange && threadMode === 'worktree' ? (
+            <label className="composer-worktree-base">
+              <span className="composer-worktree-base-label">起点</span>
+              <select
+                className="composer-worktree-base-select"
+                value={worktreeBaseRef}
+                aria-label="隔离 worktree 起点分支"
+                onChange={(e) => onWorktreeBaseRefChange?.(e.target.value)}
+              >
+                <option value="">HEAD</option>
+                {worktreeBranches.map((branch) => (
+                  <option key={branch} value={branch}>
+                    {branch}
+                  </option>
+                ))}
+              </select>
+            </label>
           ) : null}
           {dictating && dictateInterim ? (
             <span className="composer-dictate-interim">{dictateInterim}</span>

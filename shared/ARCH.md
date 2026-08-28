@@ -18,8 +18,10 @@
 | `ipc.ts` | IPC channel 名称常量 |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤 |
-| `conversation.test.ts` | 按标题 / id 过滤对话 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分 |
+| `conversation.test.ts` | 按标题 / id 过滤对话、进行中拆分 |
+| `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
+| `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |
 | `context-limit.ts` | 各模型 context 上限与格式化 |
 | `context-compress.ts` | 85% 阈值自动压缩历史 |

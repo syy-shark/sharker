@@ -44,6 +44,57 @@ describe('prepareThreadWorktree', () => {
     if (second.ok) expect(second.path).toBe(first.path)
   })
 
+  it('copies ignored .worktreeinclude files into a new worktree', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-inc-'))
+    temps.push(repo)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'hello\n')
+    await writeFile(path.join(repo, '.gitignore'), '.env\n')
+    await writeFile(path.join(repo, '.env'), 'SECRET=1\n')
+    await writeFile(path.join(repo, '.worktreeinclude'), '.env\n')
+    await execFileAsync('git', ['add', 'README.md', '.gitignore', '.worktreeinclude'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+
+    const result = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-include-1'
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    temps.push(result.path)
+    const copied = await (await import('fs/promises')).readFile(path.join(result.path, '.env'), 'utf8')
+    expect(copied).toBe('SECRET=1\n')
+  })
+
+  it('creates the worktree from a named base ref', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-base-'))
+    temps.push(repo)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'main\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+    await execFileAsync('git', ['checkout', '-b', 'feature-a'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'feature\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'feat'], { cwd: repo })
+    await execFileAsync('git', ['checkout', '-'], { cwd: repo })
+
+    const result = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-base-1',
+      baseRef: 'feature-a'
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    temps.push(result.path)
+    const { stdout } = await execFileAsync('git', ['show', 'HEAD:README.md'], { cwd: result.path })
+    expect(stdout).toBe('feature\n')
+  })
+
   it('rejects a non-git folder', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'sharker-nongit-'))
     temps.push(dir)
