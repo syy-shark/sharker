@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 外观 / 已归档
+ * 设置页壳：权限 / 模型 / 外观 / 键盘快捷键 / 已归档
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -10,6 +10,7 @@ import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
+import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -24,6 +25,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   appearance: {
     title: '外观',
     desc: '浅色苹果玻璃与深色金属；人格只改语气。'
+  },
+  shortcuts: {
+    title: '键盘快捷键',
+    desc: '搜索命令、改绑或重置。对标 Codex Settings → Keyboard Shortcuts。'
   },
   archived: {
     title: '已归档',
@@ -61,6 +66,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           )}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'shortcuts' && (
+            <ShortcutSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'archived' && <ArchivedSettings />}
         </div>

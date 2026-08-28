@@ -31,6 +31,7 @@ describe('slash commands', () => {
     expect(names).toContain('pin')
     expect(names).toContain('unread')
     expect(names).toContain('usage')
+    expect(names).toContain('keymap')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.action).toBe('copy_last_output')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fast')?.action).toBe('set_fast')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')

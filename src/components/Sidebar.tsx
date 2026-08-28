@@ -11,6 +11,7 @@ import {
   Folder,
   Inbox,
   MoreHorizontal,
+  Keyboard,
   Palette,
   Pin,
   Settings,
@@ -70,6 +71,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'permissions', label: '权限', icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'appearance', label: '外观', icon: Palette },
+  { id: 'shortcuts', label: '快捷键', icon: Keyboard },
   { id: 'archived', label: '已归档', icon: Archive }
 ]
 

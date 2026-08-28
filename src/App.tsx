@@ -58,7 +58,8 @@ import { AutomationsPage } from './pages/AutomationsPage'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
-import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
+import { adjacentConversationId } from '../shared/workbench-shortcuts'
+import { matchWorkbenchShortcut } from '../shared/keymap'
 import { mouseNavDirection, navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
 import {
   clampUiFontScale,
@@ -343,6 +344,9 @@ export default function App() {
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
+  const handleSelectConversationRef = useRef<
+    (workspaceId: string, conversationId: string) => Promise<void>
+  >(async () => {})
   /** 按会话的 done/stop 门闩 — 禁止全局 doneCommitted 误杀其他会话 */
   const doneCommittedMapRef = useRef<DoneCommittedMap>({})
   const doneCommittedRef = useRef(false)
@@ -1010,7 +1014,8 @@ export default function App() {
           worktreeKeepCount: updated.worktreeKeepCount,
           memoryInjection: updated.memoryInjection,
           memoryGeneration: updated.memoryGeneration,
-          uiFontScale: updated.uiFontScale
+          uiFontScale: updated.uiFontScale,
+          keyboardShortcuts: updated.keyboardShortcuts
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1061,6 +1066,7 @@ export default function App() {
       memoryInjection: draft.memoryInjection,
       memoryGeneration: draft.memoryGeneration,
       uiFontScale: draft.uiFontScale,
+      keyboardShortcuts: draft.keyboardShortcuts,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -2410,6 +2416,7 @@ export default function App() {
       memoryInjection: next.memoryInjection,
       memoryGeneration: next.memoryGeneration,
       uiFontScale: next.uiFontScale,
+      keyboardShortcuts: next.keyboardShortcuts,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -2563,6 +2570,7 @@ export default function App() {
       void window.sharker.patchConversationMeta(workspaceId, conversationId, { unread: false })
     }
   }
+  handleSelectConversationRef.current = handleSelectConversation
 
   useEffect(() => {
     if (!popoutRoute || !settings.workspaces.length) return
@@ -2861,7 +2869,7 @@ export default function App() {
   }
 
   /** 切换对话使用的接入与型号 */
-  const handleSelectProvider = async (id: string, model?: string) => {
+  const handleSelectProvider = useCallback(async (id: string, model?: string) => {
     const current = settingsRef.current
     const providers = current.providers.map((p) => {
       if (p.id !== id) return p
@@ -2875,10 +2883,10 @@ export default function App() {
       }
     })
     await persistSettings({ ...current, activeProviderId: id, providers })
-  }
+  }, [persistSettings])
 
   /** 对话区切换思考水平（写入对应 provider） */
-  const handleThinkingLevelChange = async (providerId: string, level: string) => {
+  const handleThinkingLevelChange = useCallback(async (providerId: string, level: string) => {
     const next = {
       ...settingsRef.current,
       providers: settingsRef.current.providers.map((p) =>
@@ -2889,7 +2897,7 @@ export default function App() {
     setSettings(next)
     setSettingsDraft(next)
     await persistSettings(next)
-  }
+  }, [persistSettings])
 
   /** 切换工作区置顶 */
   const handleTogglePinWorkspace = async (id: string) => {
@@ -3687,6 +3695,9 @@ export default function App() {
         case 'open_settings':
           void handleNavigate('settings', 'models')
           break
+        case 'open_shortcuts':
+          void handleNavigate('settings', 'shortcuts')
+          break
         case 'copy_last_output': {
           const text = lastCompletedAssistantText(messagesRef.current)
           if (text) {
@@ -3785,6 +3796,7 @@ export default function App() {
       conversationList,
       copyPlainText,
       handleCreateBranchHere,
+      handleNavigate,
       handleMarkUnread,
       handleOpenWorktree,
       handleRenameConversation,
@@ -3831,7 +3843,7 @@ export default function App() {
         return
       }
       if (cmd.action === 'shortcut_help') {
-        setShortcutsHelpOpen(true)
+        void handleNavigate('settings', 'shortcuts')
         return
       }
       if (cmd.action === 'pick_model') {
@@ -3952,15 +3964,18 @@ export default function App() {
         setRightPanelOpen(false)
         return
       }
-      const action = matchWorkbenchShortcut({
-        key: e.key,
-        code: e.code,
-        metaKey: e.metaKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-        shiftKey: e.shiftKey,
-        isComposing: e.isComposing
-      })
+      const action = matchWorkbenchShortcut(
+        {
+          key: e.key,
+          code: e.code,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+          shiftKey: e.shiftKey,
+          isComposing: e.isComposing
+        },
+        settingsRef.current.keyboardShortcuts
+      )
       if (!action) return
       if (action === 'copy_cwd') {
         const t = e.target
@@ -4002,7 +4017,18 @@ export default function App() {
         return
       }
       if (action === 'shortcut_help') {
-        setShortcutsHelpOpen((open) => !open)
+        void handleNavigate('settings', 'shortcuts')
+        return
+      }
+      if (action === 'select_recent') {
+        const n = Number(e.key)
+        const recent = [...conversationListRef.current].sort((a, b) => b.updatedAt - a.updatedAt)
+        const nextId = recent[n - 1]?.id
+        const wsId = settingsRef.current.activeWorkspaceId
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
         return
       }
       if (action === 'select_chat') {
@@ -5006,6 +5032,52 @@ export default function App() {
     [handleSelectConversation, threadMode, threadWorktreePath]
   )
 
+  const handleComposerSlash = useCallback((cmd: SlashCommandMeta, args: string) => {
+    void handleSlashActionRef.current(cmd, args)
+  }, [])
+
+  const handleCloseHistoryPicker = useCallback(() => {
+    setShowHistoryPicker(false)
+  }, [])
+
+  const conversationTitles = useMemo(
+    () => conversationList.map((c) => ({ id: c.id, title: c.title })),
+    [conversationList]
+  )
+
+  const handlePickConversation = useCallback((id: string) => {
+    const ws = settingsRef.current.activeWorkspaceId
+    if (ws) void handleSelectConversationRef.current(ws, id)
+    setShowHistoryPicker(false)
+  }, [])
+
+  const handleClearThreadGoal = useCallback(() => {
+    const convId = activeConversationIdRef.current
+    threadGoalRef.current = null
+    setThreadGoal(null)
+    if (convId) saveThreadGoal(convId, null)
+  }, [])
+
+  const handleComposerIntentHandled = useCallback(() => {
+    setComposerIntent(null)
+  }, [])
+
+  const handleRestoreWorktreeClick = useCallback(() => {
+    void handleRestoreWorktree()
+  }, [handleRestoreWorktree])
+
+  const handleRetryMessage = useCallback(
+    (userMessageId: string) => {
+      void handleRetry(userMessageId)
+    },
+    [handleRetry]
+  )
+
+  const fileSearchRoot = useMemo(() => {
+    if (threadMode === 'worktree' && threadWorktreePath) return threadWorktreePath
+    return getActiveWorkspacePath(settings) ?? ''
+  }, [threadMode, threadWorktreePath, settings])
+
   const liveConversationIds = (() => {
     void sessionLiveVersion
     const ids = new Set<string>()
@@ -5091,11 +5163,11 @@ export default function App() {
               sessionKey={activeConversationId}
               workspaces={settings.workspaces}
               activeWorkspaceId={settings.activeWorkspaceId}
-              onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
+              onSelectWorkspace={handleSelectWorkspace}
               providers={settings.providers}
               activeProviderId={settings.activeProviderId}
               onSelectProvider={handleSelectProvider}
-              onThinkingLevelChange={(id, level) => void handleThinkingLevelChange(id, level)}
+              onThinkingLevelChange={handleThinkingLevelChange}
               messages={messages}
               liveSegments={liveSegments}
               streaming={streaming}
@@ -5109,41 +5181,25 @@ export default function App() {
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}
               onAbort={handleAbort}
-              onSlashAction={(cmd, args) => void handleSlashActionRef.current(cmd, args)}
+              onSlashAction={handleComposerSlash}
               showHistoryPicker={showHistoryPicker}
-              onCloseHistoryPicker={() => setShowHistoryPicker(false)}
-              conversationTitles={conversationList.map((c) => ({
-                id: c.id,
-                title: c.title
-              }))}
-              onPickConversation={(id) => {
-                const ws = settings.activeWorkspaceId
-                if (ws) void handleSelectConversation(ws, id)
-                setShowHistoryPicker(false)
-              }}
+              onCloseHistoryPicker={handleCloseHistoryPicker}
+              conversationTitles={conversationTitles}
+              onPickConversation={handlePickConversation}
               threadMode={threadMode}
               threadGoal={threadGoal}
-              onClearThreadGoal={() => {
-                const convId = activeConversationIdRef.current
-                threadGoalRef.current = null
-                setThreadGoal(null)
-                if (convId) saveThreadGoal(convId, null)
-              }}
+              onClearThreadGoal={handleClearThreadGoal}
               onThreadModeChange={handleThreadModeChange}
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
-              fileSearchRoot={
-                threadMode === 'worktree' && threadWorktreePath
-                  ? threadWorktreePath
-                  : (getActiveWorkspacePath(settings) ?? '')
-              }
+              fileSearchRoot={fileSearchRoot}
               composerIntent={composerIntent}
-              onComposerIntentHandled={() => setComposerIntent(null)}
+              onComposerIntentHandled={handleComposerIntentHandled}
               queueHeld={queueHeld}
               onQueueHeldChange={handleQueueHeldChange}
               worktreeMissing={worktreeMissing}
-              onRestoreWorktree={() => void handleRestoreWorktree()}
-              onRetry={(userMessageId) => void handleRetry(userMessageId)}
+              onRestoreWorktree={handleRestoreWorktreeClick}
+              onRetry={handleRetryMessage}
               approval={approval}
               approvalResponding={approvalResponding}
               onApproval={handleApproval}

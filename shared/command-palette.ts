@@ -263,7 +263,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'shortcuts',
-    title: '快捷键一览',
+    title: '键盘快捷键',
     shortcut: '⌘/',
     keywords: 'shortcuts keymap help 快捷键',
     action: 'shortcut_help'

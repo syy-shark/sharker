@@ -19,6 +19,7 @@ export type WorkbenchShortcutAction =
   | 'pick_model'
   | 'shortcut_help'
   | 'select_chat'
+  | 'select_recent'
   | 'search_chats'
   | 'toggle_agents'
   | 'nav_back'
@@ -40,8 +41,8 @@ export type WorkbenchShortcutAction =
   | 'copy_cwd'
   | 'copy_session_id'
 
-/** 从键盘事件字段匹配动作；输入法组字中不触发 */
-export function matchWorkbenchShortcut(event: {
+/** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
+export function matchDefaultWorkbenchShortcut(event: {
   key: string
   code?: string
   metaKey: boolean
@@ -90,8 +91,15 @@ export function matchWorkbenchShortcut(event: {
   if (key === 'e' && event.shiftKey && !event.altKey) return 'toggle_files'
   if (key === 'b' && event.shiftKey && !event.altKey) return 'toggle_browser'
   if (key === 'm' && event.shiftKey && !event.altKey) return 'pick_model'
-  if (key === '/' && !event.altKey && !event.shiftKey) return 'shortcut_help'
+  if ((key === '/' || key === '?') && !event.altKey) return 'shortcut_help'
+  if (event.altKey && !event.shiftKey && /^[1-6]$/.test(key)) return 'select_recent'
   if (!event.altKey && !event.shiftKey && /^[1-9]$/.test(key)) return 'select_chat'
+  if (event.altKey && !event.shiftKey && (key === 'ArrowLeft' || key === 'arrowleft')) {
+    return 'prev_thread'
+  }
+  if (event.altKey && !event.shiftKey && (key === 'ArrowRight' || key === 'arrowright')) {
+    return 'next_thread'
+  }
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'
   if (key === 'o' && event.shiftKey && !event.altKey) return 'new_conversation'
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
@@ -174,6 +182,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Ctrl+L', title: '清终端' },
   { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
+  { keys: '⌘⌥1–6', title: '最近对话 1–6' },
+  { keys: '⌘⌥← / ⌘⌥→', title: '上一条 / 下一条对话' },
   { keys: '⌘/', title: '快捷键一览' },
   { keys: '⇧Esc', title: '清未读徽标' },
   { keys: '⌘⇧A', title: '归档当前对话' },
@@ -194,4 +204,73 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Enter', title: '发送；忙时注入当前回合' },
   { keys: 'Tab', title: '忙时排队下一条' },
   { keys: 'Shift+Enter', title: '换行' }
+]
+
+/** 设置 → 键盘快捷键：可改绑的动作与默认展示 */
+export const SHORTCUT_CATALOG: Array<{
+  action: WorkbenchShortcutAction
+  title: string
+  defaultKeys: string
+  defaultChord?: string | string[]
+}> = [
+  { action: 'command_palette', title: '命令面板', defaultKeys: '⌘K', defaultChord: 'mod+k' },
+  { action: 'open_settings', title: '打开设置', defaultKeys: '⌘,', defaultChord: 'mod+,' },
+  {
+    action: 'shortcut_help',
+    title: '键盘快捷键',
+    defaultKeys: '⌘/ 或 ⌘⇧/',
+    defaultChord: ['mod+/', 'mod+shift+/']
+  },
+  { action: 'open_folder', title: '打开文件夹', defaultKeys: '⌘O', defaultChord: 'mod+o' },
+  { action: 'nav_back', title: '后退', defaultKeys: '⌘[', defaultChord: 'mod+[' },
+  { action: 'nav_forward', title: '前进', defaultKeys: '⌘]', defaultChord: 'mod+]' },
+  { action: 'font_larger', title: '放大字号', defaultKeys: '⌘+', defaultChord: 'mod++' },
+  { action: 'font_smaller', title: '缩小字号', defaultKeys: '⌘-', defaultChord: 'mod+-' },
+  { action: 'font_reset', title: '重置字号', defaultKeys: '⌘0', defaultChord: 'mod+0' },
+  { action: 'toggle_sidebar', title: '切换侧栏', defaultKeys: '⌘B', defaultChord: 'mod+b' },
+  { action: 'toggle_review', title: '打开审查', defaultKeys: '⌘⌥B', defaultChord: 'mod+alt+b' },
+  { action: 'toggle_terminal', title: '打开终端', defaultKeys: '⌘J', defaultChord: ['mod+j', 'mod+`'] },
+  {
+    action: 'clear_terminal',
+    title: '清终端',
+    defaultKeys: 'Ctrl+L',
+    defaultChord: 'mod+ctrl+l'
+  },
+  { action: 'toggle_files', title: '打开文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },
+  { action: 'toggle_browser', title: '打开内置浏览器', defaultKeys: '⌘⇧B', defaultChord: 'mod+shift+b' },
+  { action: 'open_browser', title: '打开浏览器标签', defaultKeys: '⌘T', defaultChord: 'mod+t' },
+  { action: 'toggle_agents', title: '子 Agent 活动', defaultKeys: '⌘⌥U', defaultChord: 'mod+alt+u' },
+  { action: 'new_conversation', title: '新对话', defaultKeys: '⌘N', defaultChord: ['mod+n', 'mod+shift+o'] },
+  {
+    action: 'standalone_conversation',
+    title: '独立新对话',
+    defaultKeys: '⌘⌥O',
+    defaultChord: 'mod+alt+o'
+  },
+  { action: 'side_conversation', title: '旁路新线程', defaultKeys: '⌘⌥S', defaultChord: 'mod+alt+s' },
+  { action: 'archive_thread', title: '归档当前对话', defaultKeys: '⌘⇧A', defaultChord: 'mod+shift+a' },
+  { action: 'rename_conversation', title: '重命名对话', defaultKeys: '⌘⌥R', defaultChord: 'mod+alt+r' },
+  { action: 'pin_conversation', title: '置顶 / 取消置顶', defaultKeys: '⌘⌥P', defaultChord: 'mod+alt+p' },
+  { action: 'mark_unread', title: '标为未读', defaultKeys: '⌘⇧U', defaultChord: 'mod+shift+u' },
+  { action: 'clear_unread', title: '清除未读徽标', defaultKeys: '⇧Esc', defaultChord: 'shift+escape' },
+  { action: 'search_chats', title: '搜索对话', defaultKeys: '⌘G', defaultChord: 'mod+g' },
+  { action: 'search_files', title: '引用工作区文件', defaultKeys: '⌘P', defaultChord: 'mod+p' },
+  { action: 'next_attention', title: '下一条进行中对话', defaultKeys: '⌘⌥A', defaultChord: 'mod+alt+a' },
+  {
+    action: 'prev_thread',
+    title: '上一条对话',
+    defaultKeys: '⌘⇧[',
+    defaultChord: ['mod+shift+[', 'mod+alt+arrowleft']
+  },
+  {
+    action: 'next_thread',
+    title: '下一条对话',
+    defaultKeys: '⌘⇧]',
+    defaultChord: ['mod+shift+]', 'mod+alt+arrowright']
+  },
+  { action: 'select_chat', title: '跳到第 N 条对话', defaultKeys: '⌘1–9' },
+  { action: 'select_recent', title: '最近对话 1–6', defaultKeys: '⌘⌥1–6' },
+  { action: 'pick_model', title: '模型选择', defaultKeys: 'Ctrl⇧M', defaultChord: 'mod+ctrl+shift+m' },
+  { action: 'copy_cwd', title: '复制工作目录', defaultKeys: '⌘⇧C', defaultChord: 'mod+shift+c' },
+  { action: 'copy_session_id', title: '复制会话 ID', defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' }
 ]

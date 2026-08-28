@@ -7,6 +7,7 @@ import { ensureBuiltinProviders } from './provider-catalog'
 import { parsePersonality } from './personality'
 import { clampWorktreeKeepCount } from './worktree-prune'
 import { clampUiFontScale } from './ui-font-scale'
+import { normalizeKeymap } from './keymap'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -133,6 +134,7 @@ export function normalizeSettings(
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
     memoryInjection: raw.memoryInjection !== false,
     memoryGeneration: raw.memoryGeneration !== false,
+    keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

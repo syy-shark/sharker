@@ -10,4 +10,5 @@ export type SettingsTab =
   | 'permissions'
   | 'models'
   | 'appearance'
+  | 'shortcuts'
   | 'archived'

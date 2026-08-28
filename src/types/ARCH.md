@@ -13,6 +13,6 @@
 
 | 文件 | 说明 |
 |------|------|
-| `navigation.ts` | `AppPage`、`SettingsTab` |
+| `navigation.ts` | `AppPage`、`SettingsTab`（含 `shortcuts`） |
 | `chat.ts` | `PromptSubmitMode`、`QueuedPrompt` 等 |
 | `ARCH.md` | 本层架构说明 |

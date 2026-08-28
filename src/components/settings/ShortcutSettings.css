@@ -1,0 +1,123 @@
+.shortcut-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 12px 4px;
+}
+
+.shortcut-search {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-nested);
+  color: inherit;
+  font: inherit;
+}
+
+.shortcut-search:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.shortcut-search.is-key-mode {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.shortcut-key-mode {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.shortcut-key-mode.is-active,
+.shortcut-key-mode:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.shortcut-reset-all,
+.shortcut-reset {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.shortcut-reset-all:hover,
+.shortcut-reset:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.shortcut-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 8px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.shortcut-title {
+  font-weight: 550;
+}
+
+.shortcut-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.shortcut-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcut-bind {
+  min-width: 88px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-nested);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.shortcut-bind.is-listening {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.shortcut-bind:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-bind {
+    transition: none;
+  }
+}

@@ -85,6 +85,8 @@ export interface AppSettings {
   memoryInjection?: boolean
   /** 是否在回合结束提炼并写入记忆（对标 Codex /memories generate） */
   memoryGeneration?: boolean
+  /** 快捷键覆盖（对标 Codex Settings → Keyboard Shortcuts） */
+  keyboardShortcuts?: import('./keymap').KeymapOverrides
 }
 
 /** 聊天消息角色 */
@@ -312,5 +314,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   personality: 'pragmatic',
   worktreeKeepCount: 15,
   memoryInjection: true,
-  memoryGeneration: true
+  memoryGeneration: true,
+  keyboardShortcuts: {}
 }

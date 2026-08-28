@@ -16,6 +16,7 @@
 | `SettingsPrimitives.tsx` / `.css` | Section / Card / Row / Toggle / 选择组等 |
 | `SettingsSelect.tsx` / `.css` | 自定义下拉；portal 菜单 + usePopoverAnimation 180ms enter/exit 后卸载；Esc/外侧关闭 |
 | `AppearanceSettings.tsx` / `.css` | 外观：浅色玻璃 / 深色金属；界面字号（`uiFontScale` / `--ui-font-scale`）；人格（务实/共情/关闭） |
+| `ShortcutSettings.tsx` / `.css` | 键盘快捷键：搜索、按键筛选、改绑、重置（`keyboardShortcuts`） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | 权限模式、网络隔离、记忆注入/写入、托管 worktree 保留数 |
 | `ComputerUseSettings.tsx` | Computer Use 开关与就绪（设置入口暂隐藏） |

@@ -14,7 +14,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
@@ -43,8 +43,10 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘[ / ⌘] 前进后退、⌘+/- 字号、Ctrl+L 清终端、⇧Esc 清未读、⌘⇧A 归档、⌘⌥S 旁路、⌘⌥A 进行中、⌘P 搜文件、⌘T 浏览器、⌘G 搜对话、⌘⇧O 新对话、⌘⌥O 独立窗、⌘⌥R 重命名、⌘⌥P 置顶、⌘⇧U 未读、⌘⇧C 工作目录、⌘⌥C 会话 ID） |
-| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘[ / ⌘+ / Ctrl+L / ⌘G / ⌘⌥O / ⌘⌥R / ⌘⌥P |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑） |
+| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘⌥1–6 / ⌘⌥← |
+| `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑 |
+| `keymap.test.ts` | 改绑后默认失效 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |

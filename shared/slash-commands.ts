@@ -362,6 +362,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'other'
   },
   {
+    name: 'keymap',
+    description: '打开键盘快捷键设置',
+    scope: 'ui',
+    action: 'open_shortcuts',
+    category: 'other'
+  },
+  {
     name: 'help',
     description: '显示帮助与命令列表',
     scope: 'agent',

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { adjacentConversationId, matchWorkbenchShortcut } from './workbench-shortcuts'
+import { adjacentConversationId, matchDefaultWorkbenchShortcut } from './workbench-shortcuts'
+import { matchWorkbenchShortcut } from './keymap'
 
 function ev(partial: {
   key: string
@@ -52,6 +53,9 @@ describe('workbench shortcuts', () => {
       'toggle_browser'
     )
     expect(matchWorkbenchShortcut(ev({ key: '/', metaKey: true }))).toBe('shortcut_help')
+    expect(matchWorkbenchShortcut(ev({ key: '?', metaKey: true, shiftKey: true }))).toBe(
+      'shortcut_help'
+    )
     expect(matchWorkbenchShortcut(ev({ key: '3', metaKey: true }))).toBe('select_chat')
     expect(matchWorkbenchShortcut(ev({ key: '`', ctrlKey: true }))).toBe('toggle_terminal')
     expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true }))).toBe('search_chats')
@@ -100,6 +104,12 @@ describe('workbench shortcuts', () => {
     )
     expect(matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, altKey: true }))).toBe(
       'copy_session_id'
+    )
+    expect(matchDefaultWorkbenchShortcut(ev({ key: '2', metaKey: true, altKey: true }))).toBe(
+      'select_recent'
+    )
+    expect(matchDefaultWorkbenchShortcut(ev({ key: 'ArrowLeft', metaKey: true, altKey: true }))).toBe(
+      'prev_thread'
     )
   })
 
