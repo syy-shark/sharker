@@ -73,7 +73,8 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: '`', ctrlKey: true }))).toBe('toggle_terminal')
     expect(matchWorkbenchShortcut(ev({ key: '`', metaKey: true }))).toBe('toggle_terminal')
     expect(matchWorkbenchShortcut(ev({ key: 'j', ctrlKey: true }))).toBe('toggle_panel')
-    expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true }))).toBe('search_chats')
+    expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true }))).toBeNull()
+    expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true, shiftKey: true }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'u', metaKey: true, altKey: true }))).toBe(
       'toggle_activity'
     )

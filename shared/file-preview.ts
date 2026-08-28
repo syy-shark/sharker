@@ -73,6 +73,13 @@ export function dataUrlMimeForPath(filePath: string): string {
   return 'application/octet-stream'
 }
 
+/** 文件预览 ⌘L 跳行：只收正整数，超出夹到最后一行 */
+export function parseGoToLineInput(raw: string, lineCount: number): number | null {
+  const n = Number.parseInt(String(raw ?? '').trim(), 10)
+  if (!Number.isFinite(n) || n < 1) return null
+  return Math.min(n, Math.max(1, lineCount))
+}
+
 export function filePreviewUnsupportedMessage(filePath: string): string {
   const ext = fileExt(filePath)
   if (ext === 'xlsx' || ext === 'xls') {

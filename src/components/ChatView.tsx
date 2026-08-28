@@ -468,35 +468,36 @@ export function ChatView({
     const current = findHits[findHit]
     if (!findOpen || !current) return
     const el = document.getElementById(`msg-${current.messageId}`)
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    el?.scrollIntoView({ block: 'center', behavior: 'auto' })
   }, [findHit, findHits, findOpen])
 
-  /** 查找打开时 ⌘G / ⌘⇧G 跳命中（对标 Codex Find next），不抢全局搜对话 */
+  const stepFindHit = useCallback((direction: 1 | -1) => {
+    if (!findHits.length) return
+    setFindHit((i) => (i + direction + findHits.length) % findHits.length)
+  }, [findHits.length])
+
+  /** 官方 Find next / previous：⌘G / ⌘⇧G / F3，查找未开时先打开再跳 */
   useEffect(() => {
-    if (!findOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing) return
-      if (e.key === 'F3') {
-        e.preventDefault()
-        e.stopPropagation()
-        if (!findHits.length) return
-        setFindHit((i) =>
-          e.shiftKey ? (i - 1 + findHits.length) % findHits.length : (i + 1) % findHits.length
-        )
-        return
-      }
-      if (!(e.metaKey || e.ctrlKey) || e.altKey) return
-      if (e.key !== 'g' && e.key !== 'G') return
+      const isF3 = e.key === 'F3'
+      const isFindNext =
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        (e.key === 'g' || e.key === 'G')
+      if (!isF3 && !isFindNext) return
       e.preventDefault()
       e.stopPropagation()
-      if (!findHits.length) return
-      setFindHit((i) =>
-        e.shiftKey ? (i - 1 + findHits.length) % findHits.length : (i + 1) % findHits.length
-      )
+      const back = e.shiftKey
+      if (!findOpen) {
+        setFindOpen(true)
+        requestAnimationFrame(() => findInputRef.current?.focus())
+      }
+      stepFindHit(back ? -1 : 1)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [findOpen, findHits.length])
+  }, [findOpen, stepFindHit])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -868,7 +869,6 @@ export function ChatView({
                   if (e.key === 'Escape') {
                     e.preventDefault()
                     setFindOpen(false)
-                    setFindQuery('')
                     composerRef.current?.focus()
                     return
                   }
@@ -913,7 +913,6 @@ export function ChatView({
                 className="chat-find__nav"
                 onClick={() => {
                   setFindOpen(false)
-                  setFindQuery('')
                 }}
                 aria-label="关闭查找"
               >

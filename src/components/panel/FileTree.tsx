@@ -1,12 +1,13 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
- * 文本预览划选可插入输入框或旁路提问。
+ * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
 import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
+  parseGoToLineInput,
   type FilePreviewKind
 } from '../../../shared/file-preview'
 import {
@@ -119,8 +120,12 @@ export function FileTree({
   } | null>(null)
   const [fileError, setFileError] = useState('')
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
+  const [goToOpen, setGoToOpen] = useState(false)
+  const [goToDraft, setGoToDraft] = useState('')
   const lineTargetRef = useRef<HTMLDivElement | null>(null)
   const viewerBodyRef = useRef<HTMLPreElement | null>(null)
+  const treeRef = useRef<HTMLDivElement | null>(null)
+  const goToInputRef = useRef<HTMLInputElement | null>(null)
 
   const load = useCallback(async () => {
     if (!workspacePath || !window.sharker?.getWorkspaceTree) return
@@ -201,6 +206,60 @@ export function FileTree({
     lineTargetRef.current?.scrollIntoView({ block: 'center' })
   }, [openFile?.path, openFile?.line, openFile?.content])
 
+  useEffect(() => {
+    if (openFile?.kind !== 'text') setGoToOpen(false)
+  }, [openFile?.kind, openFile?.path])
+
+  useEffect(() => {
+    if (openFile?.kind === 'text') {
+      viewerBodyRef.current?.focus({ preventScroll: true })
+    }
+  }, [openFile?.path, openFile?.kind])
+
+  const applyGoToLine = useCallback(() => {
+    if (!openFile || openFile.kind !== 'text') return
+    const lineCount = (openFile.content ?? '').split('\n').length
+    const line = parseGoToLineInput(goToDraft, lineCount)
+    if (line == null) return
+    setOpenFile((prev) => (prev && prev.kind === 'text' ? { ...prev, line } : prev))
+    setGoToOpen(false)
+    requestAnimationFrame(() => viewerBodyRef.current?.focus({ preventScroll: true }))
+  }, [goToDraft, openFile])
+
+  /** 官方 Go to line：文件预览聚焦时 ⌘L；不抢输入框 / 浏览器地址栏 */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod || e.altKey || e.shiftKey) return
+      if (e.key !== 'l' && e.key !== 'L') return
+      if (openFile?.kind !== 'text') return
+      const root = treeRef.current
+      if (!root) return
+      const active = document.activeElement
+      const target = e.target
+      const inside =
+        (active instanceof Node && root.contains(active)) ||
+        (target instanceof Node && root.contains(target))
+      if (!inside) return
+      if (target instanceof HTMLElement) {
+        if (target.closest('.composer-box, .embedded-browser, textarea, [contenteditable=true]')) {
+          return
+        }
+      }
+      e.preventDefault()
+      e.stopPropagation()
+      setGoToOpen(true)
+      setGoToDraft(openFile.line ? String(openFile.line) : '')
+      requestAnimationFrame(() => {
+        goToInputRef.current?.focus()
+        goToInputRef.current?.select()
+      })
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [openFile?.kind, openFile?.line])
+
   const syncSideAsk = useCallback(() => {
     if (!onAskInSideChat && !onInsertComposer) {
       setSideAsk(null)
@@ -255,11 +314,16 @@ export function FileTree({
   }
 
   return (
-    <div className="file-tree">
+    <div className="file-tree" ref={treeRef} tabIndex={-1}>
       {openFile ? (
         <div className="file-tree-viewer">
           <div className="file-tree-viewer-head">
-            <span className="file-tree-viewer-name" title={openFile.path}>
+            <span
+              className="file-tree-viewer-name"
+              title={
+                openFile.kind === 'text' ? `${openFile.path} · ⌘L 跳到行` : openFile.path
+              }
+            >
               {openFile.path.split('/').pop()}
               {openFile.line ? `:${openFile.line}` : ''}
             </span>
@@ -267,6 +331,39 @@ export function FileTree({
               关闭
             </button>
           </div>
+          {goToOpen && openFile.kind === 'text' ? (
+            <form
+              className="file-tree-goto glass-pill"
+              onSubmit={(event) => {
+                event.preventDefault()
+                applyGoToLine()
+              }}
+            >
+              <label className="file-tree-goto-label">
+                行
+                <input
+                  ref={goToInputRef}
+                  className="file-tree-goto-input"
+                  inputMode="numeric"
+                  value={goToDraft}
+                  onChange={(event) => setGoToDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setGoToOpen(false)
+                      viewerBodyRef.current?.focus({ preventScroll: true })
+                    }
+                  }}
+                  aria-label="跳到行"
+                  placeholder="行号"
+                />
+              </label>
+              <button type="submit" className="file-tree-goto-go">
+                跳转
+              </button>
+            </form>
+          ) : null}
           {openFile.kind === 'image' && openFile.dataUrl ? (
             <div className="file-tree-viewer-media">
               <img className="file-tree-viewer-image" src={openFile.dataUrl} alt="" />
@@ -278,7 +375,12 @@ export function FileTree({
               title={openFile.path.split('/').pop() || 'PDF'}
             />
           ) : (
-          <pre className="file-tree-viewer-body" ref={viewerBodyRef} onMouseUp={syncSideAsk}>
+          <pre
+            className="file-tree-viewer-body"
+            ref={viewerBodyRef}
+            tabIndex={-1}
+            onMouseUp={syncSideAsk}
+          >
             {(openFile.content ?? '').split('\n').map((text, index) => {
               const lineNo = index + 1
               const target = openFile.line === lineNo

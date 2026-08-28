@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   dataUrlMimeForPath,
   filePreviewKind,
-  filePreviewUnsupportedMessage
+  filePreviewUnsupportedMessage,
+  parseGoToLineInput
 } from './file-preview'
 
 describe('file preview kinds', () => {
@@ -18,5 +19,10 @@ describe('file preview kinds', () => {
     expect(dataUrlMimeForPath('a.webp')).toBe('image/webp')
     expect(dataUrlMimeForPath('a.pdf')).toBe('application/pdf')
     expect(filePreviewUnsupportedMessage('a.xlsx')).toMatch(/表格/)
+    expect(parseGoToLineInput('12', 40)).toBe(12)
+    expect(parseGoToLineInput(' 99 ', 20)).toBe(20)
+    expect(parseGoToLineInput('0', 10)).toBe(null)
+    expect(parseGoToLineInput('ab', 10)).toBe(null)
+    expect(parseGoToLineInput('3', 0)).toBe(1)
   })
 })

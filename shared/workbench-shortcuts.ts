@@ -124,7 +124,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   ) {
     return 'toggle_review'
   }
-  if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
+  // 官方 Search chats 默认不绑；⌘G 留给对话内 Find next
   if (key === 'z' && event.shiftKey && !event.altKey) return 'redo_app'
   if (key === 'z' && !event.shiftKey && !event.altKey) return 'undo_app'
   if (key === 'y' && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
@@ -297,11 +297,11 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘P', title: '引用工作区文件' },
   { keys: '⌘W', title: '关闭右侧面板' },
   { keys: '⌘T', title: '打开浏览器标签' },
-  { keys: '⌘L', title: '浏览器地址栏（聚焦时）' },
+  { keys: '⌘L', title: '跳到行 / 浏览器地址栏（视焦点）' },
   { keys: '鼠标侧键', title: '后退 / 前进' },
   { keys: '⌘↑ / ⌘↓', title: '对话顶 / 底' },
   { keys: '⌘F', title: '在对话中查找' },
-  { keys: '⌘G', title: '搜索对话' },
+  { keys: '⌘G / ⌘⇧G', title: '查找下一条 / 上一条' },
   { keys: 'Ctrl⇧M', title: '模型选择' },
   { keys: 'Ctrl⇧D', title: '听写' },
   { keys: 'Ctrl⇧V', title: '语音对话' },
@@ -394,7 +394,7 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'pin_conversation', title: '置顶 / 取消置顶', defaultKeys: '⌘⌥P', defaultChord: 'mod+alt+p' },
   { action: 'mark_unread', title: '标为未读', defaultKeys: '⌘⇧U', defaultChord: 'mod+shift+u' },
   { action: 'clear_unread', title: '清除未读徽标', defaultKeys: '⇧Esc', defaultChord: 'shift+escape' },
-  { action: 'search_chats', title: '搜索对话', defaultKeys: '⌘G', defaultChord: 'mod+g' },
+  { action: 'search_chats', title: '搜索对话', defaultKeys: '未指定', defaultChord: '' },
   { action: 'search_files', title: '引用工作区文件', defaultKeys: '⌘P', defaultChord: 'mod+p' },
   { action: 'next_attention', title: '下一条进行中对话', defaultKeys: '⌘⌥A', defaultChord: 'mod+alt+a' },
   {

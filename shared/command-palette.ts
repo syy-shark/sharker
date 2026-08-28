@@ -274,7 +274,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'search-chats',
     title: '搜索对话',
-    shortcut: '⌘G',
+    shortcut: undefined,
     keywords: 'search chats history 搜索 对话 历史',
     action: 'show_history'
   },

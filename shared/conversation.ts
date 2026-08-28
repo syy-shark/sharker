@@ -194,7 +194,7 @@ export type ChatSearchItem = {
   gitBranch?: string
 }
 
-/** ⌘G 搜索对话：标题 / 自定义标题 / id / 正文摘要 / git 分支（对标 Codex expanded matching） */
+/** 搜索对话（命令面板 / 可自绑快捷键）：标题 / 自定义标题 / id / 正文摘要 / git 分支 */
 export function filterChatList<T extends ChatSearchItem>(items: T[], query: string): T[] {
   const q = query.trim().toLowerCase()
   if (!q) return items

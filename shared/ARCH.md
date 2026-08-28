@@ -23,7 +23,7 @@
 | `review-repos.test.ts` | 同仓子目录合并、本轮 All repos、附加根路径匹配、多文件 diff 展开键 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、置顶排序、`/rename` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
@@ -57,8 +57,8 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话；终端聚焦 ⌘K 清屏判定） |
-| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话；终端聚焦 ⌘K 清屏判定） |
+| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑 |
@@ -94,8 +94,8 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格 |
-| `file-preview.test.ts` | 扩展名分流与 MIME |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` 给预览 ⌘L 跳行 |
+| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
