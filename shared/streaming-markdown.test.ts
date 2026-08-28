@@ -71,6 +71,11 @@ describe('splitStreamingMarkdown', () => {
   })
 
   it('parses paired inline marks and keeps an open mark as text', () => {
+    expect(parseCheapInlineMarkdown('见 `` a`b `` 后')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'code', text: 'a`b' },
+      { type: 'text', text: ' 后' }
+    ])
     expect(parseCheapInlineMarkdown('见 `foo` 与 **bar** 和 *baz* 及 ~~删~~')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'code', text: 'foo' },
@@ -139,6 +144,23 @@ describe('splitStreamingMarkdown', () => {
     ])
     expect(parseCheapInlineMarkdown('[text](https://a.test/x (题))')).toEqual([
       { type: 'link', text: 'text', href: 'https://a.test/x', title: '题' }
+    ])
+    expect(parseCheapInlineMarkdown('[![示意](https://a.test/p.png)](https://a.test/x)')).toEqual([
+      {
+        type: 'link',
+        text: '![示意](https://a.test/p.png)',
+        href: 'https://a.test/x',
+        children: [{ type: 'image', alt: '示意', href: 'https://a.test/p.png' }]
+      }
+    ])
+    expect(parseCheapInlineMarkdown('见 [__粗__](https://a.test/x)')).toEqual([
+      { type: 'text', text: '见 ' },
+      {
+        type: 'link',
+        text: '__粗__',
+        href: 'https://a.test/x',
+        children: [{ type: 'strong', text: '粗', mark: '__' }]
+      }
     ])
     expect(parseCheapInlineMarkdown('见 [文档](https://a.test/x(1)) 后')).toEqual([
       { type: 'text', text: '见 ' },

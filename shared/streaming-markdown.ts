@@ -364,6 +364,60 @@ export function parseLinkDefinitionLine(line: string): { id: string; href: strin
   return { id: normalizeLinkLabel(match[1] ?? ''), href }
 }
 
+/** 链接标签里成对 `[]`（`[![alt](img)](url)`）对标 CommonMark */
+function findMatchingCloseBracket(src: string, from: number): number {
+  let depth = 1
+  let i = from
+  while (i < src.length) {
+    const ch = src[i]!
+    if (ch === '\n') return -1
+    if (ch === '\\') {
+      i += src[i + 1] ? 2 : 1
+      continue
+    }
+    if (ch === '[') depth += 1
+    else if (ch === ']') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+    i += 1
+  }
+  return -1
+}
+
+/** CommonMark 行内代码：开闭同样长度的 `` ` ``，内容可含更短反引号 */
+function readInlineCodeSpan(src: string, start: number): { text: string; end: number } | null {
+  let n = 0
+  while (src[start + n] === '`') n += 1
+  if (n === 0) return null
+  let i = start + n
+  while (i < src.length) {
+    if (src[i] === '`') {
+      let m = 0
+      while (src[i + m] === '`') m += 1
+      if (m === n) {
+        let text = src.slice(start + n, i)
+        if (text.startsWith(' ') && text.endsWith(' ') && text.trim() !== '') {
+          text = text.slice(1, -1)
+        }
+        return { text, end: i + n }
+      }
+      i += m
+      continue
+    }
+    i += 1
+  }
+  return null
+}
+
+function wrapInlineCode(text: string): string {
+  let n = 1
+  while (text.includes('`'.repeat(n))) n += 1
+  const ticks = '`'.repeat(n)
+  const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : ''
+  return `${ticks}${pad}${text}${pad}${ticks}`
+}
+
 /**
  * 找到 `[text](dest)` / `![alt](dest)` 的闭合 `)`。
  * dest 里成对括号（`https://a.test/x(1)`）不算结束，对标 CommonMark / micromark。
@@ -472,7 +526,7 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 
 /**
  * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合 `[text](url)` /
- * `[text][id]` / `![alt](url)` / `![alt][id]`、dest 内成对括号、标签内强调/代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
+ * `[text][id]` / `![alt](url)` / `![alt][id]` / `[![alt](img)](url)`、dest 内成对括号、标签内强调/代码、多反引号行内代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
  * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
 /** 链接标签里的 `**` / `*` / `` ` `` / `~~` 直播就画，避免收束从纯文本跳成 <a><strong> */
@@ -514,17 +568,23 @@ export function parseCheapInlineMarkdown(
       continue
     }
     if (src[i] === '`') {
-      const end = src.indexOf('`', i + 1)
-      if (end === -1) {
+      const codeSpan = readInlineCodeSpan(src, i)
+      if (!codeSpan) {
         buf += src.slice(i)
         break
       }
       flush()
-      const code = src.slice(i + 1, end)
-      const file = parseFileCitation(code)
-      if (file) nodes.push({ type: 'file', text: code, path: file.path, line: file.line, column: file.column })
-      else nodes.push({ type: 'code', text: code })
-      i = end + 1
+      const file = parseFileCitation(codeSpan.text)
+      if (file) {
+        nodes.push({
+          type: 'file',
+          text: codeSpan.text,
+          path: file.path,
+          line: file.line,
+          column: file.column
+        })
+      } else nodes.push({ type: 'code', text: codeSpan.text })
+      i = codeSpan.end
       continue
     }
     // `***foo***` / `___foo___` / `**_foo_**` / `*__foo__*` 对标 remark em+strong，避免收束跳标签
@@ -658,7 +718,7 @@ export function parseCheapInlineMarkdown(
     if (src.startsWith('![', i) || src[i] === '[') {
       const image = src.startsWith('![', i)
       const labelStart = i + (image ? 2 : 1)
-      const labelEnd = src.indexOf(']', labelStart)
+      const labelEnd = findMatchingCloseBracket(src, labelStart)
       if (labelEnd === -1) {
         buf += src.slice(i)
         break
@@ -828,7 +888,7 @@ export function parseCheapInlineMarkdown(
 function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'br') return '  \n'
   if (node.type === 'fn') return `[^${node.id}]`
-  if (node.type === 'code') return `\`${node.text}\``
+  if (node.type === 'code') return wrapInlineCode(node.text)
   if (node.type === 'strong') {
     if (node.inner === 'em') return `**_${node.text}_**`
     const mark = node.mark ?? '**'
