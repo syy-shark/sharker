@@ -56,10 +56,10 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'goal',
-    description: '设定目标并开始首轮；pause / resume / clear 管理进度',
+    description: '设定目标并开始首轮；空参查看，edit 改写，pause / resume / clear 管理',
     scope: 'ui',
     action: 'set_goal',
-    argsHint: '[文本|pause|resume|clear]',
+    argsHint: '[文本|edit|pause|resume|clear]',
     category: 'mode'
   },
   {

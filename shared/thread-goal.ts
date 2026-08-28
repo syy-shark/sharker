@@ -14,6 +14,9 @@ export interface ThreadGoal {
   startedAt?: number
 }
 
+/** 官方：目标正文最多 4000 字 */
+export const GOAL_TEXT_MAX = 4000
+
 /** `/goal` 参数解析结果 */
 export type GoalCommand =
   | { type: 'show' }
@@ -21,6 +24,7 @@ export type GoalCommand =
   | { type: 'pause' }
   | { type: 'resume' }
   | { type: 'set'; text: string }
+  | { type: 'edit'; text?: string }
 
 /** 解析 `/goal` 后的参数（不含命令名） */
 export function parseGoalCommand(args: string): GoalCommand {
@@ -30,7 +34,16 @@ export function parseGoalCommand(args: string): GoalCommand {
   if (key === 'clear' || key === 'off' || key === 'none') return { type: 'clear' }
   if (key === 'pause' || key === 'stop') return { type: 'pause' }
   if (key === 'resume' || key === 'on') return { type: 'resume' }
+  if (key === 'edit' || key.startsWith('edit ') || key.startsWith('edit\n')) {
+    const text = raw.replace(/^edit\s*/i, '').trim()
+    return { type: 'edit', text: text || undefined }
+  }
   return { type: 'set', text: raw }
+}
+
+function clampGoalText(text: string): string {
+  const next = text.trim()
+  return next.length > GOAL_TEXT_MAX ? next.slice(0, GOAL_TEXT_MAX) : next
 }
 
 /** 把命令应用到当前目标，返回下一状态与助手说明 */
@@ -42,7 +55,7 @@ export function applyGoalCommand(
     if (!current?.text.trim()) {
       return {
         goal: current,
-        note: '当前线程没有目标。用法：`/goal 文本` 设定，`/goal pause` 暂停，`/goal resume` 继续，`/goal clear` 清除。'
+        note: '当前线程没有目标。用法：`/goal 文本` 设定，`/goal edit` 改写，`/goal pause` 暂停，`/goal resume` 继续，`/goal clear` 清除。'
       }
     }
     const state = current.status === 'paused' ? '已暂停' : '进行中'
@@ -69,7 +82,20 @@ export function applyGoalCommand(
       note: `已继续线程目标：${current.text}`
     }
   }
-  const text = command.text.trim()
+  if (command.type === 'edit') {
+    const nextText = command.text ? clampGoalText(command.text) : ''
+    if (!current?.text.trim()) {
+      return { goal: current, note: '没有可编辑的目标。先用 `/goal 文本` 设定。' }
+    }
+    if (!nextText) {
+      return { goal: current, note: '在进度行里改目标，或用 `/goal edit 新文本`。' }
+    }
+    return {
+      goal: { ...current, text: nextText },
+      note: `已更新线程目标：${nextText}`
+    }
+  }
+  const text = clampGoalText(command.text)
   return {
     goal: { text, status: 'active', startedAt: current?.startedAt ?? Date.now() },
     note: `已设定线程目标：${text}`

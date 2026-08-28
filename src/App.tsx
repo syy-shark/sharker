@@ -386,6 +386,7 @@ export default function App() {
     sha?: string
     token: number
   } | null>(null)
+  const [goalEditTick, setGoalEditTick] = useState(0)
   const [queueUnread, setQueueUnread] = useState(0)
   const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
@@ -2361,6 +2362,7 @@ export default function App() {
       lastTurnPathsByConvRef.current.set(id, paths)
       setLastTurnPaths(paths)
     }
+    setReviewFocus({ mode: 'last_turn', token: Date.now() })
     setRightPanelTab('changes')
     setRightPanelOpen(true)
     setPage('chat')
@@ -4151,6 +4153,9 @@ export default function App() {
           if (shouldStartGoalTurn(command) && command.type === 'set') {
             void handlePromptSubmit(command.text)
             break
+          }
+          if (command.type === 'edit' && !command.text && next.goal) {
+            setGoalEditTick((tick) => tick + 1)
           }
           const note = {
             id: crypto.randomUUID(),
@@ -6263,6 +6268,7 @@ export default function App() {
               onPickConversation={handlePickConversation}
               threadMode={threadMode}
               threadGoal={threadGoal}
+              goalEditTick={goalEditTick}
               onGoalCommand={handleGoalCommand}
               onThreadModeChange={handleThreadModeChange}
               planMode={planMode}

@@ -240,6 +240,7 @@ interface Props {
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
   onGoalCommand?: (command: GoalCommand) => void
+  goalEditTick?: number
   onThreadModeChange?: (mode: ThreadMode) => void
   /** 首次创建隔离 worktree 的起点分支 */
   worktreeBaseRef?: string
@@ -308,6 +309,7 @@ export function ChatView({
   threadMode = 'local',
   threadGoal = null,
   onGoalCommand,
+  goalEditTick = 0,
   onThreadModeChange,
   worktreeBaseRef = '',
   onWorktreeBaseRefChange,
@@ -940,6 +942,7 @@ export function ChatView({
             onSelectWorkspace={onSelectWorkspace}
             threadMode={threadMode}
             threadGoal={threadGoal}
+            goalEditTick={goalEditTick}
             onGoalCommand={onGoalCommand}
             onThreadModeChange={onThreadModeChange}
             worktreeBaseRef={worktreeBaseRef}

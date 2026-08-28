@@ -16,16 +16,28 @@ import './GoalProgressRow.css'
 interface Props {
   goal: ThreadGoal
   onCommand: (command: GoalCommand) => void
+  /** `/goal edit` 打开进度行编辑（对标 Codex /goal edit） */
+  editTick?: number
 }
 
 /** 暂停 / 继续 / 编辑 / 清除；编辑态不跟直播走 */
-export const GoalProgressRow = memo(function GoalProgressRow({ goal, onCommand }: Props) {
+export const GoalProgressRow = memo(function GoalProgressRow({
+  goal,
+  onCommand,
+  editTick = 0
+}: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(goal.text)
 
   useEffect(() => {
     if (!editing) setDraft(goal.text)
   }, [editing, goal.text])
+
+  useEffect(() => {
+    if (!editTick) return
+    setDraft(goal.text)
+    setEditing(true)
+  }, [editTick, goal.text])
 
   const status = formatGoalProgressLabel(goal)
   if (!status) return null
@@ -37,7 +49,7 @@ export const GoalProgressRow = memo(function GoalProgressRow({ goal, onCommand }
       setEditing(false)
       return
     }
-    if (text !== goal.text.trim()) onCommand({ type: 'set', text })
+    if (text !== goal.text.trim()) onCommand({ type: 'edit', text })
     setEditing(false)
   }
 

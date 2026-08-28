@@ -36,7 +36,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送（对标 Codex `/side [question]`） |
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
-| `/goal [文本\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
+| `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |

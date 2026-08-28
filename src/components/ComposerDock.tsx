@@ -142,6 +142,7 @@ export interface ComposerDockProps {
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
   onGoalCommand?: (command: GoalCommand) => void
+  goalEditTick?: number
   onThreadModeChange?: (mode: ThreadMode) => void
   worktreeBaseRef?: string
   onWorktreeBaseRefChange?: (ref: string) => void
@@ -191,6 +192,7 @@ export const ComposerDock = memo(
       threadMode = 'local',
       threadGoal = null,
       onGoalCommand,
+      goalEditTick = 0,
       onThreadModeChange,
       worktreeBaseRef = '',
       onWorktreeBaseRefChange,
@@ -1044,7 +1046,7 @@ export const ComposerDock = memo(
     return (
       <>
       {threadGoal && onGoalCommand ? (
-        <GoalProgressRow goal={threadGoal} onCommand={onGoalCommand} />
+        <GoalProgressRow goal={threadGoal} onCommand={onGoalCommand} editTick={goalEditTick} />
       ) : null}
       <div
         className={`composer-box composer-box--focus-${composerFocus}`}
