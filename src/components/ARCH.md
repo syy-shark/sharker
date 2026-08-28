@@ -38,7 +38,7 @@
 | `CompareBlock.tsx` / `.css` | 旧/新对比行布局 |
 | `MessageActions.tsx` / `.css` | 消息复制 / 用户气泡编辑重发 / 失败重试 |
 | `ChatImage.tsx` / `.css` | 对话渲染图悬停复制 / 保存（对标 Codex Save or copy rendered images）；附件走原文件，Markdown http(s) 图由主进程拉取；命中尺寸缓存则带 `width`/`height` 与 `aspect-ratio` 首帧占位，未测到前 `8rem` 占位且 `eager` 加载，避免直播从 0 高撑开贴底 |
-| `MermaidBlock.tsx` / `.css` | 闭合 ```mermaid 内联成图（对标 Codex transcript Mermaid）；`securityLevel:strict`；失败回退代码块；未闭合直播不解析；命中 SVG 缓存则首帧直接成图；源码改了先留上一张图再换，避免闪回源码撑开贴底 |
+| `MermaidBlock.tsx` / `.css` | 闭合 ```mermaid 内联成图（对标 Codex transcript Mermaid）；`securityLevel:strict`；失败回退代码块；解析中继续 `LiveFenceTail`（与未闭合围栏同一外壳，避免先换成另一套代码块再成图）；命中 SVG 缓存则首帧直接成图并按 viewBox 占位；源码改了先留上一张图再换，避免闪回源码撑开贴底 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
 | `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix`、`/review` 对比焦点与项目附加文件夹（跨仓库审查）；文件树传入对话引用预览与项目附加文件夹；终端按线程挂载（开过一次后切 Tab 不卸）；终端 / 文件预览划选可插入输入框或旁路提问；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |

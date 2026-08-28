@@ -47,3 +47,30 @@ export function writeCachedMermaidSvg(
 export function clearMermaidSvgCache(): void {
   mermaidSvgCache.clear()
 }
+
+/** 从 mermaid SVG 读固有宽高，成图 / 重挂时按比例占位，避免从源码高度跳到图高 */
+export function parseMermaidSvgSize(svg: string): { width: number; height: number } | null {
+  const text = String(svg ?? '')
+  const viewBox = /viewBox\s*=\s*["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/i.exec(
+    text
+  )
+  if (viewBox) {
+    const width = Math.abs(Number(viewBox[3]))
+    const height = Math.abs(Number(viewBox[4]))
+    if (width > 0 && height > 0) return { width, height }
+  }
+  const widthAttr = /\bwidth\s*=\s*["']?\s*([\d.]+)(?:px)?(?!\s*%)/i.exec(text)
+  const heightAttr = /\bheight\s*=\s*["']?\s*([\d.]+)(?:px)?(?!\s*%)/i.exec(text)
+  const width = Number(widthAttr?.[1])
+  const height = Number(heightAttr?.[1])
+  if (width > 0 && height > 0) return { width, height }
+  return null
+}
+
+export function mermaidSvgAspectStyle(
+  svg?: string
+): { aspectRatio: string } | undefined {
+  const size = svg ? parseMermaidSvgSize(svg) : null
+  if (!size) return undefined
+  return { aspectRatio: `${size.width} / ${size.height}` }
+}

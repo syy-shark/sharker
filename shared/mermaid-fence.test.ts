@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   clearMermaidSvgCache,
   isMermaidLang,
+  mermaidSvgAspectStyle,
   mermaidSvgCacheKey,
+  parseMermaidSvgSize,
   readCachedMermaidSvg,
   writeCachedMermaidSvg
 } from './mermaid-fence'
@@ -29,5 +31,18 @@ describe('mermaid-fence', () => {
     expect(readCachedMermaidSvg('g31', 'default')).toBe('<svg>31</svg>')
     clearMermaidSvgCache()
     expect(readCachedMermaidSvg('g31', 'default')).toBeUndefined()
+    expect(parseMermaidSvgSize('<svg viewBox="0 0 200 100"></svg>')).toEqual({
+      width: 200,
+      height: 100
+    })
+    expect(parseMermaidSvgSize('<svg width="120px" height="80"></svg>')).toEqual({
+      width: 120,
+      height: 80
+    })
+    expect(parseMermaidSvgSize('<svg width="100%" height="100%"></svg>')).toBeNull()
+    expect(mermaidSvgAspectStyle('<svg viewBox="-10 -10 40 20"></svg>')).toEqual({
+      aspectRatio: '40 / 20'
+    })
+    expect(parseMermaidSvgSize('<svg></svg>')).toBeNull()
   })
 })

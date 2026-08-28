@@ -5,11 +5,12 @@
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import {
+  mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   writeCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
-import { CodeArtifactBlock, CodeArtifactShell } from './CodeArtifactBlock'
+import { CodeArtifactBlock, CodeArtifactShell, LiveFenceTail } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
 type MermaidApi = {
@@ -106,9 +107,13 @@ export function MermaidBlock({ code }: { code: string }) {
     }
   }, [source, theme, reactId])
 
-  if (!source.trim() || failed || !svg) {
+  if (!source.trim() || failed) {
     return <CodeArtifactBlock code={source} language="mermaid" />
   }
+  if (!svg) {
+    return <LiveFenceTail code={source} language="mermaid" />
+  }
+  const aspect = mermaidSvgAspectStyle(svg)
   return (
     <CodeArtifactShell
       label="mermaid"
@@ -116,7 +121,7 @@ export function MermaidBlock({ code }: { code: string }) {
       bodyClassName="mermaid-block-scroll"
       ariaLabel="mermaid 图"
     >
-      <div className="mermaid-block" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="mermaid-block" style={aspect} dangerouslySetInnerHTML={{ __html: svg }} />
     </CodeArtifactShell>
   )
 }
