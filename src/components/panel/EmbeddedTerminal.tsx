@@ -79,9 +79,9 @@ function isDarkUi(): boolean {
   return typeof document !== 'undefined' && document.documentElement.classList.contains('theme-dark')
 }
 
-function uiFontScale(): number {
+function codeFontScale(): number {
   if (typeof document === 'undefined') return 1
-  const raw = getComputedStyle(document.documentElement).getPropertyValue('--ui-font-scale').trim()
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--code-font-scale').trim()
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? n : 1
 }
@@ -163,7 +163,7 @@ export function EmbeddedTerminal({
     const term = new Terminal({
       cursorBlink: true,
       cursorStyle: 'bar',
-      fontSize: Math.round(13 * uiFontScale()),
+      fontSize: Math.round(13 * codeFontScale()),
       lineHeight: 1.35,
       fontFamily:
         getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() ||

@@ -5,7 +5,7 @@
   border: 0.5px solid var(--glass-edge);
   background: var(--glass-fill-raised);
   box-shadow: var(--glass-rim-soft);
-  font-size: 12px;
+  font-size: calc(12px * var(--code-font-scale, 1));
   line-height: 1.5;
   animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
 }

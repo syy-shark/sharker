@@ -1,6 +1,6 @@
 /**
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
- * 界面字号与代码字体立刻写 DOM（`--ui-font-scale` / `--mono`）。
+ * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -37,11 +37,12 @@ interface Props {
   onSave: (next: AppSettings) => Promise<void>
 }
 
-/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定）；字号写入 `--ui-font-scale`；代码字体写入 `--mono` */
+/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定）；字号写入 `--ui-font-scale`；代码字号写入 `--code-font-scale`；代码字体写入 `--mono` */
 export function applyAppearanceDom(
   theme: 'light' | 'dark',
   fontScale = UI_FONT_SCALE_DEFAULT,
-  codeFont?: string
+  codeFont?: string,
+  codeFontScale = UI_FONT_SCALE_DEFAULT
 ): void {
   const root = document.documentElement
   root.dataset.theme = theme
@@ -56,7 +57,20 @@ export function applyAppearanceDom(
   root.style.setProperty('--ui-opacity-strong', theme === 'light' ? '0.18' : '1')
   root.style.setProperty('--ui-opacity-soft', theme === 'light' ? '0.08' : '1')
   root.style.setProperty('--ui-font-scale', String(clampUiFontScale(fontScale)))
+  root.style.setProperty('--code-font-scale', String(clampUiFontScale(codeFontScale)))
   root.style.setProperty('--mono', codeFontStack(codeFont))
+}
+
+function paintDraftAppearance(
+  draft: Pick<AppSettings, 'uiTheme' | 'uiFontScale' | 'codeFont' | 'codeFontScale'>,
+  theme?: 'light' | 'dark'
+): void {
+  applyAppearanceDom(
+    theme ?? (draft.uiTheme === 'dark' ? 'dark' : 'light'),
+    draft.uiFontScale,
+    draft.codeFont,
+    draft.codeFontScale
+  )
 }
 
 /** 外观设置 */
@@ -100,8 +114,8 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   useEffect(() => {
     const t = draft.uiTheme === 'dark' ? 'dark' : 'light'
     setTheme(t)
-    applyAppearanceDom(t, draft.uiFontScale, draft.codeFont)
-  }, [draft.uiTheme, draft.uiFontScale, draft.codeFont])
+    paintDraftAppearance(draft, t)
+  }, [draft.uiTheme, draft.uiFontScale, draft.codeFont, draft.codeFontScale])
 
   const scheduleSave = useCallback(
     (next: AppSettings) => {
@@ -118,7 +132,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   const onTheme = (uiTheme: 'light' | 'dark') => {
     setTheme(uiTheme)
     themeRef.current = uiTheme
-    applyAppearanceDom(uiTheme, draftRef.current.uiFontScale, draftRef.current.codeFont)
+    paintDraftAppearance({ ...draftRef.current, uiTheme }, uiTheme)
     // 保留 uiGlass 字段兼容旧设置文件，但 UI 不再调节
     scheduleSave({
       ...draftRef.current,
@@ -129,12 +143,18 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
 
   const onFontScale = (next: number) => {
     const uiFontScale = clampUiFontScale(next)
-    applyAppearanceDom(themeRef.current, uiFontScale, draftRef.current.codeFont)
+    paintDraftAppearance({ ...draftRef.current, uiFontScale }, themeRef.current)
     scheduleSave({ ...draftRef.current, uiFontScale })
   }
 
+  const onCodeFontScale = (next: number) => {
+    const codeFontScale = clampUiFontScale(next)
+    paintDraftAppearance({ ...draftRef.current, codeFontScale }, themeRef.current)
+    scheduleSave({ ...draftRef.current, codeFontScale })
+  }
+
   const onCodeFont = (codeFont: CodeFontId) => {
-    applyAppearanceDom(themeRef.current, draftRef.current.uiFontScale, codeFont)
+    paintDraftAppearance({ ...draftRef.current, codeFont }, themeRef.current)
     scheduleSave({ ...draftRef.current, codeFont })
   }
 
@@ -197,6 +217,38 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 aria-label="放大字号"
                 disabled={clampUiFontScale(draft.uiFontScale) >= UI_FONT_SCALE_MAX}
                 onClick={() => onFontScale(stepUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT, 1))}
+              >
+                +
+              </button>
+            </div>
+          </SettingsRow>
+          <SettingsRow
+            title="代码字号"
+            description="对标 Codex Code font size。审查、终端与对话代码共用，不跟 ⌘+ / ⌘- 界面字号走。"
+          >
+            <div className="appearance-font-stepper">
+              <button
+                type="button"
+                className="appearance-font-btn"
+                aria-label="缩小代码字号"
+                disabled={clampUiFontScale(draft.codeFontScale) <= UI_FONT_SCALE_MIN}
+                onClick={() =>
+                  onCodeFontScale(stepUiFontScale(draft.codeFontScale ?? UI_FONT_SCALE_DEFAULT, -1))
+                }
+              >
+                −
+              </button>
+              <span className="appearance-font-value">
+                {formatUiFontScale(draft.codeFontScale ?? UI_FONT_SCALE_DEFAULT)}
+              </span>
+              <button
+                type="button"
+                className="appearance-font-btn"
+                aria-label="放大代码字号"
+                disabled={clampUiFontScale(draft.codeFontScale) >= UI_FONT_SCALE_MAX}
+                onClick={() =>
+                  onCodeFontScale(stepUiFontScale(draft.codeFontScale ?? UI_FONT_SCALE_DEFAULT, 1))
+                }
               >
                 +
               </button>

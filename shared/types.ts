@@ -82,6 +82,11 @@ export interface AppSettings {
    * 审查 / 终端 / 对话代码共用 `--mono`；空则系统等宽。
    */
   codeFont?: import('./code-font').CodeFontId
+  /**
+   * 代码字号缩放（对标 Codex Settings → Code font size）。
+   * 审查 / 终端 / 对话代码共用 `--code-font-scale`；不跟界面字号走。
+   */
+  codeFontScale?: number
   /** Codex 式人格：只改语气 */
   personality?: import('./personality').AgentPersonality
   /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
@@ -375,6 +380,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiTheme: 'light',
   uiFontScale: 1,
   codeFont: 'system',
+  codeFontScale: 1,
   personality: 'pragmatic',
   worktreeKeepCount: 15,
   worktreeRoot: '',

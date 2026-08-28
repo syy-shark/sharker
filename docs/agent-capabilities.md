@@ -108,7 +108,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
 - 设置 → 权限 → **项目与终端 / 命令输出**：简要 / 标准 / 详细（对标 Codex how much command output appears in chats）；标准只画输出尾部，详细完成后才默认展开，直播中仍折叠以免贴底跳动
 - 设置 → 权限 → Worktree **根目录**（对标 Codex Worktree root）：托管与永久 worktree 建在此绝对路径下，空则 `~/.sharker/worktrees`；`sharker://settings/worktrees` 打开该页。改了不搬旧目录
-- 设置 → 外观 → **代码字体**（对标 Codex Code font）：审查、终端与对话代码共用 `--mono`；`sharker://settings/code-font` 打开该页。只换等宽栈，不改主题色
+- 设置 → 外观 → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
 - 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
 - 设置 → 外观 → **记忆** 注入/写入（对标 Codex Settings → Personalization；`/memories` 仍打印本机记忆清单）
 - 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）

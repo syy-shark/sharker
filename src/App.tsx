@@ -288,9 +288,10 @@ export default function App() {
     applyAppearanceDom(
       settings.uiTheme === 'dark' ? 'dark' : 'light',
       settings.uiFontScale ?? UI_FONT_SCALE_DEFAULT,
-      settings.codeFont
+      settings.codeFont,
+      settings.codeFontScale
     )
-  }, [settings.uiTheme, settings.uiFontScale, settings.codeFont])
+  }, [settings.uiTheme, settings.uiFontScale, settings.codeFont, settings.codeFontScale])
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [page, setPage] = useState<AppPage>('chat')
   const pageRef = useRef<AppPage>('chat')
@@ -1228,6 +1229,7 @@ export default function App() {
           memoryGeneration: updated.memoryGeneration,
           uiFontScale: updated.uiFontScale,
           codeFont: updated.codeFont,
+          codeFontScale: updated.codeFontScale,
           keyboardShortcuts: updated.keyboardShortcuts,
           followUpBehavior: updated.followUpBehavior,
           composerEnterBehavior: updated.composerEnterBehavior,
@@ -1266,7 +1268,8 @@ export default function App() {
       applyAppearanceDom(
         merged.uiTheme === 'dark' ? 'dark' : 'light',
         uiFontScale,
-        merged.codeFont
+        merged.codeFont,
+        merged.codeFontScale
       )
       settingsRef.current = merged
       setSettings(merged)
@@ -1299,6 +1302,7 @@ export default function App() {
       memoryGeneration: draft.memoryGeneration,
       uiFontScale: draft.uiFontScale,
       codeFont: draft.codeFont,
+      codeFontScale: draft.codeFontScale,
       keyboardShortcuts: draft.keyboardShortcuts,
       followUpBehavior: draft.followUpBehavior,
       composerEnterBehavior: draft.composerEnterBehavior,
@@ -2776,6 +2780,7 @@ export default function App() {
       memoryGeneration: next.memoryGeneration,
       uiFontScale: next.uiFontScale,
       codeFont: next.codeFont,
+      codeFontScale: next.codeFontScale,
       keyboardShortcuts: next.keyboardShortcuts,
       followUpBehavior: next.followUpBehavior,
       composerEnterBehavior: next.composerEnterBehavior,

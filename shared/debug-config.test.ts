@@ -24,5 +24,6 @@ describe('debug-config', () => {
     expect(text).toContain('Demo')
     expect(text).not.toContain('sk-secret')
     expect(text).toContain('快捷键覆盖：1 项')
+    expect(text).toContain('代码字号 1')
   })
 })

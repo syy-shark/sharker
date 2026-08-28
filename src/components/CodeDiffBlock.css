@@ -34,6 +34,8 @@
   min-width: max-content;
   padding: 7px 0;
   tab-size: 2;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: calc(12px * var(--code-font-scale, 1));
 }
 
 .code-diff-line {

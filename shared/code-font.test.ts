@@ -29,5 +29,7 @@ describe('code font', () => {
     expect(normalizeSettings({ ...DEFAULT_SETTINGS, codeFont: 'Zapfino' as never }, '/home/u').codeFont).toBe(
       'system'
     )
+    expect(normalizeSettings({ ...DEFAULT_SETTINGS, codeFontScale: 1.2 }, '/home/u').codeFontScale).toBe(1.2)
+    expect(normalizeSettings({ ...DEFAULT_SETTINGS, codeFontScale: 9 }, '/home/u').codeFontScale).toBe(1.35)
   })
 })

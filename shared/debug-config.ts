@@ -21,7 +21,7 @@ export function formatDebugConfig(settings: AppSettings): string {
     '',
     `- 权限：${settings.permissionMode || 'sandbox'}`,
     `- 网络：${settings.networkMode || 'open'}`,
-    `- 主题：${settings.uiTheme || 'light'} · 字号 ${settings.uiFontScale ?? 1} · 代码字体 ${settings.codeFont || 'system'}`,
+    `- 主题：${settings.uiTheme || 'light'} · 字号 ${settings.uiFontScale ?? 1} · 代码字号 ${settings.codeFontScale ?? 1} · 代码字体 ${settings.codeFont || 'system'}`,
     `- 人格：${settings.personality || 'pragmatic'}`,
     `- 记忆：注入 ${settings.memoryInjection === false ? '关' : '开'} · 写入 ${settings.memoryGeneration === false ? '关' : '开'}`,
     `- 托管 worktree 保留：${settings.worktreeKeepCount ?? 15}`,

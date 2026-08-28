@@ -10,7 +10,7 @@
   box-shadow: var(--glass-rim-soft);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--code-font-scale, 1));
   line-height: 1.55;
 }
 

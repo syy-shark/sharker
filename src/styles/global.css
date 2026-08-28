@@ -217,6 +217,7 @@
     'Cascadia Mono',
     monospace;
   --ui-font-scale: 1;
+  --code-font-scale: 1;
 }
 
 * {

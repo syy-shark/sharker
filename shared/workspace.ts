@@ -142,6 +142,7 @@ export function normalizeSettings(
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
     uiFontScale: clampUiFontScale(raw.uiFontScale),
     codeFont: parseCodeFont(raw.codeFont),
+    codeFontScale: clampUiFontScale(raw.codeFontScale),
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
     worktreeRoot: clampWorktreeRoot(raw.worktreeRoot),
