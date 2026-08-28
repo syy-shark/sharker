@@ -465,6 +465,18 @@ export async function* queryLoop(
         }
       }
       if (chunk.type === 'tool_status' && chunk.content) {
+        // 写入/补丁先占 live diff 槽，再写 status，避免先插一条「正在生成」再被预览关掉
+        if (
+          isWritePreviewTool(chunk.toolStatus?.toolName) &&
+          chunk.toolStatus?.partialToolArgs
+        ) {
+          yield {
+            type: 'tool_preview',
+            toolName: chunk.toolStatus.toolName,
+            toolCallId: chunk.toolStatus.toolCallId,
+            toolArgs: chunk.toolStatus.partialToolArgs
+          }
+        }
         yield {
           type: 'status',
           content: chunk.content,
@@ -480,16 +492,6 @@ export async function* queryLoop(
             toolArgs: chunk.toolStatus.partialCaption
               ? { caption: chunk.toolStatus.partialCaption }
               : undefined
-          }
-        } else if (
-          isWritePreviewTool(chunk.toolStatus?.toolName) &&
-          chunk.toolStatus?.partialToolArgs
-        ) {
-          yield {
-            type: 'tool_preview',
-            toolName: chunk.toolStatus.toolName,
-            toolCallId: chunk.toolStatus.toolCallId,
-            toolArgs: chunk.toolStatus.partialToolArgs
           }
         }
       }

@@ -75,3 +75,4 @@ executeUserInput
 ## 直播过程
 
 - 工具执行经 `runToolWithLiveStatus` 中途 yield `status`，前端步骤详情持续更新，避免长命令期间 UI 静止。
+- 写入/补丁参数流先 yield `tool_preview` 再 `status`，live diff 槽先于「正在生成」出现。
