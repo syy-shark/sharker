@@ -4,6 +4,14 @@
  */
 import type { TurnSegment } from './types'
 
+function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i]
+    if (item && pred(item)) return item
+  }
+  return undefined
+}
+
 export type ProcessPhase = 'understand' | 'explore' | 'execute' | 'verify'
 export type ProcessPhaseState = 'pending' | 'active' | 'done' | 'error' | 'cancelled'
 export type ProcessPhaseStepKind = 'thinking' | 'status' | 'narration' | 'tool'
@@ -311,9 +319,7 @@ function sourceSegments(segments: TurnSegment[], isStreaming: boolean): TurnSegm
     )
     if (hasActiveWork) {
       // 保留中途旁白，但与「当前即将作为 final 的文本」相同的除外
-      const trailingText = [...segments]
-        .reverse()
-        .find((s) => s.kind === 'text' && s.content?.trim())
+      const trailingText = findLast(segments, (s) => s.kind === 'text' && Boolean(s.content?.trim()))
       const trail = normalizeText(trailingText?.content)
       if (trail) {
         source = source.filter(
@@ -323,10 +329,10 @@ function sourceSegments(segments: TurnSegment[], isStreaming: boolean): TurnSegm
     }
   } else {
     // 结束后：去掉与 final 正文重复的旁白
-    const finalSeg = [...segments].reverse().find((s) => s.kind === 'text' && s.role === 'final')
+    const finalSeg = findLast(segments, (s) => s.kind === 'text' && s.role === 'final')
     const finalText =
       normalizeText(finalSeg?.content) ||
-      normalizeText([...segments].reverse().find((s) => s.kind === 'text')?.content)
+      normalizeText(findLast(segments, (s) => s.kind === 'text')?.content)
     if (finalText) {
       source = source.filter(
         (s) => !(s.kind === 'text' && isDuplicateOfFinalText(s.content, finalText))
@@ -480,7 +486,7 @@ export function deriveProcessPhases(
   const current =
     groups.find((group) => group.state === 'active') ||
     (isStreaming
-      ? [...groups].reverse().find((group) => group.state === 'done' || group.state === 'error')
+      ? findLast(groups, (group) => group.state === 'done' || group.state === 'error')
       : undefined)
   const readFiles = new Set<string>()
   const modifiedFiles = new Set<string>()
@@ -509,7 +515,7 @@ export function deriveProcessPhases(
     groups,
     currentPhase:
       current?.phase ??
-      (isStreaming ? [...groups].reverse().find((group) => group.steps.length > 0)?.phase : undefined),
+      (isStreaming ? findLast(groups, (group) => group.steps.length > 0)?.phase : undefined),
     totals: {
       readFiles: readFiles.size,
       modifiedFiles: modifiedFiles.size,
