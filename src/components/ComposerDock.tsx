@@ -28,6 +28,12 @@ import {
   type SkillListItem
 } from '../../shared/skill-mention'
 import {
+  clearComposerDraft,
+  composerDraftKey,
+  loadComposerDraft,
+  saveComposerDraft
+} from '../../shared/composer-draft'
+import {
   collectUserPrompts,
   filterPromptHistory,
   lastUserPrompt,
@@ -220,8 +226,12 @@ export const ComposerDock = memo(
     },
     ref
   ) {
-    const [input, setInput] = useState('')
-    const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
+    const [input, setInput] = useState(
+      () => loadComposerDraft(composerDraftKey(sessionKey, activeWorkspaceId)).text
+    )
+    const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>(
+      () => loadComposerDraft(composerDraftKey(sessionKey, activeWorkspaceId)).attachments
+    )
     const [attachmentError, setAttachmentError] = useState('')
     const [pastePreviewId, setPastePreviewId] = useState<string | null>(null)
     const [composerFocus, setComposerFocus] = useState<'none' | 'pointer' | 'keyboard'>('none')
@@ -256,7 +266,8 @@ export const ComposerDock = memo(
     const [voiceChat, setVoiceChat] = useState(false)
     const [worktreeBranches, setWorktreeBranches] = useState<string[]>([])
     const voiceChatRef = useRef(false)
-    const inputRef = useRef('')
+    const inputRef = useRef(input)
+    const attachmentsRef = useRef<ChatAttachment[]>(pendingAttachments)
     const loadingRef = useRef(false)
     const submitVoiceRef = useRef<(text: string) => void>(() => {})
     const wasLoadingRef = useRef(false)
@@ -862,8 +873,36 @@ export const ComposerDock = memo(
       inputRef.current = input
     }, [input])
     useEffect(() => {
+      attachmentsRef.current = pendingAttachments
+    }, [pendingAttachments])
+    useEffect(() => {
       loadingRef.current = loading
     }, [loading])
+
+    const draftKey = composerDraftKey(sessionKey, activeWorkspaceId)
+    const draftKeyRef = useRef(draftKey)
+    useEffect(() => {
+      const prev = draftKeyRef.current
+      if (prev === draftKey) return
+      saveComposerDraft(prev, { text: inputRef.current, attachments: attachmentsRef.current })
+      draftKeyRef.current = draftKey
+      const next = loadComposerDraft(draftKey)
+      setInput(next.text)
+      inputRef.current = next.text
+      setPendingAttachments(next.attachments)
+      attachmentsRef.current = next.attachments
+      setPastePreviewId(null)
+      setAttachmentError('')
+    }, [draftKey])
+    useEffect(
+      () => () => {
+        saveComposerDraft(draftKeyRef.current, {
+          text: inputRef.current,
+          attachments: attachmentsRef.current
+        })
+      },
+      []
+    )
 
     useEffect(() => {
       if (threadMode !== 'worktree' || !fileSearchRoot || !window.sharker.listGitBranches) {
@@ -987,6 +1026,7 @@ export const ComposerDock = memo(
         const args = space >= 0 ? body.slice(space + 1).trim() : ''
         const cmd = SLASH_COMMANDS.find((c) => c.name === name && c.scope === 'ui')
         if (cmd && onSlashAction) {
+          clearComposerDraft(draftKey)
           setInput('')
           setPendingAttachments([])
           setPastePreviewId(null)
@@ -1001,6 +1041,7 @@ export const ComposerDock = memo(
       }
       const bang = attachments.length === 0 ? parseBangCommand(t) : null
       if (bang && onSlashAction) {
+        clearComposerDraft(draftKey)
         setInput('')
         setPendingAttachments([])
         setPastePreviewId(null)
@@ -1023,6 +1064,7 @@ export const ComposerDock = memo(
       }
       const sent = t || (attachments.some((a) => a.kind === 'image') ? '请看这张图片。' : '')
       rememberSubmittedComposerPrompt(sent)
+      clearComposerDraft(draftKey)
       setInput('')
       setPendingAttachments([])
       setPastePreviewId(null)
@@ -1039,6 +1081,7 @@ export const ComposerDock = memo(
       const t = text.trim()
       if (!t) return
       rememberSubmittedComposerPrompt(t)
+      clearComposerDraft(draftKey)
       setInput('')
       inputRef.current = ''
       setPendingAttachments([])
