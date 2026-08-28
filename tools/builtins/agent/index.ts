@@ -5,10 +5,6 @@
 import { ok } from '../../context'
 import type { ToolHandler } from '../../types'
 
-async function autoApprove(): Promise<boolean> {
-  return true
-}
-
 export const agentSpawnTool: ToolHandler = {
   name: 'agent_spawn',
   title: '启动子 Agent',
@@ -16,7 +12,13 @@ export const agentSpawnTool: ToolHandler = {
   async execute(args, ctx) {
     const { spawnSubAgent } = await import('../../../agent/coordinator')
     const prompt = String(args.prompt)
-    const session = await spawnSubAgent(ctx.settings, prompt, autoApprove, ctx.signal)
+    const session = await spawnSubAgent(
+      ctx.settings,
+      prompt,
+      undefined,
+      ctx.signal,
+      ctx.conversationId || ''
+    )
     return ok(`Sub-agent ${session.id} started (task ${session.taskId}). Use agent_get_result to poll.`)
   }
 }
@@ -31,7 +33,7 @@ export const agentSendMessageTool: ToolHandler = {
       ctx.settings,
       String(args.agent_id),
       String(args.message),
-      autoApprove,
+      undefined,
       ctx.signal
     )
     return ok(msg)
