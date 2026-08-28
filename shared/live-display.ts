@@ -371,6 +371,25 @@ export function liveStickScrollTop(scrollHeight: number, clientHeight: number): 
   return Math.max(0, scrollHeight - clientHeight)
 }
 
+/**
+ * 直播正文槽（散文 / diff / demo）已上屏就挂操作条。
+ * 尚无正文可复制时先占同一高度，避免写盘 diff 后第一句回答再冒出 38px
+ * （对标 Codex #40788 / #41155 action row）。
+ */
+export function shouldMountMessageActions(options: {
+  showBody: boolean
+  isError?: boolean
+}): boolean {
+  return options.showBody && !options.isError
+}
+
+export function shouldReserveMessageActions(options: {
+  isStreaming?: boolean
+  hasCopyableContent: boolean
+}): boolean {
+  return Boolean(options.isStreaming) && !options.hasCopyableContent
+}
+
 /** 内容高度或滚动视口变了才需要重写 scrollTop */
 export function liveStickNeedsFollow(
   prev: { scrollHeight: number; clientHeight: number },

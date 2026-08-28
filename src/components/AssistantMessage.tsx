@@ -16,7 +16,13 @@ import {
   shouldDisplayFinalBody
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
-import { liveThinkingText, isInlineDemoPaintable, sameRefList } from '../../shared/live-display'
+import {
+  liveThinkingText,
+  isInlineDemoPaintable,
+  sameRefList,
+  shouldMountMessageActions,
+  shouldReserveMessageActions
+} from '../../shared/live-display'
 import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
@@ -249,6 +255,18 @@ export const AssistantMessage = memo(function AssistantMessage({
     isStreaming ||
     (useSegmentFlow && hasProcessFlow(segments!, { isStreaming })) ||
     legacyExpandable
+  const copyableContent = (
+    displayContent ||
+    answerParts
+      .filter((p): p is Extract<(typeof answerParts)[number], { type: 'text' }> => p.type === 'text')
+      .map((p) => p.content)
+      .join('\n\n')
+  ).trim()
+  const showActions = shouldMountMessageActions({ showBody: showFinalBody, isError })
+  const reserveActions = shouldReserveMessageActions({
+    isStreaming,
+    hasCopyableContent: Boolean(copyableContent)
+  })
 
   const legacyProcessLabel = isStreaming
     ? activeTool
@@ -547,20 +565,13 @@ export const AssistantMessage = memo(function AssistantMessage({
         </div>
       ) : null}
 
-      {(displayContent ||
-        answerParts.some((p) => p.type === 'text' && p.content.trim())) &&
-        !isError && (
-          <MessageActions
-            content={
-              displayContent ||
-              answerParts
-                .filter((p): p is Extract<typeof p, { type: 'text' }> => p.type === 'text')
-                .map((p) => p.content)
-                .join('\n\n')
-            }
-            messageId={messageId}
-          />
-        )}
+      {showActions ? (
+        <MessageActions
+          content={copyableContent}
+          messageId={messageId}
+          reserved={reserveActions}
+        />
+      ) : null}
     </article>
   )
 })

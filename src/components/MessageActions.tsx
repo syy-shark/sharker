@@ -12,11 +12,23 @@ interface Props {
   messageId: string
   onRetry?: () => void
   onEdit?: () => void
+  /** 直播正文槽已上、尚无可复制正文：占同一高度，避免第一句回答再冒出 */
+  reserved?: boolean
 }
 
 /** 消息操作区（复制 / 编辑 / 重试） */
-export function MessageActions({ content, messageId, onRetry, onEdit }: Props) {
+export function MessageActions({ content, messageId, onRetry, onEdit, reserved = false }: Props) {
   const [copied, setCopied] = useState(false)
+
+  if (reserved) {
+    return (
+      <div
+        className="message-actions message-actions--reserved"
+        data-message-id={messageId}
+        aria-hidden
+      />
+    )
+  }
 
   const copy = async () => {
     try {

@@ -25,6 +25,8 @@ import {
   liveStickNeedsFollow,
   liveStickScrollTop,
   shouldFollowArtifactTail,
+  shouldMountMessageActions,
+  shouldReserveMessageActions,
   transcriptNavIntent,
   turnProcessBounds,
   processElapsedSeconds
@@ -217,6 +219,18 @@ describe('near-live message rows', () => {
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: false })).toBe(true)
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: true })).toBe(false)
     expect(shouldFollowArtifactTail({ followTail: false, userLocked: false })).toBe(false)
+    expect(shouldMountMessageActions({ showBody: true })).toBe(true)
+    expect(shouldMountMessageActions({ showBody: true, isError: true })).toBe(false)
+    expect(shouldMountMessageActions({ showBody: false })).toBe(false)
+    expect(shouldReserveMessageActions({ isStreaming: true, hasCopyableContent: false })).toBe(
+      true
+    )
+    expect(shouldReserveMessageActions({ isStreaming: true, hasCopyableContent: true })).toBe(
+      false
+    )
+    expect(shouldReserveMessageActions({ isStreaming: false, hasCopyableContent: false })).toBe(
+      false
+    )
     expect(
       liveStickNeedsFollow(
         { scrollHeight: 800, clientHeight: 400 },
