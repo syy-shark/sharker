@@ -83,6 +83,23 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 后' }
     ])
     expect(parseCheapInlineMarkdown('~~ not ~~')).toEqual([{ type: 'text', text: '~~ not ~~' }])
+    expect(parseCheapInlineMarkdown('H~2~O')).toEqual([
+      { type: 'text', text: 'H' },
+      { type: 'del', text: '2', mark: '~' },
+      { type: 'text', text: 'O' }
+    ])
+    expect(parseCheapInlineMarkdown('~one~ and ~~two~~')).toEqual([
+      { type: 'del', text: 'one', mark: '~' },
+      { type: 'text', text: ' and ' },
+      { type: 'del', text: 'two' }
+    ])
+    expect(parseCheapInlineMarkdown('~ not ~')).toEqual([{ type: 'text', text: '~ not ~' }])
+    expect(parseCheapInlineMarkdown('半截 ~删')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'del', text: '删', mark: '~', raw: '~删' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 ~')).toEqual([{ type: 'text', text: '半截 ~' }])
+    expect(parseCheapInlineMarkdown('~ not')).toEqual([{ type: 'text', text: '~ not' }])
     expect(parseCheapInlineMarkdown('[foo\nbar](https://a.test/x)')).toEqual([
       { type: 'link', text: 'foo bar', href: 'https://a.test/x', raw: '[foo\nbar](https://a.test/x)' }
     ])
@@ -448,6 +465,10 @@ describe('splitStreamingMarkdown', () => {
       }
     ])
     expect(isOnlyLinkDefinitions('[d]: https://a.test/x\n')).toBe(true)
+    expect(parseCheapProseBlocks('<!-- comment -->').map((b) => b.type)).toEqual([])
+    expect(parseCheapProseBlocks('foo <!-- x --> bar')).toEqual([
+      { type: 'p', nodes: [{ type: 'text', text: 'foo  bar' }] }
+    ])
     expect(markdownBlockWithDefs('见 [文档][d]。\n', '[d]: https://a.test/x')).toBe(
       '见 [文档][d]。\n\n[d]: https://a.test/x'
     )

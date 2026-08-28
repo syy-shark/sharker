@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -195,7 +195,7 @@ export type CheapInlineNode =
   | { type: 'text'; text: string }
   | { type: 'code'; text: string; raw?: string }
   | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del'; children?: CheapInlineNode[]; raw?: string }
-  | { type: 'del'; text: string; inner?: 'strong' | 'em'; children?: CheapInlineNode[]; raw?: string }
+  | { type: 'del'; text: string; mark?: '~' | '~~'; inner?: 'strong' | 'em'; children?: CheapInlineNode[]; raw?: string }
   | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del'; children?: CheapInlineNode[]; raw?: string }
   | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
@@ -606,6 +606,15 @@ export function linkDefinitionBlob(text: string): string {
   return lines.filter((_, index) => skip.has(index)).join('\n')
 }
 
+/** remark 无 rehype-raw：完整 HTML 注释不进画面，避免直播闪一下再消失 */
+function stripCompleteHtmlComments(text: string): string {
+  return text.replace(/<!--[\s\S]*?-->/g, '')
+}
+
+function isBlankAfterHtmlComments(text: string): boolean {
+  return !stripCompleteHtmlComments(text).trim()
+}
+
 /** 整段只有引用定义时不要画成段落（remark 会吃掉，直播也不画） */
 export function isOnlyLinkDefinitions(text: string): boolean {
   const lines = normalizeStreamingText(text).split('\n')
@@ -624,7 +633,7 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 /**
  * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合或未闭合 `[text](url` /
  * `[text][id]` / `![alt](url)` / `![alt][id]` / `[![alt](img)](url)`、dest 内成对括号、标签内强调/代码、多反引号行内代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
- * 未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画标记（空 opener 仍留原文）；`[` 对不上 `](` 时不再吞掉后面的标记。
+ * 未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画标记（空 opener 仍留原文）；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
 /** 图片 alt 对标 micromark：标签里的强调/代码只留纯文本，避免收束改 alt */
 function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
@@ -959,6 +968,35 @@ export function parseCheapInlineMarkdown(
         continue
       }
     }
+    if (src[i] === '~') {
+      const end = src.indexOf('~', i + 1)
+      if (end === -1) {
+        if (allowOpen) {
+          const openInner = src.slice(i + 1)
+          if (openInner && !/^[ \t]/.test(openInner)) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                applyMarkedInner({ type: 'del', text: '', mark: '~' }, parseMarkedInner(openInner), ['strong', 'em']),
+                src.slice(i)
+              )
+            )
+            break
+          }
+        }
+        buf += src.slice(i)
+        break
+      }
+      const inner = src.slice(i + 1, end)
+      if (inner && !/^[ \t]/.test(inner) && !/[ \t]$/.test(inner)) {
+        flush()
+        nodes.push(
+          applyMarkedInner({ type: 'del', text: '', mark: '~' }, parseMarkedInner(inner), ['strong', 'em'])
+        )
+        i = end + 1
+        continue
+      }
+    }
     if (src[i] === '*') {
       const end = src.indexOf('*', i + 1)
       if (end === -1) {
@@ -1262,10 +1300,11 @@ function cheapInlineSource(node: CheapInlineNode): string {
     return `${mark}${node.text}${mark}`
   }
   if (node.type === 'del') {
-    if (node.children?.length) return `~~${cheapInlineSourceAll(node.children)}~~`
-    if (node.inner === 'strong') return `~~**${node.text}**~~`
-    if (node.inner === 'em') return `~~*${node.text}*~~`
-    return `~~${node.text}~~`
+    const mark = node.mark ?? '~~'
+    if (node.children?.length) return `${mark}${cheapInlineSourceAll(node.children)}${mark}`
+    if (node.inner === 'strong') return `${mark}**${node.text}**${mark}`
+    if (node.inner === 'em') return `${mark}*${node.text}*${mark}`
+    return `${mark}${node.text}${mark}`
   }
   if (node.type === 'em') {
     if (node.children?.length) return `${node.mark ?? '*'}${cheapInlineSourceAll(node.children)}${node.mark ?? '*'}`
@@ -1515,11 +1554,14 @@ function quotePartsToBlocks(
       const last = chunks[chunks.length - 1]
       if (last?.type === 'p') {
         last.nodes = parseCheapInlineMarkdown(
-          `${cheapInlineSourceAll(last.nodes)}\n${part.text}`,
+          stripCompleteHtmlComments(`${cheapInlineSourceAll(last.nodes)}\n${part.text}`),
           defs
         )
-      } else {
-        chunks.push({ type: 'p', nodes: parseCheapInlineMarkdown(part.text, defs) })
+      } else if (!isBlankAfterHtmlComments(part.text)) {
+        chunks.push({
+          type: 'p',
+          nodes: parseCheapInlineMarkdown(stripCompleteHtmlComments(part.text), defs)
+        })
       }
     } else {
       marked.push(part.text)
@@ -1737,7 +1779,7 @@ export function parseCheapProseBlocks(
   let itemQuote: { parts: QuotePart[]; item: CheapListItem } | null = null
   let itemCode: { indent: number; lines: string[]; item: CheapListItem } | null = null
 
-  const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
+  const inline = (chunk: string) => parseCheapInlineMarkdown(stripCompleteHtmlComments(chunk), linkDefs)
   const currentItem = () => (list && list.items.length ? list.items[list.items.length - 1]! : null)
   const flushItemFence = () => {
     if (!itemFence) return
@@ -1796,8 +1838,10 @@ export function parseCheapProseBlocks(
 
   const flushPara = () => {
     if (!para.length) return
-    blocks.push({ type: 'p', nodes: inline(para.join('\n')) })
+    const text = para.join('\n')
     para = []
+    if (isBlankAfterHtmlComments(text)) return
+    blocks.push({ type: 'p', nodes: inline(text) })
   }
   const flushPre = () => {
     if (!pre) return
@@ -1858,7 +1902,7 @@ export function parseCheapProseBlocks(
       return
     }
     for (const line of raw.slice(0, sepIdx - 1)) {
-      if (!isGfmTableSep(line)) {
+      if (!isGfmTableSep(line) && !isBlankAfterHtmlComments(line)) {
         blocks.push({ type: 'p', nodes: inline(line) })
       }
     }
