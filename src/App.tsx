@@ -3723,6 +3723,18 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (
+        !e.isComposing &&
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        (e.key === 'w' || e.key === 'W') &&
+        rightPanelOpen
+      ) {
+        e.preventDefault()
+        setRightPanelOpen(false)
+        return
+      }
       const action = matchWorkbenchShortcut({
         key: e.key,
         code: e.code,
@@ -3876,7 +3888,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, persistFontScale, toggleSidebar])
+  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     const onMouseNav = (e: MouseEvent) => {
