@@ -406,18 +406,16 @@ export const AssistantMessage = memo(function AssistantMessage({
                     />
                   )
                 }
-                return isStreaming ? (
-                  <StreamingMarkdown key={part.id} text={part.content} />
-                ) : (
-                  <MarkdownBody key={part.id}>{part.content}</MarkdownBody>
+                return (
+                  <StreamingMarkdown
+                    key={part.id}
+                    text={part.content}
+                    finalize={!isStreaming}
+                  />
                 )
               })
             ) : displayContent ? (
-              isStreaming ? (
-                <StreamingMarkdown text={displayContent} />
-              ) : (
-                <MarkdownBody>{displayContent}</MarkdownBody>
-              )
+              <StreamingMarkdown text={displayContent} finalize={!isStreaming} />
             ) : null)}
         </div>
       ) : null}

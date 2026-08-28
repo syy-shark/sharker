@@ -15,6 +15,7 @@ import {
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
+  finalizeStreamingMarkdownSplit,
   isOnlyLinkDefinitions,
   linkDefinitionBlob,
   markdownBlockWithDefs,
@@ -300,13 +301,20 @@ const LiveProseTail = memo(function LiveProseTail({
 })
 
 /** 直播正文：稳定块 + 尾部，避免每 token 重解析全文 */
-export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
+export const StreamingMarkdown = memo(function StreamingMarkdown({
+  text,
+  finalize = false
+}: {
+  text: string
+  /** 收束后把尾收成稳定块；已闭合块不卸，避免 mermaid 闪回源码 */
+  finalize?: boolean
+}) {
   const prevRef = useRef({ text: '', split: splitStreamingMarkdown('') })
   const split = useMemo(() => {
     const next = continueStreamingMarkdown(prevRef.current.split, prevRef.current.text, text)
     prevRef.current = { text, split: next }
-    return next
-  }, [text])
+    return finalize ? finalizeStreamingMarkdownSplit(next) : next
+  }, [text, finalize])
   const fenceBody = useMemo(
     () => (split.tailKind === 'fence' ? extractOpenFenceBody(split.tail) : ''),
     [split.tail, split.tailKind]

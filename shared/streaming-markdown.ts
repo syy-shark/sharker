@@ -184,6 +184,25 @@ export function continueStreamingMarkdown(
   }
 }
 
+/**
+ * 收束后把增长尾收成稳定块，已闭合块保持同一对象。
+ * 直播结束后仍走 StreamingMarkdown，避免 mermaid / 代码块整树卸掉重挂。
+ */
+export function finalizeStreamingMarkdownSplit(
+  split: StreamingMarkdownSplit
+): StreamingMarkdownSplit {
+  if (!split.tail) return split
+  return {
+    blocks: [
+      ...split.blocks,
+      { id: `md-final-${split.blocks.length}`, text: split.tail }
+    ],
+    tail: '',
+    tailKind: 'prose',
+    closedEnd: split.closedEnd
+  }
+}
+
 /** 未闭合围栏去掉起始 ```lang 行，供代码块直播展示 */
 export function extractOpenFenceBody(tail: string): string {
   const nl = tail.indexOf('\n')

@@ -4,6 +4,7 @@ import {
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
+  finalizeStreamingMarkdownSplit,
   extractOpenFenceBody,
   isOnlyLinkDefinitions,
   markdownBlockWithDefs,
@@ -896,6 +897,18 @@ describe('splitStreamingMarkdown', () => {
     expect(committed.blocks).toHaveLength(2)
     expect(committed.blocks[1]?.text).toBe('Next sentence\n')
     expect(committed.tail).toBe('More')
+
+    const finalized = finalizeStreamingMarkdownSplit(grown)
+    expect(finalized.blocks[0]).toBe(grown.blocks[0])
+    expect(finalized.tail).toBe('')
+    expect(finalized.blocks.at(-1)).toEqual({
+      id: 'md-final-1',
+      text: 'Next sentence'
+    })
+    expect(finalizeStreamingMarkdownSplit(grown)).not.toBe(grown)
+    const closedMermaid = splitStreamingMarkdown('Intro\n\n```mermaid\ngraph TD\nA-->B\n```\n')
+    expect(finalizeStreamingMarkdownSplit(closedMermaid)).toBe(closedMermaid)
+    expect(finalizeStreamingMarkdownSplit(closedMermaid).blocks[1]?.text).toContain('```mermaid')
   })
 
   it('falls back to a full split when the prefix changes', () => {

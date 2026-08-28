@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isMermaidLang } from './mermaid-fence'
+import {
+  clearMermaidSvgCache,
+  isMermaidLang,
+  mermaidSvgCacheKey,
+  readCachedMermaidSvg,
+  writeCachedMermaidSvg
+} from './mermaid-fence'
 
 describe('mermaid-fence', () => {
   it('recognizes mermaid fence languages and rejects others', () => {
@@ -10,5 +16,18 @@ describe('mermaid-fence', () => {
     expect(isMermaidLang('diff')).toBe(false)
     expect(isMermaidLang('')).toBe(false)
     expect(isMermaidLang(undefined)).toBe(false)
+
+    clearMermaidSvgCache()
+    expect(mermaidSvgCacheKey('graph TD\nA-->B\n', 'dark')).toBe('dark\ngraph TD\nA-->B')
+    writeCachedMermaidSvg('graph TD\nA-->B\n', 'default', '<svg>one</svg>')
+    expect(readCachedMermaidSvg('graph TD\nA-->B', 'default')).toBe('<svg>one</svg>')
+    expect(readCachedMermaidSvg('graph TD\nA-->B', 'dark')).toBeUndefined()
+    writeCachedMermaidSvg('graph TD\nA-->B', 'default', '  ')
+    expect(readCachedMermaidSvg('graph TD\nA-->B', 'default')).toBe('<svg>one</svg>')
+    for (let i = 0; i < 32; i++) writeCachedMermaidSvg(`g${i}`, 'default', `<svg>${i}</svg>`)
+    expect(readCachedMermaidSvg('graph TD\nA-->B', 'default')).toBeUndefined()
+    expect(readCachedMermaidSvg('g31', 'default')).toBe('<svg>31</svg>')
+    clearMermaidSvgCache()
+    expect(readCachedMermaidSvg('g31', 'default')).toBeUndefined()
   })
 })

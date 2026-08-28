@@ -4,6 +4,11 @@
  * @see src/components/ARCH.md
  */
 import { useEffect, useId, useRef, useState } from 'react'
+import {
+  readCachedMermaidSvg,
+  writeCachedMermaidSvg,
+  type MermaidUiTheme
+} from '../../shared/mermaid-fence'
 import { CodeArtifactBlock, CodeArtifactShell } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
@@ -25,12 +30,12 @@ function loadMermaid(): Promise<MermaidApi> {
   return mermaidLoader
 }
 
-function readUiTheme(): 'dark' | 'default' {
+function readUiTheme(): MermaidUiTheme {
   return document.documentElement.classList.contains('theme-dark') ? 'dark' : 'default'
 }
 
-function useUiMermaidTheme(): 'dark' | 'default' {
-  const [theme, setTheme] = useState<'dark' | 'default'>(() =>
+function useUiMermaidTheme(): MermaidUiTheme {
+  const [theme, setTheme] = useState<MermaidUiTheme>(() =>
     typeof document === 'undefined' ? 'default' : readUiTheme()
   )
   useEffect(() => {
@@ -48,16 +53,28 @@ export function MermaidBlock({ code }: { code: string }) {
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const theme = useUiMermaidTheme()
   const source = code.replace(/\n$/, '')
+  const paintedSource = useRef(source.trim())
   const renderGen = useRef(0)
-  const [svg, setSvg] = useState('')
+  const [svg, setSvg] = useState(() => readCachedMermaidSvg(source, theme) ?? '')
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     const text = source.trim()
     if (!text) {
+      paintedSource.current = ''
       setSvg('')
       setFailed(false)
       return
+    }
+    const cached = readCachedMermaidSvg(text, theme)
+    if (cached) {
+      paintedSource.current = text
+      setSvg(cached)
+      setFailed(false)
+      return
+    }
+    if (paintedSource.current !== text) {
+      setSvg('')
     }
     let cancelled = false
     setFailed(false)
@@ -74,6 +91,8 @@ export function MermaidBlock({ code }: { code: string }) {
       })
       .then((result) => {
         if (!cancelled) {
+          writeCachedMermaidSvg(text, theme, result.svg)
+          paintedSource.current = text
           setSvg(result.svg)
           setFailed(false)
         }
