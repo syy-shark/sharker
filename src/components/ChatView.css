@@ -435,7 +435,9 @@
 .live-prose-tail > p,
 .live-prose-tail > ul,
 .live-prose-tail > ol,
-.live-prose-tail > blockquote {
+.live-prose-tail > blockquote,
+.live-prose-tail > table,
+.live-prose-tail > hr {
   margin: 0 0 10px;
 }
 
@@ -466,6 +468,26 @@
   padding-left: 0.8em;
   border-left: 2px solid var(--border-subtle);
   color: var(--text-secondary);
+}
+
+.live-prose-tail > table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.live-prose-tail th,
+.live-prose-tail td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  vertical-align: top;
+}
+
+.live-prose-tail > hr {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .live-prose-tail > :last-child {

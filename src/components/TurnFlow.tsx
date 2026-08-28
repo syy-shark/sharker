@@ -1,6 +1,6 @@
 /**
- * 一回合过程时间线（Cursor 式安静直播）：
- * - 思考：可折叠 Thought（chevron + 弱对比旁白），无灰卡片倾倒
+ * 一回合过程时间线（安静直播）：
+ * - 思考：默认折叠成「思考中」（对标 Codex），点开才看旁白，避免顶着回答长高
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - thinking 原文永不作为时间线标题或主回答
@@ -544,8 +544,8 @@ export function TurnFlow({
       !contentStreaming &&
       !planningNext
   )
-  const shouldAutoOpenThought = Boolean(thoughtBusy && hasThought)
-  const thoughtExpanded = userThoughtRef.current ? thoughtOpen : shouldAutoOpenThought
+  // 对标 Codex：思考默认折叠成一条「思考中」，不把增长正文顶在回答上面造成贴底跳动。
+  const thoughtExpanded = userThoughtRef.current ? thoughtOpen : false
 
   const displaySteps = buildDisplaySteps({
     steps,

@@ -34,8 +34,8 @@
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合 |
-| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价块（标题/列表/引用）与行内（链接 / 文件引用） |
-| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内与标题列表 |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价块（标题/列表/引用/表格/分隔线）与行内（链接 / 文件引用） |
+| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内与标题列表/表格 |
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区 |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL、边界匹配 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |

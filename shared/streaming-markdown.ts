@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用与标题/列表。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用、标题/列表/表格/分隔线。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -173,11 +173,13 @@ export type CheapInlineNode =
   | { type: 'link'; text: string; href: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
 
-/** 直播散文尾的廉价块：标题 / 列表 / 引用 / 段落，避免一律 `<p>` 收束时跳一下 */
+/** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
 export type CheapProseBlock =
   | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; nodes: CheapInlineNode[] }
   | { type: 'list'; ordered: boolean; items: CheapInlineNode[][] }
   | { type: 'quote'; nodes: CheapInlineNode[] }
+  | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][] }
+  | { type: 'hr' }
   | { type: 'p'; nodes: CheapInlineNode[] }
 
 const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
@@ -340,6 +342,24 @@ const UL_RE = /^[-+]\s+(.*)$/
 const STAR_UL_RE = /^\*\s+(.*)$/
 const OL_RE = /^(\d+)\.\s+(.*)$/
 const QUOTE_RE = /^>\s?(.*)$/
+const HR_RE = /^(?:[-*_]){3,}\s*$/
+const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/
+const TABLE_ROW_RE = /^\s*\|.+\|\s*$/
+
+function isGfmTableSep(line: string): boolean {
+  return TABLE_SEP_RE.test(line)
+}
+
+function isGfmTableRow(line: string): boolean {
+  return TABLE_ROW_RE.test(line) || isGfmTableSep(line)
+}
+
+function splitGfmTableCells(line: string): string[] {
+  let text = line.trim()
+  if (text.startsWith('|')) text = text.slice(1)
+  if (text.endsWith('|')) text = text.slice(0, -1)
+  return text.split('|').map((cell) => cell.trim())
+}
 
 /** 把散文尾拆成标题 / 列表 / 引用 / 段落，直播时用对应标签减少收束跳动 */
 export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
@@ -350,6 +370,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
   let para: string[] = []
   let list: { ordered: boolean; items: string[] } | null = null
   let quote: string[] = []
+  let table: string[] | null = null
 
   const flushPara = () => {
     if (!para.length) return
@@ -370,13 +391,53 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     blocks.push({ type: 'quote', nodes: parseCheapInlineMarkdown(quote.join('\n')) })
     quote = []
   }
+  const flushTable = () => {
+    if (!table) return
+    const raw = table
+    table = null
+    const sepIdx = raw.findIndex(isGfmTableSep)
+    if (sepIdx <= 0) {
+      for (const line of raw) {
+        if (!isGfmTableSep(line)) para.push(line)
+      }
+      flushPara()
+      return
+    }
+    for (const line of raw.slice(0, sepIdx - 1)) {
+      if (!isGfmTableSep(line)) {
+        blocks.push({ type: 'p', nodes: parseCheapInlineMarkdown(line) })
+      }
+    }
+    const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) =>
+      parseCheapInlineMarkdown(cell)
+    )
+    const rows = raw
+      .slice(sepIdx + 1)
+      .filter((line) => !isGfmTableSep(line))
+      .map((line) => splitGfmTableCells(line).map((cell) => parseCheapInlineMarkdown(cell)))
+    blocks.push({ type: 'table', header, rows })
+  }
   const flushAll = () => {
+    flushTable()
     flushPara()
     flushList()
     flushQuote()
   }
 
   for (const line of lines) {
+    if (isGfmTableRow(line)) {
+      flushPara()
+      flushList()
+      flushQuote()
+      if (!table) table = []
+      table.push(line)
+      continue
+    }
+    if (HR_RE.test(line)) {
+      flushAll()
+      blocks.push({ type: 'hr' })
+      continue
+    }
     const heading = HEADING_RE.exec(line)
     if (heading) {
       flushAll()
@@ -386,6 +447,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     }
     const ul = UL_RE.exec(line) || STAR_UL_RE.exec(line)
     if (ul) {
+      flushTable()
       flushPara()
       flushQuote()
       if (!list || list.ordered) {
@@ -397,6 +459,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     }
     const ol = OL_RE.exec(line)
     if (ol) {
+      flushTable()
       flushPara()
       flushQuote()
       if (!list || !list.ordered) {
@@ -408,6 +471,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
     }
     const q = QUOTE_RE.exec(line)
     if (q) {
+      flushTable()
       flushPara()
       flushList()
       quote.push(q[1])
@@ -417,6 +481,7 @@ export function parseCheapProseBlocks(text: string): CheapProseBlock[] {
       flushAll()
       continue
     }
+    flushTable()
     flushList()
     flushQuote()
     para.push(line)

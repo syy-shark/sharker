@@ -92,6 +92,18 @@ describe('splitStreamingMarkdown', () => {
     ])
   })
 
+  it('renders live GFM tables and rules instead of a single paragraph', () => {
+    const table = parseCheapProseBlocks('| A | B |\n| --- | --- |\n| 1 | `x.ts:2` |')
+    expect(table.map((b) => b.type)).toEqual(['table'])
+    if (table[0]?.type === 'table') {
+      expect(table[0].header).toHaveLength(2)
+      expect(table[0].rows).toHaveLength(1)
+      expect(table[0].rows[0]?.[1]?.some((n) => n.type === 'file')).toBe(true)
+    }
+    expect(parseCheapProseBlocks('| only | row |').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('---').map((b) => b.type)).toEqual(['hr'])
+  })
+
   it('renders live headings and lists instead of a single paragraph', () => {
     const blocks = parseCheapProseBlocks('# 标题\n- 一项 `src/a.ts:1`\n- 二项')
     expect(blocks.map((b) => b.type)).toEqual(['heading', 'list'])

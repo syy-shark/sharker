@@ -71,6 +71,31 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   if (block.type === 'quote') {
     return <blockquote key={index}>{renderCheapInline(block.nodes)}</blockquote>
   }
+  if (block.type === 'table') {
+    return (
+      <table key={index}>
+        <thead>
+          <tr>
+            {block.header.map((cell, i) => (
+              <th key={i}>{renderCheapInline(cell)}</th>
+            ))}
+          </tr>
+        </thead>
+        {block.rows.length ? (
+          <tbody>
+            {block.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, c) => (
+                  <td key={c}>{renderCheapInline(cell)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        ) : null}
+      </table>
+    )
+  }
+  if (block.type === 'hr') return <hr key={index} />
   return <p key={index}>{renderCheapInline(block.nodes)}</p>
 }
 

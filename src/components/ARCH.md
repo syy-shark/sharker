@@ -24,12 +24,12 @@
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
-| `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；命令输出按 `toolOutputDisplay` 截尾/折叠；子 Agent 步骤可点开活动 |
+| `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；命令输出按 `toolOutputDisplay` 截尾/折叠；子 Agent 步骤可点开活动 |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览 |
-| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价标题/列表/引用与可点 http / 文件引用，不每 token 跑 remark |
+| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价标题/列表/引用/表格/分隔线与可点 http / 文件引用，不每 token 跑 remark |
 | `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏（无行号节点） |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
