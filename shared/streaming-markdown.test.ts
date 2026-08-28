@@ -157,6 +157,10 @@ describe('splitStreamingMarkdown', () => {
       { type: 'br' },
       { type: 'text', text: '下' }
     ])
+    expect(parseCheapInlineMarkdown('见 \\*不是斜体\\* 与 *是*')).toEqual([
+      { type: 'text', text: '见 *不是斜体* 与 ' },
+      { type: 'em', text: '是' }
+    ])
     expect(parseCheapInlineMarkdown('见 ***粗斜*** 与 **粗**')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'em', text: '粗斜', mark: '***', inner: 'strong' },

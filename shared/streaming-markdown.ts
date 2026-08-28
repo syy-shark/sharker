@@ -384,6 +384,11 @@ export function parseCheapInlineMarkdown(
     buf = ''
   }
   while (i < src.length) {
+    if (src[i] === '\\' && i + 1 < src.length && /[\\`*_{}[\]()#+\-.!<>~|]/.test(src[i + 1]!)) {
+      buf += src[i + 1]
+      i += 2
+      continue
+    }
     if (src[i] === '`') {
       const end = src.indexOf('`', i + 1)
       if (end === -1) {
