@@ -115,7 +115,7 @@ export function ChatToolbar({
             title={
               rightPanelOpen
                 ? '收起面板'
-                : '展开：文件 / 审查 ⌘⌥B / 终端 ⌘J'
+                : '展开：文件 / 审查 ⌘⌥B / 终端 ⌘J · 命令 ⌘K'
             }
           >
             {rightPanelOpen ? (

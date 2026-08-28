@@ -27,7 +27,8 @@
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流 |
 | `StreamingMarkdown.tsx` | 直播正文：已闭合块 memo，只重绘增长尾部 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳 |
-| `CodeDiffBlock.tsx` / `.css` | 行级 diff 展示 |
+| `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
+| `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |
 | `CompareBlock.tsx` / `.css` | 旧/新对比行布局 |
 | `MessageActions.tsx` / `.css` | 消息复制等操作 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |

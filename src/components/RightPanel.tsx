@@ -26,6 +26,8 @@ interface Props {
   onClose?: () => void
   /** 工具写盘后递增，审查列表立刻刷新 */
   changesRevision?: number
+  /** 审查行内评论 → 当前对话 */
+  onSendReviewComments?: (prompt: string) => void
 }
 
 /** Codex 风格右侧面板 */
@@ -36,7 +38,8 @@ export function RightPanel({
   isHome = false,
   onTabChange,
   onClose,
-  changesRevision = 0
+  changesRevision = 0,
+  onSendReviewComments
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -309,7 +312,11 @@ export function RightPanel({
       <div className="right-panel-body view-enter" key={tab}>
         {tab === 'files' && <FileTree workspacePath={workspacePath} isHome={isHome} />}
         {tab === 'changes' && (
-          <ChangesPanel workspacePath={workspacePath} revision={changesRevision} />
+          <ChangesPanel
+            workspacePath={workspacePath}
+            revision={changesRevision}
+            onSendComments={onSendReviewComments}
+          />
         )}
         {tab === 'terminal' && <EmbeddedTerminal workspacePath={workspacePath} />}
         {tab === 'browser' && <EmbeddedBrowser />}

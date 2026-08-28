@@ -129,8 +129,21 @@ contextBridge.exposeInMainWorld('sharker', {
   gitCheckout: (cwd: string, branch: string) =>
     ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch),
   getGitStatusChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_STATUS_CHANGES, cwd),
-  getGitFileDiff: (cwd: string, filePath: string, status?: string) =>
-    ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status),
+  getGitFileDiff: (
+    cwd: string,
+    filePath: string,
+    status?: string,
+    scope?: 'unstaged' | 'staged'
+  ) => ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status, scope),
+  applyGitHunkAction: (
+    cwd: string,
+    payload: {
+      action: 'stage' | 'unstage' | 'revert'
+      path: string
+      patch: string
+      scope?: 'unstaged' | 'staged'
+    }
+  ) => ipcRenderer.invoke(IPC.GIT_HUNK_ACTION, cwd, payload),
   applyGitReviewAction: (
     cwd: string,
     action: 'stage' | 'unstage' | 'revert',

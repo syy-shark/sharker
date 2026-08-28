@@ -65,6 +65,7 @@ import { runGit } from '../../tools/shared/git-runner'
 import { prepareThreadWorktree } from '../../tools/thread-worktree'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
 import { applyGitReviewAction, type GitReviewAction } from '../../shared/git-review-actions'
+import { applyGitHunkAction } from '../../shared/git-hunk-actions'
 import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { readFile, rm, stat, unlink } from 'fs/promises'
 import {
@@ -1041,7 +1042,7 @@ function registerIpc(): void {
 
   ipcMain.handle(
     IPC.GIT_FILE_DIFF,
-    async (_e, cwd: string, filePath: string, status = 'M') => {
+    async (_e, cwd: string, filePath: string, status = 'M', scope: 'unstaged' | 'staged' = 'unstaged') => {
       const root = path.resolve(String(cwd || ''))
       const rel = String(filePath || '').replace(/^[/\\]+/, '')
       if (!root || !rel) {
@@ -1051,13 +1052,17 @@ function registerIpc(): void {
       if (abs !== root && !abs.startsWith(root + path.sep)) {
         return { ok: false, path: rel, status, error: '路径超出工作区' }
       }
-      let oldText: string | null = null
-      try {
-        oldText = await runGit(root, ['show', `HEAD:${rel.replaceAll('\\', '/')}`])
-      } catch {
-        oldText = null
+      const posix = rel.replaceAll('\\', '/')
+      const show = async (spec: string) => {
+        try {
+          return await runGit(root, ['show', spec])
+        } catch {
+          return null
+        }
       }
-      let newText = ''
+      const headText = await show(`HEAD:${posix}`)
+      const indexText = await show(`:${posix}`)
+      let worktreeText: string | null = null
       try {
         const buf = await readFile(abs)
         if (buf.includes(0)) {
@@ -1066,17 +1071,30 @@ function registerIpc(): void {
         if (buf.byteLength > 400_000) {
           return { ok: false, path: rel, status, error: '文件过大，请在编辑器中查看' }
         }
-        newText = buf.toString('utf8')
+        worktreeText = buf.toString('utf8')
       } catch {
-        if (!isDeletedGitChange(status)) {
-          return { ok: false, path: rel, status, error: '无法读取工作区文件' }
-        }
+        worktreeText = null
       }
+
+      const oldText = scope === 'staged' ? headText : (indexText ?? headText)
+      let newText = ''
+      if (scope === 'staged') {
+        newText = indexText ?? ''
+      } else if (worktreeText != null) {
+        newText = worktreeText
+      } else if (!isDeletedGitChange(status) && indexText == null && headText == null) {
+        return { ok: false, path: rel, status, error: '无法读取工作区文件' }
+      }
+
+      const effectiveStatus =
+        scope === 'unstaged' && indexText == null && headText == null && worktreeText != null
+          ? '??'
+          : status
       return {
         ok: true,
         path: rel,
-        status,
-        diff: diffFromGitTexts({ path: rel, status, oldText, newText })
+        status: effectiveStatus,
+        diff: diffFromGitTexts({ path: rel, status: effectiveStatus, oldText, newText })
       }
     }
   )
@@ -1094,6 +1112,47 @@ function registerIpc(): void {
         cwd: root,
         action,
         paths: Array.isArray(paths) ? paths.map(String) : undefined,
+        io: {
+          runGit,
+          unlink,
+          rmDir: (abs) => rm(abs, { recursive: true, force: true }),
+          stat: async (abs) => {
+            try {
+              const s = await stat(abs)
+              return { isFile: s.isFile(), isDirectory: s.isDirectory() }
+            } catch {
+              return null
+            }
+          }
+        }
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC.GIT_HUNK_ACTION,
+    async (
+      _e,
+      cwd: string,
+      payload: {
+        action: GitReviewAction
+        path: string
+        patch: string
+        scope?: 'unstaged' | 'staged'
+      }
+    ) => {
+      const root = path.resolve(String(cwd || ''))
+      if (!root) return { ok: false as const, error: '缺少工作区' }
+      const allowed: GitReviewAction[] = ['stage', 'unstage', 'revert']
+      if (!allowed.includes(payload?.action)) {
+        return { ok: false as const, error: '未知审查动作' }
+      }
+      return applyGitHunkAction({
+        cwd: root,
+        action: payload.action,
+        path: String(payload.path || ''),
+        patch: String(payload.patch || ''),
+        scope: payload.scope === 'staged' ? 'staged' : 'unstaged',
         io: {
           runGit,
           unlink,

@@ -139,6 +139,113 @@
   transform: scale(0.98);
 }
 
+.code-diff-hunk + .code-diff-hunk {
+  margin-top: 8px;
+}
+
+.code-diff-hunk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--text) 5%, var(--glass-fill-nested));
+  border-top: 1px solid var(--border-subtle);
+}
+
+.code-diff-hunk-label {
+  color: var(--text-muted);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+}
+
+.code-diff-hunk-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.code-diff-hunk-btn,
+.code-diff-comment-btn {
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--glass-fill-raised);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.code-diff-comment-btn {
+  display: inline-flex;
+  width: 16px;
+  min-height: 16px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.code-diff-line--review:hover .code-diff-comment-btn,
+.code-diff-comment-btn:focus-visible {
+  opacity: 1;
+}
+
+.code-diff-hunk-btn:hover:not(:disabled),
+.code-diff-comment-btn:hover {
+  color: var(--text);
+  background: var(--glass-fill-nested-hover);
+}
+
+.code-diff-hunk-btn--primary {
+  color: var(--accent);
+}
+
+.code-diff-hunk-btn--danger:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.code-diff-hunk-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.code-diff-comments {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 4px 14px 6px 86px;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.code-diff-comment-form {
+  padding: 6px 10px 10px 86px;
+}
+
+.code-diff-comment-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.code-diff-comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .code-diff-block {
     animation-duration: 0.01ms !important;

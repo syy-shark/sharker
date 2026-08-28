@@ -5,6 +5,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
+import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
+import type { GitReviewAction } from '../../../shared/git-review-actions'
+import {
+  formatReviewCommentsPrompt,
+  type ReviewLineComment
+} from '../../../shared/review-comment'
+import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { CodeDiffBlock } from '../CodeDiffBlock'
 import './ChangesPanel.css'
 
@@ -23,6 +30,8 @@ interface Props {
   workspacePath: string
   /** 工具写盘后递增，立刻刷新审查列表 */
   revision?: number
+  /** 把行内评论派发给当前对话 */
+  onSendComments?: (prompt: string) => void
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -44,7 +53,7 @@ function isUnstaged(file: ChangeFile): boolean {
 }
 
 /** Codex 式变更审查：列表 + 当前文件 diff + 文件级 Git 动作 */
-export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
+export function ChangesPanel({ workspacePath, revision = 0, onSendComments }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
   const [files, setFiles] = useState<ChangeFile[]>([])
@@ -56,6 +65,7 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
   const [diff, setDiff] = useState<FileDiffModel | null>(null)
   const [diffError, setDiffError] = useState<string | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
+  const [comments, setComments] = useState<ReviewLineComment[]>([])
 
   const visible = files.filter((f) => (scope === 'staged' ? isStaged(f) : isUnstaged(f)))
 
@@ -110,6 +120,35 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
     [acting, refresh, workspacePath]
   )
 
+  /** hunk 级暂存 / 取消暂存 / 还原 */
+  const runHunkAction = useCallback(
+    async (hunk: DiffHunk, action: GitReviewAction) => {
+      if (!workspacePath || !selectedPath || !window.sharker?.applyGitHunkAction || acting) return
+      setActing(true)
+      setError(null)
+      try {
+        const result = await window.sharker.applyGitHunkAction(workspacePath, {
+          action,
+          path: selectedPath,
+          scope,
+          patch: buildHunkPatch({
+            path: selectedPath,
+            hunk,
+            isNew: isNewGitChange(files.find((f) => f.path === selectedPath)?.status ?? ''),
+            isDeleted: isDeletedGitChange(files.find((f) => f.path === selectedPath)?.status ?? '')
+          })
+        })
+        if (!result.ok) setError(result.error || 'hunk 操作失败')
+        await refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e))
+      } finally {
+        setActing(false)
+      }
+    },
+    [acting, files, refresh, scope, selectedPath, workspacePath]
+  )
+
   useEffect(() => {
     void refresh()
     const id = window.setInterval(() => {
@@ -129,7 +168,7 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
     setDiffLoading(true)
     setDiffError(null)
     void window.sharker
-      .getGitFileDiff(workspacePath, selectedPath, file?.status ?? 'M')
+      .getGitFileDiff(workspacePath, selectedPath, file?.status ?? 'M', scope)
       .then((result) => {
         if (cancelled) return
         if (!result.ok || !result.diff) {
@@ -152,7 +191,7 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
     return () => {
       cancelled = true
     }
-  }, [files, selectedPath, workspacePath, revision])
+  }, [files, selectedPath, workspacePath, revision, scope])
 
   if (!workspacePath) {
     return (
@@ -357,7 +396,46 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
             ) : diffError ? (
               <p className="changes-panel__error">{diffError}</p>
             ) : diff ? (
-              <CodeDiffBlock diff={diff} defaultExpanded showHeader />
+              <>
+                <CodeDiffBlock
+                  diff={diff}
+                  defaultExpanded
+                  showHeader
+                  review={{
+                    scope,
+                    acting,
+                    comments: comments.filter((c) => c.path === selectedPath),
+                    onHunkAction: (hunk, action) => void runHunkAction(hunk, action),
+                    onAddComment: (comment) =>
+                      setComments((prev) => [
+                        ...prev,
+                        { ...comment, id: crypto.randomUUID() }
+                      ])
+                  }}
+                />
+                {comments.length > 0 && onSendComments ? (
+                  <div className="changes-panel__comments-bar">
+                    <span>{comments.length} 条行内评论</span>
+                    <button
+                      type="button"
+                      className="changes-panel__action"
+                      onClick={() => {
+                        onSendComments(formatReviewCommentsPrompt(comments))
+                        setComments([])
+                      }}
+                    >
+                      发送评论
+                    </button>
+                    <button
+                      type="button"
+                      className="changes-panel__action"
+                      onClick={() => setComments([])}
+                    >
+                      清空
+                    </button>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <p className="changes-panel__hint">选择一个文件查看 diff</p>
             )}

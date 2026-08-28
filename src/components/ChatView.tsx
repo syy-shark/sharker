@@ -111,6 +111,9 @@ interface Props {
   onThreadModeChange?: (mode: ThreadMode) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
+  /** 命令面板「引用文件」：打开 `@` 选择器 */
+  composerIntent?: 'mention' | null
+  onComposerIntentHandled?: () => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -147,7 +150,9 @@ export function ChatView({
   onApproval,
   threadMode = 'local',
   onThreadModeChange,
-  fileSearchRoot = ''
+  fileSearchRoot = '',
+  composerIntent = null,
+  onComposerIntentHandled
 }: Props) {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
@@ -384,6 +389,22 @@ export function ChatView({
       syncTextareaHeight()
     })
   }
+
+  useEffect(() => {
+    if (composerIntent !== 'mention') return
+    setInput('@')
+    setCursor(1)
+    setMentionDismissed(false)
+    setSlashDismissed(true)
+    onComposerIntentHandled?.()
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(1, 1)
+      syncTextareaHeight()
+    })
+  }, [composerIntent, onComposerIntentHandled])
 
   const pickSlashCommand = (cmd: SlashCommandMeta) => {
     if (cmd.action === 'mention_file') {

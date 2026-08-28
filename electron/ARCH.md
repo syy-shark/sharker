@@ -33,6 +33,7 @@
 | `conversations:*` | 对话 CRUD |
 | `approval:response` | 高危操作确认 |
 | `git:review-action` | 审查面板暂存 / 取消暂存 / 还原 |
+| `git:hunk-action` | 审查面板单个 hunk 暂存 / 取消暂存 / 还原 |
 | `workspace:search-files` | Composer `@` 工作区文件搜索 |
 
 ## 数据流

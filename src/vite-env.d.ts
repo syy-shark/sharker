@@ -138,10 +138,20 @@ export interface SharkerApi {
     action: 'stage' | 'unstage' | 'revert',
     paths?: string[]
   ) => Promise<{ ok: boolean; error?: string }>
+  applyGitHunkAction: (
+    cwd: string,
+    payload: {
+      action: 'stage' | 'unstage' | 'revert'
+      path: string
+      patch: string
+      scope?: 'unstaged' | 'staged'
+    }
+  ) => Promise<{ ok: boolean; error?: string }>
   getGitFileDiff: (
     cwd: string,
     filePath: string,
-    status?: string
+    status?: string,
+    scope?: 'unstaged' | 'staged'
   ) => Promise<{
     ok: boolean
     path: string

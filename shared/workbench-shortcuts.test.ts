@@ -31,6 +31,10 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true }))).toBe('new_conversation')
     expect(matchWorkbenchShortcut(ev({ key: ',', metaKey: true }))).toBe('open_settings')
     expect(matchWorkbenchShortcut(ev({ key: 'o', ctrlKey: true }))).toBe('open_folder')
+    expect(matchWorkbenchShortcut(ev({ key: 'k', metaKey: true }))).toBe('command_palette')
+    expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true, shiftKey: true }))).toBe(
+      'command_palette'
+    )
   })
 
   it('ignores composing and unmodified keys', () => {

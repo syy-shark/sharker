@@ -37,8 +37,16 @@
 | `at-mention.ts` | Composer `@` 查询解析与插入 |
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配 |
-| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, |
+| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K |
 | `review-prompt.ts` | `/review` 只读审查提示词 |
+| `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
+| `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
+| `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
+| `git-hunk-actions.test.ts` | 只暂存第一个 hunk |
+| `review-comment.ts` | 行内评论 → Agent 提示 |
+| `review-comment.test.ts` | 评论锚定路径与行号 |
+| `command-palette.ts` | ⌘K 命令面板目录 |
+| `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |

@@ -49,6 +49,8 @@ import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
 import { REVIEW_WORKING_TREE_PROMPT } from '../shared/review-prompt'
+import { CommandPalette } from './components/CommandPalette'
+import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
@@ -218,6 +220,8 @@ export default function App() {
     setSidebarPeeking(false)
   }, [])
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [composerIntent, setComposerIntent] = useState<'mention' | null>(null)
   const sendInFlightRef = useRef(false)
   /** 回合序号：finally 只清理自己这一轮，避免排队续跑被误清 loading */
   const turnGenRef = useRef(0)
@@ -2535,6 +2539,41 @@ export default function App() {
     handleSlashActionRef.current = handleSlashAction
   }, [handleSlashAction])
 
+  /** 命令面板：复用斜杠 / 快捷键同一套动作 */
+  const handlePaletteCommand = useCallback(
+    (cmd: PaletteCommand) => {
+      if (cmd.action === 'toggle_sidebar') {
+        toggleSidebar()
+        return
+      }
+      if (cmd.action === 'open_folder') {
+        void handleAddWorkspace()
+        return
+      }
+      if (cmd.action === 'mention_file') {
+        setPage('chat')
+        setComposerIntent('mention')
+        return
+      }
+      if (cmd.action === 'show_history') {
+        setPage('chat')
+        setShowHistoryPicker(true)
+        return
+      }
+      void handleSlashActionRef.current(
+        {
+          name: cmd.id,
+          description: cmd.title,
+          scope: 'ui',
+          action: cmd.action,
+          category: 'other'
+        },
+        ''
+      )
+    },
+    [handleAddWorkspace, toggleSidebar]
+  )
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const action = matchWorkbenchShortcut({
@@ -2572,6 +2611,10 @@ export default function App() {
       }
       if (action === 'open_folder') {
         void handleAddWorkspace()
+        return
+      }
+      if (action === 'command_palette') {
+        setCommandPaletteOpen((open) => !open)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -3406,6 +3449,8 @@ export default function App() {
                   ? threadWorktreePath
                   : (getActiveWorkspacePath(settings) ?? '')
               }
+              composerIntent={composerIntent}
+              onComposerIntentHandled={() => setComposerIntent(null)}
               onRetry={(userMessageId) => void handleRetry(userMessageId)}
               approval={approval}
               approvalResponding={approvalResponding}
@@ -3442,6 +3487,17 @@ export default function App() {
           onTabChange={setRightPanelTab}
           onClose={() => setRightPanelOpen(false)}
           changesRevision={changesRevision}
+          onSendReviewComments={(prompt) => {
+            setPage('chat')
+            void dispatchTurnRef.current(prompt)
+          }}
+        />
+        <CommandPalette
+          open={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onRun={(cmd) => {
+            void handlePaletteCommand(cmd)
+          }}
         />
       </div>
     </div>

@@ -11,6 +11,7 @@ export type WorkbenchShortcutAction =
   | 'new_conversation'
   | 'open_settings'
   | 'open_folder'
+  | 'command_palette'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -28,6 +29,8 @@ export function matchWorkbenchShortcut(event: {
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
   if (key === 'g' && event.shiftKey && !event.altKey) return 'toggle_review'
+  if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
+  if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
   if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_terminal'
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'

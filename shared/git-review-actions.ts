@@ -14,7 +14,7 @@ export type GitReviewAction = 'stage' | 'unstage' | 'revert'
 export type GitRunner = (
   cwd: string,
   args: string[],
-  options?: { trim?: boolean }
+  options?: { trim?: boolean; input?: string }
 ) => Promise<string>
 
 /** 审查动作依赖（避免 shared 直接碰 fs / child_process） */
