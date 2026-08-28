@@ -305,6 +305,27 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'delete',
+    description: '永久删除当前对话',
+    scope: 'ui',
+    action: 'delete_conversation',
+    category: 'session'
+  },
+  {
+    name: 'theme',
+    description: '打开外观设置',
+    scope: 'ui',
+    action: 'open_appearance',
+    category: 'other'
+  },
+  {
+    name: 'debug-config',
+    description: '打印本机配置摘要（不含密钥）',
+    scope: 'ui',
+    action: 'show_debug_config',
+    category: 'other'
+  },
+  {
     name: 'fast',
     description: '开关 Fast（关掉或降到最低思考）',
     scope: 'ui',

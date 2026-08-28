@@ -94,6 +94,28 @@ describe('turn segment event state machine', () => {
     expect(first).not.toBe(segments[0])
     expect(segments[0].content).toBe('你好世界')
   })
+
+  it('keeps finished tool segment identity across token appends', () => {
+    let segments: TurnSegment[] = []
+    segments = applyStreamChunk(segments, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'r1',
+      timestamp: 1
+    })
+    segments = applyStreamChunk(segments, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'r1',
+      resultSummary: 'ok',
+      timestamp: 2
+    })
+    const tool = segments[0]
+    segments = applyStreamChunk(segments, { type: 'token', content: 'A', timestamp: 3 })
+    segments = applyStreamChunk(segments, { type: 'token', content: 'B', timestamp: 4 })
+    expect(segments[0]).toBe(tool)
+    expect(segments[1].content).toBe('AB')
+  })
 })
 
 describe('process flow visibility', () => {

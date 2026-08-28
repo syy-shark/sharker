@@ -6,7 +6,7 @@
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { LiveDuration } from './LiveDuration'
 import type { TurnSegment } from '../../shared/types'
@@ -448,8 +448,14 @@ export function TurnFlow({
     }
   }, [])
 
-  const chronological = deriveChronologicalSteps(segments, { isStreaming })
-  const steps = visibleSteps(chronological, isStreaming)
+  const chronological = useMemo(
+    () => deriveChronologicalSteps(segments, { isStreaming }),
+    [isStreaming, segments]
+  )
+  const steps = useMemo(
+    () => visibleSteps(chronological, isStreaming),
+    [chronological, isStreaming]
+  )
 
   const fallbackStartedAt =
     liveStartedAt ??

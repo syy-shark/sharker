@@ -115,6 +115,7 @@ import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
+import { formatDebugConfig } from '../shared/debug-config'
 import { formatApproveRetry } from '../shared/approval-session'
 import {
   formatFastStatus,
@@ -676,12 +677,14 @@ export default function App() {
       setLiveSegments(segmentsRef.current)
       // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
       const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
-      setStreaming(finalPreview)
-      setTurnThinking(thinkingPreviewFromSegments(segmentsRef.current))
+      setStreaming((prev) => (prev === finalPreview ? prev : finalPreview))
+      const thinkPreview = thinkingPreviewFromSegments(segmentsRef.current)
+      setTurnThinking((prev) => (prev === thinkPreview ? prev : thinkPreview))
       const activeToolSeg = [...segmentsRef.current]
         .reverse()
         .find((s) => s.kind === 'tool' && s.status === 'active')
-      setActiveTool(activeToolSeg?.toolName ?? null)
+      const nextTool = activeToolSeg?.toolName ?? null
+      setActiveTool((prev) => (prev === nextTool ? prev : nextTool))
       // 当前可见会话也持续写 buffer，切换对话返回时不会丢 live 步骤
       const activeId = activeConversationIdRef.current
       const stillLive =
@@ -710,7 +713,7 @@ export default function App() {
               turnMeta: { browsedFiles: [], activities: [] }
             }
           }
-          buf.messages = [...messagesRef.current]
+          buf.messages = messagesRef.current
           buf.segments = segmentsRef.current
           buf.streaming = finalPreview
           buf.turnThinking = thinkingPreviewFromSegments(segmentsRef.current)
@@ -3698,6 +3701,19 @@ export default function App() {
         case 'open_shortcuts':
           void handleNavigate('settings', 'shortcuts')
           break
+        case 'open_appearance':
+          void handleNavigate('settings', 'appearance')
+          break
+        case 'show_debug_config':
+          appendLocalNote(formatDebugConfig(settingsRef.current))
+          break
+        case 'delete_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          const id = activeConversationIdRef.current
+          if (ws && id) await handleDeleteConversation(ws, id)
+          else appendLocalNote('没有当前对话，无法删除。')
+          break
+        }
         case 'copy_last_output': {
           const text = lastCompletedAssistantText(messagesRef.current)
           if (text) {
@@ -3796,6 +3812,7 @@ export default function App() {
       conversationList,
       copyPlainText,
       handleCreateBranchHere,
+      handleDeleteConversation,
       handleNavigate,
       handleMarkUnread,
       handleOpenWorktree,
@@ -3964,6 +3981,29 @@ export default function App() {
         setRightPanelOpen(false)
         return
       }
+      if (
+        !e.isComposing &&
+        e.key === 'Escape' &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.shiftKey
+      ) {
+        const t = e.target
+        if (
+          t instanceof HTMLElement &&
+          t.closest(
+            'input, textarea, [contenteditable=true], .slash-menu, .history-picker, .command-palette, .chat-find'
+          )
+        ) {
+          return
+        }
+        if (sendInFlightRef.current || loading) {
+          e.preventDefault()
+          void handleAbort()
+          return
+        }
+      }
       const action = matchWorkbenchShortcut(
         {
           key: e.key,
@@ -4018,6 +4058,17 @@ export default function App() {
       }
       if (action === 'shortcut_help') {
         void handleNavigate('settings', 'shortcuts')
+        return
+      }
+      if (action === 'copy_last_output') {
+        const text = lastCompletedAssistantText(messagesRef.current)
+        if (text) {
+          try {
+            void navigator.clipboard.writeText(text)
+          } catch {
+            /* ignore */
+          }
+        }
         return
       }
       if (action === 'select_recent') {
@@ -4201,7 +4252,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, loading, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     const onMouseNav = (e: MouseEvent) => {

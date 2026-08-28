@@ -1118,6 +1118,11 @@ export const ComposerDock = memo(
               }
             }
             const menuOpen = showMentionMenu || showSkillMenu || showSlashMenu || historyMounted
+            if (e.key === 'Escape' && loading && !menuOpen) {
+              e.preventDefault()
+              onAbort()
+              return
+            }
             if (e.key === 'ArrowUp' && !menuOpen) {
               const prev = restorePreviousComposerPrompt({ input, messages })
               if (prev) {
@@ -1168,7 +1173,7 @@ export const ComposerDock = memo(
             dictating
               ? '正在听写… Ctrl⇧D 结束'
               : loading
-                ? 'Enter 注入当前回合，Tab 排队下一条…'
+                ? 'Enter 注入 · Tab 排队 · Esc 停止…'
                 : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl⇧D 听写…'
           }
           rows={1}

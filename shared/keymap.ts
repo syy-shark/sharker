@@ -45,7 +45,8 @@ const ACTION_SET = new Set<string>([
   'mark_unread',
   'standalone_conversation',
   'copy_cwd',
-  'copy_session_id'
+  'copy_session_id',
+  'copy_last_output'
 ])
 
 function normalizeKeyName(key: string, code?: string): string {

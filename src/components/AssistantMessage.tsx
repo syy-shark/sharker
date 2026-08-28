@@ -123,9 +123,10 @@ export const AssistantMessage = memo(function AssistantMessage({
     if (!userToggledFlow.current) setFlowOpen(true)
   }, [isStreaming, useSegmentFlow, segments?.length])
 
-  const extractedFinal = useSegmentFlow
-    ? extractFinalContent(segments!, { isStreaming })
-    : ''
+  const extractedFinal = useMemo(
+    () => (useSegmentFlow ? extractFinalContent(segments!, { isStreaming }) : ''),
+    [isStreaming, segments, useSegmentFlow]
+  )
   // 错误/中止时 segment 可能只有 tool/status 而无 final 文本：回退到 message.content
   const finalContentRaw = (
     extractedFinal.trim() ||
@@ -149,7 +150,10 @@ export const AssistantMessage = memo(function AssistantMessage({
     return buildAnswerParts(segments, { isStreaming })
   }, [useSegmentFlow, segments, isStreaming, isError, isAborted])
 
-  const processOnly = useSegmentFlow ? processSegments(segments!, { isStreaming }) : []
+  const processOnly = useMemo(
+    () => (useSegmentFlow ? processSegments(segments!, { isStreaming }) : []),
+    [isStreaming, segments, useSegmentFlow]
+  )
   // 过程区不再重复：主区已展示的文字 / 内联演示
   const answerTextIds = useMemo(
     () => new Set(answerParts.filter((p) => p.type === 'text').map((p) => p.id)),

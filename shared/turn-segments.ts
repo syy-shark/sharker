@@ -135,9 +135,63 @@ function makeToolSegment(
 }
 
 /** 将单个 StreamChunk 增量应用到片段列表，返回新数组 */
+/** 只换数组和改过的段，已完成工具对象保持引用，避免每 token 打穿 memo */
+function applyThinkChunk(segments: TurnSegment[], content: string, timestamp: number): TurnSegment[] {
+  const next = segments.slice()
+  for (let i = 0; i < next.length; i++) {
+    const s = next[i]
+    if (s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('准备')) {
+      next[i] = { ...s, status: 'done', endedAt: timestamp }
+    }
+  }
+  for (let i = next.length - 1; i >= 0; i--) {
+    if (next[i].kind === 'thinking' && next[i].status === 'active') {
+      next[i] = { ...next[i], content: (next[i].content ?? '') + content }
+      return next
+    }
+  }
+  next.push({
+    id: `think-${crypto.randomUUID()}`,
+    kind: 'thinking',
+    content,
+    status: 'active',
+    startedAt: timestamp
+  })
+  return next
+}
+
+function applyTokenChunk(segments: TurnSegment[], content: string, timestamp: number): TurnSegment[] {
+  const next = segments.slice()
+  for (let i = next.length - 1; i >= 0; i--) {
+    if ((next[i].kind === 'thinking' || next[i].kind === 'status') && next[i].status === 'active') {
+      next[i] = { ...next[i], status: 'done', endedAt: timestamp }
+      break
+    }
+  }
+  const last = next[next.length - 1]
+  if (last?.kind === 'text' && last.status !== 'done') {
+    next[next.length - 1] = { ...last, content: (last.content ?? '') + content }
+    return next
+  }
+  next.push({
+    id: `text-${crypto.randomUUID()}`,
+    kind: 'text',
+    content,
+    status: 'active',
+    startedAt: timestamp
+  })
+  return next
+}
+
 export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): TurnSegment[] {
-  const next = cloneSegments(segments)
   const timestamp = chunk.timestamp ?? Date.now()
+  if (chunk.type === 'think' && chunk.content) {
+    return applyThinkChunk(segments, chunk.content, timestamp)
+  }
+  if (chunk.type === 'token' && chunk.content) {
+    return applyTokenChunk(segments, chunk.content, timestamp)
+  }
+  const next = cloneSegments(segments)
 
   // 回合一启动就给出可见“准备”步骤，避免 UI 空白停住
   if (chunk.type === 'turn_start') {
@@ -215,66 +269,6 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       status: 'active',
       startedAt: timestamp
     })
-    return next
-  }
-
-  if (chunk.type === 'think' && chunk.content) {
-    for (const s of next) {
-      if (
-        s.kind === 'status' &&
-        s.status === 'active' &&
-        (s.content ?? '').includes('准备')
-      ) {
-        s.status = 'done'
-        s.endedAt = timestamp
-      }
-    }
-    let lastThink: TurnSegment | undefined
-    for (let i = next.length - 1; i >= 0; i--) {
-      if (next[i].kind === 'thinking' && next[i].status === 'active') {
-        lastThink = next[i]
-        break
-      }
-    }
-    if (lastThink) {
-      lastThink.content = (lastThink.content ?? '') + chunk.content
-      return next
-    }
-    next.push({
-      id: `think-${crypto.randomUUID()}`,
-      kind: 'thinking',
-      content: chunk.content,
-      status: 'active'
-      ,startedAt: timestamp
-    })
-    return next
-  }
-
-  if (chunk.type === 'token' && chunk.content) {
-    // 结束进行中的思考段
-    for (let i = next.length - 1; i >= 0; i--) {
-      if (
-        (next[i].kind === 'thinking' || next[i].kind === 'status') &&
-        next[i].status === 'active'
-      ) {
-        next[i].status = 'done'
-        next[i].endedAt = timestamp
-        break
-      }
-    }
-
-    const last = next[next.length - 1]
-    if (last?.kind === 'text' && last.status !== 'done') {
-      last.content = (last.content ?? '') + chunk.content
-    } else {
-      next.push({
-        id: `text-${crypto.randomUUID()}`,
-        kind: 'text',
-        content: chunk.content,
-        status: 'active'
-        ,startedAt: timestamp
-      })
-    }
     return next
   }
 

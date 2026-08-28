@@ -35,7 +35,6 @@ describe('workbench shortcuts', () => {
       'new_conversation'
     )
     expect(matchWorkbenchShortcut(ev({ key: ',', metaKey: true }))).toBe('open_settings')
-    expect(matchWorkbenchShortcut(ev({ key: 'o', ctrlKey: true }))).toBe('open_folder')
     expect(matchWorkbenchShortcut(ev({ key: 'k', metaKey: true }))).toBe('command_palette')
     expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true, shiftKey: true }))).toBe(
       'command_palette'
@@ -53,6 +52,8 @@ describe('workbench shortcuts', () => {
       'toggle_browser'
     )
     expect(matchWorkbenchShortcut(ev({ key: '/', metaKey: true }))).toBe('shortcut_help')
+    expect(matchWorkbenchShortcut(ev({ key: 'o', ctrlKey: true }))).toBe('copy_last_output')
+    expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true }))).toBe('open_folder')
     expect(matchWorkbenchShortcut(ev({ key: '?', metaKey: true, shiftKey: true }))).toBe(
       'shortcut_help'
     )

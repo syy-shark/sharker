@@ -67,8 +67,27 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'copy',
     title: '复制上一条助手回复',
+    shortcut: 'Ctrl+O',
     keywords: 'copy output 复制 回复',
     action: 'copy_last_output'
+  },
+  {
+    id: 'delete',
+    title: '删除当前对话',
+    keywords: 'delete conversation 删除 对话',
+    action: 'delete_conversation'
+  },
+  {
+    id: 'theme',
+    title: '外观设置',
+    keywords: 'theme appearance 外观 主题',
+    action: 'open_appearance'
+  },
+  {
+    id: 'debug-config',
+    title: '调试配置',
+    keywords: 'debug config 配置 诊断',
+    action: 'show_debug_config'
   },
   {
     id: 'fast',

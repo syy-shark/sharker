@@ -47,6 +47,8 @@
 | `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘⌥1–6 / ⌘⌥← |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑 |
 | `keymap.test.ts` | 改绑后默认失效 |
+| `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key） |
+| `debug-config.test.ts` | 密钥打码 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
@@ -84,7 +86,7 @@
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
-| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；直播浅拷贝片段（不复制 diff 行）；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
+| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
 | `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块 |
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |

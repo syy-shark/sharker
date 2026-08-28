@@ -40,6 +40,7 @@ export type WorkbenchShortcutAction =
   | 'standalone_conversation'
   | 'copy_cwd'
   | 'copy_session_id'
+  | 'copy_last_output'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -103,6 +104,9 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'
   if (key === 'o' && event.shiftKey && !event.altKey) return 'new_conversation'
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
+  if (key === 'o' && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+    return 'copy_last_output'
+  }
   if (key === 'o' && !event.altKey && !event.shiftKey) return 'open_folder'
   if (
     !event.altKey &&
@@ -272,5 +276,11 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'select_recent', title: '最近对话 1–6', defaultKeys: '⌘⌥1–6' },
   { action: 'pick_model', title: '模型选择', defaultKeys: 'Ctrl⇧M', defaultChord: 'mod+ctrl+shift+m' },
   { action: 'copy_cwd', title: '复制工作目录', defaultKeys: '⌘⇧C', defaultChord: 'mod+shift+c' },
-  { action: 'copy_session_id', title: '复制会话 ID', defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' }
+  { action: 'copy_session_id', title: '复制会话 ID', defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' },
+  {
+    action: 'copy_last_output',
+    title: '复制上一条助手回复',
+    defaultKeys: 'Ctrl+O',
+    defaultChord: 'mod+ctrl+o'
+  }
 ]
