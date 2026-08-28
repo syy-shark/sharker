@@ -211,7 +211,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   }
   if (block.type === 'hr') return <hr key={index} />
   if (block.type === 'pre') {
-    return <LiveFenceTail key={index} code={block.text} />
+    return <LiveFenceTail key={index} code={block.text} language={block.lang} />
   }
   if (block.type === 'footnotes') {
     return (

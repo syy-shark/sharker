@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码 / 引用围栏。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -31,7 +31,7 @@ const EMPTY_SPLIT: StreamingMarkdownSplit = {
   closedEnd: 0
 }
 
-const FENCE_RE = /^(```|~~~)(.*)$/
+const FENCE_RE = /^ {0,3}(```|~~~)(.*)$/
 
 /** 对标 Codex 0.150：CRLF 粘贴按 LF 拆，避免围栏/段落对不齐 */
 export function normalizeStreamingText(text: string): string {
@@ -191,7 +191,7 @@ export type CheapProseBlock =
   | { type: 'quote'; blocks: CheapProseBlock[] }
   | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][]; align?: Array<'left' | 'right' | 'center' | null> }
   | { type: 'hr' }
-  | { type: 'pre'; text: string }
+  | { type: 'pre'; text: string; lang?: string }
   | { type: 'footnotes'; items: { id: string; paragraphs: CheapInlineNode[][] }[] }
   | { type: 'p'; nodes: CheapInlineNode[] }
 
@@ -864,6 +864,7 @@ export function parseCheapProseBlocks(
   let quote: string[] = []
   let table: string[] | null = null
   let pre: string[] | null = null
+  let fence: { marker: string; lang?: string; lines: string[] } | null = null
 
   const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
 
@@ -876,6 +877,15 @@ export function parseCheapProseBlocks(
     if (!pre) return
     blocks.push({ type: 'pre', text: pre.map((line) => line.replace(/^(?:    |\t)/, '')).join('\n') })
     pre = null
+  }
+  const flushFence = () => {
+    if (!fence) return
+    blocks.push({
+      type: 'pre',
+      text: fence.lines.join('\n'),
+      lang: fence.lang
+    })
+    fence = null
   }
   const flushList = () => {
     if (!list) return
@@ -924,6 +934,7 @@ export function parseCheapProseBlocks(
     blocks.push({ type: 'table', header, rows, align })
   }
   const flushAll = () => {
+    flushFence()
     flushTable()
     flushPre()
     flushPara()
@@ -933,6 +944,15 @@ export function parseCheapProseBlocks(
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex]!
+    if (fence) {
+      const close = FENCE_RE.exec(line)
+      if (close && close[1] === fence.marker) {
+        flushFence()
+        continue
+      }
+      fence.lines.push(line)
+      continue
+    }
     if (footnoteScan.skip.has(lineIndex) || parseLinkDefinitionLine(line)) {
       flushAll()
       continue
@@ -970,6 +990,20 @@ export function parseCheapProseBlocks(
     if (HR_RE.test(line)) {
       flushAll()
       blocks.push({ type: 'hr' })
+      continue
+    }
+    const fenceOpen = FENCE_RE.exec(line)
+    if (fenceOpen) {
+      flushTable()
+      flushPre()
+      flushPara()
+      flushList()
+      flushQuote()
+      fence = {
+        marker: fenceOpen[1] ?? '```',
+        lang: fenceOpen[2].trim().split(/\s+/)[0] || undefined,
+        lines: []
+      }
       continue
     }
     const heading = HEADING_RE.exec(line)
@@ -1127,7 +1161,7 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
   if (prev.type !== next.type) return null
   if (prev.type === 'hr' && next.type === 'hr') return prev
   if (prev.type === 'pre' && next.type === 'pre') {
-    return prev.text === next.text ? prev : next
+    return prev.text === next.text && prev.lang === next.lang ? prev : next
   }
   if (prev.type === 'footnotes' && next.type === 'footnotes') {
     const items = next.items.map((item, i) => {

@@ -39,6 +39,9 @@ describe('splitStreamingMarkdown', () => {
     expect(split.tailKind).toBe('fence')
     expect(split.tailLang).toBe('ts')
     expect(split.tail).toContain('const x = 1')
+    const spaced = splitStreamingMarkdown('   ```js\n1')
+    expect(spaced.tailKind).toBe('fence')
+    expect(spaced.tailLang).toBe('js')
   })
 
   it('commits a closed fence and does not remake earlier block ids', () => {
@@ -237,6 +240,17 @@ describe('splitStreamingMarkdown', () => {
     expect(quoteTable.map((b) => b.type)).toEqual(['quote'])
     if (quoteTable[0]?.type === 'quote') {
       expect(quoteTable[0].blocks.map((b) => b.type)).toEqual(['table'])
+    }
+    const quoteFence = parseCheapProseBlocks('> ```js\n> const x = 1\n> ```')
+    expect(quoteFence.map((b) => b.type)).toEqual(['quote'])
+    if (quoteFence[0]?.type === 'quote' && quoteFence[0].blocks[0]?.type === 'pre') {
+      expect(quoteFence[0].blocks[0].lang).toBe('js')
+      expect(quoteFence[0].blocks[0].text).toBe('const x = 1')
+    }
+    const openQuoteFence = parseCheapProseBlocks('> ```ts\n> let y = 2')
+    if (openQuoteFence[0]?.type === 'quote' && openQuoteFence[0].blocks[0]?.type === 'pre') {
+      expect(openQuoteFence[0].blocks[0].lang).toBe('ts')
+      expect(openQuoteFence[0].blocks[0].text).toBe('let y = 2')
     }
     const aligned = parseCheapProseBlocks('| A | B |\n| ---: | :---: |\n| 1 | 2 |')
     if (aligned[0]?.type === 'table') {
