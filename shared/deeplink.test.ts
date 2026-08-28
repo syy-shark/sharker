@@ -62,6 +62,10 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'appearance'
     })
+    expect(parseDeeplink('sharker://settings/memories')).toEqual({
+      type: 'settings',
+      tab: 'appearance'
+    })
     expect(parseDeeplink('sharker://settings/usage')).toEqual({
       type: 'settings',
       tab: 'usage'

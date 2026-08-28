@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
+  formatElapsedClock,
   isInlineDemoPaintable,
   isNearLiveMessageRow,
   liveThoughtBody,
@@ -131,5 +132,15 @@ describe('near-live message rows', () => {
     expect(isNearLiveMessageRow(0, 3, 8)).toBe(true)
     expect(isNearLiveMessageRow(-1, 3, 8)).toBe(false)
     expect(isNearLiveMessageRow(0, 0, 8)).toBe(false)
+  })
+})
+
+describe('elapsed clock', () => {
+  it('formats Codex-style goal and long-turn clocks', () => {
+    expect(formatElapsedClock(0)).toBe('<1s')
+    expect(formatElapsedClock(23)).toBe('23s')
+    expect(formatElapsedClock(240)).toBe('4m')
+    expect(formatElapsedClock(4140)).toBe('1h 9m')
+    expect(formatElapsedClock(36000)).toBe('10h')
   })
 })

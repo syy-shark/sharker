@@ -36,4 +36,9 @@ describe('thread goal storage', () => {
     saveThreadGoal('a', null)
     expect(loadThreadGoal('a')).toBeNull()
   })
+
+  it('persists startedAt for the goal progress clock', () => {
+    saveThreadGoal('a', { text: '修好滚动', status: 'active', startedAt: 1_700_000_000_000 })
+    expect(loadThreadGoal('a')?.startedAt).toBe(1_700_000_000_000)
+  })
 })

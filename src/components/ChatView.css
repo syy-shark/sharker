@@ -429,6 +429,7 @@
 .live-prose-tail {
   margin: 0 0 10px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

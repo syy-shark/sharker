@@ -20,6 +20,12 @@ describe('composer paste intake', () => {
     expect(decision).toEqual({ action: 'insert_text', text: '从 Word 复制的段落' })
   })
 
+  it('normalizes CRLF from Word-style plain text', () => {
+    expect(clipboardPlainText((type) => (type === 'text/plain' ? 'a\r\nb\rc' : ''))).toBe(
+      'a\nb\nc'
+    )
+  })
+
   it('falls back to stripped HTML when plain text is empty', () => {
     expect(
       clipboardPlainText((type) =>

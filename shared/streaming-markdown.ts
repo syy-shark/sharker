@@ -1,5 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接与裸 URL。
  * @see shared/ARCH.md
  */
 
@@ -31,14 +32,20 @@ const EMPTY_SPLIT: StreamingMarkdownSplit = {
 
 const FENCE_RE = /^(```|~~~)(.*)$/
 
+/** 对标 Codex 0.150：CRLF 粘贴按 LF 拆，避免围栏/段落对不齐 */
+export function normalizeStreamingText(text: string): string {
+  return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+}
+
 /**
  * 把流式文本拆成不会再变的块，与仍在增长的尾部。
  * 尾部是未闭合围栏，或最后一个尚未空行收束的段落。
  */
 export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
-  if (!text) return EMPTY_SPLIT
+  const src = normalizeStreamingText(text)
+  if (!src) return EMPTY_SPLIT
 
-  const lines = text.split('\n')
+  const lines = src.split('\n')
   const blocks: StreamingMarkdownBlock[] = []
   let current: string[] = []
   let inFence = false
@@ -111,13 +118,15 @@ export function continueStreamingMarkdown(
   prevText: string,
   text: string
 ): StreamingMarkdownSplit {
-  if (!text) return EMPTY_SPLIT
-  if (prev && text === prevText) return prev
+  const nextText = normalizeStreamingText(text)
+  const prevNorm = normalizeStreamingText(prevText)
+  if (!nextText) return EMPTY_SPLIT
+  if (prev && nextText === prevNorm) return prev
   const closedEnd = prev?.closedEnd ?? 0
-  if (!prev || closedEnd <= 0 || !text.startsWith(prevText.slice(0, closedEnd))) {
-    return splitStreamingMarkdown(text)
+  if (!prev || closedEnd <= 0 || !nextText.startsWith(prevNorm.slice(0, closedEnd))) {
+    return splitStreamingMarkdown(nextText)
   }
-  const rest = text.slice(closedEnd)
+  const rest = nextText.slice(closedEnd)
   const restSplit = splitStreamingMarkdown(rest)
   if (restSplit.blocks.length === 0) {
     if (
@@ -160,13 +169,21 @@ export type CheapInlineNode =
   | { type: 'code'; text: string }
   | { type: 'strong'; text: string }
   | { type: 'em'; text: string }
+  | { type: 'link'; text: string; href: string }
+
+const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
+
+/** 去掉裸链接尾部标点，避免句号/括号被吃进 href */
+function trimBareUrl(raw: string): string {
+  return raw.replace(/[.,;:!?)]+$/, '')
+}
 
 /**
- * 只认成对的 `code` / **bold** / *italic*。
+ * 只认成对的 `code` / **bold** / *italic*、闭合 `[text](http…)` 与裸 http(s) 链接。
  * 未闭合标记留在原文，避免直播时闪烁。
  */
 export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
-  const src = String(text ?? '')
+  const src = normalizeStreamingText(text)
   if (!src) return []
   const nodes: CheapInlineNode[] = []
   let i = 0
@@ -210,6 +227,38 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
       i = end + 1
       continue
     }
+    if (src[i] === '[') {
+      const mid = src.indexOf('](', i + 1)
+      if (mid === -1) {
+        buf += src.slice(i)
+        break
+      }
+      const label = src.slice(i + 1, mid)
+      if (!label.includes('\n')) {
+        const urlEnd = src.indexOf(')', mid + 2)
+        if (urlEnd === -1) {
+          buf += src.slice(i)
+          break
+        }
+        const href = src.slice(mid + 2, urlEnd).trim()
+        if (/^https?:\/\//i.test(href)) {
+          flush()
+          nodes.push({ type: 'link', text: label, href })
+          i = urlEnd + 1
+          continue
+        }
+      }
+    }
+    const urlMatch = BARE_URL_RE.exec(src.slice(i))
+    if (urlMatch) {
+      const href = trimBareUrl(urlMatch[0])
+      if (href.length > 'http://a'.length) {
+        flush()
+        nodes.push({ type: 'link', text: href, href })
+        i += href.length
+        continue
+      }
+    }
     buf += src[i]
     i += 1
   }
@@ -221,6 +270,9 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'code') return `\`${node.text}\``
   if (node.type === 'strong') return `**${node.text}**`
   if (node.type === 'em') return `*${node.text}*`
+  if (node.type === 'link') {
+    return node.text === node.href ? node.href : `[${node.text}](${node.href})`
+  }
   return node.text
 }
 
@@ -236,12 +288,14 @@ export function continueCheapInlineMarkdown(
   prevNodes: CheapInlineNode[],
   text: string
 ): CheapInlineNode[] {
-  if (!text) return []
-  if (text === prevText && prevNodes.length) return prevNodes
-  if (!prevNodes.length) return parseCheapInlineMarkdown(text)
+  const nextText = normalizeStreamingText(text)
+  const prevNorm = normalizeStreamingText(prevText)
+  if (!nextText) return []
+  if (nextText === prevNorm && prevNodes.length) return prevNodes
+  if (!prevNodes.length) return parseCheapInlineMarkdown(nextText)
   const stable = prevNodes.slice(0, -1)
   const prefix = cheapInlineSourceAll(stable)
-  if (!text.startsWith(prefix)) return parseCheapInlineMarkdown(text)
-  const rest = parseCheapInlineMarkdown(text.slice(prefix.length))
+  if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText)
+  const rest = parseCheapInlineMarkdown(nextText.slice(prefix.length))
   return stable.length ? [...stable, ...rest] : rest
 }

@@ -35,7 +35,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
-| `/goal [文本\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；进度行可暂停 / 继续 / 编辑 / 清除 |
+| `/goal [文本\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |
@@ -102,6 +102,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 权限 → Git **审查交付**：`/review` 默认独立线程或当前对话（对标 Codex Review delivery）
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）
 - 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
+- 设置 → 外观 → **记忆** 注入/写入（对标 Codex Settings → Personalization；`/memories` 仍打印本机记忆清单）
 - 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
 - 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）

@@ -30,12 +30,12 @@ export function htmlToPlainText(html: string): string {
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<(br|\/p|\/div|\/tr|\/li|\/h[1-6])\b[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-  return decodeHtmlEntities(stripped).replace(/\u00a0/g, ' ')
+  return decodeHtmlEntities(stripped).replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
 }
 
 /** 从剪贴板取可用文本：优先 text/plain，否则剥 HTML */
 export function clipboardPlainText(getData: (type: string) => string): string {
-  const plain = String(getData('text/plain') || '')
+  const plain = String(getData('text/plain') || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
   if (plain.trim()) return plain
   const html = String(getData('text/html') || '')
   if (!html.trim()) return ''

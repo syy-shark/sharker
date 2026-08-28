@@ -47,6 +47,14 @@ describe('splitStreamingMarkdown', () => {
     expect(done.tailKind).toBe('prose')
   })
 
+  it('treats CRLF like LF so an open fence stays in the tail', () => {
+    const split = splitStreamingMarkdown('Intro\r\n\r\n```ts\r\nconst x = 1')
+    expect(split.blocks).toHaveLength(1)
+    expect(split.tailKind).toBe('fence')
+    expect(split.tailLang).toBe('ts')
+    expect(split.tail).toContain('const x = 1')
+  })
+
   it('extracts open fence body without the opener', () => {
     expect(extractOpenFenceBody('```ts\nconst a = 1\nconst b = 2')).toBe(
       'const a = 1\nconst b = 2'
@@ -65,6 +73,16 @@ describe('splitStreamingMarkdown', () => {
     ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
+    expect(parseCheapInlineMarkdown('见 [文档](https://example.com) 与 https://a.test/path.')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://example.com' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'link', text: 'https://a.test/path', href: 'https://a.test/path' },
+      { type: 'text', text: '.' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 [未闭](https://x')).toEqual([
+      { type: 'text', text: '半截 [未闭](https://x' }
+    ])
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {

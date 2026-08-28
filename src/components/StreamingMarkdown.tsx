@@ -28,6 +28,24 @@ const LiveProseTail = memo(function LiveProseTail({ text }: { text: string }) {
         if (node.type === 'code') return <code key={index}>{node.text}</code>
         if (node.type === 'strong') return <strong key={index}>{node.text}</strong>
         if (node.type === 'em') return <em key={index}>{node.text}</em>
+        if (node.type === 'link') {
+          return (
+            <a
+              key={index}
+              href={node.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => {
+                event.preventDefault()
+                if (node.href.startsWith('http://') || node.href.startsWith('https://')) {
+                  void window.sharker.openExternal?.(node.href)
+                }
+              }}
+            >
+              {node.text}
+            </a>
+          )
+        }
         return <span key={index}>{node.text}</span>
       })}
     </p>

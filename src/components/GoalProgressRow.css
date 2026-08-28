@@ -39,6 +39,13 @@
   color: var(--accent, #007aff);
 }
 
+.goal-progress-row-elapsed {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
 .goal-progress-row-text {
   margin: 0;
   min-width: 0;

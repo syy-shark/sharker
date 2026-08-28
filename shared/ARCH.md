@@ -31,8 +31,8 @@
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
-| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child） |
-| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价行内解析 |
+| `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合 |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价行内（含闭合链接 / 裸 URL） |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
@@ -92,7 +92,7 @@
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组 |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
-| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字；`shouldStartGoalTurn` 表示文本即首轮提示 |
+| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 表示文本即首轮提示 |
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 / 首轮是否发起 |
 | `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文 / 本机今日用量） |
 | `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量 |
@@ -106,11 +106,11 @@
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、审批热键、恢复上一条、空输入 Esc+Esc 回编 |
 | `suggested-prompts.ts` | 空对话建议：审查 / 目标 / 继续最近对话（对标 Codex Suggested prompts） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片 |
-| `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
+| `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；CRLF 归一；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications→外观、git/review→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/memories→外观、git/review→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、git/review 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |

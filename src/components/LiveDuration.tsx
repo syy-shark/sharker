@@ -3,11 +3,11 @@
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
+import { formatElapsedClock } from '../../shared/live-display'
 
-/** 秒数 → 显示用耗时文案 */
+/** 秒数 → 显示用耗时文案（长回合对标 Codex 1h 9m） */
 export function formatLiveDuration(seconds: number): string {
-  if (seconds < 1) return '<1s'
-  return `${seconds}s`
+  return formatElapsedClock(seconds)
 }
 
 /** 仅刷新自身的直播秒表 */

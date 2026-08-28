@@ -10,6 +10,8 @@ export type ThreadGoalStatus = 'active' | 'paused'
 export interface ThreadGoal {
   text: string
   status: ThreadGoalStatus
+  /** 设定时刻，进度行显示耗时；不表示自动多小时循环 */
+  startedAt?: number
 }
 
 /** `/goal` 参数解析结果 */
@@ -54,7 +56,7 @@ export function applyGoalCommand(
       return { goal: current, note: '没有可暂停的目标。先用 `/goal 文本` 设定。' }
     }
     return {
-      goal: { ...current, status: 'paused' },
+      goal: { ...current, status: 'paused', startedAt: current.startedAt },
       note: `已暂停线程目标：${current.text}`
     }
   }
@@ -63,13 +65,13 @@ export function applyGoalCommand(
       return { goal: current, note: '没有可继续的目标。先用 `/goal 文本` 设定。' }
     }
     return {
-      goal: { ...current, status: 'active' },
+      goal: { ...current, status: 'active', startedAt: current.startedAt },
       note: `已继续线程目标：${current.text}`
     }
   }
   const text = command.text.trim()
   return {
-    goal: { text, status: 'active' },
+    goal: { text, status: 'active', startedAt: current?.startedAt ?? Date.now() },
     note: `已设定线程目标：${text}`
   }
 }

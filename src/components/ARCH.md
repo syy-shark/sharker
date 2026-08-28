@@ -18,7 +18,7 @@
 |------|------|
 | `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；主导航铃铛开关 Activity（⌘⌥U，未读对话徽标）；审查队列入口与未读徽标；**进行中**任务行（并行线程置顶）；**置顶**分组；对话旁 Codex 式筛选（按时间 / 进行中 / 等待回复 / 未读 / 置顶）；筛选菜单在有未读时提供「全部标为已读」（只清对话未读）；⌘⌥U 开关 Activity（默认等待回复）；进行中会话呼吸点；未读点；双击 / ⌘⌥R 行内改名；隔离 Worktree 线程小标；项目菜单含创建永久 worktree；enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入；设置导航含用量 |
 | `ChatView.tsx` / `.css` | 聊天主视图：消息列表、滚动；排队条在输入框上方（不进 `.messages`，直播贴底不受排队行影响）；输入区交给 `ComposerDock`（直播 token 不重绘输入框）；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；审批出现后仍贴底跟随（不锁上翻）；远离底部的旧消息才 `content-visibility`，贴底附近用 `message-row--near-live`；历史行 `useMemo` + 用户气泡 `memo`；用户气泡可就地编辑并重发；空输入 Esc+Esc 回编上一条并分叉；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（`.composer-box` 内仍可触发）；查找打开时 ⌘G / ⌘⇧G / F3 / ⇧F3 跳命中；⌘↑ / ⌘↓ 跳到对话顶/底（输入框内不抢）；空对话建议芯片（可关）；隔离目录被清理时显示恢复横幅；主线程子 Agent 步骤点开活动；完成后改文件芯片打开审查 |
-| `GoalProgressRow.tsx` / `.css` | 输入框上方的线程目标进度行（对标 Codex Goal）：暂停 / 继续 / 编辑 / 清除；不接收直播 token |
+| `GoalProgressRow.tsx` / `.css` | 输入框上方的线程目标进度行（对标 Codex Goal）：暂停 / 继续 / 编辑 / 清除；`startedAt` 用独立秒表显示耗时；不接收直播 token |
 | `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史（标题/正文/分支扩匹配）、项目选择器、附件、听写/语音、忙时 Enter 按 `followUpBehavior`（默认排队）/ ⌘⇧Enter 反转 / Tab 排队（⌃Tab / ⌘Tab 不补全也不排队）、审批打开时 Enter 允许一次 / Esc 拒绝、计划 / 本地 / 隔离芯片（计划不跟直播 token 变、不自动开一轮）；`/` 列表并入已安装 Skill（选中写入 `$name`，不盖内置命令）；空输入 Esc+Esc 回编上一条用户气泡（不把草稿填回输入框）；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘；有目标时在输入框上方挂 `GoalProgressRow` |
 | `ComposerQueue.tsx` / `.css` | 输入框上方排队条（对标 Codex）：编辑 / 重排 / 发送 / 删除；不进对话滚动区，避免直播贴底跳动 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
@@ -29,7 +29,7 @@
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流 |
-| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；未闭合围栏用 `LiveFenceTail`；散文尾用廉价行内解析，不每 token 跑 remark |
+| `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价行内（含可点 http 链接），不每 token 跑 remark |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏（无行号节点） |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |

@@ -22,9 +22,12 @@ describe('thread goal', () => {
 
   it('sets pauses and clears a goal', () => {
     const set = applyGoalCommand(null, { type: 'set', text: '修好滚动' })
-    expect(set.goal).toEqual({ text: '修好滚动', status: 'active' })
+    expect(set.goal?.text).toBe('修好滚动')
+    expect(set.goal?.status).toBe('active')
+    expect(typeof set.goal?.startedAt).toBe('number')
     const paused = applyGoalCommand(set.goal, { type: 'pause' })
     expect(paused.goal?.status).toBe('paused')
+    expect(paused.goal?.startedAt).toBe(set.goal?.startedAt)
     expect(goalPromptBlock(paused.goal)).toBeNull()
     const resumed = applyGoalCommand(paused.goal, { type: 'resume' })
     expect(goalPromptBlock(resumed.goal)).toContain('修好滚动')

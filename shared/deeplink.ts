@@ -86,7 +86,8 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
     key === 'theme' ||
     key === 'notifications' ||
     key === 'general' ||
-    key === 'personalization'
+    key === 'personalization' ||
+    key === 'memories'
   ) {
     return { type: 'settings', tab: 'appearance' }
   }

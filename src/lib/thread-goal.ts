@@ -20,7 +20,11 @@ export function loadThreadGoal(conversationId: string | null | undefined): Threa
     if (!text) return null
     return {
       text,
-      status: parsed.status === 'paused' ? 'paused' : 'active'
+      status: parsed.status === 'paused' ? 'paused' : 'active',
+      startedAt:
+        typeof parsed.startedAt === 'number' && Number.isFinite(parsed.startedAt)
+          ? parsed.startedAt
+          : undefined
     }
   } catch {
     return null

@@ -322,6 +322,35 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
+      <SettingsSection title="记忆">
+        <SettingsCard>
+          <SettingsRow
+            title="注入记忆"
+            description="对标 Codex Settings → Personalization：把检索到的长期记忆写入本轮 system。"
+          >
+            <SettingsToggle
+              checked={draft.memoryInjection !== false}
+              onChange={(memoryInjection) => {
+                scheduleSave({ ...draftRef.current, memoryInjection })
+              }}
+              label="注入记忆"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="写入记忆"
+            description="回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.memoryGeneration !== false}
+              onChange={(memoryGeneration) => {
+                scheduleSave({ ...draftRef.current, memoryGeneration })
+              }}
+              label="写入记忆"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
       <SettingsSection title="人格">
         <SettingsCard>
           <SettingsChoiceGroup

@@ -171,6 +171,17 @@ export function shouldSynthesizePlanning(options: {
  */
 export const NEAR_LIVE_ROW_WINDOW = 8
 
+/** 对标 Codex Goal / 长回合秒表：23s · 4m · 1h 9m */
+export function formatElapsedClock(seconds: number): string {
+  if (seconds < 1) return '<1s'
+  if (seconds < 60) return `${Math.round(seconds)}s`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const rem = minutes % 60
+  return rem ? `${hours}h ${rem}m` : `${hours}h`
+}
+
 /** 该历史行是否落在贴底窗口内（0-based index） */
 export function isNearLiveMessageRow(
   index: number,
