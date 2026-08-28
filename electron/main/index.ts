@@ -1046,7 +1046,10 @@ function registerIpc(): void {
 
 /** 应用就绪：加载设置、注册 IPC、创建主窗口。 */
 app.whenReady().then(async () => {
-  if (process.platform !== 'darwin') {
+  // 生产（打包）环境仅支持 macOS；非打包的开发环境可用 SHARKER_ALLOW_NON_DARWIN=1
+  // 在 Linux/Windows 上运行（用于 CI / Cloud Agent 里开发调试 UI）。
+  const devAllowNonDarwin = !app.isPackaged && process.env.SHARKER_ALLOW_NON_DARWIN === '1'
+  if (process.platform !== 'darwin' && !devAllowNonDarwin) {
     dialog.showErrorBox('Sharker', 'Sharker 仅支持 macOS。')
     app.quit()
     return
