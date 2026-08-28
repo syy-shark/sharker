@@ -101,6 +101,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'task',
+    description: '在全局工作区开新对话（不绑定项目，对标 Codex /task）',
+    scope: 'ui',
+    action: 'new_global_conversation',
+    category: 'session'
+  },
+  {
     name: 'history',
     description: '浏览并恢复历史对话',
     scope: 'ui',

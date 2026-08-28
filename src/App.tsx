@@ -47,6 +47,7 @@ import {
 } from '../shared/turn-segments'
 import { DEFAULT_SETTINGS } from '../shared/types'
 import {
+  GLOBAL_WORKSPACE_ID,
   getActiveWorkspacePath,
   sortWorkspaces,
   pickActiveWorkspaceId,
@@ -3525,6 +3526,10 @@ export default function App() {
           if (ws) await handleNewConversation(ws)
           break
         }
+        case 'new_global_conversation': {
+          await handleNewConversation(GLOBAL_WORKSPACE_ID)
+          break
+        }
         case 'show_history':
           setShowHistoryPicker(true)
           break
@@ -4445,6 +4450,11 @@ export default function App() {
       }
       if (action === 'copy_cwd') {
         const t = e.target
+        if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
+      }
+      if (action === 'prev_thread' || action === 'next_thread') {
+        const t = e.target
+        // 对标 Codex：浏览器聚焦时 ⌃Tab 留给标签/网页，不切对话
         if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
       }
       e.preventDefault()

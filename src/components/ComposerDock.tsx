@@ -1356,7 +1356,10 @@ export const ComposerDock = memo(
                 setSkillDismissed(true)
                 return
               }
-              if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+              if (
+                (e.key === 'Enter' && !e.shiftKey) ||
+                (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey)
+              ) {
                 e.preventDefault()
                 const hit = skillHits[skillActiveIndexRef.current]
                 if (hit) pickSkill(hit.name)
@@ -1387,7 +1390,10 @@ export const ComposerDock = memo(
                 setMentionDismissed(true)
                 return
               }
-              if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+              if (
+                (e.key === 'Enter' && !e.shiftKey) ||
+                (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey)
+              ) {
                 e.preventDefault()
                 const hit = mentionOptions[mentionActiveIndexRef.current]
                 if (hit) pickMention(hit.value)
@@ -1424,7 +1430,7 @@ export const ComposerDock = memo(
                 if (cmd) pickSlashCommand(cmd)
                 return
               }
-              if (e.key === 'Tab') {
+              if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 e.preventDefault()
                 const cmd = slashItems[slashActiveIndexRef.current]
                 if (cmd) pickSlashCommand(cmd)
@@ -1503,6 +1509,9 @@ export const ComposerDock = memo(
             const mode = resolveComposerSubmit({
               key: e.key,
               shiftKey: e.shiftKey,
+              ctrlKey: e.ctrlKey,
+              metaKey: e.metaKey,
+              altKey: e.altKey,
               loading,
               menuOpen
             })

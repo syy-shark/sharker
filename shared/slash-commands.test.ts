@@ -70,10 +70,13 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'usage')?.action).toBe('show_usage')
     expect(SLASH_COMMANDS.find((c) => c.name === 'project')?.action).toBe('open_project_picker')
     expect(SLASH_COMMANDS.find((c) => c.name === 'reasoning')?.action).toBe('set_reasoning')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'task')?.action).toBe('new_global_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'model')?.action).toBe('pick_model')
   })
 
   it('filters by prefix and description', () => {
     expect(filterSlashCommands('ch').some((c) => c.name === 'changes')).toBe(true)
     expect(filterSlashCommands('审查').some((c) => c.name === 'review')).toBe(true)
+    expect(filterSlashCommands('task').some((c) => c.name === 'task')).toBe(true)
   })
 })

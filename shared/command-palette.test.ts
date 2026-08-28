@@ -61,11 +61,14 @@ describe('command palette', () => {
     expect(ids).toContain('copy-conversation-path')
     expect(ids).toContain('undo-app')
     expect(ids).toContain('redo-app')
+    expect(ids).toContain('task')
+    expect(ids).toContain('model')
   })
 
   it('filters by title and keywords', () => {
     expect(filterPaletteCommands('审查').some((c) => c.id === 'review')).toBe(true)
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
+    expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

@@ -128,6 +128,13 @@ describe('workbench shortcuts', () => {
     expect(matchDefaultWorkbenchShortcut(ev({ key: 'ArrowLeft', metaKey: true, altKey: true }))).toBe(
       'prev_thread'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'Tab', ctrlKey: true }))).toBe('next_thread')
+    expect(matchWorkbenchShortcut(ev({ key: 'Tab', ctrlKey: true, shiftKey: true }))).toBe(
+      'prev_thread'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'Tab', metaKey: true }))).toBeNull()
+    expect(matchWorkbenchShortcut(ev({ key: 'PageDown', ctrlKey: true }))).toBe('next_thread')
+    expect(matchWorkbenchShortcut(ev({ key: 'PageUp', ctrlKey: true }))).toBe('prev_thread')
   })
 
   it('cycles conversation ids', () => {

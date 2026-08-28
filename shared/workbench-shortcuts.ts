@@ -82,6 +82,33 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (!mod) return null
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
   const code = event.code ?? ''
+  // 对标 Codex：⌃Tab / ⌃⇧Tab 切对话；⌘Tab 留给系统切应用。浏览器聚焦时由 App 放行。
+  if (
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    (key === 'Tab' || key === 'tab')
+  ) {
+    return event.shiftKey ? 'prev_thread' : 'next_thread'
+  }
+  if (
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === 'PageUp' || key === 'pageup')
+  ) {
+    return 'prev_thread'
+  }
+  if (
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === 'PageDown' || key === 'pagedown')
+  ) {
+    return 'next_thread'
+  }
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
   if (key === 'u' && event.altKey && !event.shiftKey) return 'toggle_agents'
@@ -216,7 +243,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘+ / ⌘-', title: '放大 / 缩小字号' },
   { keys: '⌘0', title: '重置字号' },
   { keys: 'Ctrl+L', title: '清终端' },
-  { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
+  { keys: '⌘⇧[ / ⌘⇧] / ⌃Tab / ⌃⇧Tab', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘⌥1–6', title: '最近对话 1–6' },
   { keys: '⌘⌥← / ⌘⌥→', title: '上一条 / 下一条对话' },
@@ -313,14 +340,14 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'prev_thread',
     title: '上一条对话',
-    defaultKeys: '⌘⇧[',
-    defaultChord: ['mod+shift+[', 'mod+alt+arrowleft']
+    defaultKeys: '⌘⇧[ / ⌃⇧Tab',
+    defaultChord: ['mod+shift+[', 'mod+alt+arrowleft', 'mod+ctrl+shift+tab']
   },
   {
     action: 'next_thread',
     title: '下一条对话',
-    defaultKeys: '⌘⇧]',
-    defaultChord: ['mod+shift+]', 'mod+alt+arrowright']
+    defaultKeys: '⌘⇧] / ⌃Tab',
+    defaultChord: ['mod+shift+]', 'mod+alt+arrowright', 'mod+ctrl+tab']
   },
   { action: 'select_chat', title: '跳到第 N 条对话', defaultKeys: '⌘1–9' },
   { action: 'select_recent', title: '最近对话 1–6', defaultKeys: '⌘⌥1–6' },

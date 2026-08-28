@@ -37,6 +37,7 @@
 | 外站玻璃 | `http(s)` 在 `dom-ready` / 导航后 `insertCSS(PAGE_GLASS_INJECT_CSS)`；失败忽略 |
 | 缓存 | 改起始页须递增 `BROWSER_START_PAGE_VERSION`，并用 webview `key` 迫使重建 |
 | 快捷方式 | **暂不展示**；以后可在起始页搜索框下加一排圆标，末尾「+ 添加」 |
+| 切标签 | 单页 webview，无多标签；聚焦时 ⌃Tab / ⌃⇧Tab 不切侧栏对话（对标 Codex「chat or tab」） |
 
 ### 依赖
 

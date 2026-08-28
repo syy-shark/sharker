@@ -17,6 +17,8 @@ describe('composer submit', () => {
   it('queues on Tab only while a turn is running', () => {
     expect(resolveComposerSubmit({ key: 'Tab', loading: true })).toBe('queue')
     expect(resolveComposerSubmit({ key: 'Tab', loading: false })).toBeNull()
+    expect(resolveComposerSubmit({ key: 'Tab', loading: true, ctrlKey: true })).toBeNull()
+    expect(resolveComposerSubmit({ key: 'Tab', loading: true, metaKey: true })).toBeNull()
   })
 
   it('ignores menus, Shift+Enter, and other keys', () => {

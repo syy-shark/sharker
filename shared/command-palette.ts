@@ -23,6 +23,19 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'new_conversation'
   },
   {
+    id: 'task',
+    title: '无项目新对话',
+    keywords: 'task global no project 无项目 全局 /task',
+    action: 'new_global_conversation'
+  },
+  {
+    id: 'model',
+    title: '选择模型',
+    shortcut: 'Ctrl⇧M',
+    keywords: 'model pick 模型 /model',
+    action: 'pick_model'
+  },
+  {
     id: 'history',
     title: '历史对话',
     keywords: 'history resume 历史',

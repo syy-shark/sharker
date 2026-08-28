@@ -125,7 +125,13 @@ export function formatShortcutChord(chord: string): string {
             ? '↑'
             : key === 'arrowdown'
               ? '↓'
-              : key.toUpperCase()
+              : key === 'tab'
+                ? 'Tab'
+                : key === 'pageup'
+                  ? 'Page Up'
+                  : key === 'pagedown'
+                    ? 'Page Down'
+                    : key.toUpperCase()
   glyphs.push(label)
   return glyphs.join('')
 }

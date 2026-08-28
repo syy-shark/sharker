@@ -13,11 +13,16 @@ export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 export function resolveComposerSubmit(options: {
   key: string
   shiftKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  altKey?: boolean
   loading: boolean
   menuOpen?: boolean
 }): ComposerSubmitMode | null {
   if (options.menuOpen || options.shiftKey) return null
   if (options.key === 'Enter') return options.loading ? 'jump' : 'send'
+  // ⌃Tab / ⌘Tab 留给切对话 / 系统切应用，不排队
+  if (options.ctrlKey || options.metaKey || options.altKey) return null
   if (options.key === 'Tab' && options.loading) return 'queue'
   return null
 }
