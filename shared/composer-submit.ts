@@ -58,6 +58,7 @@ export function isFollowUpInvertChord(options: {
  * 空闲 Enter 发送（`composerEnterBehavior`：始终 / 多行需修饰键 / 始终修饰键）。
  * 旧布尔 `requireModEnter` 仍按 `cmdAlways` 读。
  * 忙时 Enter 按 `followUpBehavior`（默认 queue）；⌘⇧Enter 反转；Tab 仍排队。
+ * Shift+Tab 不排队：输入框内切计划模式（对标 Codex Best practices）。
  * 普通 Shift+Enter 换行。
  */
 /** 审批打开时的快捷键（对标 Codex：Enter 允许一次，Esc 拒绝） */
@@ -104,7 +105,7 @@ export function resolveComposerSubmit(options: {
   const enterBehavior = parseComposerEnterBehavior(options.enterBehavior, options.requireModEnter)
 
   if (options.key === 'Tab') {
-    if (options.ctrlKey || options.metaKey || options.altKey) return null
+    if (options.ctrlKey || options.metaKey || options.altKey || options.shiftKey) return null
     return options.loading ? 'queue' : null
   }
 
@@ -120,6 +121,22 @@ export function resolveComposerSubmit(options: {
 
   if (!options.loading) return 'send'
   return follow === 'steer' ? 'jump' : 'queue'
+}
+
+/** 输入框 Shift+Tab：切换计划模式（对标 Codex Best practices：`/plan` 或 Shift+Tab） */
+export function isPlanModeToggleKey(options: {
+  key: string
+  shiftKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  altKey?: boolean
+  menuOpen?: boolean
+}): boolean {
+  if (options.menuOpen) return false
+  if (options.key !== 'Tab') return false
+  if (!options.shiftKey) return false
+  if (options.ctrlKey || options.metaKey || options.altKey) return false
+  return true
 }
 
 /** 刚提交、对话里可能还没有的草稿（取消运行 / 取消 worktree 创建后 ↑ 恢复） */

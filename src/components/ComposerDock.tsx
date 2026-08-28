@@ -45,6 +45,7 @@ import {
   resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
+  isPlanModeToggleKey,
   shouldEditLastUserOnEscape,
   type ComposerEnterBehavior,
   type FollowUpBehavior
@@ -1489,7 +1490,7 @@ export const ComposerDock = memo(
               }
               if (
                 (e.key === 'Enter' && !e.shiftKey) ||
-                (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey)
+                (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey)
               ) {
                 e.preventDefault()
                 const hit = skillHits[skillActiveIndexRef.current]
@@ -1523,7 +1524,7 @@ export const ComposerDock = memo(
               }
               if (
                 (e.key === 'Enter' && !e.shiftKey) ||
-                (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey)
+                (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey)
               ) {
                 e.preventDefault()
                 const hit = mentionOptions[mentionActiveIndexRef.current]
@@ -1561,7 +1562,7 @@ export const ComposerDock = memo(
                 if (cmd) pickSlashCommand(cmd)
                 return
               }
-              if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 e.preventDefault()
                 const cmd = slashItems[slashActiveIndexRef.current]
                 if (cmd) pickSlashCommand(cmd)
@@ -1605,6 +1606,21 @@ export const ComposerDock = memo(
               showSlashMenu ||
               historyMounted ||
               showPromptSearch
+            if (
+              onPlanModeChange &&
+              isPlanModeToggleKey({
+                key: e.key,
+                shiftKey: e.shiftKey,
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                altKey: e.altKey,
+                menuOpen
+              })
+            ) {
+              e.preventDefault()
+              onPlanModeChange(!planMode)
+              return
+            }
             const approvalChoice = resolveApprovalHotkey({
               approvalOpen,
               responding: approvalResponding,
@@ -1835,8 +1851,8 @@ export const ComposerDock = memo(
                 onClick={() => onPlanModeChange(!planMode)}
                 title={
                   planMode
-                    ? '退出计划模式'
-                    : '进入计划模式（只读调研，不改文件）'
+                    ? '退出计划模式（Shift+Tab）'
+                    : '进入计划模式（Shift+Tab，只读调研，不改文件）'
                 }
               >
                 计划

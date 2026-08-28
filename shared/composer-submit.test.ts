@@ -8,6 +8,7 @@ import {
   rememberSubmittedComposerPrompt,
   resetRememberedSubmittedComposerPrompt,
   isFollowUpInvertChord,
+  isPlanModeToggleKey,
   parseComposerEnterBehavior,
   parseFollowUpBehavior,
   resolveApprovalHotkey,
@@ -147,6 +148,12 @@ describe('composer submit', () => {
     expect(resolveComposerSubmit({ key: 'Tab', loading: false })).toBeNull()
     expect(resolveComposerSubmit({ key: 'Tab', loading: true, ctrlKey: true })).toBeNull()
     expect(resolveComposerSubmit({ key: 'Tab', loading: true, metaKey: true })).toBeNull()
+    expect(resolveComposerSubmit({ key: 'Tab', loading: true, shiftKey: true })).toBeNull()
+    expect(isPlanModeToggleKey({ key: 'Tab', shiftKey: true })).toBe(true)
+    expect(isPlanModeToggleKey({ key: 'Tab' })).toBe(false)
+    expect(isPlanModeToggleKey({ key: 'Tab', shiftKey: true, menuOpen: true })).toBe(false)
+    expect(isPlanModeToggleKey({ key: 'Tab', shiftKey: true, metaKey: true })).toBe(false)
+    expect(isPlanModeToggleKey({ key: 'Enter', shiftKey: true })).toBe(false)
   })
 
   it('ignores menus, Shift+Enter, and other keys', () => {

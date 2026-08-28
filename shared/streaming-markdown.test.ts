@@ -838,6 +838,17 @@ describe('splitStreamingMarkdown', () => {
       expect(tableGrown[0].rows[0]?.[0]).toBe(table[0].rows[0]?.[0])
       expect(tableGrown[0].rows).toHaveLength(2)
     }
+    const pipeless = 'Name | Value\n\n# 标题\n\n- 一项'
+    const pipelessFirst = parseCheapProseBlocks(pipeless)
+    expect(pipelessFirst.map((b) => b.type)).toEqual(['p', 'heading', 'list'])
+    const pipelessGrown = continueCheapProseBlocks(
+      pipeless,
+      pipelessFirst,
+      'Name | Value\n---|---\n\n# 标题\n\n- 一项'
+    )
+    expect(pipelessGrown.map((b) => b.type)).toEqual(['table', 'heading', 'list'])
+    expect(pipelessGrown[1]).toBe(pipelessFirst[1])
+    expect(pipelessGrown[2]).toBe(pipelessFirst[2])
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {

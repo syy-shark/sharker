@@ -309,6 +309,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Enter', title: '发送；忙时按设置排队或注入' },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
   { keys: 'Tab', title: '忙时排队下一条' },
+  { keys: 'Shift+Tab', title: '输入框内切换计划模式' },
   { keys: 'Shift+Enter', title: '换行' }
 ]
 

@@ -2459,6 +2459,7 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
+ * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(
   prevText: string,
@@ -2473,12 +2474,39 @@ export function continueCheapProseBlocks(
   const parsed = parseCheapProseBlocks(nextText, defs)
   if (!prevBlocks.length) return parsed
   const out: CheapProseBlock[] = []
-  const shared = Math.min(prevBlocks.length, parsed.length)
-  for (let i = 0; i < shared; i++) {
-    const reused = reuseCheapProseBlock(prevBlocks[i]!, parsed[i]!)
-    if (!reused) return [...out, ...parsed.slice(i)]
-    out.push(reused)
+  let pi = 0
+  let ni = 0
+  while (pi < prevBlocks.length && ni < parsed.length) {
+    const reused = reuseCheapProseBlock(prevBlocks[pi]!, parsed[ni]!)
+    if (reused) {
+      out.push(reused)
+      pi += 1
+      ni += 1
+      continue
+    }
+    if (pi + 1 < prevBlocks.length) {
+      const skipPrev = reuseCheapProseBlock(prevBlocks[pi + 1]!, parsed[ni]!)
+      if (skipPrev) {
+        out.push(skipPrev)
+        pi += 2
+        ni += 1
+        continue
+      }
+    }
+    if (ni + 1 < parsed.length) {
+      const skipParsed = reuseCheapProseBlock(prevBlocks[pi]!, parsed[ni + 1]!)
+      if (skipParsed) {
+        out.push(parsed[ni]!)
+        out.push(skipParsed)
+        pi += 1
+        ni += 2
+        continue
+      }
+    }
+    out.push(parsed[ni]!)
+    pi += 1
+    ni += 1
   }
-  if (parsed.length > prevBlocks.length) out.push(...parsed.slice(prevBlocks.length))
+  if (ni < parsed.length) out.push(...parsed.slice(ni))
   return out
 }
