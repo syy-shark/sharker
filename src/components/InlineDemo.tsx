@@ -4,7 +4,11 @@
  * @see ./ARCH.md
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { isInlineDemoPaintable } from '../../shared/live-display'
+import {
+  isInlineDemoPaintable,
+  seedInlineDemoHeight,
+  writeCachedInlineDemoHeight
+} from '../../shared/live-display'
 import './InlineDemo.css'
 
 export interface InlineDemoProps {
@@ -1191,14 +1195,15 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
   const reactId = useId()
   const demoId = useMemo(() => `demo-${reactId.replace(/:/g, '')}`, [reactId])
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [height, setHeight] = useState(48)
+  const [height, setHeight] = useState(() => seedInlineDemoHeight(html, streaming))
   const [expanded, setExpanded] = useState(true)
   const [theme, setTheme] = useState<ThemeVars>(() => readHostTheme())
   /** 流式时节流刷新，避免每个字符都 reload iframe */
   const [paintHtml, setPaintHtml] = useState(html)
   const lastPaintLen = useRef(0)
   /** 本轮 srcDoc 内高度只升不降，避免 parent scrollHeight 把标签裁回去 */
-  const highWaterRef = useRef(0)
+  const highWaterRef = useRef(seedInlineDemoHeight(html, streaming))
+  const heightSourceRef = useRef(html)
 
   /** iframe 报的内容高度：只抬高，永不压低 */
   const raiseHeight = (next: number) => {
@@ -1206,8 +1211,14 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
     if (!Number.isFinite(h) || h < 48) return
     if (h <= highWaterRef.current) return
     highWaterRef.current = h
+    writeCachedInlineDemoHeight(heightSourceRef.current, h)
     setHeight(h)
   }
+
+  useEffect(() => {
+    heightSourceRef.current = paintHtml || html
+    raiseHeight(seedInlineDemoHeight(paintHtml || html, streaming))
+  }, [html, paintHtml, streaming])
 
   useEffect(() => {
     if (!streaming) {

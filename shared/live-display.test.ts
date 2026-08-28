@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
   formatElapsedClock,
+  clearInlineDemoHeightCache,
+  estimateInlineDemoHeight,
   isInlineDemoPaintable,
+  readCachedInlineDemoHeight,
+  seedInlineDemoHeight,
+  writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   nextRowIntrinsicHeights,
   rowIntrinsicSizeStyle,
@@ -125,11 +130,25 @@ describe('inline demo paintability', () => {
   })
 
   it('accepts HTML with a real structure node', () => {
+    const scene = '<style>body{color:#fff}</style><div class="scene"><h1>广义相对论</h1></div>'
+    expect(isInlineDemoPaintable(scene)).toBe(true)
+    expect(estimateInlineDemoHeight('')).toBe(48)
+    expect(estimateInlineDemoHeight(scene)).toBeGreaterThanOrEqual(96)
+    expect(estimateInlineDemoHeight('<div class="card" style="height: 240px"></div>')).toBe(256)
     expect(
-      isInlineDemoPaintable(
-        '<style>body{color:#fff}</style><div class="scene"><h1>广义相对论</h1></div>'
-      )
-    ).toBe(true)
+      estimateInlineDemoHeight('<svg viewBox="0 0 200 180" width="200" height="180"></svg>')
+    ).toBe(196)
+    expect(estimateInlineDemoHeight('<canvas height="320" width="400"></canvas>')).toBe(336)
+    clearInlineDemoHeightCache()
+    expect(readCachedInlineDemoHeight(scene)).toBeNull()
+    expect(writeCachedInlineDemoHeight(scene, 420)).toBe(420)
+    expect(readCachedInlineDemoHeight(scene)).toBe(420)
+    expect(seedInlineDemoHeight(scene, true)).toBe(420)
+    expect(seedInlineDemoHeight('<div class="empty-ish"></div>', true)).toBeGreaterThanOrEqual(96)
+    writeCachedInlineDemoHeight(scene, 12)
+    expect(readCachedInlineDemoHeight(scene)).toBe(48)
+    clearInlineDemoHeightCache()
+    expect(readCachedInlineDemoHeight(scene)).toBeNull()
   })
 })
 

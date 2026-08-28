@@ -98,6 +98,87 @@ export function isInlineDemoPaintable(html: string): boolean {
   )
 }
 
+const DEMO_HEIGHT_MIN = 48
+const DEMO_HEIGHT_MAX = 1200
+const DEMO_HEIGHT_CACHE_LIMIT = 32
+const demoHeightCache = new Map<string, number>()
+
+function clampDemoHeight(value: number): number {
+  if (!Number.isFinite(value)) return DEMO_HEIGHT_MIN
+  return Math.min(DEMO_HEIGHT_MAX, Math.max(DEMO_HEIGHT_MIN, Math.round(value)))
+}
+
+function demoHeightCacheKey(html: string): string {
+  const text = html.replace(/\s+/g, ' ').trim()
+  if (!text) return ''
+  return `${text.length}:${text.slice(0, 240)}`
+}
+
+/** 从声明高度 / 块数量估 iframe 首帧高，避免 48px 再猛涨把贴底顶跳 */
+export function estimateInlineDemoHeight(html: string): number {
+  const text = html.trim()
+  if (!text || text === '<!-- streaming -->') return DEMO_HEIGHT_MIN
+
+  let explicit = 0
+  for (const match of text.matchAll(/(?:^|[\s;{"'])(?:min-)?height\s*:\s*(\d{2,4})px/gi)) {
+    const n = Number(match[1])
+    if (n >= DEMO_HEIGHT_MIN && n <= 4000) explicit = Math.max(explicit, n)
+  }
+  for (const match of text.matchAll(
+    /<(?:canvas|svg|img|video)\b[^>]*\bheight\s*=\s*["']?(\d{2,4})/gi
+  )) {
+    const n = Number(match[1])
+    if (n >= DEMO_HEIGHT_MIN && n <= 4000) explicit = Math.max(explicit, n)
+  }
+  const viewBox = /viewBox\s*=\s*["']\s*[-\d.]+\s+[-\d.]+\s+[-\d.]+\s+([-\d.]+)/i.exec(text)
+  if (viewBox) {
+    const n = Math.abs(Number(viewBox[1]))
+    if (n >= DEMO_HEIGHT_MIN && n <= 4000) explicit = Math.max(explicit, n)
+  }
+  if (explicit > 0) return clampDemoHeight(explicit + 16)
+  if (!isInlineDemoPaintable(text)) return DEMO_HEIGHT_MIN
+
+  const blocks = text.match(
+    /<(?:div|section|article|main|header|footer|p|h[1-6]|li|tr|pre|blockquote|figure|button|label|svg|canvas|img)\b/gi
+  )
+  const blockCount = blocks?.length ?? 1
+  const lines = text.split('\n').length
+  return clampDemoHeight(Math.max(blockCount * 28, lines * 18, 96))
+}
+
+export function readCachedInlineDemoHeight(html: string): number | null {
+  const key = demoHeightCacheKey(html)
+  if (!key) return null
+  return demoHeightCache.get(key) ?? null
+}
+
+export function writeCachedInlineDemoHeight(html: string, height: number): number {
+  const key = demoHeightCacheKey(html)
+  const next = clampDemoHeight(height)
+  if (!key) return next
+  demoHeightCache.delete(key)
+  demoHeightCache.set(key, next)
+  while (demoHeightCache.size > DEMO_HEIGHT_CACHE_LIMIT) {
+    const oldest = demoHeightCache.keys().next().value
+    if (oldest === undefined) break
+    demoHeightCache.delete(oldest)
+  }
+  return next
+}
+
+export function clearInlineDemoHeightCache(): void {
+  demoHeightCache.clear()
+}
+
+/** 直播首帧：缓存实测高，否则用估高，流式至少 96 */
+export function seedInlineDemoHeight(html: string, streaming = false): number {
+  return Math.max(
+    readCachedInlineDemoHeight(html) ?? 0,
+    estimateInlineDemoHeight(html),
+    streaming ? 96 : DEMO_HEIGHT_MIN
+  )
+}
+
 export type LiveDisplayStep = {
   id: string
   title: string
