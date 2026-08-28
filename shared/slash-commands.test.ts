@@ -48,6 +48,8 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')
     expect(SLASH_COMMANDS.find((c) => c.name === 'stop')?.action).toBe('stop_terminals')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.action).toBe('fork_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.argsHint).toContain('worktree')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.argsHint).toContain('问题')
     expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.action).toBe('init_agents')
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.action).toBe('set_permissions')
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.action).toBe('archive_thread')

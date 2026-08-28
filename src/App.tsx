@@ -8,6 +8,7 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   applyCustomTitle,
   buildForkedConversation,
+  parseForkDestination,
   conversationPreview,
   deriveConversationTitle,
   formatPinNote,
@@ -3794,6 +3795,7 @@ export default function App() {
           const ws = settingsRef.current.activeWorkspaceId
           if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) break
           const sourceId = activeConversationIdRef.current
+          const dest = parseForkDestination(args)
           const created = await window.sharker.createConversation(ws)
           const forked = buildForkedConversation(created, {
             title:
@@ -3801,18 +3803,33 @@ export default function App() {
             messages: messagesRef.current
           })
           await window.sharker.saveConversation(ws, forked)
-          saveThreadRuntime(forked.id, {
-            mode: threadRuntimeRef.current.mode,
-            baseRef: threadRuntimeRef.current.baseRef
-          })
+          const baseRef = threadRuntimeRef.current.baseRef
+          let forkNote = ''
+          if (dest === 'worktree') {
+            const cwd = getActiveWorkspacePath(settingsRef.current)
+            let worktreePath: string | undefined
+            if (cwd && window.sharker.prepareWorktree) {
+              const prepared = await window.sharker.prepareWorktree(cwd, forked.id, {
+                baseRef,
+                keep: settingsRef.current.worktreeKeepCount
+              })
+              if (prepared.ok) worktreePath = prepared.path
+              else forkNote = `**分叉隔离失败**：${prepared.error}`
+            }
+            saveThreadRuntime(forked.id, { mode: 'worktree', worktreePath, baseRef })
+          } else {
+            saveThreadRuntime(forked.id, { mode: 'local', baseRef })
+          }
           const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
           if (sourceGoal) saveThreadGoal(forked.id, sourceGoal)
           await handleSelectConversation(ws, forked.id)
+          if (forkNote) appendLocalNote(forkNote)
           break
         }
         case 'side_conversation': {
           const ws = settingsRef.current.activeWorkspaceId
           if (!ws || !window.sharker.createConversation) break
+          const prompt = args.trim()
           const created = await window.sharker.createConversation(ws, { activate: false })
           saveThreadRuntime(created.id, {
             mode: threadRuntimeRef.current.mode,
@@ -3842,6 +3859,7 @@ export default function App() {
               created.title || DEFAULT_CONVERSATION_TITLE
             )
           }
+          if (prompt) void dispatchTurnRef.current(prompt, [], created.id)
           void refreshConversationList(ws)
           break
         }
@@ -4662,6 +4680,19 @@ export default function App() {
       }
       if (cmd.action === 'standalone_conversation') {
         void handleStandaloneConversation()
+        return
+      }
+      if (cmd.id === 'fork-worktree') {
+        void handleSlashActionRef.current(
+          {
+            name: 'fork',
+            description: '分叉到隔离 worktree',
+            scope: 'ui',
+            action: 'fork_conversation',
+            category: 'session'
+          },
+          'worktree'
+        )
         return
       }
       void handleSlashActionRef.current(

@@ -32,7 +32,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
-| `/fork` | 分叉当前对话到新线程（拷贝消息；隔离 worktree 另建，不复用源路径） |
+| `/fork` | 分叉到新本地线程（拷贝消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree） |
+| `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送（对标 Codex `/side [question]`） |
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |

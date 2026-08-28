@@ -3,6 +3,7 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   applyCustomTitle,
   buildForkedConversation,
+  parseForkDestination,
   createEmptyConversation,
   chatSearchMatchHint,
   conversationPreview,
@@ -83,6 +84,15 @@ describe('conversation search', () => {
     expect(forkConversationTitle('修好滚动')).toBe('修好滚动（分叉）')
     expect(forkConversationTitle('修好滚动（分叉）')).toBe('修好滚动（分叉）')
     expect(forkConversationTitle('  ')).toBe(`${DEFAULT_CONVERSATION_TITLE}（分叉）`)
+  })
+
+  it('parses /fork into local or a new worktree', () => {
+    expect(parseForkDestination('')).toBe('local')
+    expect(parseForkDestination('local')).toBe('local')
+    expect(parseForkDestination('worktree')).toBe('worktree')
+    expect(parseForkDestination('WT extra')).toBe('worktree')
+    expect(parseForkDestination('isolated')).toBe('worktree')
+    expect(parseForkDestination('cloud')).toBe('local')
   })
 
   it('copies messages into a new conversation without sharing objects', () => {

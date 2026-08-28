@@ -111,6 +111,19 @@ export function createEmptyConversation(workspaceId: string): Conversation {
   }
 }
 
+/** `/fork` 目标：默认新本地线程；`worktree` 另建隔离 checkout（对标 Codex /fork） */
+export type ForkDestination = 'local' | 'worktree'
+
+/** `/fork [local|worktree]`；空或无法识别则本地 */
+export function parseForkDestination(raw: string): ForkDestination {
+  const token = String(raw || '')
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)[0]
+  if (token === 'worktree' || token === 'wt' || token === 'isolated') return 'worktree'
+  return 'local'
+}
+
 /** `/fork` 分叉标题（对标 Codex fork thread） */
 export function forkConversationTitle(title: string): string {
   const base = String(title || '').trim() || DEFAULT_CONVERSATION_TITLE

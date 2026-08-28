@@ -18,6 +18,7 @@ describe('command palette', () => {
     expect(ids).toContain('personality')
     expect(ids).toContain('shortcuts')
     expect(ids).toContain('fork')
+    expect(ids).toContain('fork-worktree')
     expect(ids).toContain('status')
     expect(ids).toContain('goal')
     expect(ids).toContain('diff')

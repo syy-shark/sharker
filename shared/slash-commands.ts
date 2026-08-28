@@ -140,23 +140,26 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'fork',
-    description: '分叉当前对话到新线程（保留消息，隔离 worktree 另建）',
+    description: '分叉到新本地线程；/fork worktree 另建隔离 worktree（不复用源路径）',
     scope: 'ui',
     action: 'fork_conversation',
+    argsHint: '[local|worktree]',
     category: 'session'
   },
   {
     name: 'side',
-    description: '旁路新线程（不离开当前对话，弹出独立窗）',
+    description: '旁路新线程（不离开当前对话，弹出独立窗；可带问题立刻发送）',
     scope: 'ui',
     action: 'side_conversation',
+    argsHint: '[问题]',
     category: 'session'
   },
   {
     name: 'btw',
-    description: '旁路新线程（/side 别名）',
+    description: '旁路新线程（/side 别名；可带问题立刻发送）',
     scope: 'ui',
     action: 'side_conversation',
+    argsHint: '[问题]',
     category: 'session'
   },
   {

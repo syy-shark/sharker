@@ -56,7 +56,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'fork',
     title: '分叉当前对话',
-    keywords: 'fork thread 分叉 对话',
+    keywords: 'fork thread 分叉 对话 local',
+    action: 'fork_conversation'
+  },
+  {
+    id: 'fork-worktree',
+    title: '分叉到隔离 worktree',
+    keywords: 'fork worktree 分叉 隔离 checkout',
     action: 'fork_conversation'
   },
   {
