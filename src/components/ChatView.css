@@ -354,9 +354,13 @@
   animation: view-enter var(--motion-duration-normal) var(--motion-ease-spring) both;
 }
 
-.message-row--user,
-.message-row--assistant:not(.message-row--live) {
+.message-row--user {
   animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
+}
+
+/* 历史助手不播进入动画：直播行收束成同一 key 时不能重启 list-item-in（会把贴底顶跳） */
+.message-row--assistant:not(.message-row--live) {
+  animation: none;
 }
 
 .message-bubble--user {

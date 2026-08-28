@@ -285,6 +285,43 @@ export function appendAssistantMessage(
   return [...messages, assistant]
 }
 
+/** 直播行 / 查找用的助手 id：有预留则用预留，否则回退 `streaming` */
+export function liveRowMessageId(reservedId: string | null | undefined): string {
+  const id = reservedId?.trim()
+  return id || 'streaming'
+}
+
+/**
+ * 直播中不把已提交的同一条助手再画进历史列，避免与直播行叠两份。
+ * 收束后 `isLive` 为假，预留 id 那一行只出现在历史列（React 复用同一 key）。
+ */
+export function historicalMessagesDuringLive(
+  messages: ChatMessage[],
+  reservedId: string | null | undefined,
+  isLive: boolean
+): ChatMessage[] {
+  if (!isLive) return messages
+  const id = reservedId?.trim()
+  if (!id) return messages
+  return messages.filter((m) => m.id !== id)
+}
+
+/**
+ * 按预留 id 写入或替换助手气泡（直播行收束成历史时同一 id，避免再追加一条）。
+ * 没有同 id 时走 `appendAssistantMessage`。
+ */
+export function upsertAssistantMessage(
+  messages: ChatMessage[],
+  assistant: ChatMessage
+): ChatMessage[] {
+  const idx = messages.findIndex((m) => m.id === assistant.id)
+  if (idx < 0) return appendAssistantMessage(messages, assistant)
+  if (messages[idx] === assistant) return messages
+  const next = messages.slice()
+  next[idx] = assistant
+  return next
+}
+
 /**
  * 解析 commit 目标会话：优先显式 id，其次流归属，再次当前 active。
  * 用于 commitAssistantReply / persist 防串写。

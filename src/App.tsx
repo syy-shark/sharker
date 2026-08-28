@@ -192,6 +192,7 @@ import {
   shouldAcceptDoneEvent,
   shouldApplyStreamToActive,
   shouldCommitToActiveUi,
+  upsertAssistantMessage,
   type DoneCommittedMap,
   type SessionQueueMap
 } from '../shared/session-runtime'
@@ -216,6 +217,8 @@ interface SessionLiveBuffer {
   turnMeta: AssistantMeta
   changedRelPaths?: string[]
   lastTurnPaths?: string[]
+  /** 本轮助手气泡预留 id，直播行与收束后历史行共用，避免整行卸载重挂 */
+  liveAssistantId?: string | null
 }
 
 /** DEV 专用：把审批/错误/直播态注入真实 React 树，供 CDP 与本地验收 */
@@ -315,6 +318,7 @@ export default function App() {
   const [liveTurnMeta, setLiveTurnMeta] = useState<AssistantMeta | null>(null)
   const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null)
   const [turnHadThinking, setTurnHadThinking] = useState(false)
+  const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -449,6 +453,7 @@ export default function App() {
   const turnHadThinkingRef = useRef(false)
   const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
   const activeUserMessageIdRef = useRef<string | undefined>(undefined)
+  const liveAssistantIdRef = useRef<string | null>(null)
 
   const syncActiveQueueUi = useCallback((queues: SessionQueueMap, convId: string | null) => {
     sessionQueuesRef.current = queues
@@ -488,6 +493,8 @@ export default function App() {
     )
     setTurnStartedAt(buf.turnStartedAt)
     if (buf.turnStartedAt) turnStartedAtRef.current = buf.turnStartedAt
+    liveAssistantIdRef.current = buf.liveAssistantId ?? null
+    setLiveAssistantId(buf.liveAssistantId ?? null)
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     setLastTurnPaths(buf.lastTurnPaths ?? lastTurnPathsByConvRef.current.get(activeConversationIdRef.current ?? '') ?? [])
   }, [])
@@ -676,6 +683,18 @@ export default function App() {
     turnChangedPathsRef.current = []
     setTurnStartedAt(now)
     setLiveTurnMeta({ browsedFiles: [], activities: [] })
+    const reservedId = crypto.randomUUID()
+    liveAssistantIdRef.current = reservedId
+    setLiveAssistantId(reservedId)
+  }, [])
+
+  /** DEV / 审批续播：没有预留 id 时补一条，保证直播行 key 稳定 */
+  const ensureLiveAssistantId = useCallback(() => {
+    if (liveAssistantIdRef.current) return liveAssistantIdRef.current
+    const reservedId = crypto.randomUUID()
+    liveAssistantIdRef.current = reservedId
+    setLiveAssistantId(reservedId)
+    return reservedId
   }, [])
 
   /** 快照当前可见会话的 live 状态，供切走后再回来恢复 */
@@ -714,7 +733,8 @@ export default function App() {
         activities: [...turnMetaRef.current.activities]
       },
       changedRelPaths: [...turnChangedPathsRef.current],
-      lastTurnPaths: lastTurnPathsByConvRef.current.get(prevId) ?? []
+      lastTurnPaths: lastTurnPathsByConvRef.current.get(prevId) ?? [],
+      liveAssistantId: liveAssistantIdRef.current
     })
     return prevId
   }, [])
@@ -769,6 +789,8 @@ export default function App() {
       // 切到空会话时只清可见队列视图，不丢弃原会话队列
       syncActiveQueueUi(sessionQueuesRef.current, null)
     }
+    liveAssistantIdRef.current = null
+    setLiveAssistantId(null)
     resetTurnMeta()
   }, [cancelScheduledStreamPaint, resetTurnMeta, syncActiveQueueUi])
 
@@ -962,13 +984,16 @@ export default function App() {
         }
       }
 
+      const reservedId = useActiveUi
+        ? liveAssistantIdRef.current
+        : (targetId ? sessionBuffersRef.current.get(targetId)?.liveAssistantId : null)
       const assistant: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: reservedId || crypto.randomUUID(),
         role: 'assistant',
         content: text,
         meta
       }
-      const next = appendAssistantMessage(sourceMessages, assistant)
+      const next = upsertAssistantMessage(sourceMessages, assistant)
 
       if (targetId) {
         doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, targetId)
@@ -1385,7 +1410,8 @@ export default function App() {
           turnOutcome: 'success',
           turnMeta: { browsedFiles: [], activities: [] },
           changedRelPaths: [],
-          lastTurnPaths: lastTurnPathsByConvRef.current.get(convId) ?? []
+          lastTurnPaths: lastTurnPathsByConvRef.current.get(convId) ?? [],
+          liveAssistantId: crypto.randomUUID()
         }
         sessionBuffersRef.current.set(convId, buf)
       }
@@ -1578,7 +1604,7 @@ export default function App() {
             (p) => p.id === settingsRef.current.activeProviderId
           )
           const assistant: ChatMessage = {
-            id: crypto.randomUUID(),
+            id: buf.liveAssistantId || crypto.randomUUID(),
             role: 'assistant',
             content: text.trim(),
             meta: {
@@ -1590,7 +1616,7 @@ export default function App() {
               outcome: buf.turnOutcome
             }
           }
-          buf.messages = appendAssistantMessage(buf.messages, assistant)
+          buf.messages = upsertAssistantMessage(buf.messages, assistant)
           buf.streaming = ''
           buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
           buf.changedRelPaths = []
@@ -1810,7 +1836,7 @@ export default function App() {
               (p) => p.id === settingsRef.current.activeProviderId
             )
             const assistant: ChatMessage = {
-              id: crypto.randomUUID(),
+              id: buf.liveAssistantId || crypto.randomUUID(),
               role: 'assistant',
               content: text.trim(),
               meta: {
@@ -1822,7 +1848,7 @@ export default function App() {
                 outcome: buf.turnOutcome
               }
             }
-            buf.messages = appendAssistantMessage(buf.messages, assistant)
+            buf.messages = upsertAssistantMessage(buf.messages, assistant)
             buf.streaming = ''
             buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
             buf.changedRelPaths = []
@@ -2161,6 +2187,10 @@ export default function App() {
       setLoading(true)
       bumpSessionLive()
       beginTurnMeta()
+      if (convId) {
+        const buf = sessionBuffersRef.current.get(convId)
+        if (buf) buf.liveAssistantId = liveAssistantIdRef.current
+      }
       activeUserMessageIdRef.current = userMsg.id
       streamingRef.current = ''
       turnThinkingRef.current = ''
@@ -3638,6 +3668,7 @@ export default function App() {
           segmentsRef.current = segs
           setLiveSegments(cloneSegments(segs))
           setLoading(true)
+          ensureLiveAssistantId()
         } else {
           const now = Date.now()
           const segs: TurnSegment[] = [
@@ -3652,6 +3683,7 @@ export default function App() {
           segmentsRef.current = segs
           setLiveSegments(cloneSegments(segs))
           setLoading(true)
+          ensureLiveAssistantId()
         }
         return
       }
@@ -5293,6 +5325,7 @@ export default function App() {
         approvalRef.current = req
         setApprovalResponding(false)
         setLoading(true)
+        ensureLiveAssistantId()
         const now = Date.now()
         const segs: TurnSegment[] = [
           {
@@ -5598,6 +5631,7 @@ export default function App() {
         segmentsRef.current = segs
         setLiveSegments(cloneSegments(segs))
         setLoading(true)
+        ensureLiveAssistantId()
         sendInFlightRef.current = true
         // 调试直播视为进行中回合：允许切会话后恢复，且 Stop/done 门闩可工作
         doneCommittedRef.current = false
@@ -5670,6 +5704,7 @@ export default function App() {
           segmentsRef.current = segs
           setLiveSegments(cloneSegments(segs))
           setLoading(true)
+          ensureLiveAssistantId()
           sendInFlightRef.current = true
           const streaming = opts?.streaming ?? ''
           streamingRef.current = streaming
@@ -6004,7 +6039,7 @@ export default function App() {
     return () => {
       if (window.__sharkerDebug === api) delete window.__sharkerDebug
     }
-  }, [bumpSessionLive, snapshotActiveSessionBuffer])
+  }, [bumpSessionLive, ensureLiveAssistantId, snapshotActiveSessionBuffer])
 
   const reviewFindings = useMemo(() => {
     const last = lastCompletedAssistantText(messages)
@@ -6329,6 +6364,7 @@ export default function App() {
               onSelectProvider={handleSelectProvider}
               onThinkingLevelChange={handleThinkingLevelChange}
               messages={messages}
+              liveAssistantId={liveAssistantId}
               liveSegments={liveSegments}
               streaming={streaming}
               turnThinking={turnThinking}

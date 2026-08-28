@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendAssistantMessage,
+  historicalMessagesDuringLive,
+  liveRowMessageId,
+  upsertAssistantMessage,
   cancelQueuedPrompt,
   clearDoneCommitted,
   createQueuedPrompt,
@@ -232,6 +235,24 @@ describe('commitAssistantReply persist targeting', () => {
     const bMessages: ChatMessage[] = [{ id: 'u2', role: 'user', content: 'on B' }]
     expect(bMessages).toHaveLength(1)
     expect(appendAssistantMessage(bMessages, assistant)[0].content).toBe('on B')
+    // 直播行预留 id：查找/DOM 与收束后历史行同一条，直播中历史列先藏起来
+    expect(liveRowMessageId('a1')).toBe('a1')
+    expect(liveRowMessageId('')).toBe('streaming')
+    expect(liveRowMessageId(null)).toBe('streaming')
+    const reserved: ChatMessage = { id: 'a-live', role: 'assistant', content: 'draft' }
+    const liveTranscript = [...base, reserved]
+    expect(historicalMessagesDuringLive(liveTranscript, 'a-live', true).map((m) => m.id)).toEqual([
+      'u1'
+    ])
+    expect(historicalMessagesDuringLive(liveTranscript, 'a-live', false).map((m) => m.id)).toEqual([
+      'u1',
+      'a-live'
+    ])
+    const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
+    const upserted = upsertAssistantMessage(liveTranscript, committed)
+    expect(upserted).toHaveLength(2)
+    expect(upserted[1]).toEqual(committed)
+    expect(upsertAssistantMessage(base, committed)[1].id).toBe('a-live')
   })
 })
 

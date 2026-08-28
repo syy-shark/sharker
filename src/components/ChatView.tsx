@@ -27,6 +27,7 @@ import {
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
+import { historicalMessagesDuringLive, liveRowMessageId } from '../../shared/session-runtime'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
@@ -228,6 +229,8 @@ interface Props {
   onSelectProvider: (providerId: string, model: string) => void
   onThinkingLevelChange?: (providerId: string, level: string) => void
   messages: ChatMessage[]
+  /** 本轮助手预留 id：直播行与收束后历史行共用，避免整行卸载重挂 */
+  liveAssistantId?: string | null
   queuedPrompts: QueuedPrompt[]
   liveSegments: TurnSegment[]
   streaming: string
@@ -309,6 +312,7 @@ export function ChatView({
   onSelectProvider,
   onThinkingLevelChange,
   messages,
+  liveAssistantId = null,
   queuedPrompts,
   liveSegments,
   streaming,
@@ -535,13 +539,15 @@ export function ChatView({
     }
   }, [composerIntent, onComposerIntentHandled, openFindBar])
 
+  const liveRowId = liveRowMessageId(liveAssistantId)
+
   const findHits = useMemo(() => {
     if (!findQuery.trim()) return EMPTY_FIND_HITS
     const rows = streaming.trim()
-      ? [...messages, { id: 'streaming', content: streaming }]
+      ? [...messages, { id: liveRowId, content: streaming }]
       : messages
     return findInThread(rows, findQuery)
-  }, [messages, findQuery, streaming])
+  }, [liveRowId, messages, findQuery, streaming])
 
   useEffect(() => {
     if (findHit >= findHits.length) setFindHit(0)
@@ -690,7 +696,8 @@ export function ChatView({
     findCurrent?.occurrence,
     findOpen,
     findQuery,
-    findCurrent?.messageId === 'streaming' ? streaming : ''
+    liveRowId,
+    findCurrent?.messageId === liveRowId ? streaming : ''
   ])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
@@ -945,8 +952,8 @@ export function ChatView({
 
   const historicalRows = useMemo(
     () =>
-      messages.map((m, index) => {
-        const nearLive = isNearLiveMessageRow(index, messages.length)
+      historicalMessagesDuringLive(messages, liveAssistantId, loading).map((m, index, rows) => {
+        const nearLive = isNearLiveMessageRow(index, rows.length)
         return m.role === 'user' ? (
           <UserMessageRow
             key={m.id}
@@ -981,7 +988,7 @@ export function ChatView({
               onOpenChangedFiles={onOpenChangedFiles}
               toolOutputDisplay={toolOutputDisplay}
               onRetry={
-                index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
+                index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
                   ? () => onRetry(m.meta!.retryOfUserMessageId!)
                   : undefined
               }
@@ -995,6 +1002,8 @@ export function ChatView({
       findHits,
       handleEditRequestHandled,
       intrinsicHeights,
+      liveAssistantId,
+      loading,
       messages,
       modelLabel,
       onOpenSubAgent,
@@ -1094,13 +1103,14 @@ export function ChatView({
 
             {showLiveAssistant && (
               <div
-                id="msg-streaming"
+                key={liveRowId}
+                id={`msg-${liveRowId}`}
                 className={`message-row message-row--assistant message-row--live${
-                  findHits.some((hit) => hit.messageId === 'streaming') ? ' is-find-hit' : ''
-                }${findHits[findHit]?.messageId === 'streaming' ? ' is-find-current' : ''}`}
+                  findHits.some((hit) => hit.messageId === liveRowId) ? ' is-find-hit' : ''
+                }${findHits[findHit]?.messageId === liveRowId ? ' is-find-current' : ''}`}
               >
                 <AssistantMessage
-                  messageId="streaming"
+                  messageId={liveRowId}
                   content={streaming}
                   meta={liveTurnMeta ?? undefined}
                   liveSegments={liveSegments}
