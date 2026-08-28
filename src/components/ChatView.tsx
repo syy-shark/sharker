@@ -27,7 +27,12 @@ import {
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
-import { historicalMessagesDuringLive, liveRowMessageId } from '../../shared/session-runtime'
+import {
+  hasLiveAssistantBody,
+  historicalMessagesDuringLive,
+  liveRowMessageId,
+  shouldRenderLiveAssistantRow
+} from '../../shared/session-runtime'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
@@ -969,9 +974,15 @@ export function ChatView({
     setEditUserMessageId(null)
   }, [])
 
+  const liveBody = hasLiveAssistantBody({
+    streaming,
+    liveSegmentCount: liveSegments.length,
+    thinking: turnThinking,
+    approvalWaiting: Boolean(approval)
+  })
   const historicalRows = useMemo(
     () =>
-      historicalMessagesDuringLive(messages, liveAssistantId, loading).map((m, index, rows) => {
+      historicalMessagesDuringLive(messages, liveAssistantId, loading, liveBody).map((m, index, rows) => {
         const nearLive = isNearLiveMessageRow(index, rows.length)
         return m.role === 'user' ? (
           <UserMessageRow
@@ -1034,6 +1045,7 @@ export function ChatView({
       handleEditRequestHandled,
       intrinsicHeights,
       liveAssistantId,
+      liveBody,
       loading,
       messages,
       modelLabel,
@@ -1045,7 +1057,13 @@ export function ChatView({
     ]
   )
 
-  const showLiveAssistant = loading
+  const showLiveAssistant = shouldRenderLiveAssistantRow({
+    loading,
+    hasLiveBody: liveBody,
+    historyHasReserved: Boolean(
+      liveAssistantId && messages.some((m) => m.id === liveAssistantId)
+    )
+  })
   // 有 segment 流时由 TurnFlow 负责；这里仅给旧路径/无实质工具时的思考态
   const isThinkingLive =
     loading &&

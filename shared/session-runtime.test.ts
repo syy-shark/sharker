@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   appendAssistantMessage,
   historicalMessagesDuringLive,
+  hasLiveAssistantBody,
   liveRowMessageId,
+  shouldRenderLiveAssistantRow,
   upsertAssistantMessage,
   cancelQueuedPrompt,
   clearDoneCommitted,
@@ -248,6 +250,42 @@ describe('commitAssistantReply persist targeting', () => {
       'u1',
       'a-live'
     ])
+    expect(
+      historicalMessagesDuringLive(liveTranscript, 'a-live', true, false).map((m) => m.id)
+    ).toEqual(['u1', 'a-live'])
+    expect(hasLiveAssistantBody({ streaming: '', liveSegmentCount: 0 })).toBe(false)
+    expect(hasLiveAssistantBody({ streaming: 'hi' })).toBe(true)
+    expect(hasLiveAssistantBody({ liveSegmentCount: 2 })).toBe(true)
+    expect(hasLiveAssistantBody({ thinking: '思考' })).toBe(true)
+    expect(hasLiveAssistantBody({ approvalWaiting: true })).toBe(true)
+    expect(
+      shouldRenderLiveAssistantRow({
+        loading: true,
+        hasLiveBody: false,
+        historyHasReserved: true
+      })
+    ).toBe(false)
+    expect(
+      shouldRenderLiveAssistantRow({
+        loading: true,
+        hasLiveBody: false,
+        historyHasReserved: false
+      })
+    ).toBe(true)
+    expect(
+      shouldRenderLiveAssistantRow({
+        loading: true,
+        hasLiveBody: true,
+        historyHasReserved: true
+      })
+    ).toBe(true)
+    expect(
+      shouldRenderLiveAssistantRow({
+        loading: false,
+        hasLiveBody: true,
+        historyHasReserved: true
+      })
+    ).toBe(false)
     const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
     const upserted = upsertAssistantMessage(liveTranscript, committed)
     expect(upserted).toHaveLength(2)

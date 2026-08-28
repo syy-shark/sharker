@@ -291,16 +291,46 @@ export function liveRowMessageId(reservedId: string | null | undefined): string 
   return id || 'streaming'
 }
 
+/** 直播行是否还有可画的正文 / 过程 / 思考 / 审批 */
+export function hasLiveAssistantBody(options: {
+  streaming?: string | null
+  liveSegmentCount?: number
+  thinking?: string | null
+  approvalWaiting?: boolean
+}): boolean {
+  if (options.approvalWaiting) return true
+  if ((options.liveSegmentCount ?? 0) > 0) return true
+  if (String(options.streaming || '').trim()) return true
+  return Boolean(String(options.thinking || '').trim())
+}
+
+/**
+ * 历史已挂上同一预留 id、直播体又空时，只留历史行。
+ * 避免 commit 后先清 live、loading 仍为 true 时闪一帧空回答
+ * （对标 Codex changelog「preserved streamed activity when tasks complete」）。
+ */
+export function shouldRenderLiveAssistantRow(options: {
+  loading: boolean
+  hasLiveBody: boolean
+  historyHasReserved: boolean
+}): boolean {
+  if (!options.loading) return false
+  if (!options.hasLiveBody && options.historyHasReserved) return false
+  return true
+}
+
 /**
  * 直播中不把已提交的同一条助手再画进历史列，避免与直播行叠两份。
+ * 直播体已空时不再藏历史行，否则会出现「消息未挂上、直播已空」的空窗。
  * 收束后 `isLive` 为假，预留 id 那一行只出现在历史列（React 复用同一 key）。
  */
 export function historicalMessagesDuringLive(
   messages: ChatMessage[],
   reservedId: string | null | undefined,
-  isLive: boolean
+  isLive: boolean,
+  hasLiveBody = true
 ): ChatMessage[] {
-  if (!isLive) return messages
+  if (!isLive || !hasLiveBody) return messages
   const id = reservedId?.trim()
   if (!id) return messages
   return messages.filter((m) => m.id !== id)

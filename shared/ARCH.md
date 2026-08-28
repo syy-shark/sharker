@@ -130,7 +130,7 @@
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
-| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；直播行预留助手 id / 收束 upsert，避免 live→history 叠两条 |
+| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；直播行预留助手 id / 收束 upsert；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
 | `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
@@ -145,7 +145,7 @@
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、git/review/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
-| `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id 单测 |
+| `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id / 收束空窗单测 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`liveAssistantMeta` 把已改路径带进直播元信息 |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff；直播占位按行估高，`liveDiffBodyMinHeight` 只升不降以免占位换行跳贴底；`canOfferDiffPreviewCollapse` / `shouldCollapseDiffPreview` 历史长 diff 才折预览，直播中不折以免 +/- 停在第 20 行（对标 Codex #32030 / #38695）；`shouldReserveDiffCollapseFooter` 直播先占「收起变更」页脚，收束不再冒出 32px（对标 Codex #40788） |
 | `patch.ts` | apply_patch 格式解析与应用 |
