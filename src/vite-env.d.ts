@@ -164,6 +164,9 @@ export interface SharkerApi {
     cwd: string
   ) => Promise<{ isRepo: boolean; branches: string[] }>
   gitCheckout: (cwd: string, branch: string) => Promise<string>
+  initGitRepository: (
+    cwd: string
+  ) => Promise<{ ok: true; branch: string } | { ok: false; error: string }>
   getGitStatusChanges: (cwd: string) => Promise<{
     isRepo: boolean
     branch: string

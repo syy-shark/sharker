@@ -190,7 +190,32 @@
   font-size: 11px;
   line-height: 1.45;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  white-space: pre;
+  white-space: pre-wrap;
+  background: var(--glass-fill-nested);
+}
+
+.file-tree-viewer-media {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 12px;
+  background: var(--glass-fill-nested);
+}
+
+.file-tree-viewer-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.file-tree-viewer-embed {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
   background: var(--glass-fill-nested);
 }
 
@@ -198,7 +223,7 @@
   display: flex;
   gap: 8px;
   padding: 0 10px;
-  min-width: max-content;
+  min-width: 0;
 }
 
 .file-tree-viewer-line.is-target {
@@ -214,7 +239,9 @@
 }
 
 .file-tree-viewer-text {
-  white-space: pre;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 

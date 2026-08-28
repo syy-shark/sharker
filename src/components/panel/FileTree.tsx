@@ -3,6 +3,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
+import {
+  filePreviewKind,
+  filePreviewUnsupportedMessage,
+  type FilePreviewKind
+} from '../../../shared/file-preview'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
 
@@ -93,7 +98,9 @@ export function FileTree({
   const [loading, setLoading] = useState(false)
   const [openFile, setOpenFile] = useState<{
     path: string
-    content: string
+    kind: FilePreviewKind
+    content?: string
+    dataUrl?: string
     line?: number
   } | null>(null)
   const [fileError, setFileError] = useState('')
@@ -140,16 +147,33 @@ export function FileTree({
   }
 
   const onOpenFile = useCallback(async (path: string, line?: number) => {
-    if (!window.sharker?.readTextFile) return
     setFileError('')
     const abs = resolveCitationPath(path, workspacePath, extraRoots)
+    const kind = filePreviewKind(abs)
+    if (kind === 'unsupported') {
+      setFileError(filePreviewUnsupportedMessage(abs))
+      setOpenFile(null)
+      return
+    }
+    if (kind === 'image' || kind === 'pdf') {
+      if (!window.sharker?.readFileDataUrl) return
+      const res = await window.sharker.readFileDataUrl(abs)
+      if (!res.ok) {
+        setFileError(res.error)
+        setOpenFile(null)
+        return
+      }
+      setOpenFile({ path: res.path, kind, dataUrl: res.dataUrl })
+      return
+    }
+    if (!window.sharker?.readTextFile) return
     const res = await window.sharker.readTextFile(abs)
     if (!res.ok) {
       setFileError(res.error)
       setOpenFile(null)
       return
     }
-    setOpenFile({ path: res.path, content: res.content, line })
+    setOpenFile({ path: res.path, kind: 'text', content: res.content, line })
   }, [workspacePath, extraRoots])
 
   useEffect(() => {
@@ -178,8 +202,19 @@ export function FileTree({
               关闭
             </button>
           </div>
+          {openFile.kind === 'image' && openFile.dataUrl ? (
+            <div className="file-tree-viewer-media">
+              <img className="file-tree-viewer-image" src={openFile.dataUrl} alt="" />
+            </div>
+          ) : openFile.kind === 'pdf' && openFile.dataUrl ? (
+            <iframe
+              className="file-tree-viewer-embed"
+              src={openFile.dataUrl}
+              title={openFile.path.split('/').pop() || 'PDF'}
+            />
+          ) : (
           <pre className="file-tree-viewer-body">
-            {openFile.content.split('\n').map((text, index) => {
+            {(openFile.content ?? '').split('\n').map((text, index) => {
               const lineNo = index + 1
               const target = openFile.line === lineNo
               return (
@@ -196,6 +231,7 @@ export function FileTree({
               )
             })}
           </pre>
+          )}
         </div>
       ) : null}
       {fileError ? <p className="file-tree-error">{fileError}</p> : null}

@@ -79,6 +79,8 @@ export const IPC = {
   GIT_BRANCH_INFO: 'git:branch-info',
   GIT_LIST_BRANCHES: 'git:list-branches',
   GIT_CHECKOUT: 'git:checkout',
+  /** 审查面板：项目还不是仓库时 `git init` */
+  GIT_INIT: 'git:init',
   /** 工作区 git 变更文件列表（Changes 面板） */
   GIT_STATUS_CHANGES: 'git:status-changes',
   /** 单个变更文件相对 HEAD 的审查 diff */

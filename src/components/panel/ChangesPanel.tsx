@@ -486,6 +486,26 @@ export function ChangesPanel({
     }
   }, [acting, isAllRepos, reviewCwd])
 
+  const runInit = useCallback(async () => {
+    if (!workspacePath || !window.sharker?.initGitRepository || acting) return
+    setActing(true)
+    setError(null)
+    setCommitHint(null)
+    try {
+      const result = await window.sharker.initGitRepository(workspacePath)
+      if (!result.ok) {
+        setError(result.error || '创建仓库失败')
+        return
+      }
+      setCommitHint(`已创建 git 仓库（${result.branch}）`)
+      await refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing(false)
+    }
+  }, [acting, refresh, workspacePath])
+
   useEffect(() => {
     void refresh()
     const id = window.setInterval(() => {
@@ -899,8 +919,16 @@ export function ChangesPanel({
 
       {!isRepo ? (
         <div className="changes-panel--empty">
-          <p>没有可审查的 git 仓库</p>
-          <p className="changes-panel__hint">主文件夹或附加文件夹需要各自是独立仓库</p>
+          <p>当前项目还不是 git 仓库</p>
+          <p className="changes-panel__hint">审查需要 Git。创建后即可看未提交、本轮与分支变更。</p>
+          <button
+            type="button"
+            className="changes-panel__action"
+            disabled={acting || !workspacePath}
+            onClick={() => void runInit()}
+          >
+            创建仓库
+          </button>
         </div>
       ) : compare !== 'branch' && taggedRepoFiles.length === 0 && compare === 'uncommitted' ? (
         <div className="changes-panel--empty">

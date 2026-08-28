@@ -171,6 +171,7 @@ contextBridge.exposeInMainWorld('sharker', {
   listGitBranches: (cwd: string) => ipcRenderer.invoke(IPC.GIT_LIST_BRANCHES, cwd),
   gitCheckout: (cwd: string, branch: string) =>
     ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch),
+  initGitRepository: (cwd: string) => ipcRenderer.invoke(IPC.GIT_INIT, cwd),
   getGitStatusChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_STATUS_CHANGES, cwd),
   getGitFileDiff: (
     cwd: string,

@@ -106,6 +106,8 @@ import {
 } from '../../shared/git-review-actions'
 import { applyGitHunkAction } from '../../shared/git-hunk-actions'
 import { parseGitNumstat, parseGitStatusPorcelain } from '../../shared/git-status'
+import { initGitRepository } from '../../shared/git-init'
+import { dataUrlMimeForPath } from '../../shared/file-preview'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges, listCommitChanges, listRecentCommits } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
@@ -1280,19 +1282,7 @@ function registerIpc(): void {
         return { ok: false as const, error: `文件过大（>${Math.round(MAX_BYTES / 1024)}KB）` }
       }
       const buf = await fs.promises.readFile(filePath)
-      const ext = path.extname(filePath).toLowerCase().replace('.', '')
-      const mime =
-        ext === 'png'
-          ? 'image/png'
-          : ext === 'jpg' || ext === 'jpeg'
-            ? 'image/jpeg'
-            : ext === 'gif'
-              ? 'image/gif'
-              : ext === 'webp'
-                ? 'image/webp'
-                : ext === 'svg'
-                  ? 'image/svg+xml'
-                  : 'application/octet-stream'
+      const mime = dataUrlMimeForPath(filePath)
       return {
         ok: true as const,
         path: filePath,
@@ -1477,6 +1467,10 @@ function registerIpc(): void {
         return null
       }
     }
+  })
+
+  ipcMain.handle(IPC.GIT_INIT, async (_e, cwd: string) => {
+    return initGitRepository({ cwd: String(cwd || ''), runGit })
   })
 
   /** 工作区 git 变更列表（右侧 Changes 面板；可探附加 Git 根） */
