@@ -3,7 +3,7 @@
  * 成图前继续 LiveFenceTail，避免闭合瞬间卸掉代码尾再挂一套。
  * @see src/components/ARCH.md
  */
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   isMermaidLang,
   mermaidSvgAspectStyle,
@@ -11,7 +11,7 @@ import {
   writeCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
-import { CodeArtifactBlock, CodeArtifactShell, LiveFenceTail } from './CodeArtifactBlock'
+import { ArtifactCodeLines, CodeArtifactBlock, CodeArtifactShell } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
 type MermaidApi = {
@@ -124,24 +124,31 @@ export function MermaidBlock({
     }
   }, [closed, source, theme, reactId])
 
+  const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
+    <CodeArtifactShell
+      className="live-fence-tail"
+      label={fenceLang}
+      copyText={source}
+      bodyClassName={bodyClassName}
+      ariaLabel={ariaLabel ?? `${fenceLang} 代码块`}
+    >
+      {children}
+    </CodeArtifactShell>
+  )
+
   if (!closed) {
-    return <LiveFenceTail code={source} language={fenceLang} />
+    return shell(<ArtifactCodeLines code={source} />)
   }
   if (!source.trim() || failed) {
     return <CodeArtifactBlock code={source} language={fenceLang} />
   }
   if (!svg) {
-    return <LiveFenceTail code={source} language={fenceLang} />
+    return shell(<ArtifactCodeLines code={source} />)
   }
   const aspect = mermaidSvgAspectStyle(svg)
-  return (
-    <CodeArtifactShell
-      label="mermaid"
-      copyText={source}
-      bodyClassName="mermaid-block-scroll"
-      ariaLabel="mermaid 图"
-    >
-      <div className="mermaid-block" style={aspect} dangerouslySetInnerHTML={{ __html: svg }} />
-    </CodeArtifactShell>
+  return shell(
+    <div className="mermaid-block" style={aspect} dangerouslySetInnerHTML={{ __html: svg }} />,
+    'mermaid-block-scroll',
+    'mermaid 图'
   )
 }

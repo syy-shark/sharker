@@ -112,7 +112,7 @@ const ArtifactCodeLine = memo(function ArtifactCodeLine({
 })
 
 /** 直播与收束共用行节点，闭合围栏时文字/行号不再换一套 DOM */
-function ArtifactCodeLines({ code }: { code: string }) {
+export function ArtifactCodeLines({ code }: { code: string }) {
   const lines = code.replace(/\n$/, '').split('\n')
   return (
     <div className="code-artifact-code">
@@ -124,25 +124,21 @@ function ArtifactCodeLines({ code }: { code: string }) {
 }
 
 /**
- * 直播未闭合围栏：与 CodeArtifactBlock 同一行结构，已闭合行 memo 住。
- * 闭合后走 MarkdownBody → CodeArtifactBlock。
+ * 直播围栏：与 CodeArtifactBlock 同一 CodeArtifactShell，复制按钮位一直在。
+ * 开闭不换外壳，收束后也不再另挂一套头栏。
  */
 export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
+  const normalizedCode = code.replace(/\n$/, '')
   const label = normalizeLanguage(language)
   return (
-    <div
-      className="code-artifact-shell live-fence-tail"
-      role="group"
-      aria-label={`${label} 直播代码`}
+    <CodeArtifactShell
+      className="live-fence-tail"
+      label={label}
+      copyText={normalizedCode}
+      ariaLabel={`${label} 代码块`}
     >
-      <div className="code-artifact-head">
-        <span className="code-artifact-label">{label}</span>
-        <span className="code-artifact-copy-slot" aria-hidden />
-      </div>
-      <div className="code-artifact-scroll">
-        <ArtifactCodeLines code={code} />
-      </div>
-    </div>
+      <ArtifactCodeLines code={normalizedCode} />
+    </CodeArtifactShell>
   )
 }
 
