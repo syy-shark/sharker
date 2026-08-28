@@ -542,6 +542,15 @@ describe('splitStreamingMarkdown', () => {
         expect(tableInList[0].items[0].blocks[0].align).toEqual(['right', 'center'])
       }
     }
+    const indentCodeInList = parseCheapProseBlocks('- item\n\n      code')
+    expect(indentCodeInList.map((b) => b.type)).toEqual(['list'])
+    if (indentCodeInList[0]?.type === 'list') {
+      expect(indentCodeInList[0].loose).toBe(true)
+      expect(indentCodeInList[0].items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'code'
+      })
+    }
     const hardInList = parseCheapProseBlocks('- a  \n  b')
     expect(hardInList.map((b) => b.type)).toEqual(['list'])
     if (hardInList[0]?.type === 'list') {

@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -1528,6 +1528,7 @@ export function parseCheapProseBlocks(
   } | null = null
   let itemTable: { lines: string[]; item: CheapListItem } | null = null
   let itemQuote: { parts: QuotePart[]; item: CheapListItem } | null = null
+  let itemCode: { indent: number; lines: string[]; item: CheapListItem } | null = null
 
   const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
   const currentItem = () => (list && list.items.length ? list.items[list.items.length - 1]! : null)
@@ -1549,6 +1550,11 @@ export function parseCheapProseBlocks(
     const item = itemQuote.item
     itemQuote = null
     if (parts.length) appendItemBlock(item, { type: 'quote', blocks: quotePartsToBlocks(parts, linkDefs) })
+  }
+  const flushItemCode = () => {
+    if (!itemCode) return
+    appendItemBlock(itemCode.item, { type: 'pre', text: itemCode.lines.join('\n') })
+    itemCode = null
   }
   const startItemOpener = (item: CheapListItem, text: string, contentIndent: number) => {
     const fenceOpen = parseFenceLine(text)
@@ -1599,6 +1605,7 @@ export function parseCheapProseBlocks(
     flushItemFence()
     flushItemTable()
     flushItemQuote()
+    flushItemCode()
     if (!list) return
     const loose = list.loose || list.items.some((item) => Boolean(item.extra?.length))
     blocks.push({
@@ -1646,6 +1653,7 @@ export function parseCheapProseBlocks(
     flushItemFence()
     flushItemTable()
     flushItemQuote()
+    flushItemCode()
     flushTable()
     flushPre()
     flushPara()
@@ -1674,6 +1682,13 @@ export function parseCheapProseBlocks(
       }
       flushItemFence()
       if (list && leadingIndent(line) <= list.indent) flushList()
+    }
+    if (itemCode) {
+      if (line.trim() === '' || leadingIndent(line) >= itemCode.indent) {
+        itemCode.lines.push(line.trim() === '' ? '' : dedentLine(line, itemCode.indent))
+        continue
+      }
+      flushItemCode()
     }
     if (itemQuote) {
       const quoteBase = itemQuote.item.contentIndent ?? list?.indent ?? 0
@@ -1839,6 +1854,20 @@ export function parseCheapProseBlocks(
         continue
       }
     }
+    if (list && list.items.length && list.afterBlank && line.trim() !== '') {
+      const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
+      const base = item.contentIndent ?? list.indent
+      if (leadingIndent(line) >= base + 4) {
+        list.loose = true
+        itemCode = {
+          indent: base + 4,
+          lines: [dedentLine(line, base + 4)],
+          item
+        }
+        list.afterBlank = false
+        continue
+      }
+    }
     const fenceOpen = parseFenceLine(line)
     if (fenceOpen) {
       flushTable()
@@ -1865,6 +1894,7 @@ export function parseCheapProseBlocks(
       flushItemFence()
       flushItemTable()
       flushItemQuote()
+      flushItemCode()
       flushTable()
       flushPre()
       flushPara()
