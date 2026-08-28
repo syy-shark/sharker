@@ -2649,7 +2649,11 @@ export default function App() {
         }
         case 'pick_model': {
           const q = args.trim().toLowerCase()
-          if (!q) break
+          if (!q) {
+            setPage('chat')
+            setComposerIntent('model')
+            break
+          }
           const providers = settingsRef.current.providers
           const byName = providers.find(
             (p) => p.id === q || p.name.toLowerCase().includes(q)

@@ -10,7 +10,7 @@
 | Projects + sessions (trusted dirs, sidebar list, archive) | have | 工作区 `workspaces` + 对话列表；侧栏新建/切换/归档（设置 → 已归档） |
 | Permission Ask default; Allow once / Allow for session / Deny | have | 默认需确认（Ask）；`InlineApproval` + `SessionApprovalStore` 强制 once/session/deny；全局 always-allow 非默认（`permissionMode` 沙箱/完整是路径策略，不是 YOLO 默认） |
 | Multi-session stream continuity (switch without clobber) | have | 流式 chunk 带 `conversationId`；渲染层按会话缓冲；切换不 abort 进行中 turn；返回仍见该会话 in-flight/完成态 |
-| Composer follow-up queue while busy | have | 忙时排队；队列按 `conversationId` 归属，A 的 follow-up 不会在 B 上派发 |
+| Composer follow-up queue while busy | have | 忙时 Tab 排队、Enter 注入；可暂停自动出队；队列按 `conversationId` 归属 |
 | Composer slash + attachments | have | 输入 `/` 弹出斜杠目录（↑↓/Enter/Esc）；`@` 文件、`$` Skill；图片附件路径稳定 |
 | Resources / files pane | have | 右侧面板「文件」树 + 终端 + 浏览器 |
 | Changes / session diffs + workspace git | have | 右侧「变更」审查：未提交/本轮/分支、文件/hunk 暂存还原、提交/推送/创建 PR、行内评论回对话；工具写盘后即时刷新；会话内工具 diff 仍在消息流 |
