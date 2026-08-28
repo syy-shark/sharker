@@ -17,6 +17,7 @@ import {
   parseCheapProseBlocks,
   splitStreamingMarkdown,
   streamingProseText,
+  streamingRenderSlots,
   needsFullRemarkMarkdown
 } from './streaming-markdown'
 
@@ -33,6 +34,8 @@ describe('splitStreamingMarkdown', () => {
     expect(streamingProseText('Hello world', next)).toBe('Hello world')
     expect(needsFullRemarkMarkdown('Hello world')).toBe(false)
     expect(needsFullRemarkMarkdown('See the note.[^1]\n\n[^1]: hi')).toBe(true)
+    expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(next).map((slot) => slot.key)).toEqual(['prose-run-0'])
   })
 
   it('commits a paragraph once a blank line arrives', () => {
@@ -41,6 +44,13 @@ describe('splitStreamingMarkdown', () => {
     expect(split.blocks[0]?.id).toBe('md-0')
     expect(split.blocks[0]?.text).toBe('Hello world.\n')
     expect(split.tail).toBe('Next')
+    expect(streamingRenderSlots(splitStreamingMarkdown('Hello')).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(split).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(split)[0]).toMatchObject({
+      kind: 'prose',
+      text: 'Hello world.\n\nNext',
+      closed: false
+    })
   })
 
   it('keeps an open fence entirely in the tail', () => {
@@ -76,6 +86,15 @@ describe('splitStreamingMarkdown', () => {
       body: '1'
     })
     expect(extractClosedFenceParts('Intro\n')).toBeNull()
+    expect(streamingRenderSlots(mid).map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
+      'prose:prose-run-0',
+      'fence:live-fence-0'
+    ])
+    expect(streamingRenderSlots(done).map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
+      'prose:prose-run-0',
+      'fence:live-fence-0',
+      'prose:prose-run-1'
+    ])
   })
 
   it('treats CRLF like LF so an open fence stays in the tail', () => {
@@ -1008,6 +1027,8 @@ describe('splitStreamingMarkdown', () => {
     expect(grown.blocks).toBe(first.blocks)
     expect(grown.tail).toBe('Next sentence')
     expect(grown.closedEnd).toBe(first.closedEnd)
+    expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(grown).map((slot) => slot.key)).toEqual(['prose-run-0'])
 
     const committed = continueStreamingMarkdown(
       grown,

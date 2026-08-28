@@ -1,6 +1,6 @@
 /**
- * 流式 Markdown：已闭合块顶层稳定挂；未闭合围栏与散文尾同级。
- * 围栏闭合不搬进散文尾，避免 LiveFenceTail 换父节点重挂跳贴底。
+ * 流式 Markdown：围栏顶层 `live-fence-N`；围栏之间的散文共用一个 `LiveProseTail`。
+ * 空行收段不换 key，避免 LiveProseTail 重挂跳贴底；围栏闭合也不搬进散文尾。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -16,12 +16,11 @@ import {
   cheapProseBlockKeys,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
-  extractClosedFenceParts,
-  extractOpenFenceBody,
   linkDefinitionBlob,
   matchLiveTaskMarker,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
+  streamingRenderSlots,
   type CheapInlineNode,
   type CheapLinkDef,
   type CheapListItem,
@@ -316,7 +315,7 @@ function renderLiveFenceSlot(
   return <LiveFenceTail key={key} code={body} language={lang} />
 }
 
-/** 直播正文：已闭合块顶层稳定挂；未闭合围栏与散文尾同级，闭合围栏不搬进散文尾重挂 */
+/** 直播正文：围栏顶层槽 + 连续散文 run，空行收段不换 LiveProseTail */
 export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
   const prevRef = useRef({ text: '', split: splitStreamingMarkdown('') })
   const split = useMemo(() => {
@@ -324,29 +323,17 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
     prevRef.current = { text, split: next }
     return next
   }, [text])
-  const fenceBody = useMemo(
-    () => (split.tailKind === 'fence' ? extractOpenFenceBody(split.tail) : ''),
-    [split.tail, split.tailKind]
-  )
+  const slots = useMemo(() => streamingRenderSlots(split), [split])
   const defsBlob = useMemo(() => linkDefinitionBlob(text), [text])
   const defs = useMemo(() => collectLinkDefinitions(text), [defsBlob])
-  const nodes: ReactNode[] = []
-  let fenceIndex = 0
-  for (const block of split.blocks) {
-    const fence = extractClosedFenceParts(block.text)
-    if (fence) {
-      nodes.push(renderLiveFenceSlot(`live-fence-${fenceIndex}`, fence.lang, fence.body, true))
-      fenceIndex += 1
-      continue
-    }
-    if (block.text.trim()) {
-      nodes.push(<LiveProseTail key={block.id} text={block.text} defs={defs} closed />)
-    }
-  }
-  if (split.tailKind === 'fence') {
-    nodes.push(renderLiveFenceSlot(`live-fence-${fenceIndex}`, split.tailLang, fenceBody, false))
-  } else if (split.tail.trim()) {
-    nodes.push(<LiveProseTail key="prose-tail" text={split.tail} defs={defs} />)
-  }
-  return <div className="streaming-markdown">{nodes}</div>
+  return (
+    <div className="streaming-markdown">
+      {slots.map((slot) => {
+        if (slot.kind === 'fence') {
+          return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
+        }
+        return <LiveProseTail key={slot.key} text={slot.text} defs={defs} closed={slot.closed} />
+      })}
+    </div>
+  )
 })

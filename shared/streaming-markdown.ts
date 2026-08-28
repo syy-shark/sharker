@@ -1,5 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
+ * `streamingRenderSlots` 把围栏之间的散文合成 `prose-run-N`，空行收段不换 LiveProseTail。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
@@ -228,6 +229,65 @@ export function extractClosedFenceParts(
     lang: fenceLang(open.info),
     body: lines.slice(1, closed ? last : lines.length).join('\n')
   }
+}
+
+/** 顶层渲染槽：围栏之间的散文共用一个 LiveProseTail，空行收段不换 key */
+export type StreamingRenderSlot =
+  | { kind: 'prose'; key: string; text: string; closed: boolean }
+  | { kind: 'fence'; key: string; lang?: string; body: string; closed: boolean }
+
+/**
+ * 把拆分结果收成稳定槽：连续散文（含已收段 + 增长尾）合成一个 run。
+ * 已收段文本以换行结尾，再用换行拼上下一段，还原空行。
+ */
+export function streamingRenderSlots(split: StreamingMarkdownSplit): StreamingRenderSlot[] {
+  const slots: StreamingRenderSlot[] = []
+  let proseRun = 0
+  let fenceIndex = 0
+  const pending: string[] = []
+
+  const flushProse = (closed: boolean) => {
+    if (pending.length === 0) return
+    slots.push({
+      kind: 'prose',
+      key: `prose-run-${proseRun++}`,
+      text: pending.join('\n'),
+      closed
+    })
+    pending.length = 0
+  }
+
+  for (const block of split.blocks) {
+    const fence = extractClosedFenceParts(block.text)
+    if (fence) {
+      flushProse(true)
+      slots.push({
+        kind: 'fence',
+        key: `live-fence-${fenceIndex++}`,
+        lang: fence.lang,
+        body: fence.body,
+        closed: true
+      })
+    } else if (block.text) {
+      pending.push(block.text)
+    }
+  }
+
+  if (split.tailKind === 'fence') {
+    flushProse(true)
+    slots.push({
+      kind: 'fence',
+      key: `live-fence-${fenceIndex}`,
+      lang: split.tailLang,
+      body: extractOpenFenceBody(split.tail),
+      closed: false
+    })
+  } else if (pending.length > 0 || split.tail) {
+    if (split.tail) pending.push(split.tail)
+    flushProse(false)
+  }
+
+  return slots
 }
 
 /** 直播散文：未闭合围栏之前的原文；散文模式给全文，避免每收一段就换 remark 树 */
