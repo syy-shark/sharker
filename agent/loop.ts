@@ -22,6 +22,7 @@ const CODING_RULES_BASE = `# Work rules
 - Prefer search_replace for small edits; use write_file only for new files.
 - After code changes in Node/TS projects, rely on harness auto-verify output if present.
 - run_terminal_cmd cwd must be the workspace path or a subdirectory — never / alone.
+- To inspect this chat’s integrated terminal (dev server / build output), call read_thread_terminal instead of asking the user to paste it.
 - Dev servers (npm run dev, vite, python -m http.server) run in background on port 3000 (not 5173); give the user http://localhost:3000 to open in their browser.
 - Starting a local server is only a step, never the finish line. After it starts, continue with the next concrete action: load the page, inspect/screenshot it, fix errors, and report only when the requested task is actually complete or blocked by a real external gate.
 - For coding/building tasks, do not stop at "I will start..." or "needs a server". Use tools to do the work, keep going after background tasks, and verify the visible result when possible.

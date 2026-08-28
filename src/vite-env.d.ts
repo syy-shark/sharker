@@ -306,9 +306,15 @@ export interface SharkerApi {
     localCwd: string
     worktreePath: string
   }) => Promise<{ ok: true; applied: string[] } | { ok: false; error: string }>
-  createTerminal: (cwd: string) => Promise<{ id: string }>
+  createTerminal: (
+    cwd: string,
+    conversationId?: string,
+    title?: string
+  ) => Promise<{ id: string }>
   writeTerminal: (id: string, data: string) => Promise<void>
   resizeTerminal: (id: string, cols: number, rows: number) => Promise<void>
+  bindTerminalThread: (id: string, conversationId: string) => Promise<void>
+  activateTerminal: (id: string) => Promise<void>
   killTerminal: (id: string) => Promise<void>
   killAllTerminals: () => Promise<void>
   onTerminalData: (cb: (payload: { id: string; data: string }) => void) => () => void

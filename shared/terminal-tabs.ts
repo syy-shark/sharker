@@ -11,6 +11,12 @@ export type TerminalTab = {
   title: string
 }
 
+/** 线程终端缓存项：reactKey 稳定，convKey 可从 pending 收成对话 id */
+export type ThreadTerminalPane = {
+  reactKey: string
+  convKey: string
+}
+
 /** 无对话时仍按工作区隔开，避免新聊天共用旧 PTY */
 export function threadTerminalKey(
   conversationId?: string | null,
@@ -85,4 +91,34 @@ export function rememberThreadTerminal(
   if (!key) return [...order]
   const cap = Math.max(1, limit)
   return [key, ...order.filter((id) => id !== key)].slice(0, cap)
+}
+
+/** 新对话拿到 id 时收编同工作区的 pending 窗格，避免再开一套 PTY */
+export function rememberThreadTerminalPanes(
+  panes: readonly ThreadTerminalPane[],
+  convKey: string,
+  workspacePath?: string | null,
+  limit = MAX_CACHED_THREAD_TERMINALS
+): ThreadTerminalPane[] {
+  const key = convKey.trim()
+  if (!key) return [...panes]
+  const cap = Math.max(1, limit)
+  const pending = threadTerminalKey('', workspacePath)
+  const adopt =
+    !key.startsWith('pending:') && pending.startsWith('pending:')
+      ? panes.find((pane) => pane.convKey === pending)
+      : undefined
+  if (adopt) {
+    const next = panes.map((pane) =>
+      pane.reactKey === adopt.reactKey ? { ...pane, convKey: key } : pane
+    )
+    const current = next.find((pane) => pane.reactKey === adopt.reactKey)
+    if (!current) return next.slice(0, cap)
+    return [current, ...next.filter((pane) => pane.reactKey !== current.reactKey)].slice(0, cap)
+  }
+  const existing = panes.find((pane) => pane.convKey === key)
+  if (existing) {
+    return [existing, ...panes.filter((pane) => pane.reactKey !== existing.reactKey)].slice(0, cap)
+  }
+  return [{ reactKey: key, convKey: key }, ...panes].slice(0, cap)
 }

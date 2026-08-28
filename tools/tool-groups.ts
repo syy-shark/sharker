@@ -17,6 +17,7 @@ export const PLAN_MODE_TOOL_NAMES = new Set([
   'git_diff',
   'git_log',
   'git_show',
+  'read_thread_terminal',
   'web_fetch',
   'web_search',
   'open_url',

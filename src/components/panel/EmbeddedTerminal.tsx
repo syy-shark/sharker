@@ -12,7 +12,7 @@ import {
   closeTerminalTab,
   ensureTerminalTabs,
   MAX_TERMINAL_TABS,
-  rememberThreadTerminal,
+  rememberThreadTerminalPanes,
   threadTerminalKey
 } from '../../../shared/terminal-tabs'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
@@ -137,6 +137,8 @@ function safeFit(fit: FitAddon, term: Terminal): void {
 
 function TerminalSession({
   workspacePath,
+  conversationId,
+  title,
   visible,
   pendingCommand = null,
   onPendingCommandSent,
@@ -145,6 +147,8 @@ function TerminalSession({
   themeTick
 }: {
   workspacePath: string
+  conversationId?: string | null
+  title: string
   visible: boolean
   pendingCommand?: string | null
   onPendingCommandSent?: () => void
@@ -266,7 +270,7 @@ function TerminalSession({
     )
 
     void window.sharker
-      .createTerminal(workspacePath || '')
+      .createTerminal(workspacePath || '', conversationId || '', title)
       .then(({ id }) => {
         if (disposed) {
           void window.sharker.killTerminal(id)
@@ -319,7 +323,20 @@ function TerminalSession({
       termRef.current = null
       fitRef.current = null
     }
-  }, [workspacePath, themeTick])
+  }, [workspacePath, themeTick, title])
+
+  useEffect(() => {
+    const id = sessionIdRef.current
+    const thread = conversationId?.trim()
+    if (!id || !thread || !window.sharker.bindTerminalThread) return
+    void window.sharker.bindTerminalThread(id, thread)
+  }, [conversationId, ready])
+
+  useEffect(() => {
+    const id = sessionIdRef.current
+    if (!visible || !ready || !id || !window.sharker.activateTerminal) return
+    void window.sharker.activateTerminal(id)
+  }, [visible, ready])
 
   useEffect(() => {
     if (!visible) {
@@ -422,6 +439,7 @@ function TerminalSession({
 /** 一个线程里的终端标签 */
 export function EmbeddedTerminal({
   workspacePath,
+  conversationId = null,
   hostActive = true,
   pendingCommand = null,
   onPendingCommandSent,
@@ -536,6 +554,8 @@ export function EmbeddedTerminal({
             >
               <TerminalSession
                 workspacePath={workspacePath}
+                conversationId={conversationId}
+                title={tab.title}
                 visible={hostActive && selected}
                 pendingCommand={selected ? pendingCommand : null}
                 onPendingCommandSent={onPendingCommandSent}
@@ -562,27 +582,27 @@ export function ThreadTerminalBank({
   onAskInSideChat
 }: Props) {
   const key = threadTerminalKey(conversationId, workspacePath)
-  const [order, setOrder] = useState<string[]>([key])
+  const [panes, setPanes] = useState(() => rememberThreadTerminalPanes([], key, workspacePath))
   const cwdRef = useRef(new Map<string, string>([[key, workspacePath]]))
 
   useEffect(() => {
     cwdRef.current.set(key, workspacePath)
-    setOrder((prev) => rememberThreadTerminal(prev, key))
+    setPanes((prev) => rememberThreadTerminalPanes(prev, key, workspacePath))
   }, [key, workspacePath])
 
   return (
     <div className="thread-terminal-bank">
-      {order.map((id) => (
+      {panes.map((pane) => (
         <div
-          key={id}
-          className={`thread-terminal-pane${id === key ? ' is-active' : ''}`}
-          hidden={id !== key}
+          key={pane.reactKey}
+          className={`thread-terminal-pane${pane.convKey === key ? ' is-active' : ''}`}
+          hidden={pane.convKey !== key}
         >
           <EmbeddedTerminal
-            workspacePath={cwdRef.current.get(id) || workspacePath}
-            conversationId={id}
-            hostActive={hostActive && id === key}
-            pendingCommand={id === key ? pendingCommand : null}
+            workspacePath={cwdRef.current.get(pane.convKey) || workspacePath}
+            conversationId={pane.convKey}
+            hostActive={hostActive && pane.convKey === key}
+            pendingCommand={pane.convKey === key ? pendingCommand : null}
             onPendingCommandSent={onPendingCommandSent}
             clearTick={clearTick}
             onAskInSideChat={onAskInSideChat}

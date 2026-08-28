@@ -117,6 +117,8 @@ import { handoffCheckout } from '../../shared/git-handoff'
 import { mkdir, readFile, rm, stat, unlink, writeFile } from 'fs/promises'
 import { spawn } from 'child_process'
 import {
+  activateTerminal,
+  bindTerminalThread,
   createTerminal,
   killAllTerminals,
   killTerminal,
@@ -1335,11 +1337,14 @@ function registerIpc(): void {
     return runGit(cwd, ['checkout', branch])
   })
 
-  ipcMain.handle(IPC.TERMINAL_CREATE, async (event, cwd: string) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    if (!win) throw new Error('no window')
-    return createTerminal(win, cwd)
-  })
+  ipcMain.handle(
+    IPC.TERMINAL_CREATE,
+    async (event, cwd: string, conversationId?: string, title?: string) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) throw new Error('no window')
+      return createTerminal(win, cwd, conversationId, title)
+    }
+  )
 
   ipcMain.handle(IPC.TERMINAL_WRITE, (_e, id: string, data: string) => {
     writeTerminal(id, data)
@@ -1347,6 +1352,14 @@ function registerIpc(): void {
 
   ipcMain.handle(IPC.TERMINAL_RESIZE, (_e, id: string, cols: number, rows: number) => {
     resizeTerminal(id, cols, rows)
+  })
+
+  ipcMain.handle(IPC.TERMINAL_BIND, (_e, id: string, conversationId: string) => {
+    bindTerminalThread(id, conversationId)
+  })
+
+  ipcMain.handle(IPC.TERMINAL_ACTIVATE, (_e, id: string) => {
+    activateTerminal(id)
   })
 
   ipcMain.handle(IPC.TERMINAL_KILL, (_e, id: string) => {

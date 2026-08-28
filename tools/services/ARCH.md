@@ -22,4 +22,6 @@
 | `browser-native-host.ts` | Chrome native messaging manifest / host 二进制 |
 | `feature-use-setup.ts` | Computer / Browser Use 开关触发的一键就绪 |
 | `lsp-client.ts` | 语言服务器 spawn 与 diagnostics 摘要 |
+| `thread-terminal-store.ts` | 集成终端输出尾（按对话）；PTY 写入，`read_thread_terminal` 读取 |
+| `thread-terminal-store.test.ts` | 绑定对话、当前标签、无会话 |
 | `ARCH.md` | 本层架构说明 |

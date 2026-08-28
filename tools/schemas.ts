@@ -245,6 +245,23 @@ const CORE_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'read_thread_terminal',
+      description:
+        'Read the current chat’s integrated terminal snapshot (active tab). Use this to inspect a running dev server or build output instead of asking the user to paste it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          max_chars: {
+            type: 'number',
+            description: 'Max characters of output tail (default 8000)'
+          }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'git_status',
       description: 'Show git working tree status',
       parameters: { type: 'object', properties: { cwd: { type: 'string' } }, required: ['cwd'] }

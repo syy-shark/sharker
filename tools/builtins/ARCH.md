@@ -36,6 +36,7 @@
 | `glob-file-search.ts` | glob 找文件 |
 | `grep.ts` | 目录内文本搜索 |
 | `run-terminal-cmd.ts` | 工作区 shell；rm -rf 后自动验证 |
+| `read-thread-terminal.ts` | 读当前对话集成终端输出尾（对标 Codex inspect terminal） |
 | `git.ts` | Git 工具组（status/diff/log/add/commit/pull/push…） |
 | `open-url.ts` | 系统浏览器打开 URL |
 | `run-skill-script.ts` | 执行 Skill 目录脚本 |

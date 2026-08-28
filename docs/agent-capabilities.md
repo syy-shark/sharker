@@ -160,6 +160,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 工具 | 能做什么 |
 |------|----------|
 | `run_terminal_cmd` | bash 执行命令（`rm` 后自动验证路径；cwd 锁在工作区） |
+| `read_thread_terminal` | 读当前对话集成终端当前标签的输出尾（对标 Codex inspect terminal；不请用户粘贴） |
 
 ### Git / Tasks / Sub-agents
 

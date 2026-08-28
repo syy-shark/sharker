@@ -27,6 +27,7 @@ import { voiceTools } from './builtins/voice'
 import { mcpTools } from './builtins/mcp'
 import { readFileTool } from './builtins/read-file'
 import { runSkillScriptTool } from './builtins/run-skill-script'
+import { readThreadTerminalTool } from './builtins/read-thread-terminal'
 import { runTerminalCmdTool } from './builtins/run-terminal-cmd'
 import { searchReplaceTool } from './builtins/search-replace'
 import { backgroundShellTools } from './builtins/shell/background'
@@ -72,6 +73,7 @@ function getAllToolHandlers(): ToolHandler[] {
     movePathTool,
     createDirectoryTool,
     runTerminalCmdTool,
+    readThreadTerminalTool,
     ...backgroundShellTools,
     ...gitTools,
     ...worktreeTools,

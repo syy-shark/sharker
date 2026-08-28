@@ -5,6 +5,7 @@ import {
   ensureTerminalTabs,
   MAX_TERMINAL_TABS,
   rememberThreadTerminal,
+  rememberThreadTerminalPanes,
   threadTerminalKey
 } from './terminal-tabs'
 
@@ -33,5 +34,11 @@ describe('terminal tabs', () => {
     expect(rememberThreadTerminal(['a', 'b'], 'c')).toEqual(['c', 'a', 'b'])
     expect(rememberThreadTerminal(['a', 'b', 'c'], 'b')).toEqual(['b', 'a', 'c'])
     expect(rememberThreadTerminal(['a', 'b', 'c', 'd'], 'e', 3)).toEqual(['e', 'a', 'b'])
+
+    const pending = rememberThreadTerminalPanes([], 'pending:/tmp/proj', '/tmp/proj')
+    expect(pending[0]).toEqual({ reactKey: 'pending:/tmp/proj', convKey: 'pending:/tmp/proj' })
+    const adopted = rememberThreadTerminalPanes(pending, 'chat-1', '/tmp/proj')
+    expect(adopted[0]).toEqual({ reactKey: 'pending:/tmp/proj', convKey: 'chat-1' })
+    expect(adopted).toHaveLength(1)
   })
 })

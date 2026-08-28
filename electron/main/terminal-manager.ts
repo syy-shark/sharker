@@ -1,13 +1,21 @@
 /**
  * 集成终端 PTY 管理（node-pty）。
+ * 输出尾写入 thread-terminal-store，供 read_thread_terminal 读取。
  * 若报 posix_spawnp failed：多为 spawn-helper 无 +x，运行 npm run fix:pty。
- * @see ../../src/components/panel/ARCH.md
+ * @see ./ARCH.md
  */
 import fs from 'fs'
 import os from 'os'
 import type { BrowserWindow } from 'electron'
 import * as pty from 'node-pty'
 import { defaultInteractiveShell } from '../../tools/shared/shell-spawn'
+import {
+  activateThreadTerminal,
+  appendThreadTerminalOutput,
+  bindThreadTerminal,
+  removeThreadTerminal,
+  upsertThreadTerminal
+} from '../../tools/services/thread-terminal-store'
 
 interface TerminalSession {
   id: string
@@ -35,7 +43,6 @@ function spawnShell(shell: string, workdir: string): pty.IPty {
     PATH: process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin'
   } as Record<string, string>
 
-  // 先普通交互；失败再试登录 shell
   const attempts: Array<{ args: string[] }> = [{ args: [] }]
   if (shell.includes('zsh') || shell.endsWith('/bash') || shell.endsWith('/sh')) {
     attempts.push({ args: ['-l'] })
@@ -66,23 +73,36 @@ function spawnShell(shell: string, workdir: string): pty.IPty {
 /** 创建 PTY 会话并向窗口推送输出 */
 export function createTerminal(
   win: BrowserWindow,
-  cwd: string
+  cwd: string,
+  conversationId = '',
+  title = '终端'
 ): { id: string } {
   const id = crypto.randomUUID()
   const shell = defaultInteractiveShell()
   const workdir = resolveWorkdir(cwd)
   const proc = spawnShell(shell, workdir)
+  const thread = conversationId.trim() || id
+
+  sessions.set(id, { id, pty: proc })
+  upsertThreadTerminal({
+    id,
+    conversationId: thread,
+    cwd: workdir,
+    title: title.trim() || '终端',
+    active: true,
+    buffer: ''
+  })
 
   proc.onData((data) => {
+    appendThreadTerminalOutput(id, data)
     if (!win.isDestroyed()) win.webContents.send('terminal:data', { id, data })
   })
 
   proc.onExit(() => {
     sessions.delete(id)
+    removeThreadTerminal(id)
     if (!win.isDestroyed()) win.webContents.send('terminal:exit', { id })
   })
-
-  sessions.set(id, { id, pty: proc })
   return { id }
 }
 
@@ -110,6 +130,14 @@ export function resizeTerminal(id: string, cols: number, rows: number): void {
   }
 }
 
+export function bindTerminalThread(id: string, conversationId: string): void {
+  bindThreadTerminal(id, conversationId)
+}
+
+export function activateTerminal(id: string): void {
+  activateThreadTerminal(id)
+}
+
 /** 销毁 PTY */
 export function killTerminal(id: string): void {
   const s = sessions.get(id)
@@ -120,6 +148,7 @@ export function killTerminal(id: string): void {
     /* already dead */
   }
   sessions.delete(id)
+  removeThreadTerminal(id)
 }
 
 /** 窗口关闭时清理全部 PTY */

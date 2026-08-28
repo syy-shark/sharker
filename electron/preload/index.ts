@@ -236,11 +236,15 @@ contextBridge.exposeInMainWorld('sharker', {
     localCwd: string
     worktreePath: string
   }) => ipcRenderer.invoke(IPC.GIT_HANDOFF, payload),
-  createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),
+  createTerminal: (cwd: string, conversationId?: string, title?: string) =>
+    ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd, conversationId, title),
   writeTerminal: (id: string, data: string) =>
     ipcRenderer.invoke(IPC.TERMINAL_WRITE, id, data),
   resizeTerminal: (id: string, cols: number, rows: number) =>
     ipcRenderer.invoke(IPC.TERMINAL_RESIZE, id, cols, rows),
+  bindTerminalThread: (id: string, conversationId: string) =>
+    ipcRenderer.invoke(IPC.TERMINAL_BIND, id, conversationId),
+  activateTerminal: (id: string) => ipcRenderer.invoke(IPC.TERMINAL_ACTIVATE, id),
   killTerminal: (id: string) => ipcRenderer.invoke(IPC.TERMINAL_KILL, id),
   killAllTerminals: () => ipcRenderer.invoke(IPC.TERMINAL_KILL_ALL),
   onTerminalData: (cb: (payload: { id: string; data: string }) => void) => {

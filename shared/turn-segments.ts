@@ -893,7 +893,13 @@ function countThinking(segments: TurnSegment[]): { count: number; hasContent: bo
   }
 }
 
-const READ_TOOLS = new Set(['read_file', 'grep', 'glob_file_search', 'list_dir'])
+const READ_TOOLS = new Set([
+  'read_file',
+  'grep',
+  'glob_file_search',
+  'list_dir',
+  'read_thread_terminal'
+])
 const EDIT_TOOLS = new Set([
   'write_file',
   'search_replace',

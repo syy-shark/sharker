@@ -262,6 +262,7 @@ const PARALLEL_READ_TOOLS = new Set([
   'git_diff',
   'git_log',
   'git_show',
+  'read_thread_terminal',
   'web_fetch',
   'web_search',
   'desktop_doctor',
