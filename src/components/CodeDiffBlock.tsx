@@ -13,6 +13,7 @@ import {
   estimateDiffBodyHeight,
   liveDiffBodyMinHeight,
   shouldCollapseDiffPreview,
+  shouldReserveDiffCollapseFooter,
   statsFromLines
 } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
@@ -183,6 +184,11 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     lineCount: displayLines.length,
     previewLimit
   })
+  const reserveCollapseFooter = shouldReserveDiffCollapseFooter({
+    review: Boolean(review),
+    lineCount: displayLines.length,
+    previewLimit
+  })
   const needsCollapse = shouldCollapseDiffPreview({
     live,
     review: Boolean(review),
@@ -269,16 +275,20 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     </>
   )
 
-  const footer = canCollapse ? (
-    <button
-      type="button"
-      className="code-diff-expand"
-      onClick={() => setExpanded((value) => !value)}
-      aria-expanded={expanded}
-    >
-      {expanded ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
-      {expanded ? '收起变更' : `展开全部 ${displayLines.length} 行`}
-    </button>
+  const footer = reserveCollapseFooter ? (
+    canCollapse ? (
+      <button
+        type="button"
+        className="code-diff-expand"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+      >
+        {expanded ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+        {expanded ? '收起变更' : `展开全部 ${displayLines.length} 行`}
+      </button>
+    ) : (
+      <div className="code-diff-expand code-diff-expand--reserved" aria-hidden />
+    )
   ) : undefined
 
   return (

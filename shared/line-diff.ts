@@ -76,6 +76,19 @@ export function canOfferDiffPreviewCollapse(options: {
   previewLimit: number
 }): boolean {
   if (options.review || options.live) return false
+  return shouldReserveDiffCollapseFooter(options)
+}
+
+/**
+ * 长 diff 的「收起/展开」页脚：直播中先占同一高度，
+ * 收束后才变成可点按钮，避免突然冒出 32px 顶贴底（对标 Codex #40788）。
+ */
+export function shouldReserveDiffCollapseFooter(options: {
+  review?: boolean
+  lineCount: number
+  previewLimit: number
+}): boolean {
+  if (options.review) return false
   return options.lineCount > Math.max(1, options.previewLimit)
 }
 

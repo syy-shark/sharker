@@ -14,7 +14,8 @@ import {
   canOfferDiffPreviewCollapse,
   estimateDiffBodyHeight,
   liveDiffBodyMinHeight,
-  shouldCollapseDiffPreview
+  shouldCollapseDiffPreview,
+  shouldReserveDiffCollapseFooter
 } from './line-diff'
 
 describe('turn segment event state machine', () => {
@@ -299,6 +300,15 @@ describe('turn segment event state machine', () => {
         lineCount: 80,
         previewLimit: 20
       })
+    ).toBe(false)
+    expect(
+      shouldReserveDiffCollapseFooter({ review: false, lineCount: 80, previewLimit: 20 })
+    ).toBe(true)
+    expect(
+      shouldReserveDiffCollapseFooter({ review: false, lineCount: 20, previewLimit: 20 })
+    ).toBe(false)
+    expect(
+      shouldReserveDiffCollapseFooter({ review: true, lineCount: 80, previewLimit: 20 })
     ).toBe(false)
 
     expect(isDemoFenceLangPrefix('dem')).toBe(true)
