@@ -55,6 +55,7 @@ export function matchWorkbenchShortcut(event: {
   if (key === '/' && !event.altKey && !event.shiftKey) return 'shortcut_help'
   if (!event.altKey && !event.shiftKey && /^[1-9]$/.test(key)) return 'select_chat'
   if (key === 'n' && !event.altKey && !event.shiftKey) return 'new_conversation'
+  if (key === 'o' && event.shiftKey && !event.altKey) return 'new_conversation'
   if (key === ',' && !event.altKey && !event.shiftKey) return 'open_settings'
   if (key === 'o' && !event.altKey && !event.shiftKey) return 'open_folder'
   if (
@@ -96,7 +97,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧E', title: '打开文件树' },
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
-  { keys: '⌘N', title: '新对话' },
+  { keys: '⌘N / ⌘⇧O', title: '新对话' },
   { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘/', title: '快捷键一览' },

@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡与输入区
  * @see src/ARCH.md
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUp, Folder, Mic } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type {
@@ -20,6 +20,7 @@ import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
+import { parseBangCommand } from '../../shared/bang-command'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
 import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
 
@@ -111,6 +112,37 @@ function MessageAttachments({ attachments }: { attachments?: ChatAttachment[] })
     </div>
   )
 }
+
+const UserMessageRow = memo(function UserMessageRow({
+  id,
+  content,
+  attachments,
+  findHit,
+  findCurrent
+}: {
+  id: string
+  content: string
+  attachments?: ChatAttachment[]
+  findHit: boolean
+  findCurrent: boolean
+}) {
+  return (
+    <div
+      id={`msg-${id}`}
+      className={`message-row message-row--user${findHit ? ' is-find-hit' : ''}${
+        findCurrent ? ' is-find-current' : ''
+      }`}
+    >
+      <div className="message-user-wrap">
+        <div className="message-bubble message-bubble--user">
+          <MessageAttachments attachments={attachments} />
+          <p>{content}</p>
+        </div>
+        <MessageActions content={content} messageId={id} />
+      </div>
+    </div>
+  )
+})
 
 /** ChatView Props：工作区/模型选择、消息与流式状态、发送回调 */
 interface Props {
@@ -1142,6 +1174,28 @@ export function ChatView({
       }
     }
 
+    const bang = attachments.length === 0 ? parseBangCommand(t) : null
+    if (bang && onSlashAction) {
+      setInput('')
+      setPendingAttachments([])
+      setAttachmentError('')
+      onSlashAction(
+        {
+          name: 'shell',
+          description: '在终端执行',
+          scope: 'ui',
+          action: 'run_shell',
+          category: 'tools'
+        },
+        bang
+      )
+      requestAnimationFrame(() => {
+        syncTextareaHeight()
+        textareaRef.current?.focus()
+      })
+      return
+    }
+
     setInput('')
     setPendingAttachments([])
     setAttachmentError('')
@@ -1533,7 +1587,7 @@ export function ChatView({
             ? '正在听写… Ctrl⇧D 结束'
             : loading
               ? 'Enter 注入当前回合，Tab 排队下一条…'
-              : '输入消息，/ 命令，@ 文件，$ Skill，Ctrl⇧D 听写…'
+              : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl⇧D 听写…'
         }
         rows={1}
       />
@@ -1798,21 +1852,14 @@ export function ChatView({
           <div className="messages" ref={messagesInnerRef}>
             {messages.map((m, index) =>
               m.role === 'user' ? (
-                <div
+                <UserMessageRow
                   key={m.id}
-                  id={`msg-${m.id}`}
-                  className={`message-row message-row--user${
-                    findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''
-                  }${findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''}`}
-                >
-                  <div className="message-user-wrap">
-                    <div className="message-bubble message-bubble--user">
-                      <MessageAttachments attachments={m.attachments} />
-                      <p>{m.content}</p>
-                    </div>
-                    <MessageActions content={m.content} messageId={m.id} />
-                  </div>
-                </div>
+                  id={m.id}
+                  content={m.content}
+                  attachments={m.attachments}
+                  findHit={findHits.some((h) => h.messageId === m.id)}
+                  findCurrent={findHits[findHit]?.messageId === m.id}
+                />
               ) : (
                 <div
                   key={m.id}

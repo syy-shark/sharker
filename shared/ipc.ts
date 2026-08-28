@@ -94,6 +94,8 @@ export const IPC = {
   TERMINAL_WRITE: 'terminal:write',
   TERMINAL_RESIZE: 'terminal:resize',
   TERMINAL_KILL: 'terminal:kill',
+  /** `/stop`：关掉全部集成终端 PTY */
+  TERMINAL_KILL_ALL: 'terminal:kill-all',
   LIST_AUTOMATIONS: 'automations:list',
   SAVE_AUTOMATIONS: 'automations:save',
   LIST_AUTOMATION_QUEUE: 'automations:queue-list',

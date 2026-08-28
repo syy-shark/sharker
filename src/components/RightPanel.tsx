@@ -39,6 +39,9 @@ interface Props {
   conversationId?: string | null
   /** 主线程点开的子 Agent */
   focusSubAgentId?: string | null
+  /** Composer `!` 待写入终端的命令 */
+  pendingTerminalCommand?: string | null
+  onPendingTerminalCommandSent?: () => void
 }
 
 /** Codex 风格右侧面板 */
@@ -55,7 +58,9 @@ export function RightPanel({
   agentFindings = [],
   suggestedCommit = '',
   conversationId = null,
-  focusSubAgentId = null
+  focusSubAgentId = null,
+  pendingTerminalCommand = null,
+  onPendingTerminalCommandSent
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -338,7 +343,13 @@ export function RightPanel({
             onSendComments={onSendReviewComments}
           />
         )}
-        {tab === 'terminal' && <EmbeddedTerminal workspacePath={workspacePath} />}
+        {tab === 'terminal' && (
+          <EmbeddedTerminal
+            workspacePath={workspacePath}
+            pendingCommand={pendingTerminalCommand}
+            onPendingCommandSent={onPendingTerminalCommandSent}
+          />
+        )}
         {tab === 'browser' && <EmbeddedBrowser />}
         {tab === 'agents' && (
           <AgentsPanel conversationId={conversationId} focusId={focusSubAgentId} />

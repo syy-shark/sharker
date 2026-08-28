@@ -31,6 +31,10 @@ describe('command palette', () => {
     expect(ids).toContain('init')
     expect(ids).toContain('permissions')
     expect(ids).toContain('memories')
+    expect(ids).toContain('copy')
+    expect(ids).toContain('fast')
+    expect(ids).toContain('skills')
+    expect(ids).toContain('stop')
   })
 
   it('filters by title and keywords', () => {

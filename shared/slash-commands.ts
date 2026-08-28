@@ -260,6 +260,36 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'tools'
   },
   {
+    name: 'skills',
+    description: '浏览已安装 Skill',
+    scope: 'ui',
+    action: 'show_skills',
+    argsHint: '[过滤]',
+    category: 'tools'
+  },
+  {
+    name: 'copy',
+    description: '复制上一条已完成的助手回复',
+    scope: 'ui',
+    action: 'copy_last_output',
+    category: 'session'
+  },
+  {
+    name: 'fast',
+    description: '开关 Fast（关掉或降到最低思考）',
+    scope: 'ui',
+    action: 'set_fast',
+    argsHint: '[on|off|status]',
+    category: 'mode'
+  },
+  {
+    name: 'stop',
+    description: '停止当前回合与后台终端',
+    scope: 'ui',
+    action: 'stop_terminals',
+    category: 'session'
+  },
+  {
     name: 'browser',
     description: '打开 / 关闭内置浏览器',
     scope: 'ui',

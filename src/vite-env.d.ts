@@ -239,6 +239,7 @@ export interface SharkerApi {
   writeTerminal: (id: string, data: string) => Promise<void>
   resizeTerminal: (id: string, cols: number, rows: number) => Promise<void>
   killTerminal: (id: string) => Promise<void>
+  killAllTerminals: () => Promise<void>
   onTerminalData: (cb: (payload: { id: string; data: string }) => void) => () => void
   onTerminalExit: (cb: (payload: { id: string }) => void) => () => void
   listAutomations: () => Promise<AutomationJob[]>

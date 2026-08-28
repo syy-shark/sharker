@@ -11,6 +11,9 @@ import './EmbeddedTerminal.css'
 
 interface Props {
   workspacePath: string
+  /** Composer `!cmd`：PTY 就绪后写入并回车 */
+  pendingCommand?: string | null
+  onPendingCommandSent?: () => void
 }
 
 /**
@@ -108,9 +111,14 @@ function safeFit(fit: FitAddon, term: Terminal): void {
 }
 
 /** xterm 终端面板 */
-export function EmbeddedTerminal({ workspacePath }: Props) {
+export function EmbeddedTerminal({
+  workspacePath,
+  pendingCommand = null,
+  onPendingCommandSent
+}: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
   /** 主题变化时强制重建 xterm（仅改 options 在部分版本不重绘底色） */
@@ -207,6 +215,7 @@ export function EmbeddedTerminal({ workspacePath }: Props) {
           return
         }
         sessionId = id
+        sessionIdRef.current = id
         setReady(true)
         flushEarly(id)
         term.onData((data) => {
@@ -245,10 +254,20 @@ export function EmbeddedTerminal({ workspacePath }: Props) {
       offExit?.()
       ro.disconnect()
       if (sessionId) void window.sharker.killTerminal(sessionId)
+      sessionIdRef.current = null
       term.dispose()
       termRef.current = null
     }
   }, [workspacePath, themeTick])
+
+  useEffect(() => {
+    if (!ready || !pendingCommand || !sessionIdRef.current || !window.sharker.writeTerminal) {
+      return
+    }
+    const payload = pendingCommand.endsWith('\n') ? pendingCommand : `${pendingCommand}\n`
+    void window.sharker.writeTerminal(sessionIdRef.current, payload)
+    onPendingCommandSent?.()
+  }, [ready, pendingCommand, onPendingCommandSent])
 
   const cwdLabel = workspacePath?.trim()
     ? workspacePath.replace(/^\/Users\/[^/]+/, '~')

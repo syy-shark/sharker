@@ -65,6 +65,30 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_memories'
   },
   {
+    id: 'copy',
+    title: '复制上一条助手回复',
+    keywords: 'copy output 复制 回复',
+    action: 'copy_last_output'
+  },
+  {
+    id: 'fast',
+    title: '开关 Fast',
+    keywords: 'fast thinking 思考 快速',
+    action: 'set_fast'
+  },
+  {
+    id: 'skills',
+    title: '浏览 Skills',
+    keywords: 'skills $ 技能',
+    action: 'show_skills'
+  },
+  {
+    id: 'stop',
+    title: '停止回合与终端',
+    keywords: 'stop abort terminal 停止 终端',
+    action: 'stop_terminals'
+  },
+  {
     id: 'status',
     title: '会话状态',
     keywords: 'status model permission 状态 模型',

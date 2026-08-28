@@ -1096,6 +1096,11 @@ function registerIpc(): void {
     killTerminal(id)
   })
 
+  ipcMain.handle(IPC.TERMINAL_KILL_ALL, () => {
+    killAllTerminals()
+    return true
+  })
+
   ipcMain.handle(IPC.LIST_AUTOMATIONS, async () => listAutomations())
   ipcMain.handle(IPC.SAVE_AUTOMATIONS, async (_e, jobs) => {
     await saveAutomations(jobs)

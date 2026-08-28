@@ -98,6 +98,14 @@ import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
+import { lastCompletedAssistantText } from '../shared/copy-output'
+import {
+  formatFastStatus,
+  isFastThinkingLevel,
+  parseFastCommand,
+  pickFastThinkingLevel
+} from '../shared/fast-mode'
+import { formatSkillsStatus } from '../shared/skills-status'
 import type { McpStatusServer } from '../shared/mcp-status'
 import { estimateContextUsage } from '../shared/token-estimate'
 import { resolveContextLimit } from '../shared/context-limit'
@@ -266,6 +274,7 @@ export default function App() {
   const threadGoalRef = useRef<ThreadGoal | null>(null)
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const [worktreeMissing, setWorktreeMissing] = useState(false)
+  const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
   const threadRuntimeRef = useRef<ThreadRuntime>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
@@ -3364,6 +3373,97 @@ export default function App() {
         case 'open_settings':
           void handleNavigate('settings', 'models')
           break
+        case 'copy_last_output': {
+          const text = lastCompletedAssistantText(messagesRef.current)
+          if (text) {
+            try {
+              await navigator.clipboard.writeText(text)
+            } catch {
+              /* ignore */
+            }
+          }
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: text ? '已复制上一条助手回复。' : '还没有可复制的助手回复。'
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'set_fast': {
+          const cmd = parseFastCommand(args)
+          const settingsNow = settingsRef.current
+          const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+          const options = provider ? resolveThinkingOptions(provider) : []
+          const currentLevel =
+            provider?.thinkingLevel || (provider ? defaultThinkingLevel(provider) : '')
+          if (cmd !== 'status' && provider && options.length) {
+            const nextLevel = pickFastThinkingLevel(
+              options,
+              cmd === 'on',
+              defaultThinkingLevel(provider)
+            )
+            if (nextLevel) await handleThinkingLevelChange(provider.id, nextLevel)
+          }
+          const after = settingsRef.current.providers.find(
+            (p) => p.id === settingsRef.current.activeProviderId
+          )
+          const level = after?.thinkingLevel || currentLevel
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatFastStatus({
+              supported: options.length > 0,
+              level,
+              fast: isFastThinkingLevel(level)
+            })
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'show_skills': {
+          const cwd = getActiveWorkspacePath(settingsRef.current) || ''
+          const items = window.sharker.listSkills ? await window.sharker.listSkills(cwd) : []
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatSkillsStatus(items, args)
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'stop_terminals': {
+          await handleAbort()
+          if (window.sharker.killAllTerminals) {
+            try {
+              await window.sharker.killAllTerminals()
+            } catch {
+              /* optional */
+            }
+          }
+          break
+        }
+        case 'run_shell': {
+          const cmd = args.trim()
+          handleTogglePanel('terminal')
+          if (cmd) setPendingTerminalCommand(cmd)
+          break
+        }
       }
     },
     [
@@ -4550,6 +4650,8 @@ export default function App() {
           suggestedCommit={suggestedCommit}
           conversationId={activeConversationId}
           focusSubAgentId={focusSubAgentId}
+          pendingTerminalCommand={pendingTerminalCommand}
+          onPendingTerminalCommandSent={() => setPendingTerminalCommand(null)}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

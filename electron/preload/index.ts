@@ -190,6 +190,7 @@ contextBridge.exposeInMainWorld('sharker', {
   resizeTerminal: (id: string, cols: number, rows: number) =>
     ipcRenderer.invoke(IPC.TERMINAL_RESIZE, id, cols, rows),
   killTerminal: (id: string) => ipcRenderer.invoke(IPC.TERMINAL_KILL, id),
+  killAllTerminals: () => ipcRenderer.invoke(IPC.TERMINAL_KILL_ALL),
   onTerminalData: (cb: (payload: { id: string; data: string }) => void) => {
     const handler = (_: unknown, payload: { id: string; data: string }) => cb(payload)
     ipcRenderer.on('terminal:data', handler)

@@ -49,6 +49,7 @@
 | `workspace:init-agents-md` | `/init` 在仓库根写 AGENTS.md |
 | `memory:list` | `/memories` 列出相关记忆 |
 | `workspace:inspect-worktree` | 隔离目录是否存在、有无快照 |
+| `terminal:kill-all` | `/stop` 关掉全部集成终端 |
 
 ## 数据流
 

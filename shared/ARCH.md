@@ -41,7 +41,7 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘G 搜对话） |
+| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘G 搜对话、⌘⇧O 新对话） |
 | `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘G |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词 |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
@@ -111,7 +111,15 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/archive、/init、/permissions、/memories、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/archive、/init、/permissions、/memories、/copy、/fast、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree） |
+| `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
+| `bang-command.test.ts` | 空 bang / 普通文本 |
+| `fast-mode.ts` | `/fast` 解析与思考档位选择 |
+| `fast-mode.test.ts` | on/off、off/low 优先 |
+| `copy-output.ts` | `/copy` 取最近一条助手正文 |
+| `copy-output.test.ts` | 跳过空助手行 |
+| `skills-status.ts` | `/skills` 已安装列表 |
+| `skills-status.test.ts` | 过滤 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架 |
 | `agents-md.test.ts` | override 优先、目录链、截断 |
 | `memory-command.ts` | `/memories` 开关解析与条目文案 |
