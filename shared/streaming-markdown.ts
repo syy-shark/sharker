@@ -1675,6 +1675,7 @@ function stealItemSetext(
   const src = cheapInlineSourceAll(item.nodes)
   const title = src.split('\n').pop() ?? ''
   if (!title) return false
+  if (marker === '-' && looksLikeGfmTableCells(title)) return false
   if (src === title) item.nodes = []
   else item.nodes = inline(src.slice(0, -(title.length + 1)))
   appendItemBlock(item, {
@@ -2150,8 +2151,29 @@ export function parseCheapProseBlocks(
         continue
       }
     }
+    if (
+      table &&
+      table.length &&
+      !/^\s*\|/.test(table[0] ?? '') &&
+      line.trim() !== '' &&
+      !parseListLine(line) &&
+      !parseHeadingLine(line) &&
+      !FENCE_RE.test(line) &&
+      !HR_RE.test(line) &&
+      !QUOTE_RE.test(line)
+    ) {
+      table.push(line)
+      continue
+    }
     if (para.length && !list && !quote.length && !table && !pre && SETEXT_RE.test(line)) {
       const marker = line.trim()[0]
+      if (
+        marker === '-' &&
+        para.length === 1 &&
+        looksLikeGfmTableCells(para[0]!)
+      ) {
+        continue
+      }
       if (marker === '=' || marker === '-') {
         const title = para.join('\n')
         para = []

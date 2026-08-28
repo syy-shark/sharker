@@ -619,6 +619,24 @@ describe('splitStreamingMarkdown', () => {
       expect(pipeless[0].header).toHaveLength(2)
       expect(pipeless[0].rows).toHaveLength(1)
     }
+    expect(parseCheapProseBlocks('Name | Value\n-').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('Name | Value\n---').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('Name | Value\n--- |').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('Name | Value\n--- | -').map((b) => b.type)).toEqual(['table'])
+    expect(parseCheapProseBlocks('Name | Value\n--- | ---\nfoo').map((b) => b.type)).toEqual(['table'])
+    const pipelessDash = parseCheapProseBlocks('Name | Value')
+    const pipelessMid = continueCheapProseBlocks('Name | Value', pipelessDash, 'Name | Value\n---')
+    expect(pipelessMid.map((b) => b.type)).toEqual(['p'])
+    if (pipelessDash[0]?.type === 'p' && pipelessMid[0]?.type === 'p') {
+      expect(pipelessMid[0]).toBe(pipelessDash[0])
+    }
+    const pipelessTable = continueCheapProseBlocks(
+      'Name | Value\n---',
+      pipelessMid,
+      'Name | Value\n--- | ---\nfoo | bar'
+    )
+    expect(pipelessTable.map((b) => b.type)).toEqual(['table'])
+    expect(parseCheapProseBlocks('Title\n---').map((b) => b.type)).toEqual(['heading'])
     expect(parseCheapProseBlocks('see a | b in logs').map((b) => b.type)).toEqual(['p'])
     expect(parseCheapProseBlocks('Overview\n--- | ---\na | b').map((b) => b.type)).toEqual(['p'])
     expect(parseCheapProseBlocks('* * *').map((b) => b.type)).toEqual(['hr'])
