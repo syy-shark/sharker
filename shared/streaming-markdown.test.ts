@@ -139,6 +139,16 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 与 ' },
       { type: 'strong', text: 'bar' }
     ])
+    expect(parseCheapInlineMarkdown('见图 ![示意][d] 后', defs)).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: '示意', href: 'https://a.test/x', raw: '![示意][d]' },
+      { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('见图 ![d] 后', defs)).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: 'd', href: 'https://a.test/x', raw: '![d]' },
+      { type: 'text', text: ' 后' }
+    ])
     expect(parseCheapInlineMarkdown('写给 <dev@a.test> 和 user@a.test 后')).toEqual([
       { type: 'text', text: '写给 ' },
       { type: 'link', text: 'dev@a.test', href: 'mailto:dev@a.test', raw: '<dev@a.test>' },
@@ -182,6 +192,11 @@ describe('splitStreamingMarkdown', () => {
       { type: 'em', text: '粗斜', inner: 'strong' },
       { type: 'text', text: ' 尾' }
     ])
+    expect(parseCheapInlineMarkdown('见 &amp; &#39; 与 **&lt;粗&gt;**')).toEqual([
+      { type: 'text', text: "见 & ' 与 " },
+      { type: 'strong', text: '<粗>' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 &amp')).toEqual([{ type: 'text', text: '半截 &amp' }])
   })
 
   it('hides reference definitions and paints indented code in the live tail', () => {

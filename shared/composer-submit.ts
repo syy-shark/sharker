@@ -1,5 +1,6 @@
 /**
  * Composer 提交键：对标 Codex 桌面端 Follow-up（默认排队）与 CLI Tab 排队。
+ * 空输入 ↑ 优先恢复刚提交的草稿（取消运行 / 取消 worktree 创建后即使还没进对话）。
  * @see shared/ARCH.md
  */
 
@@ -121,12 +122,33 @@ export function resolveComposerSubmit(options: {
   return follow === 'steer' ? 'jump' : 'queue'
 }
 
-/** 输入框为空时 ↑ 恢复上一条用户提示（对标 Codex Restore previous composer prompt） */
+/** 刚提交、对话里可能还没有的草稿（取消运行 / 取消 worktree 创建后 ↑ 恢复） */
+let rememberedSubmittedPrompt = ''
+
+/** 发送时记住原文；空输入 ↑ 优先于对话历史（对标 Codex Troubleshooting） */
+export function rememberSubmittedComposerPrompt(text: string): void {
+  const value = String(text ?? '')
+  if (value.trim()) rememberedSubmittedPrompt = value
+}
+
+export function rememberedSubmittedComposerPrompt(): string {
+  return rememberedSubmittedPrompt
+}
+
+/** 测试用：避免跨用例泄漏 */
+export function resetRememberedSubmittedComposerPrompt(): void {
+  rememberedSubmittedPrompt = ''
+}
+
+/** 输入框为空时 ↑ 恢复刚提交或上一条用户提示（对标 Codex Restore previous composer prompt） */
 export function restorePreviousComposerPrompt(options: {
   input: string
   messages: Array<{ role: string; content: string }>
+  lastSubmitted?: string | null
 }): string | null {
   if (options.input.length > 0) return null
+  const submitted = options.lastSubmitted !== undefined ? options.lastSubmitted : rememberedSubmittedPrompt
+  if (String(submitted ?? '').trim()) return String(submitted)
   return lastUserPrompt(options.messages)
 }
 

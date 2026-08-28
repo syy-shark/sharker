@@ -5,6 +5,8 @@ import {
   isDoubleEscape,
   lastUserMessageId,
   lastUserPrompt,
+  rememberSubmittedComposerPrompt,
+  resetRememberedSubmittedComposerPrompt,
   isFollowUpInvertChord,
   parseComposerEnterBehavior,
   parseFollowUpBehavior,
@@ -154,6 +156,7 @@ describe('composer submit', () => {
   })
 
   it('restores the last user prompt only when the composer is empty', () => {
+    resetRememberedSubmittedComposerPrompt()
     const messages = [
       { role: 'user', content: '先看滚动' },
       { role: 'assistant', content: '好' },
@@ -162,6 +165,23 @@ describe('composer submit', () => {
     expect(restorePreviousComposerPrompt({ input: '', messages })).toBe('再修卡顿')
     expect(restorePreviousComposerPrompt({ input: 'x', messages })).toBeNull()
     expect(restorePreviousComposerPrompt({ input: '', messages: [] })).toBeNull()
+    expect(
+      restorePreviousComposerPrompt({
+        input: '',
+        messages: [],
+        lastSubmitted: '取消 worktree 后恢复'
+      })
+    ).toBe('取消 worktree 后恢复')
+    expect(
+      restorePreviousComposerPrompt({
+        input: 'x',
+        messages: [],
+        lastSubmitted: '取消 worktree 后恢复'
+      })
+    ).toBeNull()
+    rememberSubmittedComposerPrompt('刚提交还没进对话')
+    expect(restorePreviousComposerPrompt({ input: '', messages: [] })).toBe('刚提交还没进对话')
+    resetRememberedSubmittedComposerPrompt()
   })
 
   it('lists and filters prompt history for Ctrl+R', () => {

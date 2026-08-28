@@ -31,6 +31,7 @@ import {
   collectUserPrompts,
   filterPromptHistory,
   lastUserPrompt,
+  rememberSubmittedComposerPrompt,
   resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
@@ -1017,12 +1018,14 @@ export const ComposerDock = memo(
         })
         return
       }
+      const sent = t || (attachments.some((a) => a.kind === 'image') ? '请看这张图片。' : '')
+      rememberSubmittedComposerPrompt(sent)
       setInput('')
       setPendingAttachments([])
       setPastePreviewId(null)
       setAttachmentError('')
       onSubmitted?.()
-      onSend(t || (attachments.some((a) => a.kind === 'image') ? '请看这张图片。' : ''), mode, attachments)
+      onSend(sent, mode, attachments)
       requestAnimationFrame(() => {
         syncTextareaHeight()
         textareaRef.current?.focus()
@@ -1032,6 +1035,7 @@ export const ComposerDock = memo(
     submitVoiceRef.current = (text) => {
       const t = text.trim()
       if (!t) return
+      rememberSubmittedComposerPrompt(t)
       setInput('')
       inputRef.current = ''
       setPendingAttachments([])
