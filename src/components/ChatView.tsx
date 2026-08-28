@@ -370,6 +370,7 @@ export function ChatView({
     }
   }, [fileSearchRoot, mentionQuery?.query, mentionQuery?.start])
 
+  /** 把当前 `@query` 换成选中的工作区相对路径 */
   const pickMention = (relativePath: string) => {
     const next = insertAtMention(input, cursor, relativePath)
     setInput(next.text)

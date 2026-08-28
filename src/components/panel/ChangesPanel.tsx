@@ -87,6 +87,7 @@ export function ChangesPanel({ workspacePath, revision = 0 }: Props) {
     }
   }, [workspacePath, scope])
 
+  /** 执行暂存 / 取消暂存 / 还原；还原前确认 */
   const runAction = useCallback(
     async (action: 'stage' | 'unstage' | 'revert', paths?: string[]) => {
       if (!workspacePath || !window.sharker?.applyGitReviewAction || acting) return
