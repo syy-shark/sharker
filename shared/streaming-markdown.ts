@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、裸 URL、文件引用、标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、`<https>`、裸 URL、文件引用、标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -259,6 +259,18 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
       nodes.push({ type: 'em', text: src.slice(i + 1, end) })
       i = end + 1
       continue
+    }
+    if (src[i] === '<' && /^https?:\/\//i.test(src.slice(i + 1, i + 9))) {
+      const end = src.indexOf('>', i + 1)
+      if (end !== -1) {
+        const href = src.slice(i + 1, end).trim()
+        if (/^https?:\/\/\S+$/i.test(href)) {
+          flush()
+          nodes.push({ type: 'link', text: href, href })
+          i = end + 1
+          continue
+        }
+      }
     }
     if (src.startsWith('![', i) || src[i] === '[') {
       const image = src.startsWith('![', i)

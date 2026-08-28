@@ -77,6 +77,11 @@ describe('splitStreamingMarkdown', () => {
     ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
+    expect(parseCheapInlineMarkdown('见 <https://a.test/x> 后')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: 'https://a.test/x', href: 'https://a.test/x' },
+      { type: 'text', text: ' 后' }
+    ])
     expect(parseCheapInlineMarkdown('见 [文档](https://example.com) 与 https://a.test/path.')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'link', text: '文档', href: 'https://example.com' },

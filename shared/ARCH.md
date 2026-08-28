@@ -34,7 +34,7 @@
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合；`shouldFoldTurnWork` 在正文上屏后收成 Worked for |
-| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价块（标题/列表含缩进嵌套、续行与松散项/引用/表格/分隔线）与行内（链接 / http 图 / 删除线 / 文件引用）；`continueCheapProseBlocks` 复用已闭合列表项/嵌套项/表格行 |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；散文尾廉价块（标题/列表含缩进嵌套、续行与松散项/引用/表格/分隔线）与行内（链接含 `<https>` / http 图 / 删除线 / 文件引用）；`continueCheapProseBlocks` 复用已闭合列表项/嵌套项/表格行 |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id、增量复用、廉价行内（含 http 图 / 删除线）与标题列表（嵌套、续行）/表格 |
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区 |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL、边界匹配 |
@@ -102,8 +102,8 @@
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组 |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
-| `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 表示文本即首轮提示 |
-| `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 / 首轮是否发起 |
+| `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
+| `thread-goal.test.ts` | 设定 / 编辑 / 暂停 / 芯片文案 / 首轮是否发起 |
 | `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文 / 本机今日用量） |
 | `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量 |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
