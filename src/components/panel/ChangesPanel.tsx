@@ -1,5 +1,5 @@
 /**
- * 右侧「变更」审查：对比范围 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
+ * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
  * @see ./ARCH.md
  */
 import { useCallback, useEffect, useState } from 'react'
@@ -7,7 +7,7 @@ import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
 import type { GitReviewAction } from '../../../shared/git-review-actions'
-import { fileInLastTurn, type GitCommitRef } from '../../../shared/git-compare'
+import { type GitCommitRef } from '../../../shared/git-compare'
 import {
   formatReviewCommentsPrompt,
   type ReviewLineComment
@@ -25,6 +25,18 @@ import {
   resolveReviewFileClick,
   reviewFileClickTargetFromElement
 } from '../../../shared/review-file-click'
+import {
+  ALL_REPOS_ID,
+  fileInLastTurnForRepo,
+  formatReviewLineStats,
+  resolveReviewRepoId,
+  reviewFileOpenPath,
+  reviewProbeRoots,
+  shouldShowReviewRepoSelector,
+  sumReviewLineStats,
+  uniqueReviewRepos,
+  type ReviewRepo
+} from '../../../shared/review-repos'
 import './ChangesPanel.css'
 
 interface ChangeFile {
@@ -34,7 +46,10 @@ interface ChangeFile {
   staged?: boolean
   unstaged?: boolean
   untracked?: boolean
+  repoRoot?: string
 }
+
+type RepoSnapshot = ReviewRepo & { files: ChangeFile[] }
 
 type CompareMode = 'uncommitted' | 'last_turn' | 'branch' | 'commit'
 type ReviewScope = 'unstaged' | 'staged'
@@ -55,6 +70,8 @@ interface Props {
   gitBranchPrefix?: string
   /** `/review` 打开时切到对应对比（对标 Codex Review a commit / branch） */
   reviewFocus?: { mode: CompareMode; sha?: string; token: number } | null
+  /** 项目附加文件夹：其中不同 Git 仓库出现在审查选择器 */
+  extraRoots?: string[]
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -84,10 +101,14 @@ export function ChangesPanel({
   agentFindings = [],
   suggestedCommit = '',
   gitBranchPrefix = '',
-  reviewFocus = null
+  reviewFocus = null,
+  extraRoots = []
 }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
+  const [repoSnapshots, setRepoSnapshots] = useState<RepoSnapshot[]>([])
+  const [repoId, setRepoId] = useState('')
+  const [selectedRepoRoot, setSelectedRepoRoot] = useState<string | null>(null)
   const [files, setFiles] = useState<ChangeFile[]>([])
   const [branchFiles, setBranchFiles] = useState<ChangeFile[]>([])
   const [branchBase, setBranchBase] = useState<string | null>(null)
@@ -139,31 +160,97 @@ export function ChangesPanel({
     if (reviewFocus.sha) setCommitSha(reviewFocus.sha)
   }, [reviewFocus])
 
-  const sourceFiles = compare === 'branch' ? branchFiles : compare === 'commit' ? commitFiles : files
+  const gitRepos = repoSnapshots
+  const effectiveRepoId = resolveReviewRepoId({
+    compare,
+    selectedId: repoId,
+    repoRoots: gitRepos.map((r) => r.root)
+  })
+  const isAllRepos = effectiveRepoId === ALL_REPOS_ID
+  const activeRepo = gitRepos.find((r) => r.root === effectiveRepoId) ?? gitRepos[0]
+  const reviewCwd = isAllRepos ? workspacePath : (activeRepo?.root ?? workspacePath)
+  const showRepoSelector = shouldShowReviewRepoSelector(gitRepos.length)
+  const allRepoStats = sumReviewLineStats(gitRepos)
+
+  const taggedRepoFiles = (activeRepo?.files ?? files).map((f) => ({
+    ...f,
+    repoRoot: activeRepo?.root ?? workspacePath
+  }))
+  const lastTurnAllFiles = gitRepos.flatMap((repo) =>
+    repo.files
+      .filter((f) => fileInLastTurnForRepo(f.path, lastTurnPaths, repo.root, workspacePath))
+      .map((f) => ({ ...f, repoRoot: repo.root }))
+  )
+  const sourceFiles =
+    compare === 'branch'
+      ? branchFiles.map((f) => ({ ...f, repoRoot: reviewCwd }))
+      : compare === 'commit'
+        ? commitFiles.map((f) => ({ ...f, repoRoot: reviewCwd }))
+        : compare === 'last_turn' && isAllRepos
+          ? lastTurnAllFiles
+          : taggedRepoFiles
   const readOnly = compare === 'branch' || compare === 'commit'
   const visible = sourceFiles.filter((f) => {
-    if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
+    if (compare === 'last_turn') {
+      return isAllRepos
+        ? true
+        : fileInLastTurnForRepo(f.path, lastTurnPaths, f.repoRoot ?? reviewCwd, workspacePath)
+    }
     if (compare === 'branch') return true
     return scope === 'staged' ? isStaged(f) : isUnstaged(f)
   })
-  const stagedCount = files.filter(isStaged).length
+  const stagedCount = taggedRepoFiles.filter(isStaged).length
 
   const refresh = useCallback(async () => {
     if (!workspacePath || !window.sharker?.getGitStatusChanges) {
       setIsRepo(false)
       setFiles([])
+      setRepoSnapshots([])
       setBranchFiles([])
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const result = await window.sharker.getGitStatusChanges(workspacePath)
-      setIsRepo(result.isRepo)
-      setBranch(result.branch)
-      setFiles(result.files)
-      if (window.sharker.getGitBranchChanges) {
-        const branchResult = await window.sharker.getGitBranchChanges(workspacePath)
+      const probes = reviewProbeRoots(workspacePath, extraRoots)
+      const snapshots = await Promise.all(
+        probes.map(async (root) => {
+          const result = await window.sharker.getGitStatusChanges(root)
+          return {
+            probeRoot: root,
+            isRepo: result.isRepo,
+            toplevel: result.toplevel,
+            commonDir: result.commonDir,
+            branch: result.branch,
+            added: result.added ?? 0,
+            removed: result.removed ?? 0,
+            files: result.files
+          }
+        })
+      )
+      const unique = uniqueReviewRepos(snapshots)
+      const nextRepos: RepoSnapshot[] = unique.map((repo) => {
+        const hit =
+          snapshots.find((row) => (row.toplevel || row.probeRoot) === repo.root) ??
+          snapshots.find((row) => row.probeRoot === repo.root)
+        return { ...repo, files: hit?.files ?? [] }
+      })
+      setRepoSnapshots(nextRepos)
+      const nextId = resolveReviewRepoId({
+        compare,
+        selectedId: repoId,
+        repoRoots: nextRepos.map((r) => r.root)
+      })
+      const nextAll = nextId === ALL_REPOS_ID
+      const nextActive = nextRepos.find((r) => r.root === nextId) ?? nextRepos[0]
+      const cwd = nextAll ? workspacePath : (nextActive?.root ?? workspacePath)
+      setIsRepo(nextRepos.length > 0)
+      setBranch(nextActive?.branch ?? '')
+      setFiles(nextActive?.files ?? [])
+      if (!nextAll && nextActive?.root) setSelectedRepoRoot(nextActive.root)
+
+      if (!nextAll && window.sharker.getGitBranchChanges) {
+        const branchResult = await window.sharker.getGitBranchChanges(cwd)
         setBranchBase(branchResult.base)
         setBranchFiles(branchResult.files)
         if (compare === 'branch') {
@@ -172,9 +259,12 @@ export function ChangesPanel({
             return branchResult.files[0]?.path ?? null
           })
         }
+      } else if (nextAll) {
+        setBranchBase(null)
+        setBranchFiles([])
       }
-      if (compare === 'commit' && window.sharker.getGitCommitChanges) {
-        const commitResult = await window.sharker.getGitCommitChanges(workspacePath, commitSha)
+      if (!nextAll && compare === 'commit' && window.sharker.getGitCommitChanges) {
+        const commitResult = await window.sharker.getGitCommitChanges(cwd, commitSha)
         setCommits(commitResult.commits)
         setCommitSha(commitResult.sha)
         setCommitFiles(commitResult.files)
@@ -186,17 +276,33 @@ export function ChangesPanel({
         }
       }
       if (compare !== 'branch' && compare !== 'commit') {
+        const nextList = nextAll
+          ? nextRepos.flatMap((repo) =>
+              repo.files
+                .filter((f) => fileInLastTurnForRepo(f.path, lastTurnPaths, repo.root, workspacePath))
+                .map((f) => ({ ...f, repoRoot: repo.root }))
+            )
+          : (nextActive?.files ?? []).filter((f) => {
+              if (compare === 'last_turn') {
+                return fileInLastTurnForRepo(
+                  f.path,
+                  lastTurnPaths,
+                  nextActive?.root ?? cwd,
+                  workspacePath
+                )
+              }
+              return scope === 'staged' ? isStaged(f) : isUnstaged(f)
+            })
         setSelectedPath((prev) => {
-          const nextList = result.files.filter((f) => {
-            if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
-            return scope === 'staged' ? isStaged(f) : isUnstaged(f)
-          })
           if (prev && nextList.some((f) => f.path === prev)) return prev
-          return nextList[0]?.path ?? result.files[0]?.path ?? null
+          return nextList[0]?.path ?? nextActive?.files[0]?.path ?? null
         })
+        if (nextAll) {
+          setSelectedRepoRoot(nextList[0]?.repoRoot ?? null)
+        }
       }
-      if (window.sharker.getPullRequestContext) {
-        const pr = await window.sharker.getPullRequestContext(workspacePath)
+      if (!nextAll && window.sharker.getPullRequestContext) {
+        const pr = await window.sharker.getPullRequestContext(cwd)
         if (pr.ok) {
           setPrContext(pr.context)
           if (pr.context.comments.length) {
@@ -211,21 +317,29 @@ export function ChangesPanel({
         } else {
           setPrContext(null)
         }
+      } else if (nextAll) {
+        setPrContext(null)
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
       setFiles([])
+      setRepoSnapshots([])
       setBranchFiles([])
       setCommitFiles([])
     } finally {
       setLoading(false)
     }
-  }, [workspacePath, scope, compare, lastTurnPaths, commitSha])
+  }, [workspacePath, extraRoots, repoId, scope, compare, lastTurnPaths, commitSha])
 
   /** 执行暂存 / 取消暂存 / 还原；还原前确认 */
   const runAction = useCallback(
-    async (action: 'stage' | 'unstage' | 'revert', paths?: string[]) => {
-      if (!workspacePath || !window.sharker?.applyGitReviewAction || acting || readOnly) return
+    async (action: 'stage' | 'unstage' | 'revert', paths?: string[], cwd?: string) => {
+      const gitRoot = cwd || reviewCwd
+      if (!gitRoot || !window.sharker?.applyGitReviewAction || acting || readOnly) return
+      if (isAllRepos && !cwd) {
+        setError('选择一个仓库后再批量暂存或还原')
+        return
+      }
       if (action === 'revert') {
         const label = paths?.length === 1 ? paths[0] : '全部未提交变更'
         if (!window.confirm(`确定还原 ${label}？此操作不可撤销。`)) return
@@ -233,7 +347,7 @@ export function ChangesPanel({
       setActing(true)
       setError(null)
       try {
-        const result = await window.sharker.applyGitReviewAction(workspacePath, action, paths)
+        const result = await window.sharker.applyGitReviewAction(gitRoot, action, paths)
         if (!result.ok) setError(result.error || 'Git 操作失败')
         await refresh()
       } catch (e) {
@@ -242,14 +356,14 @@ export function ChangesPanel({
         setActing(false)
       }
     },
-    [acting, readOnly, refresh, workspacePath]
+    [acting, isAllRepos, readOnly, refresh, reviewCwd]
   )
 
   /** hunk 级暂存 / 取消暂存 / 还原 */
   const runHunkAction = useCallback(
     async (hunk: DiffHunk, action: GitReviewAction) => {
       if (
-        !workspacePath ||
+        !reviewCwd ||
         !selectedPath ||
         !window.sharker?.applyGitHunkAction ||
         acting ||
@@ -257,18 +371,23 @@ export function ChangesPanel({
       ) {
         return
       }
+      const gitRoot = selectedRepoRoot || reviewCwd
       setActing(true)
       setError(null)
       try {
-        const result = await window.sharker.applyGitHunkAction(workspacePath, {
+        const result = await window.sharker.applyGitHunkAction(gitRoot, {
           action,
           path: selectedPath,
           scope,
           patch: buildHunkPatch({
             path: selectedPath,
             hunk,
-            isNew: isNewGitChange(files.find((f) => f.path === selectedPath)?.status ?? ''),
-            isDeleted: isDeletedGitChange(files.find((f) => f.path === selectedPath)?.status ?? '')
+            isNew: isNewGitChange(
+              sourceFiles.find((f) => f.path === selectedPath)?.status ?? ''
+            ),
+            isDeleted: isDeletedGitChange(
+              sourceFiles.find((f) => f.path === selectedPath)?.status ?? ''
+            )
           })
         })
         if (!result.ok) setError(result.error || 'hunk 操作失败')
@@ -279,16 +398,16 @@ export function ChangesPanel({
         setActing(false)
       }
     },
-    [acting, files, readOnly, refresh, scope, selectedPath, workspacePath]
+    [acting, readOnly, refresh, reviewCwd, scope, selectedPath, selectedRepoRoot, sourceFiles]
   )
 
   const runCommit = useCallback(async () => {
-    if (!workspacePath || !window.sharker?.commitGitChanges || acting) return
+    if (!reviewCwd || isAllRepos || !window.sharker?.commitGitChanges || acting) return
     setActing(true)
     setError(null)
     setCommitHint(null)
     try {
-      const result = await window.sharker.commitGitChanges(workspacePath, commitMessage)
+      const result = await window.sharker.commitGitChanges(reviewCwd, commitMessage)
       if (!result.ok) {
         setError(result.error || '提交失败')
         return
@@ -301,14 +420,14 @@ export function ChangesPanel({
     } finally {
       setActing(false)
     }
-  }, [acting, commitMessage, refresh, workspacePath])
+  }, [acting, commitMessage, isAllRepos, refresh, reviewCwd])
 
   const runCreateBranch = useCallback(async () => {
-    if (!workspacePath || !window.sharker?.createGitBranch || acting) return
+    if (!reviewCwd || isAllRepos || !window.sharker?.createGitBranch || acting) return
     setActing(true)
     setError(null)
     try {
-      const result = await window.sharker.createGitBranch(workspacePath, branchName)
+      const result = await window.sharker.createGitBranch(reviewCwd, branchName)
       if (!result.ok) {
         setError(result.error || '创建分支失败')
         return
@@ -321,16 +440,16 @@ export function ChangesPanel({
     } finally {
       setActing(false)
     }
-  }, [acting, branchName, refresh, workspacePath])
+  }, [acting, branchName, isAllRepos, refresh, reviewCwd])
 
   const runCreatePr = useCallback(async () => {
-    if (!workspacePath || !window.sharker?.createGitPullRequest || acting) return
+    if (!reviewCwd || isAllRepos || !window.sharker?.createGitPullRequest || acting) return
     setActing(true)
     setError(null)
     setCommitHint(null)
     try {
       const title = prTitle.trim() || commitMessage.trim()
-      const result = await window.sharker.createGitPullRequest(workspacePath, {
+      const result = await window.sharker.createGitPullRequest(reviewCwd, {
         title,
         body: commitMessage.trim() && prTitle.trim() ? commitMessage.trim() : undefined,
         base: branchBase ?? undefined
@@ -346,15 +465,15 @@ export function ChangesPanel({
     } finally {
       setActing(false)
     }
-  }, [acting, branchBase, commitMessage, prTitle, workspacePath])
+  }, [acting, branchBase, commitMessage, isAllRepos, prTitle, reviewCwd])
 
   const runPush = useCallback(async () => {
-    if (!workspacePath || !window.sharker?.pushGitBranch || acting) return
+    if (!reviewCwd || isAllRepos || !window.sharker?.pushGitBranch || acting) return
     setActing(true)
     setError(null)
     setCommitHint(null)
     try {
-      const result = await window.sharker.pushGitBranch(workspacePath)
+      const result = await window.sharker.pushGitBranch(reviewCwd)
       if (!result.ok) {
         setError(result.error || '推送失败')
         return
@@ -365,7 +484,7 @@ export function ChangesPanel({
     } finally {
       setActing(false)
     }
-  }, [acting, workspacePath])
+  }, [acting, isAllRepos, reviewCwd])
 
   useEffect(() => {
     void refresh()
@@ -376,19 +495,22 @@ export function ChangesPanel({
   }, [refresh, revision])
 
   useEffect(() => {
-    if (!workspacePath || !selectedPath || !window.sharker?.getGitFileDiff) {
+    const gitRoot = selectedRepoRoot || reviewCwd
+    if (!gitRoot || !selectedPath || !window.sharker?.getGitFileDiff) {
       setDiff(null)
       setDiffError(null)
       return
     }
-    const file = sourceFiles.find((f) => f.path === selectedPath)
+    const file = sourceFiles.find(
+      (f) => f.path === selectedPath && (!selectedRepoRoot || f.repoRoot === selectedRepoRoot)
+    )
     let cancelled = false
     setDiffLoading(true)
     setDiffError(null)
     const diffScope = compare === 'branch' ? 'branch' : compare === 'commit' ? 'commit' : scope
     void window.sharker
       .getGitFileDiff(
-        workspacePath,
+        gitRoot,
         selectedPath,
         file?.status ?? 'M',
         diffScope,
@@ -416,7 +538,7 @@ export function ChangesPanel({
     return () => {
       cancelled = true
     }
-  }, [sourceFiles, selectedPath, workspacePath, revision, scope, compare, commitSha])
+  }, [sourceFiles, selectedPath, selectedRepoRoot, reviewCwd, revision, scope, compare, commitSha])
 
   if (!workspacePath) {
     return (
@@ -426,7 +548,9 @@ export function ChangesPanel({
     )
   }
 
-  const selected = sourceFiles.find((f) => f.path === selectedPath)
+  const selected = sourceFiles.find(
+    (f) => f.path === selectedPath && (!selectedRepoRoot || f.repoRoot === selectedRepoRoot)
+  )
   const emptyCopy =
     compare === 'last_turn'
       ? lastTurnPaths.length === 0
@@ -450,7 +574,7 @@ export function ChangesPanel({
         <div className="changes-panel__title">
           <FileDiff size={15} aria-hidden />
           <span>审查</span>
-          {isRepo && branch ? (
+          {isRepo && !isAllRepos && branch ? (
             <span className="changes-panel__branch" title={branch}>
               <GitBranch size={12} aria-hidden />
               {branch}
@@ -494,7 +618,37 @@ export function ChangesPanel({
         </div>
       </div>
 
-      {isRepo && branch === 'HEAD' ? (
+      {showRepoSelector ? (
+        <label className="changes-panel__commit-pick">
+          <span className="changes-panel__commit-pick-label">仓库</span>
+          <select
+            className="changes-panel__commit-select"
+            value={effectiveRepoId}
+            onChange={(event) => setRepoId(event.target.value)}
+            aria-label="选择要审查的仓库"
+          >
+            {compare === 'last_turn' ? (
+              <option value={ALL_REPOS_ID}>
+                全部仓库
+                {formatReviewLineStats(allRepoStats.added, allRepoStats.removed)
+                  ? `  ${formatReviewLineStats(allRepoStats.added, allRepoStats.removed)}`
+                  : ''}
+              </option>
+            ) : null}
+            {gitRepos.map((repo) => {
+              const stats = formatReviewLineStats(repo.added, repo.removed)
+              return (
+                <option key={repo.root} value={repo.root} title={repo.root}>
+                  {repo.label}
+                  {stats ? `  ${stats}` : ''}
+                </option>
+              )
+            })}
+          </select>
+        </label>
+      ) : null}
+
+      {isRepo && !isAllRepos && branch === 'HEAD' ? (
         <form
           className="changes-panel__commit"
           onSubmit={(e) => {
@@ -606,7 +760,7 @@ export function ChangesPanel({
         </label>
       ) : null}
 
-      {isRepo && !readOnly && files.length > 0 && compare === 'uncommitted' ? (
+      {isRepo && !readOnly && !isAllRepos && files.length > 0 && compare === 'uncommitted' ? (
         <div className="changes-panel__toolbar">
           <div className="changes-panel__scopes" role="tablist" aria-label="暂存范围">
             <button
@@ -665,7 +819,7 @@ export function ChangesPanel({
         </div>
       ) : null}
 
-      {isRepo && !readOnly ? (
+      {isRepo && !readOnly && !isAllRepos ? (
         <form
           className="changes-panel__commit"
           onSubmit={(e) => {
@@ -699,7 +853,7 @@ export function ChangesPanel({
         </form>
       ) : null}
 
-      {isRepo && !readOnly ? (
+      {isRepo && !readOnly && !isAllRepos ? (
         <form
           className="changes-panel__commit"
           onSubmit={(e) => {
@@ -745,10 +899,10 @@ export function ChangesPanel({
 
       {!isRepo ? (
         <div className="changes-panel--empty">
-          <p>当前工作区不是 git 仓库</p>
-          <p className="changes-panel__hint">会话内文件 diff 仍显示在助手消息中</p>
+          <p>没有可审查的 git 仓库</p>
+          <p className="changes-panel__hint">主文件夹或附加文件夹需要各自是独立仓库</p>
         </div>
-      ) : compare !== 'branch' && files.length === 0 && compare === 'uncommitted' ? (
+      ) : compare !== 'branch' && taggedRepoFiles.length === 0 && compare === 'uncommitted' ? (
         <div className="changes-panel--empty">
           <p>工作区干净，无未提交变更</p>
           <p className="changes-panel__hint">Agent 改文件后，点文件名打开预览，点行背景展开 diff</p>
@@ -760,28 +914,35 @@ export function ChangesPanel({
       ) : (
         <div className="changes-panel__body">
           <ul className="changes-panel__list" role="listbox" aria-label="变更文件">
-            {visible.map((f) => (
-              <li key={`${f.raw}:${f.path}`}>
-                <div className={`changes-panel__row${selectedPath === f.path ? ' is-selected' : ''}`}>
+            {visible.map((f) => {
+              const gitRoot = f.repoRoot ?? reviewCwd
+              const openPath = reviewFileOpenPath(f.path, gitRoot, workspacePath)
+              const displayPath = isAllRepos ? openPath : f.path
+              const selected =
+                selectedPath === f.path && (!selectedRepoRoot || selectedRepoRoot === gitRoot)
+              return (
+              <li key={`${gitRoot}:${f.raw}:${f.path}`}>
+                <div className={`changes-panel__row${selected ? ' is-selected' : ''}`}>
                   <button
                     type="button"
                     className="changes-panel__item"
                     title="展开或收起 diff"
-                    aria-selected={selectedPath === f.path}
+                    aria-selected={selected}
                     onClick={(e) => {
                       const intent = resolveReviewFileClick(reviewFileClickTargetFromElement(e.target))
                       if (intent === 'open') {
-                        dispatchOpenWorkspaceFile({ path: f.path })
+                        dispatchOpenWorkspaceFile({ path: openPath })
                         return
                       }
-                      setSelectedPath((prev) => (prev === f.path ? null : f.path))
+                      setSelectedRepoRoot(gitRoot)
+                      setSelectedPath((prev) => (prev === f.path && selectedRepoRoot === gitRoot ? null : f.path))
                     }}
                   >
                     <span className={`changes-panel__status status-${f.status.trim().charAt(0) || 'M'}`}>
                       {statusLabel(f)}
                     </span>
-                    <span className="changes-panel__path" data-review-file-name title={`${f.path} · 打开预览`}>
-                      {f.path}
+                    <span className="changes-panel__path" data-review-file-name title={`${openPath} · 打开预览`}>
+                      {displayPath}
                     </span>
                   </button>
                   {!readOnly ? (
@@ -791,7 +952,7 @@ export function ChangesPanel({
                           type="button"
                           className="changes-panel__action"
                           disabled={acting}
-                          onClick={() => void runAction('stage', [f.path])}
+                          onClick={() => void runAction('stage', [f.path], gitRoot)}
                         >
                           暂存
                         </button>
@@ -801,7 +962,7 @@ export function ChangesPanel({
                           type="button"
                           className="changes-panel__action"
                           disabled={acting}
-                          onClick={() => void runAction('unstage', [f.path])}
+                          onClick={() => void runAction('unstage', [f.path], gitRoot)}
                         >
                           取消暂存
                         </button>
@@ -810,7 +971,7 @@ export function ChangesPanel({
                         type="button"
                         className="changes-panel__action changes-panel__action--danger"
                         disabled={acting}
-                        onClick={() => void runAction('revert', [f.path])}
+                        onClick={() => void runAction('revert', [f.path], gitRoot)}
                       >
                         还原
                       </button>
@@ -818,7 +979,8 @@ export function ChangesPanel({
                   ) : null}
                 </div>
               </li>
-            ))}
+              )
+            })}
           </ul>
           <div className="changes-panel__diff">
             {selected && !readOnly && (isStaged(selected) || isUnstaged(selected)) ? (
@@ -828,7 +990,9 @@ export function ChangesPanel({
                     type="button"
                     className="changes-panel__action"
                     disabled={acting}
-                    onClick={() => void runAction('stage', [selected.path])}
+                    onClick={() =>
+                      void runAction('stage', [selected.path], selected.repoRoot ?? reviewCwd)
+                    }
                   >
                     暂存此文件
                   </button>
@@ -838,7 +1002,9 @@ export function ChangesPanel({
                     type="button"
                     className="changes-panel__action"
                     disabled={acting}
-                    onClick={() => void runAction('unstage', [selected.path])}
+                    onClick={() =>
+                      void runAction('unstage', [selected.path], selected.repoRoot ?? reviewCwd)
+                    }
                   >
                     取消暂存此文件
                   </button>
@@ -847,7 +1013,9 @@ export function ChangesPanel({
                   type="button"
                   className="changes-panel__action changes-panel__action--danger"
                   disabled={acting}
-                  onClick={() => void runAction('revert', [selected.path])}
+                  onClick={() =>
+                    void runAction('revert', [selected.path], selected.repoRoot ?? reviewCwd)
+                  }
                 >
                   还原此文件
                 </button>
@@ -866,7 +1034,15 @@ export function ChangesPanel({
                   wrapLines={wrapLines}
                   onOpenLine={
                     selectedPath
-                      ? (line) => dispatchOpenWorkspaceFile({ path: selectedPath, line })
+                      ? (line) =>
+                          dispatchOpenWorkspaceFile({
+                            path: reviewFileOpenPath(
+                              selectedPath,
+                              selectedRepoRoot || reviewCwd,
+                              workspacePath
+                            ),
+                            line
+                          })
                       : undefined
                   }
                   review={{
@@ -904,12 +1080,12 @@ export function ChangesPanel({
                         disabled={acting || localCommentsForGithub(comments).length === 0}
                         onClick={() => {
                           void (async () => {
-                            if (!workspacePath) return
+                            if (!reviewCwd || isAllRepos) return
                             setActing(true)
                             setError(null)
                             try {
                               const result = await window.sharker.postPullRequestReview(
-                                workspacePath,
+                                reviewCwd,
                                 comments
                               )
                               if (!result.ok) {

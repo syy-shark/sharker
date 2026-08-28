@@ -59,3 +59,22 @@ export function parseGitStatusPorcelain(porcelain: string): GitStatusChange[] {
     .map((line) => parseGitStatusLine(line))
     .filter((row): row is GitStatusChange => Boolean(row))
 }
+
+/** `git diff --numstat`：二进制列为 `-`，不计入 */
+export function parseGitNumstat(text: string): { added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (const raw of String(text ?? '').split('\n')) {
+    const line = raw.trimEnd()
+    if (!line) continue
+    const tab1 = line.indexOf('\t')
+    if (tab1 < 0) continue
+    const tab2 = line.indexOf('\t', tab1 + 1)
+    if (tab2 < 0) continue
+    const plus = line.slice(0, tab1)
+    const minus = line.slice(tab1 + 1, tab2)
+    if (plus !== '-') added += Number(plus) || 0
+    if (minus !== '-') removed += Number(minus) || 0
+  }
+  return { added, removed }
+}

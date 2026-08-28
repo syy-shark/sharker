@@ -41,7 +41,7 @@
 | `MermaidBlock.tsx` / `.css` | 闭合 ```mermaid 内联成图（对标 Codex transcript Mermaid）；`securityLevel:strict`；失败回退代码块；未闭合直播不解析；命中 SVG 缓存则首帧直接成图，避免收束重挂闪回源码 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
-| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix` 与 `/review` 对比焦点；文件树传入对话引用预览与项目附加文件夹；终端按线程挂载（开过一次后切 Tab 不卸）；终端划选可旁路提问；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
+| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix`、`/review` 对比焦点与项目附加文件夹（跨仓库审查）；文件树传入对话引用预览与项目附加文件夹；终端按线程挂载（开过一次后切 Tab 不卸）；终端划选可旁路提问；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |

@@ -175,6 +175,10 @@ export interface SharkerApi {
       unstaged?: boolean
       untracked?: boolean
     }[]
+    added?: number
+    removed?: number
+    toplevel?: string
+    commonDir?: string
   }>
   applyGitReviewAction: (
     cwd: string,

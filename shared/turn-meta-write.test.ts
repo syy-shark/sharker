@@ -7,6 +7,9 @@ describe('extractChangedRelPaths', () => {
       extractChangedRelPaths('write_file', { path: '/proj/src/a.ts' }, '/proj')
     ).toEqual(['src/a.ts'])
     expect(extractChangedRelPaths('read_file', { path: '/proj/src/a.ts' }, '/proj')).toEqual([])
+    expect(
+      extractChangedRelPaths('write_file', { path: '/extra/lib/a.ts' }, '/proj')
+    ).toEqual(['/extra/lib/a.ts'])
   })
 
   it('extracts apply_patch hunk paths', () => {

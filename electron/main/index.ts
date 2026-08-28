@@ -105,7 +105,7 @@ import {
   type GitReviewIo
 } from '../../shared/git-review-actions'
 import { applyGitHunkAction } from '../../shared/git-hunk-actions'
-import { parseGitStatusPorcelain } from '../../shared/git-status'
+import { parseGitNumstat, parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges, listCommitChanges, listRecentCommits } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
@@ -1479,15 +1479,41 @@ function registerIpc(): void {
     }
   })
 
-  /** 工作区 git 变更列表（右侧 Changes 面板） */
+  /** 工作区 git 变更列表（右侧 Changes 面板；可探附加 Git 根） */
   ipcMain.handle(IPC.GIT_STATUS_CHANGES, async (_e, cwd: string) => {
+    const empty = {
+      isRepo: false,
+      branch: '',
+      files: [] as { status: string; path: string; raw: string }[],
+      added: 0,
+      removed: 0,
+      toplevel: '',
+      commonDir: ''
+    }
     try {
-      const branch = (await runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
-      const porcelain = await runGit(cwd, ['status', '--porcelain', '-uall'], { trim: false })
+      const root = path.resolve(String(cwd || ''))
+      if (!root) return empty
+      const branch = (await runGit(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
+      const toplevel = (await runGit(root, ['rev-parse', '--show-toplevel'])).trim()
+      let commonDir = (await runGit(root, ['rev-parse', '--git-common-dir'])).trim()
+      if (commonDir && !path.isAbsolute(commonDir)) {
+        commonDir = path.resolve(root, commonDir)
+      }
+      const porcelain = await runGit(root, ['status', '--porcelain', '-uall'], { trim: false })
       const files = parseGitStatusPorcelain(porcelain)
-      return { isRepo: true, branch, files }
+      let added = 0
+      let removed = 0
+      try {
+        const numstat = await runGit(root, ['diff', '--numstat', 'HEAD'], { trim: false })
+        const stats = parseGitNumstat(numstat)
+        added = stats.added
+        removed = stats.removed
+      } catch {
+        // 还没有 HEAD（空仓）
+      }
+      return { isRepo: true, branch, files, added, removed, toplevel, commonDir }
     } catch {
-      return { isRepo: false, branch: '', files: [] as { status: string; path: string; raw: string }[] }
+      return empty
     }
   })
 

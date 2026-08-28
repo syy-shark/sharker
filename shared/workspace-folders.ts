@@ -1,6 +1,7 @@
 /**
  * 项目附加文件夹：对标 Codex desktop Edit project（主文件夹 + 次文件夹）。
- * 新对话 / Git / AGENTS.md / Skill 仍走主路径；附加路径只给搜索与读写。
+ * 新对话 / Git / AGENTS.md / Skill 仍走主路径；附加路径给搜索、读写，
+ * 以及审查面板里「不同 Git 仓库」的选择器（同仓子目录不另开一项）。
  * @see shared/ARCH.md
  */
 

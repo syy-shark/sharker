@@ -383,6 +383,7 @@ export function RightPanel({
             suggestedCommit={suggestedCommit}
             onSendComments={onSendReviewComments}
             gitBranchPrefix={gitBranchPrefix}
+            extraRoots={extraRoots}
           />
         )}
         {tab === 'browser' && <EmbeddedBrowser />}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGitStatusLine, parseGitStatusPorcelain } from './git-status'
+import { parseGitNumstat, parseGitStatusLine, parseGitStatusPorcelain } from './git-status'
 
 describe('git status porcelain', () => {
   it('marks untracked files as unstaged only', () => {
@@ -46,5 +46,9 @@ describe('git status porcelain', () => {
   it('parses a multi-line porcelain dump', () => {
     const files = parseGitStatusPorcelain(' M a.ts\n?? b.ts\n')
     expect(files.map((f) => f.path)).toEqual(['a.ts', 'b.ts'])
+    expect(parseGitNumstat('3\t1\tsrc/a.ts\n-\t-\tbin/x.png\n2\t0\tREADME.md\n')).toEqual({
+      added: 5,
+      removed: 1
+    })
   })
 })

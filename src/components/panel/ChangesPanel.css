@@ -138,6 +138,10 @@
   padding: 6px 12px 0;
 }
 
+.changes-panel__commit-pick .changes-panel__commit-select option {
+  font-variant-numeric: tabular-nums;
+}
+
 .changes-panel__commit-pick-label {
   flex-shrink: 0;
   color: var(--text-muted);

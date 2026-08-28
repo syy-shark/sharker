@@ -17,8 +17,10 @@
 | `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
-| `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同（对标 Codex Edit project secondary folders） |
+| `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同（对标 Codex Edit project secondary folders）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复 |
+| `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮默认 All repos、附加根文件用目录名前缀打开（对标 Codex Review changes across repositories） |
+| `review-repos.test.ts` | 同仓子目录合并、本轮 All repos、附加根路径匹配 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读 |
@@ -47,8 +49,8 @@
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
-| `git-status.ts` | porcelain 行解析：暂存 / 未暂存 / 未跟踪 |
-| `git-status.test.ts` | porcelain XY / 重命名 / 未跟踪 |
+| `git-status.ts` | porcelain 行解析：暂存 / 未暂存 / 未跟踪；`parseGitNumstat` 给审查选择器 +/- |
+| `git-status.test.ts` | porcelain XY / 重命名 / 未跟踪 / numstat |
 | `git-review-actions.ts` | 审查动作：暂存、取消暂存、还原（路径锁工作区） |
 | `git-review-actions.test.ts` | 临时仓库验证 stage / unstage / revert |
 | `at-mention.ts` | Composer `@` 查询解析与插入 |
