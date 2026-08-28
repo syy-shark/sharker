@@ -184,6 +184,14 @@ export function shouldFoldTurnWork(options: {
   return options.contentStreaming || !options.isStreaming
 }
 
+/** 回答刚上屏时收回用户展开的 Thought / Worked for，避免过程区在直播回答上方突然长高 */
+export function shouldCollapseProcessOnAnswerStart(
+  contentStreaming: boolean,
+  wasContentStreaming: boolean
+): boolean {
+  return contentStreaming && !wasContentStreaming
+}
+
 /** 过程区起止：最早 startedAt → 最晚 endedAt */
 export function turnProcessBounds(
   segments: Array<{ startedAt?: number; endedAt?: number }>

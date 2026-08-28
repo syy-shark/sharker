@@ -3,7 +3,7 @@
  * - 思考：默认折叠成「思考中」（对标 Codex），点开才看旁白，避免顶着回答长高
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
- * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）
+ * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -21,6 +21,7 @@ import {
   liveThoughtBody,
   liveThinkingText,
   processElapsedSeconds,
+  shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
   shouldSynthesizePlanning,
   turnProcessBounds
@@ -505,11 +506,23 @@ export function TurnFlow({
   const userThoughtRef = useRef(false)
   const [workedOpen, setWorkedOpen] = useState(false)
   const userWorkedRef = useRef(false)
+  const wasContentStreamingRef = useRef(contentStreaming)
   useEffect(() => {
     return () => {
       if (stickyTimerRef.current) clearTimeout(stickyTimerRef.current)
     }
   }, [])
+  useEffect(() => {
+    if (
+      shouldCollapseProcessOnAnswerStart(contentStreaming, wasContentStreamingRef.current)
+    ) {
+      userWorkedRef.current = false
+      setWorkedOpen(false)
+      userThoughtRef.current = false
+      setThoughtOpen(false)
+    }
+    wasContentStreamingRef.current = contentStreaming
+  }, [contentStreaming])
 
   const chronological = useMemo(
     () => deriveChronologicalSteps(segments, { isStreaming }),

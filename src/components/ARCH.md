@@ -24,7 +24,7 @@
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、弹出窗 Always on top、Hand off 交接本地/隔离（对标 Codex header）、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上（对标 Codex 时序）；过程区间距固定，不在正文出现时再加分隔；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；完成后「已改 N 个文件」打开审查；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
-| `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出）；命令输出按 `toolOutputDisplay` 截尾/折叠；正文已上屏时隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动 |
+| `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成「思考中」（对标 Codex，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出；回答刚上屏时收回已展开的 Thought / Worked for）；命令输出按 `toolOutputDisplay` 截尾/折叠；正文已上屏时隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动 |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；子 Agent 步骤可点开活动 |
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸；参数长行换行以免横向撑开直播柱 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |

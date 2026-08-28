@@ -8,6 +8,7 @@ import {
   liveThinkingText,
   rollingThinkPreview,
   selectLiveHeadStep,
+  shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
   shouldSynthesizePlanning,
   turnProcessBounds,
@@ -165,6 +166,9 @@ describe('worked-for fold', () => {
     expect(
       shouldFoldTurnWork({ contentStreaming: true, isStreaming: false, foldableStepCount: 0 })
     ).toBe(false)
+    expect(shouldCollapseProcessOnAnswerStart(true, false)).toBe(true)
+    expect(shouldCollapseProcessOnAnswerStart(true, true)).toBe(false)
+    expect(shouldCollapseProcessOnAnswerStart(false, false)).toBe(false)
   })
 
   it('uses the earliest start and latest end for the worked clock', () => {
