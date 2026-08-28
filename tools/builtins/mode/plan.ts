@@ -14,11 +14,12 @@ import type { ToolHandler } from '../../types'
 export const enterPlanModeTool: ToolHandler = {
   name: 'enter_plan_mode',
   title: '进入计划模式',
-  async execute() {
-    if (getHarnessPhase() === 'plan') {
+  async execute(_args, ctx) {
+    const conversationId = ctx?.conversationId
+    if (getHarnessPhase(conversationId) === 'plan') {
       return ok('Already in plan mode. Use read-only tools to research, then exit_plan_mode with the plan document.')
     }
-    enterPlanMode()
+    enterPlanMode(conversationId)
     return ok(
       'Entered plan mode. Only read-only tools are available. ' +
         'Research the codebase, then call exit_plan_mode with the full plan markdown. ' +
@@ -30,10 +31,14 @@ export const enterPlanModeTool: ToolHandler = {
 export const exitPlanModeTool: ToolHandler = {
   name: 'exit_plan_mode',
   title: '退出计划模式',
-  async execute(args) {
+  async execute(args, ctx) {
     const document = String(args.plan_document ?? args.document ?? '')
     const filePath = args.plan_file_path ? String(args.plan_file_path) : undefined
-    exitPlanMode({ document: document || undefined, filePath })
+    exitPlanMode({
+      document: document || undefined,
+      filePath,
+      conversationId: ctx?.conversationId
+    })
     const preview = document.slice(0, 500)
     return {
       output:
@@ -47,6 +52,8 @@ export const exitPlanModeTool: ToolHandler = {
 }
 
 /** 供 query-loop 检测 plan 产出 */
-export function peekPlanDocument(): ReturnType<typeof getPlanDocument> {
-  return getPlanDocument()
+export function peekPlanDocument(
+  conversationId?: string | null
+): ReturnType<typeof getPlanDocument> {
+  return getPlanDocument(conversationId)
 }

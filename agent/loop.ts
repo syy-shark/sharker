@@ -11,6 +11,7 @@ import { buildWorkspaceBootstrap } from './workspace-bootstrap'
 import { loadAgentsInstructions } from './agents-md'
 import { parsePersonality, personalityPrompt } from '../shared/personality'
 import { gitPromptSystemSection } from '../shared/git-prompt'
+import { getHarnessPhase } from '../tools/harness-state'
 
 const CODING_RULES_BASE = `# Work rules
 - You MUST use the provided function tools (read_file, write_file, list_dir, etc.) to read, create, and edit files.
@@ -96,7 +97,7 @@ function buildCodingRules(): string {
 /** 拼接身份、工作区、权限模式、编码规则与可选的工作区快照 */
 export async function buildSystemPrompt(
   settings: AppSettings,
-  options?: { includeBootstrap?: boolean; cwd?: string }
+  options?: { includeBootstrap?: boolean; cwd?: string; conversationId?: string }
 ): Promise<string> {
   const workspace = getActiveWorkspacePath(settings)
   const mode = settings.permissionMode === 'full' ? 'full (entire machine)' : 'sandbox (workspace only)'
@@ -161,6 +162,18 @@ export async function buildSystemPrompt(
   if (tone) parts.push('', '# Communication style', tone)
   const gitStyle = gitPromptSystemSection(settings)
   if (gitStyle) parts.push('', gitStyle)
+
+  if (getHarnessPhase(options?.conversationId) === 'plan') {
+    parts.push(
+      '',
+      '# Plan mode',
+      'You are in plan mode for this conversation.',
+      'Use only read-only tools to research the codebase and the user goal.',
+      'Do not edit files, run mutating shell commands, commit, or push.',
+      'Write a complete Markdown plan, then call exit_plan_mode with the full plan document.',
+      'The user can click Build to execute the plan later.'
+    )
+  }
 
   parts.push('', buildCodingRules())
   return parts.join('\n')

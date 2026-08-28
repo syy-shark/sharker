@@ -433,7 +433,7 @@ export async function* queryLoop(
     }
 
     const preferTools = resumeLikely || needsToolCalling(userText, history)
-    const toolDefs = getToolDefinitionsForPhase(undefined, settings)
+    const toolDefs = getToolDefinitionsForPhase(undefined, settings, conversationId)
     let lastTextDemoLen = 0
     for await (const chunk of streamChat(settings, messages, signal, {
       preferTools,
@@ -734,12 +734,12 @@ export async function* queryLoop(
         yield { type: 'tool_start', toolName, toolArgs: args, toolCallId: tc.id }
 
         if (toolName === 'enter_plan_mode') {
-          enterPlanMode()
+          enterPlanMode(conversationId)
           yield { type: 'harness_mode', harnessPhase: 'plan' }
         }
 
         try {
-          assertToolAllowed(toolName, settings)
+          assertToolAllowed(toolName, settings, conversationId)
         } catch (e) {
           const err = e instanceof Error ? e.message : String(e)
           messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${err}` })
@@ -916,8 +916,8 @@ export async function* queryLoop(
     }
   }
 
-  if (getHarnessPhase() === 'build') {
-    finishBuildMode()
+  if (getHarnessPhase(conversationId) === 'build') {
+    finishBuildMode(conversationId)
   }
 
   // 触顶后做一次无工具收尾，避免用户只看到硬错误

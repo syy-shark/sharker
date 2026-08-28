@@ -265,6 +265,11 @@ export interface SharkerApi {
   savePersonalAgentsMd: (
     content: string
   ) => Promise<{ ok: true; path: string } | { ok: false; error: string }>
+  getPlanMode: (conversationId: string) => Promise<'normal' | 'plan' | 'build'>
+  setPlanMode: (
+    conversationId: string,
+    enabled: boolean
+  ) => Promise<'normal' | 'plan' | 'build'>
   listMemories: (
     workspaceId: string
   ) => Promise<Array<{ id: string; scope: string; kind: string; content: string }>>

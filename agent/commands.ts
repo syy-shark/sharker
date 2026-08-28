@@ -3,7 +3,7 @@
  * @see agent/ARCH.md
  */
 import { formatSlashCommandHelp } from '../shared/slash-commands'
-import { enterPlanMode, getPlanDocument } from '../tools/harness-state'
+import { enterPlanMode, getPlanDocument, togglePlanMode } from '../tools/harness-state'
 
 /** 单条斜杠命令的执行结果 */
 export interface CommandRunResult {
@@ -15,24 +15,37 @@ export interface CommandRunResult {
   rewrittenText?: string
   /** 是否继续 queryLoop */
   shouldQuery?: boolean
+  /** 切换计划模式后通知渲染进程芯片 */
+  harnessPhase?: 'normal' | 'plan' | 'build'
 }
 
 /** 斜杠命令定义 */
 interface SlashCommand {
   name: string
   description: string
-  run: (args: string) => CommandRunResult
+  run: (args: string, conversationId?: string) => CommandRunResult
 }
 
-/** `/plan` 与桌面端 `/plan-mode` 共用 */
-function runPlanMode(args: string): CommandRunResult {
-  enterPlanMode()
+/** `/plan` 与桌面端 `/plan-mode` 共用：空参切换，有参进入并开一轮调研 */
+function runPlanMode(args: string, conversationId?: string): CommandRunResult {
   const hint = args.trim()
+  if (!hint) {
+    const next = togglePlanMode(conversationId)
+    return {
+      harnessPhase: next,
+      reply:
+        next === 'plan'
+          ? '已进入**计划模式**。下一条消息会只读调研并产出计划。再 `/plan` 或点输入框「计划」可退出。'
+          : '已退出计划模式。可继续普通改动，或点 Build 执行已产出的计划。'
+    }
+  }
+  enterPlanMode(conversationId)
   const base =
     '请进入**计划模式**：仅使用只读工具调研代码库与用户目标，输出完整 Markdown 计划，然后调用 exit_plan_mode。'
   return {
     shouldQuery: true,
-    rewrittenText: hint ? `${base}\n\n用户补充：${hint}` : base
+    harnessPhase: 'plan',
+    rewrittenText: `${base}\n\n用户补充：${hint}`
   }
 }
 
@@ -64,19 +77,19 @@ const COMMANDS: SlashCommand[] = [
   },
   {
     name: 'plan',
-    description: '进入计划模式',
+    description: '切换计划模式；带说明则开始规划',
     run: runPlanMode
   },
   {
     name: 'plan-mode',
-    description: '进入计划模式（桌面端 /plan-mode 别名）',
+    description: '切换计划模式（/plan 别名）',
     run: runPlanMode
   },
   {
     name: 'build',
     description: '按计划进入构建模式',
-    run: () => {
-      const { document } = getPlanDocument()
+    run: (_args, conversationId) => {
+      const { document } = getPlanDocument(conversationId)
       if (!document?.trim()) {
         return {
           reply:
@@ -100,7 +113,10 @@ export function listSlashCommands(): SlashCommand[] {
  * 解析用户输入是否为斜杠命令；匹配则返回执行结果，否则返回 null。
  * @param userText 原始用户输入
  */
-export function matchSlashCommand(userText: string): CommandRunResult | null {
+export function matchSlashCommand(
+  userText: string,
+  conversationId?: string
+): CommandRunResult | null {
   const trimmed = userText.trim()
   if (!trimmed.startsWith('/')) return null
   const body = trimmed.slice(1)
@@ -114,5 +130,5 @@ export function matchSlashCommand(userText: string): CommandRunResult | null {
       reply: `未知命令 \`/${name}\`。输入 \`/help\` 查看可用命令。`
     }
   }
-  return cmd.run(args)
+  return cmd.run(args, conversationId)
 }

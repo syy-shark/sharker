@@ -325,6 +325,11 @@ export default function App() {
     }, 400)
   }, [])
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
+  const [planMode, setPlanMode] = useState(false)
+  const planModeByConvRef = useRef(new Map<string, boolean>())
+  const pendingPlanByConvRef = useRef(
+    new Map<string, { document: string; filePath?: string }>()
+  )
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
   const [threadGoal, setThreadGoal] = useState<ThreadGoal | null>(null)
   const threadGoalRef = useRef<ThreadGoal | null>(null)
@@ -1450,6 +1455,14 @@ export default function App() {
         ? shouldApplyStreamToActive(ownerId, activeId)
         : Boolean(activeId && sendInFlightRef.current && !streamOwnerRef.current)
 
+      if (chunk.type === 'harness_mode' && chunk.harnessPhase) {
+        const on = chunk.harnessPhase === 'plan'
+        const id = ownerId || (applyToUi ? activeId : null)
+        if (id) planModeByConvRef.current.set(id, on)
+        if (applyToUi) setPlanMode(on)
+        return
+      }
+
       // 后台会话：只写 buffer，绝不污染当前可见 transcript
       if (ownerId && !applyToUi) {
         const buf = ensureBuffer(ownerId)
@@ -1692,9 +1705,10 @@ export default function App() {
         return
       }
       if (chunk.type === 'plan_ready' && chunk.planDocument) {
-        if (applyToUi || !ownerId) {
-          setPendingPlan({ document: chunk.planDocument, filePath: chunk.planFilePath })
-        }
+        const plan = { document: chunk.planDocument, filePath: chunk.planFilePath }
+        const id = ownerId || (applyToUi ? activeId : null)
+        if (id) pendingPlanByConvRef.current.set(id, plan)
+        if (applyToUi || !ownerId) setPendingPlan(plan)
         return
       }
       if (chunk.type === 'command' && chunk.command === 'clear') {
@@ -1877,6 +1891,26 @@ export default function App() {
     },
     []
   )
+
+  const applyPlanUiForConversation = useCallback((conversationId: string) => {
+    setPlanMode(planModeByConvRef.current.get(conversationId) === true)
+    setPendingPlan(pendingPlanByConvRef.current.get(conversationId) ?? null)
+    if (!window.sharker.getPlanMode) return
+    void window.sharker.getPlanMode(conversationId).then((phase) => {
+      const on = phase === 'plan'
+      planModeByConvRef.current.set(conversationId, on)
+      if (activeConversationIdRef.current === conversationId) setPlanMode(on)
+    })
+  }, [])
+
+  const handlePlanModeChange = useCallback(async (enabled: boolean) => {
+    const id = activeConversationIdRef.current
+    if (!id || !window.sharker.setPlanMode) return
+    const phase = await window.sharker.setPlanMode(id, enabled)
+    const on = phase === 'plan'
+    planModeByConvRef.current.set(id, on)
+    if (activeConversationIdRef.current === id) setPlanMode(on)
+  }, [])
 
   const handleThreadModeChange = useCallback(async (mode: ThreadMode) => {
     const prev = threadRuntimeRef.current
@@ -2569,6 +2603,8 @@ export default function App() {
   const handleBuildPlan = useCallback(async () => {
     if (!pendingPlan) return
     const doc = pendingPlan.document
+    const id = activeConversationIdRef.current
+    if (id) pendingPlanByConvRef.current.delete(id)
     setPendingPlan(null)
     await handlePromptSubmit(
       `__SHARKER_BUILD__\n请严格按照以下计划逐步实施（可使用全部工具）：\n\n${doc}`
@@ -2770,6 +2806,7 @@ export default function App() {
     setActiveConversationId(conversationId)
     activeConversationIdRef.current = conversationId
     setLastTurnPaths(lastTurnPathsByConvRef.current.get(conversationId) ?? [])
+    applyPlanUiForConversation(conversationId)
     setPage('chat')
     syncActiveQueueUi(sessionQueuesRef.current, conversationId)
 
@@ -5684,6 +5721,7 @@ export default function App() {
           }
           setActiveConversationId(id)
           activeConversationIdRef.current = id
+          applyPlanUiForConversation(id)
           setPage('chat')
           pageRef.current = 'chat'
           syncActiveQueueUi(sessionQueuesRef.current, id)
@@ -6080,7 +6118,11 @@ export default function App() {
               <PlanBuildBar
                 planDocument={pendingPlan.document}
                 onBuild={() => void handleBuildPlan()}
-                onDismiss={() => setPendingPlan(null)}
+                onDismiss={() => {
+                  const id = activeConversationIdRef.current
+                  if (id) pendingPlanByConvRef.current.delete(id)
+                  setPendingPlan(null)
+                }}
               />
             )}
             <ChatView
@@ -6121,6 +6163,8 @@ export default function App() {
               threadGoal={threadGoal}
               onGoalCommand={handleGoalCommand}
               onThreadModeChange={handleThreadModeChange}
+              planMode={planMode}
+              onPlanModeChange={handlePlanModeChange}
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
               fileSearchRoot={fileSearchRoot}

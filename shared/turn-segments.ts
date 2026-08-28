@@ -191,6 +191,14 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   if (chunk.type === 'token' && chunk.content) {
     return applyTokenChunk(segments, chunk.content, timestamp)
   }
+  if (
+    chunk.type === 'harness_mode' ||
+    chunk.type === 'plan_ready' ||
+    chunk.type === 'command' ||
+    chunk.type === 'done'
+  ) {
+    return segments
+  }
   const next = cloneSegments(segments)
 
   // 回合一启动就给出可见“准备”步骤，避免 UI 空白停住

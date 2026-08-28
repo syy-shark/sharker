@@ -255,6 +255,9 @@ interface Props {
   worktreeMissing?: boolean
   onRestoreWorktree?: () => void
   composerSeed?: { nonce: number; text: string } | null
+  /** 计划模式芯片（对标 Codex /plan） */
+  planMode?: boolean
+  onPlanModeChange?: (enabled: boolean) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -312,7 +315,9 @@ export function ChatView({
   onQueueHeldChange,
   worktreeMissing = false,
   onRestoreWorktree,
-  composerSeed = null
+  composerSeed = null,
+  planMode = false,
+  onPlanModeChange
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -952,6 +957,8 @@ export function ChatView({
             approvalOpen={Boolean(approval)}
             approvalResponding={approvalResponding}
             onApprovalHotkey={onApproval}
+            planMode={planMode}
+            onPlanModeChange={onPlanModeChange}
           />
         </div>
       </div>

@@ -42,14 +42,16 @@ export const SLASH_COMMAND_CATEGORIES: Record<
 export const SLASH_COMMANDS: SlashCommandMeta[] = [
   {
     name: 'plan',
-    description: '进入计划模式（只读调研，输出计划）',
+    description: '切换计划模式；带说明则开始规划',
     scope: 'agent',
+    argsHint: '[说明]',
     category: 'mode'
   },
   {
     name: 'plan-mode',
-    description: '进入计划模式（/plan 别名，对标 Codex /plan-mode）',
+    description: '切换计划模式（/plan 别名）',
     scope: 'agent',
+    argsHint: '[说明]',
     category: 'mode'
   },
   {

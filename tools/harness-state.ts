@@ -1,66 +1,107 @@
 /**
  * Harness 运行时状态：计划模式、Build 阶段、Worktree 路径覆盖。
+ * 计划阶段按会话隔离，避免并行线程互踩。
  * @see tools/ARCH.md
  */
 export type HarnessPhase = 'normal' | 'plan' | 'build'
 
-const DEFAULT_WORKTREE_KEY = '__default__'
+const DEFAULT_KEY = '__default__'
 
-interface HarnessState {
+interface ConversationHarness {
   phase: HarnessPhase
-  /** 按会话隔离的 worktree 覆盖 cwd */
-  worktreeByConversation: Map<string, string>
-  /** exit_plan_mode 产出的计划正文 */
   planDocument: string | null
   planFilePath: string | null
 }
 
-const state: HarnessState = {
-  phase: 'normal',
-  worktreeByConversation: new Map(),
-  planDocument: null,
-  planFilePath: null
+interface HarnessState {
+  /** 按会话隔离的 worktree 覆盖 cwd */
+  worktreeByConversation: Map<string, string>
+  phaseByConversation: Map<string, ConversationHarness>
 }
 
-/** 当前 Harness 阶段 */
-export function getHarnessPhase(): HarnessPhase {
-  return state.phase
+const state: HarnessState = {
+  worktreeByConversation: new Map(),
+  phaseByConversation: new Map()
+}
+
+function phaseKey(conversationId?: string | null): string {
+  return conversationId?.trim() || DEFAULT_KEY
+}
+
+function bucket(conversationId?: string | null): ConversationHarness {
+  const key = phaseKey(conversationId)
+  let current = state.phaseByConversation.get(key)
+  if (!current) {
+    current = { phase: 'normal', planDocument: null, planFilePath: null }
+    state.phaseByConversation.set(key, current)
+  }
+  return current
+}
+
+/** 当前 Harness 阶段（默认按会话，无 id 走共享桶） */
+export function getHarnessPhase(conversationId?: string | null): HarnessPhase {
+  return bucket(conversationId).phase
 }
 
 /** 进入计划模式（只读工具） */
-export function enterPlanMode(): void {
-  state.phase = 'plan'
-  state.planDocument = null
-  state.planFilePath = null
+export function enterPlanMode(conversationId?: string | null): void {
+  const current = bucket(conversationId)
+  current.phase = 'plan'
+  current.planDocument = null
+  current.planFilePath = null
 }
 
 /** 退出计划模式，可选保存计划文档 */
-export function exitPlanMode(opts?: { document?: string; filePath?: string }): void {
-  state.phase = 'normal'
-  if (opts?.document) state.planDocument = opts.document
-  if (opts?.filePath) state.planFilePath = opts.filePath
+export function exitPlanMode(opts?: {
+  document?: string
+  filePath?: string
+  conversationId?: string | null
+}): void {
+  const current = bucket(opts?.conversationId)
+  current.phase = 'normal'
+  if (opts?.document) current.planDocument = opts.document
+  if (opts?.filePath) current.planFilePath = opts.filePath
+}
+
+/** 对标 Codex `/plan`：空参切换计划模式 */
+export function togglePlanMode(conversationId?: string | null): HarnessPhase {
+  const current = bucket(conversationId)
+  if (current.phase === 'plan') {
+    current.phase = 'normal'
+    return 'normal'
+  }
+  current.phase = 'plan'
+  current.planDocument = null
+  current.planFilePath = null
+  return 'plan'
 }
 
 /** 用户点击 Build：进入执行阶段（全工具） */
-export function enterBuildMode(): void {
-  state.phase = 'build'
-  state.planDocument = null
-  state.planFilePath = null
+export function enterBuildMode(conversationId?: string | null): void {
+  const current = bucket(conversationId)
+  current.phase = 'build'
+  current.planDocument = null
+  current.planFilePath = null
 }
 
 /** 本轮 Build 结束，回到 normal */
-export function finishBuildMode(): void {
-  if (state.phase === 'build') state.phase = 'normal'
+export function finishBuildMode(conversationId?: string | null): void {
+  const current = bucket(conversationId)
+  if (current.phase === 'build') current.phase = 'normal'
 }
 
 /** 取最近产出的计划文档 */
-export function getPlanDocument(): { document: string | null; filePath: string | null } {
-  return { document: state.planDocument, filePath: state.planFilePath }
+export function getPlanDocument(conversationId?: string | null): {
+  document: string | null
+  filePath: string | null
+} {
+  const current = bucket(conversationId)
+  return { document: current.planDocument, filePath: current.planFilePath }
 }
 
 /** 设置 worktree 路径覆盖；可按会话隔离，避免并行线程互踩 */
 export function setWorktreePath(p: string | null, conversationId?: string | null): void {
-  const key = conversationId?.trim() || DEFAULT_WORKTREE_KEY
+  const key = conversationId?.trim() || DEFAULT_KEY
   if (p?.trim()) state.worktreeByConversation.set(key, p.trim())
   else state.worktreeByConversation.delete(key)
 }
@@ -71,13 +112,11 @@ export function getWorktreePath(conversationId?: string | null): string | null {
   if (key && state.worktreeByConversation.has(key)) {
     return state.worktreeByConversation.get(key) ?? null
   }
-  return state.worktreeByConversation.get(DEFAULT_WORKTREE_KEY) ?? null
+  return state.worktreeByConversation.get(DEFAULT_KEY) ?? null
 }
 
 /** 重置全部 Harness 状态（切换工作区时可选调用） */
 export function resetHarnessState(): void {
-  state.phase = 'normal'
   state.worktreeByConversation.clear()
-  state.planDocument = null
-  state.planFilePath = null
+  state.phaseByConversation.clear()
 }

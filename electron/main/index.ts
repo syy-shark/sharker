@@ -37,6 +37,7 @@ import {
   stopSubAgent
 } from '../../agent/coordinator'
 import { executeUserInput, abortActiveTurn, hasActiveTurn } from '../../agent/pipeline'
+import { enterPlanMode, exitPlanMode, getHarnessPhase } from '../../tools/harness-state'
 import {
   ConversationApprovalRegistry,
   normalizeApprovalDecision,
@@ -1669,6 +1670,19 @@ function registerIpc(): void {
   ipcMain.handle(IPC.SAVE_PERSONAL_AGENTS_MD, async (_e, content: string) =>
     writePersonalAgentsMd(String(content ?? ''), app.getPath('home'))
   )
+
+  ipcMain.handle(IPC.GET_PLAN_MODE, (_e, conversationId?: string) =>
+    getHarnessPhase(typeof conversationId === 'string' ? conversationId : undefined)
+  )
+  ipcMain.handle(IPC.SET_PLAN_MODE, (_e, conversationId: string, enabled: boolean) => {
+    const id = String(conversationId || '')
+    if (enabled) {
+      enterPlanMode(id)
+      return 'plan' as const
+    }
+    exitPlanMode({ conversationId: id })
+    return 'normal' as const
+  })
 
   ipcMain.handle(IPC.MEMORY_LIST, async (_e, workspaceId: string) => {
     const id = String(workspaceId || '')

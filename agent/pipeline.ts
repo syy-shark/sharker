@@ -44,6 +44,8 @@ export interface ProcessUserInputResult {
   localReply?: string
   /** 渲染进程命令（如 clear） */
   command?: string
+  /** `/plan` 切换后同步输入框芯片 */
+  harnessPhase?: 'normal' | 'plan' | 'build'
 }
 
 /** executeUserInput 上下文 */
@@ -111,26 +113,37 @@ async function mapHistoryToApiMessages(history: ChatMessage[]): Promise<ChatComp
 /**
  * 解析用户输入：斜杠命令走本地；普通文本进入 onQuery。
  */
-export function processUserInput(userText: string): ProcessUserInputResult {
+export function processUserInput(
+  userText: string,
+  conversationId?: string
+): ProcessUserInputResult {
   let trimmed = userText.trim()
+  let harnessPhase: ProcessUserInputResult['harnessPhase']
   if (trimmed.startsWith(BUILD_PLAN_PREFIX)) {
-    enterBuildMode()
+    enterBuildMode(conversationId)
     trimmed = trimmed.slice(BUILD_PLAN_PREFIX.length).trim()
+    harnessPhase = 'normal'
   }
-  const cmd = matchSlashCommand(trimmed)
+  const cmd = matchSlashCommand(trimmed, conversationId)
   if (cmd) {
     const rewritten = cmd.rewrittenText?.trim()
     if (cmd.shouldQuery && rewritten) {
-      return { userText: rewritten, shouldQuery: true, command: cmd.command }
+      return {
+        userText: rewritten,
+        shouldQuery: true,
+        command: cmd.command,
+        harnessPhase: cmd.harnessPhase ?? harnessPhase
+      }
     }
     return {
       userText: trimmed,
       shouldQuery: false,
       localReply: cmd.reply,
-      command: cmd.command
+      command: cmd.command,
+      harnessPhase: cmd.harnessPhase ?? harnessPhase
     }
   }
-  return { userText: trimmed, shouldQuery: true }
+  return { userText: trimmed, shouldQuery: true, harnessPhase }
 }
 
 /** 占坑：发 turn_start 信号，标记本轮开始 */
@@ -148,6 +161,10 @@ async function* onQuery(
 ): AsyncGenerator<StreamChunk> {
   const { settings, history, userText, attachments, onApproval, send } = ctx
   const workspace = ctx.worktreePath || getActiveWorkspacePath(settings)
+
+  if (processed.harnessPhase) {
+    yield { type: 'harness_mode', harnessPhase: processed.harnessPhase }
+  }
 
   const providerError = validateActiveProvider(settings)
   if (providerError) {
@@ -191,7 +208,8 @@ async function* onQuery(
     getActiveSessionId(settings.activeWorkspaceId),
     buildSystemPrompt(settings, {
       includeBootstrap: useTools,
-      cwd: ctx.worktreePath || workspace
+      cwd: ctx.worktreePath || workspace,
+      conversationId: ctx.conversationId
     })
   ])
   const memoryPromise = assembleMemoryContext({
@@ -247,6 +265,9 @@ async function* runLocalCommand(
   if (processed.command) {
     yield { type: 'command', command: processed.command }
   }
+  if (processed.harnessPhase) {
+    yield { type: 'harness_mode', harnessPhase: processed.harnessPhase }
+  }
   if (processed.localReply) {
     yield { type: 'token', content: processed.localReply }
   }
@@ -296,7 +317,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       queryServe(turnCtx.send, conversationId)
       setWorktreePath(ctx.worktreePath ?? null, conversationId)
 
-      const processed = processUserInput(ctx.userText)
+      const processed = processUserInput(ctx.userText, conversationId)
 
       const turnEvents: TurnEventInput[] = []
       let assistantText = ''

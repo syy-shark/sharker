@@ -186,4 +186,12 @@ describe('process flow visibility', () => {
     ]
     expect(extractFinalContent(live, { isStreaming: true })).toBe('正在写')
   })
+
+  it('does not clone segments for harness_mode control chunks', () => {
+    const segments: TurnSegment[] = [
+      { id: 't', kind: 'text', role: 'final', content: '已有', status: 'active' }
+    ]
+    const next = applyStreamChunk(segments, { type: 'harness_mode', harnessPhase: 'plan' })
+    expect(next).toBe(segments)
+  })
 })

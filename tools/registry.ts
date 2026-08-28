@@ -128,17 +128,19 @@ export const TOOL_TITLES: Record<string, string> = Object.fromEntries(
 
 /** 按 Harness 阶段与设置开关过滤发给模型的 tools（含 MCP 动态池） */
 export function getToolDefinitionsForPhase(
-  phase = getHarnessPhase(),
-  settings?: AppSettings
+  phase?: import('./harness-state').HarnessPhase,
+  settings?: AppSettings,
+  conversationId?: string | null
 ): OpenAIToolDefinition[] {
+  const resolved = phase ?? getHarnessPhase(conversationId)
   const enabled = (name: string) => isToolEnabledForSettings(name, settings)
   const baseRaw =
-    phase === 'plan'
+    resolved === 'plan'
       ? TOOL_DEFINITIONS.filter((d) => isToolAllowedInPlanMode(d.function.name))
       : TOOL_DEFINITIONS
   const base = baseRaw.filter((d) => enabled(d.function.name))
   const mcpDynamicRaw =
-    phase === 'plan'
+    resolved === 'plan'
       ? getMcpDynamicToolDefinitions().filter((d) =>
           isMcpDynamicToolAllowedInPlanMode(d.function.name)
         )
@@ -179,11 +181,15 @@ export function getToolByName(name: string): SharkerTool | undefined {
 }
 
 /** 计划模式下拦截写操作 */
-export function assertToolAllowed(toolName: string, settings?: AppSettings): void {
+export function assertToolAllowed(
+  toolName: string,
+  settings?: AppSettings,
+  conversationId?: string | null
+): void {
   if (!isToolEnabledForSettings(toolName, settings)) {
     throw new Error(`Tool "${toolName}" is disabled in settings.`)
   }
-  if (getHarnessPhase() === 'plan') {
+  if (getHarnessPhase(conversationId) === 'plan') {
     if (isMcpDynamicToolName(toolName)) {
       if (!isMcpDynamicToolAllowedInPlanMode(toolName)) {
         throw new Error(`MCP tool "${toolName}" is blocked in plan mode.`)
@@ -204,7 +210,7 @@ export async function executeRegisteredTool(
   onStatus?: (content: string) => void,
   conversationId?: string
 ): Promise<ToolRunResult> {
-  assertToolAllowed(name, settings)
+  assertToolAllowed(name, settings, conversationId)
   if (isMcpDynamicToolName(name)) {
     const workspace = getActiveWorkspacePath(settings)
     const output = await executeMcpDynamicTool(workspace, name, args)

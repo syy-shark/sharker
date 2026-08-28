@@ -114,6 +114,9 @@ export const IPC = {
   /** 设置 → 自定义说明：读写 `~/.sharker/AGENTS.md` */
   GET_PERSONAL_AGENTS_MD: 'agents-md:get-personal',
   SAVE_PERSONAL_AGENTS_MD: 'agents-md:save-personal',
+  /** 按会话读/写计划模式（输入框芯片，不发消息） */
+  GET_PLAN_MODE: 'harness:get-plan-mode',
+  SET_PLAN_MODE: 'harness:set-plan-mode',
   /** `/memories`：列出当前工作区相关记忆 */
   MEMORY_LIST: 'memory:list',
   /** 隔离 worktree 是否还在、有无快照 */

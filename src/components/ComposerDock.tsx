@@ -162,6 +162,9 @@ export interface ComposerDockProps {
   approvalOpen?: boolean
   approvalResponding?: boolean
   onApprovalHotkey?: (decision: 'once' | 'deny') => void
+  /** 计划模式芯片（对标 Codex /plan）；不跟直播 token 变 */
+  planMode?: boolean
+  onPlanModeChange?: (enabled: boolean) => void
 }
 
 export const ComposerDock = memo(
@@ -204,7 +207,9 @@ export const ComposerDock = memo(
       requireModEnter = false,
       approvalOpen = false,
       approvalResponding = false,
-      onApprovalHotkey
+      onApprovalHotkey,
+      planMode = false,
+      onPlanModeChange
     },
     ref
   ) {
@@ -1700,6 +1705,21 @@ export const ComposerDock = memo(
                   {activeWorkspace.label || activeWorkspace.path}
                 </span>
               </span>
+            ) : null}
+            {onPlanModeChange ? (
+              <button
+                type="button"
+                className={`composer-thread-chip${planMode ? ' is-active' : ''}`}
+                aria-pressed={planMode}
+                onClick={() => onPlanModeChange(!planMode)}
+                title={
+                  planMode
+                    ? '退出计划模式'
+                    : '进入计划模式（只读调研，不改文件）'
+                }
+              >
+                计划
+              </button>
             ) : null}
             {onThreadModeChange ? (
               <div className="composer-thread-mode" role="group" aria-label="线程模式">

@@ -36,7 +36,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|pause\|resume\|clear]` | 线程持久目标（写入后续 turn 的 system）；输入框上方进度行可暂停 / 继续 / 编辑 / 清除（对标 Codex Goal） |
-| `/plan-mode` | `/plan` 的桌面端别名 |
+| `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |
 | `/compact` | 本地压缩当前对话上下文 |

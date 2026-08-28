@@ -12,6 +12,6 @@
 
 | 文件 | 说明 |
 |------|------|
-| `plan.ts` | enter / exit 计划模式（`harness-state`） |
+| `plan.ts` | enter / exit 计划模式（按 `ctx.conversationId` 写入 `harness-state`） |
 | `worktree.ts` | enter / exit worktree，覆盖工具 cwd（按 conversationId 隔离） |
 | `ARCH.md` | 本层架构说明 |
