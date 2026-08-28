@@ -134,8 +134,12 @@ const markdownComponents: Components = {
   img: ({ src, alt }) =>
     src && /^https?:\/\//i.test(src) ? <img src={src} alt={alt ?? ''} loading="lazy" /> : null,
   li: ({ children, className }) => <li className={className}>{withFileCitations(children)}</li>,
-  td: ({ children }) => <td>{withFileCitations(children)}</td>,
-  th: ({ children }) => <th>{withFileCitations(children)}</th>,
+  td: ({ children, align }) => (
+    <td style={align ? { textAlign: align } : undefined}>{withFileCitations(children)}</td>
+  ),
+  th: ({ children, align }) => (
+    <th style={align ? { textAlign: align } : undefined}>{withFileCitations(children)}</th>
+  ),
   h1: ({ children }) => <h1>{withFileCitations(children)}</h1>,
   h2: ({ children }) => <h2>{withFileCitations(children)}</h2>,
   h3: ({ children }) => <h3>{withFileCitations(children)}</h3>,

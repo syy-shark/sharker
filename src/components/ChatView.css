@@ -516,10 +516,22 @@
 }
 
 .streaming-markdown > blockquote,
-.live-prose-tail > blockquote {
+.live-prose-tail > blockquote,
+.streaming-markdown blockquote blockquote,
+.live-prose-tail blockquote blockquote {
   padding-left: 0.8em;
   border-left: 2px solid var(--border-subtle);
   color: var(--text-secondary);
+}
+
+.streaming-markdown blockquote > p,
+.live-prose-tail blockquote > p {
+  margin: 0 0 8px;
+}
+
+.streaming-markdown blockquote > p:last-child,
+.live-prose-tail blockquote > p:last-child {
+  margin-bottom: 0;
 }
 
 .streaming-markdown > table,

@@ -125,6 +125,10 @@ function renderCheapList(ordered: boolean, items: CheapListItem[], key?: number)
   )
 }
 
+function cellAlign(align: 'left' | 'right' | 'center' | null | undefined) {
+  return align ? { textAlign: align } : undefined
+}
+
 /** 廉价块用与收束后 MarkdownBody 接近的标签，减少贴底跳动 */
 function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   if (block.type === 'heading') {
@@ -135,7 +139,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     return renderCheapList(block.ordered, block.items, index)
   }
   if (block.type === 'quote') {
-    return <blockquote key={index}>{renderCheapInline(block.nodes)}</blockquote>
+    return <blockquote key={index}>{block.blocks.map(renderCheapBlock)}</blockquote>
   }
   if (block.type === 'table') {
     return (
@@ -143,7 +147,9 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
         <thead>
           <tr>
             {block.header.map((cell, i) => (
-              <th key={i}>{renderCheapInline(cell)}</th>
+              <th key={i} style={cellAlign(block.align?.[i])}>
+                {renderCheapInline(cell)}
+              </th>
             ))}
           </tr>
         </thead>
@@ -152,7 +158,9 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
             {block.rows.map((row, r) => (
               <tr key={r}>
                 {row.map((cell, c) => (
-                  <td key={c}>{renderCheapInline(cell)}</td>
+                  <td key={c} style={cellAlign(block.align?.[c])}>
+                    {renderCheapInline(cell)}
+                  </td>
                 ))}
               </tr>
             ))}

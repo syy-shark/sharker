@@ -187,8 +187,8 @@ export type CheapListItem = {
 export type CheapProseBlock =
   | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; nodes: CheapInlineNode[] }
   | { type: 'list'; ordered: boolean; items: CheapListItem[] }
-  | { type: 'quote'; nodes: CheapInlineNode[] }
-  | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][] }
+  | { type: 'quote'; blocks: CheapProseBlock[] }
+  | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][]; align?: Array<'left' | 'right' | 'center' | null> }
   | { type: 'hr' }
   | { type: 'pre'; text: string }
   | { type: 'footnotes'; items: { id: string; nodes: CheapInlineNode[] }[] }
@@ -674,6 +674,22 @@ function splitGfmTableCells(line: string): string[] {
   return text.split('|').map((cell) => cell.trim())
 }
 
+function parseGfmTableAlign(sepLine: string): Array<'left' | 'right' | 'center' | null> {
+  return splitGfmTableCells(sepLine).map((cell) => {
+    const left = cell.startsWith(':')
+    const right = cell.endsWith(':')
+    if (left && right) return 'center'
+    if (right) return 'right'
+    if (left) return 'left'
+    return null
+  })
+}
+
+function stripQuoteMarker(line: string): string {
+  const match = QUOTE_RE.exec(line)
+  return match ? (match[1] ?? '') : line
+}
+
 function isIndentCodeLine(line: string): boolean {
   return /^(?:    |\t)/.test(line) && !parseListLine(line) && !parseLinkDefinitionLine(line)
 }
@@ -719,7 +735,12 @@ export function parseCheapProseBlocks(
   }
   const flushQuote = () => {
     if (!quote.length) return
-    blocks.push({ type: 'quote', nodes: inline(quote.join('\n')) })
+    // Lines already had one `>` stripped when collected. Recurse so `> > inner`
+    // becomes quote > quote, matching remark-gfm's nested <blockquote>.
+    blocks.push({
+      type: 'quote',
+      blocks: parseCheapProseBlocks(quote.join('\n'), linkDefs)
+    })
     quote = []
   }
   const flushTable = () => {
@@ -744,7 +765,8 @@ export function parseCheapProseBlocks(
       .slice(sepIdx + 1)
       .filter((line) => !isGfmTableSep(line))
       .map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
-    blocks.push({ type: 'table', header, rows })
+    const align = parseGfmTableAlign(raw[sepIdx] ?? '')
+    blocks.push({ type: 'table', header, rows, align })
   }
   const flushAll = () => {
     flushTable()
@@ -953,8 +975,14 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
     return nodes === prev.nodes ? prev : { type: 'p', nodes }
   }
   if (prev.type === 'quote' && next.type === 'quote') {
-    const nodes = reuseInlineNodes(prev.nodes, next.nodes)
-    return nodes === prev.nodes ? prev : { type: 'quote', nodes }
+    const childBlocks = next.blocks.map((block, i) => {
+      const reused = prev.blocks[i] ? reuseCheapProseBlock(prev.blocks[i]!, block) : null
+      return reused ?? block
+    })
+    const same =
+      childBlocks.length === prev.blocks.length &&
+      childBlocks.every((block, i) => block === prev.blocks[i])
+    return same ? prev : { type: 'quote', blocks: childBlocks }
   }
   if (prev.type === 'list' && next.type === 'list') {
     if (prev.ordered !== next.ordered) return null
@@ -976,7 +1004,8 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
         (row, i) =>
           row.length === prev.rows[i]?.length && row.every((cell, c) => cell === prev.rows[i]?.[c])
       )
-    return headerSame && rowsSame ? prev : { type: 'table', header, rows }
+    const align = next.align ?? prev.align
+    return headerSame && rowsSame ? prev : { type: 'table', header, rows, align }
   }
   return null
 }

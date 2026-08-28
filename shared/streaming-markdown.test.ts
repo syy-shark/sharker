@@ -183,6 +183,15 @@ describe('splitStreamingMarkdown', () => {
     }
     expect(parseCheapProseBlocks('| only | row |').map((b) => b.type)).toEqual(['p'])
     expect(parseCheapProseBlocks('---').map((b) => b.type)).toEqual(['hr'])
+    const quoted = parseCheapProseBlocks('> 外层\n> > 内层')
+    expect(quoted.map((b) => b.type)).toEqual(['quote'])
+    if (quoted[0]?.type === 'quote') {
+      expect(quoted[0].blocks.map((b) => b.type)).toEqual(['p', 'quote'])
+    }
+    const aligned = parseCheapProseBlocks('| A | B |\n| ---: | :---: |\n| 1 | 2 |')
+    if (aligned[0]?.type === 'table') {
+      expect(aligned[0].align).toEqual(['right', 'center'])
+    }
   })
 
   it('renders live headings and lists instead of a single paragraph', () => {
