@@ -9,6 +9,8 @@ describe('command palette', () => {
     expect(ids).toContain('skill')
     expect(ids).toContain('settings')
     expect(ids).toContain('find')
+    expect(ids).toContain('search-chats')
+    expect(ids).toContain('dictate')
     expect(ids).toContain('personality')
     expect(ids).toContain('shortcuts')
   })

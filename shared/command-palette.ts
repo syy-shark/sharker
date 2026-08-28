@@ -81,6 +81,20 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'find_in_thread'
   },
   {
+    id: 'search-chats',
+    title: '搜索对话',
+    shortcut: '⌘G',
+    keywords: 'search chats history 搜索 对话 历史',
+    action: 'show_history'
+  },
+  {
+    id: 'dictate',
+    title: '开始听写',
+    shortcut: '⌃⇧D',
+    keywords: 'dictate voice speech 听写 语音',
+    action: 'start_dictation'
+  },
+  {
     id: 'settings',
     title: '打开设置',
     shortcut: '⌘,',

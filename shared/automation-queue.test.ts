@@ -4,6 +4,7 @@ import {
   attachQueueChangedPaths,
   enqueueAutomationRun,
   markQueueItem,
+  pushAfterApproveCommit,
   resolveQueueTriagePaths,
   sortAutomationQueue,
   unreadQueueCount
@@ -53,5 +54,26 @@ describe('automation queue', () => {
     expect(withPaths[0]?.changedPaths).toEqual(['src/a.ts'])
     expect(resolveQueueTriagePaths(withPaths[0]!, ['other.ts'])).toEqual(['src/a.ts'])
     expect(resolveQueueTriagePaths(item, ['fallback.ts'])).toEqual(['fallback.ts'])
+  })
+
+  it('pushes only after a successful approve commit', async () => {
+    expect(await pushAfterApproveCommit({ committed: false, push: async () => ({ ok: true }) })).toBe(
+      'skipped'
+    )
+    expect(await pushAfterApproveCommit({ committed: true })).toBe('skipped')
+    expect(await pushAfterApproveCommit({ committed: true, push: async () => ({ ok: true }) })).toBe(
+      'pushed'
+    )
+    expect(
+      await pushAfterApproveCommit({ committed: true, push: async () => ({ ok: false, error: 'no remote' }) })
+    ).toBe('push_failed')
+    expect(
+      await pushAfterApproveCommit({
+        committed: true,
+        push: async () => {
+          throw new Error('network')
+        }
+      })
+    ).toBe('push_failed')
   })
 })

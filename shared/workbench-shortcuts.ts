@@ -19,6 +19,7 @@ export type WorkbenchShortcutAction =
   | 'pick_model'
   | 'shortcut_help'
   | 'select_chat'
+  | 'search_chats'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -38,6 +39,7 @@ export function matchWorkbenchShortcut(event: {
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
   if (key === 'g' && event.shiftKey && !event.altKey) return 'toggle_review'
+  if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
   if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
@@ -96,7 +98,10 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘/', title: '快捷键一览' },
   { keys: '⌘F', title: '在对话中查找' },
+  { keys: '⌘G', title: '搜索对话' },
   { keys: 'Ctrl⇧M', title: '模型选择' },
+  { keys: 'Ctrl⇧D', title: '听写' },
+  { keys: '↑', title: '空输入时恢复上一条' },
   { keys: 'Enter', title: '发送；忙时注入当前回合' },
   { keys: 'Tab', title: '忙时排队下一条' },
   { keys: 'Shift+Enter', title: '换行' }

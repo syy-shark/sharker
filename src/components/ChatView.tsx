@@ -3,7 +3,7 @@
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUp, Folder } from 'lucide-react'
+import { ArrowUp, Folder, Mic } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type {
   AssistantMeta,
@@ -28,7 +28,9 @@ import {
   type SkillListItem
 } from '../../shared/skill-mention'
 import { findInThread } from '../../shared/thread-search'
-import { resolveComposerSubmit } from '../../shared/composer-submit'
+import { resolveComposerSubmit, restorePreviousComposerPrompt } from '../../shared/composer-submit'
+import { appendDictationTranscript, isDictationShortcut } from '../../shared/composer-dictation'
+import { filterChatList } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
 
@@ -36,6 +38,26 @@ import './ChatView.css'
 const AT_BOTTOM_PX = 16
 /** 离开底部：超过这个距离才显示「回到底部」（避免误触） */
 const LEAVE_BOTTOM_PX = 48
+
+type SpeechRecResult = { isFinal: boolean; 0?: { transcript?: string } }
+type SpeechRec = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((ev: { resultIndex: number; results: ArrayLike<SpeechRecResult> }) => void) | null
+  onerror: ((ev: { error?: string }) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
+function speechRecognitionCtor(): (new () => SpeechRec) | null {
+  const w = window as Window & {
+    SpeechRecognition?: new () => SpeechRec
+    webkitSpeechRecognition?: new () => SpeechRec
+  }
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -120,7 +142,7 @@ interface Props {
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
   /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
-  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | null
+  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | 'dictate' | null
   onComposerIntentHandled?: () => void
   /** 暂停自动出队（对标 Codex hold queue） */
   queueHeld?: boolean
@@ -197,7 +219,14 @@ export function ChatView({
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
+  const [historyQuery, setHistoryQuery] = useState('')
+  const [dictating, setDictating] = useState(false)
+  const [dictateInterim, setDictateInterim] = useState('')
+  const [dictateError, setDictateError] = useState('')
   const findInputRef = useRef<HTMLInputElement>(null)
+  const historySearchRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<SpeechRec | null>(null)
+  const toggleDictationRef = useRef<() => void>(() => {})
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -212,6 +241,11 @@ export function ChatView({
   const lastScrollTopRef = useRef(0)
   const touchStartYRef = useRef<number | null>(null)
   const shownApprovalIdRef = useRef<string | null>(null)
+
+  const historyHits = useMemo(
+    () => filterChatList(conversationTitles ?? [], historyQuery),
+    [conversationTitles, historyQuery]
+  )
 
   useEffect(() => {
     historyActiveIndexRef.current = historyActiveIndex
@@ -231,6 +265,8 @@ export function ChatView({
       setHistoryExiting(false)
       setHistoryMounted(true)
       historyMountedRef.current = true
+      setHistoryQuery('')
+      requestAnimationFrame(() => historySearchRef.current?.focus())
       return
     }
     // 关闭：用 ref 判断是否仍挂载，避免 effect 闭包读到旧 false
@@ -261,8 +297,8 @@ export function ChatView({
 
   useEffect(() => {
     if (!showHistoryPicker) return
-    const list = conversationTitles
-    if (!list?.length) return
+    const list = historyHits
+    if (!list.length) return
     const id = list[historyActiveIndex]?.id
     if (!id) return
     const el = document.getElementById(`history-option-${id}`)
@@ -280,14 +316,14 @@ export function ChatView({
     } else if (er.bottom > mr.bottom) {
       menu.scrollTop += er.bottom - mr.bottom + 6
     }
-  }, [historyActiveIndex, showHistoryPicker, conversationTitles])
+  }, [historyActiveIndex, showHistoryPicker, historyHits])
 
   // 历史选择器键盘：↑↓ 移动高亮，Enter 打开，Esc 关闭；与 hover 同步
   useEffect(() => {
     if (!showHistoryPicker) return
     setHistoryActiveIndex(0)
     historyActiveIndexRef.current = 0
-    const total = conversationTitles?.length ?? 0
+    const total = historyHits.length
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -314,7 +350,7 @@ export function ChatView({
         return
       }
       if (e.key === 'Enter') {
-        const item = conversationTitles?.[historyActiveIndexRef.current]
+        const item = historyHits[historyActiveIndexRef.current]
         if (!item) return
         e.preventDefault()
         onPickConversation?.(item.id)
@@ -323,7 +359,7 @@ export function ChatView({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showHistoryPicker, conversationTitles, onCloseHistoryPicker, onPickConversation])
+  }, [showHistoryPicker, historyHits, onCloseHistoryPicker, onPickConversation])
 
   const stickToBottomRef = useRef(stickToBottom)
   stickToBottomRef.current = stickToBottom
@@ -461,6 +497,11 @@ export function ChatView({
   }
 
   useEffect(() => {
+    if (composerIntent === 'dictate') {
+      toggleDictationRef.current()
+      onComposerIntentHandled?.()
+      return
+    }
     if (composerIntent === 'model') {
       setModelOpenSignal((n) => n + 1)
       onComposerIntentHandled?.()
@@ -533,6 +574,20 @@ export function ChatView({
         e.preventDefault()
         setFindOpen(true)
         requestAnimationFrame(() => findInputRef.current?.focus())
+        return
+      }
+      if (
+        isDictationShortcut({
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          altKey: e.altKey,
+          shiftKey: e.shiftKey,
+          isComposing: e.isComposing
+        })
+      ) {
+        e.preventDefault()
+        toggleDictationRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -695,6 +750,86 @@ export function ChatView({
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }
+
+  const stopDictation = useCallback(() => {
+    const rec = recognitionRef.current
+    recognitionRef.current = null
+    try {
+      rec?.stop()
+    } catch {
+      /* already stopped */
+    }
+    setDictating(false)
+    setDictateInterim('')
+  }, [])
+
+  const startDictation = useCallback(() => {
+    const Ctor = speechRecognitionCtor()
+    if (!Ctor) {
+      setDictateError('当前环境不支持听写')
+      return
+    }
+    setDictateError('')
+    const rec = new Ctor()
+    rec.lang = typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'zh-CN'
+    rec.continuous = true
+    rec.interimResults = true
+    rec.onresult = (ev) => {
+      let interim = ''
+      let finals = ''
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const row = ev.results[i]
+        const t = row?.[0]?.transcript || ''
+        if (row?.isFinal) finals += t
+        else interim += t
+      }
+      if (finals) {
+        setInput((cur) => appendDictationTranscript(cur, finals))
+        requestAnimationFrame(() => syncTextareaHeight())
+      }
+      setDictateInterim(interim)
+    }
+    rec.onerror = (ev) => {
+      if (ev.error === 'aborted' || ev.error === 'no-speech') return
+      setDictateError(ev.error === 'not-allowed' ? '需要麦克风权限才能听写' : '听写失败')
+      setDictating(false)
+      setDictateInterim('')
+      recognitionRef.current = null
+    }
+    rec.onend = () => {
+      if (recognitionRef.current !== rec) return
+      recognitionRef.current = null
+      setDictating(false)
+      setDictateInterim('')
+    }
+    recognitionRef.current = rec
+    try {
+      rec.start()
+      setDictating(true)
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    } catch {
+      recognitionRef.current = null
+      setDictateError('无法开始听写')
+    }
+  }, [])
+
+  const toggleDictation = useCallback(() => {
+    if (recognitionRef.current) stopDictation()
+    else startDictation()
+  }, [startDictation, stopDictation])
+
+  toggleDictationRef.current = toggleDictation
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop()
+      } catch {
+        /* ignore */
+      }
+      recognitionRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -1008,47 +1143,68 @@ export function ChatView({
           </div>
         </div>
       ) : null}
-      {historyMounted && conversationTitles?.length ? (
+      {historyMounted ? (
         <div className="composer-popover-slot">
           <div
             className={`slash-menu history-picker ${historyExiting ? 'popover-exit' : 'popover-enter'}`.trim()}
             role="listbox"
-            aria-label="历史对话"
+            aria-label="搜索对话"
             aria-activedescendant={
-              conversationTitles[historyActiveIndex]
-                ? `history-option-${conversationTitles[historyActiveIndex].id}`
+              historyHits[historyActiveIndex]
+                ? `history-option-${historyHits[historyActiveIndex].id}`
                 : undefined
             }
           >
+            <input
+              ref={historySearchRef}
+              className="history-picker-search"
+              value={historyQuery}
+              placeholder="搜索对话标题…"
+              aria-label="搜索对话"
+              onChange={(e) => {
+                setHistoryQuery(e.target.value)
+                setHistoryActiveIndex(0)
+                historyActiveIndexRef.current = 0
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
+            />
             <ul className="slash-menu-list">
-              {conversationTitles.map((c, index) => (
-                <li key={c.id} role="presentation">
-                  <button
-                    type="button"
-                    id={`history-option-${c.id}`}
-                    role="option"
-                    aria-selected={index === historyActiveIndex}
-                    className={`slash-menu-item${index === historyActiveIndex ? ' slash-menu-item--active' : ''}`}
-                    onMouseEnter={() => {
-                      setHistoryActiveIndex(index)
-                      historyActiveIndexRef.current = index
-                    }}
-                    onMouseMove={() => {
-                      if (historyActiveIndexRef.current !== index) {
+              {historyHits.length ? (
+                historyHits.map((c, index) => (
+                  <li key={c.id} role="presentation">
+                    <button
+                      type="button"
+                      id={`history-option-${c.id}`}
+                      role="option"
+                      aria-selected={index === historyActiveIndex}
+                      className={`slash-menu-item${index === historyActiveIndex ? ' slash-menu-item--active' : ''}`}
+                      onMouseEnter={() => {
                         setHistoryActiveIndex(index)
                         historyActiveIndexRef.current = index
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      onPickConversation?.(c.id)
-                      onCloseHistoryPicker?.()
-                    }}
-                  >
-                    <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
-                  </button>
-                </li>
-              ))}
+                      }}
+                      onMouseMove={() => {
+                        if (historyActiveIndexRef.current !== index) {
+                          setHistoryActiveIndex(index)
+                          historyActiveIndexRef.current = index
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onPickConversation?.(c.id)
+                        onCloseHistoryPicker?.()
+                      }}
+                    >
+                      <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <li className="slash-menu-empty">没有匹配的对话</li>
+              )}
             </ul>
           </div>
         </div>
@@ -1174,6 +1330,22 @@ export function ChatView({
             }
           }
           const menuOpen = showMentionMenu || showSkillMenu || showSlashMenu || historyMounted
+          if (e.key === 'ArrowUp' && !menuOpen) {
+            const prev = restorePreviousComposerPrompt({ input, messages })
+            if (prev) {
+              e.preventDefault()
+              setInput(prev)
+              setCursor(prev.length)
+              requestAnimationFrame(() => {
+                const el = textareaRef.current
+                if (!el) return
+                el.focus()
+                el.setSelectionRange(prev.length, prev.length)
+                syncTextareaHeight()
+              })
+              return
+            }
+          }
           const mode = resolveComposerSubmit({
             key: e.key,
             shiftKey: e.shiftKey,
@@ -1205,9 +1377,11 @@ export function ChatView({
           }
         }}
         placeholder={
-          loading
-            ? 'Enter 注入当前回合，Tab 排队下一条…'
-            : '输入消息，/ 命令，@ 文件，$ Skill…'
+          dictating
+            ? '正在听写… Ctrl⇧D 结束'
+            : loading
+              ? 'Enter 注入当前回合，Tab 排队下一条…'
+              : '输入消息，/ 命令，@ 文件，$ Skill，Ctrl⇧D 听写…'
         }
         rows={1}
       />
@@ -1268,8 +1442,22 @@ export function ChatView({
               </button>
             </div>
           ) : null}
+          {dictating && dictateInterim ? (
+            <span className="composer-dictate-interim">{dictateInterim}</span>
+          ) : null}
+          {dictateError ? <span className="composer-dictate-error">{dictateError}</span> : null}
         </div>
         <div className="composer-footer-right">
+          <button
+            type="button"
+            className={`composer-mic${dictating ? ' is-active' : ''}`}
+            onClick={() => toggleDictation()}
+            title={dictating ? '停止听写（Ctrl⇧D）' : '听写（Ctrl⇧D）'}
+            aria-label={dictating ? '停止听写' : '开始听写'}
+            aria-pressed={dictating}
+          >
+            <Mic size={14} aria-hidden />
+          </button>
           <ModelPicker
             providers={providers}
             activeProviderId={activeProviderId}

@@ -12,6 +12,10 @@ import {
   formatReviewCommentsPrompt,
   type ReviewLineComment
 } from '../../../shared/review-comment'
+import {
+  formatPrCommentsPrompt,
+  type PullRequestContext
+} from '../../../shared/git-pr-context'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { CodeDiffBlock } from '../CodeDiffBlock'
 import './ChangesPanel.css'
@@ -89,6 +93,7 @@ export function ChangesPanel({
   const [prTitle, setPrTitle] = useState('')
   const [prUrl, setPrUrl] = useState<string | null>(null)
   const [branchName, setBranchName] = useState('')
+  const [prContext, setPrContext] = useState<PullRequestContext | null>(null)
 
   useEffect(() => {
     if (!agentFindings.length) return
@@ -148,6 +153,23 @@ export function ChangesPanel({
           if (prev && nextList.some((f) => f.path === prev)) return prev
           return nextList[0]?.path ?? result.files[0]?.path ?? null
         })
+      }
+      if (window.sharker.getPullRequestContext) {
+        const pr = await window.sharker.getPullRequestContext(workspacePath)
+        if (pr.ok) {
+          setPrContext(pr.context)
+          if (pr.context.comments.length) {
+            setComments((prev) => {
+              const keys = new Set(prev.map((c) => `${c.path}:${c.line}:${c.text}`))
+              const extra = pr.context.comments.filter(
+                (f) => !keys.has(`${f.path}:${f.line}:${f.text}`)
+              )
+              return extra.length ? [...prev, ...extra] : prev
+            })
+          }
+        } else {
+          setPrContext(null)
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -418,6 +440,32 @@ export function ChangesPanel({
             创建分支
           </button>
         </form>
+      ) : null}
+
+      {prContext ? (
+        <div className="changes-panel__comments-bar">
+          <span>
+            PR #{prContext.number} · {prContext.comments.length} 条 GitHub 评论
+          </span>
+          {prContext.url ? (
+            <button
+              type="button"
+              className="changes-panel__action"
+              onClick={() => void window.sharker.openExternal?.(prContext.url)}
+            >
+              打开
+            </button>
+          ) : null}
+          {prContext.comments.length > 0 && onSendComments ? (
+            <button
+              type="button"
+              className="changes-panel__action"
+              onClick={() => onSendComments(formatPrCommentsPrompt(prContext))}
+            >
+              处理评论
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {isRepo ? (

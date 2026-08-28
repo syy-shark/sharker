@@ -75,6 +75,7 @@ import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
+import { loadPullRequestContext } from '../../shared/git-pr-context'
 import { createNamedBranch } from '../../shared/git-branch-create'
 import { handoffCheckout } from '../../shared/git-handoff'
 import { mkdir, readFile, rm, stat, unlink, writeFile } from 'fs/promises'
@@ -1246,6 +1247,12 @@ function registerIpc(): void {
         else reject(new Error(stderr.trim() || out.trim() || `${command} failed (${code})`))
       })
     })
+
+  ipcMain.handle(IPC.GIT_PR_CONTEXT, async (_e, cwd: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { ok: false as const, error: '缺少工作区' }
+    return loadPullRequestContext({ cwd: root, run: runCommand })
+  })
 
   ipcMain.handle(
     IPC.GIT_CREATE_PR,

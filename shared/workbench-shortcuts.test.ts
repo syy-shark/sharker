@@ -51,6 +51,7 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: '/', metaKey: true }))).toBe('shortcut_help')
     expect(matchWorkbenchShortcut(ev({ key: '3', metaKey: true }))).toBe('select_chat')
     expect(matchWorkbenchShortcut(ev({ key: '`', ctrlKey: true }))).toBe('toggle_terminal')
+    expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true }))).toBe('search_chats')
   })
 
   it('cycles conversation ids', () => {

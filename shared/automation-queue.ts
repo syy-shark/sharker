@@ -110,6 +110,20 @@ export function resolveQueueTriagePaths(
   return cleanRelPaths(fallback)
 }
 
+/** 审查队列「接受」：提交成功后再推送；推送失败不回滚提交 */
+export async function pushAfterApproveCommit(options: {
+  committed: boolean
+  push?: () => Promise<{ ok: boolean; error?: string }>
+}): Promise<'skipped' | 'pushed' | 'push_failed'> {
+  if (!options.committed || !options.push) return 'skipped'
+  try {
+    const result = await options.push()
+    return result.ok ? 'pushed' : 'push_failed'
+  } catch {
+    return 'push_failed'
+  }
+}
+
 /** 展示用：未读在前，已读次之，归档最后 */
 export function sortAutomationQueue(items: AutomationQueueItem[]): AutomationQueueItem[] {
   const rank: Record<AutomationQueueStatus, number> = { unread: 0, read: 1, archived: 2 }

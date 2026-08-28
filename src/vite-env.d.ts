@@ -160,6 +160,12 @@ export interface SharkerApi {
     cwd: string,
     payload: { title: string; body?: string; base?: string }
   ) => Promise<{ ok: true; url: string } | { ok: false; error: string }>
+  getPullRequestContext: (
+    cwd: string
+  ) => Promise<
+    | { ok: true; context: import('../shared/git-pr-context').PullRequestContext }
+    | { ok: false; error: string }
+  >
   createGitBranch: (
     cwd: string,
     name: string

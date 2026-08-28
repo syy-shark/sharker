@@ -917,6 +917,59 @@ html.theme-dark .composer-thread-chip.is-active {
   transform: scale(0.98);
 }
 
+.composer-mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 14px;
+  border: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  color: var(--text-muted);
+  box-shadow: var(--glass-rim-soft);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring);
+}
+
+.composer-mic:hover {
+  background: var(--glass-fill-nested-hover);
+  color: var(--text);
+  border-color: var(--glass-edge);
+}
+
+.composer-mic.is-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-soft);
+}
+
+.composer-mic:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.composer-dictate-interim,
+.composer-dictate-error {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.composer-dictate-interim {
+  color: var(--text-muted);
+}
+
+.composer-dictate-error {
+  color: var(--danger);
+}
+
 .message-bubble--queued {
   opacity: 0.72;
   border-style: dashed;
@@ -1372,7 +1425,8 @@ html.theme-dark .composer-box:focus-within {
 html.theme-dark .composer-toolbar-btn,
 html.theme-dark .composer-chip,
 html.theme-dark .composer-send:not(.composer-send--active):not(.composer-send--stop),
-html.theme-dark .composer-jump {
+html.theme-dark .composer-jump,
+html.theme-dark .composer-mic {
   background: var(--metal-control-fill);
   border-color: var(--glass-edge-soft);
   box-shadow: var(--glass-rim-soft);
@@ -1477,6 +1531,30 @@ html.theme-light .composer-send:not(.composer-send--active):not(.composer-send--
   bottom: calc(100% + 8px);
   z-index: 30;
   pointer-events: none;
+}
+
+.history-picker-search {
+  display: block;
+  width: 100%;
+  min-height: 30px;
+  margin: 0 0 6px;
+  padding: 0 10px;
+  color: var(--text);
+  background: var(--glass-fill-nested);
+  border: 0.5px solid var(--glass-edge-soft);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.history-picker-search:focus {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+.slash-menu-empty {
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .slash-menu,

@@ -21,3 +21,18 @@ export function resolveComposerSubmit(options: {
   if (options.key === 'Tab' && options.loading) return 'queue'
   return null
 }
+
+/** 输入框为空时 ↑ 恢复上一条用户提示（对标 Codex Restore previous composer prompt） */
+export function restorePreviousComposerPrompt(options: {
+  input: string
+  messages: Array<{ role: string; content: string }>
+}): string | null {
+  if (options.input.length > 0) return null
+  for (let i = options.messages.length - 1; i >= 0; i--) {
+    const row = options.messages[i]
+    if (row.role !== 'user') continue
+    const text = String(row.content || '')
+    if (text.trim()) return text
+  }
+  return null
+}

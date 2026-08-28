@@ -18,7 +18,8 @@
 | `ipc.ts` | IPC channel 名称常量 |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤 |
+| `conversation.test.ts` | 按标题 / id 过滤对话 |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |
 | `context-limit.ts` | 各模型 context 上限与格式化 |
 | `context-compress.ts` | 85% 阈值自动压缩历史 |
@@ -36,8 +37,8 @@
 | `git-review-actions.test.ts` | 临时仓库验证 stage / unstage / revert |
 | `at-mention.ts` | Composer `@` 查询解析与插入 |
 | `at-mention.test.ts` | `@` 边界与路径插入 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程） |
-| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ |
+| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘G 搜对话） |
+| `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘G |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词 |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -49,6 +50,8 @@
 | `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
 | `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
+| `git-pr-context.ts` | 当前分支 PR + GitHub 行内评论（`gh pr view` / `gh api`） |
+| `git-pr-context.test.ts` | 解析 PR JSON、LEFT→old、缺 gh |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支 |
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
@@ -59,7 +62,7 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
@@ -69,8 +72,10 @@
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表 |
 | `approval-session.test.ts` | 审批决策与会话授权单测 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队 |
-| `composer-submit.test.ts` | Enter/Tab 与菜单/换行 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队；空输入 ↑ 恢复上一条 |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条 |
+| `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
+| `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
 | `turn-meta.ts` | 工具活动 label；写盘工具相对路径（本轮审查） |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
@@ -86,8 +91,8 @@
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
 | `automation.ts` | 自动化任务类型 |
-| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件 |
-| `automation-queue.test.ts` | 入队、未读计数、排序、路径回写 |
+| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送 |
+| `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /personality、/skill） |

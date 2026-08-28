@@ -63,6 +63,7 @@ import {
 import {
   attachQueueChangedPaths,
   enqueueAutomationRun,
+  pushAfterApproveCommit,
   resolveQueueTriagePaths,
   unreadQueueCount
 } from '../shared/automation-queue'
@@ -250,9 +251,9 @@ export default function App() {
   const [showHistoryPicker, setShowHistoryPicker] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
-  const [composerIntent, setComposerIntent] = useState<'mention' | 'skill' | 'find' | 'model' | null>(
-    null
-  )
+  const [composerIntent, setComposerIntent] = useState<
+    'mention' | 'skill' | 'find' | 'model' | 'dictate' | null
+  >(null)
   const [queueHeld, setQueueHeld] = useState(false)
   const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
@@ -2833,6 +2834,11 @@ export default function App() {
         setShowHistoryPicker(true)
         return
       }
+      if (cmd.action === 'start_dictation') {
+        setPage('chat')
+        setComposerIntent('dictate')
+        return
+      }
       void handleSlashActionRef.current(
         {
           name: cmd.id,
@@ -2883,6 +2889,11 @@ export default function App() {
       if (action === 'pick_model') {
         setPage('chat')
         setComposerIntent('model')
+        return
+      }
+      if (action === 'search_chats') {
+        setPage('chat')
+        setShowHistoryPicker(true)
         return
       }
       if (action === 'shortcut_help') {
@@ -3698,6 +3709,17 @@ export default function App() {
             item.title.trim() || '自动化'
           )
           if (!committed.ok) console.warn('[queue] approve commit failed', committed.error)
+          else {
+            const pushed = await pushAfterApproveCommit({
+              committed: true,
+              push: window.sharker.pushGitBranch
+                ? () => window.sharker.pushGitBranch(cwd)
+                : undefined
+            })
+            if (pushed === 'push_failed') {
+              console.warn('[queue] approve push failed（可稍后在审查面板重试）')
+            }
+          }
         }
       }
       if (action === 'approve') {

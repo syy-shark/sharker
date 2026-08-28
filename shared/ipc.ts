@@ -62,6 +62,8 @@ export const IPC = {
   GIT_BRANCH_CHANGES: 'git:branch-changes',
   /** 审查面板：用 gh 创建 Pull Request */
   GIT_CREATE_PR: 'git:create-pr',
+  /** 当前分支 PR 与 GitHub 行内审查评论 */
+  GIT_PR_CONTEXT: 'git:pr-context',
   /** 隔离 worktree：在 HEAD 上创建命名分支 */
   GIT_CREATE_BRANCH: 'git:create-branch',
   /** 本地 ↔ 隔离 worktree 交接（Hand off） */

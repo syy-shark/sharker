@@ -86,6 +86,19 @@ export function createEmptyConversation(workspaceId: string): Conversation {
   }
 }
 
+/** ⌘G 搜索对话：按标题或 id 过滤（对标 Codex Search chats） */
+export function filterChatList<T extends { id: string; title?: string }>(
+  items: T[],
+  query: string
+): T[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return items
+  return items.filter((c) => {
+    const title = String(c.title || '').toLowerCase()
+    return title.includes(q) || c.id.toLowerCase().includes(q)
+  })
+}
+
 /** Conversation → 侧栏摘要 */
 export function toConversationSummary(c: Conversation): ConversationSummary {
   return {
