@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FILE_PREVIEW_SEL,
+  formatComposerInsert,
   formatSideChatPrompt,
+  mergeComposerInsert,
   normalizeTranscriptSelection,
+  placeSelectionAskBar,
+  shouldOfferFilePreviewSelection,
   shouldOfferSideChat,
   SIDE_CHAT_COMPOSER_SEL,
   SIDE_CHAT_LIVE_ROW_SEL,
@@ -44,6 +49,41 @@ describe('side chat quote', () => {
     expect(formatSideChatPrompt('ECONNREFUSED', '为什么连不上？', 'terminal')).toBe(
       ['为什么连不上？', '', '终端输出：', '', '> ECONNREFUSED'].join('\n')
     )
+    expect(formatSideChatPrompt('export const x = 1', '', 'file')).toBe(
+      [
+        '关于这段文件摘录：',
+        '',
+        '> export const x = 1',
+        '',
+        '请说明要点并指出明显风险。先不要改文件。'
+      ].join('\n')
+    )
+    expect(formatComposerInsert('第一行\n第二行')).toBe(
+      ['对话摘录：', '', '> 第一行', '> 第二行'].join('\n')
+    )
+    expect(formatComposerInsert('npm test', 'terminal')).toBe(
+      ['终端输出：', '', '> npm test'].join('\n')
+    )
+    expect(formatComposerInsert('  const n = 1  ', 'file')).toBe(
+      ['文件摘录：', '', '> const n = 1'].join('\n')
+    )
+    expect(formatComposerInsert('   \n')).toBe('')
+    expect(mergeComposerInsert('', '对话摘录：\n\n> a')).toBe('对话摘录：\n\n> a')
+    expect(mergeComposerInsert('请看这里', '对话摘录：\n\n> a')).toBe(
+      ['请看这里', '', '对话摘录：', '', '> a'].join('\n')
+    )
+    expect(mergeComposerInsert('草稿  \n\n', '对话摘录：\n\n> a')).toBe(
+      ['草稿', '', '对话摘录：', '', '> a'].join('\n')
+    )
+    expect(mergeComposerInsert('草稿', '')).toBe('草稿')
+    expect(placeSelectionAskBar({ top: 10, bottom: 40, left: 100, width: 80 }, { top: 0, bottom: 400, left: 0, right: 720 })).toEqual({
+      top: 48,
+      left: 140
+    })
+    expect(placeSelectionAskBar({ top: 380, bottom: 390, left: 10, width: 20 }, { top: 0, bottom: 400, left: 0, right: 200 })).toEqual({
+      top: 364,
+      left: 72
+    })
   })
 
   it('accepts transcript ranges and rejects composer or live rows', () => {
@@ -52,5 +92,8 @@ describe('side chat quote', () => {
     expect(shouldOfferSideChat(hits(SIDE_CHAT_LIVE_ROW_SEL))).toBe(false)
     expect(shouldOfferSideChat(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
     expect(shouldOfferSideChat(() => null)).toBe(false)
+    expect(shouldOfferFilePreviewSelection(hits(FILE_PREVIEW_SEL))).toBe(true)
+    expect(shouldOfferFilePreviewSelection(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
+    expect(shouldOfferFilePreviewSelection(() => null)).toBe(false)
   })
 })

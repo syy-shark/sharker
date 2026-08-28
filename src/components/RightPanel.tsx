@@ -57,8 +57,10 @@ interface Props {
   filePreview?: { path: string; line?: number; token: number } | null
   /** 项目附加文件夹（对标 Codex Edit project secondary folders） */
   extraRoots?: string[]
-  /** 终端划选 → 旁路提问（对标 Codex Ask in side chat） */
+  /** 终端 / 文件预览划选 → 旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
+  /** 终端 / 文件预览划选 → 插入当前输入框 */
+  onInsertComposer?: (text: string) => void
 }
 
 /** Codex 风格右侧面板 */
@@ -83,7 +85,8 @@ export function RightPanel({
   gitBranchPrefix = '',
   filePreview = null,
   extraRoots = EMPTY_EXTRA_ROOTS,
-  onAskInSideChat
+  onAskInSideChat,
+  onInsertComposer
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -371,6 +374,8 @@ export function RightPanel({
             isHome={isHome}
             previewRequest={filePreview}
             extraRoots={extraRoots}
+            onAskInSideChat={onAskInSideChat}
+            onInsertComposer={onInsertComposer}
           />
         )}
         {tab === 'changes' && (
@@ -403,6 +408,7 @@ export function RightPanel({
               onPendingCommandSent={onPendingTerminalCommandSent}
               clearTick={terminalClearTick}
               onAskInSideChat={onAskInSideChat}
+              onInsertComposer={onInsertComposer}
             />
           </div>
         ) : null}

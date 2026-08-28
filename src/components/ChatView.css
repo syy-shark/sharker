@@ -1550,10 +1550,15 @@ html.theme-dark .chat-scroll-bottom {
   -webkit-backdrop-filter: none;
 }
 
-.chat-side-ask {
+.chat-side-ask-bar {
   position: fixed;
   z-index: 6;
   transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.chat-side-ask {
   padding: 6px 12px;
   border: 0.5px solid var(--glass-edge);
   background: var(--glass-fill-raised);

@@ -33,7 +33,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 | `/fork` | 分叉到新本地线程（拷贝消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree） |
-| `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史正文或集成终端输出可「旁路提问」把摘录交给旁路（对标 Codex `/side [question]` 与 Ask in side chat） |
+| `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史正文、文件预览或集成终端输出可「插入输入框」把引用块接到当前草稿，或「旁路提问」把摘录交给旁路（对标 Codex send selection to composer、`/side [question]` 与 Ask in side chat） |
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
@@ -79,6 +79,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree。顶栏也有 **交接到本地 / 交接到隔离**（对标 Codex Hand off in the chat header）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督；对话旁可按时间 / 进行中 / 等待回复 / 未读 / 置顶筛选（找不到时选「按时间」）。筛选菜单在有未读时可 **全部标为已读**（只清对话未读；`⇧Esc` 仍同时清审查队列）。侧栏铃铛或 `⌘⌥U` 开关 Activity（默认等待审批回复，对标 Codex Activity）。`⌘⌥A` 先切到等你回复的对话，再切进行中。空输入连按 Esc 回编上一条用户气泡并分叉。托管 worktree 默认建在 `~/.sharker/worktrees`（设置 → 权限 → Worktree 根目录可改绝对路径，对标 Codex Worktree root；改了不搬旧目录），默认只保留最近 15 个（0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 或 Ctrl+O 复制上一条助手回复，`/delete` 删除当前对话，`/theme` 打开外观，`/debug-config` 打印本机配置（不含 Key），直播中 Esc 停止当前回合，`/fast` 降思考档位，`/skills` 打开 Skill 选择器（带过滤参数则列出匹配项），`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；`/rename [标题]` 或 ⌘⌥R / 侧栏双击写入 `customTitle`；`/pin` 或 ⌘⌥P 置顶；`/unread` 或 ⌘⇧U 标未读（打开对话或 ⇧Esc 清除）；`/usage daily|weekly|cumulative` 看本机 Token 用量；设置 → 用量或命令面板「打开用量」看终身 Token、峰值日、连续活跃与近 14 日单色火花图（对标 Codex Profile，不假装供应商额度或最长任务）；`sharker://settings/usage|profile|tokens` 打开该页；⌘⌥O / ⌘⌥N 独立新对话（弹出窗、不拷目标、不切走当前线程；对标 Codex Quick chat）；⌘⌥⇧O 打开项目选择器；⌘⇧C 复制工作目录（内置浏览器聚焦时仍复制网址）；⌘⌥C 复制会话 ID；⌘⌥⇧C 复制对话路径（隔离 worktree 优先，否则工作区 cwd）。查找栏打开时 ⌘G / ⌘⇧G / F3 / ⇧F3 跳到下一条/上一条命中。审批打开时 Enter 允许一次、Esc 拒绝（输入框菜单优先）。Ctrl+Y 重做应用操作；⌘+ / ⌘- / ⌘0 也认小键盘。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。`/task` 在全局工作区开无项目新对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
 
 ### 线程内查找
+
+划选历史正文、文件预览或集成终端输出会出现「插入输入框」与「旁路提问」（对标 Codex send transcript selections to the composer 与 Ask in side chat）。插入会把引用块接到当前未发送草稿后面，不覆盖输入框。
 
 `⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），Enter / ↑↓ 跳转。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。查找栏打开时 `⌘G` / `⌘⇧G` / `F3` / `⇧F3` 跳下一条 / 上一条（对标 Codex Find next），此时不打开「搜索对话」。不注册为全局工作台快捷键，避免抢走普通输入框的查找。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
 

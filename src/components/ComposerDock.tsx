@@ -36,6 +36,7 @@ import {
   loadComposerDraft,
   saveComposerDraft
 } from '../../shared/composer-draft'
+import { mergeComposerInsert } from '../../shared/side-chat-quote'
 import {
   collectUserPrompts,
   filterPromptHistory,
@@ -131,6 +132,13 @@ export type ComposerDockIntent =
   | 'project'
   | null
 
+/** 深链覆盖或划选追加；nonce 变化才写入，不跟直播 token 重绘 */
+export type ComposerSeed = {
+  nonce: number
+  text: string
+  mode?: 'replace' | 'append'
+}
+
 export interface ComposerDockProps {
   sessionKey?: string | null
   workspaces: WorkspaceItem[]
@@ -167,7 +175,7 @@ export interface ComposerDockProps {
   speechHint?: string
   onSubmitted?: () => void
   /** 深链 `prompt=`：只在 nonce 变化时写入，不跟直播 token 重绘 */
-  composerSeed?: { nonce: number; text: string } | null
+  composerSeed?: ComposerSeed | null
   /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
   onEditLastUser?: () => void
   followUpBehavior?: FollowUpBehavior
@@ -668,13 +676,16 @@ export const ComposerDock = memo(
 
     useEffect(() => {
       if (!composerSeed?.text) return
-      setInput(composerSeed.text)
-      setCursor(composerSeed.text.length)
+      setInput((cur) =>
+        composerSeed.mode === 'append' ? mergeComposerInsert(cur, composerSeed.text) : composerSeed.text
+      )
       requestAnimationFrame(() => {
         const el = textareaRef.current
         if (!el) return
         el.focus()
-        el.setSelectionRange(composerSeed.text.length, composerSeed.text.length)
+        const end = el.value.length
+        setCursor(end)
+        el.setSelectionRange(end, end)
         syncTextareaHeight()
       })
     }, [composerSeed])

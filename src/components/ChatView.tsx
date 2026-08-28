@@ -18,7 +18,12 @@ import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { ChatImage } from './ChatImage'
 import { MessageActions } from './MessageActions'
-import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
+import {
+  ComposerDock,
+  type ComposerDockHandle,
+  type ComposerDockIntent,
+  type ComposerSeed
+} from './ComposerDock'
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
@@ -29,9 +34,11 @@ import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery } from '../../shared/thread-search'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
+  formatComposerInsert,
   formatSideChatPrompt,
   isTranscriptSelectionRange,
-  normalizeTranscriptSelection
+  normalizeTranscriptSelection,
+  placeSelectionAskBar
 } from '../../shared/side-chat-quote'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
@@ -263,7 +270,7 @@ interface Props {
   /** 隔离 worktree 目录已被清理，可从快照恢复 */
   worktreeMissing?: boolean
   onRestoreWorktree?: () => void
-  composerSeed?: { nonce: number; text: string } | null
+  composerSeed?: ComposerSeed | null
   /** 计划模式芯片（对标 Codex /plan） */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
@@ -271,6 +278,8 @@ interface Props {
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   /** 划选正文后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
+  /** 划选正文插入当前输入框（对标 Codex send selection to composer） */
+  onInsertComposer?: (text: string) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -334,7 +343,8 @@ export function ChatView({
   planMode = false,
   onPlanModeChange,
   toolOutputDisplay = 'standard',
-  onAskInSideChat
+  onAskInSideChat,
+  onInsertComposer
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -355,7 +365,7 @@ export function ChatView({
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const syncSideAsk = useCallback(() => {
-    if (!onAskInSideChat) {
+    if (!onAskInSideChat && !onInsertComposer) {
       setSideAsk(null)
       return
     }
@@ -386,15 +396,18 @@ export function ChatView({
       setSideAsk(null)
       return
     }
-    const next = {
-      text,
-      top: Math.min(rect.bottom + 8, box.bottom - 36),
-      left: Math.min(Math.max(rect.left + rect.width / 2, box.left + 16), box.right - 16)
-    }
+    const placed = placeSelectionAskBar(rect, box)
+    const next = { text, top: placed.top, left: placed.left }
     setSideAsk((prev) =>
       prev && prev.text === next.text && prev.top === next.top && prev.left === next.left ? prev : next
     )
-  }, [onAskInSideChat])
+  }, [onAskInSideChat, onInsertComposer])
+  useEffect(() => {
+    if (!onAskInSideChat && !onInsertComposer) return
+    const onSel = () => syncSideAsk()
+    document.addEventListener('selectionchange', onSel)
+    return () => document.removeEventListener('selectionchange', onSel)
+  }, [onAskInSideChat, onInsertComposer, syncSideAsk])
   /** 程序触发的滚动期间，忽略 scroll 事件对 stickToBottom 的干扰 */
   const programmaticScrollRef = useRef(false)
   /** 用户主动上翻；只有自己滚回尽头或点「回到底部」才解除。 */
@@ -1040,20 +1053,37 @@ export function ChatView({
           />
         </div>
       </div>
-      {sideAsk && onAskInSideChat ? (
-        <button
-          type="button"
-          className="chat-side-ask glass-pill"
-          style={{ top: sideAsk.top, left: sideAsk.left }}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            onAskInSideChat(formatSideChatPrompt(sideAsk.text))
-            setSideAsk(null)
-            window.getSelection()?.removeAllRanges()
-          }}
-        >
-          旁路提问
-        </button>
+      {sideAsk && (onAskInSideChat || onInsertComposer) ? (
+        <div className="chat-side-ask-bar" style={{ top: sideAsk.top, left: sideAsk.left }}>
+          {onInsertComposer ? (
+            <button
+              type="button"
+              className="chat-side-ask glass-pill"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onInsertComposer(formatComposerInsert(sideAsk.text))
+                setSideAsk(null)
+                window.getSelection()?.removeAllRanges()
+              }}
+            >
+              插入输入框
+            </button>
+          ) : null}
+          {onAskInSideChat ? (
+            <button
+              type="button"
+              className="chat-side-ask glass-pill"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onAskInSideChat(formatSideChatPrompt(sideAsk.text))
+                setSideAsk(null)
+                window.getSelection()?.removeAllRanges()
+              }}
+            >
+              旁路提问
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

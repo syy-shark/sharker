@@ -375,7 +375,11 @@ export default function App() {
   const [composerIntent, setComposerIntent] = useState<
     'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | 'project' | null
   >(null)
-  const [composerSeed, setComposerSeed] = useState<{ nonce: number; text: string } | null>(null)
+  const [composerSeed, setComposerSeed] = useState<{
+    nonce: number
+    text: string
+    mode?: 'replace' | 'append'
+  } | null>(null)
   const composerSeedNonceRef = useRef(0)
   const popoutRoute = useMemo(
     () => parseThreadWindowHash(typeof window !== 'undefined' ? window.location.hash : ''),
@@ -3205,10 +3209,10 @@ export default function App() {
     return newItem.id
   }
 
-  const seedComposer = (text: string) => {
+  const seedComposer = (text: string, mode: 'replace' | 'append' = 'replace') => {
     const nonce = composerSeedNonceRef.current + 1
     composerSeedNonceRef.current = nonce
-    setComposerSeed({ nonce, text })
+    setComposerSeed({ nonce, text, mode })
   }
 
   const applyDeeplink = async (raw: string) => {
@@ -6348,6 +6352,7 @@ export default function App() {
                   prompt
                 )
               }}
+              onInsertComposer={(text) => seedComposer(text, 'append')}
             />
             </div>
           ) : page === 'automations' ? (
@@ -6418,6 +6423,7 @@ export default function App() {
               prompt
             )
           }}
+          onInsertComposer={(text) => seedComposer(text, 'append')}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

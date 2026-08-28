@@ -253,6 +253,35 @@ html.theme-dark .file-tree-viewer {
   border-color: var(--glass-edge-soft);
 }
 
+.file-tree-side-ask-bar {
+  position: fixed;
+  z-index: 8;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.file-tree-side-ask {
+  padding: 6px 12px;
+  border: 0.5px solid var(--glass-edge);
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow-tile), var(--glass-rim);
+}
+
+.file-tree-side-ask:hover {
+  background: var(--glass-fill-popover);
+}
+
+html.theme-dark .file-tree-side-ask {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .file-tree-row:focus-visible, .file-tree-refresh:focus-visible {
   outline: 2px solid var(--accent-ring);
   outline-offset: 2px;

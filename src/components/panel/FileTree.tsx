@@ -1,5 +1,6 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
+ * 文本预览划选可插入输入框或旁路提问。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
@@ -8,6 +9,13 @@ import {
   filePreviewUnsupportedMessage,
   type FilePreviewKind
 } from '../../../shared/file-preview'
+import {
+  formatComposerInsert,
+  formatSideChatPrompt,
+  isFilePreviewSelectionRange,
+  normalizeTranscriptSelection,
+  placeSelectionAskBar
+} from '../../../shared/side-chat-quote'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
 
@@ -20,6 +28,10 @@ interface Props {
   previewRequest?: { path: string; line?: number; token: number } | null
   /** 项目附加文件夹：与主根一起出现在文件树顶层 */
   extraRoots?: string[]
+  /** 划选预览正文后旁路提问（对标 Codex Ask in side chat） */
+  onAskInSideChat?: (prompt: string) => void
+  /** 划选预览正文插入当前输入框（对标 Codex send selection to composer） */
+  onInsertComposer?: (text: string) => void
 }
 
 function TreeNodeView({
@@ -87,7 +99,9 @@ export function FileTree({
   workspacePath,
   isHome = false,
   previewRequest = null,
-  extraRoots = EMPTY_EXTRA_ROOTS
+  extraRoots = EMPTY_EXTRA_ROOTS,
+  onAskInSideChat,
+  onInsertComposer
 }: Props) {
   const extras = useMemo(
     () => extraRoots.filter((root) => root && root !== workspacePath),
@@ -104,7 +118,9 @@ export function FileTree({
     line?: number
   } | null>(null)
   const [fileError, setFileError] = useState('')
+  const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const lineTargetRef = useRef<HTMLDivElement | null>(null)
+  const viewerBodyRef = useRef<HTMLPreElement | null>(null)
 
   const load = useCallback(async () => {
     if (!workspacePath || !window.sharker?.getWorkspaceTree) return
@@ -185,6 +201,55 @@ export function FileTree({
     lineTargetRef.current?.scrollIntoView({ block: 'center' })
   }, [openFile?.path, openFile?.line, openFile?.content])
 
+  const syncSideAsk = useCallback(() => {
+    if (!onAskInSideChat && !onInsertComposer) {
+      setSideAsk(null)
+      return
+    }
+    const root = viewerBodyRef.current
+    if (!root || openFile?.kind !== 'text') {
+      setSideAsk(null)
+      return
+    }
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+      setSideAsk(null)
+      return
+    }
+    const range = sel.getRangeAt(0)
+    if (!isFilePreviewSelectionRange(range, root)) {
+      setSideAsk(null)
+      return
+    }
+    const text = normalizeTranscriptSelection(sel.toString())
+    if (!text) {
+      setSideAsk(null)
+      return
+    }
+    const rect = range.getBoundingClientRect()
+    const box = root.getBoundingClientRect()
+    if (rect.bottom < box.top || rect.top > box.bottom) {
+      setSideAsk(null)
+      return
+    }
+    const placed = placeSelectionAskBar(rect, box)
+    const next = { text, top: placed.top, left: placed.left }
+    setSideAsk((prev) =>
+      prev && prev.text === next.text && prev.top === next.top && prev.left === next.left ? prev : next
+    )
+  }, [onAskInSideChat, onInsertComposer, openFile?.kind])
+
+  useEffect(() => {
+    setSideAsk(null)
+  }, [openFile?.path])
+
+  useEffect(() => {
+    if (!onAskInSideChat && !onInsertComposer) return
+    const onSel = () => syncSideAsk()
+    document.addEventListener('selectionchange', onSel)
+    return () => document.removeEventListener('selectionchange', onSel)
+  }, [onAskInSideChat, onInsertComposer, syncSideAsk])
+
   if (!workspacePath) {
     return <p className="file-tree-empty">请先选择工作区</p>
   }
@@ -213,7 +278,7 @@ export function FileTree({
               title={openFile.path.split('/').pop() || 'PDF'}
             />
           ) : (
-          <pre className="file-tree-viewer-body">
+          <pre className="file-tree-viewer-body" ref={viewerBodyRef} onMouseUp={syncSideAsk}>
             {(openFile.content ?? '').split('\n').map((text, index) => {
               const lineNo = index + 1
               const target = openFile.line === lineNo
@@ -232,6 +297,38 @@ export function FileTree({
             })}
           </pre>
           )}
+          {openFile.kind === 'text' && sideAsk && (onAskInSideChat || onInsertComposer) ? (
+            <div className="file-tree-side-ask-bar" style={{ top: sideAsk.top, left: sideAsk.left }}>
+              {onInsertComposer ? (
+                <button
+                  type="button"
+                  className="file-tree-side-ask glass-pill"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onInsertComposer(formatComposerInsert(sideAsk.text, 'file'))
+                    setSideAsk(null)
+                    window.getSelection()?.removeAllRanges()
+                  }}
+                >
+                  插入输入框
+                </button>
+              ) : null}
+              {onAskInSideChat ? (
+                <button
+                  type="button"
+                  className="file-tree-side-ask glass-pill"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onAskInSideChat(formatSideChatPrompt(sideAsk.text, '', 'file'))
+                    setSideAsk(null)
+                    window.getSelection()?.removeAllRanges()
+                  }}
+                >
+                  旁路提问
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
       {fileError ? <p className="file-tree-error">{fileError}</p> : null}

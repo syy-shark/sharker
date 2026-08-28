@@ -316,10 +316,15 @@ html.theme-dark .embedded-terminal .xterm-viewport::-webkit-scrollbar-thumb {
   display: flex;
 }
 
-.embedded-terminal-side-ask {
+.embedded-terminal-side-ask-bar {
   position: fixed;
   z-index: 8;
   transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.embedded-terminal-side-ask {
   padding: 6px 12px;
   border: 0.5px solid var(--glass-edge);
   background: var(--glass-fill-raised);

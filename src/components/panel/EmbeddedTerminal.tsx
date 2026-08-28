@@ -6,7 +6,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { formatSideChatPrompt, normalizeTranscriptSelection } from '../../../shared/side-chat-quote'
+import {
+  formatComposerInsert,
+  formatSideChatPrompt,
+  normalizeTranscriptSelection,
+  placeSelectionAskBar
+} from '../../../shared/side-chat-quote'
 import {
   addTerminalTab,
   closeTerminalTab,
@@ -33,6 +38,8 @@ interface Props {
   clearTick?: number
   /** 划选终端输出后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
+  /** 划选终端输出插入当前输入框（对标 Codex send selection to composer） */
+  onInsertComposer?: (text: string) => void
 }
 
 /**
@@ -144,6 +151,7 @@ function TerminalSession({
   onPendingCommandSent,
   clearTick = 0,
   onAskInSideChat,
+  onInsertComposer,
   themeTick
 }: {
   workspacePath: string
@@ -154,6 +162,7 @@ function TerminalSession({
   onPendingCommandSent?: () => void
   clearTick?: number
   onAskInSideChat?: (prompt: string) => void
+  onInsertComposer?: (text: string) => void
   themeTick: number
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -167,6 +176,8 @@ function TerminalSession({
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const onAskRef = useRef(onAskInSideChat)
   onAskRef.current = onAskInSideChat
+  const onInsertRef = useRef(onInsertComposer)
+  onInsertRef.current = onInsertComposer
 
   useEffect(() => {
     const host = hostRef.current
@@ -202,7 +213,7 @@ function TerminalSession({
     fitRef.current = fit
 
     const syncSideAsk = () => {
-      if (!onAskRef.current) {
+      if (!onAskRef.current && !onInsertRef.current) {
         setSideAsk(null)
         return
       }
@@ -214,14 +225,14 @@ function TerminalSession({
       const box = host.getBoundingClientRect()
       const mark = host.querySelector('.xterm-selection')
       const rect = mark?.getBoundingClientRect()
-      const top =
-        rect && rect.height > 0 ? Math.min(rect.bottom + 8, box.bottom - 36) : box.bottom - 40
-      const left =
-        rect && rect.width > 0
-          ? Math.min(Math.max(rect.left + rect.width / 2, box.left + 16), box.right - 16)
-          : box.left + box.width / 2
+      const placed =
+        rect && rect.height > 0
+          ? placeSelectionAskBar(rect, box)
+          : { top: box.bottom - 40, left: box.left + box.width / 2 }
       setSideAsk((prev) =>
-        prev && prev.text === text && prev.top === top && prev.left === left ? prev : { text, top, left }
+        prev && prev.text === text && prev.top === placed.top && prev.left === placed.left
+          ? prev
+          : { text, top: placed.top, left: placed.left }
       )
     }
     const selectionSub = term.onSelectionChange(syncSideAsk)
@@ -417,20 +428,40 @@ function TerminalSession({
         ref={hostRef}
         data-term-theme={isDarkUi() ? 'dark' : 'light'}
       />
-      {visible && sideAsk && onAskInSideChat ? (
-        <button
-          type="button"
-          className="embedded-terminal-side-ask glass-pill"
+      {visible && sideAsk && (onAskInSideChat || onInsertComposer) ? (
+        <div
+          className="embedded-terminal-side-ask-bar"
           style={{ top: sideAsk.top, left: sideAsk.left }}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            onAskInSideChat(formatSideChatPrompt(sideAsk.text, '', 'terminal'))
-            setSideAsk(null)
-            termRef.current?.clearSelection()
-          }}
         >
-          旁路提问
-        </button>
+          {onInsertComposer ? (
+            <button
+              type="button"
+              className="embedded-terminal-side-ask glass-pill"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onInsertComposer(formatComposerInsert(sideAsk.text, 'terminal'))
+                setSideAsk(null)
+                termRef.current?.clearSelection()
+              }}
+            >
+              插入输入框
+            </button>
+          ) : null}
+          {onAskInSideChat ? (
+            <button
+              type="button"
+              className="embedded-terminal-side-ask glass-pill"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onAskInSideChat(formatSideChatPrompt(sideAsk.text, '', 'terminal'))
+                setSideAsk(null)
+                termRef.current?.clearSelection()
+              }}
+            >
+              旁路提问
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
@@ -444,7 +475,8 @@ export function EmbeddedTerminal({
   pendingCommand = null,
   onPendingCommandSent,
   clearTick = 0,
-  onAskInSideChat
+  onAskInSideChat,
+  onInsertComposer
 }: Props) {
   const [tabs, setTabs] = useState(() => ensureTerminalTabs())
   const [activeId, setActiveId] = useState('t1')
@@ -561,6 +593,7 @@ export function EmbeddedTerminal({
                 onPendingCommandSent={onPendingCommandSent}
                 clearTick={tabClears[tab.id] ?? 0}
                 onAskInSideChat={onAskInSideChat}
+                onInsertComposer={onInsertComposer}
                 themeTick={themeTick}
               />
             </div>
@@ -579,7 +612,8 @@ export function ThreadTerminalBank({
   pendingCommand = null,
   onPendingCommandSent,
   clearTick = 0,
-  onAskInSideChat
+  onAskInSideChat,
+  onInsertComposer
 }: Props) {
   const key = threadTerminalKey(conversationId, workspacePath)
   const [panes, setPanes] = useState(() => rememberThreadTerminalPanes([], key, workspacePath))
@@ -606,6 +640,7 @@ export function ThreadTerminalBank({
             onPendingCommandSent={onPendingCommandSent}
             clearTick={clearTick}
             onAskInSideChat={onAskInSideChat}
+            onInsertComposer={onInsertComposer}
           />
         </div>
       ))}
