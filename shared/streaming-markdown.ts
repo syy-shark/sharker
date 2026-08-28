@@ -364,6 +364,57 @@ export function parseLinkDefinitionLine(line: string): { id: string; href: strin
   return { id: normalizeLinkLabel(match[1] ?? ''), href }
 }
 
+/**
+ * 找到 `[text](dest)` / `![alt](dest)` 的闭合 `)`。
+ * dest 里成对括号（`https://a.test/x(1)`）不算结束，对标 CommonMark / micromark。
+ */
+function findInlineLinkCloser(src: string, destStart: number): number {
+  let i = destStart
+  if (i >= src.length) return -1
+  if (src[i] === '<') {
+    const gt = src.indexOf('>', i + 1)
+    if (gt === -1 || src.slice(i, gt + 1).includes('\n')) return -1
+    i = gt + 1
+  } else {
+    let depth = 0
+    while (i < src.length) {
+      const ch = src[i]!
+      if (ch === '\n') return -1
+      if (ch === '\\') {
+        i += src[i + 1] ? 2 : 1
+        continue
+      }
+      if (ch === '(') {
+        depth += 1
+        i += 1
+        continue
+      }
+      if (ch === ')') {
+        if (depth === 0) return i
+        depth -= 1
+        i += 1
+        continue
+      }
+      if ((ch === ' ' || ch === '\t') && depth === 0) break
+      i += 1
+    }
+  }
+  while (i < src.length && (src[i] === ' ' || src[i] === '\t')) i += 1
+  const quote = src[i]
+  if (quote === '"' || quote === "'" || quote === '(') {
+    const endQ = quote === '(' ? ')' : quote
+    i += 1
+    while (i < src.length && src[i] !== endQ && src[i] !== '\n') {
+      if (src[i] === '\\') i += src[i + 1] ? 2 : 1
+      else i += 1
+    }
+    if (src[i] !== endQ) return -1
+    i += 1
+    while (i < src.length && (src[i] === ' ' || src[i] === '\t')) i += 1
+  }
+  return src[i] === ')' ? i : -1
+}
+
 /** CommonMark dest：`url` / `<url>`，可选 `"title"` / `'title'` / `(title)` */
 function parseLinkDestination(dest: string): { href: string; title?: string } | null {
   const trimmed = dest.trim()
@@ -421,7 +472,7 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 
 /**
  * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合 `[text](url)` /
- * `[text][id]` / `![alt](url)` / `![alt][id]`、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
+ * `[text][id]` / `![alt](url)` / `![alt][id]`、dest 内成对括号、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
  * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
 export function parseCheapInlineMarkdown(
@@ -597,7 +648,7 @@ export function parseCheapInlineMarkdown(
       const label = src.slice(labelStart, labelEnd)
       if (!label.includes('\n')) {
         if (src[labelEnd + 1] === '(') {
-          const urlEnd = src.indexOf(')', labelEnd + 2)
+          const urlEnd = findInlineLinkCloser(src, labelEnd + 2)
           if (urlEnd === -1) {
             buf += src.slice(i)
             break

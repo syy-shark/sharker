@@ -118,6 +118,20 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '见 ' },
       { type: 'link', text: '文档', href: 'https://a.test/x', title: '题' }
     ])
+    expect(parseCheapInlineMarkdown('见 [文档](https://a.test/x(1)) 后')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://a.test/x(1)' },
+      { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('见 [文档](https://a.test/x(1) "题")')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://a.test/x(1)', title: '题' }
+    ])
+    expect(parseCheapInlineMarkdown('见图 ![示意](https://a.test/p.png?x=(1)) 后')).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: '示意', href: 'https://a.test/p.png?x=(1)' },
+      { type: 'text', text: ' 后' }
+    ])
     expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
       { type: 'text', text: '半截 ![未闭](https://x' }
     ])
