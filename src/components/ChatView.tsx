@@ -3,7 +3,7 @@
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop。
  * @see src/ARCH.md
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type {
   AssistantMeta,
   ApprovalRequest,
@@ -28,7 +28,11 @@ import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
-import { isNearLiveMessageRow } from '../../shared/live-display'
+import {
+  isNearLiveMessageRow,
+  nextRowIntrinsicHeights,
+  rowIntrinsicSizeStyle
+} from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
@@ -100,6 +104,7 @@ const UserMessageRow = memo(function UserMessageRow({
   findHit,
   findCurrent,
   nearLive,
+  intrinsicHeight,
   editRequested,
   onEditRequestHandled,
   onEdit
@@ -110,6 +115,7 @@ const UserMessageRow = memo(function UserMessageRow({
   findHit: boolean
   findCurrent: boolean
   nearLive?: boolean
+  intrinsicHeight?: number
   editRequested?: boolean
   onEditRequestHandled?: () => void
   onEdit?: (text: string) => void
@@ -135,6 +141,7 @@ const UserMessageRow = memo(function UserMessageRow({
       className={`message-row message-row--user${nearLive ? ' message-row--near-live' : ''}${
         findHit ? ' is-find-hit' : ''
       }${findCurrent ? ' is-find-current' : ''}`}
+      style={nearLive ? undefined : rowIntrinsicSizeStyle(intrinsicHeight)}
     >
       <div className="message-user-wrap">
         <div className="message-bubble message-bubble--user">
@@ -362,10 +369,16 @@ export function ChatView({
   useEffect(() => {
     setEditUserMessageId(null)
     setSideAsk(null)
+    measuredRowHeightsRef.current = new Map()
+    setIntrinsicHeights(new Map())
   }, [sessionKey])
   const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
+  const measuredRowHeightsRef = useRef(new Map<string, number>())
+  const [intrinsicHeights, setIntrinsicHeights] = useState<ReadonlyMap<string, number>>(
+    () => new Map()
+  )
   const bottomRef = useRef<HTMLDivElement>(null)
   const syncSideAsk = useCallback(() => {
     if (!onAskInSideChat && !onInsertComposer) {
@@ -798,6 +811,47 @@ export function ChatView({
   }, [isEmpty, loading, sessionKey])
 
   useEffect(() => {
+    const root = messagesInnerRef.current
+    if (!root || isEmpty) return
+    const remember = (el: Element) => {
+      const id = el.id.startsWith('msg-') ? el.id.slice(4) : ''
+      if (!id || id === 'streaming') return
+      const height = Math.round((el as HTMLElement).offsetHeight)
+      if (height > 0) measuredRowHeightsRef.current.set(id, height)
+    }
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) remember(entry.target)
+    })
+    const watch = () => {
+      root.querySelectorAll('.message-row').forEach((el) => {
+        remember(el)
+        ro.observe(el)
+      })
+    }
+    watch()
+    const mo = new MutationObserver(watch)
+    mo.observe(root, { childList: true })
+    return () => {
+      ro.disconnect()
+      mo.disconnect()
+    }
+  }, [isEmpty, sessionKey])
+
+  useLayoutEffect(() => {
+    if (isEmpty) return
+    setIntrinsicHeights((prev) =>
+      nextRowIntrinsicHeights(
+        prev,
+        messages.map((m, index) => ({
+          id: m.id,
+          nearLive: isNearLiveMessageRow(index, messages.length),
+          height: measuredRowHeightsRef.current.get(m.id)
+        }))
+      )
+    )
+  }, [isEmpty, messages])
+
+  useEffect(() => {
     if (isEmpty || loading) return
     if (!stickToBottomRef.current || userScrollLockRef.current) return
     scrollToBottom('auto')
@@ -829,6 +883,7 @@ export function ChatView({
             findHit={findHits.some((h) => h.messageId === m.id)}
             findCurrent={findHits[findHit]?.messageId === m.id}
             nearLive={nearLive}
+            intrinsicHeight={intrinsicHeights.get(m.id)}
             editRequested={editUserMessageId === m.id}
             onEditRequestHandled={handleEditRequestHandled}
             onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
@@ -842,6 +897,7 @@ export function ChatView({
             }${findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''}${
               findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''
             }`}
+            style={nearLive ? undefined : rowIntrinsicSizeStyle(intrinsicHeights.get(m.id))}
           >
             <AssistantMessage
               messageId={m.id}
@@ -865,6 +921,7 @@ export function ChatView({
       findHit,
       findHits,
       handleEditRequestHandled,
+      intrinsicHeights,
       messages,
       modelLabel,
       onOpenSubAgent,

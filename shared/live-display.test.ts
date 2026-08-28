@@ -4,6 +4,8 @@ import {
   formatElapsedClock,
   isInlineDemoPaintable,
   isNearLiveMessageRow,
+  nextRowIntrinsicHeights,
+  rowIntrinsicSizeStyle,
   liveThoughtBody,
   liveThinkingText,
   rollingThinkPreview,
@@ -137,6 +139,22 @@ describe('near-live message rows', () => {
     expect(isNearLiveMessageRow(0, 3, 8)).toBe(true)
     expect(isNearLiveMessageRow(-1, 3, 8)).toBe(false)
     expect(isNearLiveMessageRow(0, 0, 8)).toBe(false)
+    expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
+    expect(rowIntrinsicSizeStyle(0)).toBeUndefined()
+    expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })
+    const prev = new Map([['old', 200]])
+    const same = nextRowIntrinsicHeights(prev, [
+      { id: 'old', nearLive: false, height: 200 },
+      { id: 'live', nearLive: true, height: 800 }
+    ])
+    expect(same).toBe(prev)
+    const grown = nextRowIntrinsicHeights(prev, [
+      { id: 'old', nearLive: false, height: 200 },
+      { id: 'left', nearLive: false, height: 640.2 }
+    ])
+    expect(grown).not.toBe(prev)
+    expect(grown.get('left')).toBe(640)
+    expect(grown.get('old')).toBe(200)
   })
 })
 

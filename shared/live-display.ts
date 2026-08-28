@@ -247,3 +247,31 @@ export function isNearLiveMessageRow(
   if (index < 0 || index >= total) return false
   return index >= Math.max(0, total - window)
 }
+
+/** 远离贴底窗口后用实测高度当 content-visibility 内在尺寸，避免从 160px 估高跳变 */
+export function rowIntrinsicSizeStyle(
+  height: number | undefined
+): { containIntrinsicSize: string } | undefined {
+  if (height == null || height < 1) return undefined
+  return { containIntrinsicSize: `auto ${Math.round(height)}px` }
+}
+
+/** 只在行离开贴底窗口时写入高度；引用没变就复用同一 Map */
+export function nextRowIntrinsicHeights(
+  prev: ReadonlyMap<string, number>,
+  snapshots: ReadonlyArray<{ id: string; nearLive: boolean; height?: number }>
+): ReadonlyMap<string, number> {
+  let changed = false
+  const next = new Map(prev)
+  for (const row of snapshots) {
+    if (row.nearLive) continue
+    const raw = row.height
+    if (raw == null || raw < 1) continue
+    const height = Math.round(raw)
+    if (next.get(row.id) !== height) {
+      next.set(row.id, height)
+      changed = true
+    }
+  }
+  return changed ? next : prev
+}
