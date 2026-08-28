@@ -117,6 +117,12 @@
   word-break: normal;
 }
 
+.code-diff-block--wrap .code-diff-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .code-diff-expand {
   display: inline-flex;
   min-height: 28px;

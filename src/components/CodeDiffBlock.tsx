@@ -48,6 +48,8 @@ interface Props {
   showHeader?: boolean
   /** ⌘/Ctrl+单击行打开预览（对标 Codex Review） */
   onOpenLine?: (line: number) => void
+  /** 长行换行（对标 Codex Wrap long diff lines；默认开，避免横向撑开直播贴底） */
+  wrapLines?: boolean
   review?: CodeDiffReviewProps
 }
 
@@ -142,6 +144,7 @@ export function CodeDiffBlock({
   defaultExpanded = false,
   showHeader = true,
   onOpenLine,
+  wrapLines = true,
   review
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
@@ -243,7 +246,7 @@ export function CodeDiffBlock({
       label={label}
       detail={detail}
       copyText={serializeDiff(displayLines)}
-      className="code-diff-block"
+      className={`code-diff-block${wrapLines ? ' code-diff-block--wrap' : ''}`}
       bodyClassName="code-diff-body"
       footer={footer}
       showHeader={showHeader}

@@ -38,6 +38,13 @@
   white-space: nowrap;
 }
 
+.changes-panel__head-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
 .changes-panel__refresh {
   display: inline-flex;
   width: 28px;
@@ -73,6 +80,18 @@
 
 .changes-panel__refresh .is-spinning {
   animation: ui-spin 0.9s linear infinite;
+}
+
+.changes-panel__wrap {
+  width: auto;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.changes-panel__wrap.is-pressed {
+  color: var(--accent);
+  border-color: var(--glass-edge);
 }
 
 .changes-panel__compare {

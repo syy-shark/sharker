@@ -110,6 +110,13 @@ export function ChangesPanel({
   const [prUrl, setPrUrl] = useState<string | null>(null)
   const [branchName, setBranchName] = useState('')
   const [prContext, setPrContext] = useState<PullRequestContext | null>(null)
+  const [wrapLines, setWrapLines] = useState(() => {
+    try {
+      return localStorage.getItem('sharker-diff-wrap') !== '0'
+    } catch {
+      return true
+    }
+  })
 
   useEffect(() => {
     if (!agentFindings.length) return
@@ -453,16 +460,38 @@ export function ChangesPanel({
             <span className="changes-panel__count">{visible.length}</span>
           ) : null}
         </div>
-        <button
-          type="button"
-          className="changes-panel__refresh"
-          onClick={() => void refresh()}
-          disabled={loading || acting}
-          title="刷新"
-          aria-label="刷新变更列表"
-        >
-          <RefreshCw size={14} className={loading ? 'is-spinning' : undefined} aria-hidden />
-        </button>
+        <div className="changes-panel__head-actions">
+          <button
+            type="button"
+            className={`changes-panel__refresh changes-panel__wrap${wrapLines ? ' is-pressed' : ''}`}
+            aria-pressed={wrapLines}
+            title={wrapLines ? '不换行长 diff' : '换行长 diff'}
+            aria-label={wrapLines ? '关闭长 diff 换行' : '换行长 diff'}
+            onClick={() => {
+              setWrapLines((on) => {
+                const next = !on
+                try {
+                  localStorage.setItem('sharker-diff-wrap', next ? '1' : '0')
+                } catch {
+                  /* ignore quota / private mode */
+                }
+                return next
+              })
+            }}
+          >
+            换行
+          </button>
+          <button
+            type="button"
+            className="changes-panel__refresh"
+            onClick={() => void refresh()}
+            disabled={loading || acting}
+            title="刷新"
+            aria-label="刷新变更列表"
+          >
+            <RefreshCw size={14} className={loading ? 'is-spinning' : undefined} aria-hidden />
+          </button>
+        </div>
       </div>
 
       {isRepo && branch === 'HEAD' ? (
@@ -834,6 +863,7 @@ export function ChangesPanel({
                   diff={diff}
                   defaultExpanded
                   showHeader
+                  wrapLines={wrapLines}
                   onOpenLine={
                     selectedPath
                       ? (line) => dispatchOpenWorkspaceFile({ path: selectedPath, line })
