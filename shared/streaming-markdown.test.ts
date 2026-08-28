@@ -140,6 +140,14 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '半截 ' },
       { type: 'link', text: 'https://a', href: 'https://a', raw: '<https://a' }
     ])
+    expect(parseCheapInlineMarkdown('半截 <dev@a.test')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'link', text: 'dev@a.test', href: 'mailto:dev@a.test', raw: '<dev@a.test' }
+    ])
+    expect(parseCheapInlineMarkdown('见注[^1')).toEqual([
+      { type: 'text', text: '见注' },
+      { type: 'fn', id: '1', raw: '[^1' }
+    ])
     expect(parseCheapInlineMarkdown('半截 **')).toEqual([{ type: 'text', text: '半截 **' }])
     expect(parseCheapInlineMarkdown('半截 *')).toEqual([{ type: 'text', text: '半截 *' }])
     expect(parseCheapInlineMarkdown('半截 ~~')).toEqual([{ type: 'text', text: '半截 ~~' }])

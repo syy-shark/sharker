@@ -200,7 +200,7 @@ export type CheapInlineNode =
   | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
-  | { type: 'fn'; id: string }
+  | { type: 'fn'; id: string; raw?: string }
   | { type: 'br' }
 
 /** 直播列表项：可挂一层或多层嵌套列表；松散项额外段落对标 remark `li>p` */
@@ -1042,11 +1042,24 @@ export function parseCheapInlineMarkdown(
           nodes.push({ type: 'link', text: rest, href: rest, raw: src.slice(i) })
           break
         }
+        if (!rest.includes('\n') && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$/.test(rest) && rest.includes('.')) {
+          flush()
+          nodes.push({ type: 'link', text: rest, href: `mailto:${rest}`, raw: src.slice(i) })
+          break
+        }
       }
     }
     if (src.startsWith('[^', i)) {
       const end = src.indexOf(']', i + 2)
       if (end === -1) {
+        if (allowOpen) {
+          const id = src.slice(i + 2)
+          if (id && !id.includes('\n')) {
+            flush()
+            nodes.push({ type: 'fn', id, raw: src.slice(i) })
+            break
+          }
+        }
         buf += src.slice(i)
         break
       }
