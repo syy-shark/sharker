@@ -39,6 +39,9 @@ describe('command palette', () => {
     expect(ids).toContain('nav-forward')
     expect(ids).toContain('font-larger')
     expect(ids).toContain('clear-terminal')
+    expect(ids).toContain('clear-unread')
+    expect(ids).toContain('search-files')
+    expect(ids).toContain('next-attention')
   })
 
   it('filters by title and keywords', () => {

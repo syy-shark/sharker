@@ -71,6 +71,18 @@ describe('workbench shortcuts', () => {
     expect(
       matchWorkbenchShortcut(ev({ key: '[', code: 'BracketLeft', metaKey: true, shiftKey: true }))
     ).toBe('prev_thread')
+    expect(matchWorkbenchShortcut(ev({ key: 'Escape', shiftKey: true }))).toBe('clear_unread')
+    expect(matchWorkbenchShortcut(ev({ key: 'a', metaKey: true, shiftKey: true }))).toBe(
+      'archive_thread'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 's', metaKey: true, altKey: true }))).toBe(
+      'side_conversation'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'a', metaKey: true, altKey: true }))).toBe(
+      'next_attention'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'p', metaKey: true }))).toBe('search_files')
+    expect(matchWorkbenchShortcut(ev({ key: 't', metaKey: true }))).toBe('open_browser')
   })
 
   it('cycles conversation ids', () => {

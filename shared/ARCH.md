@@ -18,7 +18,7 @@
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、`/fork` 分叉标题与拷贝 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝 |
 | `conversation.test.ts` | 按标题 / id 过滤对话、进行中拆分、分叉标题 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |
@@ -41,7 +41,7 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘[ / ⌘] 前进后退、⌘+/- 字号、Ctrl+L 清终端、⌘G 搜对话、⌘⇧O 新对话） |
+| `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘[ / ⌘] 前进后退、⌘+/- 字号、Ctrl+L 清终端、⇧Esc 清未读、⌘⇧A 归档、⌘⌥S 旁路、⌘⌥A 进行中、⌘P 搜文件、⌘T 浏览器、⌘G 搜对话、⌘⇧O 新对话） |
 | `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘[ / ⌘+ / Ctrl+L / ⌘G |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
@@ -111,7 +111,7 @@
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
 | `automation.ts` | 自动化任务类型 |
-| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建 |
+| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc |
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |

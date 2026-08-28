@@ -5,6 +5,7 @@ import {
   createEmptyConversation,
   filterChatList,
   forkConversationTitle,
+  nextLiveConversationId,
   splitLiveConversations
 } from './conversation'
 
@@ -37,6 +38,13 @@ describe('conversation search', () => {
     expect(forked.title).toBe('修好滚动（分叉）')
     expect(forked.messages[0]).toEqual(sourceMsg)
     expect(forked.messages[0]).not.toBe(sourceMsg)
+  })
+
+  it('cycles the next live conversation needing attention', () => {
+    expect(nextLiveConversationId(['a', 'b', 'c'], 'b')).toBe('c')
+    expect(nextLiveConversationId(['a', 'b', 'c'], 'c')).toBe('a')
+    expect(nextLiveConversationId(['a'], 'a')).toBe('a')
+    expect(nextLiveConversationId([], 'a')).toBeNull()
   })
 
   it('splits live conversations into a first-class task list', () => {

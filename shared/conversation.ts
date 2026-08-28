@@ -121,6 +121,18 @@ export function splitLiveConversations<T extends { id: string }>(
   return { live, rest }
 }
 
+/** 下一条需要关注的进行中对话（对标 Codex ⌘⌥A） */
+export function nextLiveConversationId(
+  liveIds: string[],
+  current: string | null
+): string | null {
+  if (liveIds.length === 0) return null
+  if (!current) return liveIds[0] ?? null
+  const idx = liveIds.indexOf(current)
+  if (idx < 0) return liveIds[0] ?? null
+  return liveIds[(idx + 1) % liveIds.length] ?? null
+}
+
 /** ⌘G 搜索对话：按标题或 id 过滤（对标 Codex Search chats） */
 export function filterChatList<T extends { id: string; title?: string }>(
   items: T[],

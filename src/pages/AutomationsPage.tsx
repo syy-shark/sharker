@@ -17,10 +17,12 @@ interface Props {
   onBack: () => void
   onOpenConversation?: (conversationId: string) => void
   onTriage?: (item: AutomationQueueItem, action: QueueTriageAction) => void
+  /** ⇧Esc 清未读后递增，刷新本页队列 */
+  queueRevision?: number
 }
 
 /** 自动化列表与编辑 */
-export function AutomationsPage({ onBack, onOpenConversation, onTriage }: Props) {
+export function AutomationsPage({ onBack, onOpenConversation, onTriage, queueRevision = 0 }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
   const [busy, setBusy] = useState(false)
@@ -42,7 +44,7 @@ export function AutomationsPage({ onBack, onOpenConversation, onTriage }: Props)
 
   useEffect(() => {
     void refresh()
-  }, [refresh])
+  }, [refresh, queueRevision])
 
   const save = useCallback(async (next: AutomationJob[]) => {
     setBusy(true)

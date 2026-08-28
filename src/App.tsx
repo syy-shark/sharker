@@ -8,6 +8,7 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   buildForkedConversation,
   deriveConversationTitle,
+  nextLiveConversationId,
   sortConversationsByCreatedAt
 } from '../shared/conversation'
 import type {
@@ -74,6 +75,7 @@ import {
   attachQueueChangedPaths,
   createPrAfterApprovePush,
   enqueueAutomationRun,
+  markAllQueueRead,
   pushAfterApproveCommit,
   resolveQueueTriagePaths,
   unreadQueueCount
@@ -307,6 +309,7 @@ export default function App() {
   const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
   const [queueUnread, setQueueUnread] = useState(0)
+  const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
   const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
   const turnChangedPathsRef = useRef<string[]>([])
@@ -2971,6 +2974,43 @@ export default function App() {
     setTerminalClearTick((n) => n + 1)
   }, [])
 
+  const handleOpenBrowserTab = useCallback(() => {
+    setPage('chat')
+    setRightPanelTab('browser')
+    setRightPanelOpen(true)
+  }, [])
+
+  const handleClearUnread = useCallback(async () => {
+    if (!window.sharker.listAutomationQueue || !window.sharker.saveAutomationQueue) return
+    const prev = await window.sharker.listAutomationQueue()
+    const next = markAllQueueRead(prev)
+    await window.sharker.saveAutomationQueue(next)
+    setQueueUnread(unreadQueueCount(next))
+    setQueueRevision((n) => n + 1)
+  }, [])
+
+  const handleNextAttention = useCallback(() => {
+    const liveIds: string[] = []
+    const seen = new Set<string>()
+    for (const c of conversationListRef.current) {
+      const buf = sessionBuffersRef.current.get(c.id)
+      if (buf?.loading || buf?.sendInFlight) {
+        liveIds.push(c.id)
+        seen.add(c.id)
+      }
+    }
+    for (const [id, buf] of sessionBuffersRef.current.entries()) {
+      if (seen.has(id)) continue
+      if (buf.loading || buf.sendInFlight) liveIds.push(id)
+    }
+    const nextId = nextLiveConversationId(liveIds, activeConversationIdRef.current)
+    const wsId = settingsRef.current.activeWorkspaceId
+    if (wsId && nextId) {
+      setPage('chat')
+      void handleSelectConversation(wsId, nextId)
+    }
+  }, [handleSelectConversation])
+
   /** 执行轨道内审批响应：once / session / deny → 主进程真实授权路径 */
   const handleApproval = async (decision: ApprovalDecision) => {
     if (!approval || approvalResponding) return
@@ -3640,6 +3680,24 @@ export default function App() {
         handleClearTerminal()
         return
       }
+      if (cmd.action === 'clear_unread') {
+        void handleClearUnread()
+        return
+      }
+      if (cmd.action === 'archive_thread') {
+        const ws = settingsRef.current.activeWorkspaceId
+        const id = activeConversationIdRef.current
+        if (ws && id) void handleArchiveConversation(ws, id)
+        return
+      }
+      if (cmd.action === 'open_browser') {
+        handleOpenBrowserTab()
+        return
+      }
+      if (cmd.action === 'next_attention') {
+        handleNextAttention()
+        return
+      }
       void handleSlashActionRef.current(
         {
           name: cmd.id,
@@ -3651,7 +3709,16 @@ export default function App() {
         ''
       )
     },
-    [handleAddWorkspace, handleClearTerminal, handleNavStep, persistFontScale, toggleSidebar]
+    [
+      handleAddWorkspace,
+      handleClearTerminal,
+      handleClearUnread,
+      handleNavStep,
+      handleNextAttention,
+      handleOpenBrowserTab,
+      persistFontScale,
+      toggleSidebar
+    ]
   )
 
   useEffect(() => {
@@ -3769,11 +3836,47 @@ export default function App() {
       }
       if (action === 'clear_terminal') {
         handleClearTerminal()
+        return
+      }
+      if (action === 'clear_unread') {
+        void handleClearUnread()
+        return
+      }
+      if (action === 'archive_thread') {
+        const ws = settingsRef.current.activeWorkspaceId
+        const id = activeConversationIdRef.current
+        if (ws && id) void handleArchiveConversation(ws, id)
+        return
+      }
+      if (action === 'side_conversation') {
+        void handleSlashActionRef.current(
+          {
+            name: 'side',
+            description: '旁路新线程',
+            scope: 'ui',
+            action: 'side_conversation',
+            category: 'session'
+          },
+          ''
+        )
+        return
+      }
+      if (action === 'search_files') {
+        setPage('chat')
+        setComposerIntent('mention')
+        return
+      }
+      if (action === 'open_browser') {
+        handleOpenBrowserTab()
+        return
+      }
+      if (action === 'next_attention') {
+        handleNextAttention()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAddWorkspace, handleClearTerminal, handleNavigate, handleNavStep, handleNewConversation, handleSelectConversation, handleShortcutPanel, persistFontScale, toggleSidebar])
+  }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, persistFontScale, toggleSidebar])
 
   /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
   useEffect(() => {
@@ -4731,6 +4834,7 @@ export default function App() {
             <div key="automations" className="main-pane view-enter main-pane--page">
               <div className="main-drag-strip" aria-hidden />
               <AutomationsPage
+                queueRevision={queueRevision}
                 onBack={() => setPage('chat')}
                 onOpenConversation={(conversationId) => {
                   const wsId = settingsRef.current.activeWorkspaceId

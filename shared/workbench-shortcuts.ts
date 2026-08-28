@@ -27,6 +27,12 @@ export type WorkbenchShortcutAction =
   | 'font_smaller'
   | 'font_reset'
   | 'clear_terminal'
+  | 'clear_unread'
+  | 'archive_thread'
+  | 'side_conversation'
+  | 'search_files'
+  | 'open_browser'
+  | 'next_attention'
 
 /** 从键盘事件字段匹配动作；输入法组字中不触发 */
 export function matchWorkbenchShortcut(event: {
@@ -39,6 +45,15 @@ export function matchWorkbenchShortcut(event: {
   isComposing?: boolean
 }): WorkbenchShortcutAction | null {
   if (event.isComposing) return null
+  if (
+    event.key === 'Escape' &&
+    event.shiftKey &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  ) {
+    return 'clear_unread'
+  }
   const mod = event.metaKey || event.ctrlKey
   if (!mod) return null
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
@@ -50,6 +65,11 @@ export function matchWorkbenchShortcut(event: {
   if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
   if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
+  if (key === 'p' && !event.altKey && !event.shiftKey) return 'search_files'
+  if (key === 't' && !event.altKey && !event.shiftKey) return 'open_browser'
+  if (key === 'a' && event.shiftKey && !event.altKey) return 'archive_thread'
+  if (key === 'a' && event.altKey && !event.shiftKey) return 'next_attention'
+  if (key === 's' && event.altKey && !event.shiftKey) return 'side_conversation'
   if (key === 'b' && !event.altKey && !event.shiftKey) return 'toggle_sidebar'
   if ((key === '`' || code === 'Backquote') && !event.altKey && !event.shiftKey) {
     return 'toggle_terminal'
@@ -137,6 +157,12 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧[ / ⌘⇧]', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘/', title: '快捷键一览' },
+  { keys: '⇧Esc', title: '清未读徽标' },
+  { keys: '⌘⇧A', title: '归档当前对话' },
+  { keys: '⌘⌥S', title: '旁路新线程' },
+  { keys: '⌘⌥A', title: '下一条进行中对话' },
+  { keys: '⌘P', title: '引用工作区文件' },
+  { keys: '⌘T', title: '打开浏览器标签' },
   { keys: '⌘↑ / ⌘↓', title: '对话顶 / 底' },
   { keys: '⌘F', title: '在对话中查找' },
   { keys: '⌘G', title: '搜索对话' },

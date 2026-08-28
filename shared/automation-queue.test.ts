@@ -3,6 +3,7 @@ import {
   applyQueueTriageAction,
   attachQueueChangedPaths,
   enqueueAutomationRun,
+  markAllQueueRead,
   markQueueItem,
   createPrAfterApprovePush,
   pushAfterApproveCommit,
@@ -22,6 +23,7 @@ describe('automation queue', () => {
     expect(item.conversationId).toBe('c1')
     expect(unreadQueueCount([item])).toBe(1)
     expect(unreadQueueCount(markQueueItem([item], item.id, 'read'))).toBe(0)
+    expect(unreadQueueCount(markAllQueueRead([item, { ...item, id: 'b' }]))).toBe(0)
   })
 
   it('sorts unread before read and archived', () => {

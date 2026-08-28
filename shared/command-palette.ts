@@ -309,6 +309,41 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: 'Ctrl+L',
     keywords: 'clear terminal 清屏 终端',
     action: 'clear_terminal'
+  },
+  {
+    id: 'clear-unread',
+    title: '清除未读徽标',
+    shortcut: '⇧Esc',
+    keywords: 'unread badge clear 未读 徽标',
+    action: 'clear_unread'
+  },
+  {
+    id: 'archive-shortcut',
+    title: '归档当前对话',
+    shortcut: '⌘⇧A',
+    keywords: 'archive 归档',
+    action: 'archive_thread'
+  },
+  {
+    id: 'search-files',
+    title: '搜索工作区文件',
+    shortcut: '⌘P',
+    keywords: 'search files mention @ 文件 搜索',
+    action: 'mention_file'
+  },
+  {
+    id: 'open-browser',
+    title: '打开浏览器标签',
+    shortcut: '⌘T',
+    keywords: 'browser tab 浏览器 标签',
+    action: 'open_browser'
+  },
+  {
+    id: 'next-attention',
+    title: '下一条进行中对话',
+    shortcut: '⌘⌥A',
+    keywords: 'attention live next 进行中 关注',
+    action: 'next_attention'
   }
 ]
 

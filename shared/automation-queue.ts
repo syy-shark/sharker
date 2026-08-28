@@ -68,6 +68,11 @@ export function markQueueItem(
   return items.map((i) => (i.id === id ? { ...i, status } : i))
 }
 
+/** 未读全部标已读（对标 Codex ⇧Esc 清未读徽标） */
+export function markAllQueueRead(items: AutomationQueueItem[]): AutomationQueueItem[] {
+  return items.map((i) => (i.status === 'unread' ? { ...i, status: 'read' as const } : i))
+}
+
 function cleanRelPaths(paths: string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
