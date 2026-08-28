@@ -36,7 +36,9 @@ import {
   transcriptNavIntent,
   TRANSCRIPT_NAV_BLOCK,
   nextRowIntrinsicHeights,
-  rowIntrinsicSizeStyle
+  resolveRowIntrinsicHeight,
+  rowIntrinsicSizeStyle,
+  shouldForceStickScroll
 } from '../../shared/live-display'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -933,9 +935,19 @@ export function ChatView({
 
   useEffect(() => {
     if (isEmpty || loading) return
-    if (!stickToBottomRef.current || userScrollLockRef.current) return
+    const { distance } = readScrollMetrics()
+    if (
+      !shouldForceStickScroll({
+        stickToBottom: stickToBottomRef.current,
+        userLocked: userScrollLockRef.current,
+        distanceFromBottom: distance,
+        atBottomPx: AT_BOTTOM_PX
+      })
+    ) {
+      return
+    }
     scrollToBottom('auto')
-  }, [messages, isEmpty, loading, findOpen, scrollToBottom])
+  }, [messages, isEmpty, loading, findOpen, scrollToBottom, readScrollMetrics])
 
   const handleEditLastUser = useCallback(() => {
     const id = lastUserMessageId(messages)
@@ -963,7 +975,10 @@ export function ChatView({
             findHit={findHits.some((h) => h.messageId === m.id)}
             findCurrent={findHits[findHit]?.messageId === m.id}
             nearLive={nearLive}
-            intrinsicHeight={intrinsicHeights.get(m.id)}
+            intrinsicHeight={resolveRowIntrinsicHeight(
+              intrinsicHeights.get(m.id),
+              measuredRowHeightsRef.current.get(m.id)
+            )}
             editRequested={editUserMessageId === m.id}
             onEditRequestHandled={handleEditRequestHandled}
             onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
@@ -977,7 +992,16 @@ export function ChatView({
             }${findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''}${
               findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''
             }`}
-            style={nearLive ? undefined : rowIntrinsicSizeStyle(intrinsicHeights.get(m.id))}
+            style={
+              nearLive
+                ? undefined
+                : rowIntrinsicSizeStyle(
+                    resolveRowIntrinsicHeight(
+                      intrinsicHeights.get(m.id),
+                      measuredRowHeightsRef.current.get(m.id)
+                    )
+                  )
+            }
           >
             <AssistantMessage
               messageId={m.id}

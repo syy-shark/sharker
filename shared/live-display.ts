@@ -337,6 +337,27 @@ export function rowIntrinsicSizeStyle(
   return { containIntrinsicSize: `auto ${Math.round(height)}px` }
 }
 
+/** 离开贴底窗口的第一帧：state 还没写入时用已测量高度（对标 Codex #38220） */
+export function resolveRowIntrinsicHeight(
+  stored: number | undefined,
+  measured: number | undefined
+): number | undefined {
+  if (stored != null && stored >= 1) return stored
+  if (measured != null && measured >= 1) return measured
+  return undefined
+}
+
+/** 收束/换消息时只有真贴底才强制滚到底，避免读历史被拽走（对标 Codex #37849） */
+export function shouldForceStickScroll(options: {
+  stickToBottom: boolean
+  userLocked: boolean
+  distanceFromBottom: number
+  atBottomPx?: number
+}): boolean {
+  if (!options.stickToBottom || options.userLocked) return false
+  return options.distanceFromBottom <= (options.atBottomPx ?? 16)
+}
+
 /** 贴底 scrollTop：内容变高或输入框把视口挤矮都要跟到底（对标 Codex #40788） */
 export function liveStickScrollTop(scrollHeight: number, clientHeight: number): number {
   return Math.max(0, scrollHeight - clientHeight)

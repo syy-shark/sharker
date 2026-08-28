@@ -10,7 +10,9 @@ import {
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   nextRowIntrinsicHeights,
+  resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
+  shouldForceStickScroll,
   liveThoughtBody,
   liveThinkingText,
   rollingThinkPreview,
@@ -165,6 +167,33 @@ describe('near-live message rows', () => {
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(0)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })
+    expect(resolveRowIntrinsicHeight(undefined, 640)).toBe(640)
+    expect(resolveRowIntrinsicHeight(200, 640)).toBe(200)
+    expect(resolveRowIntrinsicHeight(undefined, undefined)).toBeUndefined()
+    expect(
+      shouldForceStickScroll({
+        stickToBottom: true,
+        userLocked: false,
+        distanceFromBottom: 8,
+        atBottomPx: 16
+      })
+    ).toBe(true)
+    expect(
+      shouldForceStickScroll({
+        stickToBottom: true,
+        userLocked: false,
+        distanceFromBottom: 32,
+        atBottomPx: 16
+      })
+    ).toBe(false)
+    expect(
+      shouldForceStickScroll({
+        stickToBottom: true,
+        userLocked: true,
+        distanceFromBottom: 0,
+        atBottomPx: 16
+      })
+    ).toBe(false)
     const prev = new Map([['old', 200]])
     const same = nextRowIntrinsicHeights(prev, [
       { id: 'old', nearLive: false, height: 200 },
