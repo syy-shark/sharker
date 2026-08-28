@@ -96,6 +96,14 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 及 ' },
       { type: 'del', text: '删' }
     ])
+    expect(parseCheapInlineMarkdown('见 **foo *bar**')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'strong', text: 'foo *bar' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 **foo *bar')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'strong', text: 'foo *bar', raw: '**foo *bar' }
+    ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([
       { type: 'text', text: '半截 ' },
       { type: 'strong', text: '粗', raw: '**粗' }

@@ -645,7 +645,7 @@ function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
 }
 
 function imageAltFromLabel(label: string): string {
-  return flattenCheapInlineText(parseCheapInlineMarkdown(label))
+  return flattenCheapInlineText(parseCheapInlineMarkdown(label, EMPTY_LINK_DEFS, false))
 }
 
 function cheapImage(
@@ -674,7 +674,7 @@ function parseMarkedInner(inner: string): {
   inner?: 'em' | 'strong' | 'del'
   children?: CheapInlineNode[]
 } {
-  const nodes = parseCheapInlineMarkdown(inner)
+  const nodes = parseCheapInlineMarkdown(inner, EMPTY_LINK_DEFS, false)
   if (!nodes.length) return { text: decodeHtmlEntities(inner) }
   if (nodes.length === 1) {
     const node = nodes[0]!
@@ -726,7 +726,7 @@ function linkWithLabel(
   href: string,
   opts?: { title?: string; raw?: string }
 ): Extract<CheapInlineNode, { type: 'link' }> {
-  const children = parseCheapInlineMarkdown(label)
+  const children = parseCheapInlineMarkdown(label, EMPTY_LINK_DEFS, false)
   const node: Extract<CheapInlineNode, { type: 'link' }> = {
     type: 'link',
     text: decodeHtmlEntities(label),
@@ -740,7 +740,8 @@ function linkWithLabel(
 
 export function parseCheapInlineMarkdown(
   text: string,
-  defs: ReadonlyMap<string, string | CheapLinkDef> = EMPTY_LINK_DEFS
+  defs: ReadonlyMap<string, string | CheapLinkDef> = EMPTY_LINK_DEFS,
+  allowOpen = true
 ): CheapInlineNode[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
@@ -775,13 +776,15 @@ export function parseCheapInlineMarkdown(
         i = codeSpan.end
         continue
       }
-      let ticks = 0
-      while (src[i + ticks] === '`') ticks += 1
-      const openCode = src.slice(i + ticks)
-      if (openCode) {
-        flush()
-        nodes.push({ type: 'code', text: openCode, raw: src.slice(i) })
-        break
+      if (allowOpen) {
+        let ticks = 0
+        while (src[i + ticks] === '`') ticks += 1
+        const openCode = src.slice(i + ticks)
+        if (openCode) {
+          flush()
+          nodes.push({ type: 'code', text: openCode, raw: src.slice(i) })
+          break
+        }
       }
       buf += src.slice(i)
       break
@@ -795,16 +798,18 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
-      const openInner = src.slice(i + 3)
-      if (openInner) {
-        flush()
-        nodes.push(
-          withInlineRaw(
-            { type: 'em', text: decodeHtmlEntities(openInner), mark: '***', inner: 'strong' },
-            src.slice(i)
+      if (allowOpen) {
+        const openInner = src.slice(i + 3)
+        if (openInner) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              { type: 'em', text: decodeHtmlEntities(openInner), mark: '***', inner: 'strong' },
+              src.slice(i)
+            )
           )
-        )
-        break
+          break
+        }
       }
       buf += src.slice(i)
       break
@@ -818,16 +823,18 @@ export function parseCheapInlineMarkdown(
         continue
       }
       if (end === -1) {
-        const openInner = src.slice(i + 3)
-        if (openInner) {
-          flush()
-          nodes.push(
-            withInlineRaw(
-              { type: 'em', text: decodeHtmlEntities(openInner), mark: '___', inner: 'strong' },
-              src.slice(i)
+        if (allowOpen) {
+          const openInner = src.slice(i + 3)
+          if (openInner) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                { type: 'em', text: decodeHtmlEntities(openInner), mark: '___', inner: 'strong' },
+                src.slice(i)
+              )
             )
-          )
-          break
+            break
+          }
         }
         buf += src.slice(i)
         break
@@ -841,11 +848,13 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
-      const openInner = src.slice(i + 3)
-      if (openInner) {
-        flush()
-        nodes.push(withInlineRaw({ type: 'strong', text: decodeHtmlEntities(openInner), inner: 'em' }, src.slice(i)))
-        break
+      if (allowOpen) {
+        const openInner = src.slice(i + 3)
+        if (openInner) {
+          flush()
+          nodes.push(withInlineRaw({ type: 'strong', text: decodeHtmlEntities(openInner), inner: 'em' }, src.slice(i)))
+          break
+        }
       }
       buf += src.slice(i)
       break
@@ -858,11 +867,13 @@ export function parseCheapInlineMarkdown(
         i = end + 3
         continue
       }
-      const openInner = src.slice(i + 3)
-      if (openInner) {
-        flush()
-        nodes.push(withInlineRaw({ type: 'em', text: decodeHtmlEntities(openInner), inner: 'strong' }, src.slice(i)))
-        break
+      if (allowOpen) {
+        const openInner = src.slice(i + 3)
+        if (openInner) {
+          flush()
+          nodes.push(withInlineRaw({ type: 'em', text: decodeHtmlEntities(openInner), inner: 'strong' }, src.slice(i)))
+          break
+        }
       }
       buf += src.slice(i)
       break
@@ -870,16 +881,18 @@ export function parseCheapInlineMarkdown(
     if (src.startsWith('**', i)) {
       const end = src.indexOf('**', i + 2)
       if (end === -1) {
-        const openInner = src.slice(i + 2)
-        if (openInner) {
-          flush()
-          nodes.push(
-            withInlineRaw(
-              applyMarkedInner({ type: 'strong', text: '' }, parseMarkedInner(openInner), ['em', 'del']),
-              src.slice(i)
+        if (allowOpen) {
+          const openInner = src.slice(i + 2)
+          if (openInner) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                applyMarkedInner({ type: 'strong', text: '' }, parseMarkedInner(openInner), ['em', 'del']),
+                src.slice(i)
+              )
             )
-          )
-          break
+            break
+          }
         }
         buf += src.slice(i)
         break
@@ -904,32 +917,36 @@ export function parseCheapInlineMarkdown(
         continue
       }
       if (end === -1) {
-        const openInner = src.slice(i + 2)
-        if (openInner) {
-          flush()
-          nodes.push(
-            withInlineRaw(
-              applyMarkedInner({ type: 'strong', text: '', mark: '__' }, parseMarkedInner(openInner), ['em', 'del']),
-              src.slice(i)
+        if (allowOpen) {
+          const openInner = src.slice(i + 2)
+          if (openInner) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                applyMarkedInner({ type: 'strong', text: '', mark: '__' }, parseMarkedInner(openInner), ['em', 'del']),
+                src.slice(i)
+              )
             )
-          )
-          break
+            break
+          }
         }
       }
     }
     if (src.startsWith('~~', i)) {
       const end = src.indexOf('~~', i + 2)
       if (end === -1) {
-        const openInner = src.slice(i + 2)
-        if (openInner && !/^[ \t]/.test(openInner)) {
-          flush()
-          nodes.push(
-            withInlineRaw(
-              applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(openInner), ['strong', 'em']),
-              src.slice(i)
+        if (allowOpen) {
+          const openInner = src.slice(i + 2)
+          if (openInner && !/^[ \t]/.test(openInner)) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(openInner), ['strong', 'em']),
+                src.slice(i)
+              )
             )
-          )
-          break
+            break
+          }
         }
         buf += src.slice(i)
         break
@@ -945,16 +962,18 @@ export function parseCheapInlineMarkdown(
     if (src[i] === '*') {
       const end = src.indexOf('*', i + 1)
       if (end === -1) {
-        const openInner = src.slice(i + 1)
-        if (openInner) {
-          flush()
-          nodes.push(
-            withInlineRaw(
-              applyMarkedInner({ type: 'em', text: '' }, parseMarkedInner(openInner), ['strong', 'del']),
-              src.slice(i)
+        if (allowOpen) {
+          const openInner = src.slice(i + 1)
+          if (openInner) {
+            flush()
+            nodes.push(
+              withInlineRaw(
+                applyMarkedInner({ type: 'em', text: '' }, parseMarkedInner(openInner), ['strong', 'del']),
+                src.slice(i)
+              )
             )
-          )
-          break
+            break
+          }
         }
         buf += src.slice(i)
         break
@@ -986,16 +1005,18 @@ export function parseCheapInlineMarkdown(
         from = end + 1
       }
       if (matched) continue
-      const openInner = src.slice(i + 1)
-      if (openInner && !openInner.includes('_')) {
-        flush()
-        nodes.push(
-          withInlineRaw(
-            applyMarkedInner({ type: 'em', text: '', mark: '_' }, parseMarkedInner(openInner), ['strong', 'del']),
-            src.slice(i)
+      if (allowOpen) {
+        const openInner = src.slice(i + 1)
+        if (openInner && !openInner.includes('_')) {
+          flush()
+          nodes.push(
+            withInlineRaw(
+              applyMarkedInner({ type: 'em', text: '', mark: '_' }, parseMarkedInner(openInner), ['strong', 'del']),
+              src.slice(i)
+            )
           )
-        )
-        break
+          break
+        }
       }
     }
     if (src[i] === '<') {
@@ -1014,7 +1035,7 @@ export function parseCheapInlineMarkdown(
           i = end + 1
           continue
         }
-      } else {
+      } else if (allowOpen) {
         const rest = src.slice(i + 1)
         if (!rest.includes('\n') && /^https?:\/\/\S+$/i.test(rest)) {
           flush()
