@@ -18,6 +18,7 @@ import {
   parseCheapProseBlocks,
   splitStreamingMarkdown,
   type CheapInlineNode,
+  type CheapLinkDef,
   type CheapListItem,
   type CheapProseBlock
 } from '../../shared/streaming-markdown'
@@ -44,12 +45,42 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
     if (node.type === 'code') return <code key={index}>{node.text}</code>
     if (node.type === 'strong') {
       return (
-        <strong key={index}>{node.inner === 'em' ? <em>{node.text}</em> : node.text}</strong>
+        <strong key={index}>
+          {node.inner === 'em' ? (
+            <em>{node.text}</em>
+          ) : node.inner === 'del' ? (
+            <del>{node.text}</del>
+          ) : (
+            node.text
+          )}
+        </strong>
       )
     }
-    if (node.type === 'del') return <del key={index}>{node.text}</del>
+    if (node.type === 'del') {
+      return (
+        <del key={index}>
+          {node.inner === 'strong' ? (
+            <strong>{node.text}</strong>
+          ) : node.inner === 'em' ? (
+            <em>{node.text}</em>
+          ) : (
+            node.text
+          )}
+        </del>
+      )
+    }
     if (node.type === 'em') {
-      return <em key={index}>{node.inner === 'strong' ? <strong>{node.text}</strong> : node.text}</em>
+      return (
+        <em key={index}>
+          {node.inner === 'strong' ? (
+            <strong>{node.text}</strong>
+          ) : node.inner === 'del' ? (
+            <del>{node.text}</del>
+          ) : (
+            node.text
+          )}
+        </em>
+      )
     }
     if (node.type === 'link') {
       return (
@@ -257,7 +288,7 @@ const LiveProseTail = memo(function LiveProseTail({
   defs
 }: {
   text: string
-  defs?: ReadonlyMap<string, string>
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
 }) {
   const prevRef = useRef({ text: '', blocks: parseCheapProseBlocks('') })
   const blocks = useMemo(() => {

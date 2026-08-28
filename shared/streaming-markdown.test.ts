@@ -250,6 +250,25 @@ describe('splitStreamingMarkdown', () => {
       { type: 'em', text: '粗斜', inner: 'strong' },
       { type: 'text', text: ' 尾' }
     ])
+    expect(parseCheapInlineMarkdown('见 ~~**粗删**~~ 与 **~~删粗~~**')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'del', text: '粗删', inner: 'strong' },
+      { type: 'text', text: ' 与 ' },
+      { type: 'strong', text: '删粗', inner: 'del' }
+    ])
+    expect(parseCheapInlineMarkdown('见图 ![**粗** 与 *斜*](https://a.test/p.png)')).toEqual([
+      { type: 'text', text: '见图 ' },
+      {
+        type: 'image',
+        alt: '粗 与 斜',
+        href: 'https://a.test/p.png',
+        label: '**粗** 与 *斜*'
+      }
+    ])
+    expect(parseCheapInlineMarkdown('见图 ![`x`](https://a.test/p.png)')).toEqual([
+      { type: 'text', text: '见图 ' },
+      { type: 'image', alt: 'x', href: 'https://a.test/p.png', label: '`x`' }
+    ])
     expect(parseCheapInlineMarkdown('见 &amp; &#39; 与 **&lt;粗&gt;**')).toEqual([
       { type: 'text', text: "见 & ' 与 " },
       { type: 'strong', text: '<粗>' }
@@ -267,9 +286,28 @@ describe('splitStreamingMarkdown', () => {
     }
     const indented = parseCheapProseBlocks('    const x = 1')
     expect(indented).toEqual([{ type: 'pre', text: 'const x = 1' }])
-    expect(collectLinkDefinitions('见 [文档][D]。\n[D]: https://a.test/x').get('d')).toBe(
-      'https://a.test/x'
-    )
+    expect(collectLinkDefinitions('见 [文档][D]。\n[D]: https://a.test/x').get('d')).toEqual({
+      href: 'https://a.test/x'
+    })
+    const titledDefs = collectLinkDefinitions('见 [文档][D]。\n\n[D]: https://a.test/x "题"')
+    expect(titledDefs.get('d')).toEqual({ href: 'https://a.test/x', title: '题' })
+    expect(parseCheapInlineMarkdown('见 [文档][D]。', titledDefs)).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: '文档', href: 'https://a.test/x', title: '题', raw: '[文档][D]' },
+      { type: 'text', text: '。' }
+    ])
+    expect(
+      parseCheapInlineMarkdown('见图 ![示意][d]', collectLinkDefinitions('[d]: https://a.test/p.png "题"'))
+    ).toEqual([
+      { type: 'text', text: '见图 ' },
+      {
+        type: 'image',
+        alt: '示意',
+        href: 'https://a.test/p.png',
+        title: '题',
+        raw: '![示意][d]'
+      }
+    ])
     expect(isOnlyLinkDefinitions('[d]: https://a.test/x\n')).toBe(true)
     expect(markdownBlockWithDefs('见 [文档][d]。\n', '[d]: https://a.test/x')).toBe(
       '见 [文档][d]。\n\n[d]: https://a.test/x'
@@ -374,6 +412,17 @@ describe('splitStreamingMarkdown', () => {
     expect(quotedPipeless.map((b) => b.type)).toEqual(['quote'])
     if (quotedPipeless[0]?.type === 'quote') {
       expect(quotedPipeless[0].blocks.map((b) => b.type)).toEqual(['table'])
+    }
+    const escapedPipe = parseCheapProseBlocks('| A | B |\n| --- | --- |\n| a \\| b | c |')
+    expect(escapedPipe.map((b) => b.type)).toEqual(['table'])
+    if (escapedPipe[0]?.type === 'table') {
+      expect(escapedPipe[0].rows[0]?.[0]).toEqual([{ type: 'text', text: 'a | b' }])
+      expect(escapedPipe[0].rows[0]?.[1]).toEqual([{ type: 'text', text: 'c' }])
+    }
+    const escapedHeader = parseCheapProseBlocks('| a \\| b | c |\n| --- | --- |\n| 1 | 2 |')
+    if (escapedHeader[0]?.type === 'table') {
+      expect(escapedHeader[0].header[0]).toEqual([{ type: 'text', text: 'a | b' }])
+      expect(escapedHeader[0].header[1]).toEqual([{ type: 'text', text: 'c' }])
     }
   })
 

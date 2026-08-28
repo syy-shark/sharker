@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -168,11 +168,11 @@ export function extractOpenFenceBody(tail: string): string {
 export type CheapInlineNode =
   | { type: 'text'; text: string }
   | { type: 'code'; text: string }
-  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' }
-  | { type: 'del'; text: string }
-  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' }
+  | { type: 'strong'; text: string; mark?: '**' | '__'; inner?: 'em' | 'del' }
+  | { type: 'del'; text: string; inner?: 'strong' | 'em' }
+  | { type: 'em'; text: string; mark?: '*' | '_' | '***' | '___'; inner?: 'strong' | 'del' }
   | { type: 'link'; text: string; href: string; raw?: string; title?: string; children?: CheapInlineNode[] }
-  | { type: 'image'; alt: string; href: string; title?: string; raw?: string }
+  | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
   | { type: 'fn'; id: string }
   | { type: 'br' }
@@ -199,7 +199,15 @@ const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
 const WWW_RE = /^www\.[^\s<>]+/i
 const BARE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
 const SETEXT_RE = /^ {0,3}(?:=+|-+)\s*$/
-const EMPTY_LINK_DEFS: ReadonlyMap<string, string> = new Map()
+/** 引用定义：href + 可选 title（对标 CommonMark / remark-gfm） */
+export type CheapLinkDef = { href: string; title?: string }
+
+const EMPTY_LINK_DEFS: ReadonlyMap<string, CheapLinkDef> = new Map()
+
+function asLinkDef(value: string | CheapLinkDef | undefined): CheapLinkDef | undefined {
+  if (value == null) return undefined
+  return typeof value === 'string' ? { href: value } : value
+}
 const NAMED_HTML_ENTITIES: Record<string, string> = {
   amp: '&',
   lt: '<',
@@ -353,15 +361,18 @@ export function collectFootnoteDefinitions(text: string): Map<string, string> {
   return scanFootnoteDefinitions(normalizeStreamingText(text).split('\n')).defs
 }
 
-/** `[id]: https://…` / `[id]: <https://…>` 定义行（对标 CommonMark / remark-gfm） */
-export function parseLinkDefinitionLine(line: string): { id: string; href: string } | null {
+/** `[id]: https://…` / `[id]: <https://…>` / `[id]: url "title"` 定义行（对标 CommonMark / remark-gfm） */
+export function parseLinkDefinitionLine(line: string): { id: string; href: string; title?: string } | null {
   const match =
-    /^\s{0,3}\[([^\]]+)\]:\s*(<[^>\s]+>|\S+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$/.exec(line)
+    /^\s{0,3}\[([^\]]+)\]:\s*(<[^>\s]+>|\S+)(?:\s+(?:"([^"]*)"|'([^']*)'|\(([^)]*)\)))?\s*$/.exec(line)
   if (!match) return null
   let href = match[2] ?? ''
   if (href.startsWith('<') && href.endsWith('>')) href = href.slice(1, -1)
   if (!/^https?:\/\//i.test(href) && !href.startsWith('mailto:')) return null
-  return { id: normalizeLinkLabel(match[1] ?? ''), href }
+  const title = match[3] ?? match[4] ?? match[5]
+  return title
+    ? { id: normalizeLinkLabel(match[1] ?? ''), href, title }
+    : { id: normalizeLinkLabel(match[1] ?? ''), href }
 }
 
 /** 链接标签里成对 `[]`（`[![alt](img)](url)`）对标 CommonMark */
@@ -494,11 +505,13 @@ function parseLinkDestination(dest: string): { href: string; title?: string } | 
 }
 
 /** 从全文收集引用定义，供直播尾与已闭合块共用 */
-export function collectLinkDefinitions(text: string): Map<string, string> {
-  const map = new Map<string, string>()
+export function collectLinkDefinitions(text: string): Map<string, CheapLinkDef> {
+  const map = new Map<string, CheapLinkDef>()
   for (const line of normalizeStreamingText(text).split('\n')) {
     const def = parseLinkDefinitionLine(line)
-    if (def && !map.has(def.id)) map.set(def.id, def.href)
+    if (def && !map.has(def.id)) {
+      map.set(def.id, def.title ? { href: def.href, title: def.title } : { href: def.href })
+    }
   }
   return map
 }
@@ -529,6 +542,60 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
  * `[text][id]` / `![alt](url)` / `![alt][id]` / `[![alt](img)](url)`、dest 内成对括号、标签内强调/代码、多反引号行内代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
  * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
+/** 图片 alt 对标 micromark：标签里的强调/代码只留纯文本，避免收束改 alt */
+function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
+  return nodes
+    .map((node) => {
+      if (node.type === 'br') return '\n'
+      if (node.type === 'fn') return `[^${node.id}]`
+      if (node.type === 'link') return node.children ? flattenCheapInlineText(node.children) : node.text
+      if (node.type === 'image') return node.alt
+      if (node.type === 'file') return node.text
+      if ('text' in node) return node.text
+      return ''
+    })
+    .join('')
+}
+
+function imageAltFromLabel(label: string): string {
+  return flattenCheapInlineText(parseCheapInlineMarkdown(label))
+}
+
+function cheapImage(
+  label: string,
+  href: string,
+  extra?: { title?: string; raw?: string }
+): Extract<CheapInlineNode, { type: 'image' }> {
+  const alt = imageAltFromLabel(label)
+  const node: Extract<CheapInlineNode, { type: 'image' }> = { type: 'image', alt, href }
+  if (extra?.title) node.title = extra.title
+  if (extra?.raw) node.raw = extra.raw
+  if (alt !== label) node.label = label
+  return node
+}
+
+/** 整段被另一套标记包住时剥一层，对标 remark `del>strong` / `strong>del` */
+function peelWholeInlineMark(inner: string): { text: string; inner?: 'em' | 'strong' | 'del' } {
+  const nodes = parseCheapInlineMarkdown(inner)
+  if (nodes.length === 1) {
+    const node = nodes[0]!
+    if (node.type === 'strong' || node.type === 'em' || node.type === 'del') {
+      return { text: node.text, inner: node.type }
+    }
+    if (node.type === 'text') return { text: node.text }
+  }
+  return { text: decodeHtmlEntities(inner) }
+}
+
+function nestInner<T extends 'em' | 'strong' | 'del'>(
+  peeled: { text: string; inner?: 'em' | 'strong' | 'del' },
+  allowed: readonly T[]
+): T | undefined {
+  return peeled.inner && (allowed as readonly string[]).includes(peeled.inner)
+    ? (peeled.inner as T)
+    : undefined
+}
+
 /** 链接标签里的 `**` / `*` / `` ` `` / `~~` 直播就画，避免收束从纯文本跳成 <a><strong> */
 function linkWithLabel(
   label: string,
@@ -549,7 +616,7 @@ function linkWithLabel(
 
 export function parseCheapInlineMarkdown(
   text: string,
-  defs: ReadonlyMap<string, string> = EMPTY_LINK_DEFS
+  defs: ReadonlyMap<string, string | CheapLinkDef> = EMPTY_LINK_DEFS
 ): CheapInlineNode[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
@@ -631,7 +698,9 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      nodes.push({ type: 'strong', text: decodeHtmlEntities(src.slice(i + 2, end)) })
+      const peeled = peelWholeInlineMark(src.slice(i + 2, end))
+      const inner = nestInner(peeled, ['em', 'del'] as const)
+      nodes.push(inner ? { type: 'strong', text: peeled.text, inner } : { type: 'strong', text: peeled.text })
       i = end + 2
       continue
     }
@@ -639,7 +708,13 @@ export function parseCheapInlineMarkdown(
       const end = src.indexOf('__', i + 2)
       if (end !== -1 && end > i + 2 && canCloseUnderscore(src, end + 1)) {
         flush()
-        nodes.push({ type: 'strong', text: decodeHtmlEntities(src.slice(i + 2, end)), mark: '__' })
+        const peeled = peelWholeInlineMark(src.slice(i + 2, end))
+        const inner = nestInner(peeled, ['em', 'del'] as const)
+        nodes.push(
+          inner
+            ? { type: 'strong', text: peeled.text, mark: '__', inner }
+            : { type: 'strong', text: peeled.text, mark: '__' }
+        )
         i = end + 2
         continue
       }
@@ -651,7 +726,9 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      nodes.push({ type: 'del', text: decodeHtmlEntities(src.slice(i + 2, end)) })
+      const peeled = peelWholeInlineMark(src.slice(i + 2, end))
+      const inner = nestInner(peeled, ['strong', 'em'] as const)
+      nodes.push(inner ? { type: 'del', text: peeled.text, inner } : { type: 'del', text: peeled.text })
       i = end + 2
       continue
     }
@@ -662,7 +739,9 @@ export function parseCheapInlineMarkdown(
         break
       }
       flush()
-      nodes.push({ type: 'em', text: decodeHtmlEntities(src.slice(i + 1, end)) })
+      const peeled = peelWholeInlineMark(src.slice(i + 1, end))
+      const inner = nestInner(peeled, ['strong', 'del'] as const)
+      nodes.push(inner ? { type: 'em', text: peeled.text, inner } : { type: 'em', text: peeled.text })
       i = end + 1
       continue
     }
@@ -674,7 +753,13 @@ export function parseCheapInlineMarkdown(
         if (end === -1) break
         if (end > i + 1 && canCloseUnderscore(src, end)) {
           flush()
-          nodes.push({ type: 'em', text: decodeHtmlEntities(src.slice(i + 1, end)), mark: '_' })
+          const peeled = peelWholeInlineMark(src.slice(i + 1, end))
+          const inner = nestInner(peeled, ['strong', 'del'] as const)
+          nodes.push(
+            inner
+              ? { type: 'em', text: peeled.text, mark: '_', inner }
+              : { type: 'em', text: peeled.text, mark: '_' }
+          )
           i = end + 1
           matched = true
           break
@@ -736,9 +821,8 @@ export function parseCheapInlineMarkdown(
           const title = dest?.title
           if (image && /^https?:\/\//i.test(href)) {
             flush()
-            const alt = decodeHtmlEntities(label)
             nodes.push(
-              title ? { type: 'image', alt, href, title: decodeHtmlEntities(title) } : { type: 'image', alt, href }
+              cheapImage(label, href, title ? { title: decodeHtmlEntities(title) } : undefined)
             )
             i = urlEnd + 1
             continue
@@ -770,45 +854,49 @@ export function parseCheapInlineMarkdown(
           const idEnd = src.indexOf(']', labelEnd + 2)
           if (idEnd !== -1 && !src.slice(labelEnd + 2, idEnd).includes('\n')) {
             const id = src.slice(labelEnd + 2, idEnd)
-            const href = defs.get(normalizeLinkLabel(id || label))
-            if (href) {
-              if (image && /^https?:\/\//i.test(href)) {
+            const def = asLinkDef(defs.get(normalizeLinkLabel(id || label)))
+            if (def?.href) {
+              if (image && /^https?:\/\//i.test(def.href)) {
                 flush()
-                nodes.push({
-                  type: 'image',
-                  alt: decodeHtmlEntities(label),
-                  href,
-                  raw: src.slice(i, idEnd + 1)
-                })
+                nodes.push(
+                  cheapImage(label, def.href, {
+                    raw: src.slice(i, idEnd + 1),
+                    title: def.title
+                  })
+                )
                 i = idEnd + 1
                 continue
               }
               if (!image) {
                 flush()
-                nodes.push(linkWithLabel(label, href, { raw: src.slice(i, idEnd + 1) }))
+                nodes.push(
+                  linkWithLabel(label, def.href, {
+                    raw: src.slice(i, idEnd + 1),
+                    title: def.title
+                  })
+                )
                 i = idEnd + 1
                 continue
               }
             }
           }
         } else if (image) {
-          const href = defs.get(normalizeLinkLabel(label))
-          if (href && /^https?:\/\//i.test(href)) {
+          const def = asLinkDef(defs.get(normalizeLinkLabel(label)))
+          if (def?.href && /^https?:\/\//i.test(def.href)) {
             flush()
-            nodes.push({
-              type: 'image',
-              alt: decodeHtmlEntities(label),
-              href,
-              raw: src.slice(i, labelEnd + 1)
-            })
+            nodes.push(
+              cheapImage(label, def.href, { raw: src.slice(i, labelEnd + 1), title: def.title })
+            )
             i = labelEnd + 1
             continue
           }
         } else {
-          const href = defs.get(normalizeLinkLabel(label))
-          if (href) {
+          const def = asLinkDef(defs.get(normalizeLinkLabel(label)))
+          if (def?.href) {
             flush()
-            nodes.push(linkWithLabel(label, href, { raw: src.slice(i, labelEnd + 1) }))
+            nodes.push(
+              linkWithLabel(label, def.href, { raw: src.slice(i, labelEnd + 1), title: def.title })
+            )
             i = labelEnd + 1
             continue
           }
@@ -891,16 +979,22 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'code') return wrapInlineCode(node.text)
   if (node.type === 'strong') {
     if (node.inner === 'em') return `**_${node.text}_**`
+    if (node.inner === 'del') return `${node.mark ?? '**'}~~${node.text}~~${node.mark ?? '**'}`
     const mark = node.mark ?? '**'
     return `${mark}${node.text}${mark}`
   }
-  if (node.type === 'del') return `~~${node.text}~~`
+  if (node.type === 'del') {
+    if (node.inner === 'strong') return `~~**${node.text}**~~`
+    if (node.inner === 'em') return `~~*${node.text}*~~`
+    return `~~${node.text}~~`
+  }
   if (node.type === 'em') {
     if (node.inner === 'strong') {
       if (node.mark === '___') return `___${node.text}___`
       if (node.mark === '***') return `***${node.text}***`
       return `*__${node.text}__*`
     }
+    if (node.inner === 'del') return `${node.mark ?? '*'}~~${node.text}~~${node.mark ?? '*'}`
     const mark = node.mark ?? '*'
     return `${mark}${node.text}${mark}`
   }
@@ -913,7 +1007,7 @@ function cheapInlineSource(node: CheapInlineNode): string {
   if (node.type === 'image') {
     if (node.raw) return node.raw
     const dest = node.title ? `${node.href} "${node.title}"` : node.href
-    return `![${node.alt}](${dest})`
+    return `![${node.label ?? node.alt}](${dest})`
   }
   if (node.type === 'file') {
     return node.text
@@ -932,7 +1026,7 @@ export function continueCheapInlineMarkdown(
   prevText: string,
   prevNodes: CheapInlineNode[],
   text: string,
-  defs: ReadonlyMap<string, string> = EMPTY_LINK_DEFS
+  defs: ReadonlyMap<string, string | CheapLinkDef> = EMPTY_LINK_DEFS
 ): CheapInlineNode[] {
   const nextText = normalizeStreamingText(text)
   const prevNorm = normalizeStreamingText(prevText)
@@ -986,7 +1080,7 @@ function appendNestedListItem(
   ordered: boolean,
   indent: number,
   text: string,
-  defs: ReadonlyMap<string, string>,
+  defs: ReadonlyMap<string, string | CheapLinkDef>,
   start?: number
 ): void {
   const listStart = ordered && start && start !== 1 ? start : undefined
@@ -1013,7 +1107,7 @@ function appendListContinuation(
   item: CheapListItem,
   indent: number,
   text: string,
-  opts?: { newParagraph?: boolean; defs?: ReadonlyMap<string, string> }
+  opts?: { newParagraph?: boolean; defs?: ReadonlyMap<string, string | CheapLinkDef> }
 ): void {
   if (item.nested && indent > item.nested.indent && item.nested.items.length) {
     appendListContinuation(item.nested.items[item.nested.items.length - 1]!, indent, text, opts)
@@ -1052,11 +1146,37 @@ function looksLikeGfmTableCells(line: string): boolean {
   return splitGfmTableCells(line).length >= 2
 }
 
+function endsWithUnescapedPipe(text: string): boolean {
+  if (!text.endsWith('|')) return false
+  let slashes = 0
+  for (let i = text.length - 2; i >= 0 && text[i] === '\\'; i--) slashes += 1
+  return slashes % 2 === 0
+}
+
+/** GFM 表格：`\|` 是单元格里的竖线，不拆列 */
 function splitGfmTableCells(line: string): string[] {
-  let text = line.trim()
-  if (text.startsWith('|')) text = text.slice(1)
-  if (text.endsWith('|')) text = text.slice(0, -1)
-  return text.split('|').map((cell) => cell.trim())
+  const text = line.trim()
+  let start = text.startsWith('|') ? 1 : 0
+  let end = text.length
+  if (end > start && endsWithUnescapedPipe(text)) end -= 1
+  const cells: string[] = []
+  let cur = ''
+  for (let i = start; i < end; i++) {
+    const ch = text[i]!
+    if (ch === '\\' && i + 1 < end) {
+      cur += text[i + 1]
+      i += 1
+      continue
+    }
+    if (ch === '|') {
+      cells.push(cur.trim())
+      cur = ''
+      continue
+    }
+    cur += ch
+  }
+  cells.push(cur.trim())
+  return cells
 }
 
 function parseGfmTableAlign(sepLine: string): Array<'left' | 'right' | 'center' | null> {
@@ -1093,7 +1213,7 @@ function isIndentCodeLine(line: string): boolean {
 /** 把散文尾拆成标题 / 列表 / 引用 / 段落，直播时用对应标签减少收束跳动 */
 export function parseCheapProseBlocks(
   text: string,
-  defs?: ReadonlyMap<string, string>
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
@@ -1502,7 +1622,7 @@ export function continueCheapProseBlocks(
   prevText: string,
   prevBlocks: CheapProseBlock[],
   text: string,
-  defs?: ReadonlyMap<string, string>
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] {
   const nextText = normalizeStreamingText(text)
   const prevNorm = normalizeStreamingText(prevText)
