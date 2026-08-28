@@ -13,7 +13,7 @@
 | 文件 | 说明 |
 |------|------|
 | `format-time.ts` | 对话列表相对时间（刚刚 / 分钟前 / 月日） |
-| `open-workspace-file.ts` | 对话文件引用自定义事件：App 开文件树，FileTree 读盘跳行 |
+| `open-workspace-file.ts` | 对话文件引用与审查文件名/⌘单击行：App 开文件树，FileTree 读盘跳行 |
 | `thread-runtime.ts` | 会话线程模式（本地 / Worktree）本机记忆；交接后仍记住关联 worktree 与起点分支；后台 turn 按 conversationId 取模式 |
 | `thread-runtime.test.ts` | 当前会话用内存态、后台会话读落盘 |
 | `thread-goal.ts` | 会话 `/goal` 本机记忆（含 `startedAt`）；后台 turn 读落盘、仅 active 注入 |

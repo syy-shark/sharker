@@ -20,6 +20,11 @@ import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { formatBranchPrefix } from '../../../shared/git-branch-create'
 import { CodeDiffBlock } from '../CodeDiffBlock'
+import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
+import {
+  resolveReviewFileClick,
+  reviewFileClickTargetFromElement
+} from '../../../shared/review-file-click'
 import './ChangesPanel.css'
 
 interface ChangeFile {
@@ -717,7 +722,7 @@ export function ChangesPanel({
       ) : compare !== 'branch' && files.length === 0 && compare === 'uncommitted' ? (
         <div className="changes-panel--empty">
           <p>工作区干净，无未提交变更</p>
-          <p className="changes-panel__hint">Agent 改文件后，点左侧文件即可审查 diff</p>
+          <p className="changes-panel__hint">Agent 改文件后，点文件名打开预览，点行背景展开 diff</p>
         </div>
       ) : visible.length === 0 ? (
         <div className="changes-panel--empty">
@@ -732,14 +737,23 @@ export function ChangesPanel({
                   <button
                     type="button"
                     className="changes-panel__item"
-                    title={f.raw}
+                    title="展开或收起 diff"
                     aria-selected={selectedPath === f.path}
-                    onClick={() => setSelectedPath(f.path)}
+                    onClick={(e) => {
+                      const intent = resolveReviewFileClick(reviewFileClickTargetFromElement(e.target))
+                      if (intent === 'open') {
+                        dispatchOpenWorkspaceFile({ path: f.path })
+                        return
+                      }
+                      setSelectedPath((prev) => (prev === f.path ? null : f.path))
+                    }}
                   >
                     <span className={`changes-panel__status status-${f.status.trim().charAt(0) || 'M'}`}>
                       {statusLabel(f)}
                     </span>
-                    <span className="changes-panel__path">{f.path}</span>
+                    <span className="changes-panel__path" data-review-file-name title={`${f.path} · 打开预览`}>
+                      {f.path}
+                    </span>
                   </button>
                   {!readOnly ? (
                     <div className="changes-panel__row-actions">
@@ -820,6 +834,11 @@ export function ChangesPanel({
                   diff={diff}
                   defaultExpanded
                   showHeader
+                  onOpenLine={
+                    selectedPath
+                      ? (line) => dispatchOpenWorkspaceFile({ path: selectedPath, line })
+                      : undefined
+                  }
                   review={{
                     scope: readOnly ? 'unstaged' : scope,
                     acting,

@@ -5,6 +5,7 @@
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
+import { shouldOpenReviewLine } from '../../shared/review-file-click'
 import { statsFromLines } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
@@ -45,6 +46,8 @@ interface Props {
   defaultExpanded?: boolean
   /** 父组件已经展示文件名/统计时可隐藏头部 */
   showHeader?: boolean
+  /** ⌘/Ctrl+单击行打开预览（对标 Codex Review） */
+  onOpenLine?: (line: number) => void
   review?: CodeDiffReviewProps
 }
 
@@ -72,19 +75,32 @@ function DiffLineRow({
   index,
   review,
   commenting,
-  onStartComment
+  onStartComment,
+  onOpenLine
 }: {
   line: FileDiffLine
   index: number
   review?: CodeDiffReviewProps
   commenting: boolean
   onStartComment: () => void
+  onOpenLine?: (line: number) => void
 }) {
   const comments = (review?.comments ?? []).filter(
     (c) => c.line === commentLineNumber(line) && c.side === commentSide(line)
   )
   return (
-    <div className={`code-diff-line code-diff-line--${line.kind}${review ? ' code-diff-line--review' : ''}`}>
+    <div
+      className={`code-diff-line code-diff-line--${line.kind}${review ? ' code-diff-line--review' : ''}`}
+      title={onOpenLine ? '⌘/Ctrl+单击打开该行预览' : undefined}
+      onClick={(e) => {
+        if (!onOpenLine || !shouldOpenReviewLine(e)) return
+        if ((e.target as Element | null)?.closest?.('.code-diff-comment-btn')) return
+        const lineNo = commentLineNumber(line)
+        if (lineNo <= 0) return
+        e.preventDefault()
+        onOpenLine(lineNo)
+      }}
+    >
       <span className="code-diff-gutter" aria-hidden>
         {review ? (
           <button
@@ -125,6 +141,7 @@ export function CodeDiffBlock({
   maxPreviewLines = DEFAULT_MAX_LINES,
   defaultExpanded = false,
   showHeader = true,
+  onOpenLine,
   review
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
@@ -164,6 +181,7 @@ export function CodeDiffBlock({
           index={index}
           review={review}
           commenting={commentingKey === key}
+          onOpenLine={onOpenLine}
           onStartComment={() => {
             setCommentingKey(key)
             setDraft('')

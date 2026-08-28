@@ -329,6 +329,11 @@
   white-space: nowrap;
 }
 
+.changes-panel__path:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .changes-panel--empty {
   display: flex;
   flex: 1;
