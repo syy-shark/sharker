@@ -113,6 +113,9 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true }))).toBe(
       'standalone_conversation'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true, altKey: true }))).toBe(
+      'standalone_conversation'
+    )
     expect(
       matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true, shiftKey: true }))
     ).toBe('open_project_picker')

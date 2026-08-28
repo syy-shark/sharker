@@ -138,6 +138,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 's' && event.altKey && !event.shiftKey) return 'side_conversation'
   if (key === 'o' && event.altKey && event.shiftKey) return 'open_project_picker'
   if (key === 'o' && event.altKey && !event.shiftKey) return 'standalone_conversation'
+  if (key === 'n' && event.altKey && !event.shiftKey) return 'standalone_conversation'
   if (key === 'r' && event.altKey && !event.shiftKey) return 'rename_conversation'
   if (key === 'p' && event.altKey && !event.shiftKey) return 'pin_conversation'
   if (key === 'u' && event.shiftKey && !event.altKey) return 'mark_unread'
@@ -270,7 +271,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
   { keys: '⌘N / ⌘⇧O', title: '新对话' },
-  { keys: '⌘⌥O', title: '独立新对话' },
+  { keys: '⌘⌥O / ⌘⌥N', title: '独立新对话' },
   { keys: '⌘⌥⇧O', title: '打开项目选择器' },
   { keys: '⌘⌥R', title: '重命名对话' },
   { keys: '⌘⌥P', title: '置顶 / 取消置顶' },
@@ -370,8 +371,8 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'standalone_conversation',
     title: '独立新对话',
-    defaultKeys: '⌘⌥O',
-    defaultChord: 'mod+alt+o'
+    defaultKeys: '⌘⌥O 或 ⌘⌥N',
+    defaultChord: ['mod+alt+o', 'mod+alt+n']
   },
   {
     action: 'open_project_picker',
