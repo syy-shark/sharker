@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { adjacentConversationId, matchDefaultWorkbenchShortcut } from './workbench-shortcuts'
+import {
+  adjacentConversationId,
+  isEmbeddedTerminalTarget,
+  isTerminalClearChord,
+  matchDefaultWorkbenchShortcut
+} from './workbench-shortcuts'
 import { matchWorkbenchShortcut } from './keymap'
 
 function ev(partial: {
@@ -141,6 +146,24 @@ describe('workbench shortcuts', () => {
     expect(adjacentConversationId(['a', 'b', 'c'], 'b', 1)).toBe('c')
     expect(adjacentConversationId(['a', 'b', 'c'], 'a', -1)).toBe('c')
     expect(adjacentConversationId([], 'a', 1)).toBeNull()
+  })
+
+  it('treats ⌘K as a terminal clear chord only without Shift', () => {
+    expect(isTerminalClearChord(ev({ key: 'k', metaKey: true }))).toBe(true)
+    expect(isTerminalClearChord(ev({ key: 'k', ctrlKey: true }))).toBe(true)
+    expect(isTerminalClearChord(ev({ key: 'k', metaKey: true, shiftKey: true }))).toBe(false)
+    expect(isTerminalClearChord(ev({ key: 'p', metaKey: true, shiftKey: true }))).toBe(false)
+  })
+
+  it('detects xterm hosts as the embedded terminal', () => {
+    const inside = {
+      closest: (sel: string) =>
+        sel.includes('embedded-terminal-shell') ? {} : null
+    }
+    const outside = { closest: () => null }
+    expect(isEmbeddedTerminalTarget(inside as unknown as EventTarget)).toBe(true)
+    expect(isEmbeddedTerminalTarget(outside as unknown as EventTarget)).toBe(false)
+    expect(isEmbeddedTerminalTarget(null)).toBe(false)
   })
 
   it('ignores composing and unmodified keys', () => {

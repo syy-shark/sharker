@@ -207,6 +207,29 @@ export function matchDefaultWorkbenchShortcut(event: {
   return null
 }
 
+/** 终端聚焦时 ⌘K / Ctrl+K 清屏（对标 Codex：Clear the terminal when focused） */
+export function isTerminalClearChord(event: {
+  key: string
+  metaKey: boolean
+  ctrlKey: boolean
+  altKey: boolean
+  shiftKey: boolean
+  isComposing?: boolean
+}): boolean {
+  if (event.isComposing) return false
+  if (event.altKey || event.shiftKey) return false
+  if (!(event.metaKey || event.ctrlKey)) return false
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+  return key === 'k'
+}
+
+/** 事件是否落在集成终端（含 xterm 隐藏 textarea） */
+export function isEmbeddedTerminalTarget(target: EventTarget | null): boolean {
+  const el = target as { closest?: (selector: string) => unknown } | null
+  if (!el || typeof el.closest !== 'function') return false
+  return Boolean(el.closest('.embedded-terminal-shell, .embedded-terminal, .xterm'))
+}
+
 /** 在当前项目对话列表里循环切到上一条 / 下一条（对标 Codex ⌘⇧[ / ⌘⇧]） */
 export function adjacentConversationId(
   ids: string[],
@@ -242,7 +265,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘[ / ⌘]', title: '后退 / 前进' },
   { keys: '⌘+ / ⌘-', title: '放大 / 缩小字号' },
   { keys: '⌘0', title: '重置字号' },
-  { keys: 'Ctrl+L', title: '清终端' },
+  { keys: 'Ctrl+L / ⌘K（终端聚焦）', title: '清终端' },
   { keys: '⌘⇧[ / ⌘⇧] / ⌃Tab / ⌃⇧Tab', title: '上一条 / 下一条对话' },
   { keys: '⌘1–9', title: '跳到第 N 条对话' },
   { keys: '⌘⌥1–6', title: '最近对话 1–6' },
@@ -308,7 +331,7 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'clear_terminal',
     title: '清终端',
-    defaultKeys: 'Ctrl+L',
+    defaultKeys: 'Ctrl+L / ⌘K（终端聚焦）',
     defaultChord: 'mod+ctrl+l'
   },
   { action: 'toggle_files', title: '打开文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },

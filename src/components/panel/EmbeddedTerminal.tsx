@@ -4,6 +4,7 @@
  * @see ./ARCH.md
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { Terminal, type ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
@@ -127,6 +128,7 @@ export function EmbeddedTerminal({
   clearTick = 0
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const appliedClearRef = useRef(0)
@@ -284,6 +286,40 @@ export function EmbeddedTerminal({
   }, [clearTick, ready])
 
   useEffect(() => {
+    const clearNow = () => {
+      const term = termRef.current
+      const id = sessionIdRef.current
+      if (!term) return
+      term.clear()
+      if (id && window.sharker.writeTerminal) {
+        void window.sharker.writeTerminal(id, '\x0c')
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        !isTerminalClearChord({
+          key: e.key,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+          shiftKey: e.shiftKey,
+          isComposing: e.isComposing
+        })
+      ) {
+        return
+      }
+      const shell = shellRef.current
+      const t = e.target
+      if (!shell || !(t instanceof Node) || !shell.contains(t)) return
+      e.preventDefault()
+      e.stopPropagation()
+      clearNow()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+
+  useEffect(() => {
     if (!ready || !pendingCommand || !sessionIdRef.current || !window.sharker.writeTerminal) {
       return
     }
@@ -297,7 +333,10 @@ export function EmbeddedTerminal({
     : '终端'
 
   return (
-    <div className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}>
+    <div
+      className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}
+      ref={shellRef}
+    >
       <div className="embedded-terminal-chrome">
         <span className="embedded-terminal-title" title={workspacePath}>
           {cwdLabel}
@@ -306,7 +345,7 @@ export function EmbeddedTerminal({
           type="button"
           className="embedded-terminal-clear"
           aria-label="清终端"
-          title="清终端 · Ctrl+L"
+          title="清终端 · Ctrl+L / ⌘K"
           onClick={() => {
             const term = termRef.current
             const id = sessionIdRef.current
