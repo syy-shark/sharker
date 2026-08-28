@@ -109,10 +109,16 @@ export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
       <div className="code-artifact-head">
         <span className="code-artifact-label">{label}</span>
         <span className="code-artifact-detail">写入中</span>
+        <span className="code-artifact-copy-slot" aria-hidden />
       </div>
-      <pre className="live-fence-tail__pre">
-        <code>{code}</code>
-      </pre>
+      <div className="code-artifact-scroll">
+        <div className="code-artifact-code live-fence-tail__code">
+          <span className="live-fence-tail__gutter" aria-hidden />
+          <pre className="live-fence-tail__pre">
+            <code>{code}</code>
+          </pre>
+        </div>
+      </div>
     </div>
   )
 }

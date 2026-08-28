@@ -8,6 +8,7 @@ import { parsePersonality } from './personality'
 import { clampWorktreeKeepCount } from './worktree-prune'
 import { clampWorktreeRoot } from './worktree-root'
 import { clampUiFontScale } from './ui-font-scale'
+import { parseCodeFont } from './code-font'
 import { normalizeKeymap } from './keymap'
 import { clampGitPrompt } from './git-prompt'
 import { normalizeBranchPrefix } from './git-branch-create'
@@ -134,6 +135,7 @@ export function normalizeSettings(
     uiGlass: migrateUiGlass(raw),
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
     uiFontScale: clampUiFontScale(raw.uiFontScale),
+    codeFont: parseCodeFont(raw.codeFont),
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
     worktreeRoot: clampWorktreeRoot(raw.worktreeRoot),

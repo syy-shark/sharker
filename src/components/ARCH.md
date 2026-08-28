@@ -31,7 +31,7 @@
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览；保住 GFM 任务列表 class；元素子节点不套 span，避免收束跳动 |
 | `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`；散文尾廉价标题/列表/任务项/引用/表格/分隔线/http 图与可点 http / 文件引用；任务项用 GFM `contains-task-list` / `task-list-item`；`continueCheapProseBlocks` 保住已闭合项，不每 token 跑 remark |
 | `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
-| `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏（无行号节点） |
+| `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 直播未闭合围栏预留行号槽与复制按钮位，收束时少跳一截 |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；审查模式 hunk 暂存/还原 + 行内评论 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |
 | `ShortcutsHelp.tsx` / `.css` | ⌘/ 快捷键一览 |

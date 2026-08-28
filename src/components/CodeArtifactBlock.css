@@ -144,23 +144,52 @@
   animation: none;
 }
 
+/* 预留复制按钮位，收束成 CodeArtifactBlock 时头栏不挤 */
+.code-artifact-copy-slot {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  margin-left: auto;
+}
+
+/* 与收束后行号列同宽，避免围栏闭合时正文左移 */
+.live-fence-tail__code {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  min-width: 100%;
+}
+
+.live-fence-tail__gutter {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  border-right: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+}
+
 .live-fence-tail__pre {
   margin: 0;
-  max-height: min(360px, 46vh);
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 8px 14px;
+  padding: 0 14px;
+  overflow: visible;
   color: var(--text);
   font-family: inherit;
   font-size: inherit;
-  line-height: inherit;
+  line-height: 19px;
   tab-size: 2;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  word-break: normal;
 }
 
 .live-fence-tail__pre code {
   font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: inherit;
+}
+
+.streaming-markdown .code-artifact-shell,
+.message-body--assistant .code-artifact-shell {
+  animation: none;
 }
 
 html.theme-dark .code-artifact-shell {

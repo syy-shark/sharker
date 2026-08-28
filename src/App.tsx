@@ -285,9 +285,10 @@ export default function App() {
   useEffect(() => {
     applyAppearanceDom(
       settings.uiTheme === 'dark' ? 'dark' : 'light',
-      settings.uiFontScale ?? UI_FONT_SCALE_DEFAULT
+      settings.uiFontScale ?? UI_FONT_SCALE_DEFAULT,
+      settings.codeFont
     )
-  }, [settings.uiTheme, settings.uiFontScale])
+  }, [settings.uiTheme, settings.uiFontScale, settings.codeFont])
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [page, setPage] = useState<AppPage>('chat')
   const pageRef = useRef<AppPage>('chat')
@@ -1216,6 +1217,7 @@ export default function App() {
           memoryInjection: updated.memoryInjection,
           memoryGeneration: updated.memoryGeneration,
           uiFontScale: updated.uiFontScale,
+          codeFont: updated.codeFont,
           keyboardShortcuts: updated.keyboardShortcuts,
           followUpBehavior: updated.followUpBehavior,
           requireModEnter: updated.requireModEnter,
@@ -1250,7 +1252,11 @@ export default function App() {
     (nextScale: number) => {
       const uiFontScale = clampUiFontScale(nextScale)
       const merged = { ...settingsRef.current, uiFontScale }
-      applyAppearanceDom(merged.uiTheme === 'dark' ? 'dark' : 'light', uiFontScale)
+      applyAppearanceDom(
+        merged.uiTheme === 'dark' ? 'dark' : 'light',
+        uiFontScale,
+        merged.codeFont
+      )
       settingsRef.current = merged
       setSettings(merged)
       setSettingsDraft(merged)
@@ -1281,6 +1287,7 @@ export default function App() {
       memoryInjection: draft.memoryInjection,
       memoryGeneration: draft.memoryGeneration,
       uiFontScale: draft.uiFontScale,
+      codeFont: draft.codeFont,
       keyboardShortcuts: draft.keyboardShortcuts,
       followUpBehavior: draft.followUpBehavior,
       requireModEnter: draft.requireModEnter,
@@ -2755,6 +2762,7 @@ export default function App() {
       memoryInjection: next.memoryInjection,
       memoryGeneration: next.memoryGeneration,
       uiFontScale: next.uiFontScale,
+      codeFont: next.codeFont,
       keyboardShortcuts: next.keyboardShortcuts,
       followUpBehavior: next.followUpBehavior,
       requireModEnter: next.requireModEnter,

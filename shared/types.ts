@@ -77,6 +77,11 @@ export interface AppSettings {
   uiTheme?: 'light' | 'dark'
   /** 界面字号缩放（对标 Codex ⌘+ / ⌘-）；默认 1 */
   uiFontScale?: number
+  /**
+   * 代码字体（对标 Codex Settings → Code font）。
+   * 审查 / 终端 / 对话代码共用 `--mono`；空则系统等宽。
+   */
+  codeFont?: import('./code-font').CodeFontId
   /** Codex 式人格：只改语气 */
   personality?: import('./personality').AgentPersonality
   /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
@@ -364,6 +369,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiGlass: 0.82,
   uiTheme: 'light',
   uiFontScale: 1,
+  codeFont: 'system',
   personality: 'pragmatic',
   worktreeKeepCount: 15,
   worktreeRoot: '',

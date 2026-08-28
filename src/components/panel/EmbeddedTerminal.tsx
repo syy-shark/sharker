@@ -166,6 +166,7 @@ export function EmbeddedTerminal({
       fontSize: Math.round(13 * uiFontScale()),
       lineHeight: 1.35,
       fontFamily:
+        getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() ||
         'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Monaco, monospace',
       theme,
       // 透明底才能与面板 vibrancy / 水滴玻璃融合

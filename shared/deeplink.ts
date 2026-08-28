@@ -87,7 +87,9 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
     key === 'notifications' ||
     key === 'general' ||
     key === 'personalization' ||
-    key === 'memories'
+    key === 'memories' ||
+    key === 'code-font' ||
+    key === 'codefont'
   ) {
     return { type: 'settings', tab: 'appearance' }
   }

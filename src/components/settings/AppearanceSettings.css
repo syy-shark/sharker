@@ -188,6 +188,10 @@ html.theme-dark .appearance-theme-card.is-selected .appearance-theme-check {
   font-variant-numeric: tabular-nums;
 }
 
+.st-row-control .settings-select {
+  min-width: 148px;
+}
+
 .appearance-instructions-hint {
   font-size: 11px;
   color: var(--text-muted);

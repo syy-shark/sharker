@@ -70,6 +70,10 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'appearance'
     })
+    expect(parseDeeplink('sharker://settings/code-font')).toEqual({
+      type: 'settings',
+      tab: 'appearance'
+    })
     expect(parseDeeplink('sharker://settings/usage')).toEqual({
       type: 'settings',
       tab: 'usage'

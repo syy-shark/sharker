@@ -1,5 +1,7 @@
 /**
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
+ * 界面字号与代码字体立刻写 DOM（`--ui-font-scale` / `--mono`）。
+ * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
@@ -14,6 +16,7 @@ import {
   UI_FONT_SCALE_MAX,
   UI_FONT_SCALE_MIN
 } from '../../../shared/ui-font-scale'
+import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -21,6 +24,7 @@ import {
   SettingsSection,
   SettingsToggle
 } from './SettingsPrimitives'
+import { SettingsSelect } from './SettingsSelect'
 import './AppearanceSettings.css'
 
 interface Props {
@@ -29,8 +33,12 @@ interface Props {
   onSave: (next: AppSettings) => Promise<void>
 }
 
-/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定）；字号写入 `--ui-font-scale` */
-export function applyAppearanceDom(theme: 'light' | 'dark', fontScale = UI_FONT_SCALE_DEFAULT): void {
+/** 立刻写 DOM：主题切换即生效（材质由 CSS 固定）；字号写入 `--ui-font-scale`；代码字体写入 `--mono` */
+export function applyAppearanceDom(
+  theme: 'light' | 'dark',
+  fontScale = UI_FONT_SCALE_DEFAULT,
+  codeFont?: string
+): void {
   const root = document.documentElement
   root.dataset.theme = theme
   root.classList.toggle('theme-dark', theme === 'dark')
@@ -44,6 +52,7 @@ export function applyAppearanceDom(theme: 'light' | 'dark', fontScale = UI_FONT_
   root.style.setProperty('--ui-opacity-strong', theme === 'light' ? '0.18' : '1')
   root.style.setProperty('--ui-opacity-soft', theme === 'light' ? '0.08' : '1')
   root.style.setProperty('--ui-font-scale', String(clampUiFontScale(fontScale)))
+  root.style.setProperty('--mono', codeFontStack(codeFont))
 }
 
 /** 外观设置 */
@@ -87,8 +96,8 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   useEffect(() => {
     const t = draft.uiTheme === 'dark' ? 'dark' : 'light'
     setTheme(t)
-    applyAppearanceDom(t, draft.uiFontScale)
-  }, [draft.uiTheme, draft.uiFontScale])
+    applyAppearanceDom(t, draft.uiFontScale, draft.codeFont)
+  }, [draft.uiTheme, draft.uiFontScale, draft.codeFont])
 
   const scheduleSave = useCallback(
     (next: AppSettings) => {
@@ -105,7 +114,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   const onTheme = (uiTheme: 'light' | 'dark') => {
     setTheme(uiTheme)
     themeRef.current = uiTheme
-    applyAppearanceDom(uiTheme, draftRef.current.uiFontScale)
+    applyAppearanceDom(uiTheme, draftRef.current.uiFontScale, draftRef.current.codeFont)
     // 保留 uiGlass 字段兼容旧设置文件，但 UI 不再调节
     scheduleSave({
       ...draftRef.current,
@@ -116,8 +125,13 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
 
   const onFontScale = (next: number) => {
     const uiFontScale = clampUiFontScale(next)
-    applyAppearanceDom(themeRef.current, uiFontScale)
+    applyAppearanceDom(themeRef.current, uiFontScale, draftRef.current.codeFont)
     scheduleSave({ ...draftRef.current, uiFontScale })
+  }
+
+  const onCodeFont = (codeFont: CodeFontId) => {
+    applyAppearanceDom(themeRef.current, draftRef.current.uiFontScale, codeFont)
+    scheduleSave({ ...draftRef.current, codeFont })
   }
 
   return (
@@ -161,7 +175,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           <SettingsRow
             title="界面字号"
             description="对标 Codex ⌘+ / ⌘-；⌘0 重置。写入外观设置，重启后仍有效。"
-            last
           >
             <div className="appearance-font-stepper">
               <button
@@ -184,6 +197,18 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 +
               </button>
             </div>
+          </SettingsRow>
+          <SettingsRow
+            title="代码字体"
+            description="对标 Codex Code font。审查、终端与对话代码共用这一栈。"
+            last
+          >
+            <SettingsSelect
+              id="appearance-code-font"
+              value={parseCodeFont(draft.codeFont)}
+              options={CODE_FONT_OPTIONS.map((item) => ({ value: item.id, label: item.label }))}
+              onChange={(value) => onCodeFont(parseCodeFont(value))}
+            />
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

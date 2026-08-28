@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount` / `worktreeRoot`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、置顶排序、`/rename` |
@@ -57,6 +57,8 @@
 | `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key） |
 | `debug-config.test.ts` | 密钥打码 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
+| `code-font.ts` | 代码字体白名单与 `--mono` 栈（对标 Codex Code font） |
+| `code-font.test.ts` | 未知值回退 system、别名与栈含 monospace |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
@@ -117,7 +119,7 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/memories→外观、git/review/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/memories/code-font→外观、git/review/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、git/review/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
