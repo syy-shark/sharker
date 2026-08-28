@@ -171,8 +171,8 @@
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择 |
 | `fast-mode.test.ts` | on/off、off/low 优先 |
-| `copy-output.ts` | `/copy` 取最近一条助手正文 |
-| `copy-output.test.ts` | 跳过空助手行 |
+| `copy-output.ts` | `/copy` 取最近一条助手正文；有围栏或引用时列出整段 / 代码块 / 引用（对标 Codex /copy picker） |
+| `copy-output.test.ts` | 跳过空助手行；围栏与引用分列、围栏内 `>` 不当引用 |
 | `skills-status.ts` | `/skills` 已安装列表 |
 | `skills-status.test.ts` | 过滤 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架；个人说明路径 `~/.sharker/AGENTS.md` |

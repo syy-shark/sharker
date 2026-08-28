@@ -33,7 +33,7 @@ import {
   nextRowIntrinsicHeights,
   rowIntrinsicSizeStyle
 } from '../../shared/live-display'
-import { lastCompletedAssistantText } from '../../shared/copy-output'
+import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
@@ -290,6 +290,10 @@ interface Props {
   onAskInSideChat?: (prompt: string) => void
   /** 划选正文插入当前输入框（对标 Codex send selection to composer） */
   onInsertComposer?: (text: string) => void
+  /** `/copy` 有代码块或引用时先选再复制（对标 Codex /copy picker） */
+  copyPicker?: CopyOutputTarget[] | null
+  onCopyPick?: (target: CopyOutputTarget) => void
+  onCopyPickerClose?: () => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -354,7 +358,10 @@ export function ChatView({
   onPlanModeChange,
   toolOutputDisplay = 'standard',
   onAskInSideChat,
-  onInsertComposer
+  onInsertComposer,
+  copyPicker = null,
+  onCopyPick,
+  onCopyPickerClose
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -365,13 +372,65 @@ export function ChatView({
   const [findHit, setFindHit] = useState(0)
   const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
+  const [copyPickIndex, setCopyPickIndex] = useState(0)
+  const copyPickIndexRef = useRef(0)
+
+  useEffect(() => {
+    copyPickIndexRef.current = copyPickIndex
+  }, [copyPickIndex])
+
+  useEffect(() => {
+    setCopyPickIndex(0)
+    copyPickIndexRef.current = 0
+  }, [copyPicker])
 
   useEffect(() => {
     setEditUserMessageId(null)
     setSideAsk(null)
     measuredRowHeightsRef.current = new Map()
     setIntrinsicHeights(new Map())
-  }, [sessionKey])
+    onCopyPickerClose?.()
+  }, [sessionKey, onCopyPickerClose])
+
+  useEffect(() => {
+    if (!copyPicker?.length) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onCopyPickerClose?.()
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setCopyPickIndex((i) => {
+          const next = Math.min(copyPicker.length - 1, i + 1)
+          copyPickIndexRef.current = next
+          return next
+        })
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setCopyPickIndex((i) => {
+          const next = Math.max(0, i - 1)
+          copyPickIndexRef.current = next
+          return next
+        })
+        return
+      }
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        const target = copyPicker[copyPickIndexRef.current]
+        if (target) onCopyPick?.(target)
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [copyPicker, onCopyPick, onCopyPickerClose])
   const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
@@ -1095,6 +1154,45 @@ export function ChatView({
               >
                 回到底部
               </button>
+            </div>
+          ) : null}
+          {copyPicker?.length ? (
+            <div className="copy-picker-slot">
+              <div
+                className="slash-menu popover-enter"
+                role="listbox"
+                aria-label="复制内容"
+                aria-activedescendant={
+                  copyPicker[copyPickIndex] ? `copy-option-${copyPicker[copyPickIndex]!.id}` : undefined
+                }
+              >
+                <ul className="slash-menu-list">
+                  {copyPicker.map((target, index) => (
+                    <li key={target.id} role="presentation">
+                      <button
+                        type="button"
+                        id={`copy-option-${target.id}`}
+                        role="option"
+                        aria-selected={index === copyPickIndex}
+                        className={`slash-menu-item${index === copyPickIndex ? ' slash-menu-item--active' : ''}`}
+                        onMouseEnter={() => {
+                          setCopyPickIndex(index)
+                          copyPickIndexRef.current = index
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          onCopyPick?.(target)
+                        }}
+                      >
+                        <span className="slash-menu-name">
+                          {target.kind === 'full' ? '整段' : target.kind === 'code' ? '代码' : '引用'}
+                        </span>
+                        <span className="slash-menu-desc">{target.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           ) : null}
           {onEditQueued && onMoveQueued && onSendQueued ? (

@@ -334,7 +334,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'copy',
-    description: '复制上一条已完成的助手回复',
+    description: '复制上一条回复；有代码或引用时先选目标',
     scope: 'ui',
     action: 'copy_last_output',
     category: 'session'

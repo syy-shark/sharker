@@ -1660,6 +1660,10 @@ html.theme-dark .chat-side-ask {
   min-width: 0;
 }
 
+.copy-picker-slot {
+  margin: 0 0 8px;
+}
+
 .composer-box,
 .chat--active .composer-box {
   border: 0.5px solid var(--glass-edge);

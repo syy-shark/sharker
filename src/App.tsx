@@ -137,7 +137,11 @@ import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts } from '../shared/suggested-prompts'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
-import { lastCompletedAssistantText } from '../shared/copy-output'
+import {
+  lastCompletedAssistantText,
+  listCopyOutputTargets,
+  type CopyOutputTarget
+} from '../shared/copy-output'
 import {
   createAppUndoStack,
   execNativeUndoRedo,
@@ -381,6 +385,7 @@ export default function App() {
     mode?: 'replace' | 'append'
   } | null>(null)
   const composerSeedNonceRef = useRef(0)
+  const [copyPicker, setCopyPicker] = useState<CopyOutputTarget[] | null>(null)
   const popoutRoute = useMemo(
     () => parseThreadWindowHash(typeof window !== 'undefined' ? window.location.hash : ''),
     []
@@ -4485,24 +4490,21 @@ export default function App() {
         }
         case 'copy_last_output': {
           const text = lastCompletedAssistantText(messagesRef.current)
-          if (text) {
-            try {
-              await navigator.clipboard.writeText(text)
-            } catch {
-              /* ignore */
-            }
+          if (!text) {
+            appendLocalNote('还没有可复制的助手回复。')
+            break
           }
-          const note = {
-            id: crypto.randomUUID(),
-            role: 'assistant' as const,
-            content: text ? '已复制上一条助手回复。' : '还没有可复制的助手回复。'
+          const targets = listCopyOutputTargets(text)
+          if (targets.length > 1) {
+            setCopyPicker(targets)
+            break
           }
-          setMessages((msgs) => {
-            const nextMsgs = [...msgs, note]
-            messagesRef.current = nextMsgs
-            void persistActiveConversation(nextMsgs)
-            return nextMsgs
-          })
+          try {
+            await navigator.clipboard.writeText(text)
+          } catch {
+            /* ignore */
+          }
+          appendLocalNote('已复制上一条助手回复。')
           break
         }
         case 'set_reasoning': {
@@ -6089,6 +6091,23 @@ export default function App() {
     void handleSlashActionRef.current(cmd, args)
   }, [])
 
+  const handleCopyPick = useCallback(
+    async (target: CopyOutputTarget) => {
+      try {
+        await navigator.clipboard.writeText(target.text)
+      } catch {
+        /* ignore */
+      }
+      setCopyPicker(null)
+      appendLocalNote('已复制上一条助手回复。')
+    },
+    [appendLocalNote]
+  )
+
+  const handleCopyPickerClose = useCallback(() => {
+    setCopyPicker(null)
+  }, [])
+
   const suggestedPromptItems = useMemo(() => {
     const recent = conversationList.find((c) => c.id !== activeConversationId)
     return buildSuggestedPrompts({
@@ -6376,6 +6395,9 @@ export default function App() {
                 )
               }}
               onInsertComposer={(text) => seedComposer(text, 'append')}
+              copyPicker={copyPicker}
+              onCopyPick={handleCopyPick}
+              onCopyPickerClose={handleCopyPickerClose}
             />
             </div>
           ) : page === 'automations' ? (
