@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findInThread, seedFindQuery } from './thread-search'
+import { findAllOccurrences, findInThread, locateFlatRange, seedFindQuery } from './thread-search'
 
 describe('thread search', () => {
   it('finds messages case-insensitively', () => {
@@ -12,6 +12,22 @@ describe('thread search', () => {
       'review'
     )
     expect(hits.map((h) => h.messageId)).toEqual(['u1', 'u2'])
+    const multi = findInThread([{ id: 'a', content: 'review then REVIEW' }], 'review')
+    expect(multi).toHaveLength(2)
+    expect(multi[0]?.start).toBe(0)
+    expect(multi[1]?.start).toBe(12)
+    expect(findAllOccurrences('Aaa a', 'a')).toEqual([
+      { start: 0, end: 1 },
+      { start: 1, end: 2 },
+      { start: 2, end: 3 },
+      { start: 4, end: 5 }
+    ])
+    expect(locateFlatRange([3, 2], 2, 4)).toEqual({
+      startIndex: 0,
+      startOffset: 2,
+      endIndex: 1,
+      endOffset: 1
+    })
   })
 
   it('returns nothing for empty query', () => {

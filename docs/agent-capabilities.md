@@ -82,7 +82,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 划选历史正文、文件预览或集成终端输出会出现「插入输入框」与「旁路提问」（对标 Codex send transcript selections to the composer 与 Ask in side chat）。插入会把引用块接到当前未发送草稿后面，不覆盖输入框。
 
-`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），Enter / ↑↓ 跳转。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。`⌘G` / `⌘⇧G` / `F3` / `⇧F3` 始终跳下一条 / 上一条（查找未开时先打开再跳，关闭栏时保留上次词；命中滚动用 `auto` 并锁贴底，以免直播增高把镜头拽回底部）。Search chats 官方默认不绑，走命令面板或设置 → 键盘。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
+`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），同一条里每处各算一次，Enter / ↑↓ / `⌘G` 跳转并高亮当前词。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。`⌘G` / `⌘⇧G` / `F3` / `⇧F3` 始终跳下一条 / 上一条（查找未开时先打开再跳，关闭栏时保留上次词；命中滚动用 `auto` 并锁贴底，以免直播增高把镜头拽回底部）。Search chats 官方默认不绑，走命令面板或设置 → 键盘。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
 
 ### 人格
 

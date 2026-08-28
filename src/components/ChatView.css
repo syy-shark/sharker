@@ -112,6 +112,11 @@
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
+::highlight(sharker-find) {
+  background-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--text);
+}
+
 .messages-end {
   width: 100%;
   height: 1px;

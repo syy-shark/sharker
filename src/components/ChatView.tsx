@@ -32,6 +32,7 @@ import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery } from '../../shared/thread-search'
+import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
   formatComposerInsert,
@@ -573,20 +574,28 @@ export function ChatView({
     setStickToBottom(false)
   }, [readScrollMetrics])
 
-  /** 查找命中时锁贴底，避免直播增高把镜头拽回底部 */
+  /** 查找命中时锁贴底，避免直播增高把镜头拽回底部；标出当前词 */
   useEffect(() => {
     const current = findHits[findHit]
-    if (!findOpen || !current) return
+    if (!findOpen || !current) {
+      clearFindHighlight()
+      return
+    }
     const el = document.getElementById(`msg-${current.messageId}`)
-    if (!el) return
+    if (!el) {
+      clearFindHighlight()
+      return
+    }
     lockUserScroll()
     setCanJumpToBottom(true)
     programmaticScrollRef.current = true
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
+    paintFindHighlight(el, findQuery, current.occurrence)
     requestAnimationFrame(() => {
       programmaticScrollRef.current = false
     })
-  }, [findHit, findHits, findOpen, lockUserScroll])
+    return () => clearFindHighlight()
+  }, [findHit, findHits, findOpen, findQuery, lockUserScroll])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
   const scrollToBottom = useCallback(

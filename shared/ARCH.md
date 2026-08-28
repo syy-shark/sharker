@@ -103,8 +103,8 @@
 | `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开 |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
-| `thread-search.ts` | 线程内查找（大小写不敏感）；`seedFindQuery` 把划选收成查找词 |
-| `thread-search.test.ts` | 命中消息 id；划选预填去空白并截断 |
+| `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮 |
+| `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断 |
 | `terminal-tabs.ts` | 集成终端按线程分标签：标题、上限 8、关最后一张不准、最近 6 条线程缓存；pending 窗格可收成对话 id |
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
 | `terminal-snapshot.ts` | 集成终端快照：去 ANSI、环形缓冲、`read_thread_terminal` 文案 |
