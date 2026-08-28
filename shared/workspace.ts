@@ -13,6 +13,7 @@ import { normalizeKeymap } from './keymap'
 import { clampGitPrompt } from './git-prompt'
 import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
+import { parseComposerEnterBehavior } from './composer-submit'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -122,6 +123,11 @@ export function normalizeSettings(
     activeProviderId = ''
   }
 
+  const composerEnterBehavior = parseComposerEnterBehavior(
+    raw.composerEnterBehavior,
+    raw.requireModEnter
+  )
+
   const merged: AppSettings = {
     workspacePath: '',
     permissionMode: raw.permissionMode ?? 'sandbox',
@@ -143,7 +149,8 @@ export function normalizeSettings(
     memoryGeneration: raw.memoryGeneration !== false,
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),
     followUpBehavior: raw.followUpBehavior === 'steer' ? 'steer' : 'queue',
-    requireModEnter: raw.requireModEnter === true,
+    composerEnterBehavior,
+    requireModEnter: composerEnterBehavior === 'cmdAlways',
     suggestedPrompts: raw.suggestedPrompts !== false,
     reviewDelivery: raw.reviewDelivery === 'inline' ? 'inline' : 'detached',
     gitCommitPrompt: clampGitPrompt(raw.gitCommitPrompt),

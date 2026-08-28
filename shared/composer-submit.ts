@@ -9,9 +9,34 @@ export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 /** 忙时后续：排队等到下一回合，或注入当前回合（对标 Codex Follow-up behavior） */
 export type FollowUpBehavior = 'queue' | 'steer'
 
+/**
+ * Enter 发送（对标 Codex `chatgpt.composerEnterBehavior`）。
+ * `enter`：Enter 始终发送；`cmdIfMultiline`：草稿已有换行才要 ⌘/Ctrl+Enter；`cmdAlways`：始终要修饰键。
+ */
+export type ComposerEnterBehavior = 'enter' | 'cmdIfMultiline' | 'cmdAlways'
+
 /** 设置里未写时按桌面端默认排队 */
 export function parseFollowUpBehavior(raw: unknown): FollowUpBehavior {
   return raw === 'steer' ? 'steer' : 'queue'
+}
+
+/** 旧布尔 `requireModEnter` 视为 `cmdAlways`；缺省 `enter`（与现网默认一致） */
+export function parseComposerEnterBehavior(
+  raw: unknown,
+  requireModEnter?: unknown
+): ComposerEnterBehavior {
+  if (raw === 'enter' || raw === 'cmdIfMultiline' || raw === 'cmdAlways') return raw
+  return requireModEnter === true ? 'cmdAlways' : 'enter'
+}
+
+/** 当前草稿是否要 ⌘/Ctrl+Enter 才发送 */
+export function composerNeedsModEnter(
+  behavior: ComposerEnterBehavior,
+  multiline: boolean
+): boolean {
+  if (behavior === 'cmdAlways') return true
+  if (behavior === 'cmdIfMultiline') return multiline
+  return false
 }
 
 /** ⌘⇧Enter / Ctrl⇧Enter：单条消息使用另一种后续行为 */
@@ -29,7 +54,8 @@ export function isFollowUpInvertChord(options: {
 
 /**
  * 输入框在无菜单时的 Enter / Tab。
- * 空闲 Enter 发送（`requireModEnter` 时需 ⌘/Ctrl+Enter）。
+ * 空闲 Enter 发送（`composerEnterBehavior`：始终 / 多行需修饰键 / 始终修饰键）。
+ * 旧布尔 `requireModEnter` 仍按 `cmdAlways` 读。
  * 忙时 Enter 按 `followUpBehavior`（默认 queue）；⌘⇧Enter 反转；Tab 仍排队。
  * 普通 Shift+Enter 换行。
  */
@@ -64,12 +90,17 @@ export function resolveComposerSubmit(options: {
   loading: boolean
   menuOpen?: boolean
   followUpBehavior?: FollowUpBehavior
+  enterBehavior?: ComposerEnterBehavior
+  /** @deprecated 用 `enterBehavior: 'cmdAlways'` */
   requireModEnter?: boolean
+  /** 草稿是否已有换行（`cmdIfMultiline` 用） */
+  multiline?: boolean
 }): ComposerSubmitMode | null {
   if (options.menuOpen) return null
   const follow = parseFollowUpBehavior(options.followUpBehavior)
   const invert = isFollowUpInvertChord(options)
   const mod = Boolean(options.metaKey || options.ctrlKey)
+  const enterBehavior = parseComposerEnterBehavior(options.enterBehavior, options.requireModEnter)
 
   if (options.key === 'Tab') {
     if (options.ctrlKey || options.metaKey || options.altKey) return null
@@ -84,7 +115,7 @@ export function resolveComposerSubmit(options: {
   }
 
   if (options.shiftKey) return null
-  if (options.requireModEnter && !mod) return null
+  if (composerNeedsModEnter(enterBehavior, options.multiline === true) && !mod) return null
 
   if (!options.loading) return 'send'
   return follow === 'steer' ? 'jump' : 'queue'

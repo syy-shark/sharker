@@ -134,7 +134,7 @@ import {
 import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
-import { resolveApprovalHotkey } from '../shared/composer-submit'
+import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts } from '../shared/suggested-prompts'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
@@ -1227,6 +1227,7 @@ export default function App() {
           codeFont: updated.codeFont,
           keyboardShortcuts: updated.keyboardShortcuts,
           followUpBehavior: updated.followUpBehavior,
+          composerEnterBehavior: updated.composerEnterBehavior,
           requireModEnter: updated.requireModEnter,
           suggestedPrompts: updated.suggestedPrompts,
           reviewDelivery: updated.reviewDelivery,
@@ -1297,6 +1298,7 @@ export default function App() {
       codeFont: draft.codeFont,
       keyboardShortcuts: draft.keyboardShortcuts,
       followUpBehavior: draft.followUpBehavior,
+      composerEnterBehavior: draft.composerEnterBehavior,
       requireModEnter: draft.requireModEnter,
       suggestedPrompts: draft.suggestedPrompts,
       reviewDelivery: draft.reviewDelivery,
@@ -2773,6 +2775,7 @@ export default function App() {
       codeFont: next.codeFont,
       keyboardShortcuts: next.keyboardShortcuts,
       followUpBehavior: next.followUpBehavior,
+      composerEnterBehavior: next.composerEnterBehavior,
       requireModEnter: next.requireModEnter,
       suggestedPrompts: next.suggestedPrompts,
       reviewDelivery: next.reviewDelivery,
@@ -6257,7 +6260,10 @@ export default function App() {
               onMoveQueued={handleMoveQueued}
               onSendQueued={handleSendQueued}
               followUpBehavior={settings.followUpBehavior === 'steer' ? 'steer' : 'queue'}
-              requireModEnter={settings.requireModEnter === true}
+              composerEnterBehavior={parseComposerEnterBehavior(
+                settings.composerEnterBehavior,
+                settings.requireModEnter
+              )}
               suggestedPrompts={suggestedPromptItems}
               onSuggestedPrompt={handleSuggestedPrompt}
               onAbort={handleAbort}

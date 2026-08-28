@@ -35,6 +35,7 @@ import {
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   shouldEditLastUserOnEscape,
+  type ComposerEnterBehavior,
   type FollowUpBehavior
 } from '../../shared/composer-submit'
 import {
@@ -158,7 +159,7 @@ export interface ComposerDockProps {
   /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
   onEditLastUser?: () => void
   followUpBehavior?: FollowUpBehavior
-  requireModEnter?: boolean
+  composerEnterBehavior?: ComposerEnterBehavior
   /** 审批打开时 Enter 允许 / Esc 拒绝（对标 Codex），不跟直播 token 变 */
   approvalOpen?: boolean
   approvalResponding?: boolean
@@ -206,7 +207,7 @@ export const ComposerDock = memo(
       composerSeed = null,
       onEditLastUser,
       followUpBehavior = 'queue',
-      requireModEnter = false,
+      composerEnterBehavior = 'enter',
       approvalOpen = false,
       approvalResponding = false,
       onApprovalHotkey,
@@ -1587,7 +1588,8 @@ export const ComposerDock = memo(
               loading,
               menuOpen,
               followUpBehavior,
-              requireModEnter
+              enterBehavior: composerEnterBehavior,
+              multiline: input.includes('\n')
             })
             if (mode) {
               e.preventDefault()
@@ -1631,9 +1633,12 @@ export const ComposerDock = memo(
                 ? followUpBehavior === 'steer'
                   ? 'Enter 注入 · ⌘⇧Enter 排队 · Tab 排队 · Esc 停止…'
                   : 'Enter 排队 · ⌘⇧Enter 注入 · Tab 排队 · Esc 停止…'
-                : requireModEnter
+                : composerEnterBehavior === 'cmdAlways' ||
+                    (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
                   ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件，$ Skill…'
-                  : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
+                  : composerEnterBehavior === 'cmdIfMultiline'
+                    ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件，$ Skill…'
+                    : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
           }
           rows={1}
         />

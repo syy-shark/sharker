@@ -102,7 +102,12 @@ export interface AppSettings {
    * 默认 queue：Enter 排队；steer：Enter 注入当前回合。⌘⇧Enter 反转单条。
    */
   followUpBehavior?: 'queue' | 'steer'
-  /** 用 ⌘/Ctrl+Enter 发送，Enter 换行（对标 Codex Require Cmd+Enter） */
+  /**
+   * Enter 发送（对标 Codex `chatgpt.composerEnterBehavior`）。
+   * `enter`：始终发送；`cmdIfMultiline`：多行需 ⌘/Ctrl+Enter；`cmdAlways`：始终要修饰键。
+   */
+  composerEnterBehavior?: 'enter' | 'cmdIfMultiline' | 'cmdAlways'
+  /** 旧布尔：等价 `composerEnterBehavior === 'cmdAlways'`，读盘仍认 */
   requireModEnter?: boolean
   /** 空对话显示上下文建议（对标 Codex Suggested prompts） */
   suggestedPrompts?: boolean
@@ -377,6 +382,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   memoryGeneration: true,
   keyboardShortcuts: {},
   followUpBehavior: 'queue',
+  composerEnterBehavior: 'enter',
   requireModEnter: false,
   suggestedPrompts: true,
   reviewDelivery: 'detached',

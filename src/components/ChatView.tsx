@@ -20,7 +20,7 @@ import { MessageActions } from './MessageActions'
 import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
-import { lastUserMessageId } from '../../shared/composer-submit'
+import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
@@ -218,7 +218,7 @@ interface Props {
   onMoveQueued?: (id: string, direction: -1 | 1) => void
   onSendQueued?: (id: string) => void
   followUpBehavior?: 'queue' | 'steer'
-  requireModEnter?: boolean
+  composerEnterBehavior?: ComposerEnterBehavior
   suggestedPrompts?: SuggestedPrompt[]
   onSuggestedPrompt?: (item: SuggestedPrompt) => void
   onAbort: () => void
@@ -290,7 +290,7 @@ export function ChatView({
   onMoveQueued,
   onSendQueued,
   followUpBehavior = 'queue',
-  requireModEnter = false,
+  composerEnterBehavior = 'enter',
   suggestedPrompts = [],
   onSuggestedPrompt,
   onAbort,
@@ -957,7 +957,7 @@ export function ChatView({
             composerSeed={composerSeed}
             onEditLastUser={handleEditLastUser}
             followUpBehavior={followUpBehavior}
-            requireModEnter={requireModEnter}
+            composerEnterBehavior={composerEnterBehavior}
             approvalOpen={Boolean(approval)}
             approvalResponding={approvalResponding}
             onApprovalHotkey={onApproval}

@@ -6,6 +6,7 @@ import {
   lastUserMessageId,
   lastUserPrompt,
   isFollowUpInvertChord,
+  parseComposerEnterBehavior,
   parseFollowUpBehavior,
   resolveApprovalHotkey,
   resolveComposerSubmit,
@@ -93,6 +94,48 @@ describe('composer submit', () => {
         metaKey: true,
         loading: true,
         requireModEnter: true
+      })
+    ).toBe('queue')
+    expect(parseComposerEnterBehavior(undefined, true)).toBe('cmdAlways')
+    expect(parseComposerEnterBehavior('cmdIfMultiline', true)).toBe('cmdIfMultiline')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        loading: false,
+        enterBehavior: 'cmdIfMultiline'
+      })
+    ).toBe('send')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        loading: false,
+        enterBehavior: 'cmdIfMultiline',
+        multiline: true
+      })
+    ).toBeNull()
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        metaKey: true,
+        loading: false,
+        enterBehavior: 'cmdIfMultiline',
+        multiline: true
+      })
+    ).toBe('send')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        loading: true,
+        enterBehavior: 'cmdIfMultiline',
+        multiline: true
+      })
+    ).toBeNull()
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        ctrlKey: true,
+        loading: true,
+        enterBehavior: 'cmdAlways'
       })
     ).toBe('queue')
   })

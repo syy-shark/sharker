@@ -99,7 +99,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 - 设置 → 外观 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（中止并立即执行）
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
-- 可打开 **用 ⌘Enter 发送**（Enter 换行）
+- 设置 → 外观 → **Enter 发送**（对标 Codex `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
 - 可打开 **建议提示**（空对话显示审查 / 设定目标 / 继续最近对话，对标 Codex Suggested prompts）
 - 设置 → 权限 → Git **审查交付**：`/review` 默认独立线程或当前对话（对标 Codex Review delivery）
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）

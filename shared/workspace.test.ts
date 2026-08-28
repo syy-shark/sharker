@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { filterWorkspaces } from './workspace'
+import { DEFAULT_SETTINGS } from './types'
+import { filterWorkspaces, normalizeSettings } from './workspace'
+
+describe('workspace settings', () => {
+  it('migrates requireModEnter into composerEnterBehavior', () => {
+    expect(
+      normalizeSettings({ ...DEFAULT_SETTINGS, requireModEnter: true }, '/home/u').composerEnterBehavior
+    ).toBe('cmdAlways')
+    expect(
+      normalizeSettings({ ...DEFAULT_SETTINGS, requireModEnter: true }, '/home/u').requireModEnter
+    ).toBe(true)
+    expect(
+      normalizeSettings(
+        { ...DEFAULT_SETTINGS, composerEnterBehavior: 'cmdIfMultiline' },
+        '/home/u'
+      ).requireModEnter
+    ).toBe(false)
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').composerEnterBehavior).toBe('enter')
+  })
+})
 
 describe('workspace project picker', () => {
   it('filters by label, path or id', () => {

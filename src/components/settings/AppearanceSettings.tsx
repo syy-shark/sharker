@@ -5,6 +5,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
+import {
+  parseComposerEnterBehavior,
+  type ComposerEnterBehavior
+} from '../../../shared/composer-submit'
 import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
 import type { AgentPersonality } from '../../../shared/personality'
 import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
@@ -234,18 +238,36 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
-          <SettingsRow
-            title="用 ⌘Enter 发送"
-            description="对标 Codex Require Cmd+Enter：Enter 换行，⌘/Ctrl+Enter 发送。"
-          >
-            <SettingsToggle
-              checked={draft.requireModEnter === true}
-              onChange={(requireModEnter) => {
-                scheduleSave({ ...draftRef.current, requireModEnter })
-              }}
-              label="用 ⌘Enter 发送"
-            />
-          </SettingsRow>
+          <SettingsChoiceGroup
+            value={parseComposerEnterBehavior(draft.composerEnterBehavior, draft.requireModEnter)}
+            onChange={(composerEnterBehavior: ComposerEnterBehavior) => {
+              scheduleSave({
+                ...draftRef.current,
+                composerEnterBehavior,
+                requireModEnter: composerEnterBehavior === 'cmdAlways'
+              })
+            }}
+            options={[
+              {
+                value: 'enter',
+                title: '回车发送',
+                description: 'Enter 始终发送。Shift+Enter 换行。',
+                icon: <span aria-hidden>回</span>
+              },
+              {
+                value: 'cmdIfMultiline',
+                title: '多行需 ⌘Enter',
+                description: '单行 Enter 发送；草稿有换行后要 ⌘/Ctrl+Enter。',
+                icon: <span aria-hidden>多</span>
+              },
+              {
+                value: 'cmdAlways',
+                title: '始终 ⌘Enter',
+                description: 'Enter 换行，⌘/Ctrl+Enter 发送。',
+                icon: <span aria-hidden>⌘</span>
+              }
+            ]}
+          />
           <SettingsRow
             title="建议提示"
             description="对标 Codex Suggested prompts：空对话显示审查、目标或继续最近对话。"
