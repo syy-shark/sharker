@@ -81,6 +81,11 @@ export interface AppSettings {
   personality?: import('./personality').AgentPersonality
   /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
   worktreeKeepCount?: number
+  /**
+   * 托管 worktree 根目录（对标 Codex Settings → Worktrees → Worktree root）。
+   * 绝对路径；空则 `~/.sharker/worktrees`。改了不搬旧目录。
+   */
+  worktreeRoot?: string
   /** 是否把检索到的记忆注入 system（对标 Codex /memories inject） */
   memoryInjection?: boolean
   /** 是否在回合结束提炼并写入记忆（对标 Codex /memories generate） */
@@ -361,6 +366,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiFontScale: 1,
   personality: 'pragmatic',
   worktreeKeepCount: 15,
+  worktreeRoot: '',
   memoryInjection: true,
   memoryGeneration: true,
   keyboardShortcuts: {},

@@ -1643,11 +1643,14 @@ function registerIpc(): void {
       conversationId: string,
       opts?: { baseRef?: string; keep?: number }
     ) => {
+      const wt = normalizeSettings(await loadSettings(), app.getPath('home'))
       return prepareThreadWorktree({
         workspacePath: String(cwd || ''),
         conversationId: String(conversationId || ''),
         baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined,
-        keep: typeof opts?.keep === 'number' ? opts.keep : undefined
+        home: app.getPath('home'),
+        keep: wt.worktreeKeepCount,
+        root: wt.worktreeRoot
       })
     }
   )
@@ -1655,10 +1658,13 @@ function registerIpc(): void {
   ipcMain.handle(
     IPC.WORKSPACE_CREATE_PERMANENT_WORKTREE,
     async (_e, cwd: string, name: string, opts?: { baseRef?: string }) => {
+      const wt = normalizeSettings(await loadSettings(), app.getPath('home'))
       return createPermanentWorktree({
         workspacePath: String(cwd || ''),
         name: String(name || ''),
-        baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined
+        baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined,
+        home: app.getPath('home'),
+        root: wt.worktreeRoot
       })
     }
   )
@@ -1666,9 +1672,12 @@ function registerIpc(): void {
   ipcMain.handle(
     IPC.WORKSPACE_REMOVE_WORKTREE,
     async (_e, cwd: string, conversationId: string) => {
+      const wt = normalizeSettings(await loadSettings(), app.getPath('home'))
       return removeManagedWorktree({
         workspacePath: String(cwd || ''),
-        conversationId: String(conversationId || '')
+        conversationId: String(conversationId || ''),
+        home: app.getPath('home'),
+        root: wt.worktreeRoot
       })
     }
   )

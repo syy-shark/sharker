@@ -10,6 +10,7 @@ import {
   type ToolOutputDisplay
 } from '../../../shared/tool-output-display'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
+import { clampWorktreeRoot } from '../../../shared/worktree-root'
 import {
   FullModeIcon,
   SandboxModeIcon,
@@ -237,6 +238,27 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
 
       <SettingsSection title="Worktree">
         <SettingsCard>
+          <SettingsRow
+            title="Worktree 根目录"
+            description="对标 Codex Worktree root：托管与永久 worktree 建在此目录下。空则 ~/.sharker/worktrees。须填绝对路径；改了不搬旧目录。"
+          >
+            <input
+              className="st-number"
+              type="text"
+              spellCheck={false}
+              value={draft.worktreeRoot ?? ''}
+              placeholder="~/.sharker/worktrees"
+              aria-label="Worktree 根目录"
+              style={{ width: '16rem', textAlign: 'left' }}
+              onChange={(e) => scheduleGitPromptSave({ worktreeRoot: e.target.value })}
+              onBlur={() => {
+                const worktreeRoot = clampWorktreeRoot(draftRef.current.worktreeRoot)
+                const next = { ...draftRef.current, worktreeRoot }
+                setDraft(next)
+                void onSave(next)
+              }}
+            />
+          </SettingsRow>
           <SettingsRow
             title="托管 worktree 保留数"
             description="对标 Codex：默认保留最近 15 个。填 0 则不自动删除。归档对话仍会清掉对应托管 worktree。"

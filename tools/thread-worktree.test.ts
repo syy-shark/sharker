@@ -7,12 +7,25 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   createPermanentWorktree,
   inspectWorktreePath,
+  managedWorktreeRoot,
   prepareThreadWorktree,
   removeManagedWorktree
 } from './thread-worktree'
 import { readFile as readUtf, utimes } from 'fs/promises'
 
 const execFileAsync = promisify(execFile)
+
+describe('managedWorktreeRoot', () => {
+  it('uses ~/.sharker/worktrees unless given a safe absolute override', () => {
+    expect(managedWorktreeRoot('/home/u')).toBe(path.join('/home/u', '.sharker', 'worktrees'))
+    expect(managedWorktreeRoot('/home/u', '')).toBe(path.join('/home/u', '.sharker', 'worktrees'))
+    expect(managedWorktreeRoot('/home/u', 'relative/path')).toBe(
+      path.join('/home/u', '.sharker', 'worktrees')
+    )
+    expect(managedWorktreeRoot('/home/u', '/data/wt')).toBe(path.resolve('/data/wt'))
+    expect(managedWorktreeRoot('/home/u', '/data/wt/')).toBe(path.resolve('/data/wt'))
+  })
+})
 
 describe('prepareThreadWorktree', () => {
   const temps: string[] = []
@@ -52,6 +65,32 @@ describe('prepareThreadWorktree', () => {
     })
     expect(second.ok).toBe(true)
     if (second.ok) expect(second.path).toBe(first.path)
+  })
+
+  it('creates the worktree under a custom absolute root', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-root-'))
+    temps.push(repo)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'hello\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-root-'))
+    const customRoot = await mkdtemp(path.join(os.tmpdir(), 'sharker-custom-wt-'))
+    temps.push(home, customRoot)
+    const result = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-custom-root',
+      home,
+      root: customRoot
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    temps.push(result.path)
+    expect(result.path.startsWith(path.resolve(customRoot) + path.sep)).toBe(true)
+    expect(result.path.includes(`${path.sep}.sharker${path.sep}worktrees${path.sep}`)).toBe(false)
   })
 
   it('copies ignored .worktreeinclude files into a new worktree', async () => {

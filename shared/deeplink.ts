@@ -96,6 +96,8 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
     key === 'browser-use' ||
     key === 'git' ||
     key === 'review' ||
+    key === 'worktree' ||
+    key === 'worktrees' ||
     key.startsWith('computer-use')
   ) {
     return { type: 'settings', tab: 'permissions' }

@@ -6,6 +6,7 @@ import type { AppSettings, WorkspaceItem } from './types'
 import { ensureBuiltinProviders } from './provider-catalog'
 import { parsePersonality } from './personality'
 import { clampWorktreeKeepCount } from './worktree-prune'
+import { clampWorktreeRoot } from './worktree-root'
 import { clampUiFontScale } from './ui-font-scale'
 import { normalizeKeymap } from './keymap'
 import { clampGitPrompt } from './git-prompt'
@@ -135,6 +136,7 @@ export function normalizeSettings(
     uiFontScale: clampUiFontScale(raw.uiFontScale),
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
+    worktreeRoot: clampWorktreeRoot(raw.worktreeRoot),
     memoryInjection: raw.memoryInjection !== false,
     memoryGeneration: raw.memoryGeneration !== false,
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),

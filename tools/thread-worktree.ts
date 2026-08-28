@@ -19,6 +19,7 @@ import {
   sanitizePermanentWorktreeName,
   selectManagedWorktreesToPrune
 } from '../shared/worktree-prune'
+import { clampWorktreeRoot } from '../shared/worktree-root'
 
 export type PrepareWorktreeResult =
   | { ok: true; path: string; branch: string }
@@ -101,14 +102,16 @@ function safeRelPath(rel: string): string | null {
   return n
 }
 
-/** 托管 worktree 与快照根目录（可注入 home 便于测试） */
-export function managedWorktreeRoot(home = os.homedir()): string {
+/** 托管 worktree 与快照根目录（可注入 home / 绝对 override；空则 `~/.sharker/worktrees`） */
+export function managedWorktreeRoot(home = os.homedir(), override?: string): string {
+  const custom = clampWorktreeRoot(override)
+  if (custom) return path.isAbsolute(custom) ? path.resolve(custom) : custom
   return path.join(home, '.sharker', 'worktrees')
 }
 
 /** 永久 worktree 根（不参与自动清理） */
-export function permanentWorktreeRoot(home = os.homedir()): string {
-  return path.join(managedWorktreeRoot(home), 'permanent')
+export function permanentWorktreeRoot(home = os.homedir(), override?: string): string {
+  return path.join(managedWorktreeRoot(home, override), 'permanent')
 }
 
 function snapshotFileFor(dest: string, home: string): string {
@@ -202,13 +205,15 @@ export async function pruneManagedWorktrees(options: {
   repoName: string
   home?: string
   keep?: number
+  /** Settings → Worktrees → Worktree root；空则默认 */
+  root?: string
   protectPaths?: string[]
 }): Promise<string[]> {
   const cwd = path.resolve(options.workspacePath)
   const home = options.home ?? os.homedir()
   const keep = options.keep ?? DEFAULT_MANAGED_WORKTREE_LIMIT
   if (keep === 0) return []
-  const root = path.resolve(managedWorktreeRoot(home))
+  const root = path.resolve(managedWorktreeRoot(home, options.root))
   let porcelain = ''
   try {
     porcelain = await runGit(cwd, ['worktree', 'list', '--porcelain'], { trim: false })
@@ -250,7 +255,7 @@ async function currentBranchName(dest: string): Promise<string> {
   }
 }
 
-/** 在 ~/.sharker/worktrees 下为会话创建或复用 detached worktree */
+/** 在托管根（默认 ~/.sharker/worktrees）下为会话创建或复用 detached worktree */
 export async function prepareThreadWorktree(options: {
   workspacePath: string
   conversationId: string
@@ -258,6 +263,8 @@ export async function prepareThreadWorktree(options: {
   /** 测试可注入，默认 os.homedir() */
   home?: string
   keep?: number
+  /** Settings → Worktrees → Worktree root；空则默认 */
+  root?: string
 }): Promise<PrepareWorktreeResult> {
   const cwd = path.resolve(options.workspacePath)
   try {
@@ -278,7 +285,10 @@ export async function prepareThreadWorktree(options: {
   }
 
   const home = options.home ?? os.homedir()
-  const dest = path.join(managedWorktreeRoot(home), `${repoName}-${shortId(options.conversationId)}`)
+  const dest = path.join(
+    managedWorktreeRoot(home, options.root),
+    `${repoName}-${shortId(options.conversationId)}`
+  )
   await mkdir(path.dirname(dest), { recursive: true })
 
   const finish = async (branch: string): Promise<PrepareWorktreeResult> => {
@@ -293,6 +303,7 @@ export async function prepareThreadWorktree(options: {
         repoName,
         home,
         keep: options.keep,
+        root: options.root,
         protectPaths: [dest]
       })
     } catch (e) {
@@ -352,6 +363,7 @@ export async function createPermanentWorktree(options: {
   name: string
   baseRef?: string
   home?: string
+  root?: string
 }): Promise<PrepareWorktreeResult> {
   const cwd = path.resolve(options.workspacePath)
   const name = sanitizePermanentWorktreeName(options.name)
@@ -366,7 +378,7 @@ export async function createPermanentWorktree(options: {
   }
   const home = options.home ?? os.homedir()
   const repoName = await resolveRepoName(cwd)
-  const dest = path.join(permanentWorktreeRoot(home), `${repoName}-${name}`)
+  const dest = path.join(permanentWorktreeRoot(home, options.root), `${repoName}-${name}`)
   await mkdir(path.dirname(dest), { recursive: true })
   const start = sanitizeWorktreeBaseRef(options.baseRef)
   const branch = `perm/${name}`
@@ -389,11 +401,15 @@ export async function removeManagedWorktree(options: {
   workspacePath: string
   conversationId: string
   home?: string
+  root?: string
 }): Promise<{ ok: true; removed: boolean } | { ok: false; error: string }> {
   const cwd = path.resolve(options.workspacePath)
   const home = options.home ?? os.homedir()
   const repoName = await resolveRepoName(cwd)
-  const dest = path.join(managedWorktreeRoot(home), `${repoName}-${shortId(options.conversationId)}`)
+  const dest = path.join(
+    managedWorktreeRoot(home, options.root),
+    `${repoName}-${shortId(options.conversationId)}`
+  )
   try {
     const listed = await runGit(cwd, ['worktree', 'list', '--porcelain'], { trim: false })
     if (!listed.split('\n').some((line) => line === `worktree ${dest}`)) {

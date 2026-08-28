@@ -25,6 +25,7 @@ export function formatDebugConfig(settings: AppSettings): string {
     `- 人格：${settings.personality || 'pragmatic'}`,
     `- 记忆：注入 ${settings.memoryInjection === false ? '关' : '开'} · 写入 ${settings.memoryGeneration === false ? '关' : '开'}`,
     `- 托管 worktree 保留：${settings.worktreeKeepCount ?? 15}`,
+    `- Worktree 根：${settings.worktreeRoot?.trim() || '~/.sharker/worktrees'}`,
     `- 快捷键覆盖：${keymap} 项`,
     `- 工作区：${settings.workspaces?.length ?? 0} 个 · 当前 ${settings.activeWorkspaceId || '无'}`,
     `- 当前接入：${active?.name || active?.id || '无'} · ${active?.model || '—'}`,
