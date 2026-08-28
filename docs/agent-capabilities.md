@@ -35,7 +35,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### @file 引用
 
-输入 `@` 弹出工作区文件模糊搜索（↑↓/Enter/Tab）；也可手写 `@src/App.tsx` 或 `@/绝对路径`（sandbox 内）。Harness 自动读取并注入文件内容。
+输入 `@` 弹出工作区文件模糊搜索（↑↓/Enter/Tab）；也可手写 `@src/App.tsx` 或 `@/绝对路径`（sandbox 内）。Harness 自动读取并注入文件内容。同一菜单也会列出其它对话（对标 Codex @ chats），选中后写入 `@chat/<id>`；Harness 只注入最近几条的截断摘要（最多 2 条对话），避免整段大线程拖垮上下文。
 
 输入 `$` 弹出已安装 Skill（对标 Codex `$skill-name`）；选中后写入 `$name`，Harness 按名称匹配并注入该 Skill。`/skill` 与命令面板「引用 Skill」打开同一选择器。
 

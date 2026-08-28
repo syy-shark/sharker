@@ -37,6 +37,8 @@
 | `git-review-actions.test.ts` | 临时仓库验证 stage / unstage / revert |
 | `at-mention.ts` | Composer `@` 查询解析与插入 |
 | `at-mention.test.ts` | `@` 边界与路径插入 |
+| `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
+| `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
 | `workbench-shortcuts.ts` | Codex 式工作台快捷键匹配（含 ⌘⇧[ / ⌘⇧] 切线程、⌘G 搜对话） |
 | `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘G |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词 |

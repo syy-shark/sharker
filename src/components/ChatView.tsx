@@ -21,6 +21,9 @@ import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
+import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
+
+type MentionOption = { kind: 'file' | 'chat'; name: string; value: string; detail: string }
 import {
   filterSkillMentions,
   insertSkillMention,
@@ -406,7 +409,30 @@ export function ChatView({
     !showHistoryPicker && !showSlashMenu && !mentionDismissed
       ? parseAtMention(input, cursor)
       : null
-  const showMentionMenu = Boolean(mentionQuery && fileSearchRoot)
+  const chatMentionHits = useMemo(() => {
+    if (!mentionQuery) return []
+    return filterChatMentions(conversationTitles ?? [], mentionQuery.query, sessionKey).map((c) => ({
+      kind: 'chat' as const,
+      name: c.title || '对话',
+      value: chatMentionToken(c.id),
+      detail: '对话'
+    }))
+  }, [conversationTitles, mentionQuery, sessionKey])
+  const fileMentionHits = useMemo(
+    () =>
+      mentionHits.map((hit) => ({
+        kind: 'file' as const,
+        name: hit.name,
+        value: hit.relativePath,
+        detail: hit.relativePath
+      })),
+    [mentionHits]
+  )
+  const mentionOptions: MentionOption[] = useMemo(
+    () => [...chatMentionHits, ...fileMentionHits],
+    [chatMentionHits, fileMentionHits]
+  )
+  const showMentionMenu = Boolean(mentionQuery && mentionOptions.length)
   const skillQuery =
     !showHistoryPicker && !showSlashMenu && !showMentionMenu && !skillDismissed
       ? parseSkillMention(input, cursor)
@@ -1117,24 +1143,24 @@ export function ChatView({
         }
       }}
     >
-      {showMentionMenu && mentionHits.length > 0 ? (
+      {showMentionMenu ? (
         <div className="composer-popover-slot">
           <div
             className="slash-menu popover-enter"
             role="listbox"
-            aria-label="引用文件"
+            aria-label="引用文件或对话"
             aria-activedescendant={
-              mentionHits[mentionActiveIndex]
-                ? `mention-option-${mentionHits[mentionActiveIndex].relativePath}`
+              mentionOptions[mentionActiveIndex]
+                ? `mention-option-${mentionActiveIndex}`
                 : undefined
             }
           >
             <ul className="slash-menu-list">
-              {mentionHits.map((hit, index) => (
-                <li key={hit.relativePath} role="presentation">
+              {mentionOptions.map((hit, index) => (
+                <li key={`${hit.kind}-${hit.value}`} role="presentation">
                   <button
                     type="button"
-                    id={`mention-option-${hit.relativePath}`}
+                    id={`mention-option-${index}`}
                     role="option"
                     aria-selected={index === mentionActiveIndex}
                     className={`slash-menu-item${index === mentionActiveIndex ? ' slash-menu-item--active' : ''}`}
@@ -1144,11 +1170,11 @@ export function ChatView({
                     }}
                     onMouseDown={(e) => {
                       e.preventDefault()
-                      pickMention(hit.relativePath)
+                      pickMention(hit.value)
                     }}
                   >
                     <span className="slash-menu-name">@{hit.name}</span>
-                    <span className="slash-menu-desc">{hit.relativePath}</span>
+                    <span className="slash-menu-desc">{hit.detail}</span>
                   </button>
                 </li>
               ))}
@@ -1352,11 +1378,11 @@ export function ChatView({
               return
             }
           }
-          if (showMentionMenu && mentionHits.length > 0) {
+          if (showMentionMenu && mentionOptions.length > 0) {
             if (e.key === 'ArrowDown') {
               e.preventDefault()
               setMentionActiveIndex((i) => {
-                const n = (i + 1) % mentionHits.length
+                const n = (i + 1) % mentionOptions.length
                 mentionActiveIndexRef.current = n
                 return n
               })
@@ -1365,7 +1391,7 @@ export function ChatView({
             if (e.key === 'ArrowUp') {
               e.preventDefault()
               setMentionActiveIndex((i) => {
-                const n = (i - 1 + mentionHits.length) % mentionHits.length
+                const n = (i - 1 + mentionOptions.length) % mentionOptions.length
                 mentionActiveIndexRef.current = n
                 return n
               })
@@ -1378,8 +1404,8 @@ export function ChatView({
             }
             if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
               e.preventDefault()
-              const hit = mentionHits[mentionActiveIndexRef.current]
-              if (hit) pickMention(hit.relativePath)
+              const hit = mentionOptions[mentionActiveIndexRef.current]
+              if (hit) pickMention(hit.value)
               return
             }
           }

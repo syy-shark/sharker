@@ -13,6 +13,7 @@ import { simpleCompletion, type ChatCompletionMessage } from '../providers/opena
 import { matchSlashCommand } from './commands'
 import { buildSystemPrompt, type ApprovalHandler } from './loop'
 import { expandFileReferences } from './file-refs'
+import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { killAllShellChildren } from '../tools/shell-runner'
@@ -177,7 +178,13 @@ async function* onQuery(
 
   const useTools = needsToolCalling(userText, historyForAgent)
   const [expandedUserText, projectId, sessionId, systemBaseRaw] = await Promise.all([
-    expandFileReferences(userText, workspace),
+    expandFileReferences(userText, workspace).then((text) =>
+      expandChatReferences(
+        text,
+        workspaceChatLoader(workspace, settings.activeWorkspaceId),
+        ctx.conversationId
+      )
+    ),
     getWorkspaceProjectId(settings.activeWorkspaceId),
     getActiveSessionId(settings.activeWorkspaceId),
     buildSystemPrompt(settings, { includeBootstrap: useTools })

@@ -15,6 +15,7 @@ const FILE_REF_RE = /@([^\s@]+)/g
 function resolveRef(ref: string, workspace: string): string | null {
   const trimmed = ref.replace(/^file:/, '')
   if (!trimmed || trimmed.startsWith('http://') || trimmed.startsWith('https://')) return null
+  if (trimmed.startsWith('chat/')) return null
   const abs = path.isAbsolute(trimmed) ? trimmed : path.join(workspace, trimmed)
   const normalized = path.normalize(abs)
   if (workspace && !normalized.startsWith(path.normalize(workspace))) {
