@@ -12,11 +12,6 @@
   font-family: var(--font);
 }
 
-.mermaid-block--pending {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
 .mermaid-block svg {
   display: block;
   max-width: 100%;

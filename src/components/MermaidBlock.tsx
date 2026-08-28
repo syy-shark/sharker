@@ -89,17 +89,8 @@ export function MermaidBlock({ code }: { code: string }) {
     }
   }, [source, theme, reactId])
 
-  if (!source.trim() || failed) {
+  if (!source.trim() || failed || !svg) {
     return <CodeArtifactBlock code={source} language="mermaid" />
-  }
-  if (!svg) {
-    return (
-      <CodeArtifactShell label="mermaid" copyText={source} ariaLabel="mermaid 图">
-        <div className="mermaid-block mermaid-block--pending" aria-busy>
-          正在绘制
-        </div>
-      </CodeArtifactShell>
-    )
   }
   return (
     <CodeArtifactShell
