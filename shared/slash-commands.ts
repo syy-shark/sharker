@@ -83,7 +83,8 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   {
     name: 'compact',
     description: '压缩当前对话上下文（摘要旧消息）',
-    scope: 'agent',
+    scope: 'ui',
+    action: 'compact_context',
     category: 'session'
   },
   {
@@ -108,10 +109,25 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'resume',
-    description: '恢复上一条对话',
+    description: '从历史恢复一条对话',
     scope: 'ui',
     action: 'resume_conversation',
     category: 'session'
+  },
+  {
+    name: 'title',
+    description: '重命名当前对话（/rename 别名）',
+    scope: 'ui',
+    action: 'rename_conversation',
+    argsHint: '[标题]',
+    category: 'session'
+  },
+  {
+    name: 'agent',
+    description: '打开子 Agent 活动',
+    scope: 'ui',
+    action: 'toggle_agents',
+    category: 'panel'
   },
   {
     name: 'fork',

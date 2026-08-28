@@ -27,7 +27,14 @@ import {
   parseSkillMention,
   type SkillListItem
 } from '../../shared/skill-mention'
-import { resolveComposerSubmit, restorePreviousComposerPrompt } from '../../shared/composer-submit'
+import {
+  collectUserPrompts,
+  filterPromptHistory,
+  isDoubleEscape,
+  lastUserPrompt,
+  resolveComposerSubmit,
+  restorePreviousComposerPrompt
+} from '../../shared/composer-submit'
 import {
   appendDictationTranscript,
   isDictationShortcut,
@@ -186,6 +193,11 @@ export const ComposerDock = memo(
     const skillActiveIndexRef = useRef(0)
     const [modelOpenSignal, setModelOpenSignal] = useState(0)
     const [historyQuery, setHistoryQuery] = useState('')
+    const [promptSearchOpen, setPromptSearchOpen] = useState(false)
+    const [promptSearchQuery, setPromptSearchQuery] = useState('')
+    const [promptSearchIndex, setPromptSearchIndex] = useState(0)
+    const promptSearchIndexRef = useRef(0)
+    const lastEscAtRef = useRef(0)
     const [dictating, setDictating] = useState(false)
     const [dictateInterim, setDictateInterim] = useState('')
     const [dictateError, setDictateError] = useState('')
@@ -313,6 +325,15 @@ export const ComposerDock = memo(
         : null
     const slashItems = slashQuery != null ? filterSlashCommands(slashQuery) : []
     const showSlashMenu = slashItems.length > 0
+    const promptHits = useMemo(
+      () =>
+        filterPromptHistory(
+          collectUserPrompts(messages),
+          promptSearchQuery || (promptSearchOpen ? input : '')
+        ),
+      [input, messages, promptSearchOpen, promptSearchQuery]
+    )
+    const showPromptSearch = promptSearchOpen && promptHits.length > 0
     const mentionQuery =
       !showHistoryPicker && !showSlashMenu && !mentionDismissed ? parseAtMention(input, cursor) : null
     const chatMentionHits = useMemo(() => {
@@ -567,6 +588,20 @@ export const ComposerDock = memo(
       requestAnimationFrame(() => {
         syncTextareaHeight()
         textareaRef.current?.focus()
+      })
+    }
+
+    const pickPromptHistory = (text: string) => {
+      setInput(text)
+      setCursor(text.length)
+      setPromptSearchOpen(false)
+      setPromptSearchQuery('')
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(text.length, text.length)
+        syncTextareaHeight()
       })
     }
 
@@ -998,6 +1033,42 @@ export const ComposerDock = memo(
             </div>
           </div>
         ) : null}
+        {showPromptSearch ? (
+          <div className="composer-popover-slot">
+            <div
+              className="slash-menu popover-enter"
+              role="listbox"
+              aria-label="提示历史"
+              aria-activedescendant={
+                promptHits[promptSearchIndex] ? `prompt-option-${promptSearchIndex}` : undefined
+              }
+            >
+              <ul className="slash-menu-list">
+                {promptHits.map((text, index) => (
+                  <li key={`${index}-${text.slice(0, 24)}`} role="presentation">
+                    <button
+                      type="button"
+                      id={`prompt-option-${index}`}
+                      role="option"
+                      aria-selected={index === promptSearchIndex}
+                      className={`slash-menu-item${index === promptSearchIndex ? ' slash-menu-item--active' : ''}`}
+                      onMouseEnter={() => {
+                        setPromptSearchIndex(index)
+                        promptSearchIndexRef.current = index
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        pickPromptHistory(text)
+                      }}
+                    >
+                      <span className="slash-menu-desc">{text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
         <textarea
           ref={textareaRef}
           className="composer-input"
@@ -1017,6 +1088,28 @@ export const ComposerDock = memo(
               e.nativeEvent.isComposing ||
               e.key === 'Process' ||
               (e.nativeEvent as KeyboardEvent).keyCode === 229
+            if (
+              !composing &&
+              (e.metaKey || e.ctrlKey) &&
+              !e.altKey &&
+              !e.shiftKey &&
+              e.key.toLowerCase() === 'r'
+            ) {
+              e.preventDefault()
+              if (promptSearchOpen) {
+                setPromptSearchIndex((i) => {
+                  const n = promptHits.length ? (i + 1) % promptHits.length : 0
+                  promptSearchIndexRef.current = n
+                  return n
+                })
+                return
+              }
+              setPromptSearchOpen(true)
+              setPromptSearchQuery('')
+              setPromptSearchIndex(0)
+              promptSearchIndexRef.current = 0
+              return
+            }
             if (composing) return
             if (showSkillMenu) {
               if (e.key === 'ArrowDown') {
@@ -1117,11 +1210,58 @@ export const ComposerDock = memo(
                 return
               }
             }
-            const menuOpen = showMentionMenu || showSkillMenu || showSlashMenu || historyMounted
+            if (showPromptSearch) {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setPromptSearchIndex((i) => {
+                  const n = (i + 1) % promptHits.length
+                  promptSearchIndexRef.current = n
+                  return n
+                })
+                return
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setPromptSearchIndex((i) => {
+                  const n = (i - 1 + promptHits.length) % promptHits.length
+                  promptSearchIndexRef.current = n
+                  return n
+                })
+                return
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setPromptSearchOpen(false)
+                return
+              }
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                const hit = promptHits[promptSearchIndexRef.current]
+                if (hit) pickPromptHistory(hit)
+                return
+              }
+            }
+            const menuOpen =
+              showMentionMenu ||
+              showSkillMenu ||
+              showSlashMenu ||
+              historyMounted ||
+              showPromptSearch
             if (e.key === 'Escape' && loading && !menuOpen) {
               e.preventDefault()
               onAbort()
               return
+            }
+            if (e.key === 'Escape' && !menuOpen && !loading) {
+              const now = Date.now()
+              if (isDoubleEscape(lastEscAtRef.current, now)) {
+                e.preventDefault()
+                lastEscAtRef.current = 0
+                const prev = lastUserPrompt(messages)
+                if (prev) pickPromptHistory(prev)
+                return
+              }
+              lastEscAtRef.current = now
             }
             if (e.key === 'ArrowUp' && !menuOpen) {
               const prev = restorePreviousComposerPrompt({ input, messages })
@@ -1174,7 +1314,7 @@ export const ComposerDock = memo(
               ? '正在听写… Ctrl⇧D 结束'
               : loading
                 ? 'Enter 注入 · Tab 排队 · Esc 停止…'
-                : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl⇧D 听写…'
+                : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
           }
           rows={1}
         />

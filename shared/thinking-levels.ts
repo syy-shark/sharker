@@ -243,6 +243,19 @@ export function thinkingLevelLabel(provider: ProviderConfig): string {
   return opt?.label ?? '—'
 }
 
+/** Alt+, / Alt+. 升降思考档（对标 Codex reasoning depth） */
+export function stepThinkingLevel(
+  options: Array<{ id: string }>,
+  current: string,
+  delta: number
+): string | null {
+  if (!options.length) return null
+  const idx = options.findIndex((o) => o.id === current)
+  const from = idx >= 0 ? idx : 0
+  const next = Math.max(0, Math.min(options.length - 1, from + delta))
+  return options[next]?.id ?? null
+}
+
 type ProviderKind = 'deepseek' | 'xai' | 'openai' | 'kimi' | 'zhipu' | 'other'
 
 function hostOf(baseUrl: string): string {

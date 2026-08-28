@@ -32,6 +32,8 @@ describe('command palette', () => {
     expect(ids).toContain('permissions')
     expect(ids).toContain('memories')
     expect(ids).toContain('copy')
+    expect(ids).toContain('resume')
+    expect(ids).toContain('compact')
     expect(ids).toContain('delete')
     expect(ids).toContain('theme')
     expect(ids).toContain('debug-config')

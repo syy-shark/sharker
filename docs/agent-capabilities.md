@@ -39,6 +39,10 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/plan-mode` | `/plan` 的桌面端别名 |
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |
+| `/compact` | 本地压缩当前对话上下文 |
+| `/resume` | 打开历史对话选择器 |
+| `/title` | `/rename` 别名 |
+| `/agent` | `/agents` 别名 |
 | `/copy` | 复制上一条助手回复（Ctrl+O 静默复制） |
 | `/delete` | 永久删除当前对话 |
 | `/theme` | 打开外观设置 |

@@ -41,6 +41,8 @@ export type WorkbenchShortcutAction =
   | 'copy_cwd'
   | 'copy_session_id'
   | 'copy_last_output'
+  | 'thinking_lower'
+  | 'thinking_higher'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -61,6 +63,15 @@ export function matchDefaultWorkbenchShortcut(event: {
     !event.altKey
   ) {
     return 'clear_unread'
+  }
+  if (
+    event.altKey &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    (event.key === ',' || event.key === '.')
+  ) {
+    return event.key === ',' ? 'thinking_lower' : 'thinking_higher'
   }
   const mod = event.metaKey || event.ctrlKey
   if (!mod) return null
@@ -282,5 +293,7 @@ export const SHORTCUT_CATALOG: Array<{
     title: '复制上一条助手回复',
     defaultKeys: 'Ctrl+O',
     defaultChord: 'mod+ctrl+o'
-  }
+  },
+  { action: 'thinking_lower', title: '降低思考档', defaultKeys: '⌥,', defaultChord: 'alt+,' },
+  { action: 'thinking_higher', title: '提高思考档', defaultKeys: '⌥.', defaultChord: 'alt+.' }
 ]

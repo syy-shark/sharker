@@ -54,6 +54,8 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: '/', metaKey: true }))).toBe('shortcut_help')
     expect(matchWorkbenchShortcut(ev({ key: 'o', ctrlKey: true }))).toBe('copy_last_output')
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true }))).toBe('open_folder')
+    expect(matchWorkbenchShortcut(ev({ key: ',', altKey: true }))).toBe('thinking_lower')
+    expect(matchWorkbenchShortcut(ev({ key: '.', altKey: true }))).toBe('thinking_higher')
     expect(matchWorkbenchShortcut(ev({ key: '?', metaKey: true, shiftKey: true }))).toBe(
       'shortcut_help'
     )

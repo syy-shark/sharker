@@ -29,6 +29,18 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_history'
   },
   {
+    id: 'resume',
+    title: '恢复历史对话',
+    keywords: 'resume history picker 恢复 历史',
+    action: 'resume_conversation'
+  },
+  {
+    id: 'compact',
+    title: '压缩上下文',
+    keywords: 'compact context 压缩 上下文',
+    action: 'compact_context'
+  },
+  {
     id: 'fork',
     title: '分叉当前对话',
     keywords: 'fork thread 分叉 对话',

@@ -49,7 +49,11 @@ import {
   withActiveWorkspace
 } from '../shared/workspace'
 import { knownModelsForProvider } from '../shared/provider-catalog'
-import { defaultThinkingLevel, resolveThinkingOptions } from '../shared/thinking-levels'
+import {
+  defaultThinkingLevel,
+  resolveThinkingOptions,
+  stepThinkingLevel
+} from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
@@ -3571,11 +3575,26 @@ export default function App() {
           })
           break
         }
-        case 'resume_conversation': {
-          const prev = conversationList.filter((c) => c.id !== activeConversationIdRef.current)[0]
-          if (prev && settingsRef.current.activeWorkspaceId) {
-            await handleSelectConversation(settingsRef.current.activeWorkspaceId, prev.id)
+        case 'resume_conversation':
+          setPage('chat')
+          setShowHistoryPicker(true)
+          break
+        case 'compact_context': {
+          if (!window.sharker.compressContext) {
+            appendLocalNote('当前环境不能压缩上下文。')
+            break
           }
+          const result = await window.sharker.compressContext(messagesRef.current)
+          if (!result.compressed) {
+            appendLocalNote('上下文还不需要压缩。')
+            break
+          }
+          setMessages(result.messages)
+          messagesRef.current = result.messages
+          await persistActiveConversation(result.messages)
+          appendLocalNote(
+            `已压缩 ${result.removedCount} 条 · ${result.beforeTokens}→${result.afterTokens} tokens`
+          )
           break
         }
         case 'pick_model': {
@@ -3591,17 +3610,22 @@ export default function App() {
           )
           if (byName) {
             await handleSelectProvider(byName.id, byName.model)
+            appendLocalNote(`已切换到 ${byName.name} · ${byName.model || '默认模型'}`)
             break
           }
+          let switched = false
           for (const p of providers) {
             const hit = knownModelsForProvider(p.id, p.model).find((id) =>
               id.toLowerCase().includes(q)
             )
             if (hit) {
               await handleSelectProvider(p.id, hit)
+              appendLocalNote(`已切换到 ${p.name} · ${hit}`)
+              switched = true
               break
             }
           }
+          if (!switched) appendLocalNote(`没有匹配的模型：${args.trim()}`)
           break
         }
         case 'git_branch':
@@ -4071,6 +4095,20 @@ export default function App() {
         }
         return
       }
+      if (action === 'thinking_lower' || action === 'thinking_higher') {
+        const settingsNow = settingsRef.current
+        const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+        if (!provider) return
+        const options = resolveThinkingOptions(provider)
+        const current = provider.thinkingLevel || defaultThinkingLevel(provider)
+        const next = stepThinkingLevel(
+          options,
+          current,
+          action === 'thinking_higher' ? 1 : -1
+        )
+        if (next && next !== current) void handleThinkingLevelChange(provider.id, next)
+        return
+      }
       if (action === 'select_recent') {
         const n = Number(e.key)
         const recent = [...conversationListRef.current].sort((a, b) => b.updatedAt - a.updatedAt)
@@ -4252,7 +4290,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, loading, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     const onMouseNav = (e: MouseEvent) => {

@@ -98,7 +98,7 @@
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队；空输入 ↑ 恢复上一条 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；Esc+Esc 回编 |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条 |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
@@ -110,7 +110,7 @@
 | `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |
 | `provider-validate.ts` | 当前 API 配置校验 |
 | `provider-vision.ts` | 模型是否支持视觉（截图回灌） |
-| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射 |
+| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射；`stepThinkingLevel` 供 ⌥, / ⌥. |
 | `oauth-gpt.ts` | ChatGPT 订阅凭据导入 |
 | `oauth-xai.ts` | xAI SuperGrok 设备码 OAuth |
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
