@@ -27,7 +27,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
-| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线；`/review commit [sha]` 指定提交（对标 Codex Review a commit） |
+| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线；`/review commit [sha]` 指定提交（对标 Codex Review a commit）；剩余文字作自定义关注（对标 Codex `/review Focus on edge cases and security issues`） |
 | `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
@@ -108,7 +108,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
 - 设置 → 权限 → **项目与终端 / 命令输出**：简要 / 标准 / 详细（对标 Codex how much command output appears in chats）；标准只画输出尾部，详细完成后才默认展开，直播中仍折叠以免贴底跳动
 - 设置 → 权限 → Worktree **根目录**（对标 Codex Worktree root）：托管与永久 worktree 建在此绝对路径下，空则 `~/.sharker/worktrees`；`sharker://settings/worktrees` 打开该页。改了不搬旧目录
-- 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / Git / AGENTS.md / Skill；附加文件夹可供 `@` 搜索与沙箱读写，不改 Git 根
+- 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / Git / AGENTS.md / Skill；附加文件夹可供右侧文件树浏览、`@` 搜索、文件引用跳转与沙箱读写，不改 Git 根
 - 设置 → 外观 → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
 - 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
 - 设置 → 外观 → **记忆** 注入/写入（对标 Codex Settings → Personalization；`/memories` 仍打印本机记忆清单）

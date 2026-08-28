@@ -1,16 +1,20 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
+
+const EMPTY_EXTRA_ROOTS: string[] = []
 
 interface Props {
   workspacePath: string
   isHome?: boolean
   /** 对话文件引用：打开预览并跳行 */
   previewRequest?: { path: string; line?: number; token: number } | null
+  /** 项目附加文件夹：与主根一起出现在文件树顶层 */
+  extraRoots?: string[]
 }
 
 function TreeNodeView({
@@ -74,7 +78,16 @@ function TreeNodeView({
 }
 
 /** 文件树面板 */
-export function FileTree({ workspacePath, isHome = false, previewRequest = null }: Props) {
+export function FileTree({
+  workspacePath,
+  isHome = false,
+  previewRequest = null,
+  extraRoots = EMPTY_EXTRA_ROOTS
+}: Props) {
+  const extras = useMemo(
+    () => extraRoots.filter((root) => root && root !== workspacePath),
+    [extraRoots, workspacePath]
+  )
   const [tree, setTree] = useState<WorkspaceTreeNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [loading, setLoading] = useState(false)
@@ -91,13 +104,13 @@ export function FileTree({ workspacePath, isHome = false, previewRequest = null 
     setLoading(true)
     setFileError('')
     try {
-      const nodes = await window.sharker.getWorkspaceTree(workspacePath, isHome)
+      const nodes = await window.sharker.getWorkspaceTree(workspacePath, isHome, extras)
       setTree(nodes)
-      setExpanded(new Set([workspacePath]))
+      setExpanded(new Set([workspacePath, ...extras]))
     } finally {
       setLoading(false)
     }
-  }, [workspacePath, isHome])
+  }, [workspacePath, isHome, extras])
 
   useEffect(() => {
     setOpenFile(null)
@@ -129,7 +142,7 @@ export function FileTree({ workspacePath, isHome = false, previewRequest = null 
   const onOpenFile = useCallback(async (path: string, line?: number) => {
     if (!window.sharker?.readTextFile) return
     setFileError('')
-    const abs = resolveCitationPath(path, workspacePath)
+    const abs = resolveCitationPath(path, workspacePath, extraRoots)
     const res = await window.sharker.readTextFile(abs)
     if (!res.ok) {
       setFileError(res.error)
@@ -137,7 +150,7 @@ export function FileTree({ workspacePath, isHome = false, previewRequest = null 
       return
     }
     setOpenFile({ path: res.path, content: res.content, line })
-  }, [workspacePath])
+  }, [workspacePath, extraRoots])
 
   useEffect(() => {
     if (!previewRequest?.path || isHome) return
@@ -187,8 +200,12 @@ export function FileTree({ workspacePath, isHome = false, previewRequest = null 
       ) : null}
       {fileError ? <p className="file-tree-error">{fileError}</p> : null}
       <div className="file-tree-head">
-        <span className="file-tree-root" title={workspacePath}>
+        <span
+          className="file-tree-root"
+          title={[workspacePath, ...extras].join('\n')}
+        >
           {workspacePath.split('/').pop() || workspacePath}
+          {extras.length ? ` · +${extras.length}` : ''}
           {isHome ? ' · 仅文件夹' : ''}
         </span>
         <button type="button" className="file-tree-refresh" onClick={() => void load()}>

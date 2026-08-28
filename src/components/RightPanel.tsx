@@ -13,6 +13,8 @@ import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 
 export type RightPanelTab = 'files' | 'changes' | 'terminal' | 'browser' | 'agents'
 
+const EMPTY_EXTRA_ROOTS: string[] = []
+
 const PANEL_WIDTH_KEY = 'sharker-right-panel-width'
 const PANEL_DEFAULT_WIDTH = RIGHT_PANEL_LAYOUT.default
 const PANEL_MIN_WIDTH = RIGHT_PANEL_LAYOUT.min
@@ -53,6 +55,8 @@ interface Props {
   gitBranchPrefix?: string
   /** 对话文件引用要打开的预览 */
   filePreview?: { path: string; line?: number; token: number } | null
+  /** 项目附加文件夹（对标 Codex Edit project secondary folders） */
+  extraRoots?: string[]
 }
 
 /** Codex 风格右侧面板 */
@@ -75,7 +79,8 @@ export function RightPanel({
   onPendingTerminalCommandSent,
   terminalClearTick = 0,
   gitBranchPrefix = '',
-  filePreview = null
+  filePreview = null,
+  extraRoots = EMPTY_EXTRA_ROOTS
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -348,7 +353,12 @@ export function RightPanel({
       </div>
       <div className="right-panel-body view-enter" key={tab}>
         {tab === 'files' && (
-          <FileTree workspacePath={workspacePath} isHome={isHome} previewRequest={filePreview} />
+          <FileTree
+            workspacePath={workspacePath}
+            isHome={isHome}
+            previewRequest={filePreview}
+            extraRoots={extraRoots}
+          />
         )}
         {tab === 'changes' && (
           <ChangesPanel

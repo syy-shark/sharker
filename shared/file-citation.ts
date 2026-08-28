@@ -113,13 +113,27 @@ export function matchFileCitationAt(
   return { end, citation, text: raw }
 }
 
-/** 相对路径接到工作区；绝对路径原样返回 */
-export function resolveCitationPath(path: string, workspacePath: string): string {
-  const rel = normalizeCitationPath(path)
+/** 相对路径接到工作区；绝对路径原样返回。附加根用目录名做前缀（与 `@` 搜索一致）。 */
+export function resolveCitationPath(
+  filePath: string,
+  workspacePath: string,
+  extraRoots: string[] = []
+): string {
+  const rel = normalizeCitationPath(filePath)
   if (!rel) return ''
   if (rel.startsWith('/') || /^[A-Za-z]:\//.test(rel)) return rel
-  const base = String(workspacePath || '').replace(/[\\/]+$/, '')
-  if (!base) return rel
   const rest = rel.replace(/^\.\//, '')
+  const first = rest.split('/')[0]
+  for (const extra of extraRoots) {
+    const extraBase = String(extra || '').replace(/[\\/]+$/, '')
+    if (!extraBase) continue
+    const name = extraBase.split('/').pop() || ''
+    if (name && first === name) {
+      const nested = rest.slice(name.length).replace(/^\//, '')
+      return nested ? `${extraBase}/${nested}` : extraBase
+    }
+  }
+  const base = String(workspacePath || '').replace(/[\\/]+$/, '')
+  if (!base) return rest
   return `${base}/${rest}`
 }

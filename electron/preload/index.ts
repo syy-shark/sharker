@@ -155,8 +155,8 @@ contextBridge.exposeInMainWorld('sharker', {
   compressContext: (history: ChatMessage[]) =>
     ipcRenderer.invoke(IPC.COMPRESS_CONTEXT, history),
   getTokenUsage: (days?: number) => ipcRenderer.invoke(IPC.GET_TOKEN_USAGE, days),
-  getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) =>
-    ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly),
+  getWorkspaceTree: (workspace: string, directoriesOnly?: boolean, extraRoots?: string[]) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly, extraRoots ?? []),
   searchWorkspaceFiles: (workspace: string, query: string, extraRoots?: string[]) =>
     ipcRenderer.invoke(IPC.WORKSPACE_SEARCH_FILES, workspace, query, extraRoots ?? []),
   listSkills: (workspace: string) => ipcRenderer.invoke(IPC.SKILLS_LIST, workspace),

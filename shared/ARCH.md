@@ -19,7 +19,8 @@
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同（对标 Codex Edit project secondary folders） |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复 |
-| `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；`@` 搜索可扫附加文件夹（目录名做前缀） |
+| `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
+| `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、置顶排序、`/rename` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
@@ -38,8 +39,8 @@
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用；`isNearLiveMessageRow` 标贴底窗口（不用 nth-last-child）；`formatElapsedClock` 给 Goal / 长回合；`shouldFoldTurnWork` 在正文上屏后收成 Worked for |
 | `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部；CRLF 归一；`continueStreamingMarkdown` 复用已闭合块；围栏开闭按最长 \`/\~ 串（\`\`\`\` 可包住内部 \`\`\`）；散文尾廉价块（ATX/Setext 含 0–3 空格与行尾闭合 `#`、列表含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内表格 / 围栏 / 引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码（嵌套层自己松、不松外层）/`blockquote>p`/引用懒续行（含硬换行；未闭合围栏不吃懒续行；懒续行不抽表格）/表格对齐与单列 / 无两侧 `|` 与 `\\|` / 分隔行未到的两侧 `|` 行先画表/分隔线含 `* * *`/缩进代码/引用围栏/`pre` 语言/脚注区含缩进续行与多段、无引用的定义不画）与行内（闭合链接含空 dest / `#锚点` / 相对路径 / 危险协议清空 / 未闭合 `](` 先画链接避免收束跳、dest 内成对括号与标签内换行、`[![img]](url)`、标签内 `**` / `` ` ``、多反引号代码、引用式链接 / 引用式图片含相对 dest 与定义 title 与次行标题、HTML 实体、`<https>` / 邮箱 / `www.`、http 图（含 title、alt 去标记）、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画（空 opener 与 GFM `~~ not` 仍留原文）、反斜杠转义、GFM 删除线（两侧无空白）、脚注、硬换行、文件引用）；`[` 对不上 `](` 时不吞后续标记；链接定义行不画；`continueCheapProseBlocks` 复用已闭合列表项/嵌套项/表格行 |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏（含 0–3 空格）、稳定 id、增量复用、廉价行内（含 http 图 / 引用式图片含相对 dest / dest 内括号 / 空 dest / `#锚点` / 相对路径 / 危险协议清空 / `[![img]](url)` / 多反引号代码 / 链接标签内强调 / HTML 实体 / 删除线套粗体 / 标记内混排与链接 / 图片 alt 去标记 / 下划线 / `***` 嵌套强调 / 未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画 / 引用链接含 title / 邮箱 / `www.` / 脚注续行 / 硬换行）与标题（含 Setext / 0–3 空格 / 行尾 `#`）列表（`1)` / `ol start`、嵌套、续行硬换行、松散、项内引用 / ATX / Setext / HR / 嵌套围栏 / 缩进代码）/表格（含单列、无两侧 `|` 与 `\\|`）/ `* * *` 分隔线 / 引用围栏与懒续行（不吃未闭合围栏、不抽懒表格） / 缩进代码 |
-| `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区；拒绝 `www.`、`</tag>` 与尾斜杠 / `a\\` 假路径，以免直播把自动链接 / HTML / 反斜杠硬换行收束成文件芯片 |
-| `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配 |
+| `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区或附加根（目录名前缀）；拒绝 `www.`、`</tag>` 与尾斜杠 / `a\\` 假路径，以免直播把自动链接 / HTML / 反斜杠硬换行收束成文件芯片 |
+| `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
 | `git-status.ts` | porcelain 行解析：暂存 / 未暂存 / 未跟踪 |
@@ -64,7 +65,7 @@
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
-| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；Review delivery（inline / detached）与 here/detached 覆盖 |
+| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；Review delivery（inline / detached）与 here/detached 覆盖；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -169,7 +170,7 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖 |
+| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、自定义关注拼进提示 |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 

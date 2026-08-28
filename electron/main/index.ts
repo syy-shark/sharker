@@ -82,7 +82,7 @@ import {
 } from '../../shared/browser-use-status'
 import { compressContextForce } from '../../shared/context-compress'
 import { getUsageHistory } from '../../shared/token-usage-store'
-import { buildWorkspaceTree, searchWorkspaceFiles } from '../../shared/workspace-tree'
+import { buildWorkspaceForest, searchWorkspaceFiles } from '../../shared/workspace-tree'
 import { loadSkills } from '../../skills/loader'
 import { runGit } from '../../tools/shared/git-runner'
 import {
@@ -1158,9 +1158,15 @@ function registerIpc(): void {
     return getUsageHistory(days)
   })
 
-  ipcMain.handle(IPC.WORKSPACE_TREE, async (_e, workspace: string, directoriesOnly = false) => {
-    return buildWorkspaceTree(workspace, { directoriesOnly })
-  })
+  ipcMain.handle(
+    IPC.WORKSPACE_TREE,
+    async (_e, workspace: string, directoriesOnly = false, extraRoots: string[] = []) => {
+      const extras = Array.isArray(extraRoots)
+        ? extraRoots.map((item) => path.resolve(String(item || ''))).filter(Boolean)
+        : []
+      return buildWorkspaceForest(String(workspace || ''), extras, { directoriesOnly })
+    }
+  )
 
   ipcMain.handle(
     IPC.WORKSPACE_SEARCH_FILES,

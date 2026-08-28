@@ -67,6 +67,38 @@ export async function buildWorkspaceTree(
   return nodes
 }
 
+/** 有附加根时，主文件夹与附加文件夹都作为顶层节点（对标 Codex Edit project 多文件夹） */
+export function wrapWorkspaceForest(
+  primaryPath: string,
+  primaryChildren: WorkspaceTreeNode[],
+  extras: Array<{ path: string; children: WorkspaceTreeNode[] }>
+): WorkspaceTreeNode[] {
+  const extrasClean = extras.filter((item) => item.path && item.path !== primaryPath)
+  if (!primaryPath || extrasClean.length === 0) return primaryChildren
+  const wrap = (root: string, children: WorkspaceTreeNode[]): WorkspaceTreeNode => ({
+    name: path.basename(root) || root,
+    path: root,
+    isDirectory: true,
+    children
+  })
+  return [wrap(primaryPath, primaryChildren), ...extrasClean.map((item) => wrap(item.path, item.children))]
+}
+
+/** 主工作区 + 附加文件夹森林；无附加时仍返回主根子节点（保持旧文件树） */
+export async function buildWorkspaceForest(
+  root: string,
+  extraRoots: string[] = [],
+  options: BuildWorkspaceTreeOptions = {}
+): Promise<WorkspaceTreeNode[]> {
+  const extras = extraRoots.filter((item) => item && item !== root)
+  const primaryChildren = root ? await buildWorkspaceTree(root, options) : []
+  if (extras.length === 0) return primaryChildren
+  const extraNodes = await Promise.all(
+    extras.map(async (item) => ({ path: item, children: await buildWorkspaceTree(item, options) }))
+  )
+  return wrapWorkspaceForest(root, primaryChildren, extraNodes)
+}
+
 /** Composer `@` 文件命中 */
 export interface WorkspaceFileHit {
   name: string

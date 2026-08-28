@@ -62,5 +62,8 @@ describe('file citations', () => {
   it('joins a relative path onto the workspace', () => {
     expect(resolveCitationPath('src/App.tsx', '/tmp/proj')).toBe('/tmp/proj/src/App.tsx')
     expect(resolveCitationPath('/abs/x.ts', '/tmp/proj')).toBe('/abs/x.ts')
+    expect(resolveCitationPath('lib/util.ts', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/proj/lib/util.ts')
+    expect(resolveCitationPath('extra/util.ts', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/extra/util.ts')
+    expect(resolveCitationPath('extra', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/extra')
   })
 })

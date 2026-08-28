@@ -296,10 +296,10 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'review',
-    description: '审查变更（未提交 / 基线 / 指定 commit，只读）',
+    description: '审查变更（未提交 / 基线 / 指定 commit，可加关注点，只读）',
     scope: 'ui',
     action: 'review_working_tree',
-    argsHint: '[uncommitted|branch|commit] [here|detached]',
+    argsHint: '[uncommitted|branch|commit] [here|detached] [关注点]',
     category: 'panel'
   },
   {

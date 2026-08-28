@@ -28,7 +28,13 @@ export function parseReviewDelivery(raw: unknown): ReviewDelivery {
   return raw === 'inline' ? 'inline' : 'detached'
 }
 
-/** `/review` 参数：范围 + 是否独立线程（设置默认，here/detached 单次覆盖） */
+const REVIEW_INLINE_TOKENS = new Set(['here', 'inline'])
+const REVIEW_DETACHED_TOKENS = new Set(['detached', 'new'])
+const REVIEW_BRANCH_TOKENS = new Set(['branch', 'base', 'against-base'])
+/** 对标 Codex `/review Focus on …`；与 `/goal` 同上限 */
+const REVIEW_INSTRUCTIONS_MAX = 4000
+
+/** `/review` 参数：范围 + 是否独立线程 + 剩余自定义关注（设置默认，here/detached 单次覆盖） */
 export function parseReviewRequest(
   args: string,
   options?: { delivery?: unknown }
@@ -36,19 +42,61 @@ export function parseReviewRequest(
   scope: 'uncommitted' | 'branch' | 'commit'
   commit?: string
   detached: boolean
+  instructions: string
 } {
-  const tokens = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const tokens = args.trim().split(/\s+/).filter(Boolean)
   let detached = parseReviewDelivery(options?.delivery) === 'detached'
-  if (tokens.includes('here') || tokens.includes('inline')) detached = false
-  if (tokens.includes('detached') || tokens.includes('new')) detached = true
-  const sha = tokens.find((t) => /^[0-9a-f]{7,40}$/i.test(t))
-  if (tokens.includes('commit') || sha) {
-    return { scope: 'commit', commit: sha, detached }
+  let scope: 'uncommitted' | 'branch' | 'commit' = 'uncommitted'
+  let commit: string | undefined
+  const leftover: string[] = []
+  for (const token of tokens) {
+    const lower = token.toLowerCase()
+    if (REVIEW_INLINE_TOKENS.has(lower)) {
+      detached = false
+      continue
+    }
+    if (REVIEW_DETACHED_TOKENS.has(lower)) {
+      detached = true
+      continue
+    }
+    if (/^[0-9a-f]{7,40}$/i.test(token)) {
+      scope = 'commit'
+      commit = token
+      continue
+    }
+    if (lower === 'commit') {
+      scope = 'commit'
+      continue
+    }
+    if (REVIEW_BRANCH_TOKENS.has(lower)) {
+      scope = 'branch'
+      continue
+    }
+    if (lower === 'uncommitted') continue
+    leftover.push(token)
   }
-  const scope = tokens.some((t) => t === 'branch' || t === 'base' || t === 'against-base')
-    ? 'branch'
-    : 'uncommitted'
-  return { scope, detached }
+  const instructions = leftover.join(' ').slice(0, REVIEW_INSTRUCTIONS_MAX)
+  return { scope, commit, detached, instructions }
+}
+
+/** 把官方自定义关注接到只读审查提示后面 */
+export function withReviewInstructions(base: string, instructions?: string): string {
+  const text = String(instructions || '').trim()
+  if (!text) return base
+  return `${base}\n\n额外关注：${text}`
+}
+
+/** 按 `/review` 解析结果拼完整提示（范围 + 可选关注点） */
+export function formatReviewPrompt(
+  review: ReturnType<typeof parseReviewRequest>
+): string {
+  const base =
+    review.scope === 'commit'
+      ? reviewCommitPrompt(review.commit)
+      : review.scope === 'branch'
+        ? REVIEW_BRANCH_PROMPT
+        : REVIEW_WORKING_TREE_PROMPT
+  return withReviewInstructions(base, review.instructions)
 }
 
 /** `/review` 范围：空/uncommitted → 未提交；branch/base → 相对基线；commit → 指定提交 */

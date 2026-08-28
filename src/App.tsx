@@ -88,12 +88,7 @@ import {
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
 import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
-import {
-  REVIEW_BRANCH_PROMPT,
-  REVIEW_WORKING_TREE_PROMPT,
-  parseReviewRequest,
-  reviewCommitPrompt
-} from '../shared/review-prompt'
+import { formatReviewPrompt, parseReviewRequest } from '../shared/review-prompt'
 import {
   nextPersonality,
   parsePersonality,
@@ -4375,12 +4370,7 @@ export default function App() {
             sha: review.commit,
             token: Date.now()
           })
-          const prompt =
-            review.scope === 'commit'
-              ? reviewCommitPrompt(review.commit)
-              : review.scope === 'branch'
-                ? REVIEW_BRANCH_PROMPT
-                : REVIEW_WORKING_TREE_PROMPT
+          const prompt = formatReviewPrompt(review)
           const wsId = settingsRef.current.activeWorkspaceId
           if (review.detached && wsId && window.sharker.createConversation) {
             const conv = await window.sharker.createConversation(wsId)
@@ -6415,6 +6405,7 @@ export default function App() {
           terminalClearTick={terminalClearTick}
           gitBranchPrefix={settings.gitBranchPrefix ?? ''}
           filePreview={filePreview}
+          extraRoots={fileSearchExtraRoots}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

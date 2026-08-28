@@ -132,7 +132,11 @@ export interface SharkerApi {
   installBrowserUseManifest: () => Promise<{ ok: boolean; message: string }>
   compressContext: (history: ChatMessage[]) => Promise<import('../shared/context-compress').ContextCompressResult>
   getTokenUsage: (days?: number) => Promise<import('../shared/token-usage-store').DayUsage[]>
-  getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) => Promise<WorkspaceTreeNode[]>
+  getWorkspaceTree: (
+    workspace: string,
+    directoriesOnly?: boolean,
+    extraRoots?: string[]
+  ) => Promise<WorkspaceTreeNode[]>
   searchWorkspaceFiles: (
     workspace: string,
     query: string,
