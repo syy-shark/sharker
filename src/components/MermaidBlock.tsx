@@ -141,6 +141,7 @@ export function MermaidBlock({
       copyText={source}
       bodyClassName={bodyClassName}
       ariaLabel={ariaLabel ?? `${fenceLang} 代码块`}
+      followTail={!closed && !svg}
     >
       {children}
     </CodeArtifactShell>

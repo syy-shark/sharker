@@ -10,7 +10,12 @@ import {
   processSegments
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
-import { estimateDiffBodyHeight, liveDiffBodyMinHeight } from './line-diff'
+import {
+  canOfferDiffPreviewCollapse,
+  estimateDiffBodyHeight,
+  liveDiffBodyMinHeight,
+  shouldCollapseDiffPreview
+} from './line-diff'
 
 describe('turn segment event state machine', () => {
   it('keeps event order, timestamps and real derived phases', () => {
@@ -262,6 +267,39 @@ describe('turn segment event state machine', () => {
     expect(liveDiffBodyMinHeight(0, 3, 0)).toBe(71)
     expect(liveDiffBodyMinHeight(71, 0, 1)).toBe(71)
     expect(liveDiffBodyMinHeight(33, 0, 5)).toBe(109)
+    expect(
+      canOfferDiffPreviewCollapse({ live: true, lineCount: 80, previewLimit: 20 })
+    ).toBe(false)
+    expect(
+      canOfferDiffPreviewCollapse({ live: false, lineCount: 80, previewLimit: 20 })
+    ).toBe(true)
+    expect(
+      canOfferDiffPreviewCollapse({ review: true, lineCount: 80, previewLimit: 20 })
+    ).toBe(false)
+    expect(
+      shouldCollapseDiffPreview({
+        live: false,
+        expanded: false,
+        lineCount: 80,
+        previewLimit: 20
+      })
+    ).toBe(true)
+    expect(
+      shouldCollapseDiffPreview({
+        live: true,
+        expanded: false,
+        lineCount: 80,
+        previewLimit: 20
+      })
+    ).toBe(false)
+    expect(
+      shouldCollapseDiffPreview({
+        live: false,
+        expanded: true,
+        lineCount: 80,
+        previewLimit: 20
+      })
+    ).toBe(false)
 
     expect(isDemoFenceLangPrefix('dem')).toBe(true)
     expect(isDemoFenceLangPrefix('viz')).toBe(true)

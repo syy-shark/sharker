@@ -55,13 +55,19 @@ interface Props {
   children?: React.ReactNode
 }
 
-/** 直播文件 diff：写入一开始占槽，参数流填 +/-，完成后换核实行；预览 20 行 */
-const LiveFileDiff = memo(function LiveFileDiff({ diff }: { diff: FileDiff }) {
+/** 直播文件 diff：写入一开始占槽，参数流填 +/-；直播中不折行，内层跟尾 */
+const LiveFileDiff = memo(function LiveFileDiff({
+  diff,
+  streaming = false
+}: {
+  diff: FileDiff
+  streaming?: boolean
+}) {
   return (
     <div className="assistant-live-diff">
       <CodeDiffBlock
         diff={diff}
-        live
+        live={streaming}
         showHeader
         wrapLines
         maxPreviewLines={20}
@@ -477,7 +483,13 @@ export const AssistantMessage = memo(function AssistantMessage({
                   )
                 }
                 if (part.type === 'diff') {
-                  return <LiveFileDiff key={part.id} diff={part.diff} />
+                  return (
+                    <LiveFileDiff
+                      key={part.id}
+                      diff={part.diff}
+                      streaming={Boolean(isStreaming)}
+                    />
+                  )
                 }
                 return <StreamingMarkdown key={part.id} text={part.content} />
               })

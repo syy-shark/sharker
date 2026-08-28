@@ -1,13 +1,20 @@
 /**
  * 行级代码 diff 展示：过程流 / Markdown 用只读块；审查模式带 hunk 动作与行内评论。
  * 直播写入：无行时按 stats 占位，有参数流 +/- 就画行；同一外壳填核实 diff。
+ * 直播中不折预览、内层跟尾；收束后保持展开以免跳。
  * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { memo, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
 import { shouldOpenReviewLine } from '../../shared/review-file-click'
-import { estimateDiffBodyHeight, liveDiffBodyMinHeight, statsFromLines } from '../../shared/line-diff'
+import {
+  canOfferDiffPreviewCollapse,
+  estimateDiffBodyHeight,
+  liveDiffBodyMinHeight,
+  shouldCollapseDiffPreview,
+  statsFromLines
+} from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
 import type { ReviewLineComment } from '../../shared/review-comment'
@@ -159,6 +166,9 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   const hunks = useMemo(() => (review ? splitDiffHunks(displayLines) : []), [displayLines, review])
   const stats = diff?.stats ?? statsFromLines(displayLines)
   const filePath = diff?.path ?? path ?? ''
+  useEffect(() => {
+    if (live) setExpanded(true)
+  }, [live])
   if (displayLines.length === 0 && !filePath) return null
 
   const label = filePath || 'diff'
@@ -167,13 +177,26 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     displayLines.length === 0
       ? Math.min(previewLimit, Math.max(1, (stats.added || 0) + (stats.removed || 0)))
       : 0
-  const needsCollapse = !review && displayLines.length > previewLimit
-  const visible = expanded || !needsCollapse ? displayLines : displayLines.slice(0, previewLimit)
+  const canCollapse = canOfferDiffPreviewCollapse({
+    live,
+    review: Boolean(review),
+    lineCount: displayLines.length,
+    previewLimit
+  })
+  const needsCollapse = shouldCollapseDiffPreview({
+    live,
+    review: Boolean(review),
+    expanded,
+    lineCount: displayLines.length,
+    previewLimit
+  })
+  const visible = needsCollapse ? displayLines.slice(0, previewLimit) : displayLines
   if (live && pendingRows > 0) {
     pendingFloorRef.current = Math.max(pendingFloorRef.current, estimateDiffBodyHeight(pendingRows))
   }
+  const paintedCount = pendingRows > 0 ? 0 : displayLines.length
   const bodyMinHeight = live
-    ? liveDiffBodyMinHeight(pendingFloorRef.current, pendingRows, pendingRows > 0 ? 0 : visible.length)
+    ? liveDiffBodyMinHeight(pendingFloorRef.current, pendingRows, paintedCount)
     : pendingRows
       ? estimateDiffBodyHeight(pendingRows)
       : undefined
@@ -246,7 +269,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     </>
   )
 
-  const footer = needsCollapse ? (
+  const footer = canCollapse ? (
     <button
       type="button"
       className="code-diff-expand"
@@ -268,6 +291,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
       footer={footer}
       showHeader={showHeader}
       ariaLabel={filePath ? `${filePath} 文件差异` : '代码差异'}
+      followTail={live}
     >
       <div
         className={`code-diff-code${pendingRows ? ' code-diff-code--pending' : ''}`}

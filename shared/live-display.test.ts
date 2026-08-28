@@ -24,6 +24,7 @@ import {
   shouldSynthesizePlanning,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  shouldFollowArtifactTail,
   transcriptNavIntent,
   turnProcessBounds,
   processElapsedSeconds
@@ -213,6 +214,9 @@ describe('near-live message rows', () => {
     expect(grown.get('old')).toBe(200)
     expect(liveStickScrollTop(800, 200)).toBe(600)
     expect(liveStickScrollTop(100, 400)).toBe(0)
+    expect(shouldFollowArtifactTail({ followTail: true, userLocked: false })).toBe(true)
+    expect(shouldFollowArtifactTail({ followTail: true, userLocked: true })).toBe(false)
+    expect(shouldFollowArtifactTail({ followTail: false, userLocked: false })).toBe(false)
     expect(
       liveStickNeedsFollow(
         { scrollHeight: 800, clientHeight: 400 },

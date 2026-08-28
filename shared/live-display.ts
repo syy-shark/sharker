@@ -379,6 +379,18 @@ export function liveStickNeedsFollow(
   return prev.scrollHeight !== next.scrollHeight || prev.clientHeight !== next.clientHeight
 }
 
+/**
+ * 代码/diff 内层滚动跟尾：外壳有 max-height 后新行不再顶对话柱，
+ * 必须把内层滚到最新行，否则直播看起来像停住（对标 Codex #32030 / #38695）。
+ * 用户上翻读已画行时不抢。
+ */
+export function shouldFollowArtifactTail(options: {
+  followTail: boolean
+  userLocked: boolean
+}): boolean {
+  return options.followTail && !options.userLocked
+}
+
 export type TranscriptNavIntent = 'top' | 'bottom'
 
 /** 输入框 / 查找 / 右侧预览 / 终端 / 浏览器里不抢 Home End */

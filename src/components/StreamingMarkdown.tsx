@@ -311,7 +311,7 @@ function renderLiveFenceSlot(
   if (isMermaidLangPrefix(lang)) {
     return <MermaidBlock key={key} code={body} closed={closed} language={lang} />
   }
-  return <LiveFenceTail key={key} code={body} language={lang} />
+  return <LiveFenceTail key={key} code={body} language={lang} followTail={!closed} />
 }
 
 /** 直播正文：围栏顶层槽 + 连续散文 run，空行收段不换 LiveProseTail */

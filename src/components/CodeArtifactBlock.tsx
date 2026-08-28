@@ -1,9 +1,15 @@
 /**
  * 紧凑编辑器式代码产物：固定头部、复制操作、行号与稳定滚动区域。
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
+ * 直播跟尾时内层滚到最新行（外壳 max-height 后新行不再顶对话柱）。
  */
 import { Check, Copy } from 'lucide-react'
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  liveStickNeedsFollow,
+  liveStickScrollTop,
+  shouldFollowArtifactTail
+} from '../../shared/live-display'
 import './CodeArtifactBlock.css'
 
 interface CodeArtifactShellProps {
@@ -16,6 +22,8 @@ interface CodeArtifactShellProps {
   footer?: ReactNode
   showHeader?: boolean
   ariaLabel?: string
+  /** 未闭合围栏 / 直播 diff：内层贴底跟尾，用户上翻不抢 */
+  followTail?: boolean
 }
 
 /** 普通代码和 diff 共用的编辑器外壳。 */
@@ -28,10 +36,18 @@ export function CodeArtifactShell({
   bodyClassName = '',
   footer,
   showHeader = true,
-  ariaLabel
+  ariaLabel,
+  followTail = false
 }: CodeArtifactShellProps) {
   const [copied, setCopied] = useState(false)
   const copiedTimer = useRef<number | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const userLockedRef = useRef(false)
+  const followTailRef = useRef(followTail)
+  const programmaticScrollRef = useRef(false)
+  const lastSizeRef = useRef({ scrollHeight: 0, clientHeight: 0 })
+  followTailRef.current = followTail
+  if (!followTail) userLockedRef.current = false
 
   useEffect(
     () => () => {
@@ -39,6 +55,67 @@ export function CodeArtifactShell({
     },
     []
   )
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const follow = () => {
+      if (
+        !shouldFollowArtifactTail({
+          followTail: followTailRef.current,
+          userLocked: userLockedRef.current
+        })
+      ) {
+        return
+      }
+      const next = { scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }
+      if (!liveStickNeedsFollow(lastSizeRef.current, next)) return
+      lastSizeRef.current = next
+      programmaticScrollRef.current = true
+      el.scrollTop = liveStickScrollTop(next.scrollHeight, next.clientHeight)
+      programmaticScrollRef.current = false
+    }
+
+    const onScroll = () => {
+      if (programmaticScrollRef.current) return
+      const distance = el.scrollHeight - el.clientHeight - el.scrollTop
+      userLockedRef.current = distance > 16
+    }
+    const onWheel = (event: WheelEvent) => {
+      if (event.deltaY < 0) userLockedRef.current = true
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true })
+    el.addEventListener('wheel', onWheel, { passive: true })
+    const ro = new ResizeObserver(follow)
+    ro.observe(el)
+    for (const child of el.children) ro.observe(child)
+    follow()
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      el.removeEventListener('wheel', onWheel)
+      ro.disconnect()
+    }
+  }, [followTail])
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    if (
+      !shouldFollowArtifactTail({
+        followTail,
+        userLocked: userLockedRef.current
+      })
+    ) {
+      return
+    }
+    lastSizeRef.current = { scrollHeight: 0, clientHeight: 0 }
+    programmaticScrollRef.current = true
+    el.scrollTop = liveStickScrollTop(el.scrollHeight, el.clientHeight)
+    lastSizeRef.current = { scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }
+    programmaticScrollRef.current = false
+  }, [followTail, children])
 
   const handleCopy = async () => {
     if (!copyText) return
@@ -78,7 +155,9 @@ export function CodeArtifactShell({
           ) : null}
         </div>
       ) : null}
-      <div className={`code-artifact-scroll ${bodyClassName}`.trim()}>{children}</div>
+      <div ref={scrollRef} className={`code-artifact-scroll ${bodyClassName}`.trim()}>
+        {children}
+      </div>
       {footer ? <div className="code-artifact-footer">{footer}</div> : null}
     </div>
   )
@@ -87,6 +166,8 @@ export function CodeArtifactShell({
 interface CodeArtifactBlockProps {
   code: string
   language?: string
+  /** 未闭合围栏：内层贴底跟最新行 */
+  followTail?: boolean
 }
 
 function normalizeLanguage(language?: string): string {
@@ -128,7 +209,7 @@ export function ArtifactCodeLines({ code }: { code: string }) {
  * 直播围栏：与 CodeArtifactBlock 同一 CodeArtifactShell，复制按钮位一直在。
  * 开闭不换外壳，收束后也不再另挂一套头栏。
  */
-export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
+export function LiveFenceTail({ code, language, followTail = false }: CodeArtifactBlockProps) {
   const normalizedCode = code.replace(/\n$/, '')
   const label = normalizeLanguage(language)
   return (
@@ -137,6 +218,7 @@ export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
       label={label}
       copyText={normalizedCode}
       ariaLabel={`${label} 代码块`}
+      followTail={followTail}
     >
       <ArtifactCodeLines code={normalizedCode} />
     </CodeArtifactShell>

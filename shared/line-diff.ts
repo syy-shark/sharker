@@ -65,6 +65,31 @@ export function liveDiffBodyMinHeight(
   )
 }
 
+/**
+ * 历史长 diff 才出「展开全部」；直播中不折，否则 +/- 停在第 20 行、
+ * 「展开全部」反复开合会跳滚动条（对标 Codex #32030 / #38695）。
+ */
+export function canOfferDiffPreviewCollapse(options: {
+  live?: boolean
+  review?: boolean
+  lineCount: number
+  previewLimit: number
+}): boolean {
+  if (options.review || options.live) return false
+  return options.lineCount > Math.max(1, options.previewLimit)
+}
+
+export function shouldCollapseDiffPreview(options: {
+  live?: boolean
+  review?: boolean
+  expanded: boolean
+  lineCount: number
+  previewLimit: number
+}): boolean {
+  if (options.expanded) return false
+  return canOfferDiffPreviewCollapse(options)
+}
+
 /** 统计 add/del 行数 */
 export function statsFromLines(lines: FileDiffLine[]): { added: number; removed: number } {
   let added = 0
