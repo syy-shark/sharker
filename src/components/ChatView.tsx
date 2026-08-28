@@ -31,7 +31,7 @@ import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
-import { findInThread, seedFindQuery } from '../../shared/thread-search'
+import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
@@ -44,6 +44,8 @@ import {
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
+
+const EMPTY_FIND_HITS: ThreadSearchHit[] = []
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
 const AT_BOTTOM_PX = 16
@@ -459,7 +461,13 @@ export function ChatView({
     }
   }, [composerIntent, onComposerIntentHandled, openFindBar])
 
-  const findHits = useMemo(() => findInThread(messages, findQuery), [messages, findQuery])
+  const findHits = useMemo(() => {
+    if (!findQuery.trim()) return EMPTY_FIND_HITS
+    const rows = streaming.trim()
+      ? [...messages, { id: 'streaming', content: streaming }]
+      : messages
+    return findInThread(rows, findQuery)
+  }, [messages, findQuery, streaming])
 
   useEffect(() => {
     if (findHit >= findHits.length) setFindHit(0)
@@ -574,28 +582,42 @@ export function ChatView({
     setStickToBottom(false)
   }, [readScrollMetrics])
 
-  /** 查找命中时锁贴底，避免直播增高把镜头拽回底部；标出当前词 */
+  const findCurrent = findHits[findHit]
+
+  /** 换命中才滚；直播 token 不反复抢镜头 */
   useEffect(() => {
-    const current = findHits[findHit]
-    if (!findOpen || !current) {
-      clearFindHighlight()
-      return
-    }
-    const el = document.getElementById(`msg-${current.messageId}`)
-    if (!el) {
-      clearFindHighlight()
-      return
-    }
+    if (!findOpen || !findCurrent) return
+    const el = document.getElementById(`msg-${findCurrent.messageId}`)
+    if (!el) return
     lockUserScroll()
     setCanJumpToBottom(true)
     programmaticScrollRef.current = true
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
-    paintFindHighlight(el, findQuery, current.occurrence)
     requestAnimationFrame(() => {
       programmaticScrollRef.current = false
     })
+  }, [findCurrent?.messageId, findCurrent?.occurrence, findOpen, lockUserScroll])
+
+  /** 高亮当前词；直播重绘文本节点后要重标 */
+  useEffect(() => {
+    if (!findOpen || !findCurrent) {
+      clearFindHighlight()
+      return
+    }
+    const el = document.getElementById(`msg-${findCurrent.messageId}`)
+    if (!el) {
+      clearFindHighlight()
+      return
+    }
+    paintFindHighlight(el, findQuery, findCurrent.occurrence)
     return () => clearFindHighlight()
-  }, [findHit, findHits, findOpen, findQuery, lockUserScroll])
+  }, [
+    findCurrent?.messageId,
+    findCurrent?.occurrence,
+    findOpen,
+    findQuery,
+    findCurrent?.messageId === 'streaming' ? streaming : ''
+  ])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
   const scrollToBottom = useCallback(
@@ -941,7 +963,12 @@ export function ChatView({
             {historicalRows}
 
             {showLiveAssistant && (
-              <div className="message-row message-row--assistant message-row--live">
+              <div
+                id="msg-streaming"
+                className={`message-row message-row--assistant message-row--live${
+                  findHits.some((hit) => hit.messageId === 'streaming') ? ' is-find-hit' : ''
+                }${findHits[findHit]?.messageId === 'streaming' ? ' is-find-current' : ''}`}
+              >
                 <AssistantMessage
                   messageId="streaming"
                   content={streaming}
