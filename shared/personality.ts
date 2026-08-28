@@ -1,10 +1,11 @@
 /**
  * Codex 式人格：只改语气，不改能力。
+ * 对标官方 Settings → Personalization：Pragmatic / Friendly / None。
  * @see shared/ARCH.md
  */
 
-/** 务实 / 共情 / 关闭（自动化与严格解析用） */
-export type AgentPersonality = 'pragmatic' | 'empathetic' | 'none'
+/** 务实 / 友好 / 关闭（自动化与严格解析用） */
+export type AgentPersonality = 'pragmatic' | 'friendly' | 'none'
 
 /** 桌面端默认：务实 */
 export const DEFAULT_PERSONALITY: AgentPersonality = 'pragmatic'
@@ -16,14 +17,14 @@ export const PERSONALITY_OPTIONS: Array<{
   description: string
 }> = [
   { id: 'pragmatic', title: '务实', description: '短、直接、先行动，少寒暄。' },
-  { id: 'empathetic', title: '共情', description: '更会解释与确认，适合一起想清楚。' },
+  { id: 'friendly', title: '友好', description: '更会解释与确认，适合一起想清楚。' },
   { id: 'none', title: '关闭', description: '不加人格指令，语气中性。' }
 ]
 
-/** 规范化设置里的人格字段 */
+/** 规范化设置里的人格字段；旧 `empathetic` 读成 `friendly` */
 export function parsePersonality(raw: unknown): AgentPersonality {
   const v = String(raw || '').trim().toLowerCase()
-  if (v === 'empathetic' || v === 'friendly' || v === 'empathy') return 'empathetic'
+  if (v === 'friendly' || v === 'empathetic' || v === 'empathy') return 'friendly'
   if (v === 'none' || v === 'off') return 'none'
   if (v === 'pragmatic') return 'pragmatic'
   return DEFAULT_PERSONALITY
@@ -33,25 +34,25 @@ export function parsePersonality(raw: unknown): AgentPersonality {
 export function parsePersonalityArg(arg: string): AgentPersonality | null {
   const v = arg.trim().toLowerCase()
   if (!v) return null
-  if (v === 'empathetic' || v === 'friendly' || v === 'empathy') return 'empathetic'
+  if (v === 'friendly' || v === 'empathetic' || v === 'empathy') return 'friendly'
   if (v === 'none' || v === 'off') return 'none'
   if (v === 'pragmatic') return 'pragmatic'
   return null
 }
 
-/** 循环切换：务实 → 共情 → 关闭 */
+/** 循环切换：务实 → 友好 → 关闭 */
 export function nextPersonality(current: AgentPersonality): AgentPersonality {
-  if (current === 'pragmatic') return 'empathetic'
-  if (current === 'empathetic') return 'none'
+  if (current === 'pragmatic') return 'friendly'
+  if (current === 'friendly') return 'none'
   return 'pragmatic'
 }
 
 /** 写入 system prompt 的语气段；`none` 为空 */
 export function personalityPrompt(personality: AgentPersonality): string {
   if (personality === 'none') return ''
-  if (personality === 'empathetic') {
+  if (personality === 'friendly') {
     return [
-      'Communication style: empathetic.',
+      'Communication style: friendly.',
       'Be a collaborative partner. Explain why before large edits, acknowledge uncertainty, and check that the user is aligned.',
       'Do not reduce tool use or skip verification to sound nicer.'
     ].join('\n')

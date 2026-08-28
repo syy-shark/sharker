@@ -314,7 +314,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'personality',
     title: '切换人格',
-    keywords: 'personality pragmatic empathetic 人格 务实 共情',
+    keywords: 'personality pragmatic friendly empathetic 人格 务实 友好 共情',
     action: 'set_personality'
   },
   {

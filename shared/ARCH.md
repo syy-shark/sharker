@@ -163,7 +163,7 @@
 | `feedback-bundle.ts` | `/feedback` 本地诊断包 |
 | `feedback-bundle.test.ts` | 含状态且声明不外发 |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
-| `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
+| `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
 | `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖 |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |

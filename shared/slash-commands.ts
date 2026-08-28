@@ -304,10 +304,10 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'personality',
-    description: '切换人格（务实 / 共情 / 关闭）',
+    description: '切换人格（务实 / 友好 / 关闭）',
     scope: 'ui',
     action: 'set_personality',
-    argsHint: '[pragmatic|empathetic|none]',
+    argsHint: '[pragmatic|friendly|none]',
     category: 'mode'
   },
   {

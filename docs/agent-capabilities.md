@@ -28,7 +28,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
 | `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线；`/review commit [sha]` 指定提交（对标 Codex Review a commit） |
-| `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
+| `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
@@ -82,7 +82,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 人格
 
-设置 → 外观，或 `/personality [pragmatic|empathetic|none]`。只改回复语气，不改工具与权限。默认务实。
+设置 → 外观，或 `/personality [pragmatic|friendly|none]`（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成友好）。只改回复语气，不改工具与权限。默认务实。
 
 ### 自动化审查队列
 
