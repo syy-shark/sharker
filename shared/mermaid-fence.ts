@@ -59,12 +59,17 @@ export function parseMermaidSvgSize(svg: string): { width: number; height: numbe
     const height = Math.abs(Number(viewBox[4]))
     if (width > 0 && height > 0) return { width, height }
   }
-  const widthAttr = /\bwidth\s*=\s*["']?\s*([\d.]+)(?:px)?(?!\s*%)/i.exec(text)
-  const heightAttr = /\bheight\s*=\s*["']?\s*([\d.]+)(?:px)?(?!\s*%)/i.exec(text)
-  const width = Number(widthAttr?.[1])
-  const height = Number(heightAttr?.[1])
+  const width = readSvgPxAttr(text, 'width')
+  const height = readSvgPxAttr(text, 'height')
   if (width > 0 && height > 0) return { width, height }
   return null
+}
+
+function readSvgPxAttr(svg: string, name: string): number {
+  const match = new RegExp(`\\b${name}\\s*=\\s*["']?\\s*([\\d.]+)(px|%)?`, 'i').exec(svg)
+  if (!match || match[2] === '%') return 0
+  const value = Number(match[1])
+  return value > 0 ? value : 0
 }
 
 export function mermaidSvgAspectStyle(
