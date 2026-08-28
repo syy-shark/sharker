@@ -171,6 +171,18 @@ describe('splitStreamingMarkdown', () => {
     if (notes[0]?.type === 'p') {
       expect(notes[0].nodes.some((n) => n.type === 'fn' && n.id === '1')).toBe(true)
     }
+    const continued = parseCheapProseBlocks('见注[^1]。\n[^1]: 说明\n    续行')
+    expect(continued.map((b) => b.type)).toEqual(['p', 'footnotes'])
+    if (continued[1]?.type === 'footnotes') {
+      expect(continued[1].items[0]?.paragraphs).toHaveLength(1)
+      expect(
+        continued[1].items[0]?.paragraphs[0]?.some((n) => n.type === 'text' && n.text.includes('续行'))
+      ).toBe(true)
+    }
+    const multi = parseCheapProseBlocks('见注[^1]。\n[^1]: 第一段\n\n    第二段')
+    if (multi[1]?.type === 'footnotes') {
+      expect(multi[1].items[0]?.paragraphs).toHaveLength(2)
+    }
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {
@@ -188,6 +200,9 @@ describe('splitStreamingMarkdown', () => {
     if (quoted[0]?.type === 'quote') {
       expect(quoted[0].blocks.map((b) => b.type)).toEqual(['p', 'quote'])
     }
+    expect(parseCheapProseBlocks('   > 缩进引用').map((b) => b.type)).toEqual(['quote'])
+    expect(parseCheapProseBlocks('   # 标题')[0]).toMatchObject({ type: 'heading', level: 1 })
+    expect(parseCheapProseBlocks('Title\n   ---').map((b) => b.type)).toEqual(['heading'])
     const aligned = parseCheapProseBlocks('| A | B |\n| ---: | :---: |\n| 1 | 2 |')
     if (aligned[0]?.type === 'table') {
       expect(aligned[0].align).toEqual(['right', 'center'])
@@ -253,6 +268,12 @@ describe('splitStreamingMarkdown', () => {
     expect(loose).toHaveLength(1)
     if (loose[0]?.type === 'list') {
       expect(loose[0].items).toHaveLength(2)
+      expect(loose[0].loose).toBe(true)
+    }
+    const loosePara = parseCheapProseBlocks('- 一项\n\n  续段')
+    if (loosePara[0]?.type === 'list') {
+      expect(loosePara[0].loose).toBe(true)
+      expect(loosePara[0].items[0]?.extra).toHaveLength(1)
     }
     const afterList = parseCheapProseBlocks('- 一项\n\n下一段')
     expect(afterList.map((b) => b.type)).toEqual(['list', 'p'])

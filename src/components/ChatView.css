@@ -534,6 +534,18 @@
   margin-bottom: 0;
 }
 
+.streaming-markdown li > p,
+.live-prose-tail li > p,
+.message-body--assistant li > p {
+  margin: 0 0 8px;
+}
+
+.streaming-markdown li > p:last-child,
+.live-prose-tail li > p:last-child,
+.message-body--assistant li > p:last-child {
+  margin-bottom: 0;
+}
+
 .streaming-markdown > table,
 .live-prose-tail > table {
   width: 100%;
@@ -623,6 +635,18 @@
   padding-left: 0.8em;
   border-left: 2px solid var(--border-subtle);
   color: var(--text-secondary);
+}
+
+.message-body--assistant blockquote blockquote {
+  margin: 8px 0 0;
+}
+
+.message-body--assistant blockquote > p {
+  margin: 0 0 8px;
+}
+
+.message-body--assistant blockquote > p:last-child {
+  margin-bottom: 0;
 }
 
 .message-body--assistant pre {

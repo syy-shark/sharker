@@ -96,27 +96,60 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
   })
 }
 
-/** 廉价列表（含嵌套），任务项用 GFM class */
-function renderCheapList(ordered: boolean, items: CheapListItem[], key?: number): ReactNode {
+function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
+  return [item.nodes, ...(item.extra ?? [])]
+}
+
+/** 廉价列表（含嵌套），任务项用 GFM class；松散列表对标 remark `li>p` */
+function renderCheapList(
+  ordered: boolean,
+  items: CheapListItem[],
+  key?: number,
+  loose?: boolean
+): ReactNode {
   const Tag = ordered ? 'ol' : 'ul'
   const hasTask = items.some((item) => parseCheapTaskItem(item.nodes))
+  const wrapP = Boolean(loose || items.some((item) => item.extra?.length))
   return (
     <Tag key={key} className={hasTask ? 'contains-task-list' : undefined}>
       {items.map((item, i) => {
         const task = parseCheapTaskItem(item.nodes)
-        const nested = item.nested ? renderCheapList(item.nested.ordered, item.nested.items) : null
+        const nested = item.nested
+          ? renderCheapList(item.nested.ordered, item.nested.items)
+          : null
+        const paragraphs = listItemParagraphs({
+          ...item,
+          nodes: task ? task.nodes : item.nodes
+        })
+        const body =
+          wrapP || paragraphs.length > 1
+            ? paragraphs.map((nodes, pi) => (
+                <p key={pi}>
+                  {pi === 0 && task ? (
+                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+                  ) : null}
+                  {renderCheapInline(nodes)}
+                </p>
+              ))
+            : (
+                <>
+                  {task ? (
+                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+                  ) : null}
+                  {renderCheapInline(task ? task.nodes : item.nodes)}
+                </>
+              )
         if (!task) {
           return (
             <li key={i}>
-              {renderCheapInline(item.nodes)}
+              {body}
               {nested}
             </li>
           )
         }
         return (
           <li key={i} className="task-list-item live-prose-task">
-            <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-            {renderCheapInline(task.nodes)}
+            {body}
             {nested}
           </li>
         )
@@ -136,7 +169,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     return <Tag key={index}>{renderCheapInline(block.nodes)}</Tag>
   }
   if (block.type === 'list') {
-    return renderCheapList(block.ordered, block.items, index)
+    return renderCheapList(block.ordered, block.items, index, block.loose)
   }
   if (block.type === 'quote') {
     return <blockquote key={index}>{block.blocks.map(renderCheapBlock)}</blockquote>
@@ -182,17 +215,24 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
         <ol>
           {block.items.map((item) => (
             <li key={item.id} id={`user-content-fn-${item.id}`}>
-              <p>
-                {renderCheapInline(item.nodes)}{' '}
-                <a
-                  href={`#user-content-fnref-${item.id}`}
-                  data-footnote-backref
-                  className="data-footnote-backref"
-                  aria-label="Back to content"
-                >
-                  ↩
-                </a>
-              </p>
+              {item.paragraphs.map((nodes, pi) => (
+                <p key={pi}>
+                  {renderCheapInline(nodes)}
+                  {pi === item.paragraphs.length - 1 ? (
+                    <>
+                      {' '}
+                      <a
+                        href={`#user-content-fnref-${item.id}`}
+                        data-footnote-backref
+                        className="data-footnote-backref"
+                        aria-label="Back to content"
+                      >
+                        ↩
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+              ))}
             </li>
           ))}
         </ol>

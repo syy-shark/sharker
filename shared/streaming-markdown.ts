@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、脚注、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线 / 缩进代码。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -177,27 +177,28 @@ export type CheapInlineNode =
   | { type: 'fn'; id: string }
   | { type: 'br' }
 
-/** 直播列表项：可挂一层或多层嵌套列表，收束时少跳 */
+/** 直播列表项：可挂一层或多层嵌套列表；松散项额外段落对标 remark `li>p` */
 export type CheapListItem = {
   nodes: CheapInlineNode[]
+  extra?: CheapInlineNode[][]
   nested?: { ordered: boolean; indent: number; items: CheapListItem[] }
 }
 
 /** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
 export type CheapProseBlock =
   | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; nodes: CheapInlineNode[] }
-  | { type: 'list'; ordered: boolean; items: CheapListItem[] }
+  | { type: 'list'; ordered: boolean; items: CheapListItem[]; loose?: boolean }
   | { type: 'quote'; blocks: CheapProseBlock[] }
   | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][]; align?: Array<'left' | 'right' | 'center' | null> }
   | { type: 'hr' }
   | { type: 'pre'; text: string }
-  | { type: 'footnotes'; items: { id: string; nodes: CheapInlineNode[] }[] }
+  | { type: 'footnotes'; items: { id: string; paragraphs: CheapInlineNode[][] }[] }
   | { type: 'p'; nodes: CheapInlineNode[] }
 
 const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
 const WWW_RE = /^www\.[^\s<>]+/i
 const BARE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
-const SETEXT_RE = /^(=+|-+)\s*$/
+const SETEXT_RE = /^ {0,3}(?:=+|-+)\s*$/
 const EMPTY_LINK_DEFS: ReadonlyMap<string, string> = new Map()
 
 /** 去掉裸链接尾部标点，避免句号/括号被吃进 href */
@@ -222,22 +223,79 @@ export function normalizeLinkLabel(label: string): string {
   return label.trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
-/** `[^id]: 正文` 脚注定义（对标 remark-gfm footnotes） */
+/** `[^id]: 正文` 脚注定义（对标 remark-gfm / micromark-extension-gfm-footnote） */
 export function parseFootnoteDefinitionLine(line: string): { id: string; text: string } | null {
-  const match = /^\[\^([^\]]+)\]:\s?(.*)$/.exec(line)
+  const match = /^ {0,3}\[\^([^\]]+)\]:\s?(.*)$/.exec(line)
   if (!match) return null
   const id = (match[1] ?? '').trim()
   if (!id) return null
   return { id, text: match[2] ?? '' }
 }
 
-export function collectFootnoteDefinitions(text: string): Map<string, string> {
-  const map = new Map<string, string>()
-  for (const line of normalizeStreamingText(text).split('\n')) {
-    const def = parseFootnoteDefinitionLine(line)
-    if (def && !map.has(def.id)) map.set(def.id, def.text)
+function isFootnoteContLine(line: string): boolean {
+  return /^(?:    |\t)/.test(line)
+}
+
+/** 吃掉定义后的 4 空格/tab 续行与空行分段，返回正文（段间 `\n\n`）与结束行下标 */
+function consumeFootnoteRegion(
+  lines: string[],
+  start: number,
+  firstText: string
+): { body: string; end: number } {
+  const paras: string[] = []
+  let buf: string[] = firstText ? [firstText] : []
+  const flush = () => {
+    if (!buf.length) return
+    paras.push(buf.join('\n'))
+    buf = []
   }
-  return map
+  let i = start + 1
+  while (i < lines.length) {
+    const line = lines[i]!
+    if (parseFootnoteDefinitionLine(line)) break
+    if (isFootnoteContLine(line)) {
+      buf.push(line.replace(/^(?:    |\t)/, ''))
+      i += 1
+      continue
+    }
+    if (line.trim() === '') {
+      const next = lines[i + 1]
+      if (next !== undefined && isFootnoteContLine(next)) {
+        flush()
+        i += 1
+        continue
+      }
+      break
+    }
+    break
+  }
+  flush()
+  return { body: paras.join('\n\n'), end: i }
+}
+
+function scanFootnoteDefinitions(lines: string[]): {
+  defs: Map<string, string>
+  skip: Set<number>
+} {
+  const defs = new Map<string, string>()
+  const skip = new Set<number>()
+  let i = 0
+  while (i < lines.length) {
+    const def = parseFootnoteDefinitionLine(lines[i]!)
+    if (!def) {
+      i += 1
+      continue
+    }
+    const { body, end } = consumeFootnoteRegion(lines, i, def.text)
+    if (!defs.has(def.id)) defs.set(def.id, body)
+    for (let j = i; j < end; j++) skip.add(j)
+    i = end
+  }
+  return { defs, skip }
+}
+
+export function collectFootnoteDefinitions(text: string): Map<string, string> {
+  return scanFootnoteDefinitions(normalizeStreamingText(text).split('\n')).defs
 }
 
 /** `[id]: https://…` / `[id]: <https://…>` 定义行（对标 CommonMark / remark-gfm） */
@@ -600,7 +658,7 @@ export function continueCheapInlineMarkdown(
   return stable.length ? [...stable, ...rest] : rest
 }
 
-const HEADING_RE = /^(#{1,6})\s+(.*)$/
+const HEADING_RE = /^ {0,3}(#{1,6})\s+(.*)$/
 const LIST_LINE_RE = /^(\s*)(?:[-+]|\*|\d+\.)\s+(.*)$/
 
 /** 行首空白：tab 按 2 空格算，用来判断列表嵌套 */
@@ -645,17 +703,31 @@ function appendNestedListItem(
   item.nested.items.push({ nodes: parseCheapInlineMarkdown(text, defs) })
 }
 
-/** 列表项续行：缩进或 CommonMark lazy continuation，避免收束时从段落跳回 li */
-function appendListContinuation(item: CheapListItem, indent: number, text: string): void {
+/** 列表项续行：缩进或 CommonMark lazy continuation；空行后另起一段，对标松散 `li>p` */
+function appendListContinuation(
+  item: CheapListItem,
+  indent: number,
+  text: string,
+  opts?: { newParagraph?: boolean; defs?: ReadonlyMap<string, string> }
+): void {
   if (item.nested && indent > item.nested.indent && item.nested.items.length) {
-    appendListContinuation(item.nested.items[item.nested.items.length - 1]!, indent, text)
+    appendListContinuation(item.nested.items[item.nested.items.length - 1]!, indent, text, opts)
+    return
+  }
+  if (opts?.newParagraph) {
+    item.extra = [...(item.extra ?? []), parseCheapInlineMarkdown(text, opts.defs)]
+    return
+  }
+  if (item.extra?.length) {
+    const last = item.extra[item.extra.length - 1]!
+    item.extra = [...item.extra.slice(0, -1), [...last, { type: 'text', text: `\n${text}` }]]
     return
   }
   item.nodes = [...item.nodes, { type: 'text', text: `\n${text}` }]
 }
 
-const QUOTE_RE = /^>\s?(.*)$/
-const HR_RE = /^(?:[-*_]){3,}\s*$/
+const QUOTE_RE = /^ {0,3}>\s?(.*)$/
+const HR_RE = /^ {0,3}(?:[-*_]){3,}\s*$/
 const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/
 const TABLE_ROW_RE = /^\s*\|.+\|\s*$/
 
@@ -702,12 +774,18 @@ export function parseCheapProseBlocks(
   const src = normalizeStreamingText(text)
   if (!src) return []
   const linkDefs = defs ?? collectLinkDefinitions(src)
-  const footnoteDefs = collectFootnoteDefinitions(src)
   const lines = src.split('\n')
+  const footnoteScan = scanFootnoteDefinitions(lines)
+  const footnoteDefs = footnoteScan.defs
   const blocks: CheapProseBlock[] = []
   let para: string[] = []
-  let list: { ordered: boolean; indent: number; items: CheapListItem[]; afterBlank: boolean } | null =
-    null
+  let list: {
+    ordered: boolean
+    indent: number
+    items: CheapListItem[]
+    afterBlank: boolean
+    loose: boolean
+  } | null = null
   let quote: string[] = []
   let table: string[] | null = null
   let pre: string[] | null = null
@@ -726,10 +804,12 @@ export function parseCheapProseBlocks(
   }
   const flushList = () => {
     if (!list) return
+    const loose = list.loose || list.items.some((item) => Boolean(item.extra?.length))
     blocks.push({
       type: 'list',
       ordered: list.ordered,
-      items: list.items
+      items: list.items,
+      loose: loose || undefined
     })
     list = null
   }
@@ -776,8 +856,9 @@ export function parseCheapProseBlocks(
     flushQuote()
   }
 
-  for (const line of lines) {
-    if (parseLinkDefinitionLine(line) || parseFootnoteDefinitionLine(line)) {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex]!
+    if (footnoteScan.skip.has(lineIndex) || parseLinkDefinitionLine(line)) {
       flushAll()
       continue
     }
@@ -842,8 +923,15 @@ export function parseCheapProseBlocks(
       }
       if (!list || list.ordered !== listLine.ordered || listLine.indent < list.indent) {
         flushList()
-        list = { ordered: listLine.ordered, indent: listLine.indent, items: [], afterBlank: false }
+        list = {
+          ordered: listLine.ordered,
+          indent: listLine.indent,
+          items: [],
+          afterBlank: false,
+          loose: false
+        }
       }
+      if (list.afterBlank && list.items.length) list.loose = true
       list.items.push({ nodes: inline(listLine.text) })
       list.afterBlank = false
       continue
@@ -856,7 +944,11 @@ export function parseCheapProseBlocks(
       !FENCE_RE.test(line) &&
       (!list.afterBlank || leadingIndent(line) > list.indent)
     ) {
-      appendListContinuation(list.items[list.items.length - 1]!, leadingIndent(line), line.trimStart())
+      if (list.afterBlank) list.loose = true
+      appendListContinuation(list.items[list.items.length - 1]!, leadingIndent(line), line.trimStart(), {
+        newParagraph: list.afterBlank,
+        defs: linkDefs
+      })
       list.afterBlank = false
       continue
     }
@@ -888,7 +980,10 @@ export function parseCheapProseBlocks(
   if (footnoteDefs.size) {
     blocks.push({
       type: 'footnotes',
-      items: [...footnoteDefs].map(([id, text]) => ({ id, nodes: inline(text) }))
+      items: [...footnoteDefs].map(([id, body]) => ({
+        id,
+        paragraphs: body.split(/\n\n/).map((paraText) => inline(paraText))
+      }))
     })
   }
   return blocks
@@ -941,8 +1036,13 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
         ? prevItem.nested
         : { ordered: nextItem.nested.ordered, indent: nextItem.nested.indent, items: nestedItems }
     }
-    if (nodes === prevItem.nodes && nested === prevItem.nested) out.push(prevItem)
-    else out.push({ nodes, nested })
+    const extra = reuseInlineLists(prevItem.extra ?? [], nextItem.extra ?? [])
+    const extraSame =
+      extra.length === (prevItem.extra?.length ?? 0) &&
+      extra.every((para, index) => para === prevItem.extra?.[index]) &&
+      extra.length === (nextItem.extra?.length ?? 0)
+    if (nodes === prevItem.nodes && nested === prevItem.nested && extraSame) out.push(prevItem)
+    else out.push({ nodes, extra: extra.length ? extra : undefined, nested })
   }
   if (next.length > prev.length) out.push(...next.slice(prev.length))
   return out
@@ -958,8 +1058,11 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
     const items = next.items.map((item, i) => {
       const prevItem = prev.items[i]
       if (!prevItem || prevItem.id !== item.id) return item
-      const nodes = reuseInlineNodes(prevItem.nodes, item.nodes)
-      return nodes === prevItem.nodes ? prevItem : { id: item.id, nodes }
+      const paragraphs = reuseInlineLists(prevItem.paragraphs, item.paragraphs)
+      const sameParas =
+        paragraphs.length === prevItem.paragraphs.length &&
+        paragraphs.every((para, index) => para === prevItem.paragraphs[index])
+      return sameParas ? prevItem : { id: item.id, paragraphs }
     })
     const same =
       items.length === prev.items.length && items.every((item, i) => item === prev.items[i])
@@ -988,8 +1091,10 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
     if (prev.ordered !== next.ordered) return null
     const items = reuseListItems(prev.items, next.items)
     const same =
-      items.length === prev.items.length && items.every((item, i) => item === prev.items[i])
-    return same ? prev : { type: 'list', ordered: prev.ordered, items }
+      items.length === prev.items.length &&
+      items.every((item, i) => item === prev.items[i]) &&
+      prev.loose === next.loose
+    return same ? prev : { type: 'list', ordered: prev.ordered, items, loose: next.loose }
   }
   if (prev.type === 'table' && next.type === 'table') {
     const header = reuseInlineLists(prev.header, next.header)
