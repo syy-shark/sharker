@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码 / 引用围栏。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套、续行与松散 `li>p`）/任务项/表格/分隔线 / 缩进代码 / 引用围栏与懒续行。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -837,6 +837,17 @@ function stripQuoteMarker(line: string): string {
   return match ? (match[1] ?? '') : line
 }
 
+/** CommonMark lazy continuation：引用段落后一行可以没有 `>`，列表/标题/HR/围栏会打断 */
+function isQuoteLazyLine(line: string): boolean {
+  if (line.trim() === '') return false
+  if (QUOTE_RE.test(line)) return false
+  if (FENCE_RE.test(line)) return false
+  if (HEADING_RE.test(line)) return false
+  if (HR_RE.test(line)) return false
+  if (parseListLine(line)) return false
+  return true
+}
+
 function isIndentCodeLine(line: string): boolean {
   return /^(?:    |\t)/.test(line) && !parseListLine(line) && !parseLinkDefinitionLine(line)
 }
@@ -955,6 +966,10 @@ export function parseCheapProseBlocks(
     }
     if (footnoteScan.skip.has(lineIndex) || parseLinkDefinitionLine(line)) {
       flushAll()
+      continue
+    }
+    if (quote.length && isQuoteLazyLine(line)) {
+      quote.push(line.trimStart())
       continue
     }
     if (pre && !isIndentCodeLine(line)) {

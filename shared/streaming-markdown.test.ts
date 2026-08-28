@@ -233,6 +233,17 @@ describe('splitStreamingMarkdown', () => {
     if (quoted[0]?.type === 'quote') {
       expect(quoted[0].blocks.map((b) => b.type)).toEqual(['p', 'quote'])
     }
+    const lazyQuote = parseCheapProseBlocks('> 注意\n下一行还是引用')
+    expect(lazyQuote.map((b) => b.type)).toEqual(['quote'])
+    if (lazyQuote[0]?.type === 'quote') {
+      expect(lazyQuote[0].blocks.map((b) => b.type)).toEqual(['p'])
+      expect(
+        lazyQuote[0].blocks[0]?.type === 'p' &&
+          lazyQuote[0].blocks[0].nodes.some((n) => n.type === 'text' && n.text.includes('下一行'))
+      ).toBe(true)
+    }
+    expect(parseCheapProseBlocks('> foo\n- bar').map((b) => b.type)).toEqual(['quote', 'list'])
+    expect(parseCheapProseBlocks('> foo\n\nbar').map((b) => b.type)).toEqual(['quote', 'p'])
     expect(parseCheapProseBlocks('   > 缩进引用').map((b) => b.type)).toEqual(['quote'])
     expect(parseCheapProseBlocks('   # 标题')[0]).toMatchObject({ type: 'heading', level: 1 })
     expect(parseCheapProseBlocks('Title\n   ---').map((b) => b.type)).toEqual(['heading'])
