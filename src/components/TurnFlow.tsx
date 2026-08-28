@@ -4,6 +4,7 @@
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
+ * - 直播中不挂「查看输出」（对标 Codex command output behind expand）
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -33,6 +34,7 @@ import {
   clipToolOutput,
   parseToolOutputDisplay,
   shouldExpandToolOutput,
+  shouldMountToolOutputDetails,
   type ToolOutputDisplay
 } from '../../shared/tool-output-display'
 import './TurnFlow.css'
@@ -492,10 +494,13 @@ const ProcessStepRow = memo(function ProcessStepRow({
         {step.status === 'error' ? (
           <span className="turn-flow-step-error">{segment?.errorMessage || '操作失败'}</span>
         ) : null}
-        {!isDemo &&
-        outputMode !== 'brief' &&
-        segment?.resultOutput &&
-        segment.resultOutput !== segment.resultSummary ? (
+        {shouldMountToolOutputDetails({
+          mode: outputMode,
+          hasDistinctOutput: Boolean(
+            !isDemo && segment?.resultOutput && segment.resultOutput !== segment.resultSummary
+          ),
+          isStreaming
+        }) ? (
           <details
             className="turn-flow-step-output"
             defaultOpen={shouldExpandToolOutput(outputMode, step.status, { isStreaming })}

@@ -99,8 +99,8 @@
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
-| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不自动展开 verbose |
-| `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开 |
+| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不挂「查看输出」、也不自动展开 verbose（对标 Codex command output behind expand） |
+| `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮 |

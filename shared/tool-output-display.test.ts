@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   clipToolOutput,
   parseToolOutputDisplay,
-  shouldExpandToolOutput
+  shouldExpandToolOutput,
+  shouldMountToolOutputDetails
 } from './tool-output-display'
 
 describe('tool output display', () => {
@@ -23,5 +24,40 @@ describe('tool output display', () => {
     expect(shouldExpandToolOutput('verbose', 'active')).toBe(false)
     expect(shouldExpandToolOutput('standard', 'done')).toBe(false)
     expect(shouldExpandToolOutput('verbose', 'done', { isStreaming: true })).toBe(false)
+    expect(
+      shouldMountToolOutputDetails({
+        mode: 'standard',
+        hasDistinctOutput: true,
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolOutputDetails({
+        mode: 'verbose',
+        hasDistinctOutput: true,
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolOutputDetails({
+        mode: 'standard',
+        hasDistinctOutput: true,
+        isStreaming: false
+      })
+    ).toBe(true)
+    expect(
+      shouldMountToolOutputDetails({
+        mode: 'brief',
+        hasDistinctOutput: true,
+        isStreaming: false
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolOutputDetails({
+        mode: 'standard',
+        hasDistinctOutput: false,
+        isStreaming: false
+      })
+    ).toBe(false)
   })
 })

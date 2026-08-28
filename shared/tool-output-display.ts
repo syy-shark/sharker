@@ -48,3 +48,19 @@ export function shouldExpandToolOutput(
   if (opts?.isStreaming) return false
   return mode === 'verbose' && status !== 'active'
 }
+
+/**
+ * 直播中不挂「查看输出」：工具一完成就冒出 summary 会顶过程区，
+ * 正文上屏后又被藏掉（对标 Codex Desktop 把 command output 收在展开控件后，
+ * developer-settings「how much command output」/ #19260）。
+ */
+export function shouldMountToolOutputDetails(options: {
+  mode: ToolOutputDisplay
+  hasDistinctOutput: boolean
+  isStreaming?: boolean
+}): boolean {
+  if (!options.hasDistinctOutput) return false
+  if (options.mode === 'brief') return false
+  if (options.isStreaming) return false
+  return true
+}
