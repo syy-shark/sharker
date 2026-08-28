@@ -406,6 +406,7 @@ describe('splitStreamingMarkdown', () => {
     if (multi[1]?.type === 'footnotes') {
       expect(multi[1].items[0]?.paragraphs).toHaveLength(2)
     }
+    expect(parseCheapProseBlocks('[^1]: n').map((b) => b.type)).toEqual([])
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {
@@ -431,6 +432,15 @@ describe('splitStreamingMarkdown', () => {
         lazyQuote[0].blocks[0]?.type === 'p' &&
           lazyQuote[0].blocks[0].nodes.some((n) => n.type === 'text' && n.text.includes('下一行'))
       ).toBe(true)
+    }
+    const lazyHard = parseCheapProseBlocks('> a  \nb')
+    expect(lazyHard.map((b) => b.type)).toEqual(['quote'])
+    if (lazyHard[0]?.type === 'quote' && lazyHard[0].blocks[0]?.type === 'p') {
+      expect(lazyHard[0].blocks[0].nodes).toEqual([
+        { type: 'text', text: 'a' },
+        { type: 'br' },
+        { type: 'text', text: 'b' }
+      ])
     }
     expect(parseCheapProseBlocks('> foo\n- bar').map((b) => b.type)).toEqual(['quote', 'list'])
     expect(parseCheapProseBlocks('> foo\n\nbar').map((b) => b.type)).toEqual(['quote', 'p'])
@@ -547,6 +557,16 @@ describe('splitStreamingMarkdown', () => {
     if (indentCodeInList[0]?.type === 'list') {
       expect(indentCodeInList[0].loose).toBe(true)
       expect(indentCodeInList[0].items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'code'
+      })
+    }
+    const nestedIndent = parseCheapProseBlocks('- a\n  - b\n\n        code')
+    expect(nestedIndent.map((b) => b.type)).toEqual(['list'])
+    if (nestedIndent[0]?.type === 'list') {
+      expect(nestedIndent[0].loose).toBeUndefined()
+      expect(nestedIndent[0].items[0]?.nested?.loose).toBe(true)
+      expect(nestedIndent[0].items[0]?.nested?.items[0]?.blocks?.[0]).toMatchObject({
         type: 'pre',
         text: 'code'
       })

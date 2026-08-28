@@ -207,7 +207,14 @@ export type CheapInlineNode =
 export type CheapListItem = {
   nodes: CheapInlineNode[]
   extra?: CheapInlineNode[][]
-  nested?: { ordered: boolean; indent: number; items: CheapListItem[]; start?: number }
+  nested?: {
+    ordered: boolean
+    indent: number
+    items: CheapListItem[]
+    start?: number
+    /** 嵌套列表自己的松散，不要把外层也收成 `li>p` */
+    loose?: boolean
+  }
   /** 项内表格 / 围栏 / 引用 / 标题，对标 remark `li>table` / `li>pre` / `li>blockquote` / `li>h*` */
   blocks?: CheapProseBlock[]
   /** 项内围栏/表格之后的紧随文本，对标 remark 仍画在 `pre`/`table` 后面 */
@@ -1290,6 +1297,30 @@ function deepestItemForIndent(items: CheapListItem[], indent: number): CheapList
   return item
 }
 
+function nestedListContaining(
+  items: CheapListItem[],
+  target: CheapListItem
+): NonNullable<CheapListItem['nested']> | null {
+  for (const item of items) {
+    if (!item.nested) continue
+    if (item.nested.items.includes(target)) return item.nested
+    const deeper = nestedListContaining(item.nested.items, target)
+    if (deeper) return deeper
+  }
+  return null
+}
+
+/** 空行后的项内块只松它所在的那一层，避免外层 `li` 无故套 `p` */
+function markItemListLoose(list: { items: CheapListItem[]; loose: boolean }, item: CheapListItem): void {
+  if (list.items.includes(item)) {
+    list.loose = true
+    return
+  }
+  const nested = nestedListContaining(list.items, item)
+  if (nested) nested.loose = true
+  else list.loose = true
+}
+
 function quotePartsHaveOpenFence(parts: QuotePart[]): boolean {
   let marker: string | null = null
   for (const part of parts) {
@@ -1319,7 +1350,10 @@ function quotePartsToBlocks(
       flushMarked()
       const last = chunks[chunks.length - 1]
       if (last?.type === 'p') {
-        last.nodes = [...last.nodes, { type: 'text', text: `\n${part.text}` }]
+        last.nodes = parseCheapInlineMarkdown(
+          `${cheapInlineSourceAll(last.nodes)}\n${part.text}`,
+          defs
+        )
       } else {
         chunks.push({ type: 'p', nodes: parseCheapInlineMarkdown(part.text, defs) })
       }
@@ -1807,7 +1841,7 @@ export function parseCheapProseBlocks(
       const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
       const base = item.contentIndent ?? list.indent
       if (parseHrLine(line, base) || HR_RE.test(line)) {
-        if (list.afterBlank) list.loose = true
+        if (list.afterBlank) markItemListLoose(list, item)
         appendItemBlock(item, { type: 'hr' })
         list.afterBlank = false
         continue
@@ -1823,7 +1857,7 @@ export function parseCheapProseBlocks(
       const base = item.contentIndent ?? list.indent
       const itemFenceOpen = parseFenceLineAt(line, base) ?? parseFenceLine(line)
       if (itemFenceOpen) {
-        if (list.afterBlank) list.loose = true
+        if (list.afterBlank) markItemListLoose(list, item)
         itemFence = {
           marker: itemFenceOpen.marker,
           lang: fenceLang(itemFenceOpen.info),
@@ -1836,7 +1870,7 @@ export function parseCheapProseBlocks(
       }
       const itemHeading = parseHeadingLine(line, base) ?? parseHeadingLine(line, 0)
       if (itemHeading) {
-        if (list.afterBlank) list.loose = true
+        if (list.afterBlank) markItemListLoose(list, item)
         appendItemBlock(item, {
           type: 'heading',
           level: itemHeading.level,
@@ -1848,7 +1882,7 @@ export function parseCheapProseBlocks(
       const itemQuoted =
         parseQuoteLine(line, base) ?? parseQuoteLine(line, list.indent) ?? parseQuoteLine(line, 0)
       if (itemQuoted !== null) {
-        if (list.afterBlank) list.loose = true
+        if (list.afterBlank) markItemListLoose(list, item)
         itemQuote = { parts: [{ text: itemQuoted }], item }
         list.afterBlank = false
         continue
@@ -1858,7 +1892,7 @@ export function parseCheapProseBlocks(
       const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
       const base = item.contentIndent ?? list.indent
       if (leadingIndent(line) >= base + 4) {
-        list.loose = true
+        markItemListLoose(list, item)
         itemCode = {
           indent: base + 4,
           lines: [dedentLine(line, base + 4)],
@@ -1900,8 +1934,13 @@ export function parseCheapProseBlocks(
       flushPara()
       flushQuote()
       if (list && listLine.indent > list.indent && list.items.length) {
+        const parent = list.items[list.items.length - 1]!
+        if (list.afterBlank) {
+          if (parent.nested?.items.length) parent.nested.loose = true
+          else list.loose = true
+        }
         const nested = appendNestedListItem(
-          list.items[list.items.length - 1]!,
+          parent,
           listLine.ordered,
           listLine.indent,
           listLine.text,
@@ -1942,8 +1981,9 @@ export function parseCheapProseBlocks(
       !FENCE_RE.test(line) &&
       (!list.afterBlank || leadingIndent(line) > list.indent)
     ) {
-      if (list.afterBlank) list.loose = true
-      appendListContinuation(list.items[list.items.length - 1]!, leadingIndent(line), line.trimStart(), {
+      const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
+      if (list.afterBlank) markItemListLoose(list, item)
+      appendListContinuation(item, leadingIndent(line), line.trimStart(), {
         newParagraph: list.afterBlank,
         defs: linkDefs
       })
@@ -1976,13 +2016,22 @@ export function parseCheapProseBlocks(
   }
   flushAll()
   if (footnoteDefs.size) {
-    blocks.push({
-      type: 'footnotes',
-      items: [...footnoteDefs].map(([id, body]) => ({
+    const footnoteRefs = new Set<string>()
+    const refRe = /\[\^([^\]\n]+)\]/g
+    for (let i = 0; i < lines.length; i++) {
+      if (footnoteScan.skip.has(i)) continue
+      const line = lines[i]!
+      refRe.lastIndex = 0
+      let match: RegExpExecArray | null
+      while ((match = refRe.exec(line))) footnoteRefs.add(match[1]!)
+    }
+    const items = [...footnoteDefs]
+      .filter(([id]) => footnoteRefs.has(id))
+      .map(([id, body]) => ({
         id,
         paragraphs: body.split(/\n\n/).map((paraText) => inline(paraText))
       }))
-    })
+    if (items.length) blocks.push({ type: 'footnotes', items })
   }
   return blocks
 }
@@ -2029,10 +2078,18 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
       const nestedItems = reuseListItems(prevItem.nested.items, nextItem.nested.items)
       const nestedSame =
         nestedItems.length === prevItem.nested.items.length &&
-        nestedItems.every((item, index) => item === prevItem.nested!.items[index])
+        nestedItems.every((item, index) => item === prevItem.nested!.items[index]) &&
+        prevItem.nested.loose === nextItem.nested.loose &&
+        prevItem.nested.start === nextItem.nested.start
       nested = nestedSame
         ? prevItem.nested
-        : { ordered: nextItem.nested.ordered, indent: nextItem.nested.indent, items: nestedItems }
+        : {
+            ordered: nextItem.nested.ordered,
+            indent: nextItem.nested.indent,
+            items: nestedItems,
+            start: nextItem.nested.start,
+            loose: nextItem.nested.loose
+          }
     }
     const extra = reuseInlineLists(prevItem.extra ?? [], nextItem.extra ?? [])
     const extraSame =

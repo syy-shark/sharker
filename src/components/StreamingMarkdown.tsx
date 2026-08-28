@@ -133,7 +133,13 @@ function renderCheapList(
       {items.map((item, i) => {
         const task = parseCheapTaskItem(item.nodes)
         const nested = item.nested
-          ? renderCheapList(item.nested.ordered, item.nested.items, undefined, undefined, item.nested.start)
+          ? renderCheapList(
+              item.nested.ordered,
+              item.nested.items,
+              undefined,
+              item.nested.loose,
+              item.nested.start
+            )
           : null
         const paragraphs = listItemParagraphs({
           ...item,
