@@ -208,6 +208,8 @@ export type CheapListItem = {
   nodes: CheapInlineNode[]
   extra?: CheapInlineNode[][]
   nested?: { ordered: boolean; indent: number; items: CheapListItem[]; start?: number }
+  /** 项内表格 / 围栏，对标 remark `li>table` / `li>pre` */
+  blocks?: CheapProseBlock[]
 }
 
 /** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
@@ -1289,6 +1291,39 @@ function parseGfmTableAlign(sepLine: string): Array<'left' | 'right' | 'center' 
   })
 }
 
+function dedentLine(line: string, indent: number): string {
+  let n = 0
+  let i = 0
+  while (i < line.length && n < indent) {
+    if (line[i] === ' ') {
+      n += 1
+      i += 1
+    } else if (line[i] === '\t') {
+      n += 2
+      i += 1
+    } else break
+  }
+  return line.slice(i)
+}
+
+function appendItemBlock(item: CheapListItem, block: CheapProseBlock): void {
+  item.blocks = [...(item.blocks ?? []), block]
+}
+
+function tableBlockFromLines(
+  raw: string[],
+  inline: (chunk: string) => CheapInlineNode[]
+): Extract<CheapProseBlock, { type: 'table' }> | null {
+  const sepIdx = raw.findIndex(isGfmTableSep)
+  if (sepIdx <= 0) return null
+  const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) => inline(cell))
+  const rows = raw
+    .slice(sepIdx + 1)
+    .filter((line) => !isGfmTableSep(line))
+    .map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
+  return { type: 'table', header, rows, align: parseGfmTableAlign(raw[sepIdx] ?? '') }
+}
+
 function stripQuoteMarker(line: string): string {
   const match = QUOTE_RE.exec(line)
   return match ? (match[1] ?? '') : line
@@ -1340,8 +1375,26 @@ export function parseCheapProseBlocks(
   let table: string[] | null = null
   let pre: string[] | null = null
   let fence: { marker: string; lang?: string; lines: string[] } | null = null
+  let itemFence: { marker: string; lang?: string; indent: number; lines: string[] } | null = null
+  let itemTable: string[] | null = null
 
   const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
+  const currentItem = () => (list && list.items.length ? list.items[list.items.length - 1]! : null)
+  const flushItemFence = () => {
+    if (!itemFence) return
+    const item = currentItem()
+    if (item) {
+      appendItemBlock(item, { type: 'pre', text: itemFence.lines.join('\n'), lang: itemFence.lang })
+    }
+    itemFence = null
+  }
+  const flushItemTable = () => {
+    if (!itemTable) return
+    const item = currentItem()
+    const block = tableBlockFromLines(itemTable, inline)
+    itemTable = null
+    if (item && block) appendItemBlock(item, block)
+  }
 
   const flushPara = () => {
     if (!para.length) return
@@ -1363,6 +1416,8 @@ export function parseCheapProseBlocks(
     fence = null
   }
   const flushList = () => {
+    flushItemFence()
+    flushItemTable()
     if (!list) return
     const loose = list.loose || list.items.some((item) => Boolean(item.extra?.length))
     blocks.push({
@@ -1401,16 +1456,13 @@ export function parseCheapProseBlocks(
         blocks.push({ type: 'p', nodes: inline(line) })
       }
     }
-    const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) => inline(cell))
-    const rows = raw
-      .slice(sepIdx + 1)
-      .filter((line) => !isGfmTableSep(line))
-      .map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
-    const align = parseGfmTableAlign(raw[sepIdx] ?? '')
-    blocks.push({ type: 'table', header, rows, align })
+    const block = tableBlockFromLines(raw.slice(sepIdx - 1), inline)
+    if (block) blocks.push(block)
   }
   const flushAll = () => {
     flushFence()
+    flushItemFence()
+    flushItemTable()
     flushTable()
     flushPre()
     flushPara()
@@ -1426,6 +1478,14 @@ export function parseCheapProseBlocks(
         continue
       }
       fence.lines.push(line)
+      continue
+    }
+    if (itemFence) {
+      if (isFenceClose(line, itemFence.marker)) {
+        flushItemFence()
+        continue
+      }
+      itemFence.lines.push(dedentLine(line, itemFence.indent))
       continue
     }
     if (footnoteScan.skip.has(lineIndex) || linkDefScan.skip.has(lineIndex)) {
@@ -1444,6 +1504,29 @@ export function parseCheapProseBlocks(
       pre.push(line)
       continue
     }
+    if (itemTable) {
+      if (isGfmTableRow(line) || looksLikeGfmTableCells(line)) {
+        itemTable.push(line.trim())
+        continue
+      }
+      flushItemTable()
+    }
+    if (
+      list &&
+      list.items.length &&
+      isGfmTableSep(line) &&
+      leadingIndent(line) > list.indent
+    ) {
+      const item = currentItem()!
+      const src = cheapInlineSourceAll(item.nodes)
+      const header = src.split('\n').pop() ?? ''
+      if (header && looksLikeGfmTableCells(header)) {
+        if (src === header) item.nodes = []
+        else item.nodes = inline(src.slice(0, -(header.length + 1)))
+        itemTable = [header, line.trim()]
+        continue
+      }
+    }
     if (isGfmTableSep(line) && !table && para.length === 1 && looksLikeGfmTableCells(para[0]!)) {
       flushPre()
       flushList()
@@ -1456,13 +1539,15 @@ export function parseCheapProseBlocks(
       (isGfmTableRow(line) && !(isGfmTableSep(line) && !table)) ||
       (table && looksLikeGfmTableCells(line))
     ) {
-      flushPre()
-      flushPara()
-      flushList()
-      flushQuote()
-      if (!table) table = []
-      table.push(line)
-      continue
+      if (!(list && list.items.length && leadingIndent(line) > list.indent && !table)) {
+        flushPre()
+        flushPara()
+        flushList()
+        flushQuote()
+        if (!table) table = []
+        table.push(line)
+        continue
+      }
     }
     if (para.length && !list && !quote.length && !table && !pre && SETEXT_RE.test(line)) {
       const marker = line.trim()[0]
@@ -1484,6 +1569,15 @@ export function parseCheapProseBlocks(
     }
     const fenceOpen = parseFenceLine(line)
     if (fenceOpen) {
+      if (list && list.items.length && leadingIndent(line) > list.indent) {
+        itemFence = {
+          marker: fenceOpen.marker,
+          lang: fenceLang(fenceOpen.info),
+          indent: leadingIndent(line),
+          lines: []
+        }
+        continue
+      }
       flushTable()
       flushPre()
       flushPara()
@@ -1505,6 +1599,8 @@ export function parseCheapProseBlocks(
     }
     const listLine = parseListLine(line)
     if (listLine) {
+      flushItemFence()
+      flushItemTable()
       flushTable()
       flushPre()
       flushPara()
@@ -1642,8 +1738,26 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
       extra.length === (prevItem.extra?.length ?? 0) &&
       extra.every((para, index) => para === prevItem.extra?.[index]) &&
       extra.length === (nextItem.extra?.length ?? 0)
-    if (nodes === prevItem.nodes && nested === prevItem.nested && extraSame) out.push(prevItem)
-    else out.push({ nodes, extra: extra.length ? extra : undefined, nested })
+    const prevBlocks = prevItem.blocks ?? []
+    const nextBlocks = nextItem.blocks ?? []
+    const blocks = nextBlocks.map((block, index) => {
+      const prevBlock = prevBlocks[index]
+      return prevBlock ? reuseCheapProseBlock(prevBlock, block) ?? block : block
+    })
+    const blocksSame =
+      blocks.length === prevBlocks.length &&
+      blocks.length === nextBlocks.length &&
+      blocks.every((block, index) => block === prevBlocks[index])
+    if (nodes === prevItem.nodes && nested === prevItem.nested && extraSame && blocksSame) {
+      out.push(prevItem)
+    } else {
+      out.push({
+        nodes,
+        extra: extra.length ? extra : undefined,
+        nested,
+        blocks: blocks.length ? blocks : undefined
+      })
+    }
   }
   if (next.length > prev.length) out.push(...next.slice(prev.length))
   return out

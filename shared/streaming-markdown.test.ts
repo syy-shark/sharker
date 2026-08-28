@@ -506,6 +506,22 @@ describe('splitStreamingMarkdown', () => {
       expect(offset[0].ordered).toBe(true)
       expect(offset[0].start).toBe(3)
     }
+    const tableInList = parseCheapProseBlocks('- | a | b |\n  | --- | --- |\n  | 1 | 2 |')
+    expect(tableInList.map((b) => b.type)).toEqual(['list'])
+    if (tableInList[0]?.type === 'list') {
+      expect(tableInList[0].items[0]?.nodes).toEqual([])
+      expect(tableInList[0].items[0]?.blocks?.[0]?.type).toBe('table')
+    }
+    const fenceInList = parseCheapProseBlocks('1. item\n   ```js\n   x\n   ```')
+    expect(fenceInList.map((b) => b.type)).toEqual(['list'])
+    if (fenceInList[0]?.type === 'list') {
+      expect(fenceInList[0].items[0]?.nodes).toEqual([{ type: 'text', text: 'item' }])
+      expect(fenceInList[0].items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'x',
+        lang: 'js'
+      })
+    }
   })
 
   it('reuses closed cheap blocks when a list or table grows', () => {

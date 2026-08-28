@@ -113,7 +113,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
 }
 
 function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
-  return [item.nodes, ...(item.extra ?? [])]
+  return [...(item.nodes.length ? [item.nodes] : []), ...(item.extra ?? [])]
 }
 
 /** 廉价列表（含嵌套），任务项用 GFM class；松散列表对标 remark `li>p` */
@@ -140,35 +140,38 @@ function renderCheapList(
           nodes: task ? task.nodes : item.nodes
         })
         const body =
-          wrapP || paragraphs.length > 1
-            ? paragraphs.map((nodes, pi) => (
-                <p key={pi}>
-                  {pi === 0 && task ? (
-                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-                  ) : null}
-                  {renderCheapInline(nodes)}
-                </p>
-              ))
-            : (
-                <>
-                  {task ? (
-                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-                  ) : null}
-                  {renderCheapInline(task ? task.nodes : item.nodes)}
-                </>
-              )
+          paragraphs.length === 0
+            ? null
+            : wrapP || paragraphs.length > 1
+              ? paragraphs.map((nodes, pi) => (
+                  <p key={pi}>
+                    {pi === 0 && task ? (
+                      <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+                    ) : null}
+                    {renderCheapInline(nodes)}
+                  </p>
+                ))
+              : (
+                  <>
+                    {task ? (
+                      <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+                    ) : null}
+                    {renderCheapInline(task ? task.nodes : item.nodes)}
+                  </>
+                )
+        const inner = (
+          <>
+            {body}
+            {item.blocks?.map((block, bi) => renderCheapBlock(block, bi))}
+            {nested}
+          </>
+        )
         if (!task) {
-          return (
-            <li key={i}>
-              {body}
-              {nested}
-            </li>
-          )
+          return <li key={i}>{inner}</li>
         }
         return (
           <li key={i} className="task-list-item live-prose-task">
-            {body}
-            {nested}
+            {inner}
           </li>
         )
       })}
