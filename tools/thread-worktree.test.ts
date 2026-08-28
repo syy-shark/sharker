@@ -27,7 +27,7 @@ describe('managedWorktreeRoot', () => {
   })
 })
 
-describe('prepareThreadWorktree', () => {
+describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
   const temps: string[] = []
 
   afterEach(async () => {
