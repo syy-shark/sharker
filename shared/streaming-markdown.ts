@@ -573,16 +573,20 @@ function parseLinkDestination(dest: string): { href: string; title?: string } | 
   let rest = ''
   if (trimmed.startsWith('<')) {
     const close = trimmed.indexOf('>')
-    if (close === -1) return null
-    href = trimmed.slice(1, close)
-    rest = trimmed.slice(close + 1).trim()
+    if (close === -1) {
+      href = trimmed.slice(1)
+      rest = ''
+    } else {
+      href = trimmed.slice(1, close)
+      rest = trimmed.slice(close + 1).trim()
+    }
   } else {
     const match = /^(\S+)(?:\s+(.*))?$/.exec(trimmed)
     if (!match) return null
     href = match[1] ?? ''
     rest = (match[2] ?? '').trim()
   }
-  if (!href) return null
+  if (!href && trimmed !== '<') return null
   href = sanitizeCheapHref(href)
   let title: string | undefined
   const quoted = /^(?:"([^"]*)"|'([^']*)'|\(([^)]*)\))$/.exec(rest)
@@ -618,7 +622,7 @@ export function markdownBlockWithDefs(blockText: string, defsBlob: string): stri
 }
 
 /**
- * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合 `[text](url)` /
+ * 只认成对的 `code` / **bold** / __bold__ / *italic* / _italic_、闭合或未闭合 `[text](url` /
  * `[text][id]` / `![alt](url)` / `![alt][id]` / `[![alt](img)](url)`、dest 内成对括号、标签内强调/代码、多反引号行内代码、HTML 实体、`<https>` / 邮箱、裸 http(s)、文件引用。
  * 未闭合标记留在原文；`[` 对不上 `](` 时不再吞掉后面的标记。
  */
@@ -924,16 +928,17 @@ export function parseCheapInlineMarkdown(
       if (!rawLabel.includes('\n\n')) {
         if (src[labelEnd + 1] === '(') {
           const urlEnd = findInlineLinkCloser(src, labelEnd + 2)
-          if (urlEnd === -1) {
+          const openDest = urlEnd === -1
+          if (openDest && src.slice(labelEnd + 2).includes('\n')) {
             buf += src.slice(i)
             break
           }
-          const rawDest = src.slice(labelEnd + 2, urlEnd)
+          const rawDest = src.slice(labelEnd + 2, openDest ? undefined : urlEnd)
           const dest = parseLinkDestination(rawDest)
-          const emptyDest = rawDest.trim() === ''
+          const emptyDest = rawDest.trim() === '' || rawDest.trim() === '<'
           const href = dest?.href ?? ''
           const title = dest?.title
-          const wrapRaw = rawLabel.includes('\n') ? src.slice(i, urlEnd + 1) : undefined
+          const wrapRaw = openDest || rawLabel.includes('\n') ? src.slice(i, openDest ? undefined : urlEnd + 1) : undefined
           if (image && (dest || emptyDest)) {
             flush()
             nodes.push(
@@ -942,6 +947,7 @@ export function parseCheapInlineMarkdown(
                 ...(wrapRaw ? { raw: wrapRaw } : {})
               })
             )
+            if (openDest) break
             i = urlEnd + 1
             continue
           }
@@ -953,6 +959,7 @@ export function parseCheapInlineMarkdown(
                 ...(wrapRaw ? { raw: wrapRaw } : {})
               })
             )
+            if (openDest) break
             i = urlEnd + 1
             continue
           }

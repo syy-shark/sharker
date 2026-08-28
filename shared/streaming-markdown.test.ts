@@ -111,7 +111,12 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '.' }
     ])
     expect(parseCheapInlineMarkdown('半截 [未闭](https://x')).toEqual([
-      { type: 'text', text: '半截 [未闭](https://x' }
+      { type: 'text', text: '半截 ' },
+      { type: 'link', text: '未闭', href: 'https://x', raw: '[未闭](https://x' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 [未闭](<https://a')).toEqual([
+      { type: 'text', text: '半截 ' },
+      { type: 'link', text: '未闭', href: 'https://a', raw: '[未闭](<https://a' }
     ])
     expect(parseCheapInlineMarkdown('改 src/App.tsx:12 与 `foo.ts:3`')).toEqual([
       { type: 'text', text: '改 ' },
@@ -187,7 +192,8 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: ' 后' }
     ])
     expect(parseCheapInlineMarkdown('半截 ![未闭](https://x')).toEqual([
-      { type: 'text', text: '半截 ![未闭](https://x' }
+      { type: 'text', text: '半截 ' },
+      { type: 'image', alt: '未闭', href: 'https://x', raw: '![未闭](https://x' }
     ])
     expect(parseCheapInlineMarkdown('[x]()')).toEqual([{ type: 'link', text: 'x', href: '' }])
     expect(parseCheapInlineMarkdown('[见](#sec)')).toEqual([{ type: 'link', text: '见', href: '#sec' }])
@@ -759,6 +765,13 @@ describe('splitStreamingMarkdown', () => {
     expect(imgGrown[0]).toBe(imgNodes[0])
     expect(imgGrown[1]).toBe(imgNodes[1])
     expect(imgGrown.map((n) => n.type)).toEqual(['text', 'image', 'text', 'strong'])
+    const openLink = '见 [文档](https://a'
+    const openNodes = parseCheapInlineMarkdown(openLink)
+    expect(openNodes.map((n) => n.type)).toEqual(['text', 'link'])
+    const closedLink = continueCheapInlineMarkdown(openLink, openNodes, '见 [文档](https://a.test/x)')
+    expect(closedLink[0]).toBe(openNodes[0])
+    expect(closedLink.map((n) => n.type)).toEqual(['text', 'link'])
+    expect(closedLink[1]).toMatchObject({ type: 'link', href: 'https://a.test/x', text: '文档' })
   })
 
   it('reuses closed blocks when only the tail grows', () => {
