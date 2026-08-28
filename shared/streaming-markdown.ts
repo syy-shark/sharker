@@ -1493,7 +1493,16 @@ function tableBlockFromLines(
   inline: (chunk: string) => CheapInlineNode[]
 ): Extract<CheapProseBlock, { type: 'table' }> | null {
   const sepIdx = raw.findIndex(isGfmTableSep)
-  if (sepIdx <= 0) return null
+  if (sepIdx <= 0) {
+    // 直播时分隔行还没到：两侧带 `|` 的行先画成表，避免先段落再跳成 table
+    if (!raw.length || !raw.some(isGfmTableRow)) return null
+    if (!raw.every((line) => isGfmTableRow(line) || looksLikeGfmTableCells(line))) return null
+    return {
+      type: 'table',
+      header: splitGfmTableCells(raw[0] ?? '').map((cell) => inline(cell)),
+      rows: raw.slice(1).map((line) => splitGfmTableCells(line).map((cell) => inline(cell)))
+    }
+  }
   const header = splitGfmTableCells(raw[sepIdx - 1] ?? '').map((cell) => inline(cell))
   const rows = raw
     .slice(sepIdx + 1)
@@ -1613,6 +1622,11 @@ export function parseCheapProseBlocks(
     if (quoted !== null && /^ {0,3}>/.test(text)) {
       item.nodes = []
       itemQuote = { parts: [{ text: quoted }], item }
+      return
+    }
+    if (isGfmTableRow(text)) {
+      item.nodes = []
+      itemTable = { lines: [text.trim()], item }
     }
   }
 
@@ -1668,6 +1682,11 @@ export function parseCheapProseBlocks(
     table = null
     const sepIdx = raw.findIndex(isGfmTableSep)
     if (sepIdx <= 0) {
+      const tentative = tableBlockFromLines(raw, inline)
+      if (tentative) {
+        blocks.push(tentative)
+        return
+      }
       for (const line of raw) {
         if (!isGfmTableSep(line)) para.push(line)
       }

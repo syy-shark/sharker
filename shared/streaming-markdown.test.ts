@@ -417,7 +417,11 @@ describe('splitStreamingMarkdown', () => {
       expect(table[0].rows).toHaveLength(1)
       expect(table[0].rows[0]?.[1]?.some((n) => n.type === 'file')).toBe(true)
     }
-    expect(parseCheapProseBlocks('| only | row |').map((b) => b.type)).toEqual(['p'])
+    expect(parseCheapProseBlocks('| only | row |').map((b) => b.type)).toEqual(['table'])
+    if (parseCheapProseBlocks('| only | row |')[0]?.type === 'table') {
+      expect(parseCheapProseBlocks('| only | row |')[0].header).toHaveLength(2)
+      expect(parseCheapProseBlocks('| only | row |')[0].rows).toEqual([])
+    }
     expect(parseCheapProseBlocks('---').map((b) => b.type)).toEqual(['hr'])
     const quoted = parseCheapProseBlocks('> 外层\n> > 内层')
     expect(quoted.map((b) => b.type)).toEqual(['quote'])
@@ -542,6 +546,18 @@ describe('splitStreamingMarkdown', () => {
     if (offset[0]?.type === 'list') {
       expect(offset[0].ordered).toBe(true)
       expect(offset[0].start).toBe(3)
+    }
+    const pendingTable = parseCheapProseBlocks('| A | B |')
+    expect(pendingTable.map((b) => b.type)).toEqual(['table'])
+    if (pendingTable[0]?.type === 'table') {
+      expect(pendingTable[0].header).toHaveLength(2)
+      expect(pendingTable[0].rows).toEqual([])
+    }
+    const pendingInList = parseCheapProseBlocks('- | a | b |')
+    expect(pendingInList.map((b) => b.type)).toEqual(['list'])
+    if (pendingInList[0]?.type === 'list') {
+      expect(pendingInList[0].items[0]?.nodes).toEqual([])
+      expect(pendingInList[0].items[0]?.blocks?.[0]?.type).toBe('table')
     }
     const tableInList = parseCheapProseBlocks('- | a | b |\n  | ---: | :---: |\n  | 1 | 2 |')
     expect(tableInList.map((b) => b.type)).toEqual(['list'])
