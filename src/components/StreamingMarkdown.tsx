@@ -26,7 +26,6 @@ import {
   type CheapListItem,
   type CheapProseBlock
 } from '../../shared/streaming-markdown'
-import { isInlineDemoPaintable } from '../../shared/live-display'
 
 /** GFM 任务项：直播时就画 checkbox；未写完的 `[x` / `[ ]` 先占位，收束后不从普通 li 跳成任务列表 */
 function parseCheapTaskItem(
@@ -236,7 +235,7 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
     if (isMermaidLang(block.lang)) {
       return <MermaidBlock key={key} code={block.text} />
     }
-    if (isInlineDemoLang(block.lang) && isInlineDemoPaintable(block.text)) {
+    if (isInlineDemoLang(block.lang)) {
       return <InlineDemo key={key} html={block.text} streaming />
     }
     return <LiveFenceTail key={key} code={block.text} language={block.lang} />
@@ -306,7 +305,7 @@ function renderLiveFenceSlot(
   body: string,
   closed: boolean
 ) {
-  if (isInlineDemoLang(lang) && isInlineDemoPaintable(body)) {
+  if (isInlineDemoLang(lang)) {
     return <InlineDemo key={key} html={body} streaming />
   }
   if (isMermaidLang(lang)) {

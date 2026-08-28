@@ -125,6 +125,7 @@ describe('inline demo paintability', () => {
   it('rejects empty, placeholder, and CSS-only fragments', () => {
     expect(isInlineDemoPaintable('')).toBe(false)
     expect(isInlineDemoPaintable('<!-- streaming -->')).toBe(false)
+    expect(seedInlineDemoHeight('<!-- streaming -->', true)).toBe(96)
     expect(
       isInlineDemoPaintable('background: #444;\ncolor: white;\ncursor: pointer;\nfont-size: 14px;')
     ).toBe(false)

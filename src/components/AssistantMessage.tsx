@@ -208,16 +208,15 @@ export const AssistantMessage = memo(function AssistantMessage({
   const hasAnswerStream = answerParts.length > 0
   const hasLiveProse = answerParts.some((p) => p.type === 'text' && p.content.trim())
   const hasLiveDiffs = answerParts.some((p) => p.type === 'diff')
+  const hasLiveDemo = answerParts.some((p) => p.type === 'demo')
   const hasPaintableDemo = answerParts.some(
     (p) => p.type === 'demo' && isInlineDemoPaintable(p.html)
   )
-  const generatingDemo = Boolean(
-    isStreaming && answerParts.some((p) => p.type === 'demo') && !hasPaintableDemo
-  )
+  const generatingDemo = Boolean(isStreaming && hasLiveDemo && !hasPaintableDemo)
   const liveThinkText = useSegmentFlow ? liveThinkingText(segments!) : ''
   const showFinalBody =
     Boolean(children) ||
-    (isStreaming ? hasLiveProse || hasPaintableDemo || hasLiveDiffs : hasAnswerStream) ||
+    (isStreaming ? hasLiveProse || hasLiveDemo || hasLiveDiffs : hasAnswerStream) ||
     (Boolean(displayContent) &&
       (isError || isAborted || finalDecision.show) &&
       !useSegmentFlow)
@@ -468,7 +467,6 @@ export const AssistantMessage = memo(function AssistantMessage({
             (hasAnswerStream ? (
               answerParts.map((part) => {
                 if (part.type === 'demo') {
-                  if (!isInlineDemoPaintable(part.html)) return null
                   return (
                     <InlineDemo
                       key={part.id}

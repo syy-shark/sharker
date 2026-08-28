@@ -289,6 +289,17 @@ describe('turn segment event state machine', () => {
     expect(buildAnswerParts(demoSegs, { isStreaming: false }).map((part) => `${part.type}:${part.id}`)).toEqual(
       [`text:${demoId}`, `demo:${demoId}-demo-stream`, `text:${demoId}-post`]
     )
+    let toolDemo: TurnSegment[] = []
+    toolDemo = applyStreamChunk(toolDemo, {
+      type: 'tool_start',
+      toolName: 'present_inline_demo',
+      toolCallId: 'd1',
+      timestamp: 40
+    })
+    expect(buildAnswerParts(toolDemo, { isStreaming: true }).find((part) => part.type === 'demo')).toMatchObject({
+      html: '<!-- streaming -->',
+      streaming: true
+    })
   })
 
   it('keeps finished tool segment identity across token appends', () => {

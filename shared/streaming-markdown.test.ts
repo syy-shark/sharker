@@ -105,6 +105,16 @@ describe('splitStreamingMarkdown', () => {
         (slot) => `${slot.kind}:${slot.key}:${String(slot.closed)}`
       )
     ).toEqual(['fence:live-fence-0:true'])
+    expect(
+      streamingRenderSlots(splitStreamingMarkdown('```demo\n<div>')).map(
+        (slot) => `${slot.kind}:${slot.key}:${String(slot.closed)}`
+      )
+    ).toEqual(['fence:live-fence-0:false'])
+    expect(
+      streamingRenderSlots(splitStreamingMarkdown('```demo\n<div class="scene"></div>\n```')).map(
+        (slot) => `${slot.kind}:${slot.key}:${String(slot.closed)}`
+      )
+    ).toEqual(['fence:live-fence-0:true'])
   })
 
   it('treats CRLF like LF so an open fence stays in the tail', () => {

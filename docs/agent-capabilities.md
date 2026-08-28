@@ -182,7 +182,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `web_fetch` | HTTP 抓取 + 粗略 HTML→文本 |
 | `web_search` | DuckDuckGo Instant Answer |
 | `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
-| `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；正文 ```demo 围栏开闭也走同一演示槽（不换 key）；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
+| `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；工具一开始就占演示槽（未可绘先 96px 骨架）；正文 ```demo 围栏开闭都挂 `InlineDemo`（不先画代码围栏再换组件）；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
 
 ### 内联可视化规范（强制）
 
