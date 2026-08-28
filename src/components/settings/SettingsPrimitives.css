@@ -103,6 +103,32 @@ html.theme-dark .st-number {
   background: var(--metal-control-fill-soft);
 }
 
+.st-textarea {
+  display: block;
+  width: calc(100% - 24px);
+  min-height: 88px;
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+  box-shadow: var(--glass-rim-soft);
+}
+
+.st-textarea:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+html.theme-dark .st-textarea {
+  background: var(--metal-control-fill-soft);
+}
+
 .st-row-control {
   position: relative;
   z-index: 2;

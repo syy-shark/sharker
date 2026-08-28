@@ -101,6 +101,10 @@ export interface AppSettings {
    * detached（默认）：新开审查线程；inline：能在当前对话跑就在当前对话。
    */
   reviewDelivery?: 'inline' | 'detached'
+  /** 生成 commit message 时使用的用户模板（对标 Codex Git commit prompt） */
+  gitCommitPrompt?: string
+  /** 生成 PR 描述时使用的用户模板（对标 Codex Git pull request prompt） */
+  gitPrPrompt?: string
   /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
@@ -352,6 +356,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   requireModEnter: false,
   suggestedPrompts: true,
   reviewDelivery: 'detached',
+  gitCommitPrompt: '',
+  gitPrPrompt: '',
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

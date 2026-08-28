@@ -5,6 +5,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { loadSkills } from '../../../skills/loader'
+import { applyGitPromptTemplates } from '../../../shared/git-prompt'
 import { getActiveWorkspacePath } from '../../../shared/workspace'
 import { ok } from '../../context'
 import type { ToolHandler } from '../../types'
@@ -32,7 +33,8 @@ export const readSkillTool: ToolHandler = {
     const skill = skills.find((s) => s.name === name)
     if (!skill) throw new Error(`Skill not found: ${name}`)
     const md = await fs.readFile(path.join(skill.path, 'SKILL.md'), 'utf8').catch(() => skill.body)
-    return ok(`# Skill: ${skill.name}\n${skill.description}\n\n${md}`)
+    const body = applyGitPromptTemplates(skill.name, md, ctx.settings)
+    return ok(`# Skill: ${skill.name}\n${skill.description}\n\n${body}`)
   }
 }
 

@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery` / `gitCommitPrompt` / `gitPrPrompt`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
@@ -57,6 +57,7 @@
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词；Review delivery（inline / detached）与 here/detached 覆盖 |
+| `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
 | `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
@@ -152,7 +153,8 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` 解析 |
+| `review-prompt.test.ts` | `/review branch` 解析、Review delivery 覆盖 |
+| `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 
 ## 设计原则

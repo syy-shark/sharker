@@ -21,7 +21,7 @@
 | `commands.test.ts` | `/plan-mode` 与 `/plan` 同义 |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
 | `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表 + 拒绝记录供 `/approve`）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
-| `loop.ts` | `buildSystemPrompt`（含人格语气、AGENTS.md 链）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
+| `loop.ts` | `buildSystemPrompt`（含人格语气、Git commit/PR 文案模板、AGENTS.md 链）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
 | `agents-md.ts` | 加载全局 `~/.sharker` + 仓库根到 cwd 的 AGENTS.md；`/init` 写脚手架；设置页读写个人 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | 全局 override、init 只写一次、个人说明不碰 override |
 | `file-refs.ts` | 解析 `@path` 并注入文件内容（跳过 `@chat/`） |

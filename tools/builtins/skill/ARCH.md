@@ -12,5 +12,5 @@
 
 | 文件 | 说明 |
 |------|------|
-| `discovery.ts` | list / read Skill 的 ToolHandler |
+| `discovery.ts` | list / read Skill 的 ToolHandler；读 `git-commit` 时接上用户 Git 文案模板 |
 | `ARCH.md` | 本层架构说明 |

@@ -17,7 +17,7 @@
 | [mcp/](./mcp/ARCH.md) | MCP list / call |
 | [mode/](./mode/ARCH.md) | 计划模式、worktree 模式 |
 | [shell/](./shell/ARCH.md) | 后台 shell 会话 |
-| [skill/](./skill/ARCH.md) | list_skills / read_skill |
+| [skill/](./skill/ARCH.md) | list_skills / read_skill（`git-commit` 接用户 Git 文案模板） |
 | [tasks/](./tasks/ARCH.md) | 后台任务列表与控制 |
 | [voice/](./voice/ARCH.md) | 语音朗读（macOS say） |
 | [web/](./web/ARCH.md) | web_fetch / web_search |

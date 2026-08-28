@@ -2,6 +2,7 @@
  * 权限模式与网络隔离选择
  * @see src/ARCH.md
  */
+import { useEffect, useRef } from 'react'
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
 import { parseReviewDelivery, type ReviewDelivery } from '../../../shared/review-prompt'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
@@ -24,6 +25,28 @@ interface Props {
 
 /** 沙箱/完全权限模式选择面板 */
 export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
+  const draftRef = useRef(draft)
+  const gitPromptTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  useEffect(() => {
+    return () => {
+      if (gitPromptTimer.current) clearTimeout(gitPromptTimer.current)
+    }
+  }, [])
+
+  const scheduleGitPromptSave = (patch: Partial<AppSettings>) => {
+    const next = { ...draftRef.current, ...patch }
+    setDraft(next)
+    if (gitPromptTimer.current) clearTimeout(gitPromptTimer.current)
+    gitPromptTimer.current = setTimeout(() => {
+      void onSave({ ...draftRef.current, ...patch })
+    }, 320)
+  }
+
   const setMode = (mode: PermissionMode) => {
     const next = { ...draft, permissionMode: mode }
     setDraft(next)
@@ -147,6 +170,34 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
                 icon: <span aria-hidden>独</span>
               }
             ]}
+          />
+          <SettingsRow
+            title="Commit 文案模板"
+            description="对标 Codex Settings → Git：生成 commit message 时写入 system 与 git-commit skill。"
+          >
+            <span className="st-row-badge">模板</span>
+          </SettingsRow>
+          <textarea
+            className="st-textarea"
+            value={draft.gitCommitPrompt ?? ''}
+            spellCheck={false}
+            placeholder="例如：用 Conventional Commits；说明为什么改，不要罗列文件名。"
+            aria-label="Commit 文案模板"
+            onChange={(e) => scheduleGitPromptSave({ gitCommitPrompt: e.target.value })}
+          />
+          <SettingsRow
+            title="PR 文案模板"
+            description="生成 pull request 标题与描述时使用。"
+          >
+            <span className="st-row-badge">模板</span>
+          </SettingsRow>
+          <textarea
+            className="st-textarea"
+            value={draft.gitPrPrompt ?? ''}
+            spellCheck={false}
+            placeholder="例如：Summary 2–3 条 + Test plan 清单。"
+            aria-label="PR 文案模板"
+            onChange={(e) => scheduleGitPromptSave({ gitPrPrompt: e.target.value })}
           />
         </SettingsCard>
       </SettingsSection>
