@@ -555,6 +555,8 @@ describe('splitStreamingMarkdown', () => {
       expect(quoteFence[0].blocks[0].lang).toBe('js')
       expect(quoteFence[0].blocks[0].text).toBe('const x = 1')
     }
+    const mermaidFence = parseCheapProseBlocks('```mermaid\ngraph TD\nA-->B\n```')
+    expect(mermaidFence[0]).toMatchObject({ type: 'pre', lang: 'mermaid', text: 'graph TD\nA-->B' })
     const longFence = parseCheapProseBlocks('````\n```\ninner\n```\n````')
     expect(longFence[0]).toMatchObject({ type: 'pre', text: '```\ninner\n```' })
     const openQuoteFence = parseCheapProseBlocks('> ```ts\n> let y = 2')

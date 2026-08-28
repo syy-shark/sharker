@@ -4,6 +4,8 @@
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
 import { LiveFenceTail } from './CodeArtifactBlock'
+import { MermaidBlock } from './MermaidBlock'
+import { isMermaidLang } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
@@ -239,6 +241,9 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   }
   if (block.type === 'hr') return <hr key={index} />
   if (block.type === 'pre') {
+    if (isMermaidLang(block.lang)) {
+      return <MermaidBlock key={index} code={block.text} />
+    }
     return <LiveFenceTail key={index} code={block.text} language={block.lang} />
   }
   if (block.type === 'footnotes') {

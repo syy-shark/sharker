@@ -1,0 +1,28 @@
+.mermaid-block-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.mermaid-block {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 12px;
+  overflow-x: auto;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.mermaid-block--pending {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.mermaid-block svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+html.theme-dark .mermaid-block {
+  color: var(--text);
+}

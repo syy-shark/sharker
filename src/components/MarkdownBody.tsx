@@ -16,6 +16,8 @@ import { CompareBlock, parseCompareRows } from './CompareBlock'
 import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
+import { MermaidBlock } from './MermaidBlock'
+import { isMermaidLang } from '../../shared/mermaid-fence'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
@@ -88,6 +90,9 @@ function trySpecialCodeBlock(
     const { caption } = parseDemoMeta(className)
     return <InlineDemo html={text} caption={caption} />
   }
+  if (isMermaidLang(lang)) {
+    return <MermaidBlock code={text} />
+  }
   const compareRows = parseCompareRows(text)
   if (compareRows) return <CompareBlock rows={compareRows} />
   if (lang === 'diff') {
@@ -147,7 +152,7 @@ const markdownComponents: Components = {
   code: ({ className, children, ...rest }) => {
     const match = /language-([^\s]+)/.exec(className ?? '')
     const lang = match?.[1]
-    if (lang === 'diff' || isInlineDemoLang(lang)) {
+    if (lang === 'diff' || isInlineDemoLang(lang) || isMermaidLang(lang)) {
       const text = extractCodeText(children)
       const special = trySpecialCodeBlock(text, lang, className)
       if (special) return special
