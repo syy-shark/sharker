@@ -94,21 +94,6 @@
   flex: 1 1 auto;
 }
 
-.model-picker-thinking-chip {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 0.5px solid color-mix(in srgb, var(--accent) 18%, transparent);
-}
-
 .model-picker-chevron--open {
   transform: rotate(180deg);
 }

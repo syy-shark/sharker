@@ -1,0 +1,69 @@
+.reasoning-gauge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 4px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.reasoning-gauge:hover,
+.reasoning-gauge:focus-visible {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.reasoning-gauge:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+.reasoning-gauge-track {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.reasoning-gauge-seg {
+  width: 3px;
+  padding: 0;
+  border: none;
+  border-radius: 1px;
+  background: var(--glass-fill-nested);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge-soft);
+  cursor: pointer;
+}
+
+.reasoning-gauge-seg.is-on {
+  background: var(--text-secondary);
+  box-shadow: none;
+}
+
+.reasoning-gauge-seg.is-current {
+  background: var(--accent);
+}
+
+.reasoning-gauge-seg:active {
+  transform: scaleY(0.92);
+}
+
+html.theme-dark .reasoning-gauge-seg {
+  background: var(--glass-fill-nested);
+}
+
+html.theme-dark .reasoning-gauge-seg.is-on {
+  background: var(--text-secondary);
+}
+
+html.theme-dark .reasoning-gauge-seg.is-current {
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reasoning-gauge-seg:active {
+    transform: none;
+  }
+}

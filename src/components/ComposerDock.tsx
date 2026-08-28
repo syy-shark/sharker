@@ -17,6 +17,11 @@ import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from 
 import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
+import { ReasoningGauge } from './ReasoningGauge'
+import {
+  defaultThinkingLevel,
+  resolveThinkingOptions
+} from '../../shared/thinking-levels'
 import { SLASH_COMMANDS, slashItemsWithSkills, type SlashCommandMeta } from '../../shared/slash-commands'
 import { parseBangCommand } from '../../shared/bang-command'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
@@ -507,6 +512,17 @@ export const ComposerDock = memo(
       [chatMentionHits, skillMentionHits, fileMentionHits]
     )
     const boundSkills = useMemo(() => collectBoundSkills(input, skillCatalog), [input, skillCatalog])
+    const activeProvider = providers.find((p) => p.id === activeProviderId) ?? providers[0]
+    const thinkingOpts = useMemo(
+      () => (activeProvider ? resolveThinkingOptions(activeProvider) : []),
+      [activeProvider]
+    )
+    const thinkingValue =
+      activeProvider && thinkingOpts.length
+        ? activeProvider.thinkingLevel && thinkingOpts.some((o) => o.id === activeProvider.thinkingLevel)
+          ? activeProvider.thinkingLevel
+          : defaultThinkingLevel(activeProvider)
+        : ''
     const showMentionMenu = Boolean(mentionQuery && mentionOptions.length)
     const skillQuery =
       !showHistoryPicker &&
@@ -1930,6 +1946,13 @@ export const ComposerDock = memo(
               onThinkingLevelChange={onThinkingLevelChange}
               openSignal={modelOpenSignal}
             />
+            {thinkingOpts.length > 1 && onThinkingLevelChange && activeProvider ? (
+              <ReasoningGauge
+                options={thinkingOpts}
+                value={thinkingValue}
+                onChange={(level) => onThinkingLevelChange(activeProvider.id, level)}
+              />
+            ) : null}
             {onQueueHeldChange && (loading || queuedCount > 0 || queueHeld) ? (
               <button
                 type="button"

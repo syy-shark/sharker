@@ -18,6 +18,7 @@ import {
   continueStreamingMarkdown,
   extractOpenFenceBody,
   linkDefinitionBlob,
+  matchLiveTaskMarker,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
   streamingProseText,
@@ -28,19 +29,18 @@ import {
 } from '../../shared/streaming-markdown'
 import { isInlineDemoPaintable } from '../../shared/live-display'
 
-/** GFM 任务项：直播时就画 checkbox，收束后不从普通 li 跳成任务列表 */
+/** GFM 任务项：直播时就画 checkbox；未写完的 `[x` / `[ ]` 先占位，收束后不从普通 li 跳成任务列表 */
 function parseCheapTaskItem(
   nodes: CheapInlineNode[]
 ): { checked: boolean; nodes: CheapInlineNode[] } | null {
   const first = nodes[0]
   if (!first || first.type !== 'text') return null
-  const match = /^\[([ xX])\]\s+(.*)$/.exec(first.text)
+  const match = matchLiveTaskMarker(first.text)
   if (!match) return null
-  const restText = match[2]
-  const rest: CheapInlineNode[] = restText
-    ? [{ type: 'text', text: restText }, ...nodes.slice(1)]
+  const rest: CheapInlineNode[] = match.rest
+    ? [{ type: 'text', text: match.rest }, ...nodes.slice(1)]
     : nodes.slice(1)
-  return { checked: match[1] !== ' ', nodes: rest }
+  return { checked: match.checked, nodes: rest }
 }
 
 function cheapMarkBody(node: Extract<CheapInlineNode, { type: 'strong' | 'em' | 'del' }>): ReactNode {
@@ -218,19 +218,17 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
             ))}
           </tr>
         </thead>
-        {block.rows.length ? (
-          <tbody>
-            {block.rows.map((row, r) => (
-              <tr key={r}>
-                {row.map((cell, c) => (
-                  <td key={c} style={cellAlign(block.align?.[c])}>
-                    {renderCheapInline(cell)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        ) : null}
+        <tbody>
+          {block.rows.map((row, r) => (
+            <tr key={r}>
+              {row.map((cell, c) => (
+                <td key={c} style={cellAlign(block.align?.[c])}>
+                  {renderCheapInline(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
       </table>
     )
   }

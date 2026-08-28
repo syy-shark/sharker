@@ -1398,6 +1398,20 @@ export function cheapProseBlockKeys(blocks: CheapProseBlock[]): string[] {
   })
 }
 
+/**
+ * 直播任务勾选：写完 `[x] ` 才算正式项；`[x` / `[ ]` 先占 checkbox，
+ * 避免勾选框突然插入把已画文字挤开。`[x](url)` 仍当链接，不认任务。
+ */
+export function matchLiveTaskMarker(text: string): { checked: boolean; rest: string } | null {
+  const done = /^\[([ xX])\]\s+(.*)$/.exec(text)
+  if (done) return { checked: done[1] !== ' ', rest: done[2] }
+  const closed = /^\[([ xX])\]\s*$/.exec(text)
+  if (closed) return { checked: closed[1] !== ' ', rest: '' }
+  const open = /^\[([ xX])$/.exec(text)
+  if (open) return { checked: open[1] !== ' ', rest: '' }
+  return null
+}
+
 /** 直播行内 key：用类型 + 前缀长度，闭合标记时已画节点不换下标 */
 export function cheapInlineNodeKeys(nodes: CheapInlineNode[]): string[] {
   const keys: string[] = []

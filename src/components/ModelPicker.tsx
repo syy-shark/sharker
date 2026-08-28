@@ -164,11 +164,6 @@ export function ModelPicker({
       >
         {active ? <ProviderBrandIcon provider={active} size={16} /> : null}
         <span className="model-picker-label">{modelLabel}</span>
-        {thinkingShort ? (
-          <span className="model-picker-thinking-chip" title={`思考水平：${thinkingShort}`}>
-            {shortThinkingChip(thinkingShort)}
-          </span>
-        ) : null}
         <ChevronIcon open={pop.expanded} />
       </button>
 
@@ -245,17 +240,4 @@ export function ModelPicker({
       )}
     </div>
   )
-}
-
-/** 触发器上的短标签，避免过长 */
-function shortThinkingChip(label: string): string {
-  const t = label.replace(/（.*?）/g, '').trim()
-  if (t.length <= 4) return t
-  if (t.includes('关闭')) return '关'
-  if (t.includes('最大') || t.includes('很高')) return '最大'
-  if (t.includes('高')) return '高'
-  if (t.includes('中')) return '中'
-  if (t.includes('低') || t.includes('最低')) return '低'
-  if (t.includes('开启')) return '思'
-  return t.slice(0, 2)
 }

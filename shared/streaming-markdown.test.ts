@@ -3,6 +3,7 @@ import {
   collectLinkDefinitions,
   cheapInlineNodeKeys,
   cheapProseBlockKeys,
+  matchLiveTaskMarker,
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
@@ -702,6 +703,11 @@ describe('splitStreamingMarkdown', () => {
       expect(taskOl[0].ordered).toBe(true)
       expect(taskOl[0].items[0]?.nodes).toEqual([{ type: 'text', text: '[ ] do' }])
     }
+    expect(matchLiveTaskMarker('[x')).toEqual({ checked: true, rest: '' })
+    expect(matchLiveTaskMarker('[ ]')).toEqual({ checked: false, rest: '' })
+    expect(matchLiveTaskMarker('[ ] do')).toEqual({ checked: false, rest: 'do' })
+    expect(matchLiveTaskMarker('[x](url)')).toBeNull()
+    expect(matchLiveTaskMarker('[docs')).toBeNull()
     const fenceInList = parseCheapProseBlocks('1. item\n   ```js\n   x\n   ```')
     expect(fenceInList.map((b) => b.type)).toEqual(['list'])
     if (fenceInList[0]?.type === 'list') {

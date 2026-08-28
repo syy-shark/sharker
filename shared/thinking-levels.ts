@@ -243,6 +243,15 @@ export function thinkingLevelLabel(provider: ProviderConfig): string {
   return opt?.label ?? '—'
 }
 
+/** 输入框旁思考条：当前档在官方选项里的下标（对标 Codex composer gauge） */
+export function thinkingGaugeIndex(
+  options: Array<{ id: string }>,
+  current: string
+): number {
+  const idx = options.findIndex((o) => o.id === current)
+  return idx >= 0 ? idx : 0
+}
+
 /** Alt+, / Alt+. 升降思考档（对标 Codex reasoning depth） */
 export function stepThinkingLevel(
   options: Array<{ id: string }>,
@@ -302,7 +311,10 @@ export function formatReasoningStatus(opts: {
   if (opts.unknown) {
     lines.push('', `未识别档位 \`${opts.unknown}\`。`)
   }
-  lines.push('', '用法：`/reasoning [off|low|medium|high|max|…]`，空参数查看当前档。⌥, / ⌥. 也可升降。')
+  lines.push(
+    '',
+    '用法：`/reasoning [off|low|medium|high|max|…]`，空参数查看当前档。输入框旁思考条可点选，⌥, / ⌥. 也可升降。'
+  )
   return lines.join('\n')
 }
 

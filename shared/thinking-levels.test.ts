@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatReasoningStatus, parseReasoningArgs, stepThinkingLevel } from './thinking-levels'
+import {
+  formatReasoningStatus,
+  parseReasoningArgs,
+  stepThinkingLevel,
+  thinkingGaugeIndex
+} from './thinking-levels'
 
 describe('stepThinkingLevel', () => {
   const opts = [{ id: 'low' }, { id: 'medium' }, { id: 'high' }]
@@ -9,6 +14,9 @@ describe('stepThinkingLevel', () => {
     expect(stepThinkingLevel(opts, 'medium', -1)).toBe('low')
     expect(stepThinkingLevel(opts, 'high', 1)).toBe('high')
     expect(stepThinkingLevel(opts, 'low', -1)).toBe('low')
+    expect(thinkingGaugeIndex(opts, 'medium')).toBe(1)
+    expect(thinkingGaugeIndex(opts, '')).toBe(0)
+    expect(thinkingGaugeIndex(opts, 'high')).toBe(2)
   })
 
   it('starts at the first option when current is unknown', () => {
@@ -28,5 +36,6 @@ describe('stepThinkingLevel', () => {
     const text = formatReasoningStatus({ supported: true, current: 'high', options: opts })
     expect(text).toContain('`high`')
     expect(text).toContain('当前')
+    expect(text).toContain('思考条')
   })
 })
