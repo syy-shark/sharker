@@ -18,6 +18,7 @@ import type {
 } from '../../shared/types'
 import { generateTitle, type ApprovalHandler } from '../../agent/loop'
 import {
+  hydrateSubAgents,
   listSubAgentSnapshots,
   sendSubAgentMessage,
   setSubAgentListener,
@@ -1475,6 +1476,11 @@ app.whenReady().then(async () => {
     console.warn('[workspace] ensure global dir failed', e)
   }
   await saveSettings(settings)
+  try {
+    await hydrateSubAgents()
+  } catch (e) {
+    console.warn('[subagents] hydrate failed', e)
+  }
   registerIpc()
   createWindow()
 

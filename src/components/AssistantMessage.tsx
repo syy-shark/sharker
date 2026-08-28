@@ -43,6 +43,8 @@ interface Props {
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: ApprovalDecision) => void | Promise<void>
+  /** 主线程活动点开子 Agent */
+  onOpenSubAgent?: (id: string | null) => void
   children?: React.ReactNode
 }
 
@@ -68,6 +70,7 @@ export function AssistantMessage({
   approval,
   approvalResponding,
   onApproval,
+  onOpenSubAgent,
   children
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
@@ -314,6 +317,7 @@ export function AssistantMessage({
                 contentStreaming={hasLiveProse || hasPaintableDemo}
                 generatingDemo={generatingDemo}
                 answerStreaming={Boolean(finalContentRaw.trim() || hasLiveProse)}
+                onOpenSubAgent={onOpenSubAgent}
               />
             </div>
           ) : (
@@ -327,6 +331,7 @@ export function AssistantMessage({
                 contentStreaming={Boolean(finalContentRaw.trim())}
                 generatingDemo={false}
                 answerStreaming={Boolean(finalContentRaw.trim())}
+                onOpenSubAgent={onOpenSubAgent}
               />
             </div>
           )}
@@ -460,7 +465,11 @@ export function AssistantMessage({
               inert={showFlowPanel ? undefined : true}
             >
               <div className="turn-flow-collapse-inner">
-                <TurnFlow segments={processForFlow} isStreaming={false} />
+                <TurnFlow
+                  segments={processForFlow}
+                  isStreaming={false}
+                  onOpenSubAgent={onOpenSubAgent}
+                />
               </div>
             </div>
           ) : null}
@@ -473,7 +482,7 @@ export function AssistantMessage({
             >
               <div className="assistant-process-inner">
                 <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
-                  <ProcessTimeline steps={processSteps} />
+                  <ProcessTimeline steps={processSteps} onOpenSubAgent={onOpenSubAgent} />
                 </div>
               </div>
             </div>

@@ -97,5 +97,14 @@ export function formatToolActivity(
     const caption = typeof args?.caption === 'string' ? args.caption.trim() : ''
     return caption ? `${toolName} · ${caption}` : toolName
   }
+  if (toolName === 'agent_spawn') {
+    const prompt = typeof args?.prompt === 'string' ? args.prompt.trim().replace(/\s+/g, ' ') : ''
+    const short = prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt
+    return short ? `${toolName} · ${short}` : toolName
+  }
+  if (toolName === 'agent_send_message' || toolName === 'agent_get_result') {
+    const id = typeof args?.agent_id === 'string' ? args.agent_id.trim() : ''
+    return id ? `${toolName} · ${id}` : toolName
+  }
   return toolName
 }

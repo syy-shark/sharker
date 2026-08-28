@@ -22,6 +22,7 @@ import {
   extractChangedRelPaths,
   formatToolActivity
 } from '../shared/turn-meta'
+import { stampSubAgentActivity } from '../shared/subagent'
 import {
   activitiesFromSegments,
   applyStreamChunk,
@@ -232,6 +233,7 @@ export default function App() {
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
+  const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
   const [changesRevision, setChangesRevision] = useState(0)
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
@@ -1072,6 +1074,22 @@ export default function App() {
         setRightPanelTab('agents')
         setRightPanelOpen(true)
       }
+      if (chunk.type === 'tool_done' && chunk.toolName) {
+        if (
+          stampSubAgentActivity(
+            buf.turnMeta.activities,
+            chunk.toolName,
+            chunk.toolArgs,
+            chunk.resultSummary,
+            chunk.content
+          )
+        ) {
+          buf.liveTurnMeta = {
+            browsedFiles: [...buf.turnMeta.browsedFiles],
+            activities: [...buf.turnMeta.activities]
+          }
+        }
+      }
       if (chunk.type === 'tool_start' && chunk.toolName) {
         for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
           if (!buf.turnMeta.browsedFiles.includes(p)) buf.turnMeta.browsedFiles.push(p)
@@ -1289,6 +1307,19 @@ export default function App() {
             acts.push({ kind: 'tool', label })
           }
           syncLiveTurnMeta()
+        }
+        if (chunk.type === 'tool_done' && chunk.toolName) {
+          if (
+            stampSubAgentActivity(
+              turnMetaRef.current.activities,
+              chunk.toolName,
+              chunk.toolArgs,
+              chunk.resultSummary,
+              chunk.content
+            )
+          ) {
+            syncLiveTurnMeta()
+          }
         }
         if (chunk.type === 'context_compress' && chunk.contextCompress) {
           const { messages: compressed, removedCount, beforeTokens, afterTokens } =
@@ -1834,6 +1865,13 @@ export default function App() {
   /** 切换右侧面板 Tab（斜杠命令 /files 等） */
   const handleTogglePanel = useCallback((tab: RightPanelTab) => {
     setRightPanelTab(tab)
+    setRightPanelOpen(true)
+    setPage('chat')
+  }, [])
+
+  const handleOpenSubAgent = useCallback((id: string | null) => {
+    setFocusSubAgentId(id)
+    setRightPanelTab('agents')
     setRightPanelOpen(true)
     setPage('chat')
   }, [])
@@ -3919,6 +3957,7 @@ export default function App() {
               approval={approval}
               approvalResponding={approvalResponding}
               onApproval={handleApproval}
+              onOpenSubAgent={handleOpenSubAgent}
             />
             </div>
           ) : page === 'automations' ? (
@@ -3967,6 +4006,7 @@ export default function App() {
           agentFindings={reviewFindings}
           suggestedCommit={suggestedCommit}
           conversationId={activeConversationId}
+          focusSubAgentId={focusSubAgentId}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

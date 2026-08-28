@@ -3,6 +3,7 @@
  * 详见 shared/ARCH.md
  */
 import type { TurnActivity } from './types'
+import { isSubAgentInspectTool, parseSubAgentId, subAgentIdFromTool } from './subagent'
 
 /** UI 过程时间线标题（渲染进程用，与 tools/builtins 各模块 title 保持同步） */
 const TOOL_TITLES: Record<string, string> = {
@@ -69,6 +70,9 @@ export interface ProcessStep {
   detail?: string
   thinkingText?: string
   status: ProcessStepStatus
+  toolName?: string
+  /** 主线程点开活动时的子 Agent id */
+  subAgentId?: string | null
 }
 
 
@@ -159,7 +163,11 @@ export function buildProcessSteps(options: {
       kind: 'tool',
       title,
       detail,
-      status: isActive ? 'active' : 'done'
+      status: isActive ? 'active' : 'done',
+      toolName,
+      subAgentId: isSubAgentInspectTool(toolName)
+        ? subAgentIdFromTool(toolName, undefined, detail, a.label) || parseSubAgentId(a.label)
+        : null
     })
   }
 

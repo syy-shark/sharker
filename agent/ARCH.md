@@ -28,8 +28,8 @@
 | `tool-definitions.ts` | re-export `tools/schemas` 的 `TOOL_DEFINITIONS` |
 | `text-tool-fallback.ts` | 弱模型把工具调用打进正文时的解析与回退执行 |
 | `vision-feedback.ts` | Computer Use 截图视觉回灌（多模态 user 消息） |
-| `coordinator.ts` | 子 Agent：spawn、转向、停止、按父线程快照；直播 token 节流广播 |
-| `coordinator.test.ts` | 父线程归组与停止 |
+| `coordinator.ts` | 子 Agent：spawn、转向、停止、按父线程快照；直播 token 节流广播；`~/.sharker/subagents.json` 重启恢复（进行中标中断） |
+| `coordinator.test.ts` | 父线程归组、停止、落盘与重启中断 |
 | `approval-bridge.ts` | 父 turn 审批桥，供子 Agent 工具调用复用 |
 | `ARCH.md` | 本层架构说明 |
 

@@ -25,7 +25,7 @@
 | `context-compress.ts` | 85% 阈值自动压缩历史 |
 | `token-estimate.ts` | 上下文 token 粗估 |
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
-| `process-steps.ts` | 旧消息回退：过程时间线步骤 |
+| `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用 |
 | `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部，避免每 token 重解析全文 |
 | `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id |
@@ -56,8 +56,8 @@
 | `git-pr-review.test.ts` | 跳过 gh- 导入评论、拼 api 参数 |
 | `thread-window.ts` | 弹出线程窗 `#thread/<ws>/<id>` |
 | `thread-window.test.ts` | hash 往返 |
-| `subagent.ts` | 子 Agent 快照过滤 / 排序（不进侧栏） |
-| `subagent.test.ts` | 按父线程过滤、进行中优先 |
+| `subagent.ts` | 子 Agent 快照过滤 / 排序 / 主线程解析 id / 落盘中断（不进侧栏） |
+| `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支 |
 | `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
@@ -83,7 +83,7 @@
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
-| `turn-meta.ts` | 工具活动 label；写盘工具相对路径（本轮审查） |
+| `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查） |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |

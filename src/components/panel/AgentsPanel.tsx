@@ -13,9 +13,11 @@ import './AgentsPanel.css'
 
 interface Props {
   conversationId: string | null
+  /** 主线程时间线点开时选中该孩子 */
+  focusId?: string | null
 }
 
-export function AgentsPanel({ conversationId }: Props) {
+export function AgentsPanel({ conversationId, focusId = null }: Props) {
   const [items, setItems] = useState<SubAgentSnapshot[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [steer, setSteer] = useState('')
@@ -34,6 +36,10 @@ export function AgentsPanel({ conversationId }: Props) {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    if (focusId) setSelectedId(focusId)
+  }, [focusId])
 
   useEffect(() => {
     if (!window.sharker.onSubAgentUpdate) return

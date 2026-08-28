@@ -120,11 +120,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### Git / Tasks / Sub-agents
 
-见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥U`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。
+见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥U`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。主线程时间线里的启动子 Agent / 转向 / 取结果步骤可点 **打开**，选中对应孩子（对标 Codex「Open a subagent thread from the activity shown in the main thread」）。快照落 `~/.sharker/subagents.json`，重启后仍能查看已结束的孩子；启动时仍在跑的标为「应用重启后中断」。
 
 ### 子 Agent 活动
 
-对标 Codex Activity / Subagents：只挂在当前对话下；审批沿用父 turn，避免权限请求丢失。
+对标 Codex Activity / Subagents：只挂在当前对话下；审批沿用父 turn，避免权限请求丢失。可从主线程活动点开；重启后从磁盘恢复。
 
 ### Web
 

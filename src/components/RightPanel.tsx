@@ -37,6 +37,8 @@ interface Props {
   suggestedCommit?: string
   /** 当前对话：子 Agent 只挂在父线程下 */
   conversationId?: string | null
+  /** 主线程点开的子 Agent */
+  focusSubAgentId?: string | null
 }
 
 /** Codex 风格右侧面板 */
@@ -52,7 +54,8 @@ export function RightPanel({
   lastTurnPaths = [],
   agentFindings = [],
   suggestedCommit = '',
-  conversationId = null
+  conversationId = null,
+  focusSubAgentId = null
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -337,7 +340,9 @@ export function RightPanel({
         )}
         {tab === 'terminal' && <EmbeddedTerminal workspacePath={workspacePath} />}
         {tab === 'browser' && <EmbeddedBrowser />}
-        {tab === 'agents' && <AgentsPanel conversationId={conversationId} />}
+        {tab === 'agents' && (
+          <AgentsPanel conversationId={conversationId} focusId={focusSubAgentId} />
+        )}
       </div>
     </aside>
   )

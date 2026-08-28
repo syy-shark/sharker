@@ -1,10 +1,19 @@
 /**
  * 子 Agent 编排：spawn、转向、停止、取结果；按父线程归组，不进侧栏。
+ * 快照落 ~/.sharker/subagents.json，重启后仍可点开已结束的孩子。
  * @see agent/ARCH.md
  */
 import { randomUUID } from 'crypto'
+import fs from 'fs/promises'
+import os from 'os'
+import path from 'path'
 import type { AppSettings, ChatMessage } from '../shared/types'
 import type { SubAgentSnapshot } from '../shared/subagent'
+import {
+  capSubAgentSnapshot,
+  interruptRunningSubAgent,
+  parsePersistedSubAgents
+} from '../shared/subagent'
 import { buildSystemPrompt } from './loop'
 import { queryLoop } from './query-loop'
 import type { ApprovalHandler } from './loop'
@@ -33,6 +42,77 @@ type SubAgentListener = (snapshot: SubAgentSnapshot) => void
 let listener: SubAgentListener | null = null
 let emitTimer: ReturnType<typeof setTimeout> | null = null
 const pendingEmit = new Set<string>()
+let persistReady = false
+let persistFile: string | null = null
+let persistTimer: ReturnType<typeof setTimeout> | null = null
+
+function defaultPersistPath(): string {
+  return path.join(os.homedir(), '.sharker', 'subagents.json')
+}
+
+function sessionFromSnapshot(snap: SubAgentSnapshot): SubAgentSession {
+  return {
+    id: snap.id,
+    taskId: `restored-${snap.id}`,
+    parentConversationId: snap.parentConversationId,
+    prompt: snap.prompt,
+    status: snap.status,
+    result: snap.result,
+    streaming: snap.streaming,
+    messages: [],
+    createdAt: snap.createdAt,
+    updatedAt: snap.updatedAt,
+    generation: 1,
+    abort: new AbortController()
+  }
+}
+
+async function flushPersist(): Promise<void> {
+  if (!persistReady || !persistFile) return
+  const payload = {
+    sessions: listSubAgents().map((s) => capSubAgentSnapshot(toSubAgentSnapshot(s)))
+  }
+  await fs.mkdir(path.dirname(persistFile), { recursive: true })
+  await fs.writeFile(persistFile, JSON.stringify(payload, null, 2), 'utf8')
+}
+
+function schedulePersist(immediate = false): void {
+  if (!persistReady) return
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  if (immediate) {
+    void flushPersist().catch((e) => console.warn('[subagents] persist failed', e))
+    return
+  }
+  persistTimer = setTimeout(() => {
+    persistTimer = null
+    void flushPersist().catch((e) => console.warn('[subagents] persist failed', e))
+  }, 400)
+}
+
+/** 启动时从磁盘恢复；进行中的孩子标为重启中断 */
+export async function hydrateSubAgents(filePath?: string): Promise<number> {
+  persistFile = filePath || defaultPersistPath()
+  persistReady = true
+  let raw: unknown = { sessions: [] }
+  try {
+    raw = JSON.parse(await fs.readFile(persistFile, 'utf8')) as unknown
+  } catch {
+    raw = { sessions: [] }
+  }
+  const loaded = parsePersistedSubAgents(raw)
+  let interrupted = 0
+  for (const row of loaded) {
+    if (sessions.has(row.id)) continue
+    const snap = interruptRunningSubAgent(row)
+    if (snap.status !== row.status) interrupted += 1
+    sessions.set(snap.id, sessionFromSnapshot(snap))
+  }
+  if (interrupted > 0) schedulePersist(true)
+  return loaded.length
+}
 
 export function setSubAgentListener(fn: SubAgentListener | null): void {
   listener = fn
@@ -52,6 +132,7 @@ export function toSubAgentSnapshot(session: SubAgentSession): SubAgentSnapshot {
 }
 
 function emit(session: SubAgentSnapshot, immediate = false): void {
+  schedulePersist(immediate)
   if (!listener) return
   if (immediate) {
     listener(session)
@@ -238,5 +319,11 @@ export function resetSubAgentsForTest(): void {
     clearTimeout(emitTimer)
     emitTimer = null
   }
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  persistReady = false
+  persistFile = null
   listener = null
 }

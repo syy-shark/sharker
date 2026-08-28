@@ -3,11 +3,13 @@
  * @see src/ARCH.md
  */
 import type { ProcessStep } from '../../shared/process-steps'
+import { isSubAgentInspectTool } from '../../shared/subagent'
 import './ProcessTimeline.css'
 
 /** ProcessTimeline Props：过程步骤列表 */
 interface Props {
   steps: ProcessStep[]
+  onOpenSubAgent?: (id: string | null) => void
 }
 
 /** 步骤类型对应图标 */
@@ -57,12 +59,14 @@ function StepIcon({ kind, active }: { kind: ProcessStep['kind']; active: boolean
 }
 
 /** 思考/工具/技能步骤时间线 */
-export function ProcessTimeline({ steps }: Props) {
+export function ProcessTimeline({ steps, onOpenSubAgent }: Props) {
   if (steps.length === 0) return null
 
   return (
     <ol className="process-timeline">
-      {steps.map((step, index) => (
+      {steps.map((step, index) => {
+        const openable = Boolean(onOpenSubAgent && isSubAgentInspectTool(step.toolName))
+        return (
         <li
           key={step.id}
           className={`process-timeline-item process-timeline-item--${step.status}`}
@@ -74,7 +78,21 @@ export function ProcessTimeline({ steps }: Props) {
           </div>
           <div className="process-timeline-body">
             <div className="process-timeline-head">
-              <span className="process-timeline-title">{step.title}</span>
+              {openable ? (
+                <button
+                  type="button"
+                  className="process-timeline-open"
+                  onClick={() => onOpenSubAgent?.(step.subAgentId ?? null)}
+                  aria-label={
+                    step.subAgentId ? `打开子 Agent ${step.subAgentId}` : '打开子 Agent 活动'
+                  }
+                >
+                  <span className="process-timeline-title">{step.title}</span>
+                  <span className="process-timeline-open-hint">打开</span>
+                </button>
+              ) : (
+                <span className="process-timeline-title">{step.title}</span>
+              )}
               {step.status === 'active' && step.kind !== 'think' && (
                 <span className="process-timeline-pulse" aria-hidden />
               )}
@@ -84,7 +102,8 @@ export function ProcessTimeline({ steps }: Props) {
             ) : null}
           </div>
         </li>
-      ))}
+        )
+      })}
     </ol>
   )
 }

@@ -83,6 +83,37 @@
   letter-spacing: 0.02em;
 }
 
+.process-timeline-open {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.process-timeline-open:hover .process-timeline-title {
+  color: var(--accent);
+}
+
+.process-timeline-open:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.process-timeline-open-hint {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .process-timeline-item--active .process-timeline-title {
   color: var(--accent);
 }

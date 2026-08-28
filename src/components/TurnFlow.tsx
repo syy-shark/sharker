@@ -20,6 +20,7 @@ import {
   shouldSynthesizePlanning
 } from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
+import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
 import './TurnFlow.css'
 
 interface Props {
@@ -41,6 +42,8 @@ interface Props {
   contentStreaming?: boolean
   /** 正在生成内联演示（工具已启动，即使尚未可绘） */
   generatingDemo?: boolean
+  /** 对标 Codex：主线程活动点开子 Agent */
+  onOpenSubAgent?: (id: string | null) => void
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -316,15 +319,27 @@ export function ThoughtDisclosure({
 
 function ProcessStepRow({
   step,
-  isLast
+  isLast,
+  onOpenSubAgent
 }: {
   step: DisplayStep
   isLast: boolean
+  onOpenSubAgent?: (id: string | null) => void
 }) {
   const segment = step.source?.segment
   const isDemo =
     Boolean(segment?.toolName === 'present_inline_demo' && segment?.content?.trim())
   const title = step.title
+  const subAgentId = subAgentIdFromTool(
+    segment?.toolName,
+    segment?.toolArgs,
+    segment?.resultSummary,
+    segment?.resultOutput,
+    segment?.content,
+    segment?.toolDetail,
+    step.detail
+  )
+  const openable = Boolean(onOpenSubAgent && isSubAgentInspectTool(segment?.toolName))
 
   return (
     <li
@@ -342,7 +357,19 @@ function ProcessStepRow({
       </span>
       <div className="turn-flow-step-content">
         <div className="turn-flow-step-copy">
-          <span className="turn-flow-step-title">{title}</span>
+          {openable ? (
+            <button
+              type="button"
+              className="turn-flow-step-open"
+              onClick={() => onOpenSubAgent?.(subAgentId)}
+              aria-label={subAgentId ? `打开子 Agent ${subAgentId}` : '打开子 Agent 活动'}
+            >
+              <span className="turn-flow-step-title">{title}</span>
+              <span className="turn-flow-step-open-hint">打开</span>
+            </button>
+          ) : (
+            <span className="turn-flow-step-title">{title}</span>
+          )}
           {step.detail && !isDemo ? (
             <code className="turn-flow-step-detail" title={step.detail || segment?.toolDetail}>
               {step.detail}
@@ -408,7 +435,8 @@ export function TurnFlow({
   answerStreaming = false,
   thinkText,
   contentStreaming = false,
-  generatingDemo = false
+  generatingDemo = false,
+  onOpenSubAgent
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -672,6 +700,7 @@ export function TurnFlow({
               key={step.id}
               step={step}
               isLast={i === listSteps.length - 1}
+              onOpenSubAgent={onOpenSubAgent}
             />
           ))}
         </ol>

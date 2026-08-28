@@ -469,6 +469,39 @@ html.theme-dark .turn-flow-live-head {
   min-width: 0;
 }
 
+.turn-flow-step-open {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.turn-flow-step-open:hover .turn-flow-step-title {
+  color: var(--text);
+}
+
+.turn-flow-step-open:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.turn-flow-step-open-hint {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  opacity: 0.88;
+}
+
 .turn-flow-step-title {
   transition: color var(--motion-duration-fast) var(--motion-ease-soft), opacity var(--motion-duration-fast) var(--motion-ease-soft);
   flex-shrink: 0;
