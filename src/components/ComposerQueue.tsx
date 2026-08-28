@@ -5,6 +5,7 @@
  */
 import { memo, useState } from 'react'
 import type { QueuedPrompt } from '../types/chat'
+import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import './ComposerQueue.css'
 
 interface Props {
@@ -61,7 +62,7 @@ export const ComposerQueue = memo(function ComposerQueue({
                 autoFocus
               />
             ) : (
-              <p className="composer-queue-text">{item.text}</p>
+              <p className="composer-queue-text">{normalizeStreamingText(item.text)}</p>
             )}
             <div className="composer-queue-actions">
               {editing ? (

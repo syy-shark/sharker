@@ -343,6 +343,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  min-width: 0;
   max-width: min(85%, 520px);
 }
 
@@ -365,6 +366,7 @@
 
 .message-bubble--user {
   width: 100%;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 18px 18px 6px 18px;
   background: var(--glass-fill-raised);
@@ -376,6 +378,8 @@
   font-size: 14px;
   line-height: 1.5;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-soft),
     border-color var(--motion-duration-fast) var(--motion-ease-soft),
@@ -385,6 +389,10 @@
 .message-bubble--user p {
   margin: 0;
   font-size: calc(14px * var(--ui-font-scale, 1));
+  /* 对标 Codex #37709 / #38380 / #38704：换行保留，长 URL 在柱内折 */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .message-attachments {
@@ -928,6 +936,8 @@
   color: var(--text);
   outline: none;
   box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .composer-input::placeholder {
@@ -1089,6 +1099,7 @@
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
@@ -1100,8 +1111,11 @@
 
 .message-user-edit-input {
   width: 100%;
+  min-width: 0;
   min-height: 72px;
   resize: vertical;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   border: 0.5px solid var(--glass-edge);
   border-radius: var(--radius-sm);
   background: var(--glass-fill-nested);
@@ -1628,9 +1642,10 @@ html.theme-dark .chat-side-ask {
   content-visibility: visible;
   contain-intrinsic-size: auto;
 }
-.message-user-wrap { max-width: min(78%, 600px); }
+.message-user-wrap { min-width: 0; max-width: min(78%, 600px); }
 
 .message-bubble--user {
+  min-width: 0;
   padding: 10px 14px;
   color: var(--text);
   border: 0.5px solid var(--glass-edge);
@@ -1639,6 +1654,8 @@ html.theme-dark .chat-side-ask {
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: var(--glass-rim-soft);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .message-body--assistant { font-size: calc(14px * var(--ui-font-scale, 1)); line-height: 1.68; }
@@ -1755,6 +1772,8 @@ html.theme-dark .chat-side-ask {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .composer-input:focus,
 .composer-input:focus-visible {

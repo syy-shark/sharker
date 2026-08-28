@@ -16,6 +16,7 @@ import {
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
+  normalizeStreamingText,
   streamingProseText,
   streamingRenderSlots,
   needsFullRemarkMarkdown
@@ -123,6 +124,10 @@ describe('splitStreamingMarkdown', () => {
     expect(split.tailKind).toBe('fence')
     expect(split.tailLang).toBe('ts')
     expect(split.tail).toContain('const x = 1')
+    expect(normalizeStreamingText('a\r\nb\rc\n')).toBe('a\nb\nc\n')
+    expect(normalizeStreamingText('https://example.com/very/long')).toBe(
+      'https://example.com/very/long'
+    )
   })
 
   it('extracts open fence body without the opener', () => {

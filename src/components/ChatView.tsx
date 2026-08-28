@@ -42,6 +42,7 @@ import {
   shouldFollowApprovalIntoView
 } from '../../shared/live-display'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
+import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
@@ -200,7 +201,7 @@ const UserMessageRow = memo(function UserMessageRow({
               </div>
             </div>
           ) : (
-            <p>{content}</p>
+            <p>{normalizeStreamingText(content)}</p>
           )}
         </div>
         {editing ? null : (
