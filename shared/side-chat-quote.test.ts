@@ -32,6 +32,18 @@ describe('side chat quote', () => {
         '请说明要点并指出明显风险。先不要改文件。'
       ].join('\n')
     )
+    expect(formatSideChatPrompt('npm test', '', 'terminal')).toBe(
+      [
+        '关于这段终端输出：',
+        '',
+        '> npm test',
+        '',
+        '请说明要点并指出明显风险。先不要改文件。'
+      ].join('\n')
+    )
+    expect(formatSideChatPrompt('ECONNREFUSED', '为什么连不上？', 'terminal')).toBe(
+      ['为什么连不上？', '', '终端输出：', '', '> ECONNREFUSED'].join('\n')
+    )
   })
 
   it('accepts transcript ranges and rejects composer or live rows', () => {

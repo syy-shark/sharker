@@ -31,7 +31,7 @@
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流；本地文件引用点开右侧预览；保住 GFM 任务列表 class；元素子节点不套 span，避免收束跳动 |
 | `StreamingMarkdown.tsx` | 直播正文：`React.memo` + 增量拆分复用已闭合块，只重绘增长尾部；CRLF 按 LF 拆；未闭合围栏用 `LiveFenceTail`（开闭至少三连，更长围栏可包住内部 \`\`\`）；散文尾廉价 ATX/Setext 标题（含行尾 `#`）/列表（含 `1)`、`ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内表格 / 围栏 / 引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码（嵌套层自己松））/任务项/嵌套引用（`blockquote>p`、引用围栏与懒续行含硬换行；未闭合围栏不吃懒续行）/表格对齐与单列 / 无两侧 `|` 与 `\\|` / 分隔行未到先画表/分隔线（含 `* * *`）/缩进代码/脚注区（缩进续行与多段）/http 图（含 title、`![alt][id]` 相对 dest、alt 去标记）/dest 内成对括号 / 未闭合 `](` 先画链接/未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画/`[![img]](url)`/多反引号代码/链接标签内强调与代码/HTML 实体/删除线套粗体（两侧无空白才画）/标记内混排与链接/下划线强调/`***` 嵌套强调/反斜杠转义/引用式链接含定义 title 与次行标题/邮箱/`www.`（不当文件芯片）/危险协议清空/硬换行与可点 http / 文件引用；全文引用定义挂到已闭合块；任务项用 GFM `contains-task-list` / `task-list-item`；`continueCheapProseBlocks` 保住已闭合项，不每 token 跑 remark |
 | `FileCiteLink.tsx` / `.css` | 对话文件引用按钮，派发打开右侧预览 |
-| `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 与收束后共用行节点（已闭合行 memo），头栏同为语言标签 + 复制按钮位（不再写「写入中」），闭合围栏不再换一套 DOM |
+| `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳；`LiveFenceTail` 与收束后共用行节点（已闭合行 memo）；长行在对话柱内换行（不再 `min-width: max-content` 横向撑开直播贴底）；头栏同为语言标签 + 复制按钮位（不再写「写入中」），闭合围栏不再换一套 DOM |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff；默认换行长行（对标 Codex Wrap long diff lines）；审查模式 hunk 暂存/还原 + 行内评论；⌘/Ctrl+单击行打开预览 |
 | `CommandPalette.tsx` / `.css` | Codex 式 ⌘K / ⌘⇧P 命令面板 |
 | `ShortcutsHelp.tsx` / `.css` | ⌘/ 快捷键一览 |
@@ -39,7 +39,7 @@
 | `MessageActions.tsx` / `.css` | 消息复制 / 用户气泡编辑重发 / 失败重试 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
-| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix` 与 `/review` 对比焦点；文件树传入对话引用预览与项目附加文件夹；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
+| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix` 与 `/review` 对比焦点；文件树传入对话引用预览与项目附加文件夹；终端划选可旁路提问；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |

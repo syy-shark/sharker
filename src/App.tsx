@@ -6406,6 +6406,18 @@ export default function App() {
           gitBranchPrefix={settings.gitBranchPrefix ?? ''}
           filePreview={filePreview}
           extraRoots={fileSearchExtraRoots}
+          onAskInSideChat={(prompt) => {
+            void handleSlashActionRef.current(
+              {
+                name: 'side',
+                description: '旁路新线程',
+                scope: 'ui',
+                action: 'side_conversation',
+                category: 'session'
+              },
+              prompt
+            )
+          }}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

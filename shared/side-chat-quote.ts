@@ -39,11 +39,17 @@ export function isTranscriptSelectionRange(range: AbstractRange, root: ParentNod
   return shouldOfferSideChat((selector) => el.closest(selector))
 }
 
+export type SideChatSource = 'transcript' | 'terminal'
+
 /**
  * 旁路线程首条提示：摘录作上下文。
  * 有问题时把问题放在前面；无问题则请模型概括并指出风险，先不改仓库。
  */
-export function formatSideChatPrompt(selection: string, question = ''): string {
+export function formatSideChatPrompt(
+  selection: string,
+  question = '',
+  source: SideChatSource = 'transcript'
+): string {
   const excerpt = normalizeTranscriptSelection(selection)
   if (!excerpt) return question.trim()
   const quoted = excerpt
@@ -51,6 +57,7 @@ export function formatSideChatPrompt(selection: string, question = ''): string {
     .map((line) => `> ${line}`)
     .join('\n')
   const ask = question.trim()
-  if (ask) return `${ask}\n\n对话摘录：\n\n${quoted}`
-  return `关于这段对话摘录：\n\n${quoted}\n\n请说明要点并指出明显风险。先不要改文件。`
+  const label = source === 'terminal' ? '终端输出' : '对话摘录'
+  if (ask) return `${ask}\n\n${label}：\n\n${quoted}`
+  return `关于这段${label}：\n\n${quoted}\n\n请说明要点并指出明显风险。先不要改文件。`
 }

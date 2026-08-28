@@ -82,15 +82,17 @@
 }
 
 .code-artifact-code {
-  min-width: max-content;
+  min-width: 0;
+  width: 100%;
   padding: 7px 0;
   tab-size: 2;
 }
 
 .code-artifact-line {
   display: grid;
-  min-width: 100%;
-  grid-template-columns: 46px max-content;
+  min-width: 0;
+  width: 100%;
+  grid-template-columns: 46px minmax(0, 1fr);
   min-height: 19px;
 }
 
@@ -118,8 +120,9 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  white-space: pre;
-  word-break: normal;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .code-artifact-footer {

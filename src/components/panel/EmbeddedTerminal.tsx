@@ -4,6 +4,7 @@
  * @see ./ARCH.md
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { formatSideChatPrompt, normalizeTranscriptSelection } from '../../../shared/side-chat-quote'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { Terminal, type ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -17,6 +18,8 @@ interface Props {
   onPendingCommandSent?: () => void
   /** 递增则清屏（对标 Codex Ctrl+L） */
   clearTick?: number
+  /** 划选终端输出后旁路提问（对标 Codex Ask in side chat） */
+  onAskInSideChat?: (prompt: string) => void
 }
 
 /**
@@ -125,7 +128,8 @@ export function EmbeddedTerminal({
   workspacePath,
   pendingCommand = null,
   onPendingCommandSent,
-  clearTick = 0
+  clearTick = 0,
+  onAskInSideChat
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<HTMLDivElement>(null)
@@ -136,6 +140,9 @@ export function EmbeddedTerminal({
   const [ready, setReady] = useState(false)
   /** 主题变化时强制重建 xterm（仅改 options 在部分版本不重绘底色） */
   const [themeTick, setThemeTick] = useState(0)
+  const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
+  const onAskRef = useRef(onAskInSideChat)
+  onAskRef.current = onAskInSideChat
   const uiDark = useMemo(() => isDarkUi(), [themeTick])
 
   useEffect(() => {
@@ -178,6 +185,32 @@ export function EmbeddedTerminal({
     term.open(host)
     term.options.theme = theme
     termRef.current = term
+
+    const syncSideAsk = () => {
+      if (!onAskRef.current) {
+        setSideAsk(null)
+        return
+      }
+      const text = normalizeTranscriptSelection(term.getSelection())
+      if (!text) {
+        setSideAsk(null)
+        return
+      }
+      const box = host.getBoundingClientRect()
+      const mark = host.querySelector('.xterm-selection')
+      const rect = mark?.getBoundingClientRect()
+      const top =
+        rect && rect.height > 0 ? Math.min(rect.bottom + 8, box.bottom - 36) : box.bottom - 40
+      const left =
+        rect && rect.width > 0
+          ? Math.min(Math.max(rect.left + rect.width / 2, box.left + 16), box.right - 16)
+          : box.left + box.width / 2
+      setSideAsk((prev) =>
+        prev && prev.text === text && prev.top === top && prev.left === left ? prev : { text, top, left }
+      )
+    }
+    const selectionSub = term.onSelectionChange(syncSideAsk)
+    const scrollSub = term.onScroll(syncSideAsk)
 
     let disposed = false
     let sessionId: string | null = null
@@ -264,6 +297,9 @@ export function EmbeddedTerminal({
     return () => {
       disposed = true
       for (const t of fitTimers) window.clearTimeout(t)
+      selectionSub.dispose()
+      scrollSub.dispose()
+      setSideAsk(null)
       offData?.()
       offExit?.()
       ro.disconnect()
@@ -369,6 +405,21 @@ export function EmbeddedTerminal({
         ref={hostRef}
         data-term-theme={uiDark ? 'dark' : 'light'}
       />
+      {sideAsk && onAskInSideChat ? (
+        <button
+          type="button"
+          className="embedded-terminal-side-ask glass-pill"
+          style={{ top: sideAsk.top, left: sideAsk.left }}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            onAskInSideChat(formatSideChatPrompt(sideAsk.text, '', 'terminal'))
+            setSideAsk(null)
+            termRef.current?.clearSelection()
+          }}
+        >
+          旁路提问
+        </button>
+      ) : null}
     </div>
   )
 }
