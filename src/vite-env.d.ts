@@ -96,6 +96,16 @@ export interface SharkerApi {
     dataUrl: string
   }) => Promise<ChatAttachment>
   readAttachmentDataUrl: (filePath: string) => Promise<string>
+  notifyTurnComplete: (payload: {
+    title: string
+    body: string
+    conversationId: string
+    workspaceId: string
+  }) => Promise<boolean>
+  setDockBadge: (count: number) => Promise<void>
+  onNotifyTurnClick: (
+    cb: (payload: { conversationId: string; workspaceId: string }) => void
+  ) => () => void
   abortChat: (conversationId?: string) => Promise<void>
   respondApproval: (
     id: string,

@@ -3,7 +3,17 @@
  * Electron 主进程入口：窗口生命周期、全部 IPC 注册与 Agent 对话调度。
  * @see electron/ARCH.md
  */
-import { app, BrowserWindow, ipcMain, dialog, Menu, nativeImage, shell, safeStorage } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  Menu,
+  nativeImage,
+  Notification,
+  shell,
+  safeStorage
+} from 'electron'
 import fs from 'fs'
 import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
@@ -140,11 +150,12 @@ const approvalRegistry = new ConversationApprovalRegistry()
 let cachedAppIcon: Electron.NativeImage | undefined
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
-const IMAGE_MIME_TO_EXT: Record<string, string> = {
+const ATTACHMENT_MIME_TO_EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
-  'image/gif': 'gif'
+  'image/gif': 'gif',
+  'text/plain': 'txt'
 }
 
 function sanitizeAttachmentName(name: string): string {
@@ -244,13 +255,13 @@ async function ensureXaiSubscriptionFresh(
 }
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
-  const m = dataUrl.match(/^data:([^;,]+);base64,(.+)$/)
+  const m = dataUrl.match(/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.+)$/)
   if (!m) throw new Error('附件数据格式无效')
   const mimeType = m[1].toLowerCase()
-  if (!IMAGE_MIME_TO_EXT[mimeType]) throw new Error(`不支持的图片类型: ${mimeType}`)
+  if (!ATTACHMENT_MIME_TO_EXT[mimeType]) throw new Error(`不支持的附件类型: ${mimeType}`)
   const buffer = Buffer.from(m[2], 'base64')
   if (buffer.length > MAX_ATTACHMENT_BYTES) {
-    throw new Error(`图片过大（>${Math.round(MAX_ATTACHMENT_BYTES / 1024 / 1024)}MB）`)
+    throw new Error(`附件过大（>${Math.round(MAX_ATTACHMENT_BYTES / 1024 / 1024)}MB）`)
   }
   return { mimeType, buffer }
 }
@@ -265,19 +276,21 @@ async function saveChatAttachment(input: {
     throw new Error('附件 MIME 类型不一致')
   }
   const id = crypto.randomUUID()
-  const ext = IMAGE_MIME_TO_EXT[parsed.mimeType]
+  const ext = ATTACHMENT_MIME_TO_EXT[parsed.mimeType]
   const safeName = sanitizeAttachmentName(input.name)
   const dir = path.join(app.getPath('userData'), 'attachments')
   await fs.promises.mkdir(dir, { recursive: true })
   const filePath = path.join(dir, `${Date.now()}-${id}-${safeName}.${ext}`)
   await fs.promises.writeFile(filePath, parsed.buffer)
+  const kind = parsed.mimeType.startsWith('image/') ? 'image' : 'text'
   return {
     id,
     name: safeName,
     mimeType: parsed.mimeType,
     path: filePath,
     size: parsed.buffer.length,
-    kind: 'image'
+    kind,
+    text: kind === 'text' ? parsed.buffer.toString('utf8') : undefined
   }
 }
 
@@ -289,13 +302,15 @@ async function readAttachmentDataUrl(filePath: string): Promise<string> {
   }
   const ext = path.extname(resolved).toLowerCase()
   const mimeType =
-    ext === '.jpg' || ext === '.jpeg'
-      ? 'image/jpeg'
-      : ext === '.webp'
-        ? 'image/webp'
-        : ext === '.gif'
-          ? 'image/gif'
-          : 'image/png'
+    ext === '.txt'
+      ? 'text/plain'
+      : ext === '.jpg' || ext === '.jpeg'
+        ? 'image/jpeg'
+        : ext === '.webp'
+          ? 'image/webp'
+          : ext === '.gif'
+            ? 'image/gif'
+            : 'image/png'
   const buf = await fs.promises.readFile(resolved)
   return `data:${mimeType};base64,${buf.toString('base64')}`
 }
@@ -966,6 +981,36 @@ function registerIpc(): void {
   ipcMain.handle(IPC.READ_ATTACHMENT_DATA_URL, async (_e, filePath: string) =>
     readAttachmentDataUrl(filePath)
   )
+
+  ipcMain.handle(
+    IPC.NOTIFY_TURN_COMPLETE,
+    (_e, payload: { title?: string; body?: string; conversationId?: string; workspaceId?: string }) => {
+      if (!Notification.isSupported()) return false
+      const n = new Notification({
+        title: String(payload?.title || 'Sharker'),
+        body: String(payload?.body || '回合已完成')
+      })
+      n.on('click', () => {
+        const wins = BrowserWindow.getAllWindows()
+        const win = wins[0]
+        if (win) {
+          if (win.isMinimized()) win.restore()
+          win.show()
+          win.focus()
+        }
+        for (const w of wins) {
+          w.webContents.send(IPC.NOTIFY_TURN_CLICK, payload)
+        }
+      })
+      n.show()
+      return true
+    }
+  )
+
+  ipcMain.handle(IPC.SET_DOCK_BADGE, (_e, count: number) => {
+    const n = Math.max(0, Math.floor(Number(count) || 0))
+    app.dock?.setBadge(n > 0 ? String(n) : '')
+  })
 
   ipcMain.handle(IPC.WINDOW_MINIMIZE, (e) => windowFromEvent(e)?.minimize())
   ipcMain.handle(IPC.WINDOW_MAXIMIZE, (e) => {

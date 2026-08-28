@@ -3,7 +3,7 @@
  * @see src/ARCH.md
  */
 import { useState } from 'react'
-import { Check, Copy, RotateCcw } from 'lucide-react'
+import { Check, Copy, Pencil, RotateCcw } from 'lucide-react'
 import './MessageActions.css'
 
 /** MessageActions Props：消息正文与 ID */
@@ -11,10 +11,11 @@ interface Props {
   content: string
   messageId: string
   onRetry?: () => void
+  onEdit?: () => void
 }
 
-/** 消息操作区（复制等） */
-export function MessageActions({ content, messageId, onRetry }: Props) {
+/** 消息操作区（复制 / 编辑 / 重试） */
+export function MessageActions({ content, messageId, onRetry, onEdit }: Props) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -38,6 +39,17 @@ export function MessageActions({ content, messageId, onRetry }: Props) {
       >
         {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       </button>
+      {onEdit ? (
+        <button
+          type="button"
+          className="message-actions-btn"
+          title="编辑并重发"
+          aria-label="编辑并重发"
+          onClick={onEdit}
+        >
+          <Pencil size={16} aria-hidden />
+        </button>
+      ) : null}
       {onRetry ? (
         <button
           type="button"

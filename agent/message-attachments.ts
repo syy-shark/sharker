@@ -8,9 +8,38 @@ import type { ChatCompletionContentPart } from '../providers/openai'
 
 const MAX_ATTACHMENT_VISION_BYTES = 5 * 1024 * 1024
 
-function attachmentLabel(attachments: ChatAttachment[]): string {
+/** 图片附件在正文里的标签 */
+function imageAttachmentLabel(attachments: ChatAttachment[]): string {
   if (!attachments.length) return ''
   return attachments.map((a, i) => `[图片 ${i + 1}: ${a.name}]`).join('\n')
+}
+
+/** 读取文本附件正文（优先内存字段，避免重复读盘） */
+async function textFromAttachment(attachment: ChatAttachment): Promise<string> {
+  if (attachment.text?.trim()) return attachment.text
+  return fs.readFile(attachment.path, 'utf8')
+}
+
+/** 把粘贴文本附件折进 user 正文（当作请求，不是旁路参考） */
+export async function appendTextAttachments(
+  text: string,
+  attachments: ChatAttachment[]
+): Promise<string> {
+  const texts = attachments.filter((a) => a.kind === 'text')
+  if (!texts.length) return text
+  const blocks: string[] = []
+  for (const attachment of texts) {
+    try {
+      const body = (await textFromAttachment(attachment)).trim()
+      if (!body) continue
+      blocks.push(`【附件 ${attachment.name}】\n${body}`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      blocks.push(`[系统] 文本附件读取失败: ${attachment.name} (${msg})`)
+    }
+  }
+  if (!blocks.length) return text
+  return [text.trim(), ...blocks].filter(Boolean).join('\n\n')
 }
 
 async function imagePartFromAttachment(
@@ -39,11 +68,13 @@ export async function userMessageContentWithAttachments(
   text: string,
   attachments?: ChatAttachment[]
 ): Promise<string | ChatCompletionContentPart[]> {
-  const images = attachments?.filter((a) => a.kind === 'image') ?? []
-  if (!images.length) return text
+  const list = attachments ?? []
+  const withText = await appendTextAttachments(text, list)
+  const images = list.filter((a) => a.kind === 'image')
+  if (!images.length) return withText
 
   const parts: ChatCompletionContentPart[] = [
-    { type: 'text', text: `${text}\n\n${attachmentLabel(images)}`.trim() }
+    { type: 'text', text: `${withText}\n\n${imageAttachmentLabel(images)}`.trim() }
   ]
   for (const attachment of images) {
     try {

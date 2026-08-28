@@ -27,7 +27,8 @@
 | `file-refs.ts` | 解析 `@path` 并注入文件内容（跳过 `@chat/`） |
 | `chat-refs.ts` | 解析 `@chat/<id>` 并注入有界对话摘要 |
 | `chat-refs.test.ts` | 跳过当前线程、未解析则原样返回 |
-| `message-attachments.ts` | 用户图片附件 → OpenAI 兼容多模态 content |
+| `message-attachments.ts` | 用户图片 / 粘贴文本附件 → OpenAI 兼容多模态 content（文本附件折进正文） |
+| `message-attachments.test.ts` | 粘贴文本折进 prompt、无图时保持纯文本 |
 | `verify.ts` | 改后自动验证：按 package.json scripts 选 test/build/lint 等 |
 | `workspace-bootstrap.ts` | 注入 README、package.json、顶层目录快照 |
 | `tool-definitions.ts` | re-export `tools/schemas` 的 `TOOL_DEFINITIONS` |

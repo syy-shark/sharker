@@ -94,6 +94,21 @@ contextBridge.exposeInMainWorld('sharker', {
   }): Promise<ChatAttachment> => ipcRenderer.invoke(IPC.SAVE_ATTACHMENT, input),
   readAttachmentDataUrl: (filePath: string): Promise<string> =>
     ipcRenderer.invoke(IPC.READ_ATTACHMENT_DATA_URL, filePath),
+  notifyTurnComplete: (payload: {
+    title: string
+    body: string
+    conversationId: string
+    workspaceId: string
+  }): Promise<boolean> => ipcRenderer.invoke(IPC.NOTIFY_TURN_COMPLETE, payload),
+  setDockBadge: (count: number): Promise<void> => ipcRenderer.invoke(IPC.SET_DOCK_BADGE, count),
+  onNotifyTurnClick: (
+    cb: (payload: { conversationId: string; workspaceId: string }) => void
+  ): (() => void) => {
+    const handler = (_: unknown, payload: { conversationId: string; workspaceId: string }): void =>
+      cb(payload)
+    ipcRenderer.on(IPC.NOTIFY_TURN_CLICK, handler)
+    return () => ipcRenderer.removeListener(IPC.NOTIFY_TURN_CLICK, handler)
+  },
   abortChat: (conversationId?: string): Promise<void> =>
     ipcRenderer.invoke(IPC.ABORT_CHAT, conversationId),
   respondApproval: (

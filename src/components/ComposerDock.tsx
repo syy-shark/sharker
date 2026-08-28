@@ -12,7 +12,7 @@ import {
   useRef,
   useState
 } from 'react'
-import { ArrowUp, Folder, Mic } from 'lucide-react'
+import { ArrowUp, FileText, Folder, Mic } from 'lucide-react'
 import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { PromptSubmitMode } from '../types/chat'
@@ -35,6 +35,12 @@ import {
   resolveComposerSubmit,
   restorePreviousComposerPrompt
 } from '../../shared/composer-submit'
+import {
+  decideClipboardPaste,
+  materializeComposerInput,
+  pastedTextAttachmentName,
+  utf8ToBase64
+} from '../../shared/composer-paste'
 import {
   appendDictationTranscript,
   isDictationShortcut,
@@ -172,6 +178,7 @@ export const ComposerDock = memo(
     const [input, setInput] = useState('')
     const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
     const [attachmentError, setAttachmentError] = useState('')
+    const [pastePreviewId, setPastePreviewId] = useState<string | null>(null)
     const [composerFocus, setComposerFocus] = useState<'none' | 'pointer' | 'keyboard'>('none')
     const [historyActiveIndex, setHistoryActiveIndex] = useState(0)
     const historyActiveIndexRef = useRef(0)
@@ -785,9 +792,46 @@ export const ComposerDock = memo(
       }
     }
 
+    const addPastedText = async (text: string) => {
+      const body = text
+      if (!body.trim()) return
+      setAttachmentError('')
+      try {
+        const name = pastedTextAttachmentName(
+          pendingAttachments.filter((a) => a.kind === 'text').length
+        )
+        const saved = await window.sharker.saveAttachment({
+          name,
+          mimeType: 'text/plain',
+          dataUrl: `data:text/plain;base64,${utf8ToBase64(body)}`
+        })
+        setPendingAttachments((prev) => [...prev, { ...saved, kind: 'text', text: body }])
+        setPastePreviewId(saved.id)
+      } catch (e) {
+        setAttachmentError(e instanceof Error ? e.message : String(e))
+      }
+    }
+
+    const revertPastedText = (id: string) => {
+      const att = pendingAttachments.find((a) => a.id === id && a.kind === 'text')
+      if (!att?.text) return
+      setPendingAttachments((prev) => prev.filter((x) => x.id !== id))
+      setPastePreviewId((cur) => (cur === id ? null : cur))
+      setInput((prev) => (prev.trim() ? `${prev.replace(/\s+$/, '')}\n\n${att.text}` : att.text!))
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        const pos = el.value.length
+        el.setSelectionRange(pos, pos)
+        syncTextareaHeight()
+      })
+    }
+
     const submit = (mode: PromptSubmitMode = loading ? 'queue' : 'send') => {
-      const t = input.trim()
-      const attachments = pendingAttachments
+      const resolved = materializeComposerInput(input, pendingAttachments)
+      const t = resolved.text.trim()
+      const attachments = resolved.attachments
       if (!t && attachments.length === 0) return
       if (t.startsWith('/') && attachments.length === 0) {
         const body = t.slice(1).trim()
@@ -798,6 +842,7 @@ export const ComposerDock = memo(
         if (cmd && onSlashAction) {
           setInput('')
           setPendingAttachments([])
+          setPastePreviewId(null)
           setAttachmentError('')
           onSlashAction(cmd, args)
           requestAnimationFrame(() => {
@@ -811,6 +856,7 @@ export const ComposerDock = memo(
       if (bang && onSlashAction) {
         setInput('')
         setPendingAttachments([])
+        setPastePreviewId(null)
         setAttachmentError('')
         onSlashAction(
           {
@@ -830,9 +876,10 @@ export const ComposerDock = memo(
       }
       setInput('')
       setPendingAttachments([])
+      setPastePreviewId(null)
       setAttachmentError('')
       onSubmitted?.()
-      onSend(t || '请看这张图片。', mode, attachments)
+      onSend(t || (attachments.some((a) => a.kind === 'image') ? '请看这张图片。' : ''), mode, attachments)
       requestAnimationFrame(() => {
         syncTextareaHeight()
         textareaRef.current?.focus()
@@ -1292,7 +1339,18 @@ export const ComposerDock = memo(
           }}
           onPaste={(e) => {
             const files = Array.from(e.clipboardData.files)
-            if (files.some((f) => f.type.startsWith('image/'))) {
+            const decision = decideClipboardPaste({
+              getData: (type) => e.clipboardData.getData(type),
+              hasImageFiles: files.some((f) => f.type.startsWith('image/')),
+              forcePlainText: e.shiftKey
+            })
+            if (decision.action === 'insert_text') return
+            if (decision.action === 'attach_text') {
+              e.preventDefault()
+              void addPastedText(decision.text)
+              return
+            }
+            if (decision.action === 'attach_images') {
               e.preventDefault()
               void addImageFiles(files)
             }
@@ -1321,18 +1379,58 @@ export const ComposerDock = memo(
         {pendingAttachments.length > 0 || attachmentError ? (
           <div className="composer-attachments">
             {pendingAttachments.map((a) => (
-              <div key={a.id} className="composer-attachment">
-                <AttachmentImage attachment={a} />
-                <span title={a.name}>{a.name}</span>
+              <div
+                key={a.id}
+                className={`composer-attachment${a.kind === 'text' ? ' composer-attachment--text' : ''}`}
+              >
+                {a.kind === 'text' ? (
+                  <FileText size={16} strokeWidth={2} aria-hidden />
+                ) : (
+                  <AttachmentImage attachment={a} />
+                )}
                 <button
                   type="button"
-                  onClick={() => setPendingAttachments((prev) => prev.filter((x) => x.id !== a.id))}
+                  className="composer-attachment-name"
+                  title={a.kind === 'text' ? '预览粘贴文本' : a.name}
+                  onClick={() =>
+                    a.kind === 'text'
+                      ? setPastePreviewId((cur) => (cur === a.id ? null : a.id))
+                      : undefined
+                  }
+                >
+                  {a.name}
+                </button>
+                {a.kind === 'text' ? (
+                  <button
+                    type="button"
+                    className="composer-attachment-revert"
+                    onClick={() => revertPastedText(a.id)}
+                  >
+                    插入正文
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingAttachments((prev) => prev.filter((x) => x.id !== a.id))
+                    setPastePreviewId((cur) => (cur === a.id ? null : cur))
+                  }}
                   aria-label={`移除 ${a.name}`}
                 >
                   ×
                 </button>
               </div>
             ))}
+            {pastePreviewId
+              ? (() => {
+                  const preview = pendingAttachments.find((a) => a.id === pastePreviewId)
+                  return preview?.text ? (
+                    <pre className="composer-paste-preview" tabIndex={0}>
+                      {preview.text}
+                    </pre>
+                  ) : null
+                })()
+              : null}
             {attachmentError ? <span className="composer-attachment-error">{attachmentError}</span> : null}
           </div>
         ) : null}

@@ -29,6 +29,8 @@
 | Channel | 作用 |
 |---------|------|
 | `chat:send` / `chat:abort` | 跑 / 中止 Turn |
+| `app:notify-turn` / `app:notify-turn-click` | 后台回合系统通知与点击回跳 |
+| `app:set-dock-badge` | macOS Dock 本机未读数字 |
 | `settings:*` | 读写设置 |
 | `conversations:*` | 对话 CRUD |
 | `approval:response` | 高危操作确认 |

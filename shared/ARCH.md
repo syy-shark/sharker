@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、记忆注入/写入开关） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G 标题过滤、进行中任务拆分、⌘⌥A 下一条进行中、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
@@ -86,7 +86,7 @@
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
-| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
+| `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think 只换改过的段（已完成工具保持引用）；其它事件浅拷贝片段（不复制 diff 行）；`extractFinalContent` 从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象 单测 |
 | `thread-goal.ts` | `/goal` 解析、暂停/清除、system 注入块 |
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
@@ -100,6 +100,10 @@
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
 | `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；Esc+Esc 回编 |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条 |
+| `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
+| `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
+| `turn-notify.ts` | 后台回合：系统通知 / 未读 / Dock 徽标（正在看且窗口在前台不打扰） |
+| `turn-notify.test.ts` | 失焦通知、同会话不标未读、徽标计数 |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
@@ -147,7 +151,7 @@
 ## 设计原则
 
 - 新增跨进程契约 **先改 `types.ts`**
-- 用户图片附件只存稳定路径与元数据，不把大图 base64 放进会话 JSON
+- 用户图片 / 超长粘贴文本附件只存稳定路径与元数据；粘贴文本可带 `text` 供预览回插，不把大图 base64 放进会话 JSON
 - 算法类放 shared，避免 renderer 引入 electron
 - `process-phases.ts` 只做展示归组，不写入 IPC/消息类型/持久化
 

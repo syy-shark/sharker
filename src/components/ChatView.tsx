@@ -54,12 +54,18 @@ function MessageAttachments({ attachments }: { attachments?: ChatAttachment[] })
   if (!attachments?.length) return null
   return (
     <div className="message-attachments">
-      {attachments.map((a) => (
-        <figure key={a.id} className="message-attachment">
-          <AttachmentImage attachment={a} />
-          <figcaption>{a.name}</figcaption>
-        </figure>
-      ))}
+      {attachments.map((a) =>
+        a.kind === 'text' ? (
+          <figure key={a.id} className="message-attachment message-attachment--text">
+            <figcaption>{a.name}</figcaption>
+          </figure>
+        ) : (
+          <figure key={a.id} className="message-attachment">
+            <AttachmentImage attachment={a} />
+            <figcaption>{a.name}</figcaption>
+          </figure>
+        )
+      )}
     </div>
   )
 }
@@ -69,14 +75,18 @@ const UserMessageRow = memo(function UserMessageRow({
   content,
   attachments,
   findHit,
-  findCurrent
+  findCurrent,
+  onEdit
 }: {
   id: string
   content: string
   attachments?: ChatAttachment[]
   findHit: boolean
   findCurrent: boolean
+  onEdit?: (text: string) => void
 }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(content)
   return (
     <div
       id={`msg-${id}`}
@@ -87,9 +97,68 @@ const UserMessageRow = memo(function UserMessageRow({
       <div className="message-user-wrap">
         <div className="message-bubble message-bubble--user">
           <MessageAttachments attachments={attachments} />
-          <p>{content}</p>
+          {editing ? (
+            <div className="message-user-edit">
+              <textarea
+                className="message-user-edit-input"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setDraft(content)
+                    setEditing(false)
+                  }
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && draft.trim()) {
+                    e.preventDefault()
+                    onEdit?.(draft)
+                    setEditing(false)
+                  }
+                }}
+              />
+              <div className="message-user-edit-actions">
+                <button
+                  type="button"
+                  className="message-user-edit-btn message-user-edit-btn--primary"
+                  disabled={!draft.trim()}
+                  onClick={() => {
+                    if (!draft.trim()) return
+                    onEdit?.(draft)
+                    setEditing(false)
+                  }}
+                >
+                  发送
+                </button>
+                <button
+                  type="button"
+                  className="message-user-edit-btn"
+                  onClick={() => {
+                    setDraft(content)
+                    setEditing(false)
+                  }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p>{content}</p>
+          )}
         </div>
-        <MessageActions content={content} messageId={id} />
+        {editing ? null : (
+          <MessageActions
+            content={content}
+            messageId={id}
+            onEdit={
+              onEdit
+                ? () => {
+                    setDraft(content)
+                    setEditing(true)
+                  }
+                : undefined
+            }
+          />
+        )}
       </div>
     </div>
   )
@@ -125,6 +194,7 @@ interface Props {
   conversationTitles?: Array<{ id: string; title: string }>
   onPickConversation?: (id: string) => void
   onRetry?: (userMessageId: string) => void
+  onEditUserMessage?: (userMessageId: string, text: string) => void
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
@@ -179,6 +249,7 @@ export function ChatView({
   conversationTitles,
   onPickConversation,
   onRetry,
+  onEditUserMessage,
   approval,
   approvalResponding,
   onApproval,
@@ -552,6 +623,7 @@ export function ChatView({
             attachments={m.attachments}
             findHit={findHits.some((h) => h.messageId === m.id)}
             findCurrent={findHits[findHit]?.messageId === m.id}
+            onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
           />
         ) : (
           <div
@@ -576,7 +648,7 @@ export function ChatView({
           </div>
         )
       ),
-    [findHit, findHits, messages, modelLabel, onOpenSubAgent, onRetry]
+    [findHit, findHits, messages, modelLabel, onOpenSubAgent, onRetry, onEditUserMessage]
   )
 
   const showLiveAssistant = loading

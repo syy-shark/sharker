@@ -16,6 +16,12 @@ export const IPC = {
   SEND_MESSAGE: 'chat:send',
   SAVE_ATTACHMENT: 'chat:save-attachment',
   READ_ATTACHMENT_DATA_URL: 'chat:read-attachment-data-url',
+  /** 后台回合完成：系统通知 */
+  NOTIFY_TURN_COMPLETE: 'app:notify-turn',
+  /** 点击系统通知 → 打开对应对话 */
+  NOTIFY_TURN_CLICK: 'app:notify-turn-click',
+  /** macOS Dock 未读数字（本机对话，不拉 Cloud） */
+  SET_DOCK_BADGE: 'app:set-dock-badge',
   ABORT_CHAT: 'chat:abort',
   APPROVAL_RESPONSE: 'approval:response',
   /** `/approve`：最近一次拒绝排队一次重试 */

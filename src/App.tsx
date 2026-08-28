@@ -119,6 +119,13 @@ import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
+import {
+  shouldMarkConversationUnread,
+  shouldNotifyTurnComplete,
+  turnNotifyPreview,
+  turnNotifyTitle,
+  unreadDockBadgeCount
+} from '../shared/turn-notify'
 import { formatDebugConfig } from '../shared/debug-config'
 import { formatApproveRetry } from '../shared/approval-session'
 import {
@@ -899,6 +906,42 @@ export default function App() {
         }
         void persistActiveConversation(next, targetId)
       }
+
+      if (targetId) {
+        const viewing = {
+          conversationId: targetId,
+          activeConversationId: activeConversationIdRef.current,
+          page: pageRef.current
+        }
+        if (shouldMarkConversationUnread(viewing)) {
+          setConversationList((list) =>
+            list.map((c) => (c.id === targetId ? { ...c, unread: true } : c))
+          )
+          const ws =
+            conversationListRef.current.find((c) => c.id === targetId)?.workspaceId ||
+            settingsRef.current.activeWorkspaceId
+          if (ws && window.sharker.patchConversationMeta) {
+            void window.sharker.patchConversationMeta(ws, targetId, { unread: true })
+          }
+        }
+        const focused =
+          typeof document !== 'undefined' &&
+          document.hasFocus() &&
+          document.visibilityState === 'visible'
+        if (
+          shouldNotifyTurnComplete({ ...viewing, windowFocused: focused, outcome }) &&
+          window.sharker.notifyTurnComplete
+        ) {
+          const conv = conversationListRef.current.find((c) => c.id === targetId)
+          void window.sharker.notifyTurnComplete({
+            title: turnNotifyTitle(conv ?? {}),
+            body: turnNotifyPreview(text),
+            conversationId: targetId,
+            workspaceId:
+              conv?.workspaceId || settingsRef.current.activeWorkspaceId || ''
+          })
+        }
+      }
     },
     [persistActiveConversation, resetTurnMeta]
   )
@@ -906,6 +949,31 @@ export default function App() {
   useEffect(() => {
     conversationListRef.current = conversationList
   }, [conversationList])
+
+  useEffect(() => {
+    if (!window.sharker.setDockBadge) return
+    void window.sharker.setDockBadge(unreadDockBadgeCount(conversationList))
+  }, [conversationList])
+
+  useEffect(() => {
+    if (page !== 'chat' || !activeConversationId) return
+    const ws = settingsRef.current.activeWorkspaceId
+    const marked = conversationListRef.current.find((c) => c.id === activeConversationId)
+    if (!marked?.unread || !ws || !window.sharker.patchConversationMeta) return
+    setConversationList((list) =>
+      list.map((c) => (c.id === activeConversationId ? { ...c, unread: false } : c))
+    )
+    void window.sharker.patchConversationMeta(ws, activeConversationId, { unread: false })
+  }, [page, activeConversationId])
+
+  useEffect(() => {
+    if (!window.sharker.onNotifyTurnClick) return
+    return window.sharker.onNotifyTurnClick((payload) => {
+      if (!payload?.conversationId || !payload.workspaceId) return
+      setPage('chat')
+      void handleSelectConversationRef.current(payload.workspaceId, payload.conversationId)
+    })
+  }, [])
 
   useEffect(() => {
     pageRef.current = page
@@ -2244,9 +2312,9 @@ export default function App() {
     [syncActiveQueueUi]
   )
 
-  /** Replay the latest failed turn without duplicating its user message. */
+  /** Replay a user turn without duplicating its bubble; optional edited text. */
   const handleRetry = useCallback(
-    async (userMessageId: string) => {
+    async (userMessageId: string, contentOverride?: string) => {
       const current = messagesRef.current
       const index = current.findIndex((message) => message.id === userMessageId && message.role === 'user')
       const original = current[index]
@@ -2295,7 +2363,7 @@ export default function App() {
       setMessages(history)
       messagesRef.current = history
       await persistActiveConversation(history)
-      await dispatchTurn(original.content, original.attachments ?? [])
+      await dispatchTurn(contentOverride ?? original.content, original.attachments ?? [])
     },
     [dispatchTurn, loading, persistActiveConversation]
   )
@@ -5162,6 +5230,13 @@ export default function App() {
     [handleRetry]
   )
 
+  const handleEditUserMessage = useCallback(
+    (userMessageId: string, text: string) => {
+      void handleRetry(userMessageId, text)
+    },
+    [handleRetry]
+  )
+
   const fileSearchRoot = useMemo(() => {
     if (threadMode === 'worktree' && threadWorktreePath) return threadWorktreePath
     return getActiveWorkspacePath(settings) ?? ''
@@ -5289,6 +5364,7 @@ export default function App() {
               worktreeMissing={worktreeMissing}
               onRestoreWorktree={handleRestoreWorktreeClick}
               onRetry={handleRetryMessage}
+              onEditUserMessage={handleEditUserMessage}
               approval={approval}
               approvalResponding={approvalResponding}
               onApproval={handleApproval}

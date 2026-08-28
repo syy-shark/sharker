@@ -574,28 +574,44 @@ function hasActiveWork(segments: TurnSegment[]): boolean {
   )
 }
 
+/** 从后往前找片段，避免每 token `[...].reverse()` 拷数组 */
+function findLastSegment(
+  segments: TurnSegment[],
+  pred: (s: TurnSegment) => boolean
+): TurnSegment | undefined {
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const s = segments[i]
+    if (pred(s)) return s
+  }
+  return undefined
+}
+
 /** 从片段列表提取最终回答正文 */
 export function extractFinalContent(
   segments: TurnSegment[],
   opts?: { isStreaming?: boolean }
 ): string {
   if (opts?.isStreaming) {
-    const activeText = [...segments]
-      .reverse()
-      .find((s) => s.kind === 'text' && s.status === 'active')
+    const activeText = findLastSegment(
+      segments,
+      (s) => s.kind === 'text' && s.status === 'active'
+    )
     // 流式阶段保留未 trim 的正文，避免首字符到达前空白被误判为「无输出」
     if (activeText?.content) return activeText.content
     // 工具/思考仍在进行：不要把中途已闭合的旁白当成最终回答（否则过程区+正文重复）
     if (hasActiveWork(segments)) return ''
     // 无 active 工作：用末尾文本（可能刚标 done 尚未 finalize）
-    const trailing = [...segments].reverse().find((s) => s.kind === 'text' && s.content?.trim())
+    const trailing = findLastSegment(
+      segments,
+      (s) => s.kind === 'text' && Boolean(s.content?.trim())
+    )
     return trailing?.content ?? ''
   }
 
-  const finalSeg = [...segments].reverse().find((s) => s.kind === 'text' && s.role === 'final')
+  const finalSeg = findLastSegment(segments, (s) => s.kind === 'text' && s.role === 'final')
   if (finalSeg?.content?.trim()) return finalSeg.content.trim()
 
-  const lastText = [...segments].reverse().find((s) => s.kind === 'text' && s.content?.trim())
+  const lastText = findLastSegment(segments, (s) => s.kind === 'text' && Boolean(s.content?.trim()))
   return lastText?.content?.trim() ?? ''
 }
 

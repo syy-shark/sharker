@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   applyStreamChunk,
+  extractFinalContent,
   finalizeSegments,
   hasProcessFlow,
   processSegments
@@ -170,5 +171,19 @@ describe('process flow visibility', () => {
     expect(processSegments(segments, { isStreaming: false }).some((s) => s.kind === 'tool')).toBe(
       true
     )
+  })
+
+  it('extractFinalContent scans last-to-first without copying the array', () => {
+    const segments: TurnSegment[] = [
+      { id: 'n', kind: 'text', role: 'narration', content: '旁白', status: 'done' },
+      { id: 'f', kind: 'text', role: 'final', content: '最终回答', status: 'done' }
+    ]
+    expect(extractFinalContent(segments)).toBe('最终回答')
+    expect(extractFinalContent(segments, { isStreaming: true })).toBe('最终回答')
+    const live: TurnSegment[] = [
+      { id: 't', kind: 'tool', status: 'active', toolName: 'read_file' },
+      { id: 'a', kind: 'text', role: 'final', content: '正在写', status: 'active' }
+    ]
+    expect(extractFinalContent(live, { isStreaming: true })).toBe('正在写')
   })
 })

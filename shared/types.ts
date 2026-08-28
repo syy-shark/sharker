@@ -92,14 +92,19 @@ export interface AppSettings {
 /** 聊天消息角色 */
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-/** 用户消息附件（粘贴/拖拽图片会先复制到 Sharker 稳定目录） */
+/** 用户消息附件种类：图片或超长粘贴文本 */
+export type ChatAttachmentKind = 'image' | 'text'
+
+/** 用户消息附件（粘贴/拖拽会先复制到 Sharker 稳定目录） */
 export interface ChatAttachment {
   id: string
   name: string
   mimeType: string
   path: string
   size: number
-  kind: 'image'
+  kind: ChatAttachmentKind
+  /** 粘贴正文：预览 / 回插 / 折进 `/goal`；大文件可不带，读 path */
+  text?: string
 }
 
 /** 单轮助手活动记录（工具/压缩） */
