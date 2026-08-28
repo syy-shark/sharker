@@ -14,6 +14,8 @@ import {
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
   shouldSynthesizePlanning,
+  liveStickNeedsFollow,
+  liveStickScrollTop,
   turnProcessBounds,
   processElapsedSeconds
 } from './live-display'
@@ -155,6 +157,20 @@ describe('near-live message rows', () => {
     expect(grown).not.toBe(prev)
     expect(grown.get('left')).toBe(640)
     expect(grown.get('old')).toBe(200)
+    expect(liveStickScrollTop(800, 200)).toBe(600)
+    expect(liveStickScrollTop(100, 400)).toBe(0)
+    expect(
+      liveStickNeedsFollow(
+        { scrollHeight: 800, clientHeight: 400 },
+        { scrollHeight: 800, clientHeight: 300 }
+      )
+    ).toBe(true)
+    expect(
+      liveStickNeedsFollow(
+        { scrollHeight: 800, clientHeight: 400 },
+        { scrollHeight: 800, clientHeight: 400 }
+      )
+    ).toBe(false)
   })
 })
 

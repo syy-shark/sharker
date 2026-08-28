@@ -22,5 +22,6 @@ describe('tool output display', () => {
     expect(shouldExpandToolOutput('verbose', 'done')).toBe(true)
     expect(shouldExpandToolOutput('verbose', 'active')).toBe(false)
     expect(shouldExpandToolOutput('standard', 'done')).toBe(false)
+    expect(shouldExpandToolOutput('verbose', 'done', { isStreaming: true })).toBe(false)
   })
 })

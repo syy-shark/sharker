@@ -256,6 +256,19 @@ export function rowIntrinsicSizeStyle(
   return { containIntrinsicSize: `auto ${Math.round(height)}px` }
 }
 
+/** 贴底 scrollTop：内容变高或输入框把视口挤矮都要跟到底（对标 Codex #40788） */
+export function liveStickScrollTop(scrollHeight: number, clientHeight: number): number {
+  return Math.max(0, scrollHeight - clientHeight)
+}
+
+/** 内容高度或滚动视口变了才需要重写 scrollTop */
+export function liveStickNeedsFollow(
+  prev: { scrollHeight: number; clientHeight: number },
+  next: { scrollHeight: number; clientHeight: number }
+): boolean {
+  return prev.scrollHeight !== next.scrollHeight || prev.clientHeight !== next.clientHeight
+}
+
 /** 只在行离开贴底窗口时写入高度；引用没变就复用同一 Map */
 export function nextRowIntrinsicHeights(
   prev: ReadonlyMap<string, number>,

@@ -40,6 +40,11 @@ export function clipToolOutput(
 }
 
 /** 详细档且步骤已结束时默认展开；直播中仍折叠以免贴底跳动 */
-export function shouldExpandToolOutput(mode: ToolOutputDisplay, status: string): boolean {
+export function shouldExpandToolOutput(
+  mode: ToolOutputDisplay,
+  status: string,
+  opts?: { isStreaming?: boolean }
+): boolean {
+  if (opts?.isStreaming) return false
   return mode === 'verbose' && status !== 'active'
 }

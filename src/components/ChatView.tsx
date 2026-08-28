@@ -1,6 +1,6 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
- * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop。
+ * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容和滚动视口都盯）。
  * @see src/ARCH.md
  */
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -30,6 +30,8 @@ import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/comp
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
+  liveStickNeedsFollow,
+  liveStickScrollTop,
   nextRowIntrinsicHeights,
   rowIntrinsicSizeStyle
 } from '../../shared/live-display'
@@ -852,17 +854,29 @@ export function ChatView({
     const content = messagesInnerRef.current
     if (!scroller || !content) return
     let lastHeight = 0
+    let lastClient = 0
     const follow = () => {
       if (!stickToBottomRef.current || userScrollLockRef.current) return
       const h = scroller.scrollHeight
-      if (h === lastHeight) return
+      const client = scroller.clientHeight
+      if (
+        !liveStickNeedsFollow(
+          { scrollHeight: lastHeight, clientHeight: lastClient },
+          { scrollHeight: h, clientHeight: client }
+        )
+      ) {
+        return
+      }
       lastHeight = h
+      lastClient = client
       programmaticScrollRef.current = true
-      scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
+      scroller.scrollTop = liveStickScrollTop(h, client)
       programmaticScrollRef.current = false
     }
     const ro = new ResizeObserver(follow)
     ro.observe(content)
+    // 输入框变高 / 窗口变矮会挤视口，只盯内容高度会把直播尾藏进底部（对标 Codex #40788）
+    ro.observe(scroller)
     follow()
     return () => {
       ro.disconnect()
@@ -914,7 +928,7 @@ export function ChatView({
     if (isEmpty || loading) return
     if (!stickToBottomRef.current || userScrollLockRef.current) return
     scrollToBottom('auto')
-  }, [messages, isEmpty, loading, scrollToBottom])
+  }, [messages, isEmpty, loading, findOpen, scrollToBottom])
 
   const handleEditLastUser = useCallback(() => {
     const id = lastUserMessageId(messages)

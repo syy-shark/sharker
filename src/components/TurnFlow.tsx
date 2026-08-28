@@ -394,12 +394,14 @@ const ProcessStepRow = memo(function ProcessStepRow({
   step,
   isLast,
   onOpenSubAgent,
-  outputMode
+  outputMode,
+  isStreaming = false
 }: {
   step: DisplayStep
   isLast: boolean
   onOpenSubAgent?: (id: string | null) => void
   outputMode: ToolOutputDisplay
+  isStreaming?: boolean
 }) {
   const segment = step.source?.segment
   const isDemo =
@@ -496,7 +498,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
         segment.resultOutput !== segment.resultSummary ? (
           <details
             className="turn-flow-step-output"
-            defaultOpen={shouldExpandToolOutput(outputMode, step.status)}
+            defaultOpen={shouldExpandToolOutput(outputMode, step.status, { isStreaming })}
           >
             <summary>{clip.clipped ? '查看输出（已截尾）' : '查看输出'}</summary>
             <pre>{clip.text}</pre>
@@ -846,6 +848,7 @@ export const TurnFlow = memo(function TurnFlow({
               isLast={i === listSteps.length - 1}
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
+              isStreaming={isStreaming}
             />
           ))}
         </ol>
@@ -859,6 +862,7 @@ export const TurnFlow = memo(function TurnFlow({
               isLast={i === pinnedSteps.length - 1}
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
+              isStreaming={isStreaming}
             />
           ))}
         </ol>
