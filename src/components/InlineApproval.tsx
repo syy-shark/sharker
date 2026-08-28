@@ -35,9 +35,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
   const busy = responding || submitted
 
   useEffect(() => {
-    const el = rootRef.current
-    el?.scrollIntoView({ block: 'nearest' })
-    el?.focus()
+    rootRef.current?.focus({ preventScroll: true })
   }, [request.id])
 
   const respond = (choice: ApprovalDecision) => {

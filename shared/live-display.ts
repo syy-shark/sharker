@@ -358,6 +358,14 @@ export function shouldForceStickScroll(options: {
   return options.distanceFromBottom <= (options.atBottomPx ?? 16)
 }
 
+/** 审批出现：已贴底才跟；读历史不解锁、不抢镜头（对标 Codex #38220，Enter/Esc 仍走输入框） */
+export function shouldFollowApprovalIntoView(options: {
+  userLocked: boolean
+  stickToBottom: boolean
+}): boolean {
+  return !options.userLocked && options.stickToBottom
+}
+
 /** 贴底 scrollTop：内容变高或输入框把视口挤矮都要跟到底（对标 Codex #40788） */
 export function liveStickScrollTop(scrollHeight: number, clientHeight: number): number {
   return Math.max(0, scrollHeight - clientHeight)

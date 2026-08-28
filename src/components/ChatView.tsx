@@ -38,7 +38,8 @@ import {
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
-  shouldForceStickScroll
+  shouldForceStickScroll,
+  shouldFollowApprovalIntoView
 } from '../../shared/live-display'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -842,16 +843,21 @@ export function ChatView({
   useEffect(() => {
     if (!approval || shownApprovalIdRef.current === approval.id) return
     shownApprovalIdRef.current = approval.id
+    if (
+      !shouldFollowApprovalIntoView({
+        userLocked: userScrollLockRef.current,
+        stickToBottom: stickToBottomRef.current
+      })
+    ) {
+      return
+    }
     const frame = window.requestAnimationFrame(() => {
       const el = messagesRef.current
       if (!el) return
+      if (userScrollLockRef.current) return
       programmaticScrollRef.current = true
-      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+      el.scrollTop = liveStickScrollTop(el.scrollHeight, el.clientHeight)
       programmaticScrollRef.current = false
-      userScrollLockRef.current = false
-      stickToBottomRef.current = true
-      setStickToBottom(true)
-      setCanJumpToBottom(false)
     })
     return () => window.cancelAnimationFrame(frame)
   }, [approval])

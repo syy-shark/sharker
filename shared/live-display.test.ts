@@ -13,6 +13,7 @@ import {
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
   shouldForceStickScroll,
+  shouldFollowApprovalIntoView,
   liveThoughtBody,
   liveThinkingText,
   rollingThinkPreview,
@@ -194,6 +195,9 @@ describe('near-live message rows', () => {
         atBottomPx: 16
       })
     ).toBe(false)
+    expect(shouldFollowApprovalIntoView({ userLocked: false, stickToBottom: true })).toBe(true)
+    expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: false })).toBe(false)
+    expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: true })).toBe(false)
     const prev = new Map([['old', 200]])
     const same = nextRowIntrinsicHeights(prev, [
       { id: 'old', nearLive: false, height: 200 },
