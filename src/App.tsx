@@ -3435,6 +3435,14 @@ export default function App() {
     setRightPanelOpen(true)
   }, [])
 
+  const handleMarkConversationsRead = useCallback(async () => {
+    const ws = settingsRef.current.activeWorkspaceId
+    if (ws && window.sharker.clearConversationUnread) {
+      await window.sharker.clearConversationUnread(ws)
+      setConversationList((list) => list.map((c) => (c.unread ? { ...c, unread: false } : c)))
+    }
+  }, [])
+
   const handleClearUnread = useCallback(async () => {
     if (window.sharker.listAutomationQueue && window.sharker.saveAutomationQueue) {
       const prev = await window.sharker.listAutomationQueue()
@@ -3443,12 +3451,8 @@ export default function App() {
       setQueueUnread(unreadQueueCount(next))
       setQueueRevision((n) => n + 1)
     }
-    const ws = settingsRef.current.activeWorkspaceId
-    if (ws && window.sharker.clearConversationUnread) {
-      await window.sharker.clearConversationUnread(ws)
-      setConversationList((list) => list.map((c) => (c.unread ? { ...c, unread: false } : c)))
-    }
-  }, [])
+    await handleMarkConversationsRead()
+  }, [handleMarkConversationsRead])
 
   const handleNextAttention = useCallback(() => {
     const liveIds: string[] = []
@@ -4336,6 +4340,9 @@ export default function App() {
           break
         case 'open_appearance':
           void handleNavigate('settings', 'appearance')
+          break
+        case 'open_usage':
+          void handleNavigate('settings', 'usage')
           break
         case 'show_debug_config':
           appendLocalNote(formatDebugConfig(settingsRef.current))
@@ -6083,6 +6090,7 @@ export default function App() {
           renameRequestId={renameRequestId}
           onRenameRequestHandled={() => setRenameRequestId(null)}
           onNavigate={handleNavigate}
+          onClearUnread={() => void handleMarkConversationsRead()}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           onPeekChange={setSidebarPeeking}

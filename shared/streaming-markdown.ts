@@ -216,3 +216,32 @@ export function parseCheapInlineMarkdown(text: string): CheapInlineNode[] {
   flush()
   return nodes
 }
+
+function cheapInlineSource(node: CheapInlineNode): string {
+  if (node.type === 'code') return `\`${node.text}\``
+  if (node.type === 'strong') return `**${node.text}**`
+  if (node.type === 'em') return `*${node.text}*`
+  return node.text
+}
+
+function cheapInlineSourceAll(nodes: CheapInlineNode[]): string {
+  return nodes.map(cheapInlineSource).join('')
+}
+
+/**
+ * 直播散文尾增量解析：复用已闭合的行内节点，只重扫最后一段增长文本。
+ */
+export function continueCheapInlineMarkdown(
+  prevText: string,
+  prevNodes: CheapInlineNode[],
+  text: string
+): CheapInlineNode[] {
+  if (!text) return []
+  if (text === prevText && prevNodes.length) return prevNodes
+  if (!prevNodes.length) return parseCheapInlineMarkdown(text)
+  const stable = prevNodes.slice(0, -1)
+  const prefix = cheapInlineSourceAll(stable)
+  if (!text.startsWith(prefix)) return parseCheapInlineMarkdown(text)
+  const rest = parseCheapInlineMarkdown(text.slice(prefix.length))
+  return stable.length ? [...stable, ...rest] : rest
+}

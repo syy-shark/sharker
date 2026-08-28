@@ -1,0 +1,72 @@
+.usage-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-metric {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-empty {
+  margin: 0;
+  padding: 12px 4px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.usage-empty--inset {
+  padding: 8px 4px 4px;
+}
+
+.usage-spark-card {
+  position: relative;
+  z-index: 1;
+  padding: 14px 16px 12px;
+}
+
+.usage-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 88px;
+  color: var(--text);
+}
+
+.usage-spark-col {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+
+.usage-spark-bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 1px 1px;
+  background: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+.usage-spark-note {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html.theme-dark .usage-spark-bar {
+  background: color-mix(in srgb, var(--text) 72%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-spark-bar {
+    transition: none;
+  }
+}

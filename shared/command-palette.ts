@@ -445,9 +445,9 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'usage',
-    title: '查看 Token 用量',
-    keywords: 'usage tokens 用量 token',
-    action: 'show_usage'
+    title: '打开用量',
+    keywords: 'usage tokens profile streak 用量 画像 token 统计',
+    action: 'open_usage'
   },
   {
     id: 'copy-cwd',

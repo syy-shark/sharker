@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   formatUsageReport,
   parseUsageScope,
-  usageHistoryDays
+  summarizeUsageInsights,
+  usageHistoryDays,
+  usageSparkRatios
 } from './token-usage-format'
 
 describe('token usage format', () => {
@@ -32,5 +34,34 @@ describe('token usage format', () => {
     const all = formatUsageReport(days, 'cumulative')
     expect(all).toContain('累计')
     expect(all).toContain('350')
+  })
+
+  it('summarizes lifetime, peak day, and streaks without inventing longest-task', () => {
+    const days = [
+      { date: '2026-08-20', tokens: 10, turns: 1 },
+      { date: '2026-08-21', tokens: 0, turns: 0 },
+      { date: '2026-08-22', tokens: 100, turns: 2 },
+      { date: '2026-08-23', tokens: 40, turns: 1 },
+      { date: '2026-08-24', tokens: 0, turns: 0 }
+    ]
+    expect(summarizeUsageInsights(days)).toEqual({
+      lifetimeTokens: 150,
+      lifetimeTurns: 4,
+      peakTokens: 100,
+      peakDate: '2026-08-22',
+      currentStreak: 2,
+      longestStreak: 2,
+      activeDays: 3
+    })
+    expect(summarizeUsageInsights([])).toEqual({
+      lifetimeTokens: 0,
+      lifetimeTurns: 0,
+      peakTokens: 0,
+      peakDate: null,
+      currentStreak: 0,
+      longestStreak: 0,
+      activeDays: 0
+    })
+    expect(usageSparkRatios(days, 4)).toEqual([0, 1, 0.4, 0])
   })
 })

@@ -7,16 +7,21 @@ import { LiveFenceTail } from './CodeArtifactBlock'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
 import {
+  continueCheapInlineMarkdown,
   continueStreamingMarkdown,
   extractOpenFenceBody,
-  parseCheapInlineMarkdown,
   splitStreamingMarkdown
 } from '../../shared/streaming-markdown'
 import { isInlineDemoPaintable } from '../../shared/live-display'
 
 /** 增长中的散文尾：行内标记廉价解析，不跑 remark */
 const LiveProseTail = memo(function LiveProseTail({ text }: { text: string }) {
-  const nodes = useMemo(() => parseCheapInlineMarkdown(text), [text])
+  const prevRef = useRef({ text: '', nodes: continueCheapInlineMarkdown('', [], '') })
+  const nodes = useMemo(() => {
+    const next = continueCheapInlineMarkdown(prevRef.current.text, prevRef.current.nodes, text)
+    prevRef.current = { text, nodes: next }
+    return next
+  }, [text])
   return (
     <p className="live-prose-tail">
       {nodes.map((node, index) => {

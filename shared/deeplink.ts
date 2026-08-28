@@ -15,7 +15,7 @@ export type DeeplinkAction =
   | { type: 'open_thread'; conversationId: string }
   | {
       type: 'settings'
-      tab: 'permissions' | 'models' | 'appearance' | 'shortcuts' | 'archived'
+      tab: 'permissions' | 'models' | 'appearance' | 'shortcuts' | 'archived' | 'usage'
     }
   | { type: 'skills' }
   | { type: 'automations'; create?: boolean }
@@ -100,6 +100,9 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
     return { type: 'settings', tab: 'permissions' }
   }
   if (key === 'archived') return { type: 'settings', tab: 'archived' }
+  if (key === 'usage' || key === 'profile' || key === 'tokens') {
+    return { type: 'settings', tab: 'usage' }
+  }
   return { type: 'settings', tab: 'models' }
 }
 

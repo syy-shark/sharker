@@ -65,3 +65,68 @@ export function formatUsageReport(days: DayUsage[], scope: UsageScope): string {
   lines.push('', '估算值，按本机记录。用法：`/usage daily|weekly|cumulative`（对标 Codex）。')
   return lines.join('\n')
 }
+
+/** 设置 → 用量：对标 Codex Profile 的本机洞察（不假装供应商额度） */
+export interface UsageInsights {
+  lifetimeTokens: number
+  lifetimeTurns: number
+  peakTokens: number
+  peakDate: string | null
+  currentStreak: number
+  longestStreak: number
+  activeDays: number
+}
+
+function dayActive(day: DayUsage): boolean {
+  return (day.turns || 0) > 0 || (day.tokens || 0) > 0
+}
+
+/** 从按日期升序的本机记录汇总终身 Token、峰值日与连续活跃天数 */
+export function summarizeUsageInsights(days: DayUsage[]): UsageInsights {
+  const lifetime = sumUsage(days)
+  let peakTokens = 0
+  let peakDate: string | null = null
+  let activeDays = 0
+  let longestStreak = 0
+  let run = 0
+  for (const day of days) {
+    if (dayActive(day)) {
+      activeDays += 1
+      run += 1
+      if (run > longestStreak) longestStreak = run
+      if (day.tokens > peakTokens) {
+        peakTokens = day.tokens
+        peakDate = day.date
+      }
+    } else {
+      run = 0
+    }
+  }
+  let currentStreak = 0
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (dayActive(days[i])) {
+      currentStreak += 1
+      continue
+    }
+    if (currentStreak === 0 && i === days.length - 1) continue
+    break
+  }
+  return {
+    lifetimeTokens: lifetime.tokens,
+    lifetimeTurns: lifetime.turns,
+    peakTokens,
+    peakDate,
+    currentStreak,
+    longestStreak,
+    activeDays
+  }
+}
+
+/** 近 N 日 Token 柱高（0–1），供设置 → 用量火花图 */
+export function usageSparkRatios(days: DayUsage[], count = 14): number[] {
+  const n = Math.max(1, Math.floor(count))
+  const slice = days.slice(-n)
+  const max = Math.max(0, ...slice.map((d) => d.tokens || 0))
+  if (!max) return slice.map(() => 0)
+  return slice.map((d) => (d.tokens || 0) / max)
+}

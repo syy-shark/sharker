@@ -380,6 +380,12 @@ html.window-rounded .sidebar {
   background: var(--glass-fill-raised);
 }
 
+.sidebar-chat-filter-sep {
+  height: 0.5px;
+  margin: 4px 6px;
+  background: var(--glass-edge);
+}
+
 .sidebar-section-action:active {
   transform: scale(0.94);
 }

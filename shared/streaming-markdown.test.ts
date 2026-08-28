@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  continueCheapInlineMarkdown,
   continueStreamingMarkdown,
   extractOpenFenceBody,
   parseCheapInlineMarkdown,
@@ -64,6 +65,15 @@ describe('splitStreamingMarkdown', () => {
     ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
+  })
+
+  it('reuses closed inline nodes when the prose tail grows', () => {
+    const firstText = '见 `foo` 与 '
+    const first = parseCheapInlineMarkdown(firstText)
+    const grown = continueCheapInlineMarkdown(firstText, first, '见 `foo` 与 **bar**')
+    expect(grown[0]).toBe(first[0])
+    expect(grown[1]).toBe(first[1])
+    expect(grown.map((n) => n.type)).toEqual(['text', 'code', 'text', 'strong'])
   })
 
   it('reuses closed blocks when only the tail grows', () => {

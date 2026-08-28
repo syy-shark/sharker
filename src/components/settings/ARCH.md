@@ -19,6 +19,8 @@
 | `ShortcutSettings.tsx` / `.css` | 键盘快捷键：搜索、按键筛选、改绑、重置（`keyboardShortcuts`） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | 权限模式、网络隔离、记忆注入/写入、Git Review delivery（inline / detached）与 commit/PR 文案模板、托管 worktree 保留数 |
+| `ArchivedSettings.tsx` / `.css` | 已归档对话：回档或彻底删除 |
+| `UsageSettings.tsx` / `.css` | 用量：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Profile，不假装最长任务或供应商额度） |
 | `ComputerUseSettings.tsx` | Computer Use 开关与就绪（设置入口暂隐藏） |
 | `BrowserUseSettings.tsx` | Browser Use 开关与就绪（设置入口暂隐藏） |
 | `FeatureStatusPanel.tsx` / `.css` | 功能检查列表（共用）；项进入 list-item-in |

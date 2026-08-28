@@ -62,6 +62,18 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'appearance'
     })
+    expect(parseDeeplink('sharker://settings/usage')).toEqual({
+      type: 'settings',
+      tab: 'usage'
+    })
+    expect(parseDeeplink('sharker://settings/profile')).toEqual({
+      type: 'settings',
+      tab: 'usage'
+    })
+    expect(parseDeeplink('sharker://settings/tokens')).toEqual({
+      type: 'settings',
+      tab: 'usage'
+    })
     expect(parseDeeplink('sharker://settings/connections/ssh')).toEqual({
       type: 'settings',
       tab: 'models'

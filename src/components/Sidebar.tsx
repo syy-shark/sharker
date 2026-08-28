@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
+  ChartNoAxesColumn,
   Folder,
   Inbox,
   ListFilter,
@@ -65,6 +66,8 @@ interface Props {
   renameRequestId?: string | null
   onRenameRequestHandled?: () => void
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
+  /** Activity「全部标为已读」：只清对话未读，不动审查队列 */
+  onClearUnread?: () => void
   /** 自动化审查队列未读数（Codex Triage） */
   queueUnread?: number
   /** 受控收起态（与主区顶栏同步） */
@@ -99,7 +102,8 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'appearance', label: '外观', icon: Palette },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
-  { id: 'archived', label: '已归档', icon: Archive }
+  { id: 'archived', label: '已归档', icon: Archive },
+  { id: 'usage', label: '用量', icon: ChartNoAxesColumn }
 ]
 
 function readSidebarWidth(): number {
@@ -138,6 +142,7 @@ export function Sidebar({
   renameRequestId = null,
   onRenameRequestHandled,
   onNavigate,
+  onClearUnread,
   queueUnread = 0,
   collapsed: collapsedProp,
   onCollapsedChange,
@@ -311,6 +316,8 @@ export function Sidebar({
     localStorage.setItem(SIDEBAR_CHAT_FILTER_KEY, next)
     setChatFilterOpen(false)
   }
+
+  const hasUnread = conversations.some((c) => c.unread)
 
   useEffect(() => {
     if (!activityToggleNonce) return
@@ -828,6 +835,21 @@ export function Sidebar({
                         {item.label}
                       </button>
                     ))}
+                    {hasUnread && onClearUnread ? (
+                      <>
+                        <div className="sidebar-chat-filter-sep" role="separator" />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            onClearUnread()
+                            setChatFilterOpen(false)
+                          }}
+                        >
+                          全部标为已读
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

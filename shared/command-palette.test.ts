@@ -70,6 +70,7 @@ describe('command palette', () => {
     expect(filterPaletteCommands('审查').some((c) => c.id === 'review')).toBe(true)
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
+    expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

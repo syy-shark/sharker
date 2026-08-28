@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 外观 / 键盘快捷键 / 已归档
+ * 设置页壳：权限 / 模型 / 外观 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -11,6 +11,7 @@ import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
+import { UsageSettings } from '../components/settings/UsageSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -33,6 +34,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   archived: {
     title: '已归档',
     desc: '已归档的对话。可回档到侧栏列表，或彻底删除。'
+  },
+  usage: {
+    title: '用量',
+    desc: '本机 Token、峰值日与连续活跃。对标 Codex Profile，不假装供应商额度或最长任务。'
   }
 }
 
@@ -71,6 +76,7 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
             <ShortcutSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'archived' && <ArchivedSettings />}
+          {tab === 'usage' && <UsageSettings />}
         </div>
       </div>
     </div>
