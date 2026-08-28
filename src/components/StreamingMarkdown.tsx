@@ -1,5 +1,6 @@
 /**
  * 流式 Markdown：已闭合块 memo 住，只重绘增长中的尾部。
+ * 收束后仍用本组件：`finalize` 只把尾收成稳定块，不卸已画 mermaid。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
