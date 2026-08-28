@@ -1,5 +1,6 @@
 /**
  * 对话里的本地文件引用：对标 Codex TUI / 桌面端 `path:line`、`#L`、`(line N)`。
+ * 拒绝尾斜杠目录与 `a\\` 假路径，避免把反斜杠硬换行收成文件芯片。
  * @see shared/ARCH.md
  */
 
@@ -41,6 +42,8 @@ export function looksLikeFilePath(path: string): boolean {
   if (text.includes('://')) return false
   if (/\s/.test(text)) return false
   if (text.startsWith('-')) return false
+  // `a\` 归一成 `a/`，不能当成路径，否则 `a\` + 换行会被吃掉、硬换行画不成
+  if (text.endsWith('/')) return false
   return text.includes('/') || CODE_EXT.test(text)
 }
 

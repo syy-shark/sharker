@@ -194,6 +194,17 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapInlineMarkdown('[rel](./a.ts)')).toEqual([
       { type: 'link', text: 'rel', href: './a.ts' }
     ])
+    expect(parseCheapInlineMarkdown('[x](./a "题")')).toEqual([
+      { type: 'link', text: 'x', href: './a', title: '题' }
+    ])
+    expect(parseCheapInlineMarkdown('[x](javascript:alert(1))')).toEqual([
+      { type: 'link', text: 'x', href: '' }
+    ])
+    expect(parseCheapInlineMarkdown('a\\\nb')).toEqual([
+      { type: 'text', text: 'a' },
+      { type: 'br' },
+      { type: 'text', text: 'b' }
+    ])
     expect(parseCheapInlineMarkdown('见 __粗__ 与 _斜_ ，但 foo_bar_baz 不动')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'strong', text: '粗', mark: '__' },
@@ -221,6 +232,10 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '见图 ' },
       { type: 'image', alt: 'd', href: 'https://a.test/x', raw: '![d]' },
       { type: 'text', text: ' 后' }
+    ])
+    const relImg = new Map([['d', './p.png']])
+    expect(parseCheapInlineMarkdown('![x][d]', relImg)).toEqual([
+      { type: 'image', alt: 'x', href: './p.png', raw: '![x][d]' }
     ])
     expect(parseCheapInlineMarkdown('写给 <dev@a.test> 和 user@a.test 后')).toEqual([
       { type: 'text', text: '写给 ' },
@@ -486,6 +501,13 @@ describe('splitStreamingMarkdown', () => {
       expect(escapedHeader[0].header[0]).toEqual([{ type: 'text', text: 'a | b' }])
       expect(escapedHeader[0].header[1]).toEqual([{ type: 'text', text: 'c' }])
     }
+    const oneCol = parseCheapProseBlocks('| A |\n| --- |\n| [x](#s) |')
+    expect(oneCol.map((b) => b.type)).toEqual(['table'])
+    if (oneCol[0]?.type === 'table') {
+      expect(oneCol[0].header).toHaveLength(1)
+      expect(oneCol[0].rows[0]?.[0]?.some((n) => n.type === 'link' && n.href === '#s')).toBe(true)
+    }
+    expect(parseCheapProseBlocks('---').map((b) => b.type)).toEqual(['hr'])
   })
 
   it('renders live headings and lists instead of a single paragraph', () => {
@@ -511,11 +533,29 @@ describe('splitStreamingMarkdown', () => {
       expect(offset[0].ordered).toBe(true)
       expect(offset[0].start).toBe(3)
     }
-    const tableInList = parseCheapProseBlocks('- | a | b |\n  | --- | --- |\n  | 1 | 2 |')
+    const tableInList = parseCheapProseBlocks('- | a | b |\n  | ---: | :---: |\n  | 1 | 2 |')
     expect(tableInList.map((b) => b.type)).toEqual(['list'])
     if (tableInList[0]?.type === 'list') {
       expect(tableInList[0].items[0]?.nodes).toEqual([])
       expect(tableInList[0].items[0]?.blocks?.[0]?.type).toBe('table')
+      if (tableInList[0].items[0]?.blocks?.[0]?.type === 'table') {
+        expect(tableInList[0].items[0].blocks[0].align).toEqual(['right', 'center'])
+      }
+    }
+    const hardInList = parseCheapProseBlocks('- a  \n  b')
+    expect(hardInList.map((b) => b.type)).toEqual(['list'])
+    if (hardInList[0]?.type === 'list') {
+      expect(hardInList[0].items[0]?.nodes).toEqual([
+        { type: 'text', text: 'a' },
+        { type: 'br' },
+        { type: 'text', text: 'b' }
+      ])
+    }
+    const taskOl = parseCheapProseBlocks('1. [ ] do')
+    expect(taskOl.map((b) => b.type)).toEqual(['list'])
+    if (taskOl[0]?.type === 'list') {
+      expect(taskOl[0].ordered).toBe(true)
+      expect(taskOl[0].items[0]?.nodes).toEqual([{ type: 'text', text: '[ ] do' }])
     }
     const fenceInList = parseCheapProseBlocks('1. item\n   ```js\n   x\n   ```')
     expect(fenceInList.map((b) => b.type)).toEqual(['list'])
@@ -590,6 +630,13 @@ describe('splitStreamingMarkdown', () => {
     if (hashDef[0]?.type === 'p') {
       expect(hashDef[0].nodes.some((n) => n.type === 'link' && n.href === '#sec')).toBe(true)
     }
+    const imageHash = parseCheapProseBlocks('![x][d]\n\n[d]: ./p.png')
+    expect(imageHash.map((b) => b.type)).toEqual(['p'])
+    if (imageHash[0]?.type === 'p') {
+      expect(imageHash[0].nodes).toEqual([
+        { type: 'image', alt: 'x', href: './p.png', raw: '![x][d]' }
+      ])
+    }
   })
 
   it('reuses closed cheap blocks when a list or table grows', () => {
@@ -623,10 +670,7 @@ describe('splitStreamingMarkdown', () => {
     expect(wrap).toHaveLength(1)
     if (wrap[0]?.type === 'list') {
       expect(wrap[0].items).toHaveLength(1)
-      expect(wrap[0].items[0]?.nodes[0]).toMatchObject({ type: 'text', text: '一项' })
-      expect(wrap[0].items[0]?.nodes.some((n) => n.type === 'text' && n.text.includes('续行'))).toBe(
-        true
-      )
+      expect(wrap[0].items[0]?.nodes).toEqual([{ type: 'text', text: '一项\n续行仍在项内' }])
     }
     const nestedWrap = parseCheapProseBlocks('- 一项\n  - 嵌套\n    续写')
     if (nestedWrap[0]?.type === 'list') {
