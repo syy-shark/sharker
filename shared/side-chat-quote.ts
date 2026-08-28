@@ -102,7 +102,7 @@ export function formatComposerInsert(
 
 /** 划选插入：接在现有草稿后面，不覆盖未发送内容 */
 export function mergeComposerInsert(existing: string, insert: string): string {
-  const cur = String(existing ?? '').replace(/[ \t]+$/g, '').replace(/\n+$/g, '')
+  const cur = String(existing ?? '').replace(/[ \t]+$/gm, '').replace(/\n+$/g, '')
   const add = String(insert ?? '').trim()
   if (!add) return String(existing ?? '')
   if (!cur) return add
