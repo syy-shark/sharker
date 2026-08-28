@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
+  ELAPSED_CLOCK_RESERVE_CH,
   formatElapsedClock,
   clearInlineDemoHeightCache,
   estimateInlineDemoHeight,
@@ -265,6 +266,8 @@ describe('elapsed clock', () => {
     expect(formatElapsedClock(240)).toBe('4m')
     expect(formatElapsedClock(4140)).toBe('1h 9m')
     expect(formatElapsedClock(36000)).toBe('10h')
+    expect(formatElapsedClock(4140).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
+    expect(formatElapsedClock(3599).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
   })
 })
 

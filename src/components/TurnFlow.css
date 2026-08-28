@@ -82,7 +82,7 @@
 
 .turn-flow-live-count {
   flex-shrink: 0;
-  min-width: 4.5ch;
+  min-width: 7ch;
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
@@ -93,7 +93,9 @@
 }
 
 .turn-flow-live-time {
-  min-width: 4.5ch;
+  flex-shrink: 0;
+  min-width: 7ch;
+  text-align: right;
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
@@ -157,7 +159,9 @@
 
 .turn-flow-thought-time {
   margin-left: auto;
-  min-width: 4.5ch;
+  flex-shrink: 0;
+  min-width: 7ch;
+  text-align: right;
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;

@@ -4,7 +4,8 @@ import {
   parseToolOutputDisplay,
   shouldExpandToolOutput,
   shouldMountToolExitCode,
-  shouldMountToolOutputDetails
+  shouldMountToolOutputDetails,
+  shouldMountToolResultSummary
 } from './tool-output-display'
 
 describe('tool output display', () => {
@@ -63,5 +64,33 @@ describe('tool output display', () => {
     expect(shouldMountToolExitCode({ exitCode: 0, isStreaming: true })).toBe(false)
     expect(shouldMountToolExitCode({ exitCode: 1, isStreaming: false })).toBe(true)
     expect(shouldMountToolExitCode({ exitCode: null, isStreaming: false })).toBe(false)
+    expect(
+      shouldMountToolResultSummary({
+        summary: '执行中… 9s',
+        status: 'active',
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolResultSummary({
+        summary: '读取 42 行',
+        status: 'done',
+        isStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountToolResultSummary({
+        summary: '读取 42 行',
+        status: 'done',
+        isStreaming: false
+      })
+    ).toBe(true)
+    expect(
+      shouldMountToolResultSummary({
+        summary: '执行中… 3s',
+        status: 'done',
+        isStreaming: false
+      })
+    ).toBe(false)
   })
 })

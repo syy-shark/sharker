@@ -4,7 +4,7 @@
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
- * - 直播中不挂「查看输出」/ 退出码；工具间隙不把头闪成「规划下一步」
+ * - 直播中不挂「查看输出」/ 退出码 / 进度摘要；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -37,6 +37,7 @@ import {
   shouldExpandToolOutput,
   shouldMountToolExitCode,
   shouldMountToolOutputDetails,
+  shouldMountToolResultSummary,
   type ToolOutputDisplay
 } from '../../shared/tool-output-display'
 import './TurnFlow.css'
@@ -435,26 +436,14 @@ const ProcessStepRow = memo(function ProcessStepRow({
             <InlineDemo html={segment.content} caption={segment.toolDetail} />
           </div>
         ) : null}
-        {!isDemo &&
-        segment?.resultSummary &&
-        step.status !== 'error' &&
-        segment.resultSummary.trim() !== (step.detail ?? '').trim() &&
-        // 不把源码/JSON 首行当步骤结果文案（完整输出仍可在 details 查看）
-        !/^(L\d+:|[{}\[\]]|```)/.test(segment.resultSummary.trim()) &&
-        // 中止后进度心跳不重复展示；仅直播 active 时显示“执行中…”
-        !(
-          step.status !== 'active' &&
-          (/^(已启动|执行中|运行中|处理中)/.test(segment.resultSummary.trim()) ||
-            /执行中…\s*\d+s/.test(segment.resultSummary) ||
-            /·\s*\d+s$/.test(segment.resultSummary.trim()))
-        ) ? (
-          <span
-            className={`turn-flow-step-result${
-              step.status === 'active' ? ' turn-flow-step-result--live' : ''
-            }`}
-          >
-            {segment.resultSummary}
-          </span>
+        {shouldMountToolResultSummary({
+          summary: segment?.resultSummary,
+          detail: step.detail,
+          status: step.status,
+          isStreaming,
+          isDemo
+        }) ? (
+          <span className="turn-flow-step-result">{segment?.resultSummary}</span>
         ) : null}
         {shouldMountToolExitCode({
           exitCode: segment?.exitCode,

@@ -74,3 +74,26 @@ export function shouldMountToolExitCode(options: {
   if (options.isStreaming) return false
   return true
 }
+
+const PROGRESS_SUMMARY =
+  /^(已启动|执行中|运行中|处理中)|执行中…\s*\d+s|·\s*\d+s$/
+
+/**
+ * 直播中不挂结果摘要：「执行中… Ns」每秒更新还会另起一行顶过程区。
+ * 进度只留在直播头秒表；收束后点开「工作了」再看真正摘要。
+ */
+export function shouldMountToolResultSummary(options: {
+  summary?: string | null
+  detail?: string | null
+  status?: string
+  isStreaming?: boolean
+  isDemo?: boolean
+}): boolean {
+  if (options.isDemo || options.status === 'error') return false
+  const summary = String(options.summary || '').trim()
+  if (!summary) return false
+  if (summary === String(options.detail || '').trim()) return false
+  if (/^(L\d+:|[{}\[\]]|```)/.test(summary)) return false
+  if (options.isStreaming) return false
+  return !PROGRESS_SUMMARY.test(summary)
+}

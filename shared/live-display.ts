@@ -312,6 +312,9 @@ export function processElapsedSeconds(options: {
   return Math.max(0, Math.round((end - options.startedAt) / 1000))
 }
 
+/** 直播头 / Worked for 秒表预留「1h 59m」，避免跨分钟换行挤过程区 */
+export const ELAPSED_CLOCK_RESERVE_CH = 7
+
 /** 对标 Codex Goal / 长回合秒表：23s · 4m · 1h 9m */
 export function formatElapsedClock(seconds: number): string {
   if (seconds < 1) return '<1s'
