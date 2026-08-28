@@ -163,6 +163,9 @@ interface Props {
   /** 暂停自动出队（对标 Codex hold queue） */
   queueHeld?: boolean
   onQueueHeldChange?: (held: boolean) => void
+  /** 隔离 worktree 目录已被清理，可从快照恢复 */
+  worktreeMissing?: boolean
+  onRestoreWorktree?: () => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -208,7 +211,9 @@ export function ChatView({
   composerIntent = null,
   onComposerIntentHandled,
   queueHeld = false,
-  onQueueHeldChange
+  onQueueHeldChange,
+  worktreeMissing = false,
+  onRestoreWorktree
 }: Props) {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
@@ -1887,6 +1892,16 @@ export function ChatView({
           </h2>
         )}
         <div className="composer-wrap">
+          {worktreeMissing ? (
+            <div className="composer-worktree-banner" role="status">
+              <span>隔离 worktree 已被清理。可从快照恢复后继续。</span>
+              {onRestoreWorktree ? (
+                <button type="button" className="composer-worktree-banner-btn" onClick={onRestoreWorktree}>
+                  恢复
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {canJumpToBottom ? (
             <div className="chat-scroll-bottom-wrap">
               <button

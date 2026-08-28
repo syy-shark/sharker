@@ -8,6 +8,7 @@ import { gatherComputerUseStatus } from '../shared/computer-use-status'
 import { gatherBrowserUseStatus } from '../shared/browser-use-status'
 import { simpleCompletion } from '../providers/openai'
 import { buildWorkspaceBootstrap } from './workspace-bootstrap'
+import { loadAgentsInstructions } from './agents-md'
 import { parsePersonality, personalityPrompt } from '../shared/personality'
 
 const CODING_RULES_BASE = `# Work rules
@@ -94,7 +95,7 @@ function buildCodingRules(): string {
 /** 拼接身份、工作区、权限模式、编码规则与可选的工作区快照 */
 export async function buildSystemPrompt(
   settings: AppSettings,
-  options?: { includeBootstrap?: boolean }
+  options?: { includeBootstrap?: boolean; cwd?: string }
 ): Promise<string> {
   const workspace = getActiveWorkspacePath(settings)
   const mode = settings.permissionMode === 'full' ? 'full (entire machine)' : 'sandbox (workspace only)'
@@ -111,6 +112,17 @@ export async function buildSystemPrompt(
     `All file paths and terminal/git cwd must be inside the workspace directory above.`,
     `Use that path as cwd for run_terminal_cmd and git tools — never use / or paths outside the workspace unless mode is full.`
   ]
+
+  if (workspace) {
+    try {
+      const agents = await loadAgentsInstructions(workspace, { cwd: options?.cwd || workspace })
+      if (agents.trim()) {
+        parts.push('', '# Project instructions (AGENTS.md)', agents)
+      }
+    } catch {
+      /* optional */
+    }
+  }
 
   if (options?.includeBootstrap && workspace) {
     const snapshot = await buildWorkspaceBootstrap(workspace)

@@ -72,9 +72,13 @@ import { loadSkills } from '../../skills/loader'
 import { runGit } from '../../tools/shared/git-runner'
 import {
   createPermanentWorktree,
+  inspectWorktreePath,
   prepareThreadWorktree,
   removeManagedWorktree
 } from '../../tools/thread-worktree'
+import { initAgentsMdFile } from '../../agent/agents-md'
+import { listMemoriesExact } from '../../agent/memory/memories'
+import { getActiveSessionId, getWorkspaceProjectId } from '../../agent/memory/workspaces-sync'
 import { loadMcpConfig, listMcpToolsQuick } from '../../tools/services/mcp-registry'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
 import {
@@ -1470,6 +1474,39 @@ function registerIpc(): void {
       })
     }
   )
+
+  ipcMain.handle(IPC.INIT_AGENTS_MD, async (_e, workspace: string) => {
+    return initAgentsMdFile(String(workspace || ''))
+  })
+
+  ipcMain.handle(IPC.MEMORY_LIST, async (_e, workspaceId: string) => {
+    const id = String(workspaceId || '')
+    if (!id) return []
+    try {
+      const [projectId, sessionId] = await Promise.all([
+        getWorkspaceProjectId(id),
+        getActiveSessionId(id)
+      ])
+      const rows = await listMemoriesExact({
+        projectId,
+        workspaceId: id,
+        sessionId,
+        limit: 24
+      })
+      return rows.map((r) => ({
+        id: r.id,
+        scope: r.scope,
+        kind: r.kind,
+        content: r.content
+      }))
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle(IPC.WORKSPACE_INSPECT_WORKTREE, async (_e, dest: string) => {
+    return inspectWorktreePath(String(dest || ''))
+  })
 
   ipcMain.handle(
     IPC.MCP_STATUS,

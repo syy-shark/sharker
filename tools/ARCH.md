@@ -33,7 +33,7 @@
 | `truncate.ts` | 工具输出截断 |
 | `tool-groups.ts` | 工具分组与计划模式白名单 |
 | `harness-state.ts` | 计划模式 / Build / 按会话隔离的 worktree 运行时状态 |
-| `thread-worktree.ts` | 为会话创建或复用 `~/.sharker/worktrees` 隔离 worktree；可选起点分支；按 `.worktreeinclude` 拷被忽略文件；默认保留最近 15 个并在删除前快照；归档可移除；项目菜单可建永久 worktree（`worktrees/permanent/`，不自动删） |
+| `thread-worktree.ts` | 为会话创建或复用 `~/.sharker/worktrees` 隔离 worktree；可选起点分支；按 `.worktreeinclude` 拷被忽略文件；默认保留最近 15 个并在删除前快照；归档可移除；项目菜单可建永久 worktree（`worktrees/permanent/`，不自动删）；`inspectWorktreePath` 探活目录与快照 |
 | `thread-worktree.test.ts` | worktree 创建/复用、include 拷贝、起点分支、非 git 拒绝、清理与快照恢复 |
 | `builtins/present-inline-demo.ts` | 对话内嵌 HTML 演示（不写文件、不开浏览器） |
 | `ARCH.md` | 本层架构说明 |

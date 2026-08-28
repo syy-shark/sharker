@@ -783,6 +783,39 @@ html.theme-dark .composer-thread-chip.is-active {
   background: var(--metal-control-fill-soft);
 }
 
+.composer-worktree-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  box-shadow: var(--glass-rim-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.composer-worktree-banner-btn {
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 560;
+  cursor: pointer;
+}
+
+html.theme-dark .composer-worktree-banner {
+  background: var(--metal-control-fill-soft);
+  backdrop-filter: none;
+}
+
 .composer-worktree-base {
   display: inline-flex;
   align-items: center;

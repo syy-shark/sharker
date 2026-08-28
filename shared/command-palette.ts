@@ -35,6 +35,36 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'fork_conversation'
   },
   {
+    id: 'side',
+    title: '旁路新线程',
+    keywords: 'side btw popout 旁路 侧边',
+    action: 'side_conversation'
+  },
+  {
+    id: 'archive',
+    title: '归档当前对话',
+    keywords: 'archive 归档',
+    action: 'archive_thread'
+  },
+  {
+    id: 'init',
+    title: '初始化 AGENTS.md',
+    keywords: 'init agents.md 项目说明',
+    action: 'init_agents'
+  },
+  {
+    id: 'permissions',
+    title: '切换权限模式',
+    keywords: 'permissions sandbox full 权限 沙箱',
+    action: 'set_permissions'
+  },
+  {
+    id: 'memories',
+    title: '记忆状态',
+    keywords: 'memories memory 记忆',
+    action: 'show_memories'
+  },
+  {
     id: 'status',
     title: '会话状态',
     keywords: 'status model permission 状态 模型',

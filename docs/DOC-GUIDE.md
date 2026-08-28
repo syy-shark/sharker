@@ -109,7 +109,7 @@ foo/                    ← foo/ARCH.md 说明 bar/、baz.ts、qux.ts …
 
 ## 给 AI 的提示
 
-在 Sharker **用户工作区**里，项目规则写在 `<工作区>/.sharker/AGENTS.md`（路线图 Phase 2，待实现）。
+在 Sharker **用户工作区**里，项目规则写在仓库根 `AGENTS.md` / `AGENTS.override.md`，或 `<工作区>/.sharker/AGENTS.md`（`/init` 可生成脚手架；全局规则在 `~/.sharker/AGENTS.md`）。
 
 在 **Sharker 源码仓库**里：
 

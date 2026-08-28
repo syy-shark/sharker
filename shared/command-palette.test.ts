@@ -26,6 +26,11 @@ describe('command palette', () => {
     expect(ids).toContain('feedback')
     expect(ids).toContain('local')
     expect(ids).toContain('worktree')
+    expect(ids).toContain('side')
+    expect(ids).toContain('archive')
+    expect(ids).toContain('init')
+    expect(ids).toContain('permissions')
+    expect(ids).toContain('memories')
   })
 
   it('filters by title and keywords', () => {

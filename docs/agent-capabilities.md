@@ -61,7 +61,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件，再打开同一会话可恢复。归档对话会清掉对应托管 worktree。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
 
 ### 线程内查找
 
@@ -241,7 +241,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Chrome 扩展 + native host | **deferred** | 可选 scripts/setup-browser-use.sh |
 | Remote Control / Mobile | **deferred** | 需 Secure Enclave 替代 + app-server 守护 |
 | 编辑快照/撤销 | **missing** | 路线图 |
-| `.sharker/AGENTS.md` | **missing** | 路线图 |
+| `.sharker/AGENTS.md` | **done** | 全局 `~/.sharker` + 根到 cwd；`/init` 脚手架；override 优先 |
 
 **Sharker 优势**：Harness 源码可控、自定义 API、git worktree、sub-agents、plan 模式。
 

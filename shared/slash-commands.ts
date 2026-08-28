@@ -121,6 +121,50 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'side',
+    description: '旁路新线程（不离开当前对话，弹出独立窗）',
+    scope: 'ui',
+    action: 'side_conversation',
+    category: 'session'
+  },
+  {
+    name: 'btw',
+    description: '旁路新线程（/side 别名）',
+    scope: 'ui',
+    action: 'side_conversation',
+    category: 'session'
+  },
+  {
+    name: 'archive',
+    description: '归档当前对话（保留记录，清托管 worktree）',
+    scope: 'ui',
+    action: 'archive_thread',
+    category: 'session'
+  },
+  {
+    name: 'init',
+    description: '在仓库根创建 AGENTS.md 项目说明',
+    scope: 'ui',
+    action: 'init_agents',
+    category: 'workspace'
+  },
+  {
+    name: 'permissions',
+    description: '切换沙箱 / 完整权限',
+    scope: 'ui',
+    action: 'set_permissions',
+    argsHint: '[sandbox|full]',
+    category: 'mode'
+  },
+  {
+    name: 'memories',
+    description: '查看 / 开关长期记忆注入与写入',
+    scope: 'ui',
+    action: 'show_memories',
+    argsHint: '[on|off|inject on|generate off]',
+    category: 'session'
+  },
+  {
     name: 'local',
     description: '交接回本地工作区',
     scope: 'ui',

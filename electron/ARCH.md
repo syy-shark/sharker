@@ -46,6 +46,9 @@
 | `automations:queue-*` | 自动化审查队列读写 |
 | `workspace:search-files` | Composer `@` 工作区文件搜索 |
 | `skills:list` | Composer `$` Skill 名称与描述 |
+| `workspace:init-agents-md` | `/init` 在仓库根写 AGENTS.md |
+| `memory:list` | `/memories` 列出相关记忆 |
+| `workspace:inspect-worktree` | 隔离目录是否存在、有无快照 |
 
 ## 数据流
 

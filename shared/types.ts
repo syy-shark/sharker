@@ -79,6 +79,10 @@ export interface AppSettings {
   personality?: import('./personality').AgentPersonality
   /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
   worktreeKeepCount?: number
+  /** 是否把检索到的记忆注入 system（对标 Codex /memories inject） */
+  memoryInjection?: boolean
+  /** 是否在回合结束提炼并写入记忆（对标 Codex /memories generate） */
+  memoryGeneration?: boolean
 }
 
 /** 聊天消息角色 */
@@ -303,5 +307,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiGlass: 0.82,
   uiTheme: 'light',
   personality: 'pragmatic',
-  worktreeKeepCount: 15
+  worktreeKeepCount: 15,
+  memoryInjection: true,
+  memoryGeneration: true
 }

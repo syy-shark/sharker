@@ -176,6 +176,9 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.WORKSPACE_REMOVE_WORKTREE, cwd, conversationId),
   listMcpStatus: (workspace: string, verbose?: boolean) =>
     ipcRenderer.invoke(IPC.MCP_STATUS, workspace, verbose),
+  initAgentsMd: (workspace: string) => ipcRenderer.invoke(IPC.INIT_AGENTS_MD, workspace),
+  listMemories: (workspaceId: string) => ipcRenderer.invoke(IPC.MEMORY_LIST, workspaceId),
+  inspectWorktree: (dest: string) => ipcRenderer.invoke(IPC.WORKSPACE_INSPECT_WORKTREE, dest),
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'
     localCwd: string

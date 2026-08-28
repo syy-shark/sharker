@@ -129,6 +129,8 @@ export function normalizeSettings(
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
+    memoryInjection: raw.memoryInjection !== false,
+    memoryGeneration: raw.memoryGeneration !== false,
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

@@ -223,6 +223,13 @@ export interface SharkerApi {
   ) => Promise<
     Array<{ name: string; command: string; args?: string[]; tools?: string[]; error?: string }>
   >
+  initAgentsMd: (
+    workspace: string
+  ) => Promise<{ ok: true; path: string; created: boolean } | { ok: false; error: string }>
+  listMemories: (
+    workspaceId: string
+  ) => Promise<Array<{ id: string; scope: string; kind: string; content: string }>>
+  inspectWorktree: (dest: string) => Promise<{ exists: boolean; hasSnapshot: boolean }>
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'
     localCwd: string

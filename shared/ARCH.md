@@ -14,8 +14,8 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、记忆注入/写入开关） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、`/fork` 分叉标题与拷贝 |
@@ -72,7 +72,7 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
 | `skill-mention.test.ts` | `$token` 边界与过滤 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、状态、目标、打开 worktree） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉、旁路、归档、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
@@ -111,7 +111,11 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/archive、/init、/permissions、/memories、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree） |
+| `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架 |
+| `agents-md.test.ts` | override 优先、目录链、截断 |
+| `memory-command.ts` | `/memories` 开关解析与条目文案 |
+| `memory-command.test.ts` | on/off、inject、空列表 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案 |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表 |
 | `feedback-bundle.ts` | `/feedback` 本地诊断包 |

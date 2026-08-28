@@ -6,6 +6,7 @@ import { promisify } from 'util'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   createPermanentWorktree,
+  inspectWorktreePath,
   prepareThreadWorktree,
   removeManagedWorktree
 } from './thread-worktree'
@@ -229,5 +230,13 @@ describe('prepareThreadWorktree', () => {
     expect(removed).toEqual({ ok: true, removed: true })
     const { stdout } = await execFileAsync('git', ['worktree', 'list'], { cwd: repo })
     expect(stdout).not.toContain(prepared.path)
+  })
+
+  it('inspects a missing worktree and a snapshot file', async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-inspect-'))
+    temps.push(home)
+    const dest = path.join(home, '.sharker', 'worktrees', 'repo-missing1')
+    const missing = await inspectWorktreePath(dest, home)
+    expect(missing).toEqual({ exists: false, hasSnapshot: false })
   })
 })

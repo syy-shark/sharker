@@ -10,7 +10,8 @@ import {
   SettingsCard,
   SettingsChoiceGroup,
   SettingsRow,
-  SettingsSection
+  SettingsSection,
+  SettingsToggle
 } from './SettingsPrimitives'
 
 /** PermissionsSettings Props：设置草稿与保存回调 */
@@ -85,6 +86,40 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="记忆">
+        <SettingsCard>
+          <SettingsRow
+            title="注入记忆"
+            description="对标 Codex /memories：把检索到的长期记忆写入本轮 system。"
+          >
+            <SettingsToggle
+              checked={draft.memoryInjection !== false}
+              onChange={(v) => {
+                const next = { ...draft, memoryInjection: v }
+                setDraft(next)
+                void onSave(next)
+              }}
+              label="注入记忆"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="写入记忆"
+            description="回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.memoryGeneration !== false}
+              onChange={(v) => {
+                const next = { ...draft, memoryGeneration: v }
+                setDraft(next)
+                void onSave(next)
+              }}
+              label="写入记忆"
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
 

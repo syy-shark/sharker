@@ -6,8 +6,9 @@
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { LiveDuration } from './LiveDuration'
 import type { TurnSegment } from '../../shared/types'
 import {
   deriveChronologicalSteps,
@@ -56,11 +57,6 @@ type DisplayStep = {
   status: ProcessPhaseStep['status']
   kind: ProcessPhaseStep['kind'] | 'synthetic'
   source?: ProcessPhaseStep
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 1) return '<1s'
-  return `${seconds}s`
 }
 
 function isNoisyLiveDetail(label: string, detail?: string): boolean {
@@ -265,7 +261,7 @@ export function ThoughtDisclosure({
   open: boolean
   onToggle: () => void
   label: string
-  elapsed?: string
+  elapsed?: ReactNode
   streaming?: boolean
 }) {
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -438,7 +434,6 @@ export function TurnFlow({
   generatingDemo = false,
   onOpenSubAgent
 }: Props) {
-  const [now, setNow] = useState(() => Date.now())
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
   const [stickyLive, setStickyLive] = useState<{ label: string; detail?: string }>({
     label: '处理中'
@@ -447,11 +442,6 @@ export function TurnFlow({
   const lastSwapAtRef = useRef(0)
   const [thoughtOpen, setThoughtOpen] = useState(false)
   const userThoughtRef = useRef(false)
-  useEffect(() => {
-    if (!isStreaming) return
-    const id = window.setInterval(() => setNow(Date.now()), 500)
-    return () => window.clearInterval(id)
-  }, [isStreaming])
   useEffect(() => {
     return () => {
       if (stickyTimerRef.current) clearTimeout(stickyTimerRef.current)
@@ -465,11 +455,10 @@ export function TurnFlow({
     liveStartedAt ??
     chronological.find((step) => step.segment.startedAt != null)?.segment.startedAt ??
     chronological[0]?.segment.startedAt
-  const elapsedSec =
-    isStreaming && fallbackStartedAt != null
-      ? Math.max(0, Math.round((now - fallbackStartedAt) / 1000))
-      : null
-  const elapsed = elapsedSec != null ? formatDuration(elapsedSec) : undefined
+  const liveClock =
+    isStreaming && fallbackStartedAt != null ? (
+      <LiveDuration startedAt={fallbackStartedAt} />
+    ) : undefined
 
   const onlyMeta =
     chronological.length > 0 &&
@@ -659,7 +648,7 @@ export function TurnFlow({
             setThoughtOpen(!thoughtExpanded)
           }}
           label={thoughtAsLiveHead ? '思考中' : '已思考'}
-          elapsed={thoughtAsLiveHead ? elapsed : undefined}
+          elapsed={thoughtAsLiveHead ? liveClock : undefined}
           streaming={thoughtAsLiveHead}
         />
       ) : null}
@@ -682,7 +671,7 @@ export function TurnFlow({
               </span>
             ) : null}
           </div>
-          <span className="turn-flow-live-time">{elapsed ?? '0s'}</span>
+          <span className="turn-flow-live-time">{liveClock ?? '0s'}</span>
           {approvalWaiting ? (
             <span
               className="turn-flow-live-phase turn-flow-live-phase--wait-approval"

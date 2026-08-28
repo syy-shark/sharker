@@ -136,6 +136,8 @@ export async function writeMemoriesFromTurn(input: WriterInput): Promise<void> {
     ])
   }
 
+  if (input.settings.memoryGeneration === false) return
+
   const heuristic = heuristicCandidates(input)
   const llm =
     input.userText.length > 20 || input.assistantText.length > 80

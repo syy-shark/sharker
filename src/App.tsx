@@ -97,6 +97,7 @@ import {
 import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
+import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import type { McpStatusServer } from '../shared/mcp-status'
 import { estimateContextUsage } from '../shared/token-estimate'
 import { resolveContextLimit } from '../shared/context-limit'
@@ -264,6 +265,7 @@ export default function App() {
   const [threadGoal, setThreadGoal] = useState<ThreadGoal | null>(null)
   const threadGoalRef = useRef<ThreadGoal | null>(null)
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
+  const [worktreeMissing, setWorktreeMissing] = useState(false)
   const threadRuntimeRef = useRef<ThreadRuntime>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
@@ -884,11 +886,26 @@ export default function App() {
     setThreadWorktreePath(runtime.worktreePath)
     setWorktreeBaseRef(runtime.baseRef || '')
     threadRuntimeRef.current = runtime
+    setWorktreeMissing(false)
     const goal = loadThreadGoal(activeConversationId)
     threadGoalRef.current = goal
     setThreadGoal(goal)
     setQueueHeld(Boolean(activeConversationId && queueHeldByConvRef.current.has(activeConversationId)))
   }, [activeConversationId])
+
+  useEffect(() => {
+    if (threadMode !== 'worktree' || !threadWorktreePath || !window.sharker.inspectWorktree) {
+      setWorktreeMissing(false)
+      return
+    }
+    let cancelled = false
+    void window.sharker.inspectWorktree(threadWorktreePath).then((info) => {
+      if (!cancelled) setWorktreeMissing(!info.exists)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [threadMode, threadWorktreePath])
 
   useEffect(() => {
     const off = window.sharker?.onAutomationRun?.((job) => {
@@ -966,7 +983,9 @@ export default function App() {
           uiGlass: updated.uiGlass,
           uiTheme: updated.uiTheme,
           personality: updated.personality,
-          worktreeKeepCount: updated.worktreeKeepCount
+          worktreeKeepCount: updated.worktreeKeepCount,
+          memoryInjection: updated.memoryInjection,
+          memoryGeneration: updated.memoryGeneration
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -999,6 +1018,10 @@ export default function App() {
       browserUseEnabled: draft.browserUseEnabled,
       uiGlass: draft.uiGlass,
       uiTheme: draft.uiTheme,
+      personality: draft.personality,
+      worktreeKeepCount: draft.worktreeKeepCount,
+      memoryInjection: draft.memoryInjection,
+      memoryGeneration: draft.memoryGeneration,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -1315,9 +1338,11 @@ export default function App() {
           return
         }
         if (chunk.type === 'think' && chunk.content) {
-          turnHadThinkingRef.current = true
-          setTurnHadThinking(true)
           turnThinkingRef.current += chunk.content
+          if (!turnHadThinkingRef.current) {
+            turnHadThinkingRef.current = true
+            setTurnHadThinking(true)
+          }
         }
         if (chunk.type === 'error') turnOutcomeRef.current = 'error'
         if (chunk.type === 'token' && chunk.content) {
@@ -1656,7 +1681,12 @@ export default function App() {
     const runtime = runtimeForConversation(convId, activeConversationIdRef.current, threadRuntimeRef.current)
     worktreeWarningRef.current = null
     if (runtime.mode !== 'worktree') return undefined
-    if (runtime.worktreePath) return runtime.worktreePath
+    if (runtime.worktreePath && window.sharker.inspectWorktree) {
+      const info = await window.sharker.inspectWorktree(runtime.worktreePath)
+      if (info.exists) return runtime.worktreePath
+    } else if (runtime.worktreePath) {
+      return runtime.worktreePath
+    }
     const cwd = getActiveWorkspacePath(settingsRef.current)
     if (!cwd || !convId || !window.sharker?.prepareWorktree) return undefined
     const result = await window.sharker.prepareWorktree(cwd, convId, {
@@ -1678,8 +1708,15 @@ export default function App() {
       threadRuntimeRef.current = next
       setThreadWorktreePath(result.path)
     }
+    if (isActive) setWorktreeMissing(false)
     return result.path
   }, [])
+
+  const handleRestoreWorktree = useCallback(async () => {
+    const convId = activeConversationIdRef.current
+    const path = await ensureWorktreeForTurn(convId)
+    if (path) setWorktreeMissing(false)
+  }, [ensureWorktreeForTurn])
 
   /** 派发单条 turn：立刻展示用户消息，再触发 IPC（绑定 conversationId） */
   const dispatchTurn = useCallback(
@@ -2331,6 +2368,8 @@ export default function App() {
       uiTheme: next.uiTheme,
       personality: next.personality,
       worktreeKeepCount: next.worktreeKeepCount,
+      memoryInjection: next.memoryInjection,
+      memoryGeneration: next.memoryGeneration,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -2926,6 +2965,149 @@ export default function App() {
           const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
           if (sourceGoal) saveThreadGoal(forked.id, sourceGoal)
           await handleSelectConversation(ws, forked.id)
+          break
+        }
+        case 'side_conversation': {
+          const ws = settingsRef.current.activeWorkspaceId
+          if (!ws || !window.sharker.createConversation) break
+          const created = await window.sharker.createConversation(ws)
+          saveThreadRuntime(created.id, {
+            mode: threadRuntimeRef.current.mode,
+            baseRef: threadRuntimeRef.current.baseRef
+          })
+          const sourceId = activeConversationIdRef.current
+          const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
+          if (sourceGoal) saveThreadGoal(created.id, sourceGoal)
+          const optimistic: ConversationSummary = {
+            id: created.id,
+            workspaceId: created.workspaceId,
+            title: created.title || DEFAULT_CONVERSATION_TITLE,
+            customTitle: created.customTitle,
+            createdAt: created.createdAt,
+            updatedAt: created.updatedAt,
+            messageCount: created.messages?.length ?? 0,
+            status: created.status ?? 'active'
+          }
+          setConversationList((list) => {
+            if (list.some((c) => c.id === created.id)) return list
+            return sortConversationsByCreatedAt([...list, optimistic])
+          })
+          if (window.sharker.openThreadWindow) {
+            await window.sharker.openThreadWindow(
+              ws,
+              created.id,
+              created.title || DEFAULT_CONVERSATION_TITLE
+            )
+          }
+          void refreshConversationList(ws)
+          break
+        }
+        case 'archive_thread': {
+          const ws = settingsRef.current.activeWorkspaceId
+          const id = activeConversationIdRef.current
+          if (ws && id) await handleArchiveConversation(ws, id)
+          break
+        }
+        case 'init_agents': {
+          const cwd = getActiveWorkspacePath(settingsRef.current) || ''
+          if (!cwd || !window.sharker.initAgentsMd) {
+            const note = {
+              id: crypto.randomUUID(),
+              role: 'assistant' as const,
+              content: '没有工作区，无法创建 AGENTS.md。'
+            }
+            setMessages((msgs) => {
+              const nextMsgs = [...msgs, note]
+              messagesRef.current = nextMsgs
+              void persistActiveConversation(nextMsgs)
+              return nextMsgs
+            })
+            break
+          }
+          const result = await window.sharker.initAgentsMd(cwd)
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: result.ok
+              ? result.created
+                ? `已在仓库根创建 \`AGENTS.md\`：\n\n\`${result.path}\`\n\n下一轮对话会自动注入这些项目说明。`
+                : `已有项目说明文件，未覆盖：\n\n\`${result.path}\``
+              : `无法初始化 AGENTS.md：${result.error}`
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'set_permissions': {
+          const token = args.trim().toLowerCase().split(/\s+/)[0] || ''
+          const current = settingsRef.current.permissionMode
+          if (token !== 'sandbox' && token !== 'full') {
+            const note = {
+              id: crypto.randomUUID(),
+              role: 'assistant' as const,
+              content: `当前权限：${current === 'full' ? '完整（整机）' : '沙箱（仅工作区）'}。用法：\`/permissions sandbox|full\``
+            }
+            setMessages((msgs) => {
+              const nextMsgs = [...msgs, note]
+              messagesRef.current = nextMsgs
+              void persistActiveConversation(nextMsgs)
+              return nextMsgs
+            })
+            break
+          }
+          const merged = { ...settingsRef.current, permissionMode: token as 'sandbox' | 'full' }
+          await persistSettings(merged)
+          setSettings(merged)
+          setSettingsDraft(merged)
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: `权限已切换为${token === 'full' ? '完整（整机）' : '沙箱（仅工作区）'}。`
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'show_memories': {
+          const parsed = parseMemoryCommand(args)
+          let settingsNow = settingsRef.current
+          if (parsed.kind === 'set') {
+            const merged = {
+              ...settingsNow,
+              memoryInjection: parsed.injection ?? settingsNow.memoryInjection !== false,
+              memoryGeneration: parsed.generation ?? settingsNow.memoryGeneration !== false
+            }
+            await persistSettings(merged)
+            setSettings(merged)
+            setSettingsDraft(merged)
+            settingsNow = merged
+          }
+          const items = window.sharker.listMemories
+            ? await window.sharker.listMemories(settingsNow.activeWorkspaceId)
+            : []
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatMemoryStatus({
+              injection: settingsNow.memoryInjection !== false,
+              generation: settingsNow.memoryGeneration !== false,
+              items
+            })
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
           break
         }
         case 'show_status': {
@@ -4312,6 +4494,8 @@ export default function App() {
               onComposerIntentHandled={() => setComposerIntent(null)}
               queueHeld={queueHeld}
               onQueueHeldChange={handleQueueHeldChange}
+              worktreeMissing={worktreeMissing}
+              onRestoreWorktree={() => void handleRestoreWorktree()}
               onRetry={(userMessageId) => void handleRetry(userMessageId)}
               approval={approval}
               approvalResponding={approvalResponding}

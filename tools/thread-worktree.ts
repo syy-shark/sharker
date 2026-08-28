@@ -115,6 +115,27 @@ function snapshotFileFor(dest: string, home: string): string {
   return path.join(home, '.sharker', 'worktree-snapshots', `${path.basename(dest)}.json`)
 }
 
+/** 目录是否还在、删除前快照是否可恢复 */
+export async function inspectWorktreePath(
+  dest: string,
+  home = os.homedir()
+): Promise<{ exists: boolean; hasSnapshot: boolean }> {
+  let exists = false
+  try {
+    exists = (await stat(dest)).isDirectory()
+  } catch {
+    exists = false
+  }
+  let hasSnapshot = false
+  try {
+    await readFile(snapshotFileFor(dest, home), 'utf8')
+    hasSnapshot = true
+  } catch {
+    hasSnapshot = false
+  }
+  return { exists, hasSnapshot }
+}
+
 /** 删除前保存 HEAD + 脏文件，便于会话再打开时恢复 */
 export async function snapshotManagedWorktree(dest: string, home = os.homedir()): Promise<void> {
   let head = ''

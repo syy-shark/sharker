@@ -84,6 +84,12 @@ export const IPC = {
   WORKSPACE_REMOVE_WORKTREE: 'workspace:remove-worktree',
   /** `/mcp` 已配置 Server 列表 */
   MCP_STATUS: 'mcp:status',
+  /** `/init`：没有说明文件时写入仓库根 AGENTS.md */
+  INIT_AGENTS_MD: 'workspace:init-agents-md',
+  /** `/memories`：列出当前工作区相关记忆 */
+  MEMORY_LIST: 'memory:list',
+  /** 隔离 worktree 是否还在、有无快照 */
+  WORKSPACE_INSPECT_WORKTREE: 'workspace:inspect-worktree',
   TERMINAL_CREATE: 'terminal:create',
   TERMINAL_WRITE: 'terminal:write',
   TERMINAL_RESIZE: 'terminal:resize',

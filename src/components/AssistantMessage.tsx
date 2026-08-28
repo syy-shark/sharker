@@ -75,7 +75,6 @@ export const AssistantMessage = memo(function AssistantMessage({
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
-  const [liveSec, setLiveSec] = useState(0)
   const [thoughtOpen, setThoughtOpen] = useState(false)
   const userToggledFlow = useRef(false)
 
@@ -91,20 +90,11 @@ export const AssistantMessage = memo(function AssistantMessage({
       : '已完成任务分析'
     : ''
 
-  const durationSec =
-    meta?.durationSec ??
-    (liveStartedAt != null ? Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000)) : undefined)
-
-  useEffect(() => {
-    if (liveStartedAt == null || !isStreaming) return
-    const tick = () => setLiveSec(Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000)))
-    tick()
-    const id = window.setInterval(tick, 500)
-    return () => window.clearInterval(id)
-  }, [liveStartedAt, isStreaming])
-
   const shownDuration =
-    durationSec != null ? durationSec : liveStartedAt != null ? liveSec : undefined
+    meta?.durationSec ??
+    (!isStreaming && liveStartedAt != null
+      ? Math.max(0, Math.round((Date.now() - liveStartedAt) / 1000))
+      : undefined)
 
   // —— 旧消息回退：无 segments 时用 ProcessTimeline ——
   const processSteps = useMemo(

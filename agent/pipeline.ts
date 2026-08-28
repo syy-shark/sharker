@@ -189,7 +189,10 @@ async function* onQuery(
     ),
     getWorkspaceProjectId(settings.activeWorkspaceId),
     getActiveSessionId(settings.activeWorkspaceId),
-    buildSystemPrompt(settings, { includeBootstrap: useTools })
+    buildSystemPrompt(settings, {
+      includeBootstrap: useTools,
+      cwd: ctx.worktreePath || workspace
+    })
   ])
   const memoryPromise = assembleMemoryContext({
     settings,

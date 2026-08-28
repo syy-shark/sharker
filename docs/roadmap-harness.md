@@ -98,7 +98,7 @@ flowchart LR
 
 | 项 | 内容 |
 |----|------|
-| AGENTS.md | `<工作区>/.sharker/AGENTS.md` 或根目录 `AGENTS.md`，规则注入 |
+| AGENTS.md | 已实现：全局 `~/.sharker` + 根到 cwd；`/init` 写脚手架 |
 | 架构摘要 | 首次打开项目生成 `architecture.md` 缓存，增量更新 |
 | 依赖图（轻量） | package.json / Cargo.toml / pyproject 解析 → 技术栈卡片 |
 
