@@ -1969,7 +1969,7 @@ export const ComposerDock = memo(
                 type="button"
                 className="composer-jump"
                 onClick={() => submit('jump')}
-                title="注入：中止当前任务并立即执行本条（Enter）"
+                title="注入：加入当前回合，不中止直播（Enter）"
                 aria-label="注入当前回合"
               >
                 注入

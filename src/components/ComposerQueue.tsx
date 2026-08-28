@@ -1,5 +1,5 @@
 /**
- * 输入框上方的排队条：编辑 / 重排 / 立即发送 / 删除（对标 Codex queued messages）。
+ * 输入框上方的排队条：注入预览 / 排队后续（对标 Codex pending steer + queued follow-ups）。
  * 不接收直播 token，只跟队列 props 更新。
  * @see src/components/ARCH.md
  */
@@ -9,6 +9,8 @@ import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import './ComposerQueue.css'
 
 interface Props {
+  /** 已接受、下一工具/采样后写入当前回合 */
+  steers?: QueuedPrompt[]
   items: QueuedPrompt[]
   onEdit: (id: string, text: string) => void
   onMove: (id: string, direction: -1 | 1) => void
@@ -16,8 +18,114 @@ interface Props {
   onCancel: (id: string) => void
 }
 
-/** 排队列表：挂在输入框上方，不进对话滚动区，避免直播贴底跳动 */
+function QueueRow({
+  item,
+  index,
+  kind,
+  editing,
+  draft,
+  canMoveUp,
+  canMoveDown,
+  onDraft,
+  onStartEdit,
+  onCommit,
+  onCancelEdit,
+  onMove,
+  onSend,
+  onCancel
+}: {
+  item: QueuedPrompt
+  index: number
+  kind: 'steer' | 'queue'
+  editing: boolean
+  draft: string
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onDraft: (text: string) => void
+  onStartEdit: () => void
+  onCommit: () => void
+  onCancelEdit: () => void
+  onMove: (direction: -1 | 1) => void
+  onSend: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="composer-queue-item glass-tile" role="listitem">
+      <span className={`composer-queue-badge${kind === 'steer' ? ' composer-queue-badge--steer' : ''}`}>
+        {kind === 'steer' ? '注入' : `排队 ${index + 1}`}
+      </span>
+      {editing ? (
+        <textarea
+          className="composer-queue-edit"
+          value={draft}
+          aria-label={kind === 'steer' ? '编辑注入消息' : '编辑排队消息'}
+          onChange={(e) => onDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              onCancelEdit()
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              onCommit()
+            }
+          }}
+          autoFocus
+        />
+      ) : (
+        <p className="composer-queue-text">{normalizeStreamingText(item.text)}</p>
+      )}
+      <div className="composer-queue-actions">
+        {editing ? (
+          <button
+            type="button"
+            className="composer-queue-btn"
+            disabled={!draft.trim()}
+            onClick={onCommit}
+          >
+            保存
+          </button>
+        ) : (
+          <button type="button" className="composer-queue-btn" onClick={onStartEdit}>
+            编辑
+          </button>
+        )}
+        {kind === 'queue' ? (
+          <>
+            <button
+              type="button"
+              className="composer-queue-btn"
+              disabled={!canMoveUp}
+              onClick={() => onMove(-1)}
+              aria-label="上移"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="composer-queue-btn"
+              disabled={!canMoveDown}
+              onClick={() => onMove(1)}
+              aria-label="下移"
+            >
+              ↓
+            </button>
+            <button type="button" className="composer-queue-btn composer-queue-btn--primary" onClick={onSend}>
+              发送
+            </button>
+          </>
+        ) : null}
+        <button type="button" className="composer-queue-btn" onClick={onCancel}>
+          删除
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** 注入在上、排队在下：挂在输入框上方，不进对话滚动区 */
 export const ComposerQueue = memo(function ComposerQueue({
+  steers = [],
   items,
   onEdit,
   onMove,
@@ -26,7 +134,7 @@ export const ComposerQueue = memo(function ComposerQueue({
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
-  if (items.length === 0) return null
+  if (steers.length === 0 && items.length === 0) return null
 
   const commitEdit = (id: string) => {
     const text = draft.trim()
@@ -36,90 +144,61 @@ export const ComposerQueue = memo(function ComposerQueue({
   }
 
   return (
-    <div className="composer-queue" role="list" aria-label="排队中的后续消息">
+    <div className="composer-queue" role="list" aria-label="注入与排队中的后续消息">
+      {steers.map((item, index) => {
+        const editing = editingId === item.id
+        return (
+          <QueueRow
+            key={item.id}
+            item={item}
+            index={index}
+            kind="steer"
+            editing={editing}
+            draft={draft}
+            canMoveUp={false}
+            canMoveDown={false}
+            onDraft={setDraft}
+            onStartEdit={() => {
+              setEditingId(item.id)
+              setDraft(item.text)
+            }}
+            onCommit={() => commitEdit(item.id)}
+            onCancelEdit={() => {
+              setEditingId(null)
+              setDraft('')
+            }}
+            onMove={() => undefined}
+            onSend={() => undefined}
+            onCancel={() => onCancel(item.id)}
+          />
+        )
+      })}
       {items.map((item, index) => {
         const editing = editingId === item.id
         return (
-          <div key={item.id} className="composer-queue-item glass-tile" role="listitem">
-            <span className="composer-queue-badge">排队 {index + 1}</span>
-            {editing ? (
-              <textarea
-                className="composer-queue-edit"
-                value={draft}
-                aria-label="编辑排队消息"
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault()
-                    setEditingId(null)
-                    setDraft('')
-                  }
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    commitEdit(item.id)
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <p className="composer-queue-text">{normalizeStreamingText(item.text)}</p>
-            )}
-            <div className="composer-queue-actions">
-              {editing ? (
-                <button
-                  type="button"
-                  className="composer-queue-btn"
-                  disabled={!draft.trim()}
-                  onClick={() => commitEdit(item.id)}
-                >
-                  保存
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="composer-queue-btn"
-                  onClick={() => {
-                    setEditingId(item.id)
-                    setDraft(item.text)
-                  }}
-                >
-                  编辑
-                </button>
-              )}
-              <button
-                type="button"
-                className="composer-queue-btn"
-                disabled={index === 0}
-                onClick={() => onMove(item.id, -1)}
-                aria-label="上移"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="composer-queue-btn"
-                disabled={index === items.length - 1}
-                onClick={() => onMove(item.id, 1)}
-                aria-label="下移"
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                className="composer-queue-btn composer-queue-btn--primary"
-                onClick={() => onSend(item.id)}
-              >
-                发送
-              </button>
-              <button
-                type="button"
-                className="composer-queue-btn"
-                onClick={() => onCancel(item.id)}
-              >
-                删除
-              </button>
-            </div>
-          </div>
+          <QueueRow
+            key={item.id}
+            item={item}
+            index={index}
+            kind="queue"
+            editing={editing}
+            draft={draft}
+            canMoveUp={index > 0}
+            canMoveDown={index < items.length - 1}
+            onDraft={setDraft}
+            onStartEdit={() => {
+              setEditingId(item.id)
+              setDraft(item.text)
+            }}
+            onCommit={() => commitEdit(item.id)}
+            onCancelEdit={() => {
+              setEditingId(null)
+              setDraft('')
+            }}
+            onMove={(direction) => onMove(item.id, direction)}
+            onSend={() => onSend(item.id)}
+            onCancel={() => onCancel(item.id)}
+          />
         )
       })}
     </div>

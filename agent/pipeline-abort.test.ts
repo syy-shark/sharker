@@ -8,6 +8,7 @@ import {
   abortActiveTurn,
   getActiveTurnConversationId
 } from './pipeline'
+import { acceptTurnSteer, markTurnSteerable, peekSteersForTurn } from './pending-steer-mailbox'
 
 describe('abortActiveTurn conversation ownership', () => {
   beforeEach(() => {
@@ -23,6 +24,11 @@ describe('abortActiveTurn conversation ownership', () => {
     // 全局 abort 在无 slot 时返回 null（不伪造成其他会话）
     expect(abortActiveTurn()).toBeNull()
     expect(getActiveTurnConversationId()).toBeNull()
+    expect(acceptTurnSteer('conv-b', '改方向').ok).toBe(false)
+    markTurnSteerable('conv-b')
+    const steered = acceptTurnSteer('conv-b', '改方向')
+    expect(steered.ok).toBe(true)
+    expect(peekSteersForTurn('conv-b')).toHaveLength(1)
   })
 
   it('scoped abort for A does not claim to abort B', () => {

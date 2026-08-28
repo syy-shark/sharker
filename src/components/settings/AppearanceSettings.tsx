@@ -279,13 +279,13 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               {
                 value: 'queue',
                 title: '排队',
-                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为注入。',
+                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为加入当前回合。',
                 icon: <span aria-hidden>排</span>
               },
               {
                 value: 'steer',
                 title: '注入',
-                description: '忙时 Enter 插入当前回合。⌘⇧Enter 改为排队。',
+                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为排队。',
                 icon: <span aria-hidden>注</span>
               }
             ]}

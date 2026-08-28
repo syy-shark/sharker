@@ -1,0 +1,141 @@
+/**
+ * 当前回合注入（对标 Codex Follow-up → Steer：加入当前 run，不中止直播）。
+ * 首轮采样前不排空；采样/工具边界后再交给模型。
+ * @see shared/ARCH.md
+ */
+import type { ChatAttachment, ChatMessage } from './types'
+
+/** 已接受、尚未写入对话历史的注入 */
+export interface PendingSteerItem {
+  id: string
+  conversationId: string
+  text: string
+  attachments?: ChatAttachment[]
+  createdAt: number
+}
+
+/** conversationId → 该会话待注入列表 */
+export type PendingSteerMap = Record<string, PendingSteerItem[]>
+
+/** 主进程接受注入的结果 */
+export type SteerAcceptResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: 'no_active_turn' | 'empty' | 'no_conversation' }
+
+/** 创建注入项（强制绑定 conversationId） */
+export function createPendingSteer(
+  conversationId: string,
+  text: string,
+  attachments?: ChatAttachment[],
+  id?: string
+): PendingSteerItem {
+  return {
+    id: id ?? `s-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    conversationId,
+    text,
+    createdAt: Date.now(),
+    attachments: attachments?.length ? attachments : undefined
+  }
+}
+
+/** 排入指定会话的待注入列表 */
+export function enqueuePendingSteer(
+  boxes: PendingSteerMap,
+  conversationId: string,
+  item: PendingSteerItem
+): PendingSteerMap {
+  const owned: PendingSteerItem = { ...item, conversationId }
+  const prev = boxes[conversationId] ?? []
+  return { ...boxes, [conversationId]: [...prev, owned] }
+}
+
+/** 列出某会话尚未排空的注入 */
+export function listPendingSteers(
+  boxes: PendingSteerMap,
+  conversationId: string | null | undefined
+): PendingSteerItem[] {
+  if (!conversationId) return []
+  return boxes[conversationId] ?? []
+}
+
+/** 排空某会话全部注入 */
+export function drainPendingSteers(
+  boxes: PendingSteerMap,
+  conversationId: string
+): { items: PendingSteerItem[]; boxes: PendingSteerMap } {
+  const items = boxes[conversationId] ?? []
+  if (items.length === 0) return { items: [], boxes }
+  const next = { ...boxes }
+  delete next[conversationId]
+  return { items, boxes: next }
+}
+
+/** 取消一条尚未排空的注入 */
+export function cancelPendingSteer(
+  boxes: PendingSteerMap,
+  conversationId: string,
+  steerId: string
+): PendingSteerMap {
+  const list = boxes[conversationId]
+  if (!list?.length) return boxes
+  const nextList = list.filter((item) => item.id !== steerId)
+  if (nextList.length === list.length) return boxes
+  const next = { ...boxes }
+  if (nextList.length === 0) delete next[conversationId]
+  else next[conversationId] = nextList
+  return next
+}
+
+/** 改写一条尚未排空的注入正文 */
+export function updatePendingSteerText(
+  boxes: PendingSteerMap,
+  conversationId: string,
+  steerId: string,
+  text: string
+): PendingSteerMap {
+  const list = boxes[conversationId]
+  if (!list?.length) return boxes
+  const trimmed = text.trim()
+  if (!trimmed) return cancelPendingSteer(boxes, conversationId, steerId)
+  return {
+    ...boxes,
+    [conversationId]: list.map((item) => (item.id === steerId ? { ...item, text: trimmed } : item))
+  }
+}
+
+/**
+ * 对标 Codex：采样进行中不排空；至少完成过一次模型回复后才交给下一轮。
+ * 首轮用户提示先被采样，工具批次后或终答前再注入。
+ */
+export function shouldDrainPendingSteers(options: {
+  hasSampledOnce: boolean
+  samplingInFlight?: boolean
+}): boolean {
+  if (options.samplingInFlight) return false
+  return options.hasSampledOnce
+}
+
+/** 写入模型上下文的注入正文（附件只列文件名，避免中止重开） */
+export function formatSteerForModel(item: PendingSteerItem): string {
+  const text = String(item.text || '').trim()
+  const names = (item.attachments || []).map((a) => a.name).filter(Boolean)
+  if (!names.length) return text
+  return `${text}\n\n[附件: ${names.join(', ')}]`
+}
+
+/** 排空后写入对话历史；已有同一 id 不重复（对标 committed UserMessage） */
+export function appendConsumedSteerMessage(
+  messages: ChatMessage[],
+  item: Pick<PendingSteerItem, 'id' | 'text' | 'attachments'>
+): ChatMessage[] {
+  if (messages.some((row) => row.id === item.id)) return messages
+  return [
+    ...messages,
+    {
+      id: item.id,
+      role: 'user',
+      content: item.text,
+      attachments: item.attachments
+    }
+  ]
+}

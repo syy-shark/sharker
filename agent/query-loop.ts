@@ -28,6 +28,8 @@ import {
   resolveSessionGrant,
   type SessionApprovalStore
 } from '../shared/approval-session'
+import { formatSteerForModel, shouldDrainPendingSteers } from '../shared/pending-steer'
+import { drainSteersForTurn, peekSteersForTurn } from './pending-steer-mailbox'
 
 /** 默认工具循环上限（读/改/跑命令累加，多文件项目生成需要更长续跑空间） */
 const DEFAULT_MAX_ITERATIONS = 40
@@ -412,12 +414,34 @@ export async function* queryLoop(
     })
   }
 
+  const consumePendingSteers = function* (): Generator<StreamChunk> {
+    if (!conversationId) return
+    if (
+      !shouldDrainPendingSteers({
+        hasSampledOnce: iterations > 1,
+        samplingInFlight: false
+      })
+    ) {
+      return
+    }
+    for (const item of drainSteersForTurn(conversationId)) {
+      messages.push({ role: 'user', content: formatSteerForModel(item) })
+      yield {
+        type: 'steer_consumed',
+        content: item.text,
+        steerId: item.id,
+        conversationId
+      }
+    }
+  }
+
   while (iterations < maxIterations) {
     iterations++
     if (signal?.aborted) {
       yield { type: 'done' }
       return
     }
+    yield* consumePendingSteers()
 
     let assistantText = ''
     let displayedAssistantText = ''
@@ -596,6 +620,9 @@ export async function* queryLoop(
             }
           }
         }
+        if (conversationId && peekSteersForTurn(conversationId).length > 0) {
+          continue
+        }
         yield { type: 'done' }
         return
       }
@@ -635,6 +662,15 @@ export async function* queryLoop(
           error:
             '模型本轮没有返回可显示的文字。Sharker 已避免静默结束；请检查当前模型是否支持 Chat Completions 流式正文输出，或换用更兼容的模型/Base URL。'
         }
+      }
+      if (conversationId && peekSteersForTurn(conversationId).length > 0) {
+        if (assistantText.trim()) {
+          messages.push({
+            role: 'assistant',
+            content: stripTextToolCalls(assistantText) || assistantText
+          })
+        }
+        continue
       }
       yield { type: 'done' }
       return

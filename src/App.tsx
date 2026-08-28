@@ -198,6 +198,15 @@ import {
   type DoneCommittedMap,
   type SessionQueueMap
 } from '../shared/session-runtime'
+import {
+  appendConsumedSteerMessage,
+  createPendingSteer,
+  enqueuePendingSteer,
+  listPendingSteers,
+  cancelPendingSteer,
+  updatePendingSteerText,
+  type PendingSteerMap
+} from '../shared/pending-steer'
 import './App.css'
 
 /** 非当前可见会话的流式缓冲（切换会话不丢 in-flight） */
@@ -328,6 +337,7 @@ export default function App() {
     null
   )
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
+  const [pendingSteers, setPendingSteers] = useState<QueuedPrompt[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
@@ -418,6 +428,7 @@ export default function App() {
   const turnGenRef = useRef(0)
   /** 按会话隔离的 follow-up 队列 */
   const sessionQueuesRef = useRef<SessionQueueMap>({})
+  const pendingSteersRef = useRef<PendingSteerMap>({})
   const queuedPromptsRef = useRef<QueuedPrompt[]>([])
   /** 后台会话 live 状态（切换离开后继续收流） */
   const sessionBuffersRef = useRef<Map<string, SessionLiveBuffer>>(new Map())
@@ -463,6 +474,11 @@ export default function App() {
     const list = listQueuedForConversation(queues, convId)
     queuedPromptsRef.current = list
     setQueuedPrompts(list)
+  }, [])
+
+  const syncPendingSteerUi = useCallback((boxes: PendingSteerMap, convId: string | null) => {
+    pendingSteersRef.current = boxes
+    setPendingSteers(listPendingSteers(boxes, convId))
   }, [])
 
   const applyBufferToUi = useCallback((buf: SessionLiveBuffer) => {
@@ -1534,6 +1550,38 @@ export default function App() {
         ? shouldApplyStreamToActive(ownerId, activeId)
         : Boolean(activeId && sendInFlightRef.current && !streamOwnerRef.current)
 
+      if (chunk.type === 'steer_consumed' && ownerId && chunk.steerId) {
+        const pending = listPendingSteers(pendingSteersRef.current, ownerId).find(
+          (row) => row.id === chunk.steerId
+        )
+        syncPendingSteerUi(cancelPendingSteer(pendingSteersRef.current, ownerId, chunk.steerId), activeId)
+        const targetMsgs = applyToUi ? messagesRef.current : ensureBuffer(ownerId).messages
+        const nextMsgs = appendConsumedSteerMessage(targetMsgs, {
+          id: chunk.steerId,
+          text: chunk.content || pending?.text || '',
+          attachments: pending?.attachments
+        })
+        if (applyToUi) {
+          messagesRef.current = nextMsgs
+          setMessages(nextMsgs)
+          void persistActiveConversation(nextMsgs, ownerId)
+        } else {
+          ensureBuffer(ownerId).messages = nextMsgs
+        }
+        return
+      }
+      if (chunk.type === 'steer_restored' && ownerId && chunk.content) {
+        syncPendingSteerUi(
+          cancelPendingSteer(pendingSteersRef.current, ownerId, chunk.steerId || ''),
+          activeId
+        )
+        const restored = createQueuedPrompt(ownerId, chunk.content, undefined, chunk.steerId)
+        const queues = enqueueForConversation(sessionQueuesRef.current, ownerId, restored, 'front')
+        if (ownerId === activeId) syncActiveQueueUi(queues, ownerId)
+        else sessionQueuesRef.current = queues
+        return
+      }
+
       if (chunk.type === 'harness_mode' && chunk.harnessPhase) {
         const on = chunk.harnessPhase === 'plan'
         const id = ownerId || (applyToUi ? activeId : null)
@@ -1948,6 +1996,7 @@ export default function App() {
     refreshConversationList,
     persistActiveConversation,
     syncActiveQueueUi,
+    syncPendingSteerUi,
     bumpChangesSoon,
     bumpSessionLive,
     notifyApprovalIfNeeded
@@ -2543,10 +2592,32 @@ export default function App() {
           attachments.length ? attachments : undefined
         )
         if (mode === 'jump') {
-          // 插队：中止当前可见 turn 后立刻派发本条（不再依赖 done 回调出队）
-          // 1) 先作废当前 turn 代数，避免旧 finally/seed 干扰
+          // 对标 Codex Steer：加入当前回合，不中止直播。无进行中回合才回退中止重开。
+          if (window.sharker.steerChat) {
+            try {
+              const accepted = await window.sharker.steerChat(
+                convId,
+                trimmed,
+                attachments.length ? attachments : undefined
+              )
+              if (accepted.ok) {
+                const steer = createPendingSteer(
+                  convId,
+                  trimmed,
+                  attachments.length ? attachments : undefined,
+                  accepted.id
+                )
+                syncPendingSteerUi(
+                  enqueuePendingSteer(pendingSteersRef.current, convId, steer),
+                  convId
+                )
+                return
+              }
+            } catch (e) {
+              console.error('steer failed', e)
+            }
+          }
           turnGenRef.current += 1
-          // 2) 本地收口 live（调试 seed 无后端 turn 时也必须能停）
           if (sendInFlightRef.current || loading) {
             doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, convId)
             doneCommittedRef.current = true
@@ -2576,7 +2647,6 @@ export default function App() {
           sendInFlightRef.current = false
           setLoading(false)
           if (streamOwnerRef.current === convId) streamOwnerRef.current = null
-          // 3) 清掉该会话排队，插队消息直接执行
           if (sessionQueuesRef.current[convId]) {
             const cleared = { ...sessionQueuesRef.current }
             delete cleared[convId]
@@ -2587,10 +2657,8 @@ export default function App() {
           } catch (e) {
             console.error('abort failed', e)
           }
-          // 4) 打开新 turn 门闩并立即派发
           doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
           doneCommittedRef.current = false
-          // 抬代数：后续旧 abort/done 一律视为过期
           const jumpGen = ++turnGenRef.current
           streamTurnGenByConvRef.current[convId] = jumpGen
           awaitingTurnStartByConvRef.current[convId] = jumpGen
@@ -2604,7 +2672,7 @@ export default function App() {
 
       await dispatchTurn(trimmed, attachments, convId ?? undefined)
     },
-    [commitAssistantReply, dispatchTurn, flushSettingsDraftIfNeeded, loading, syncActiveQueueUi]
+    [commitAssistantReply, dispatchTurn, flushSettingsDraftIfNeeded, loading, syncActiveQueueUi, syncPendingSteerUi]
   )
 
   /** 暂停 / 恢复当前会话的排队自动出队 */
@@ -2628,20 +2696,30 @@ export default function App() {
     (id: string) => {
       const convId = activeConversationIdRef.current
       if (!convId) return
+      if (listPendingSteers(pendingSteersRef.current, convId).some((row) => row.id === id)) {
+        void window.sharker.cancelSteer?.(convId, id)
+        syncPendingSteerUi(cancelPendingSteer(pendingSteersRef.current, convId, id), convId)
+        return
+      }
       const queues = cancelQueuedPrompt(sessionQueuesRef.current, convId, id)
       syncActiveQueueUi(queues, convId)
     },
-    [syncActiveQueueUi]
+    [syncActiveQueueUi, syncPendingSteerUi]
   )
 
   const handleEditQueued = useCallback(
     (id: string, text: string) => {
       const convId = activeConversationIdRef.current
       if (!convId) return
+      if (listPendingSteers(pendingSteersRef.current, convId).some((row) => row.id === id)) {
+        void window.sharker.updateSteer?.(convId, id, text)
+        syncPendingSteerUi(updatePendingSteerText(pendingSteersRef.current, convId, id, text), convId)
+        return
+      }
       const queues = updateQueuedPromptText(sessionQueuesRef.current, convId, id, text)
       syncActiveQueueUi(queues, convId)
     },
-    [syncActiveQueueUi]
+    [syncActiveQueueUi, syncPendingSteerUi]
   )
 
   const handleMoveQueued = useCallback(
@@ -2940,6 +3018,7 @@ export default function App() {
     applyPlanUiForConversation(conversationId)
     setPage('chat')
     syncActiveQueueUi(sessionQueuesRef.current, conversationId)
+    syncPendingSteerUi(pendingSteersRef.current, conversationId)
 
     if (settingsRef.current.activeWorkspaceId !== workspaceId) {
       const next = withActiveWorkspace(settingsRef.current, workspaceId)
@@ -6399,6 +6478,7 @@ export default function App() {
               turnStartedAt={turnStartedAt}
               turnHadThinking={turnHadThinking}
               queuedPrompts={queuedPrompts}
+              pendingSteers={pendingSteers}
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}
               onEditQueued={handleEditQueued}

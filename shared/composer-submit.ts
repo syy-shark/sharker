@@ -7,7 +7,7 @@
 /** 发送模式（与 UI PromptSubmitMode 对齐） */
 export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 
-/** 忙时后续：排队等到下一回合，或注入当前回合（对标 Codex Follow-up behavior） */
+/** 忙时后续：排队等到下一回合，或加入当前回合（对标 Codex Follow-up → Steer，不中止） */
 export type FollowUpBehavior = 'queue' | 'steer'
 
 /**

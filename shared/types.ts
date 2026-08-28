@@ -109,7 +109,7 @@ export interface AppSettings {
   keyboardShortcuts?: import('./keymap').KeymapOverrides
   /**
    * 忙时后续行为（对标 Codex Settings → General → Follow-up behavior）。
-   * 默认 queue：Enter 排队；steer：Enter 注入当前回合。⌘⇧Enter 反转单条。
+   * 默认 queue：Enter 排队；steer：Enter 加入当前回合（不中止直播）。⌘⇧Enter 反转单条。
    */
   followUpBehavior?: 'queue' | 'steer'
   /**
@@ -338,7 +338,13 @@ export interface StreamChunk {
     | 'command'
     | 'plan_ready'
     | 'harness_mode'
+    /** 注入已写入本回合模型上下文，渲染成用户气泡 */
+    | 'steer_consumed'
+    /** 回合结束仍未排空：交还渲染层排队或还原 */
+    | 'steer_restored'
   content?: string
+  /** chat:steer 条目 id */
+  steerId?: string
   toolName?: string
   toolArgs?: Record<string, unknown>
   toolCallId?: string

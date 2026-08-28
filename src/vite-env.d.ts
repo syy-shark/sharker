@@ -118,6 +118,16 @@ export interface SharkerApi {
   onDeeplink: (cb: (url: string) => void) => () => void
   onMenuAction: (cb: (action: string) => void) => () => void
   abortChat: (conversationId?: string) => Promise<void>
+  steerChat: (
+    conversationId: string,
+    text: string,
+    attachments?: import('../shared/types').ChatAttachment[]
+  ) => Promise<
+    | { ok: true; id: string }
+    | { ok: false; reason: 'no_active_turn' | 'empty' | 'no_conversation' }
+  >
+  cancelSteer: (conversationId: string, steerId: string) => Promise<boolean>
+  updateSteer: (conversationId: string, steerId: string, text: string) => Promise<boolean>
   respondApproval: (
     id: string,
     decision: import('../shared/approval-session').ApprovalDecision | boolean

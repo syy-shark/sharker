@@ -37,6 +37,10 @@ export const IPC = {
   /** 应用菜单点击（无加速键注册，避免与渲染进程快捷键双触发） */
   MENU_ACTION: 'app:menu-action',
   ABORT_CHAT: 'chat:abort',
+  /** 忙时注入当前回合（对标 Codex Steer，不中止直播） */
+  STEER_CHAT: 'chat:steer',
+  STEER_CHAT_CANCEL: 'chat:steer-cancel',
+  STEER_CHAT_UPDATE: 'chat:steer-update',
   APPROVAL_RESPONSE: 'approval:response',
   /** `/approve`：最近一次拒绝排队一次重试 */
   APPROVE_DENIED_RETRY: 'approval:approve-denied',

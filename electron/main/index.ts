@@ -40,6 +40,7 @@ import {
   stopSubAgent
 } from '../../agent/coordinator'
 import { executeUserInput, abortActiveTurn, hasActiveTurn } from '../../agent/pipeline'
+import { acceptTurnSteer, cancelTurnSteer, updateTurnSteer } from '../../agent/pending-steer-mailbox'
 import { enterPlanMode, exitPlanMode, getHarnessPhase } from '../../tools/harness-state'
 import {
   ConversationApprovalRegistry,
@@ -1066,6 +1067,24 @@ function registerIpc(): void {
   ipcMain.handle(IPC.ABORT_CHAT, async (_e, conversationId?: string) => {
     abortActiveTurn(conversationId)
   })
+
+  ipcMain.handle(
+    IPC.STEER_CHAT,
+    async (
+      _e,
+      conversationId: string,
+      text: string,
+      attachments: ChatAttachment[] = []
+    ) => acceptTurnSteer(conversationId, text, attachments)
+  )
+  ipcMain.handle(IPC.STEER_CHAT_CANCEL, async (_e, conversationId: string, steerId: string) =>
+    cancelTurnSteer(conversationId, steerId)
+  )
+  ipcMain.handle(
+    IPC.STEER_CHAT_UPDATE,
+    async (_e, conversationId: string, steerId: string, text: string) =>
+      updateTurnSteer(conversationId, steerId, text)
+  )
 
   ipcMain.handle(
     IPC.SAVE_ATTACHMENT,

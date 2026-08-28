@@ -129,6 +129,15 @@ contextBridge.exposeInMainWorld('sharker', {
   },
   abortChat: (conversationId?: string): Promise<void> =>
     ipcRenderer.invoke(IPC.ABORT_CHAT, conversationId),
+  steerChat: (
+    conversationId: string,
+    text: string,
+    attachments?: import('../../shared/types').ChatAttachment[]
+  ) => ipcRenderer.invoke(IPC.STEER_CHAT, conversationId, text, attachments ?? []),
+  cancelSteer: (conversationId: string, steerId: string) =>
+    ipcRenderer.invoke(IPC.STEER_CHAT_CANCEL, conversationId, steerId),
+  updateSteer: (conversationId: string, steerId: string, text: string) =>
+    ipcRenderer.invoke(IPC.STEER_CHAT_UPDATE, conversationId, steerId, text),
   respondApproval: (
     id: string,
     decision: import('../../shared/approval-session').ApprovalDecision | boolean

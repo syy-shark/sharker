@@ -16,6 +16,11 @@ import { expandFileReferences } from './file-refs'
 import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
+import {
+  markTurnSteerable,
+  releaseTurnSteer,
+  __resetPendingSteerMailboxForTests
+} from './pending-steer-mailbox'
 import { killAllShellChildren } from '../tools/shell-runner'
 import { enterBuildMode, setWorktreePath } from '../tools/harness-state'
 import { assembleMemoryContext } from './memory/assembler'
@@ -296,6 +301,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       }
     }
     activeSlots.set(key, slot)
+    if (conversationId) markTurnSteerable(conversationId)
     const signal = slot.abortController.signal
     const stamp = (chunk: StreamChunk): StreamChunk => ({
       ...chunk,
@@ -382,6 +388,17 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
         turnCtx.send({ type: 'done', conversationId })
       }
     } finally {
+      if (conversationId) {
+        const leftover = releaseTurnSteer(conversationId)
+        for (const item of leftover) {
+          turnCtx.send({
+            type: 'steer_restored',
+            content: item.text,
+            steerId: item.id,
+            conversationId
+          })
+        }
+      }
       slot.release()
     }
   }
@@ -429,9 +446,17 @@ export function hasActiveTurn(): boolean {
   return activeSlots.size > 0
 }
 
+/** 指定会话是否有正在跑的 turn（chat:steer 入口） */
+export function hasActiveTurnForConversation(conversationId?: string): boolean {
+  const id = conversationId?.trim()
+  if (!id) return false
+  return activeSlots.has(chainKey(id))
+}
+
 /** 测试用：清空排队取消标记与 chain 状态敏感字段 */
 export function __resetTurnPipelineForTests(): void {
   cancelledBeforeStart.clear()
   turnChains.clear()
   activeSlots.clear()
+  __resetPendingSteerMailboxForTests()
 }

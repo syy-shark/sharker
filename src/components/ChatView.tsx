@@ -243,6 +243,8 @@ interface Props {
   /** 本轮助手预留 id：直播行与收束后历史行共用，避免整行卸载重挂 */
   liveAssistantId?: string | null
   queuedPrompts: QueuedPrompt[]
+  /** 已接受、下一工具/采样后写入当前回合（对标 Codex pending steer） */
+  pendingSteers?: QueuedPrompt[]
   liveSegments: TurnSegment[]
   streaming: string
   turnThinking: string
@@ -325,6 +327,7 @@ export function ChatView({
   messages,
   liveAssistantId = null,
   queuedPrompts,
+  pendingSteers = [],
   liveSegments,
   streaming,
   turnThinking,
@@ -515,6 +518,7 @@ export function ChatView({
   const isEmpty =
     messages.length === 0 &&
     queuedPrompts.length === 0 &&
+    pendingSteers.length === 0 &&
     liveSegments.length === 0 &&
     !streaming &&
     !turnThinking &&
@@ -1274,6 +1278,7 @@ export function ChatView({
           ) : null}
           {onEditQueued && onMoveQueued && onSendQueued ? (
             <ComposerQueue
+              steers={pendingSteers}
               items={queuedPrompts}
               onEdit={onEditQueued}
               onMove={onMoveQueued}
