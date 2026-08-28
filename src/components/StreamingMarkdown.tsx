@@ -159,10 +159,17 @@ function renderCheapList(
                     {renderCheapInline(task ? task.nodes : item.nodes)}
                   </>
                 )
+        const tail =
+          item.suffix?.length && (wrapP || paragraphs.length > 1) ? (
+            <p>{renderCheapInline(item.suffix)}</p>
+          ) : item.suffix?.length ? (
+            renderCheapInline(item.suffix)
+          ) : null
         const inner = (
           <>
             {body}
             {item.blocks?.map((block, bi) => renderCheapBlock(block, bi))}
+            {tail}
             {nested}
           </>
         )

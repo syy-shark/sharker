@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接 / 引用式图片（含定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行与松散 `li>p`、项内引用 / ATX / Setext / 嵌套围栏 / 围栏后后缀）/任务项/表格（含无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -208,8 +208,12 @@ export type CheapListItem = {
   nodes: CheapInlineNode[]
   extra?: CheapInlineNode[][]
   nested?: { ordered: boolean; indent: number; items: CheapListItem[]; start?: number }
-  /** 项内表格 / 围栏，对标 remark `li>table` / `li>pre` */
+  /** 项内表格 / 围栏 / 引用 / 标题，对标 remark `li>table` / `li>pre` / `li>blockquote` / `li>h*` */
   blocks?: CheapProseBlock[]
+  /** 项内围栏/表格之后的紧随文本，对标 remark 仍画在 `pre`/`table` 后面 */
+  suffix?: CheapInlineNode[]
+  /** 列表标记结束列，用来认项内围栏（含 4 空格嵌套） */
+  contentIndent?: number
 }
 
 /** 直播散文尾的廉价块：标题 / 列表 / 引用 / 表格 / 分隔线 / 段落，避免一律 `<p>` 收束时跳一下 */
@@ -1163,16 +1167,18 @@ function leadingIndent(line: string): number {
 /** 解析列表行：缩进 + 有序/无序 + 正文；有序记下起始号（对标 GFM `1)` / `ol start`） */
 function parseListLine(
   line: string
-): { indent: number; ordered: boolean; text: string; start?: number } | null {
-  if (!LIST_LINE_RE.test(line)) return null
+): { indent: number; ordered: boolean; text: string; start?: number; contentIndent: number } | null {
+  const marker = /^(\s*(?:[-+]|\*|\d+[.)])\s+)/.exec(line)
+  if (!marker || !LIST_LINE_RE.test(line)) return null
   const indent = leadingIndent(line)
   const rest = line.trimStart()
+  const contentIndent = marker[1]!.length
   const ul = /^[-+]\s+(.*)$/.exec(rest) || /^\*\s+(.*)$/.exec(rest)
-  if (ul) return { indent, ordered: false, text: ul[1] ?? '' }
+  if (ul) return { indent, ordered: false, text: ul[1] ?? '', contentIndent }
   const ol = /^(\d+)[.)]\s+(.*)$/.exec(rest)
   if (!ol) return null
   const start = Number.parseInt(ol[1] ?? '1', 10)
-  return { indent, ordered: true, text: ol[2] ?? '', start: Number.isFinite(start) ? start : 1 }
+  return { indent, ordered: true, text: ol[2] ?? '', start: Number.isFinite(start) ? start : 1, contentIndent }
 }
 
 /** 把更缩进的列表项挂到当前项的嵌套列表 */
@@ -1182,25 +1188,31 @@ function appendNestedListItem(
   indent: number,
   text: string,
   defs: ReadonlyMap<string, string | CheapLinkDef>,
-  start?: number
-): void {
+  start?: number,
+  contentIndent?: number
+): CheapListItem {
   const listStart = ordered && start && start !== 1 ? start : undefined
   if (!item.nested) {
     item.nested = { ordered, indent, items: [], start: listStart }
   } else if (indent > item.nested.indent && item.nested.items.length) {
-    appendNestedListItem(
+    return appendNestedListItem(
       item.nested.items[item.nested.items.length - 1]!,
       ordered,
       indent,
       text,
       defs,
-      start
+      start,
+      contentIndent
     )
-    return
   } else if (item.nested.ordered !== ordered && indent <= item.nested.indent) {
     item.nested = { ordered, indent, items: [], start: listStart }
   }
-  item.nested.items.push({ nodes: parseCheapInlineMarkdown(text, defs) })
+  const nested: CheapListItem = {
+    nodes: parseCheapInlineMarkdown(text, defs),
+    contentIndent
+  }
+  item.nested.items.push(nested)
+  return nested
 }
 
 /** 列表项续行：缩进或 CommonMark lazy continuation；空行后另起一段，对标松散 `li>p` */
@@ -1212,6 +1224,14 @@ function appendListContinuation(
 ): void {
   if (item.nested && indent > item.nested.indent && item.nested.items.length) {
     appendListContinuation(item.nested.items[item.nested.items.length - 1]!, indent, text, opts)
+    return
+  }
+  if (item.blocks?.length) {
+    if (item.suffix?.length) {
+      item.suffix = [...item.suffix, { type: 'text', text: `\n${text}` }]
+      return
+    }
+    item.suffix = parseCheapInlineMarkdown(text, opts?.defs)
     return
   }
   if (opts?.newParagraph) {
@@ -1226,7 +1246,112 @@ function appendListContinuation(
   item.nodes = [...item.nodes, { type: 'text', text: `\n${text}` }]
 }
 
+type QuotePart = { text: string; lazy?: boolean }
+
 const QUOTE_RE = /^ {0,3}>\s?(.*)$/
+
+function parseQuoteLine(line: string, baseIndent = 0): string | null {
+  const stripped = baseIndent ? dedentLine(line, baseIndent) : line
+  const match = QUOTE_RE.exec(stripped)
+  return match ? (match[1] ?? '') : null
+}
+
+function parseHeadingLine(
+  line: string,
+  baseIndent = 0
+): { level: 1 | 2 | 3 | 4 | 5 | 6; text: string } | null {
+  const stripped = baseIndent ? dedentLine(line, baseIndent) : line
+  const heading = HEADING_RE.exec(stripped)
+  if (!heading) return null
+  return {
+    level: Math.min(6, heading[1]!.length) as 1 | 2 | 3 | 4 | 5 | 6,
+    text: stripAtxClosingHashes(heading[2] ?? '')
+  }
+}
+
+function parseFenceLineAt(line: string, baseIndent = 0): { marker: string; info: string } | null {
+  const stripped = baseIndent ? dedentLine(line, baseIndent) : line
+  return parseFenceLine(stripped)
+}
+
+function deepestItemForIndent(items: CheapListItem[], indent: number): CheapListItem | null {
+  if (!items.length) return null
+  let item = items[items.length - 1]!
+  while (item.nested && indent > item.nested.indent && item.nested.items.length) {
+    item = item.nested.items[item.nested.items.length - 1]!
+  }
+  return item
+}
+
+function quotePartsHaveOpenFence(parts: QuotePart[]): boolean {
+  let marker: string | null = null
+  for (const part of parts) {
+    if (marker) {
+      if (isFenceClose(part.text, marker)) marker = null
+    } else {
+      const open = parseFenceLine(part.text)
+      if (open) marker = open.marker
+    }
+  }
+  return marker != null
+}
+
+function quotePartsToBlocks(
+  parts: QuotePart[],
+  defs: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] {
+  const chunks: CheapProseBlock[] = []
+  let marked: string[] = []
+  const flushMarked = () => {
+    if (!marked.length) return
+    chunks.push(...parseCheapProseBlocks(marked.join('\n'), defs))
+    marked = []
+  }
+  for (const part of parts) {
+    if (part.lazy) {
+      flushMarked()
+      const last = chunks[chunks.length - 1]
+      if (last?.type === 'p') {
+        last.nodes = [...last.nodes, { type: 'text', text: `\n${part.text}` }]
+      } else {
+        chunks.push({ type: 'p', nodes: parseCheapInlineMarkdown(part.text, defs) })
+      }
+    } else {
+      marked.push(part.text)
+    }
+  }
+  flushMarked()
+  return chunks
+}
+
+function isItemFenceClose(line: string, fence: { marker: string; indent: number }): boolean {
+  const stripped = dedentLine(line, fence.indent)
+  if (isFenceClose(stripped, fence.marker)) return true
+  return leadingIndent(line) <= 3 && isFenceClose(line, fence.marker)
+}
+
+function stealItemSetext(
+  item: CheapListItem,
+  line: string,
+  inline: (chunk: string) => CheapInlineNode[]
+): boolean {
+  const trimmed = line.trim()
+  const marker = trimmed[0]
+  if (marker !== '=' && marker !== '-') return false
+  if (!/^(?:=+|-+)$/.test(trimmed)) return false
+  if (item.extra?.length || item.blocks?.length) return false
+  const src = cheapInlineSourceAll(item.nodes)
+  const title = src.split('\n').pop() ?? ''
+  if (!title) return false
+  if (src === title) item.nodes = []
+  else item.nodes = inline(src.slice(0, -(title.length + 1)))
+  appendItemBlock(item, {
+    type: 'heading',
+    level: marker === '=' ? 1 : 2,
+    nodes: inline(title)
+  })
+  return true
+}
 /** CommonMark thematic break：`---` / `* * *` / `- - -`（标记之间可空） */
 const HR_RE = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})[ \t]*$/
 const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/
@@ -1371,29 +1496,65 @@ export function parseCheapProseBlocks(
     loose: boolean
     start?: number
   } | null = null
-  let quote: string[] = []
+  let quote: QuotePart[] = []
   let table: string[] | null = null
   let pre: string[] | null = null
   let fence: { marker: string; lang?: string; lines: string[] } | null = null
-  let itemFence: { marker: string; lang?: string; indent: number; lines: string[] } | null = null
-  let itemTable: string[] | null = null
+  let itemFence: {
+    marker: string
+    lang?: string
+    indent: number
+    lines: string[]
+    item: CheapListItem
+  } | null = null
+  let itemTable: { lines: string[]; item: CheapListItem } | null = null
+  let itemQuote: { parts: QuotePart[]; item: CheapListItem } | null = null
 
   const inline = (chunk: string) => parseCheapInlineMarkdown(chunk, linkDefs)
   const currentItem = () => (list && list.items.length ? list.items[list.items.length - 1]! : null)
   const flushItemFence = () => {
     if (!itemFence) return
-    const item = currentItem()
-    if (item) {
-      appendItemBlock(item, { type: 'pre', text: itemFence.lines.join('\n'), lang: itemFence.lang })
-    }
+    appendItemBlock(itemFence.item, { type: 'pre', text: itemFence.lines.join('\n'), lang: itemFence.lang })
     itemFence = null
   }
   const flushItemTable = () => {
     if (!itemTable) return
-    const item = currentItem()
-    const block = tableBlockFromLines(itemTable, inline)
+    const block = tableBlockFromLines(itemTable.lines, inline)
+    const item = itemTable.item
     itemTable = null
     if (item && block) appendItemBlock(item, block)
+  }
+  const flushItemQuote = () => {
+    if (!itemQuote) return
+    const parts = itemQuote.parts
+    const item = itemQuote.item
+    itemQuote = null
+    if (parts.length) appendItemBlock(item, { type: 'quote', blocks: quotePartsToBlocks(parts, linkDefs) })
+  }
+  const startItemOpener = (item: CheapListItem, text: string, contentIndent: number) => {
+    const fenceOpen = parseFenceLine(text)
+    if (fenceOpen) {
+      item.nodes = []
+      itemFence = {
+        marker: fenceOpen.marker,
+        lang: fenceLang(fenceOpen.info),
+        indent: contentIndent,
+        lines: [],
+        item
+      }
+      return
+    }
+    const heading = parseHeadingLine(text, 0)
+    if (heading && /^ {0,3}#{1,6}\s+/.test(text)) {
+      item.nodes = []
+      appendItemBlock(item, { type: 'heading', level: heading.level, nodes: inline(heading.text) })
+      return
+    }
+    const quoted = parseQuoteLine(text, 0)
+    if (quoted !== null && /^ {0,3}>/.test(text)) {
+      item.nodes = []
+      itemQuote = { parts: [{ text: quoted }], item }
+    }
   }
 
   const flushPara = () => {
@@ -1418,6 +1579,7 @@ export function parseCheapProseBlocks(
   const flushList = () => {
     flushItemFence()
     flushItemTable()
+    flushItemQuote()
     if (!list) return
     const loose = list.loose || list.items.some((item) => Boolean(item.extra?.length))
     blocks.push({
@@ -1431,11 +1593,12 @@ export function parseCheapProseBlocks(
   }
   const flushQuote = () => {
     if (!quote.length) return
-    // Lines already had one `>` stripped when collected. Recurse so `> > inner`
-    // becomes quote > quote, matching remark-gfm's nested <blockquote>.
+    // Marked lines already had one `>` stripped. Recurse so `> > inner`
+    // becomes quote > quote. Lazy lines stay in the last paragraph so
+    // GFM tables / fences cannot start on a continuation without `>`.
     blocks.push({
       type: 'quote',
-      blocks: parseCheapProseBlocks(quote.join('\n'), linkDefs)
+      blocks: quotePartsToBlocks(quote, linkDefs)
     })
     quote = []
   }
@@ -1463,6 +1626,7 @@ export function parseCheapProseBlocks(
     flushFence()
     flushItemFence()
     flushItemTable()
+    flushItemQuote()
     flushTable()
     flushPre()
     flushPara()
@@ -1481,19 +1645,40 @@ export function parseCheapProseBlocks(
       continue
     }
     if (itemFence) {
-      if (isFenceClose(line, itemFence.marker)) {
+      if (isItemFenceClose(line, itemFence)) {
         flushItemFence()
         continue
       }
-      itemFence.lines.push(dedentLine(line, itemFence.indent))
-      continue
+      if (line.trim() === '' || leadingIndent(line) >= itemFence.indent) {
+        itemFence.lines.push(dedentLine(line, itemFence.indent))
+        continue
+      }
+      flushItemFence()
+      if (list && leadingIndent(line) <= list.indent) flushList()
+    }
+    if (itemQuote) {
+      const quoteBase = itemQuote.item.contentIndent ?? list?.indent ?? 0
+      const quoted =
+        parseQuoteLine(line, quoteBase) ??
+        parseQuoteLine(line, list?.indent ?? 0) ??
+        (leadingIndent(line) <= 3 ? parseQuoteLine(line, 0) : null)
+      const indented = !list || leadingIndent(line) > list.indent
+      if (quoted !== null && indented) {
+        itemQuote.parts.push({ text: quoted })
+        continue
+      }
+      if (isQuoteLazyLine(line) && !quotePartsHaveOpenFence(itemQuote.parts) && indented) {
+        itemQuote.parts.push({ text: line.trimStart(), lazy: true })
+        continue
+      }
+      flushItemQuote()
     }
     if (footnoteScan.skip.has(lineIndex) || linkDefScan.skip.has(lineIndex)) {
       flushAll()
       continue
     }
-    if (quote.length && isQuoteLazyLine(line)) {
-      quote.push(line.trimStart())
+    if (quote.length && isQuoteLazyLine(line) && !quotePartsHaveOpenFence(quote)) {
+      quote.push({ text: line.trimStart(), lazy: true })
       continue
     }
     if (pre && !isIndentCodeLine(line)) {
@@ -1506,7 +1691,22 @@ export function parseCheapProseBlocks(
     }
     if (itemTable) {
       if (isGfmTableRow(line) || looksLikeGfmTableCells(line)) {
-        itemTable.push(line.trim())
+        itemTable.lines.push(line.trim())
+        continue
+      }
+      const tableItem = itemTable.item
+      const tableBase = tableItem.contentIndent ?? list?.indent ?? 0
+      if (
+        list &&
+        line.trim() !== '' &&
+        leadingIndent(line) > list.indent &&
+        !parseListLine(line) &&
+        !parseHeadingLine(line, tableBase) &&
+        !parseQuoteLine(line, tableBase) &&
+        !parseFenceLineAt(line, tableBase) &&
+        !HR_RE.test(line)
+      ) {
+        itemTable.lines.push(line.trim())
         continue
       }
       flushItemTable()
@@ -1517,13 +1717,13 @@ export function parseCheapProseBlocks(
       isGfmTableSep(line) &&
       leadingIndent(line) > list.indent
     ) {
-      const item = currentItem()!
+      const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
       const src = cheapInlineSourceAll(item.nodes)
       const header = src.split('\n').pop() ?? ''
       if (header && looksLikeGfmTableCells(header)) {
         if (src === header) item.nodes = []
         else item.nodes = inline(src.slice(0, -(header.length + 1)))
-        itemTable = [header, line.trim()]
+        itemTable = { lines: [header, line.trim()], item }
         continue
       }
     }
@@ -1562,22 +1762,56 @@ export function parseCheapProseBlocks(
         continue
       }
     }
+    if (list && list.items.length && leadingIndent(line) > list.indent && SETEXT_RE.test(line)) {
+      const item = deepestItemForIndent(list.items, leadingIndent(line))
+      if (item && stealItemSetext(item, line, inline)) {
+        list.afterBlank = false
+        continue
+      }
+    }
     if (HR_RE.test(line)) {
       flushAll()
       blocks.push({ type: 'hr' })
       continue
     }
-    const fenceOpen = parseFenceLine(line)
-    if (fenceOpen) {
-      if (list && list.items.length && leadingIndent(line) > list.indent) {
+    if (list && list.items.length && leadingIndent(line) > list.indent) {
+      const item = deepestItemForIndent(list.items, leadingIndent(line)) ?? currentItem()!
+      const base = item.contentIndent ?? list.indent
+      const itemFenceOpen = parseFenceLineAt(line, base) ?? parseFenceLine(line)
+      if (itemFenceOpen) {
+        if (list.afterBlank) list.loose = true
         itemFence = {
-          marker: fenceOpen.marker,
-          lang: fenceLang(fenceOpen.info),
+          marker: itemFenceOpen.marker,
+          lang: fenceLang(itemFenceOpen.info),
           indent: leadingIndent(line),
-          lines: []
+          lines: [],
+          item
         }
+        list.afterBlank = false
         continue
       }
+      const itemHeading = parseHeadingLine(line, base) ?? parseHeadingLine(line, 0)
+      if (itemHeading) {
+        if (list.afterBlank) list.loose = true
+        appendItemBlock(item, {
+          type: 'heading',
+          level: itemHeading.level,
+          nodes: inline(itemHeading.text)
+        })
+        list.afterBlank = false
+        continue
+      }
+      const itemQuoted =
+        parseQuoteLine(line, base) ?? parseQuoteLine(line, list.indent) ?? parseQuoteLine(line, 0)
+      if (itemQuoted !== null) {
+        if (list.afterBlank) list.loose = true
+        itemQuote = { parts: [{ text: itemQuoted }], item }
+        list.afterBlank = false
+        continue
+      }
+    }
+    const fenceOpen = parseFenceLine(line)
+    if (fenceOpen) {
       flushTable()
       flushPre()
       flushPara()
@@ -1601,19 +1835,22 @@ export function parseCheapProseBlocks(
     if (listLine) {
       flushItemFence()
       flushItemTable()
+      flushItemQuote()
       flushTable()
       flushPre()
       flushPara()
       flushQuote()
       if (list && listLine.indent > list.indent && list.items.length) {
-        appendNestedListItem(
+        const nested = appendNestedListItem(
           list.items[list.items.length - 1]!,
           listLine.ordered,
           listLine.indent,
           listLine.text,
           linkDefs,
-          listLine.start
+          listLine.start,
+          listLine.contentIndent
         )
+        startItemOpener(nested, listLine.text, listLine.contentIndent)
         list.afterBlank = false
         continue
       }
@@ -1629,7 +1866,12 @@ export function parseCheapProseBlocks(
         }
       }
       if (list.afterBlank && list.items.length) list.loose = true
-      list.items.push({ nodes: inline(listLine.text) })
+      const item: CheapListItem = {
+        nodes: inline(listLine.text),
+        contentIndent: listLine.contentIndent
+      }
+      list.items.push(item)
+      startItemOpener(item, listLine.text, listLine.contentIndent)
       list.afterBlank = false
       continue
     }
@@ -1655,7 +1897,7 @@ export function parseCheapProseBlocks(
       flushPre()
       flushPara()
       flushList()
-      quote.push(q[1])
+      quote.push({ text: q[1] ?? '' })
       continue
     }
     if (line.trim() === '') {
@@ -1738,6 +1980,11 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
       extra.length === (prevItem.extra?.length ?? 0) &&
       extra.every((para, index) => para === prevItem.extra?.[index]) &&
       extra.length === (nextItem.extra?.length ?? 0)
+    const suffix = reuseInlineNodes(prevItem.suffix ?? [], nextItem.suffix ?? [])
+    const suffixSame =
+      suffix.length === (prevItem.suffix?.length ?? 0) &&
+      suffix.every((node, index) => node === prevItem.suffix?.[index]) &&
+      suffix.length === (nextItem.suffix?.length ?? 0)
     const prevBlocks = prevItem.blocks ?? []
     const nextBlocks = nextItem.blocks ?? []
     const blocks = nextBlocks.map((block, index) => {
@@ -1748,14 +1995,16 @@ function reuseListItems(prev: CheapListItem[], next: CheapListItem[]): CheapList
       blocks.length === prevBlocks.length &&
       blocks.length === nextBlocks.length &&
       blocks.every((block, index) => block === prevBlocks[index])
-    if (nodes === prevItem.nodes && nested === prevItem.nested && extraSame && blocksSame) {
+    if (nodes === prevItem.nodes && nested === prevItem.nested && extraSame && suffixSame && blocksSame) {
       out.push(prevItem)
     } else {
       out.push({
         nodes,
         extra: extra.length ? extra : undefined,
+        suffix: suffix.length ? suffix : undefined,
         nested,
-        blocks: blocks.length ? blocks : undefined
+        blocks: blocks.length ? blocks : undefined,
+        contentIndent: nextItem.contentIndent ?? prevItem.contentIndent
       })
     }
   }

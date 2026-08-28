@@ -522,6 +522,59 @@ describe('splitStreamingMarkdown', () => {
         lang: 'js'
       })
     }
+    const quoteInList = parseCheapProseBlocks('- note\n  > quoted')
+    expect(quoteInList.map((b) => b.type)).toEqual(['list'])
+    if (quoteInList[0]?.type === 'list') {
+      expect(quoteInList[0].items[0]?.blocks?.[0]?.type).toBe('quote')
+    }
+    const headingInList = parseCheapProseBlocks('- note\n  # title')
+    expect(headingInList.map((b) => b.type)).toEqual(['list'])
+    if (headingInList[0]?.type === 'list') {
+      expect(headingInList[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'heading', level: 1 })
+    }
+    const fenceFirst = parseCheapProseBlocks('1) ```js\n   x\n   ```')
+    expect(fenceFirst.map((b) => b.type)).toEqual(['list'])
+    if (fenceFirst[0]?.type === 'list') {
+      expect(fenceFirst[0].items[0]?.nodes).toEqual([])
+      expect(fenceFirst[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'pre', text: 'x', lang: 'js' })
+    }
+    const nestedFence = parseCheapProseBlocks('- a\n  - b\n    ```\n    x\n    ```')
+    expect(nestedFence.map((b) => b.type)).toEqual(['list'])
+    if (nestedFence[0]?.type === 'list') {
+      expect(nestedFence[0].items[0]?.nested?.items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'x'
+      })
+    }
+    const afterFence = parseCheapProseBlocks('- a\n  ```\n  x\n  ```\n  after')
+    expect(afterFence.map((b) => b.type)).toEqual(['list'])
+    if (afterFence[0]?.type === 'list') {
+      expect(afterFence[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const looseFence = parseCheapProseBlocks('- a\n\n  ```\n  x\n  ```')
+    expect(looseFence.map((b) => b.type)).toEqual(['list'])
+    if (looseFence[0]?.type === 'list') {
+      expect(looseFence[0].loose).toBe(true)
+    }
+    const lazyTableQuote = parseCheapProseBlocks('> Name | Value\n--- | ---\nfoo | bar')
+    expect(lazyTableQuote.map((b) => b.type)).toEqual(['quote'])
+    if (lazyTableQuote[0]?.type === 'quote') {
+      expect(lazyTableQuote[0].blocks[0]?.type).toBe('p')
+    }
+    const quoteFenceLazy = parseCheapProseBlocks('> ```\n> x\ncode?')
+    expect(quoteFenceLazy.map((b) => b.type)).toEqual(['quote', 'p'])
+    const setextInList = parseCheapProseBlocks('- Title\n  ===')
+    expect(setextInList.map((b) => b.type)).toEqual(['list'])
+    if (setextInList[0]?.type === 'list') {
+      expect(setextInList[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'heading', level: 1 })
+    }
+    const setextHr = parseCheapProseBlocks('- Overview\n  ---')
+    expect(setextHr.map((b) => b.type)).toEqual(['list'])
+    if (setextHr[0]?.type === 'list') {
+      expect(setextHr[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'heading', level: 2 })
+    }
+    const messyFenceFirst = parseCheapProseBlocks('1. ```\ncode\n```')
+    expect(messyFenceFirst.map((b) => b.type)).toEqual(['list', 'p', 'pre'])
   })
 
   it('reuses closed cheap blocks when a list or table grows', () => {
