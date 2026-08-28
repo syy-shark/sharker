@@ -31,7 +31,7 @@
 |----|------|
 | 默认页 | **本地新标签**（`browserStartPageDataUrl()`），**不**默认打开 google.com 营销页 |
 | 工具栏 | 后退 / 前进 / 刷新 · 一条 omnibox ·「主页」回新标签 |
-| Omnibox | Enter：像 Chrome——带点当网址，否则 Google 搜索 |
+| Omnibox | Enter：像 Chrome——带点当网址，否则 Google 搜索；聚焦浏览器时 ⌘L 选中地址栏、⌘R / ⌘⇧R 刷新、⌘← / ⌘→ 前进后退、⌘⇧C 复制网址、鼠标侧键导航 |
 | 视口 | `<webview>` **absolute 铺满**（`height:100%` 会裁切半截页）；宿主视口背景透明以透玻璃 |
 | 起始页玻璃 | 起始 HTML 自带半透搜索框 + 透明底；主题跟随 App `theme-light/dark`（非系统偏好） |
 | 外站玻璃 | `http(s)` 在 `dom-ready` / 导航后 `insertCSS(PAGE_GLASS_INJECT_CSS)`；失败忽略 |

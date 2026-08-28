@@ -56,6 +56,8 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
   const [canBack, setCanBack] = useState(false)
   const [canForward, setCanForward] = useState(false)
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
+  const urlInputRef = useRef<HTMLInputElement>(null)
   const urlRef = useRef(url)
   const glassCssKeyRef = useRef<string | null>(null)
 
@@ -222,9 +224,90 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
       if (loading) webviewRef.current?.stop()
       else webviewRef.current?.reload()
     })
+  const reloadBypassCache = () =>
+    safeCall(() => {
+      webviewRef.current?.reloadIgnoringCache?.()
+    })
+  const copyUrl = () => {
+    const raw = urlRef.current
+    const text = displayUrlForBar(raw)
+    if (!text || !navigator.clipboard?.writeText) return
+    void navigator.clipboard.writeText(text)
+  }
+
+  /** 浏览器聚焦时：⌘L 地址栏、⌘R 刷新、⌘←/→ 前进后退、⌘⇧C 复制网址、侧键导航 */
+  useEffect(() => {
+    const inBrowser = (node: EventTarget | null) => {
+      const host = shellRef.current
+      if (!host) return false
+      return node instanceof Node && host.contains(node)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod || e.altKey) return
+      if (!inBrowser(document.activeElement) && !inBrowser(e.target)) return
+      if ((e.key === 'l' || e.key === 'L') && !e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        urlInputRef.current?.focus()
+        urlInputRef.current?.select()
+        return
+      }
+      if ((e.key === 'r' || e.key === 'R') && !e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        reload()
+        return
+      }
+      if ((e.key === 'r' || e.key === 'R') && e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        reloadBypassCache()
+        return
+      }
+      if (e.key === 'ArrowLeft' && !e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        goBack()
+        return
+      }
+      if (e.key === 'ArrowRight' && !e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        goForward()
+        return
+      }
+      if ((e.key === 'c' || e.key === 'C') && e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        copyUrl()
+      }
+    }
+    const onMouse = (e: MouseEvent) => {
+      if (!inBrowser(e.target)) return
+      if (e.button === 3) {
+        e.preventDefault()
+        e.stopPropagation()
+        goBack()
+      } else if (e.button === 4) {
+        e.preventDefault()
+        e.stopPropagation()
+        goForward()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('mouseup', onMouse, true)
+    window.addEventListener('auxclick', onMouse, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('mouseup', onMouse, true)
+      window.removeEventListener('auxclick', onMouse, true)
+    }
+  }, [loading])
 
   return (
-    <div className="embedded-browser">
+    <div className="embedded-browser" ref={shellRef}>
       <div className="embedded-browser-toolbar">
         <div className="embedded-browser-nav">
           <button
@@ -266,6 +349,7 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
         <div className={`embedded-browser-omnibox ${loading ? 'is-loading' : ''}`}>
           {loading ? <span className="embedded-browser-omnibox-pulse" aria-hidden /> : null}
           <input
+            ref={urlInputRef}
             className="embedded-browser-url"
             value={input}
             onChange={(e) => setInput(e.target.value)}

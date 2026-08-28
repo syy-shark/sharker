@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { navBack, navForward, pushNav, sameNav } from './nav-history'
+import { mouseNavDirection, navBack, navForward, pushNav, sameNav } from './nav-history'
 
 describe('nav history', () => {
   it('pushes and drops the forward stack', () => {
@@ -22,5 +22,11 @@ describe('nav history', () => {
     expect(fwd.entry?.conversationId).toBe('b')
     expect(navBack(stack, 0).entry).toBeNull()
     expect(sameNav({ page: 'chat' }, { page: 'chat', conversationId: null })).toBe(true)
+  })
+
+  it('maps mouse side buttons', () => {
+    expect(mouseNavDirection(3)).toBe('back')
+    expect(mouseNavDirection(4)).toBe('forward')
+    expect(mouseNavDirection(0)).toBeNull()
   })
 })

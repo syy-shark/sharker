@@ -46,6 +46,13 @@ export function navBack(
   return { stack, index: next, entry: stack[next] ?? null }
 }
 
+/** 鼠标侧键：3 后退 / 4 前进（对标 Codex Mouse Back/Forward） */
+export function mouseNavDirection(button: number): 'back' | 'forward' | null {
+  if (button === 3) return 'back'
+  if (button === 4) return 'forward'
+  return null
+}
+
 /** 前进一格 */
 export function navForward(
   stack: NavEntry[],

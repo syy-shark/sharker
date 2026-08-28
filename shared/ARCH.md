@@ -45,7 +45,7 @@
 | `workbench-shortcuts.test.ts` | ⌘B / ⌘⌥B / ⌘J / ⌘N / ⌘, / ⌘K / ⌘⇧[ / ⌘[ / ⌘+ / Ctrl+L / ⌘G |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
-| `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点） |
+| `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词 |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |

@@ -53,7 +53,7 @@ import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
 import { adjacentConversationId, matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
-import { navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
+import { mouseNavDirection, navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
 import {
   clampUiFontScale,
   stepUiFontScale,
@@ -3877,6 +3877,23 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, persistFontScale, toggleSidebar])
+
+  useEffect(() => {
+    const onMouseNav = (e: MouseEvent) => {
+      const dir = mouseNavDirection(e.button)
+      if (!dir) return
+      const t = e.target
+      if (t instanceof HTMLElement && t.closest('.embedded-browser')) return
+      e.preventDefault()
+      handleNavStep(dir)
+    }
+    window.addEventListener('mouseup', onMouseNav)
+    window.addEventListener('auxclick', onMouseNav)
+    return () => {
+      window.removeEventListener('mouseup', onMouseNav)
+      window.removeEventListener('auxclick', onMouseNav)
+    }
+  }, [handleNavStep])
 
   /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
   useEffect(() => {

@@ -163,6 +163,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⌥A', title: '下一条进行中对话' },
   { keys: '⌘P', title: '引用工作区文件' },
   { keys: '⌘T', title: '打开浏览器标签' },
+  { keys: '⌘L', title: '浏览器地址栏（聚焦时）' },
+  { keys: '鼠标侧键', title: '后退 / 前进' },
   { keys: '⌘↑ / ⌘↓', title: '对话顶 / 底' },
   { keys: '⌘F', title: '在对话中查找' },
   { keys: '⌘G', title: '搜索对话' },
