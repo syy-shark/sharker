@@ -50,6 +50,10 @@ export const IPC = {
   GIT_STATUS_CHANGES: 'git:status-changes',
   /** 单个变更文件相对 HEAD 的审查 diff */
   GIT_FILE_DIFF: 'git:file-diff',
+  /** 审查面板：暂存 / 取消暂存 / 还原 */
+  GIT_REVIEW_ACTION: 'git:review-action',
+  /** Composer `@` 工作区文件模糊搜索 */
+  WORKSPACE_SEARCH_FILES: 'workspace:search-files',
   /** 为会话准备隔离 Git worktree */
   WORKSPACE_PREPARE_WORKTREE: 'workspace:prepare-worktree',
   TERMINAL_CREATE: 'terminal:create',

@@ -61,7 +61,7 @@ export function ChatToolbar({
         className="chat-toolbar-icon-btn chat-toolbar-sidebar-toggle"
         onClick={handleToggleSidebar}
         onMouseDown={(e) => e.stopPropagation()}
-        title={sidebarCollapsed ? '固定展开边栏' : '收起边栏'}
+        title={sidebarCollapsed ? '固定展开边栏 ⌘B' : '收起边栏 ⌘B'}
         aria-label={sidebarCollapsed ? '固定展开边栏' : '收起边栏'}
         aria-pressed={!sidebarCollapsed}
       >
@@ -80,7 +80,7 @@ export function ChatToolbar({
           onNewConversation?.()
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        title="新对话"
+        title="新对话 ⌘N"
         aria-label="开启新对话"
       >
         <SquarePen size={18} strokeWidth={1.75} aria-hidden />
@@ -112,7 +112,11 @@ export function ChatToolbar({
             }}
             onMouseDown={(e) => e.stopPropagation()}
             aria-label={rightPanelOpen ? '收起右侧面板' : '展开右侧面板'}
-            title={rightPanelOpen ? '收起面板' : '展开：文件 / 终端 / 浏览器'}
+            title={
+              rightPanelOpen
+                ? '收起面板'
+                : '展开：文件 / 审查 ⌘⌥B / 终端 ⌘J'
+            }
           >
             {rightPanelOpen ? (
               <PanelRightClose size={18} aria-hidden />

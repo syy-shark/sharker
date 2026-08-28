@@ -47,6 +47,8 @@ import { AutomationsPage } from './pages/AutomationsPage'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
+import { matchWorkbenchShortcut } from '../shared/workbench-shortcuts'
+import { REVIEW_WORKING_TREE_PROMPT } from '../shared/review-prompt'
 import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
@@ -1624,7 +1626,21 @@ export default function App() {
   const handleTogglePanel = useCallback((tab: RightPanelTab) => {
     setRightPanelTab(tab)
     setRightPanelOpen(true)
+    setPage('chat')
   }, [])
+
+  /** Codex 快捷键：同一 Tab 再按一次则收起 */
+  const handleShortcutPanel = useCallback((tab: RightPanelTab) => {
+    setPage('chat')
+    const open = rightPanelOpen
+    const current = rightPanelTab
+    if (open && current === tab) {
+      setRightPanelOpen(false)
+      return
+    }
+    setRightPanelTab(tab)
+    setRightPanelOpen(true)
+  }, [rightPanelOpen, rightPanelTab])
 
   /** 接待用户输入：空闲直接派发；忙时排队或插队 */
   const handlePromptSubmit = useCallback(
@@ -2497,6 +2513,10 @@ export default function App() {
         case 'toggle_changes':
           handleTogglePanel('changes')
           break
+        case 'review_working_tree':
+          handleTogglePanel('changes')
+          await dispatchTurnRef.current(REVIEW_WORKING_TREE_PROMPT)
+          break
         case 'toggle_browser':
           handleTogglePanel('browser')
           break
@@ -2514,6 +2534,49 @@ export default function App() {
   useEffect(() => {
     handleSlashActionRef.current = handleSlashAction
   }, [handleSlashAction])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const action = matchWorkbenchShortcut({
+        key: e.key,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+        isComposing: e.isComposing
+      })
+      if (!action) return
+      e.preventDefault()
+      if (action === 'toggle_sidebar') {
+        toggleSidebar()
+        return
+      }
+      if (action === 'toggle_review') {
+        handleShortcutPanel('changes')
+        return
+      }
+      if (action === 'toggle_terminal') {
+        handleShortcutPanel('terminal')
+        return
+      }
+      if (action === 'new_conversation') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        if (wsId) void handleNewConversation(wsId)
+        else void handleAddWorkspace()
+        setPage('chat')
+        return
+      }
+      if (action === 'open_settings') {
+        void handleNavigate('settings', 'models')
+        return
+      }
+      if (action === 'open_folder') {
+        void handleAddWorkspace()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleAddWorkspace, handleNavigate, handleNewConversation, handleShortcutPanel, toggleSidebar])
 
   /** 仅 DEV：注入真实 React 状态，验证审批/错误/直播头，不走 mock DOM */
   useEffect(() => {
@@ -3338,6 +3401,11 @@ export default function App() {
               }}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
+              fileSearchRoot={
+                threadMode === 'worktree' && threadWorktreePath
+                  ? threadWorktreePath
+                  : (getActiveWorkspacePath(settings) ?? '')
+              }
               onRetry={(userMessageId) => void handleRetry(userMessageId)}
               approval={approval}
               approvalResponding={approvalResponding}

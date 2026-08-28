@@ -104,6 +104,10 @@ export interface SharkerApi {
   compressContext: (history: ChatMessage[]) => Promise<import('../shared/context-compress').ContextCompressResult>
   getTokenUsage: (days?: number) => Promise<import('../shared/token-usage-store').DayUsage[]>
   getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) => Promise<WorkspaceTreeNode[]>
+  searchWorkspaceFiles: (
+    workspace: string,
+    query: string
+  ) => Promise<Array<{ name: string; path: string; relativePath: string }>>
   readTextFile: (
     filePath: string
   ) => Promise<{ ok: true; path: string; content: string } | { ok: false; error: string }>
@@ -120,8 +124,20 @@ export interface SharkerApi {
   getGitStatusChanges: (cwd: string) => Promise<{
     isRepo: boolean
     branch: string
-    files: { status: string; path: string; raw: string }[]
+    files: {
+      status: string
+      path: string
+      raw: string
+      staged?: boolean
+      unstaged?: boolean
+      untracked?: boolean
+    }[]
   }>
+  applyGitReviewAction: (
+    cwd: string,
+    action: 'stage' | 'unstage' | 'revert',
+    paths?: string[]
+  ) => Promise<{ ok: boolean; error?: string }>
   getGitFileDiff: (
     cwd: string,
     filePath: string,

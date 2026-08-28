@@ -20,6 +20,7 @@ import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
+import { insertAtMention, parseAtMention } from '../../shared/at-mention'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
 
@@ -108,6 +109,8 @@ interface Props {
   /** Codex 式线程目标：本地工作区或隔离 worktree */
   threadMode?: ThreadMode
   onThreadModeChange?: (mode: ThreadMode) => void
+  /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
+  fileSearchRoot?: string
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -143,7 +146,8 @@ export function ChatView({
   approvalResponding,
   onApproval,
   threadMode = 'local',
-  onThreadModeChange
+  onThreadModeChange,
+  fileSearchRoot = ''
 }: Props) {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
@@ -162,6 +166,11 @@ export function ChatView({
   const [slashActiveIndex, setSlashActiveIndex] = useState(0)
   const [slashDismissed, setSlashDismissed] = useState(false)
   const slashActiveIndexRef = useRef(0)
+  const [cursor, setCursor] = useState(0)
+  const [mentionDismissed, setMentionDismissed] = useState(false)
+  const [mentionHits, setMentionHits] = useState<Array<{ name: string; relativePath: string }>>([])
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
+  const mentionActiveIndexRef = useRef(0)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -315,6 +324,11 @@ export function ChatView({
       : null
   const slashItems = slashQuery != null ? filterSlashCommands(slashQuery) : []
   const showSlashMenu = slashItems.length > 0
+  const mentionQuery =
+    !showHistoryPicker && !showSlashMenu && !mentionDismissed
+      ? parseAtMention(input, cursor)
+      : null
+  const showMentionMenu = Boolean(mentionQuery && fileSearchRoot)
 
   useEffect(() => {
     slashActiveIndexRef.current = slashActiveIndex
@@ -325,7 +339,66 @@ export function ChatView({
     slashActiveIndexRef.current = 0
   }, [slashQuery])
 
+  useEffect(() => {
+    mentionActiveIndexRef.current = mentionActiveIndex
+  }, [mentionActiveIndex])
+
+  useEffect(() => {
+    setMentionActiveIndex(0)
+    mentionActiveIndexRef.current = 0
+  }, [mentionQuery?.query, mentionQuery?.start])
+
+  useEffect(() => {
+    if (!mentionQuery || !fileSearchRoot || !window.sharker?.searchWorkspaceFiles) {
+      setMentionHits([])
+      return
+    }
+    let cancelled = false
+    const id = window.setTimeout(() => {
+      void window.sharker
+        .searchWorkspaceFiles(fileSearchRoot, mentionQuery.query)
+        .then((hits) => {
+          if (!cancelled) setMentionHits(hits)
+        })
+        .catch(() => {
+          if (!cancelled) setMentionHits([])
+        })
+    }, 80)
+    return () => {
+      cancelled = true
+      window.clearTimeout(id)
+    }
+  }, [fileSearchRoot, mentionQuery?.query, mentionQuery?.start])
+
+  const pickMention = (relativePath: string) => {
+    const next = insertAtMention(input, cursor, relativePath)
+    setInput(next.text)
+    setCursor(next.cursor)
+    setMentionDismissed(false)
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(next.cursor, next.cursor)
+      syncTextareaHeight()
+    })
+  }
+
   const pickSlashCommand = (cmd: SlashCommandMeta) => {
+    if (cmd.action === 'mention_file') {
+      setInput('@')
+      setCursor(1)
+      setMentionDismissed(false)
+      setSlashDismissed(true)
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(1, 1)
+        syncTextareaHeight()
+      })
+      return
+    }
     if (cmd.scope === 'ui' && onSlashAction) {
       setInput('')
       setPendingAttachments([])
@@ -628,7 +701,7 @@ export function ChatView({
     })
   }
 
-  /** 输入框与底部工具栏（模型、发送）；斜杠菜单 / 工作区选择暂关 */
+  /** 输入框与底部工具栏（模型、发送）；斜杠目录 / `@` 文件选择 / 历史弹层 */
   const composer = (
     <div
       className={`composer-box composer-box--focus-${composerFocus}`}
@@ -639,6 +712,45 @@ export function ChatView({
         }
       }}
     >
+      {showMentionMenu && mentionHits.length > 0 ? (
+        <div className="composer-popover-slot">
+          <div
+            className="slash-menu popover-enter"
+            role="listbox"
+            aria-label="引用文件"
+            aria-activedescendant={
+              mentionHits[mentionActiveIndex]
+                ? `mention-option-${mentionHits[mentionActiveIndex].relativePath}`
+                : undefined
+            }
+          >
+            <ul className="slash-menu-list">
+              {mentionHits.map((hit, index) => (
+                <li key={hit.relativePath} role="presentation">
+                  <button
+                    type="button"
+                    id={`mention-option-${hit.relativePath}`}
+                    role="option"
+                    aria-selected={index === mentionActiveIndex}
+                    className={`slash-menu-item${index === mentionActiveIndex ? ' slash-menu-item--active' : ''}`}
+                    onMouseEnter={() => {
+                      setMentionActiveIndex(index)
+                      mentionActiveIndexRef.current = index
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      pickMention(hit.relativePath)
+                    }}
+                  >
+                    <span className="slash-menu-name">@{hit.name}</span>
+                    <span className="slash-menu-desc">{hit.relativePath}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
       {showSlashMenu ? (
         <div className="composer-popover-slot">
           <div
@@ -729,7 +841,12 @@ export function ChatView({
         value={input}
         onChange={(e) => {
           setSlashDismissed(false)
+          setMentionDismissed(false)
           setInput(e.target.value)
+          setCursor(e.target.selectionStart ?? e.target.value.length)
+        }}
+        onSelect={(e) => {
+          setCursor(e.currentTarget.selectionStart ?? 0)
         }}
         onKeyDown={(e) => {
           // 中文输入法组字中按 Enter 不应发送（keyCode 229 = 组字中）
@@ -738,6 +855,37 @@ export function ChatView({
             e.key === 'Process' ||
             (e.nativeEvent as KeyboardEvent).keyCode === 229
           if (composing) return
+          if (showMentionMenu && mentionHits.length > 0) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setMentionActiveIndex((i) => {
+                const n = (i + 1) % mentionHits.length
+                mentionActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setMentionActiveIndex((i) => {
+                const n = (i - 1 + mentionHits.length) % mentionHits.length
+                mentionActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setMentionDismissed(true)
+              return
+            }
+            if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+              e.preventDefault()
+              const hit = mentionHits[mentionActiveIndexRef.current]
+              if (hit) pickMention(hit.relativePath)
+              return
+            }
+          }
           if (showSlashMenu) {
             if (e.key === 'ArrowDown') {
               e.preventDefault()
@@ -799,7 +947,7 @@ export function ChatView({
             e.preventDefault()
           }
         }}
-        placeholder={loading ? '可继续输入，Enter 排队…' : '输入消息…'}
+        placeholder={loading ? '可继续输入，Enter 排队…' : '输入消息，/ 命令，@ 引用文件…'}
         rows={1}
       />
       {pendingAttachments.length > 0 || attachmentError ? (

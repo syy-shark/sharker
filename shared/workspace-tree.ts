@@ -1,5 +1,6 @@
 /**
- * 工作区文件树：供右侧面板 IPC 返回结构化节点。
+ * 工作区文件树与 `@` 文件搜索。
+ * @see shared/ARCH.md
  */
 import fs from 'fs/promises'
 import path from 'path'
@@ -64,4 +65,90 @@ export async function buildWorkspaceTree(
     nodes.push(node)
   }
   return nodes
+}
+
+/** Composer `@` 文件命中 */
+export interface WorkspaceFileHit {
+  name: string
+  path: string
+  relativePath: string
+}
+
+/** 给 `@` 查询打分：文件名开头 > 文件名包含 > 路径包含 */
+export function scoreWorkspaceFileHit(relativePath: string, query: string): number {
+  const q = query.trim().toLowerCase()
+  if (!q) return 1
+  const rel = relativePath.replaceAll('\\', '/').toLowerCase()
+  const name = rel.split('/').pop() ?? rel
+  if (name.startsWith(q)) return 100 - Math.min(rel.length, 40)
+  if (name.includes(q)) return 70 - Math.min(rel.length, 40)
+  if (rel.includes(q)) return 40 - Math.min(rel.length, 30)
+  return 0
+}
+
+/** 按查询排序并截断文件命中 */
+export function rankWorkspaceFileHits(
+  files: WorkspaceFileHit[],
+  query: string,
+  limit = 30
+): WorkspaceFileHit[] {
+  return files
+    .map((f) => ({ f, score: scoreWorkspaceFileHit(f.relativePath, query) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.f.relativePath.localeCompare(b.f.relativePath))
+    .slice(0, limit)
+    .map((x) => x.f)
+}
+
+/** 扁平收集工作区文件（跳过忽略目录），供 `@` 模糊搜索 */
+export async function collectWorkspaceFiles(
+  root: string,
+  options: { maxFiles?: number; maxDepth?: number; depth?: number; prefix?: string } = {}
+): Promise<WorkspaceFileHit[]> {
+  const maxFiles = options.maxFiles ?? 4000
+  const maxDepth = options.maxDepth ?? 8
+  const depth = options.depth ?? 0
+  const prefix = options.prefix ?? ''
+  const hits: WorkspaceFileHit[] = []
+
+  let entries
+  try {
+    entries = await fs.readdir(root, { withFileTypes: true })
+  } catch {
+    return []
+  }
+
+  for (const e of entries) {
+    if (hits.length >= maxFiles) break
+    if (e.name.startsWith('.') && e.name !== '.sharker') continue
+    if (IGNORE_DIRS.has(e.name)) continue
+    const rel = prefix ? `${prefix}/${e.name}` : e.name
+    const full = path.join(root, e.name)
+    if (e.isDirectory()) {
+      if (depth >= maxDepth) continue
+      const nested = await collectWorkspaceFiles(full, {
+        maxFiles: maxFiles - hits.length,
+        maxDepth,
+        depth: depth + 1,
+        prefix: rel
+      })
+      hits.push(...nested)
+      continue
+    }
+    if (e.isFile()) {
+      hits.push({ name: e.name, path: full, relativePath: rel.replaceAll('\\', '/') })
+    }
+  }
+  return hits
+}
+
+/** 在工作区中按查询搜索文件 */
+export async function searchWorkspaceFiles(
+  root: string,
+  query: string,
+  limit = 30
+): Promise<WorkspaceFileHit[]> {
+  if (!root) return []
+  const files = await collectWorkspaceFiles(root)
+  return rankWorkspaceFileHits(files, query, limit)
 }

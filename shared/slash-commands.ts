@@ -123,10 +123,17 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'review',
-    description: '打开右侧变更审查（别名）',
+    description: '审查未提交变更（只读，不改文件）',
     scope: 'ui',
-    action: 'toggle_changes',
+    action: 'review_working_tree',
     category: 'panel'
+  },
+  {
+    name: 'mention',
+    description: '引用工作区文件（等同 @）',
+    scope: 'ui',
+    action: 'mention_file',
+    category: 'workspace'
   },
   {
     name: 'browser',

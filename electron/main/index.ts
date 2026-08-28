@@ -60,11 +60,13 @@ import {
 } from '../../shared/browser-use-status'
 import { compressContextForce } from '../../shared/context-compress'
 import { getUsageHistory } from '../../shared/token-usage-store'
-import { buildWorkspaceTree } from '../../shared/workspace-tree'
+import { buildWorkspaceTree, searchWorkspaceFiles } from '../../shared/workspace-tree'
 import { runGit } from '../../tools/shared/git-runner'
 import { prepareThreadWorktree } from '../../tools/thread-worktree'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
-import { readFile } from 'fs/promises'
+import { applyGitReviewAction, type GitReviewAction } from '../../shared/git-review-actions'
+import { parseGitStatusPorcelain } from '../../shared/git-status'
+import { readFile, rm, stat, unlink } from 'fs/promises'
 import {
   createTerminal,
   killAllTerminals,
@@ -856,6 +858,12 @@ function registerIpc(): void {
     return buildWorkspaceTree(workspace, { directoriesOnly })
   })
 
+  ipcMain.handle(IPC.WORKSPACE_SEARCH_FILES, async (_e, workspace: string, query = '') => {
+    const root = path.resolve(String(workspace || ''))
+    if (!root) return []
+    return searchWorkspaceFiles(root, String(query || ''), 30)
+  })
+
   ipcMain.handle(IPC.READ_TEXT_FILE, async (_e, filePath: string) => {
     const MAX_BYTES = 512 * 1024
     try {
@@ -908,7 +916,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.GIT_BRANCH_INFO, async (_e, cwd: string) => {
     try {
       const branch = (await runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
-      const porcelain = await runGit(cwd, ['status', '--porcelain'])
+      const porcelain = await runGit(cwd, ['status', '--porcelain'], { trim: false })
       return { isRepo: true, branch, dirty: porcelain.trim().length > 0 }
     } catch {
       return { isRepo: false, branch: '', dirty: false }
@@ -1023,25 +1031,8 @@ function registerIpc(): void {
   ipcMain.handle(IPC.GIT_STATUS_CHANGES, async (_e, cwd: string) => {
     try {
       const branch = (await runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
-      const porcelain = await runGit(cwd, ['status', '--porcelain', '-uall'])
-      const files = porcelain
-        .split('\n')
-        .map((line) => line.trimEnd())
-        .filter(Boolean)
-        .map((line) => {
-          const status = line.slice(0, 2).trim() || line.slice(0, 2)
-          let pathPart = line.length > 3 ? line.slice(3).trim() : ''
-          // rename: "R  old -> new" / quoted paths
-          const arrow = pathPart.indexOf(' -> ')
-          if (arrow >= 0) pathPart = pathPart.slice(arrow + 4).trim()
-          if (
-            (pathPart.startsWith('"') && pathPart.endsWith('"')) ||
-            (pathPart.startsWith("'") && pathPart.endsWith("'"))
-          ) {
-            pathPart = pathPart.slice(1, -1)
-          }
-          return { status, path: pathPart, raw: line }
-        })
+      const porcelain = await runGit(cwd, ['status', '--porcelain', '-uall'], { trim: false })
+      const files = parseGitStatusPorcelain(porcelain)
       return { isRepo: true, branch, files }
     } catch {
       return { isRepo: false, branch: '', files: [] as { status: string; path: string; raw: string }[] }
@@ -1087,6 +1078,36 @@ function registerIpc(): void {
         status,
         diff: diffFromGitTexts({ path: rel, status, oldText, newText })
       }
+    }
+  )
+
+  ipcMain.handle(
+    IPC.GIT_REVIEW_ACTION,
+    async (_e, cwd: string, action: GitReviewAction, paths?: string[]) => {
+      const root = path.resolve(String(cwd || ''))
+      if (!root) return { ok: false as const, error: '缺少工作区' }
+      const allowed: GitReviewAction[] = ['stage', 'unstage', 'revert']
+      if (!allowed.includes(action)) {
+        return { ok: false as const, error: '未知审查动作' }
+      }
+      return applyGitReviewAction({
+        cwd: root,
+        action,
+        paths: Array.isArray(paths) ? paths.map(String) : undefined,
+        io: {
+          runGit,
+          unlink,
+          rmDir: (abs) => rm(abs, { recursive: true, force: true }),
+          stat: async (abs) => {
+            try {
+              const s = await stat(abs)
+              return { isFile: s.isFile(), isDirectory: s.isDirectory() }
+            } catch {
+              return null
+            }
+          }
+        }
+      })
     }
   )
 

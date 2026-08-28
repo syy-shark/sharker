@@ -119,6 +119,8 @@ contextBridge.exposeInMainWorld('sharker', {
   getTokenUsage: (days?: number) => ipcRenderer.invoke(IPC.GET_TOKEN_USAGE, days),
   getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) =>
     ipcRenderer.invoke(IPC.WORKSPACE_TREE, workspace, directoriesOnly),
+  searchWorkspaceFiles: (workspace: string, query: string) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_SEARCH_FILES, workspace, query),
   readTextFile: (filePath: string) => ipcRenderer.invoke(IPC.READ_TEXT_FILE, filePath),
   readFileDataUrl: (filePath: string) =>
     ipcRenderer.invoke(IPC.READ_FILE_DATA_URL, filePath),
@@ -129,6 +131,11 @@ contextBridge.exposeInMainWorld('sharker', {
   getGitStatusChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_STATUS_CHANGES, cwd),
   getGitFileDiff: (cwd: string, filePath: string, status?: string) =>
     ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status),
+  applyGitReviewAction: (
+    cwd: string,
+    action: 'stage' | 'unstage' | 'revert',
+    paths?: string[]
+  ) => ipcRenderer.invoke(IPC.GIT_REVIEW_ACTION, cwd, action, paths),
   prepareWorktree: (cwd: string, conversationId: string) =>
     ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId),
   createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),

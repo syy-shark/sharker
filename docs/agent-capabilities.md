@@ -26,12 +26,14 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|------|
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
-| `/changes` `/review` | 打开右侧变更审查 |
+| `/changes` | 打开右侧变更审查 |
+| `/review` | 打开审查并派发只读工作区评审（不改文件） |
+| `/mention` | 打开 `@` 文件选择器 |
 | `/files` `/terminal` `/browser` | 打开右侧对应面板 |
 
 ### @file 引用
 
-在消息中写 `@src/App.tsx` 或 `@/绝对路径`（sandbox 内），Harness 自动读取并注入文件内容。
+输入 `@` 弹出工作区文件模糊搜索（↑↓/Enter/Tab）；也可手写 `@src/App.tsx` 或 `@/绝对路径`（sandbox 内）。Harness 自动读取并注入文件内容。
 
 ### 排队与插队
 

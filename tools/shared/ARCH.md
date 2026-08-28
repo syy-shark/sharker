@@ -14,7 +14,7 @@
 | 文件 | 说明 |
 |------|------|
 | `fs-text.ts` | 文本文件读辅助（不存在返回 null） |
-| `git-runner.ts` | `git` 子进程封装 |
+| `git-runner.ts` | `git` 子进程封装；`trim: false` 保留 porcelain 行首空格 |
 | `glob.ts` | 简易 glob 匹配与遍历 |
 | `grep.ts` | 目录内正则文本搜索 |
 | `list-dir.ts` | 递归列目录 |

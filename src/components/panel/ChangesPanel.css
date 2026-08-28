@@ -75,6 +75,104 @@
   animation: ui-spin 0.9s linear infinite;
 }
 
+.changes-panel__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.changes-panel__scopes {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--glass-fill-nested);
+  border: 1px solid var(--border-subtle);
+}
+
+.changes-panel__scope {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.changes-panel__scope.is-active {
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge);
+}
+
+.changes-panel__bulk,
+.changes-panel__row-actions,
+.changes-panel__file-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.changes-panel__file-actions {
+  margin-bottom: 8px;
+}
+
+.changes-panel__action {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--glass-fill-raised);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft),
+    border-color var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.changes-panel__action:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass-fill-nested-hover);
+  border-color: var(--glass-edge);
+}
+
+.changes-panel__action--danger:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border-subtle));
+}
+
+.changes-panel__action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.changes-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+
+.changes-panel__row.is-selected {
+  background: color-mix(in srgb, var(--accent) 10%, var(--glass-fill-nested));
+}
+
+.changes-panel__row .changes-panel__item {
+  flex: 1;
+  min-width: 0;
+}
+
 .changes-panel__count {
   min-width: 1.25em;
   padding: 0 5px;

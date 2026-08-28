@@ -17,7 +17,7 @@
 | 文件 | 说明 |
 |------|------|
 | `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；进行中会话呼吸点；隔离 Worktree 线程小标；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
-| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver（不再每帧 rAF）；「回到底部」在滚动区与输入框之间的右侧槽；提交时拦截 UI 斜杠命令；`/` 斜杠目录与 `/history` 历史选择弹层；composer 本地/隔离线程模式 |
+| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver（不再每帧 rAF）；「回到底部」在滚动区与输入框之间的右侧槽；提交时拦截 UI 斜杠命令；`/` 斜杠目录、`@` 文件选择与 `/history` 历史选择弹层；composer 本地/隔离线程模式 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时；生成演示时改头标签；有工具才展开时间线 |
@@ -32,7 +32,7 @@
 | `MessageActions.tsx` / `.css` | 消息复制等操作 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
-| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/终端/浏览器）；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
+| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器）；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
