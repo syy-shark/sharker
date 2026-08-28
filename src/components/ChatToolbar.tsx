@@ -26,6 +26,9 @@ interface Props {
   /** 弹出当前对话到独立窗（对标 Codex Open in Popup Window） */
   onPopOut?: () => void
   popout?: boolean
+  /** 当前分支若已有 PR，顶栏显示芯片并打开审查 */
+  prLabel?: string | null
+  onOpenPullRequest?: () => void
 }
 
 /** 挂到 body，用 fixed 相对视口，避免 flex 壳把 absolute 子节点挤到底部 */
@@ -41,7 +44,9 @@ export function ChatToolbar({
   onToggleRightPanel,
   onNewConversation,
   onPopOut,
-  popout = false
+  popout = false,
+  prLabel = null,
+  onOpenPullRequest
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
 
@@ -108,6 +113,22 @@ export function ChatToolbar({
         <div className="chat-toolbar-drag" aria-hidden />
 
         <div className="chat-toolbar-right">
+          {prLabel && onOpenPullRequest && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-pr-chip"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenPullRequest()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="打开审查中的 Pull Request"
+              aria-label={`打开 ${prLabel}`}
+            >
+              {prLabel}
+            </button>
+          ) : null}
           {onPopOut && !popout ? (
             <button
               type="button"

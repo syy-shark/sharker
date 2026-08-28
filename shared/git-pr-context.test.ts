@@ -4,10 +4,16 @@ import {
   loadPullRequestContext,
   parsePrUrlParts,
   parsePrViewJson,
-  parseReviewCommentsJson
+  parseReviewCommentsJson,
+  prToolbarLabel
 } from './git-pr-context'
 
 describe('git pr context', () => {
+  it('formats a toolbar chip label', () => {
+    expect(prToolbarLabel(12)).toBe('PR #12')
+    expect(prToolbarLabel(0)).toBe('')
+  })
+
   it('parses pr view json and github review comments', () => {
     expect(parsePrViewJson('{"number":12,"title":"Fix scroll","url":"https://github.com/acme/app/pull/12"}')).toEqual(
       {

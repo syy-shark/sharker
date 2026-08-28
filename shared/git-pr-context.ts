@@ -15,6 +15,13 @@ export interface PullRequestContext {
   comments: ReviewLineComment[]
 }
 
+/** 顶栏 / 侧栏用的短标签 */
+export function prToolbarLabel(number: number): string {
+  const n = Number(number)
+  if (!Number.isFinite(n) || n < 1) return ''
+  return `PR #${Math.floor(n)}`
+}
+
 /** 从 `gh pr view --json` 取出编号 / 标题 / 地址 */
 export function parsePrViewJson(raw: string): { number: number; title: string; url: string } | null {
   try {

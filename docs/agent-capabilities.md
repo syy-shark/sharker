@@ -69,7 +69,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 `/review` 结束时会解析 `review-findings` 围栏，把发现挂到审查 diff 对应行上（与人手评论一起发送）。
 
-当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。本地行内评论可 **发布到 GitHub**（`gh api` 写回 PR）。未安装 `gh` / 没有 PR 时不报错、不显示横幅。
+当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。本地行内评论可 **发布到 GitHub**（`gh api` 写回 PR）。顶栏会显示 **PR #n** 芯片，点开审查面板。未安装 `gh` / 没有 PR 时不报错、不显示横幅或芯片。
 
 ### 命令面板
 

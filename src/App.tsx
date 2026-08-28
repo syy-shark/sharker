@@ -23,6 +23,7 @@ import {
   formatToolActivity
 } from '../shared/turn-meta'
 import { stampSubAgentActivity } from '../shared/subagent'
+import { prToolbarLabel } from '../shared/git-pr-context'
 import {
   activitiesFromSegments,
   applyStreamChunk,
@@ -234,6 +235,7 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
+  const [prChipLabel, setPrChipLabel] = useState<string | null>(null)
   const [changesRevision, setChangesRevision] = useState(0)
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
@@ -1872,6 +1874,37 @@ export default function App() {
   const handleOpenSubAgent = useCallback((id: string | null) => {
     setFocusSubAgentId(id)
     setRightPanelTab('agents')
+    setRightPanelOpen(true)
+    setPage('chat')
+  }, [])
+
+  const reviewCwd =
+    threadMode === 'worktree' && threadWorktreePath
+      ? threadWorktreePath
+      : (getActiveWorkspacePath(settings) ?? '')
+
+  useEffect(() => {
+    if (!reviewCwd || !window.sharker.getPullRequestContext) {
+      setPrChipLabel(null)
+      return
+    }
+    let cancelled = false
+    void window.sharker
+      .getPullRequestContext(reviewCwd)
+      .then((result) => {
+        if (cancelled) return
+        setPrChipLabel(result.ok ? prToolbarLabel(result.context.number) : null)
+      })
+      .catch(() => {
+        if (!cancelled) setPrChipLabel(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [reviewCwd, changesRevision])
+
+  const handleOpenPullRequest = useCallback(() => {
+    setRightPanelTab('changes')
     setRightPanelOpen(true)
     setPage('chat')
   }, [])
@@ -3882,6 +3915,8 @@ export default function App() {
               rightPanelOpen={rightPanelOpen}
               sidebarCollapsed={sidebarCollapsed}
               popout={Boolean(popoutRoute)}
+              prLabel={prChipLabel}
+              onOpenPullRequest={handleOpenPullRequest}
               onPopOut={() => {
                 const ws = settingsRef.current.activeWorkspaceId
                 const id = activeConversationIdRef.current

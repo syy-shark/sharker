@@ -52,7 +52,7 @@
 | `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
 | `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
-| `git-pr-context.ts` | 当前分支 PR + GitHub 行内评论（`gh pr view` / `gh api`） |
+| `git-pr-context.ts` | 当前分支 PR + GitHub 行内评论（`gh pr view` / `gh api`）；顶栏芯片文案 |
 | `git-pr-context.test.ts` | 解析 PR JSON、LEFT→old、缺 gh |
 | `git-pr-review.ts` | 本地行内评论写回 GitHub PR |
 | `git-pr-review.test.ts` | 跳过 gh- 导入评论、拼 api 参数 |
