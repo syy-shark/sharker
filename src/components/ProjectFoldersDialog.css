@@ -1,0 +1,99 @@
+.project-folders-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+}
+
+.project-folders-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, #000 28%, transparent);
+  cursor: default;
+}
+
+.project-folders-dialog {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: min(560px, 78vh);
+  overflow: auto;
+  padding: 16px 16px 12px;
+  border-radius: 18px;
+}
+
+.project-folders-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.project-folders-head p,
+.project-folders-empty {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.project-folders-block {
+  margin: 0 0 14px;
+}
+
+.project-folders-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.project-folders-dialog ul {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.project-folders-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.project-folders-row code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.project-folders-row button,
+.project-folders-add,
+.project-folders-actions button {
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.project-folders-add {
+  margin-top: 2px;
+}
+
+.project-folders-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+html.theme-dark .project-folders-dialog {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

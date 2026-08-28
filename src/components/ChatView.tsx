@@ -252,6 +252,7 @@ interface Props {
   onWorktreeBaseRefChange?: (ref: string) => void
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
+  fileSearchExtraRoots?: string[]
   /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
   composerIntent?: ComposerDockIntent | 'find'
   onComposerIntentHandled?: () => void
@@ -321,6 +322,7 @@ export function ChatView({
   worktreeBaseRef = '',
   onWorktreeBaseRefChange,
   fileSearchRoot = '',
+  fileSearchExtraRoots = [],
   composerIntent = null,
   onComposerIntentHandled,
   queueHeld = false,
@@ -999,6 +1001,7 @@ export function ChatView({
             worktreeBaseRef={worktreeBaseRef}
             onWorktreeBaseRefChange={onWorktreeBaseRefChange}
             fileSearchRoot={fileSearchRoot}
+            fileSearchExtraRoots={fileSearchExtraRoots}
             composerIntent={dockIntent}
             onComposerIntentHandled={onComposerIntentHandled}
             queueHeld={queueHeld}

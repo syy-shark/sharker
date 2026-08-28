@@ -135,7 +135,8 @@ export interface SharkerApi {
   getWorkspaceTree: (workspace: string, directoriesOnly?: boolean) => Promise<WorkspaceTreeNode[]>
   searchWorkspaceFiles: (
     workspace: string,
-    query: string
+    query: string,
+    extraRoots?: string[]
   ) => Promise<Array<{ name: string; path: string; relativePath: string }>>
   listSkills: (
     workspace: string

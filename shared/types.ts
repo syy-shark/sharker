@@ -50,6 +50,11 @@ export interface WorkspaceItem {
   label: string
   isHome?: boolean
   pinned?: boolean
+  /**
+   * 附加文件夹（对标 Codex Edit project secondary folders）。
+   * 新对话 / Git / AGENTS.md / Skill 仍走 `path`；附加路径可供搜索与读写。
+   */
+  extraPaths?: string[]
 }
 
 /** 应用全局设置（工作区、模型、权限） */

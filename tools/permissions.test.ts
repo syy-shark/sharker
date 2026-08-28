@@ -21,6 +21,8 @@ describe('permissions / high-risk gates', () => {
     const check = checkPathAccess('/tmp/x', workspace, 'sandbox')
     expect(check.allowed).toBe(false)
     expect(check.reason || '').toMatch(/工作区外|沙箱/)
+    expect(checkPathAccess('/tmp/x/lib/a.ts', workspace, 'sandbox', ['/tmp/x']).allowed).toBe(true)
+    expect(needsPathApproval('read_file', { path: '/tmp/x/a.ts' }, workspace, 'sandbox', ['/tmp/x'])).toBeNull()
   })
 
   it('needsPathApproval flags outside file paths under sandbox', () => {

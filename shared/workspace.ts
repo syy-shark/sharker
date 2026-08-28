@@ -14,6 +14,7 @@ import { clampGitPrompt } from './git-prompt'
 import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
 import { parseComposerEnterBehavior } from './composer-submit'
+import { normalizeExtraFolderPaths } from './workspace-folders'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -192,6 +193,10 @@ export function normalizeSettings(
   if (home) {
     workspaces = ensureGlobalWorkspace(workspaces, home)
   }
+  workspaces = workspaces.map((w) => {
+    const extraPaths = normalizeExtraFolderPaths(w.path, w.extraPaths)
+    return extraPaths.length ? { ...w, extraPaths } : { ...w, extraPaths: undefined }
+  })
 
   merged.workspaces = sortWorkspaces(workspaces)
   merged.activeWorkspaceId = pickActiveWorkspaceId(workspaces, merged.activeWorkspaceId)

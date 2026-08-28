@@ -142,13 +142,19 @@ export async function collectWorkspaceFiles(
   return hits
 }
 
-/** 在工作区中按查询搜索文件 */
+/** 在工作区中按查询搜索文件；附加根用目录名做前缀以免和主树撞路径 */
 export async function searchWorkspaceFiles(
   root: string,
   query: string,
-  limit = 30
+  limit = 30,
+  extraRoots: string[] = []
 ): Promise<WorkspaceFileHit[]> {
-  if (!root) return []
-  const files = await collectWorkspaceFiles(root)
+  if (!root && extraRoots.length === 0) return []
+  const files = root ? await collectWorkspaceFiles(root) : []
+  for (const extra of extraRoots) {
+    if (!extra || extra === root) continue
+    const prefix = path.basename(extra)
+    files.push(...(await collectWorkspaceFiles(extra, { prefix })))
+  }
   return rankWorkspaceFileHits(files, query, limit)
 }

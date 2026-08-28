@@ -108,13 +108,14 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
 - 设置 → 权限 → **项目与终端 / 命令输出**：简要 / 标准 / 详细（对标 Codex how much command output appears in chats）；标准只画输出尾部，详细完成后才默认展开，直播中仍折叠以免贴底跳动
 - 设置 → 权限 → Worktree **根目录**（对标 Codex Worktree root）：托管与永久 worktree 建在此绝对路径下，空则 `~/.sharker/worktrees`；`sharker://settings/worktrees` 打开该页。改了不搬旧目录
+- 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / Git / AGENTS.md / Skill；附加文件夹可供 `@` 搜索与沙箱读写，不改 Git 根
 - 设置 → 外观 → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
 - 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
 - 设置 → 外观 → **记忆** 注入/写入（对标 Codex Settings → Personalization；`/memories` 仍打印本机记忆清单）
 - 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
 - 对话与直播正文里的本地文件引用（`src/foo.ts:12`、`#L12`、`` `foo.ts` ``、`(line N)`）可点开右侧文件预览并跳到该行（对标 Codex View Code）
-- 直播思考默认折叠成「思考中」（对标 Codex Thought），点开才看旁白，避免增长正文把回答顶下去；散文尾廉价画 GFM 表格（含单列、无两侧 `|`、分隔行未到先画表）、任务列表、`1)` / `ol start` 有序列表、项内引用 / 标题 / HR / 嵌套围栏 / 缩进代码（嵌套层自己松）、无引用脚注定义不画、引用懒续行硬换行、空 dest / 锚点 / 相对链接、危险协议清空、未闭合 `](` 先画链接、未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` 先画标记、http 图、分隔线（含 `* * *`）、Setext / 行尾 `#` 标题、下划线强调、引用式链接 / 图片（含相对 dest）、dest 内成对括号、可点图 `[![img]](url)`、多反引号代码、链接标签内强调、HTML 实体、`www.` / 邮箱、脚注、硬换行（含列表续行与 `\\\n`）与缩进代码，并复用已闭合列表项/表格行；`[label][id]` 不再吞掉后面的标记；廉价尾与收束后共用块边距 / 任务列表 class，正文出现后收起命令输出，并把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出），贴底在布局后同帧写 scrollTop
+- 直播思考默认折叠成「思考中」（对标 Codex Thought），点开才看旁白，避免增长正文把回答顶下去；散文尾廉价画 GFM 表格（含单列、无两侧 `|`、分隔行未到先画表）、任务列表、`1)` / `ol start` 有序列表、项内引用 / 标题 / HR / 嵌套围栏 / 缩进代码（嵌套层自己松）、无引用脚注定义不画、引用懒续行硬换行、空 dest / 锚点 / 相对链接、危险协议清空、未闭合 `](` 先画链接、未闭合 `**` / `*` / `~~` / `` ` `` / `***` / `<https://` / `<email@` / `[^id` 先画标记、http 图、分隔线（含 `* * *`）、Setext / 行尾 `#` 标题、下划线强调、引用式链接 / 图片（含相对 dest）、dest 内成对括号、可点图 `[![img]](url)`、多反引号代码、链接标签内强调、HTML 实体、`www.` / 邮箱、脚注、硬换行（含列表续行与 `\\\n`）与缩进代码，并复用已闭合列表项/表格行；`[label][id]` 不再吞掉后面的标记；廉价尾与收束后共用块边距 / 任务列表 class，正文出现后收起命令输出，并把过程收成「工作中 / 工作了」（对标 Codex Worked for，点开才看步骤；审批/失败仍露出），贴底在布局后同帧写 scrollTop
 - 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）
 - 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
 - Composer 「注入」按钮始终注入当前回合

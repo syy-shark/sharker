@@ -3,7 +3,7 @@
  * @see tools/ARCH.md
  */
 import type { ToolRunResult } from '../shared/types'
-import { getActiveWorkspacePath } from '../shared/workspace'
+import { getActiveWorkspace, getActiveWorkspacePath } from '../shared/workspace'
 import { checkPathAccess, isInsideWorkspace, resolveCommandCwd } from './permissions'
 import { getWorktreePath } from './harness-state'
 import type { ToolContext } from './types'
@@ -11,8 +11,9 @@ import type { ToolContext } from './types'
 /** 沙箱模式下校验目标路径，不通过则抛错 */
 export function assertAccess(ctx: ToolContext, target: string): void {
   const workspace = getActiveWorkspacePath(ctx.settings)
+  const extras = getActiveWorkspace(ctx.settings)?.extraPaths ?? []
   const overlay = getWorktreePath(ctx.conversationId)
-  const check = checkPathAccess(target, workspace, ctx.settings.permissionMode)
+  const check = checkPathAccess(target, workspace, ctx.settings.permissionMode, extras)
   if (check.allowed) return
   if (overlay && isInsideWorkspace(target, overlay)) return
   throw new Error(check.reason ?? 'Access denied')

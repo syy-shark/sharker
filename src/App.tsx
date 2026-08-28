@@ -28,7 +28,8 @@ import type {
   AssistantMeta,
   ChatAttachment,
   ChatMessage,
-  TurnSegment
+  TurnSegment,
+  WorkspaceItem
 } from '../shared/types'
 import {
   extractBrowsedPaths,
@@ -50,11 +51,13 @@ import {
 import { DEFAULT_SETTINGS } from '../shared/types'
 import {
   GLOBAL_WORKSPACE_ID,
+  getActiveWorkspace,
   getActiveWorkspacePath,
   sortWorkspaces,
   pickActiveWorkspaceId,
   withActiveWorkspace
 } from '../shared/workspace'
+import { normalizeExtraFolderPaths } from '../shared/workspace-folders'
 import { knownModelsForProvider } from '../shared/provider-catalog'
 import {
   defaultThinkingLevel,
@@ -111,6 +114,7 @@ import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { FeedbackDialog } from './components/FeedbackDialog'
+import { ProjectFoldersDialog } from './components/ProjectFoldersDialog'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import { applyAppearanceDom } from './components/settings/AppearanceSettings'
@@ -303,6 +307,7 @@ export default function App() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   /** ⌘⌥R / `/rename` 无参数：侧栏进入行内改名 */
   const [renameRequestId, setRenameRequestId] = useState<string | null>(null)
+  const [editProjectId, setEditProjectId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [liveSegments, setLiveSegments] = useState<TurnSegment[]>([])
   const [streaming, setStreaming] = useState('')
@@ -3418,6 +3423,48 @@ export default function App() {
     await persistSettings(next)
   }
 
+  const patchWorkspaceItem = async (id: string, patch: Partial<WorkspaceItem>) => {
+    const current = settingsRef.current
+    const workspaces = current.workspaces.map((item) => {
+      if (item.id !== id) return item
+      const nextItem = { ...item, ...patch }
+      const extraPaths = normalizeExtraFolderPaths(nextItem.path, nextItem.extraPaths)
+      return extraPaths.length ? { ...nextItem, extraPaths } : { ...nextItem, extraPaths: undefined }
+    })
+    const next = withActiveWorkspace(
+      { ...current, workspaces: sortWorkspaces(workspaces) },
+      current.activeWorkspaceId
+    )
+    settingsRef.current = next
+    setSettings(next)
+    setSettingsDraft(next)
+    await persistSettings(next)
+  }
+
+  const handleChangeProjectPrimary = async (id: string) => {
+    const folder = await window.sharker.pickWorkspaceFolder()
+    if (!folder) return
+    await patchWorkspaceItem(id, { path: folder })
+  }
+
+  const handleAddProjectExtraFolder = async (id: string) => {
+    const folder = await window.sharker.pickWorkspaceFolder()
+    if (!folder) return
+    const item = settingsRef.current.workspaces.find((w) => w.id === id)
+    if (!item) return
+    await patchWorkspaceItem(id, {
+      extraPaths: normalizeExtraFolderPaths(item.path, [...(item.extraPaths ?? []), folder])
+    })
+  }
+
+  const handleRemoveProjectExtraFolder = async (id: string, folder: string) => {
+    const item = settingsRef.current.workspaces.find((w) => w.id === id)
+    if (!item) return
+    await patchWorkspaceItem(id, {
+      extraPaths: (item.extraPaths ?? []).filter((path) => path !== folder)
+    })
+  }
+
   /** 聊天 ↔ 设置页导航 */
   const handleNavigate = async (targetPage: AppPage, tab?: SettingsTab) => {
     if (page === 'settings' && targetPage !== 'settings') {
@@ -6124,6 +6171,10 @@ export default function App() {
     if (threadMode === 'worktree' && threadWorktreePath) return threadWorktreePath
     return getActiveWorkspacePath(settings) ?? ''
   }, [threadMode, threadWorktreePath, settings])
+  const fileSearchExtraRoots = useMemo(
+    () => getActiveWorkspace(settings)?.extraPaths ?? [],
+    [settings]
+  )
 
   const liveConversationIds = (() => {
     void sessionLiveVersion
@@ -6169,6 +6220,7 @@ export default function App() {
           onDeleteWorkspace={handleDeleteWorkspace}
           onTogglePinWorkspace={handleTogglePinWorkspace}
           onRenameWorkspace={(id, label) => void handleRenameWorkspace(id, label)}
+          onEditProjectFolders={(id) => setEditProjectId(id)}
           onCreatePermanentWorktree={(id) => void handleCreatePermanentWorktree(id)}
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
@@ -6278,6 +6330,7 @@ export default function App() {
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
               fileSearchRoot={fileSearchRoot}
+              fileSearchExtraRoots={fileSearchExtraRoots}
               composerIntent={composerIntent}
               onComposerIntentHandled={handleComposerIntentHandled}
               queueHeld={queueHeld}
@@ -6369,6 +6422,13 @@ export default function App() {
         />
         )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
+        <ProjectFoldersDialog
+          workspace={settings.workspaces.find((item) => item.id === editProjectId) ?? null}
+          onClose={() => setEditProjectId(null)}
+          onChangePrimary={(id) => void handleChangeProjectPrimary(id)}
+          onAddExtra={(id) => void handleAddProjectExtraFolder(id)}
+          onRemoveExtra={(id, folder) => void handleRemoveProjectExtraFolder(id, folder)}
+        />
         <FeedbackDialog
           open={feedbackOpen}
           info={feedbackInfo}

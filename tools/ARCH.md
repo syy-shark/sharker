@@ -26,8 +26,8 @@
 | `schemas-extended.ts` | Phase 2+ 扩展 schema，由 schemas 合并 |
 | `registry.ts` | 注册表：handler + schema、分发执行、高危评估、计划模式过滤 |
 | `executor.ts` | 对外 `executeTool` / `executeToolWithMeta`（含截断） |
-| `context.ts` | `assertAccess`、`toolCwd`、`ok` 等执行上下文 |
-| `permissions.ts（含 permissions.test.ts 路径/高危门禁单测）` | 沙箱路径、高危 shell/路径模式 |
+| `context.ts` | `assertAccess`、`toolCwd`、`ok` 等执行上下文；沙箱可读主文件夹 + `extraPaths` |
+| `permissions.ts（含 permissions.test.ts 路径/高危门禁单测）` | 沙箱路径（含附加文件夹根）、高危 shell/路径模式 |
 | `network-policy.ts` | `networkMode` 限制 web / shell 出站 |
 | `shell-runner.ts` | 可中止 shell；开发服务器就绪后放后台；长命令 `onStatus` 进度回传 |
 | `truncate.ts` | 工具输出截断 |

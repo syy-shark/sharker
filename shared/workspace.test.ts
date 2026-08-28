@@ -31,5 +31,16 @@ describe('workspace project picker', () => {
     expect(filterWorkspaces(items, 'ws-2').map((w) => w.id)).toEqual(['ws-2'])
     expect(filterWorkspaces(items, '')).toEqual(items)
     expect(filterWorkspaces(items, 'zzz')).toEqual([])
+    const withExtra = normalizeSettings(
+      {
+        workspaces: [
+          { id: 'ws-1', label: 'App', path: '/repo', extraPaths: ['/repo', '/extra', 'rel', '/extra/'] }
+        ],
+        activeWorkspaceId: 'ws-1'
+      },
+      '/home/u'
+    )
+    const item = withExtra.workspaces.find((w) => w.id === 'ws-1')
+    expect(item?.extraPaths).toEqual(['/extra'])
   })
 })

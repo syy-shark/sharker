@@ -149,6 +149,8 @@ export interface ComposerDockProps {
   worktreeBaseRef?: string
   onWorktreeBaseRefChange?: (ref: string) => void
   fileSearchRoot?: string
+  /** 项目附加文件夹（对标 Codex secondary folders），只进 @ 搜索不改 Skill 根 */
+  fileSearchExtraRoots?: string[]
   composerIntent?: ComposerDockIntent
   onComposerIntentHandled?: () => void
   queueHeld?: boolean
@@ -199,6 +201,7 @@ export const ComposerDock = memo(
       worktreeBaseRef = '',
       onWorktreeBaseRefChange,
       fileSearchRoot = '',
+      fileSearchExtraRoots = [],
       composerIntent = null,
       onComposerIntentHandled,
       queueHeld = false,
@@ -510,7 +513,7 @@ export const ComposerDock = memo(
       let cancelled = false
       const id = window.setTimeout(() => {
         void window.sharker
-          .searchWorkspaceFiles(fileSearchRoot, mentionQuery.query)
+          .searchWorkspaceFiles(fileSearchRoot, mentionQuery.query, fileSearchExtraRoots)
           .then((hits) => {
             if (!cancelled) setMentionHits(hits)
           })
@@ -522,7 +525,7 @@ export const ComposerDock = memo(
         cancelled = true
         window.clearTimeout(id)
       }
-    }, [fileSearchRoot, mentionQuery?.query, mentionQuery?.start])
+    }, [fileSearchRoot, fileSearchExtraRoots, mentionQuery?.query, mentionQuery?.start])
     useEffect(() => {
       skillActiveIndexRef.current = skillActiveIndex
     }, [skillActiveIndex])

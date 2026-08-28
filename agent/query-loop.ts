@@ -5,7 +5,7 @@
 import { randomUUID } from 'crypto'
 import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../shared/types'
 import { needsToolCalling } from '../shared/needs-tools'
-import { getActiveWorkspacePath } from '../shared/workspace'
+import { getActiveWorkspace, getActiveWorkspacePath } from '../shared/workspace'
 import { streamChat, type ChatCompletionMessage } from '../providers/openai'
 import { executeToolWithMeta } from '../tools/executor'
 import { needsPathApproval } from '../tools/permissions'
@@ -378,6 +378,7 @@ export async function* queryLoop(
     conversationId
   } = opts
   const workspace = getWorktreePath(conversationId) || getActiveWorkspacePath(settings)
+  const extraRoots = getActiveWorkspace(settings)?.extraPaths ?? []
   let iterations = 0
   let verifyDoneForTurn = false
   let warnedNearLimit = false
@@ -656,7 +657,7 @@ export async function* queryLoop(
       toolName: string,
       args: Record<string, unknown>
     ): boolean => {
-      const pathErr = needsPathApproval(toolName, args, workspace, settings.permissionMode)
+      const pathErr = needsPathApproval(toolName, args, workspace, settings.permissionMode, extraRoots)
       const risk = isHighRiskTool(toolName, args)
       return Boolean(pathErr || risk.highRisk)
     }
@@ -747,7 +748,7 @@ export async function* queryLoop(
           continue
         }
 
-        const pathErr = needsPathApproval(toolName, args, workspace, settings.permissionMode)
+        const pathErr = needsPathApproval(toolName, args, workspace, settings.permissionMode, extraRoots)
         const risk = isHighRiskTool(toolName, args)
 
         if (pathErr || risk.highRisk) {

@@ -52,17 +52,18 @@ export function resolveCommandCwd(
 export function checkPathAccess(
   targetPath: string,
   workspace: string,
-  mode: PermissionMode
+  mode: PermissionMode,
+  extraRoots: string[] = []
 ): { allowed: boolean; reason?: string } {
   const resolved = normalizePath(targetPath)
   if (mode === 'full') return { allowed: true }
-  if (!workspace) {
+  if (!workspace && extraRoots.length === 0) {
     return { allowed: false, reason: '请先在设置中选择工作区' }
   }
-  if (!isInsideWorkspace(resolved, workspace)) {
-    return { allowed: false, reason: `沙箱模式禁止访问工作区外的路径: ${resolved}` }
+  if (isInsideWorkspace(resolved, workspace) || extraRoots.some((root) => isInsideWorkspace(resolved, root))) {
+    return { allowed: true }
   }
-  return { allowed: true }
+  return { allowed: false, reason: `沙箱模式禁止访问工作区外的路径: ${resolved}` }
 }
 
 /** 判断路径是否属于系统敏感目录 */
@@ -82,7 +83,8 @@ export function needsPathApproval(
   toolName: string,
   args: Record<string, unknown>,
   workspace: string,
-  mode: PermissionMode
+  mode: PermissionMode,
+  extraRoots: string[] = []
 ): string | null {
   const paths: string[] = []
   if (args.path) paths.push(String(args.path))
@@ -94,7 +96,7 @@ export function needsPathApproval(
   }
 
   for (const p of paths) {
-    const check = checkPathAccess(p, workspace, mode)
+    const check = checkPathAccess(p, workspace, mode, extraRoots)
     if (!check.allowed) return check.reason ?? '路径被拒绝'
   }
   return null

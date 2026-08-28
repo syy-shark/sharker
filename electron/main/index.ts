@@ -1162,11 +1162,17 @@ function registerIpc(): void {
     return buildWorkspaceTree(workspace, { directoriesOnly })
   })
 
-  ipcMain.handle(IPC.WORKSPACE_SEARCH_FILES, async (_e, workspace: string, query = '') => {
-    const root = path.resolve(String(workspace || ''))
-    if (!root) return []
-    return searchWorkspaceFiles(root, String(query || ''), 30)
-  })
+  ipcMain.handle(
+    IPC.WORKSPACE_SEARCH_FILES,
+    async (_e, workspace: string, query = '', extraRoots: string[] = []) => {
+      const root = path.resolve(String(workspace || ''))
+      const extras = Array.isArray(extraRoots)
+        ? extraRoots.map((item) => path.resolve(String(item || ''))).filter(Boolean)
+        : []
+      if (!root && extras.length === 0) return []
+      return searchWorkspaceFiles(root, String(query || ''), 30, extras)
+    }
+  )
 
   ipcMain.handle(IPC.SKILLS_LIST, async (_e, workspace = '') => {
     const skills = await loadSkills(String(workspace || ''))
