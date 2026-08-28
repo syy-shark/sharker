@@ -40,6 +40,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
 | `/feedback` | 生成本地诊断并尝试复制（不外发） |
 | `/local` `/worktree` | 交接回本地 / 进隔离 worktree |
+| `/approve` | 批准重试最近一次被拒的高危/越权操作（一次）；空闲时重派上一条用户消息 |
+| `/subagents` | `/agents` 别名 |
 
 ### @file 引用
 
@@ -61,11 +63,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 复制上一条助手回复，`/fast` 降思考档位，`/skills` 列出已安装 Skill，`/stop` 中止回合并关掉集成终端。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 复制上一条助手回复，`/fast` 降思考档位，`/skills` 列出已安装 Skill，`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；查找栏打开时 ⌘G / ⌘⇧G 跳到下一条/上一条命中。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
 
 ### 线程内查找
 
-`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），Enter / ↑↓ 跳转。不注册为全局工作台快捷键，避免抢走普通输入框的查找。
+`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），Enter / ↑↓ 跳转。查找栏打开时 `⌘G` / `⌘⇧G` 跳下一条 / 上一条（对标 Codex Find next），此时不打开「搜索对话」。不注册为全局工作台快捷键，避免抢走普通输入框的查找。
 
 ### 人格
 

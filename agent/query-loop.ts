@@ -788,6 +788,7 @@ export async function* queryLoop(
             }
           }
           if (!approved) {
+            sessionApprovals?.recordDenial(toolName, req.description)
             messages.push({
               role: 'tool',
               tool_call_id: tc.id,

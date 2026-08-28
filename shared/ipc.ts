@@ -18,6 +18,8 @@ export const IPC = {
   READ_ATTACHMENT_DATA_URL: 'chat:read-attachment-data-url',
   ABORT_CHAT: 'chat:abort',
   APPROVAL_RESPONSE: 'approval:response',
+  /** `/approve`：最近一次拒绝排队一次重试 */
+  APPROVE_DENIED_RETRY: 'approval:approve-denied',
   SELECT_WORKSPACE: 'workspace:select',
   PICK_WORKSPACE_FOLDER: 'workspace:pick',
   LIST_CONVERSATIONS: 'conversations:list',

@@ -108,6 +108,7 @@ import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
+import { formatApproveRetry } from '../shared/approval-session'
 import {
   formatFastStatus,
   isFastThinkingLevel,
@@ -3467,6 +3468,32 @@ export default function App() {
             void persistActiveConversation(nextMsgs)
             return nextMsgs
           })
+          break
+        }
+        case 'approve_denied': {
+          const convId = activeConversationIdRef.current
+          const result = window.sharker.approveDeniedRetry
+            ? await window.sharker.approveDeniedRetry(convId)
+            : { ok: false, denial: null }
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatApproveRetry(result)
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          if (result.ok) {
+            const lastUser = [...messagesRef.current]
+              .reverse()
+              .find((m) => m.role === 'user' && m.content.trim())
+            if (lastUser && !sendInFlightRef.current) {
+              void dispatchTurnRef.current(lastUser.content, lastUser.attachments, convId ?? undefined)
+            }
+          }
           break
         }
         case 'mention_file':

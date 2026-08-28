@@ -652,6 +652,24 @@ export function ChatView({
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [findHit, findHits, findOpen])
 
+  /** 查找打开时 ⌘G / ⌘⇧G 跳命中（对标 Codex Find next），不抢全局搜对话 */
+  useEffect(() => {
+    if (!findOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return
+      if (e.key !== 'g' && e.key !== 'G') return
+      e.preventDefault()
+      e.stopPropagation()
+      if (!findHits.length) return
+      setFindHit((i) =>
+        e.shiftKey ? (i - 1 + findHits.length) % findHits.length : (i + 1) % findHits.length
+      )
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [findOpen, findHits.length])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing) return

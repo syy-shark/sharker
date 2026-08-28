@@ -25,6 +25,8 @@ describe('slash commands', () => {
     expect(names).toContain('fast')
     expect(names).toContain('skills')
     expect(names).toContain('stop')
+    expect(names).toContain('approve')
+    expect(names).toContain('subagents')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.action).toBe('copy_last_output')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fast')?.action).toBe('set_fast')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')

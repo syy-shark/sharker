@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ConversationApprovalRegistry,
   SessionApprovalStore,
+  formatApproveRetry,
   isApprovalGranted,
   matchKeyForApproval,
   normalizeApprovalDecision,
@@ -80,5 +81,18 @@ describe('approval decision enforcement (once / session / deny)', () => {
     expect(b.isGranted('run_terminal_cmd')).toBe(false)
     registry.clear('conv-a')
     expect(registry.get('conv-a').isGranted('run_terminal_cmd')).toBe(false)
+  })
+
+  it('queues one /approve retry after a recorded denial', () => {
+    const store = new SessionApprovalStore()
+    expect(store.queueApproveOnce().ok).toBe(false)
+    expect(formatApproveRetry({ ok: false, denial: null })).toContain('没有可重试')
+    store.recordDenial('run_terminal_cmd', '删除工作区外文件')
+    expect(store.getLastDenied()?.toolName).toBe('run_terminal_cmd')
+    const queued = store.queueApproveOnce()
+    expect(queued.ok).toBe(true)
+    expect(resolveSessionGrant(store, 'run_terminal_cmd')).toBe('once')
+    expect(resolveSessionGrant(store, 'run_terminal_cmd')).toBeNull()
+    expect(formatApproveRetry(queued)).toContain('run_terminal_cmd')
   })
 })

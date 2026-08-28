@@ -36,12 +36,48 @@ export function isApprovalGranted(decision: ApprovalDecision): boolean {
  * 会话内审批授权表：session grant 后同 matchKey 自动通过。
  * once 只通过当前请求，不写入表；deny 拒绝且不写入。
  */
+/** 最近一次被拒的高危/路径审批（供 `/approve` 重试一次） */
+export interface DeniedApproval {
+  toolName: string
+  description: string
+}
+
 export class SessionApprovalStore {
   private readonly grants = new Set<string>()
+  private readonly onceKeys = new Set<string>()
+  private lastDenied: DeniedApproval | null = null
 
   /** 当前已记录的 session 授权数量（测试/调试） */
   get size(): number {
     return this.grants.size
+  }
+
+  /** 最近一次拒绝（无则 null） */
+  getLastDenied(): DeniedApproval | null {
+    return this.lastDenied
+  }
+
+  /** 记下拒绝，供 `/approve` 排队一次重试 */
+  recordDenial(toolName: string, description: string): void {
+    this.lastDenied = {
+      toolName: String(toolName || '').trim() || 'unknown',
+      description: String(description || '').trim()
+    }
+  }
+
+  /** `/approve`：把最近拒绝的工具排进一次性放行 */
+  queueApproveOnce(): { ok: boolean; denial: DeniedApproval | null } {
+    if (!this.lastDenied) return { ok: false, denial: null }
+    this.onceKeys.add(matchKeyForApproval(this.lastDenied.toolName))
+    return { ok: true, denial: this.lastDenied }
+  }
+
+  /** 消费一次性放行；命中则返回 true */
+  consumeOnce(toolName: string, args?: Record<string, unknown>): boolean {
+    const key = matchKeyForApproval(toolName, args)
+    if (!this.onceKeys.has(key)) return false
+    this.onceKeys.delete(key)
+    return true
   }
 
   /** 是否已有对该工具的 session 授权 */
@@ -69,6 +105,8 @@ export class SessionApprovalStore {
   /** 清空本会话授权（新对话或显式重置） */
   clear(): void {
     this.grants.clear()
+    this.onceKeys.clear()
+    this.lastDenied = null
   }
 
   /** 导出授权键（测试） */
@@ -102,6 +140,14 @@ export class ConversationApprovalRegistry {
   clearAll(): void {
     this.byConversation.clear()
   }
+
+  /** `/approve`：当前会话最近一次拒绝排队一次重试 */
+  approveLastDenial(conversationId: string | null | undefined): {
+    ok: boolean
+    denial: DeniedApproval | null
+  } {
+    return this.get(conversationId).queueApproveOnce()
+  }
 }
 
 /**
@@ -114,5 +160,18 @@ export function resolveSessionGrant(
   args?: Record<string, unknown>
 ): ApprovalDecision | null {
   if (store.isGranted(toolName, args)) return 'session'
+  if (store.consumeOnce(toolName, args)) return 'once'
   return null
+}
+
+/** `/approve` 结果文案 */
+export function formatApproveRetry(result: {
+  ok: boolean
+  denial: DeniedApproval | null
+}): string {
+  if (!result.ok || !result.denial) {
+    return '没有可重试的被拒操作。高危或越权路径被拒绝后，可用 `/approve` 批准下一次同工具重试（对标 Codex）。'
+  }
+  const detail = result.denial.description ? `\n\n${result.denial.description}` : ''
+  return `已批准重试一次 \`${result.denial.toolName}\`。下一轮若再调用该工具，将跳过确认。${detail}`
 }

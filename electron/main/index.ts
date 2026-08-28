@@ -926,6 +926,10 @@ function registerIpc(): void {
     }
   )
 
+  ipcMain.handle(IPC.APPROVE_DENIED_RETRY, async (_e, conversationId?: string) => {
+    return approvalRegistry.approveLastDenial(conversationId)
+  })
+
   ipcMain.handle(IPC.ABORT_CHAT, async (_e, conversationId?: string) => {
     abortActiveTurn(conversationId)
   })

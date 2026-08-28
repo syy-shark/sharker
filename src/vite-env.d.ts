@@ -94,6 +94,10 @@ export interface SharkerApi {
   ) => Promise<void>
   onStream: (cb: (chunk: StreamChunk) => void) => () => void
   onApproval: (cb: (req: ApprovalRequest) => void) => () => void
+  approveDeniedRetry: (conversationId?: string | null) => Promise<{
+    ok: boolean
+    denial: { toolName: string; description: string } | null
+  }>
   windowMinimize: () => Promise<void>
   windowMaximize: () => Promise<void>
   windowClose: () => Promise<void>

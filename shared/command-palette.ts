@@ -344,6 +344,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥A',
     keywords: 'attention live next 进行中 关注',
     action: 'next_attention'
+  },
+  {
+    id: 'approve',
+    title: '批准重试被拒操作',
+    keywords: 'approve retry denied 批准 重试 拒绝',
+    action: 'approve_denied'
   }
 ]
 

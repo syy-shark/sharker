@@ -304,6 +304,20 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'panel'
   },
   {
+    name: 'subagents',
+    description: '打开子 Agent 活动（/agents 别名）',
+    scope: 'ui',
+    action: 'toggle_agents',
+    category: 'panel'
+  },
+  {
+    name: 'approve',
+    description: '批准重试最近一次被拒的高危操作',
+    scope: 'ui',
+    action: 'approve_denied',
+    category: 'mode'
+  },
+  {
     name: 'automations',
     description: '打开自动化（定时任务）',
     scope: 'ui',

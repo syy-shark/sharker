@@ -42,6 +42,7 @@ describe('command palette', () => {
     expect(ids).toContain('clear-unread')
     expect(ids).toContain('search-files')
     expect(ids).toContain('next-attention')
+    expect(ids).toContain('approve')
   })
 
   it('filters by title and keywords', () => {

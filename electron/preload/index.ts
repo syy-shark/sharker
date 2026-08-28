@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld('sharker', {
     id: string,
     decision: import('../../shared/approval-session').ApprovalDecision | boolean
   ): Promise<void> => ipcRenderer.invoke(IPC.APPROVAL_RESPONSE, id, decision),
+  approveDeniedRetry: (conversationId?: string | null) =>
+    ipcRenderer.invoke(IPC.APPROVE_DENIED_RETRY, conversationId),
   onStream: (cb: (chunk: StreamChunk) => void): (() => void) => {
     const handler = (_: unknown, chunk: StreamChunk): void => cb(chunk)
     ipcRenderer.on('chat:stream', handler)

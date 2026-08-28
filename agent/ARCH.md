@@ -20,7 +20,7 @@
 | `commands.ts` | 斜杠命令注册表（本地处理，不走模型；`/plan-mode` 等同 `/plan`） |
 | `commands.test.ts` | `/plan-mode` 与 `/plan` 同义 |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
-| `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
+| `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表 + 拒绝记录供 `/approve`）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
 | `loop.ts` | `buildSystemPrompt`（含人格语气、AGENTS.md 链）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
 | `agents-md.ts` | 加载全局 `~/.sharker` + 仓库根到 cwd 的 AGENTS.md；`/init` 写脚手架 |
 | `agents-md.test.ts` | 全局 override、init 只写一次 |
