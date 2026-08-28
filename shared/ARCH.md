@@ -47,6 +47,8 @@
 | `git-commit.test.ts` | 只提交暂存、拒绝空说明、无远程推送失败 |
 | `git-compare.ts` | 相对基线分支的 name-status + 本轮路径匹配 |
 | `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
+| `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
+| `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
 | `thread-search.ts` | 线程内查找（大小写不敏感） |
 | `thread-search.test.ts` | 命中消息 id |
 | `review-comment.ts` | 行内评论 → Agent 提示 |

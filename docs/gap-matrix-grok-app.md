@@ -13,7 +13,7 @@
 | Composer follow-up queue while busy | have | 忙时排队；队列按 `conversationId` 归属，A 的 follow-up 不会在 B 上派发 |
 | Composer slash + attachments | have | 输入 `/` 弹出斜杠目录（↑↓/Enter/Esc）；图片附件路径稳定 |
 | Resources / files pane | have | 右侧面板「文件」树 + 终端 + 浏览器 |
-| Changes / session diffs + workspace git | have | 右侧「变更」审查：未提交/本轮/分支、文件/hunk 暂存还原、提交/推送、行内评论回对话；工具写盘后即时刷新；会话内工具 diff 仍在消息流 |
+| Changes / session diffs + workspace git | have | 右侧「变更」审查：未提交/本轮/分支、文件/hunk 暂存还原、提交/推送/创建 PR、行内评论回对话；工具写盘后即时刷新；会话内工具 diff 仍在消息流 |
 | Automations (scheduled list / NL create) | partial | `AutomationsPage` 列表与保存；无 grok-app 级 NL 静默建任务 |
 | Settings: providers | have | 设置 → 模型：多 provider、Key/订阅导入、测通 |
 | Settings: theme (light/dark) | have | 浅色水滴玻璃 / 深色金属（`uiTheme`） |

@@ -73,7 +73,9 @@ import { applyGitHunkAction } from '../../shared/git-hunk-actions'
 import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges } from '../../shared/git-compare'
+import { createPullRequest } from '../../shared/git-pr'
 import { readFile, rm, stat, unlink } from 'fs/promises'
+import { spawn } from 'child_process'
 import {
   createTerminal,
   killAllTerminals,
@@ -1198,6 +1200,49 @@ function registerIpc(): void {
     if (!root) return { ok: false as const, error: '缺少工作区' }
     return pushCurrentBranch({ cwd: root, io: reviewIo() })
   })
+
+  const runCommand = (cwd: string, command: string, args: string[]): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const child = spawn(command, args, { cwd })
+      let stdout = ''
+      let stderr = ''
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM')
+        reject(new Error(`${command} timed out`))
+      }, 60_000)
+      child.stdout.on('data', (chunk) => {
+        stdout += String(chunk)
+      })
+      child.stderr.on('data', (chunk) => {
+        stderr += String(chunk)
+      })
+      child.on('error', (err) => {
+        clearTimeout(timer)
+        reject(err)
+      })
+      child.on('close', (code) => {
+        clearTimeout(timer)
+        const out = stdout || stderr || ''
+        if (code === 0) resolve(out)
+        else reject(new Error(stderr.trim() || out.trim() || `${command} failed (${code})`))
+      })
+    })
+
+  ipcMain.handle(
+    IPC.GIT_CREATE_PR,
+    async (_e, cwd: string, payload?: { title?: string; body?: string; base?: string }) => {
+      const root = path.resolve(String(cwd || ''))
+      if (!root) return { ok: false as const, error: '缺少工作区' }
+      const detected = await listBranchChanges({ cwd: root, runGit })
+      return createPullRequest({
+        cwd: root,
+        title: String(payload?.title || ''),
+        body: payload?.body,
+        base: payload?.base || detected.base || undefined,
+        run: runCommand
+      })
+    }
+  )
 
   ipcMain.handle(IPC.GIT_BRANCH_CHANGES, async (_e, cwd: string) => {
     const root = path.resolve(String(cwd || ''))

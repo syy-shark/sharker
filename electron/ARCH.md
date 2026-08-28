@@ -36,6 +36,7 @@
 | `git:hunk-action` | 审查面板单个 hunk 暂存 / 取消暂存 / 还原 |
 | `git:commit` / `git:push` | 审查面板提交已暂存 / 推送当前分支 |
 | `git:branch-changes` | 相对基线分支的已提交变更 |
+| `git:create-pr` | 审查面板用 `gh pr create` 开 PR |
 | `workspace:search-files` | Composer `@` 工作区文件搜索 |
 
 ## 数据流

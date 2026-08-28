@@ -60,6 +60,8 @@ export const IPC = {
   GIT_PUSH: 'git:push',
   /** 相对基线分支的已提交变更 */
   GIT_BRANCH_CHANGES: 'git:branch-changes',
+  /** 审查面板：用 gh 创建 Pull Request */
+  GIT_CREATE_PR: 'git:create-pr',
   /** Composer `@` 工作区文件模糊搜索 */
   WORKSPACE_SEARCH_FILES: 'workspace:search-files',
   /** 为会话准备隔离 Git worktree */

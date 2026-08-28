@@ -80,6 +80,8 @@ export function ChangesPanel({
   const [comments, setComments] = useState<ReviewLineComment[]>([])
   const [commitMessage, setCommitMessage] = useState('')
   const [commitHint, setCommitHint] = useState<string | null>(null)
+  const [prTitle, setPrTitle] = useState('')
+  const [prUrl, setPrUrl] = useState<string | null>(null)
 
   const sourceFiles = compare === 'branch' ? branchFiles : files
   const readOnly = compare === 'branch'
@@ -104,15 +106,18 @@ export function ChangesPanel({
       setIsRepo(result.isRepo)
       setBranch(result.branch)
       setFiles(result.files)
-      if (compare === 'branch' && window.sharker.getGitBranchChanges) {
+      if (window.sharker.getGitBranchChanges) {
         const branchResult = await window.sharker.getGitBranchChanges(workspacePath)
         setBranchBase(branchResult.base)
         setBranchFiles(branchResult.files)
-        setSelectedPath((prev) => {
-          if (prev && branchResult.files.some((f) => f.path === prev)) return prev
-          return branchResult.files[0]?.path ?? null
-        })
-      } else {
+        if (compare === 'branch') {
+          setSelectedPath((prev) => {
+            if (prev && branchResult.files.some((f) => f.path === prev)) return prev
+            return branchResult.files[0]?.path ?? null
+          })
+        }
+      }
+      if (compare !== 'branch') {
         setSelectedPath((prev) => {
           const nextList = result.files.filter((f) => {
             if (compare === 'last_turn') return fileInLastTurn(f.path, lastTurnPaths)
@@ -211,6 +216,31 @@ export function ChangesPanel({
       setActing(false)
     }
   }, [acting, commitMessage, refresh, workspacePath])
+
+  const runCreatePr = useCallback(async () => {
+    if (!workspacePath || !window.sharker?.createGitPullRequest || acting) return
+    setActing(true)
+    setError(null)
+    setCommitHint(null)
+    try {
+      const title = prTitle.trim() || commitMessage.trim()
+      const result = await window.sharker.createGitPullRequest(workspacePath, {
+        title,
+        body: commitMessage.trim() && prTitle.trim() ? commitMessage.trim() : undefined,
+        base: branchBase ?? undefined
+      })
+      if (!result.ok) {
+        setError(result.error || '创建 PR 失败')
+        return
+      }
+      setPrUrl(result.url)
+      setCommitHint('已创建 Pull Request')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing(false)
+    }
+  }, [acting, branchBase, commitMessage, prTitle, workspacePath])
 
   const runPush = useCallback(async () => {
     if (!workspacePath || !window.sharker?.pushGitBranch || acting) return
@@ -449,6 +479,47 @@ export function ChangesPanel({
             推送
           </button>
         </form>
+      ) : null}
+
+      {isRepo && !readOnly ? (
+        <form
+          className="changes-panel__commit"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void runCreatePr()
+          }}
+        >
+          <input
+            className="changes-panel__commit-input"
+            value={prTitle}
+            placeholder="PR 标题（可留空，用提交说明）"
+            aria-label="Pull Request 标题"
+            disabled={acting}
+            onChange={(e) => setPrTitle(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="changes-panel__action"
+            disabled={acting || !(prTitle.trim() || commitMessage.trim())}
+          >
+            创建 PR
+          </button>
+        </form>
+      ) : null}
+
+      {prUrl ? (
+        <p className="changes-panel__hint changes-panel__hint--bar">
+          <button
+            type="button"
+            className="changes-panel__action"
+            onClick={() => void window.sharker.openExternal(prUrl)}
+          >
+            打开 PR
+          </button>
+          <span className="changes-panel__path" title={prUrl}>
+            {prUrl}
+          </span>
+        </p>
       ) : null}
 
       {commitHint ? <p className="changes-panel__hint changes-panel__hint--bar">{commitHint}</p> : null}

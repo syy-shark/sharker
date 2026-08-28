@@ -139,6 +139,10 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.GIT_COMMIT, cwd, message),
   pushGitBranch: (cwd: string) => ipcRenderer.invoke(IPC.GIT_PUSH, cwd),
   getGitBranchChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_BRANCH_CHANGES, cwd),
+  createGitPullRequest: (
+    cwd: string,
+    payload: { title: string; body?: string; base?: string }
+  ) => ipcRenderer.invoke(IPC.GIT_CREATE_PR, cwd, payload),
   applyGitHunkAction: (
     cwd: string,
     payload: {
