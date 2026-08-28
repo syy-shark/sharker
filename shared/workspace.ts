@@ -9,6 +9,7 @@ import { clampWorktreeKeepCount } from './worktree-prune'
 import { clampUiFontScale } from './ui-font-scale'
 import { normalizeKeymap } from './keymap'
 import { clampGitPrompt } from './git-prompt'
+import { normalizeBranchPrefix } from './git-branch-create'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
@@ -142,6 +143,8 @@ export function normalizeSettings(
     reviewDelivery: raw.reviewDelivery === 'inline' ? 'inline' : 'detached',
     gitCommitPrompt: clampGitPrompt(raw.gitCommitPrompt),
     gitPrPrompt: clampGitPrompt(raw.gitPrPrompt),
+    gitForceWithLease: raw.gitForceWithLease === true,
+    gitBranchPrefix: normalizeBranchPrefix(raw.gitBranchPrefix),
     turnNotifyMode:
       raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
         ? raw.turnNotifyMode

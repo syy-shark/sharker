@@ -30,4 +30,16 @@ describe('git prompt templates', () => {
     )
     expect(applyGitPromptTemplates('other', 'base', settings)).toBe('base')
   })
+
+  it('adds branch prefix and force-with-lease policy', () => {
+    const section = gitPromptSystemSection({
+      gitBranchPrefix: 'codex',
+      gitForceWithLease: true
+    })
+    expect(section).toContain('# Git policy')
+    expect(section).toContain('codex/')
+    expect(section).toContain('--force-with-lease')
+    expect(section).toContain('never `--force`')
+    expect(gitPromptSystemSection({ gitForceWithLease: false })).toBe('')
+  })
 })

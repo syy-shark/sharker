@@ -106,6 +106,13 @@ export interface AppSettings {
   /** 生成 PR 描述时使用的用户模板（对标 Codex Git pull request prompt） */
   gitPrPrompt?: string
   /**
+   * 审查面板推送使用 `git push --force-with-lease`（对标 Codex Always force push）。
+   * 默认关；从不使用 `--force`。
+   */
+  gitForceWithLease?: boolean
+  /** 新建分支名前缀（对标 Codex Git branch naming）；空则不加。无尾斜杠时补 `/` */
+  gitBranchPrefix?: string
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -358,6 +365,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reviewDelivery: 'detached',
   gitCommitPrompt: '',
   gitPrPrompt: '',
+  gitForceWithLease: false,
+  gitBranchPrefix: '',
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

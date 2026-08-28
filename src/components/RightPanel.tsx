@@ -44,6 +44,8 @@ interface Props {
   onPendingTerminalCommandSent?: () => void
   /** Ctrl+L：递增后清屏 */
   terminalClearTick?: number
+  /** Settings → Git 分支名前缀，审查面板创建分支占位提示 */
+  gitBranchPrefix?: string
 }
 
 /** Codex 风格右侧面板 */
@@ -63,7 +65,8 @@ export function RightPanel({
   focusSubAgentId = null,
   pendingTerminalCommand = null,
   onPendingTerminalCommandSent,
-  terminalClearTick = 0
+  terminalClearTick = 0,
+  gitBranchPrefix = ''
 }: Props) {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_KEY)
@@ -344,6 +347,7 @@ export function RightPanel({
             agentFindings={agentFindings}
             suggestedCommit={suggestedCommit}
             onSendComments={onSendReviewComments}
+            gitBranchPrefix={gitBranchPrefix}
           />
         )}
         {tab === 'terminal' && (

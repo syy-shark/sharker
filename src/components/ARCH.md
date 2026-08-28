@@ -38,7 +38,7 @@
 | `MessageActions.tsx` / `.css` | 消息复制 / 用户气泡编辑重发 / 失败重试 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐 |
 | `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
-| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
+| `RightPanel.tsx` / `.css` | 右侧可调宽面板（文件/审查/终端/浏览器/活动）；审查传入 `gitBranchPrefix`；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降） |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |

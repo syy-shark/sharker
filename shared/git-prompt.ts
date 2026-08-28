@@ -1,7 +1,8 @@
 /**
- * Settings → Git 的 commit / PR 文案模板（对标 Codex developer-settings Git）。
+ * Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease（对标 Codex developer-settings Git）。
  * @see shared/ARCH.md
  */
+import { formatBranchPrefix } from './git-branch-create'
 
 export const GIT_PROMPT_MAX = 4096
 
@@ -17,7 +18,12 @@ export function clampGitPrompt(raw: unknown): string {
 export function applyGitPromptTemplates(
   skillName: string,
   body: string,
-  settings?: { gitCommitPrompt?: string; gitPrPrompt?: string }
+  settings?: {
+    gitCommitPrompt?: string
+    gitPrPrompt?: string
+    gitBranchPrefix?: string
+    gitForceWithLease?: boolean
+  }
 ): string {
   if (skillName !== 'git-commit' || !settings) return body
   const extra = gitPromptSystemSection(settings)
@@ -25,19 +31,38 @@ export function applyGitPromptTemplates(
   return `${body}\n\n${extra}`
 }
 
-/** 写入 system：仅当用户填了模板 */
+/** 写入 system：文案模板、分支前缀或 force-with-lease 任一有值 */
 export function gitPromptSystemSection(settings?: {
   gitCommitPrompt?: string
   gitPrPrompt?: string
+  gitBranchPrefix?: string
+  gitForceWithLease?: boolean
 }): string {
   const commit = clampGitPrompt(settings?.gitCommitPrompt)
   const pr = clampGitPrompt(settings?.gitPrPrompt)
-  if (!commit && !pr) return ''
-  const lines = [
-    '# Git message style',
-    'Use these user templates when drafting commit messages or pull request descriptions.'
-  ]
-  if (commit) lines.push('', 'Commit message prompt:', commit)
-  if (pr) lines.push('', 'Pull request prompt:', pr)
+  const prefix = formatBranchPrefix(settings?.gitBranchPrefix)
+  const force = settings?.gitForceWithLease === true
+  if (!commit && !pr && !prefix && !force) return ''
+  const lines: string[] = []
+  if (commit || pr) {
+    lines.push(
+      '# Git message style',
+      'Use these user templates when drafting commit messages or pull request descriptions.'
+    )
+    if (commit) lines.push('', 'Commit message prompt:', commit)
+    if (pr) lines.push('', 'Pull request prompt:', pr)
+  }
+  if (prefix || force) {
+    if (lines.length) lines.push('')
+    lines.push('# Git policy')
+    if (prefix) {
+      lines.push(
+        `When creating a new branch, prefix the name with \`${prefix}\` unless it already starts with that prefix.`
+      )
+    }
+    if (force) {
+      lines.push('When pushing, use `git push --force-with-lease` (never `--force`).')
+    }
+  }
   return lines.join('\n')
 }

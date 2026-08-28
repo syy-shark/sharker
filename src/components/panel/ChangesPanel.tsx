@@ -18,6 +18,7 @@ import {
 } from '../../../shared/git-pr-context'
 import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
+import { formatBranchPrefix } from '../../../shared/git-branch-create'
 import { CodeDiffBlock } from '../CodeDiffBlock'
 import './ChangesPanel.css'
 
@@ -45,6 +46,8 @@ interface Props {
   agentFindings?: ReviewLineComment[]
   /** 审查队列接受后预填提交说明 */
   suggestedCommit?: string
+  /** Settings → Git 分支名前缀（占位提示；真正加前缀在主进程） */
+  gitBranchPrefix?: string
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -72,7 +75,8 @@ export function ChangesPanel({
   lastTurnPaths = [],
   onSendComments,
   agentFindings = [],
-  suggestedCommit = ''
+  suggestedCommit = '',
+  gitBranchPrefix = ''
 }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
@@ -432,7 +436,11 @@ export function ChangesPanel({
           <input
             className="changes-panel__commit-input"
             value={branchName}
-            placeholder="在此创建分支（隔离 worktree）"
+            placeholder={
+              formatBranchPrefix(gitBranchPrefix)
+                ? `在此创建分支（${formatBranchPrefix(gitBranchPrefix)}…）`
+                : '在此创建分支（隔离 worktree）'
+            }
             aria-label="新分支名"
             disabled={acting}
             onChange={(e) => setBranchName(e.target.value)}

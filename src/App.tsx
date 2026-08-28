@@ -1220,6 +1220,8 @@ export default function App() {
           reviewDelivery: updated.reviewDelivery,
           gitCommitPrompt: updated.gitCommitPrompt,
           gitPrPrompt: updated.gitPrPrompt,
+          gitForceWithLease: updated.gitForceWithLease,
+          gitBranchPrefix: updated.gitBranchPrefix,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -1281,6 +1283,8 @@ export default function App() {
       reviewDelivery: draft.reviewDelivery,
       gitCommitPrompt: draft.gitCommitPrompt,
       gitPrPrompt: draft.gitPrPrompt,
+      gitForceWithLease: draft.gitForceWithLease,
+      gitBranchPrefix: draft.gitBranchPrefix,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -2732,6 +2736,8 @@ export default function App() {
       reviewDelivery: next.reviewDelivery,
       gitCommitPrompt: next.gitCommitPrompt,
       gitPrPrompt: next.gitPrPrompt,
+      gitForceWithLease: next.gitForceWithLease,
+      gitBranchPrefix: next.gitBranchPrefix,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -6252,6 +6258,7 @@ export default function App() {
           pendingTerminalCommand={pendingTerminalCommand}
           onPendingTerminalCommandSent={() => setPendingTerminalCommand(null)}
           terminalClearTick={terminalClearTick}
+          gitBranchPrefix={settings.gitBranchPrefix ?? ''}
           onSendReviewComments={(prompt) => {
             setPage('chat')
             void dispatchTurnRef.current(prompt)

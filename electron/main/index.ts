@@ -1534,7 +1534,12 @@ function registerIpc(): void {
   ipcMain.handle(IPC.GIT_PUSH, async (_e, cwd: string) => {
     const root = path.resolve(String(cwd || ''))
     if (!root) return { ok: false as const, error: '缺少工作区' }
-    return pushCurrentBranch({ cwd: root, io: reviewIo() })
+    const git = normalizeSettings(await loadSettings(), app.getPath('home'))
+    return pushCurrentBranch({
+      cwd: root,
+      io: reviewIo(),
+      forceWithLease: git.gitForceWithLease === true
+    })
   })
 
   const runCommand = (cwd: string, command: string, args: string[]): Promise<string> =>
@@ -1610,7 +1615,13 @@ function registerIpc(): void {
   ipcMain.handle(IPC.GIT_CREATE_BRANCH, async (_e, cwd: string, name: string) => {
     const root = path.resolve(String(cwd || ''))
     if (!root) return { ok: false as const, error: '缺少工作区' }
-    return createNamedBranch({ cwd: root, name: String(name || ''), io: reviewIo() })
+    const git = normalizeSettings(await loadSettings(), app.getPath('home'))
+    return createNamedBranch({
+      cwd: root,
+      name: String(name || ''),
+      prefix: git.gitBranchPrefix,
+      io: reviewIo()
+    })
   })
 
   ipcMain.handle(IPC.GIT_BRANCH_CHANGES, async (_e, cwd: string) => {

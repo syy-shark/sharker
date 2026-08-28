@@ -12,7 +12,8 @@ import {
   SettingsCard,
   SettingsChoiceGroup,
   SettingsRow,
-  SettingsSection
+  SettingsSection,
+  SettingsToggle
 } from './SettingsPrimitives'
 
 /** PermissionsSettings Props：设置草稿与保存回调 */
@@ -164,6 +165,36 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
             aria-label="PR 文案模板"
             onChange={(e) => scheduleGitPromptSave({ gitPrPrompt: e.target.value })}
           />
+          <SettingsRow
+            title="始终 force-with-lease 推送"
+            description="对标 Codex Always force push：审查面板推送使用 git push --force-with-lease，从不 --force。默认关。"
+          >
+            <SettingsToggle
+              checked={draft.gitForceWithLease === true}
+              onChange={(gitForceWithLease) => {
+                const next = { ...draftRef.current, gitForceWithLease }
+                setDraft(next)
+                void onSave(next)
+              }}
+              label="始终 force-with-lease 推送"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="分支名前缀"
+            description="对标 Codex Git branch naming：审查面板与 agent 新建分支时自动加上。空则不加。没有 / 会补上。"
+            last
+          >
+            <input
+              className="st-number"
+              type="text"
+              spellCheck={false}
+              value={draft.gitBranchPrefix ?? ''}
+              placeholder="codex"
+              aria-label="分支名前缀"
+              style={{ width: '9rem', textAlign: 'left' }}
+              onChange={(e) => scheduleGitPromptSave({ gitBranchPrefix: e.target.value })}
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
 

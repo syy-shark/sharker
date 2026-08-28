@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery` / `gitCommitPrompt` / `gitPrPrompt`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`reviewDelivery` / `gitCommitPrompt` / `gitPrPrompt` / `gitForceWithLease` / `gitBranchPrefix`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
@@ -57,13 +57,13 @@
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
 | `review-prompt.ts` | `/review` 未提交 / 基线提示词；Review delivery（inline / detached）与 here/detached 覆盖 |
-| `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板：截断、拼 system 段、接到 `git-commit` skill |
+| `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
 | `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
 | `git-hunk-actions.test.ts` | 只暂存第一个 hunk |
-| `git-commit.ts` | 审查面板提交已暂存 / 推送当前分支 |
-| `git-commit.test.ts` | 只提交暂存、拒绝空说明、无远程推送失败 |
+| `git-commit.ts` | 审查面板提交已暂存 / 推送当前分支（可选 `--force-with-lease`） |
+| `git-commit.test.ts` | 只提交暂存、拒绝空说明、无远程推送失败、`gitPushArgs` |
 | `git-compare.ts` | 相对基线分支的 name-status + 本轮路径匹配 |
 | `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
 | `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
@@ -76,8 +76,9 @@
 | `thread-window.test.ts` | hash 往返 |
 | `subagent.ts` | 子 Agent 快照过滤 / 排序 / 主线程解析 id / 落盘中断（不进侧栏） |
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
-| `git-branch-create.ts` | detached HEAD 上创建命名分支 |
-| `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
+| `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
+| `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
+| `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感） |

@@ -1,5 +1,5 @@
 /**
- * 审查面板提交 / 推送：只提交已暂存内容，message 不能当 flag。
+ * 审查面板提交 / 推送：只提交已暂存内容，message 不能当 flag；推送可按设置加 `--force-with-lease`。
  * @see shared/ARCH.md
  */
 import type { GitReviewIo } from './git-review-actions'
@@ -32,15 +32,21 @@ export async function commitStagedChanges(options: {
   }
 }
 
+/** 推送参数：默认 `push`；打开设置后用 `--force-with-lease`，从不 `--force` */
+export function gitPushArgs(forceWithLease?: boolean): string[] {
+  return forceWithLease === true ? ['push', '--force-with-lease'] : ['push']
+}
+
 /** 推送当前分支到已配置的上游 */
 export async function pushCurrentBranch(options: {
   cwd: string
   io: GitReviewIo
+  forceWithLease?: boolean
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const root = String(options.cwd || '')
   if (!root) return { ok: false, error: '缺少工作区' }
   try {
-    await options.io.runGit(root, ['push'])
+    await options.io.runGit(root, gitPushArgs(options.forceWithLease))
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }

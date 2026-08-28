@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `FileTree.tsx` / `.css` | 工作区文件树；打开预览 view-enter；子目录展开 list-item-in |
-| `ChangesPanel.tsx` / `.css` | Git 变更审查：未提交 / 本轮 / 分支对比、未暂存/已暂存、文件/hunk 暂存还原、提交/推送/创建 PR、detached 上创建分支、行内评论 + `/review` 发现 + GitHub PR 评论挂到 diff，本地评论可发布到 GitHub；`revision` 随工具写盘刷新 |
+| `ChangesPanel.tsx` / `.css` | Git 变更审查：未提交 / 本轮 / 分支对比、未暂存/已暂存、文件/hunk 暂存还原、提交/推送/创建 PR、detached 上创建分支（占位显示 Settings 前缀）、行内评论 + `/review` 发现 + GitHub PR 评论挂到 diff，本地评论可发布到 GitHub；`revision` 随工具写盘刷新 |
 | `EmbeddedTerminal.tsx` / `.css` | 集成终端；挂载 view-enter；可接收 Composer `!` 待执行命令；`clearTick` / 清屏按钮对标 Ctrl+L；终端聚焦时 ⌘K / Ctrl+K 也清屏（⌘⇧P 仍开命令面板）；字号跟 `--ui-font-scale` |
 | `EmbeddedBrowser.tsx` / `.css` | 内置浏览器；起始页主题跟随 App；避免 data URL 自激 reload |
 | `AgentsPanel.tsx` / `.css` | 当前线程的子 Agent：进行中/已结束、直播正文、停止、转向；主线程点开时选中对应孩子 |

@@ -2,7 +2,12 @@ import { mkdtemp, rm, stat, unlink, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { commitStagedChanges, normalizeCommitMessage, pushCurrentBranch } from './git-commit'
+import {
+  commitStagedChanges,
+  gitPushArgs,
+  normalizeCommitMessage,
+  pushCurrentBranch
+} from './git-commit'
 import { runGit } from '../tools/shared/git-runner'
 
 const io = {
@@ -23,6 +28,12 @@ describe('git commit', () => {
   const dirs: string[] = []
   afterEach(async () => {
     await Promise.all(dirs.splice(0).map((d) => rm(d, { recursive: true, force: true })))
+  })
+
+  it('uses force-with-lease only when enabled', () => {
+    expect(gitPushArgs()).toEqual(['push'])
+    expect(gitPushArgs(false)).toEqual(['push'])
+    expect(gitPushArgs(true)).toEqual(['push', '--force-with-lease'])
   })
 
   it('rejects empty or flag-like messages', () => {
