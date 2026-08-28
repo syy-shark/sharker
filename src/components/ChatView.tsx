@@ -27,6 +27,11 @@ import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread } from '../../shared/thread-search'
 import { textForSpeech } from '../../shared/composer-dictation'
+import {
+  formatSideChatPrompt,
+  isTranscriptSelectionRange,
+  normalizeTranscriptSelection
+} from '../../shared/side-chat-quote'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
@@ -262,6 +267,8 @@ interface Props {
   onPlanModeChange?: (enabled: boolean) => void
   /** 对话里命令输出展示量（对标 Codex command output） */
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
+  /** 划选正文后旁路提问（对标 Codex Ask in side chat） */
+  onAskInSideChat?: (prompt: string) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -323,7 +330,8 @@ export function ChatView({
   composerSeed = null,
   planMode = false,
   onPlanModeChange,
-  toolOutputDisplay = 'standard'
+  toolOutputDisplay = 'standard',
+  onAskInSideChat
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -333,14 +341,57 @@ export function ChatView({
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
   const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
+  const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
 
   useEffect(() => {
     setEditUserMessageId(null)
+    setSideAsk(null)
   }, [sessionKey])
   const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const syncSideAsk = useCallback(() => {
+    if (!onAskInSideChat) {
+      setSideAsk(null)
+      return
+    }
+    const root = messagesInnerRef.current
+    const scroller = messagesRef.current
+    if (!root || !scroller) {
+      setSideAsk(null)
+      return
+    }
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+      setSideAsk(null)
+      return
+    }
+    const range = sel.getRangeAt(0)
+    if (!isTranscriptSelectionRange(range, root)) {
+      setSideAsk(null)
+      return
+    }
+    const text = normalizeTranscriptSelection(sel.toString())
+    if (!text) {
+      setSideAsk(null)
+      return
+    }
+    const rect = range.getBoundingClientRect()
+    const box = scroller.getBoundingClientRect()
+    if (rect.bottom < box.top || rect.top > box.bottom) {
+      setSideAsk(null)
+      return
+    }
+    const next = {
+      text,
+      top: Math.min(rect.bottom + 8, box.bottom - 36),
+      left: Math.min(Math.max(rect.left + rect.width / 2, box.left + 16), box.right - 16)
+    }
+    setSideAsk((prev) =>
+      prev && prev.text === next.text && prev.top === next.top && prev.left === next.left ? prev : next
+    )
+  }, [onAskInSideChat])
   /** 程序触发的滚动期间，忽略 scroll 事件对 stickToBottom 的干扰 */
   const programmaticScrollRef = useRef(false)
   /** 用户主动上翻；只有自己滚回尽头或点「回到底部」才解除。 */
@@ -765,7 +816,7 @@ export function ChatView({
     >
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
-        <div className="messages-scroll" ref={messagesRef}>
+        <div className="messages-scroll" ref={messagesRef} onMouseUp={syncSideAsk}>
           {findOpen ? (
             <div className="chat-find glass-tile" role="search">
               <input
@@ -966,6 +1017,21 @@ export function ChatView({
           />
         </div>
       </div>
+      {sideAsk && onAskInSideChat ? (
+        <button
+          type="button"
+          className="chat-side-ask glass-pill"
+          style={{ top: sideAsk.top, left: sideAsk.left }}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            onAskInSideChat(formatSideChatPrompt(sideAsk.text))
+            setSideAsk(null)
+            window.getSelection()?.removeAllRanges()
+          }}
+        >
+          旁路提问
+        </button>
+      ) : null}
     </div>
   )
 }

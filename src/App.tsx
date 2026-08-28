@@ -6293,6 +6293,18 @@ export default function App() {
               onOpenSubAgent={handleOpenSubAgent}
               onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
               toolOutputDisplay={settings.toolOutputDisplay}
+              onAskInSideChat={(prompt) => {
+                void handleSlashActionRef.current(
+                  {
+                    name: 'side',
+                    description: '旁路新线程',
+                    scope: 'ui',
+                    action: 'side_conversation',
+                    category: 'session'
+                  },
+                  prompt
+                )
+              }}
             />
             </div>
           ) : page === 'automations' ? (
