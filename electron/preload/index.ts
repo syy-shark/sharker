@@ -186,6 +186,8 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.GIT_PR_REVIEW, cwd, comments),
   openThreadWindow: (workspaceId: string, conversationId: string, title?: string) =>
     ipcRenderer.invoke(IPC.OPEN_THREAD_WINDOW, workspaceId, conversationId, title),
+  setWindowAlwaysOnTop: (flag: boolean) => ipcRenderer.invoke(IPC.SET_WINDOW_ALWAYS_ON_TOP, flag),
+  getWindowAlwaysOnTop: () => ipcRenderer.invoke(IPC.GET_WINDOW_ALWAYS_ON_TOP),
   createGitBranch: (cwd: string, name: string) =>
     ipcRenderer.invoke(IPC.GIT_CREATE_BRANCH, cwd, name),
   applyGitHunkAction: (

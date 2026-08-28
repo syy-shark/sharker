@@ -54,6 +54,9 @@ export const IPC = {
   WINDOW_CLOSE: 'window:close',
   /** 弹出独立线程窗（对标 Codex Open in Popup Window） */
   OPEN_THREAD_WINDOW: 'window:open-thread',
+  /** 当前窗 Always on top（对标 Codex 弹出对话置顶） */
+  SET_WINDOW_ALWAYS_ON_TOP: 'window:set-always-on-top',
+  GET_WINDOW_ALWAYS_ON_TOP: 'window:get-always-on-top',
   /** 把本地行内评论发到当前 GitHub PR */
   GIT_PR_REVIEW: 'git:pr-review',
   OPEN_EXTERNAL: 'shell:open-external',

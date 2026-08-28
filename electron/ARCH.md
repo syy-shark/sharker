@@ -44,6 +44,8 @@
 | `git:pr-context` | 当前分支 GitHub PR 与行内审查评论 |
 | `git:pr-review` | 把本地行内评论发到当前 PR |
 | `window:open-thread` | 弹出独立线程窗；`chat:stream` / `chat:approval` 广播到所有窗 |
+| `window:set-always-on-top` / `get-always-on-top` | 弹出窗 Always on top |
+| `chat:send` 期间 `powerSaveBlocker` | 设置打开时阻止系统休眠 |
 | `agents:list` / `stop` / `steer` | 子 Agent 活动；`agents:update` 广播直播快照 |
 | `git:create-branch` | 隔离 worktree 在 HEAD 上创建命名分支 |
 | `git:handoff` | 本地 ↔ 隔离 worktree 交接 |

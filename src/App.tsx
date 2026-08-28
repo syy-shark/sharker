@@ -140,7 +140,7 @@ import {
 import {
   shouldMarkConversationUnread,
   shouldNotifyTurnComplete,
-  turnNotifyPreview,
+  turnNotifyBody,
   turnNotifyTitle,
   unreadDockBadgeCount
 } from '../shared/turn-notify'
@@ -360,6 +360,7 @@ export default function App() {
     () => parseThreadWindowHash(typeof window !== 'undefined' ? window.location.hash : ''),
     []
   )
+  const [alwaysOnTop, setAlwaysOnTop] = useState(false)
   const [queueHeld, setQueueHeld] = useState(false)
   const queueHeldByConvRef = useRef<Set<string>>(new Set())
   const [lastTurnPaths, setLastTurnPaths] = useState<string[]>([])
@@ -902,6 +903,12 @@ export default function App() {
         retryOfUserMessageId:
           outcome === 'error' ? activeUserMessageIdRef.current : undefined,
         browsedFiles: browsedFilesFromSegments(finalized),
+        changedFiles: (() => {
+          const paths = useActiveUi
+            ? [...turnChangedPathsRef.current]
+            : [...(sessionBuffersRef.current.get(targetId ?? '')?.changedRelPaths ?? [])]
+          return paths.length ? paths : undefined
+        })(),
         activities: activitiesFromSegments(finalized),
         segments: finalized,
         durationSec: durationSec > 0 ? durationSec : undefined,
@@ -986,13 +993,18 @@ export default function App() {
           document.hasFocus() &&
           document.visibilityState === 'visible'
         if (
-          shouldNotifyTurnComplete({ ...viewing, windowFocused: focused, outcome }) &&
+          shouldNotifyTurnComplete({
+            ...viewing,
+            windowFocused: focused,
+            outcome,
+            mode: settingsRef.current.turnNotifyMode
+          }) &&
           window.sharker.notifyTurnComplete
         ) {
           const conv = conversationListRef.current.find((c) => c.id === targetId)
           void window.sharker.notifyTurnComplete({
             title: turnNotifyTitle(conv ?? {}),
-            body: turnNotifyPreview(text),
+            body: turnNotifyBody(text, meta.changedFiles?.length ?? 0),
             conversationId: targetId,
             workspaceId:
               conv?.workspaceId || settingsRef.current.activeWorkspaceId || ''
@@ -1160,7 +1172,10 @@ export default function App() {
           uiFontScale: updated.uiFontScale,
           keyboardShortcuts: updated.keyboardShortcuts,
           followUpBehavior: updated.followUpBehavior,
-          requireModEnter: updated.requireModEnter
+          requireModEnter: updated.requireModEnter,
+          turnNotifyMode: updated.turnNotifyMode,
+          preventSleepWhileRunning: updated.preventSleepWhileRunning,
+          popoutAlwaysOnTop: updated.popoutAlwaysOnTop
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1214,6 +1229,9 @@ export default function App() {
       keyboardShortcuts: draft.keyboardShortcuts,
       followUpBehavior: draft.followUpBehavior,
       requireModEnter: draft.requireModEnter,
+      turnNotifyMode: draft.turnNotifyMode,
+      preventSleepWhileRunning: draft.preventSleepWhileRunning,
+      popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -2198,6 +2216,18 @@ export default function App() {
     setPage('chat')
   }, [])
 
+  const handleOpenChangedFiles = useCallback((paths: string[]) => {
+    if (popoutRoute) return
+    const id = activeConversationIdRef.current
+    if (id && paths.length) {
+      lastTurnPathsByConvRef.current.set(id, paths)
+      setLastTurnPaths(paths)
+    }
+    setRightPanelTab('changes')
+    setRightPanelOpen(true)
+    setPage('chat')
+  }, [popoutRoute])
+
   const handleOpenWorktree = useCallback(() => {
     const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
     if (!dest || !window.sharker.openPath) return
@@ -2600,6 +2630,9 @@ export default function App() {
       keyboardShortcuts: next.keyboardShortcuts,
       followUpBehavior: next.followUpBehavior,
       requireModEnter: next.requireModEnter,
+      turnNotifyMode: next.turnNotifyMode,
+      preventSleepWhileRunning: next.preventSleepWhileRunning,
+      popoutAlwaysOnTop: next.popoutAlwaysOnTop,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -2761,6 +2794,16 @@ export default function App() {
     // 只在弹出窗首次带上工作区列表时加载指定线程
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popoutRoute, settings.workspaces.length])
+
+  useEffect(() => {
+    if (!popoutRoute || !window.sharker.getWindowAlwaysOnTop) return
+    void window.sharker.getWindowAlwaysOnTop().then((on) => setAlwaysOnTop(Boolean(on)))
+  }, [popoutRoute])
+
+  const handleToggleAlwaysOnTop = useCallback(() => {
+    if (!window.sharker.setWindowAlwaysOnTop) return
+    void window.sharker.setWindowAlwaysOnTop(!alwaysOnTop).then((on) => setAlwaysOnTop(Boolean(on)))
+  }, [alwaysOnTop])
 
   /** 删除对话并选中相邻条目（仅设置 → 已归档 使用） */
   const handleDeleteConversation = async (workspaceId: string, conversationId: string) => {
@@ -5812,6 +5855,8 @@ export default function App() {
               rightPanelOpen={rightPanelOpen}
               sidebarCollapsed={sidebarCollapsed}
               popout={Boolean(popoutRoute)}
+              alwaysOnTop={alwaysOnTop}
+              onToggleAlwaysOnTop={handleToggleAlwaysOnTop}
               prLabel={prChipLabel}
               onOpenPullRequest={handleOpenPullRequest}
               worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
@@ -5895,6 +5940,7 @@ export default function App() {
               approvalResponding={approvalResponding}
               onApproval={handleApproval}
               onOpenSubAgent={handleOpenSubAgent}
+              onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
             />
             </div>
           ) : page === 'automations' ? (

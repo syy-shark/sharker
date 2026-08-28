@@ -96,6 +96,12 @@
     transform var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
+.chat-toolbar-icon-btn--on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--glass-edge-soft);
+}
+
 .chat-toolbar-icon-btn:hover {
   color: var(--text);
   background: var(--glass-fill-nested);

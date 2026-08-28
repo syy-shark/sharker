@@ -10,6 +10,7 @@ import {
   dialog,
   nativeImage,
   Notification,
+  powerSaveBlocker,
   shell,
   safeStorage
 } from 'electron'
@@ -35,7 +36,7 @@ import {
   setSubAgentListener,
   stopSubAgent
 } from '../../agent/coordinator'
-import { executeUserInput, abortActiveTurn } from '../../agent/pipeline'
+import { executeUserInput, abortActiveTurn, hasActiveTurn } from '../../agent/pipeline'
 import {
   ConversationApprovalRegistry,
   normalizeApprovalDecision,
@@ -130,6 +131,23 @@ import { stopLsp } from '../../tools/services/lsp-client'
 let mainWindow: BrowserWindow | null = null
 const threadWindows = new Map<string, BrowserWindow>()
 let settings: AppSettings
+/** chat:send 进行中计数：排队未入槽时也要挡住休眠 */
+let preventSleepHolds = 0
+let sleepBlockerId: number | null = null
+
+/** 有回合在跑且设置打开时阻止系统休眠（对标 Codex Prevent sleep while running） */
+function syncPreventSleep(): void {
+  const want = Boolean(settings?.preventSleepWhileRunning) && (preventSleepHolds > 0 || hasActiveTurn())
+  if (want) {
+    if (sleepBlockerId == null || !powerSaveBlocker.isStarted(sleepBlockerId)) {
+      sleepBlockerId = powerSaveBlocker.start('prevent-app-suspension')
+    }
+    return
+  }
+  if (sleepBlockerId == null) return
+  if (powerSaveBlocker.isStarted(sleepBlockerId)) powerSaveBlocker.stop(sleepBlockerId)
+  sleepBlockerId = null
+}
 let pendingDeeplink: string | null = null
 
 function registerDeeplinkScheme(): void {
@@ -590,6 +608,7 @@ function createThreadWindow(workspaceId: string, conversationId: string, title: 
   win.setMenuBarVisibility(false)
   lockWindowZoom(win)
   applyWindowAppearance(win, settings)
+  if (settings?.popoutAlwaysOnTop) win.setAlwaysOnTop(true, 'floating')
   if (icon) win.setIcon(icon)
   win.once('ready-to-show', () => {
     if (win.isDestroyed()) return
@@ -671,6 +690,7 @@ function registerIpc(): void {
     } catch (e) {
       console.warn('[feature-use] setup failed', e)
     }
+    syncPreventSleep()
     return true
   })
 
@@ -1067,6 +1087,15 @@ function registerIpc(): void {
     else win.maximize()
   })
   ipcMain.handle(IPC.WINDOW_CLOSE, (e) => windowFromEvent(e)?.close())
+  ipcMain.handle(IPC.SET_WINDOW_ALWAYS_ON_TOP, (e, flag: boolean) => {
+    const win = windowFromEvent(e)
+    if (!win) return false
+    const on = Boolean(flag)
+    if (on) win.setAlwaysOnTop(true, 'floating')
+    else win.setAlwaysOnTop(false)
+    return win.isAlwaysOnTop()
+  })
+  ipcMain.handle(IPC.GET_WINDOW_ALWAYS_ON_TOP, (e) => Boolean(windowFromEvent(e)?.isAlwaysOnTop()))
   ipcMain.handle(
     IPC.OPEN_THREAD_WINDOW,
     async (_e, workspaceId: string, conversationId: string, title?: string) => {
@@ -1294,6 +1323,8 @@ function registerIpc(): void {
         send({ type: 'done', conversationId })
         return
       }
+      preventSleepHolds += 1
+      syncPreventSleep()
       try {
         await executeUserInput({
           settings,
@@ -1323,6 +1354,9 @@ function registerIpc(): void {
         console.error('[chat:send] executeUserInput threw', msg)
         send({ type: 'error', error: msg, conversationId })
         send({ type: 'done', conversationId })
+      } finally {
+        preventSleepHolds = Math.max(0, preventSleepHolds - 1)
+        syncPreventSleep()
       }
     }
   )

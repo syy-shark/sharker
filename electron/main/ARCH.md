@@ -14,7 +14,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `index.ts` | 主进程入口：窗口、菜单、IPC、`chat:send` → `executeUserInput`（可选 worktreePath / goal）、`/init` 写 AGENTS.md、记忆列表、worktree 探活、记忆初始化、子 Agent 落盘恢复、`/approve` 一次重试、对话元数据补丁（重命名/置顶/未读）、旁路/独立窗 `createConversation({ activate: false })`、图片/文本附件落盘、后台回合 `Notification` 与 Dock 徽标、`sharker://` 深链等；窗口锁定 pinch 缩放，字号走 `--ui-font-scale` |
+| `index.ts` | 主进程入口：窗口、菜单、IPC、`chat:send` → `executeUserInput`（可选 worktreePath / goal）、`/init` 写 AGENTS.md、记忆列表、worktree 探活、记忆初始化、子 Agent 落盘恢复、`/approve` 一次重试、对话元数据补丁（重命名/置顶/未读）、旁路/独立窗 `createConversation({ activate: false })`、图片/文本附件落盘、后台回合 `Notification` 与 Dock 徽标、`sharker://` 深链、弹出窗 Always on top、`powerSaveBlocker` 防休眠等；窗口锁定 pinch 缩放，字号走 `--ui-font-scale` |
 | `app-menu.ts` | macOS 应用菜单（File / Edit / View / Window / Help）；撤销/重做走渲染进程（输入框原生、其它处应用动作）；自定义项 `registerAccelerator: false` |
 | `terminal-manager.ts` | node-pty 会话：创建/读写/关闭集成终端 |
 | `automation-scheduler.ts` | 读取 `~/.sharker/automations.json`（jobs + 审查队列），按 cron 触发任务 |

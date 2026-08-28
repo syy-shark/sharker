@@ -17,6 +17,7 @@ import {
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
 import { liveThinkingText, isInlineDemoPaintable } from '../../shared/live-display'
+import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
 import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
@@ -45,6 +46,8 @@ interface Props {
   onApproval?: (decision: ApprovalDecision) => void | Promise<void>
   /** 主线程活动点开子 Agent */
   onOpenSubAgent?: (id: string | null) => void
+  /** 完成后「已改 N 个文件」打开审查（对标 Codex 变更摘要） */
+  onOpenChangedFiles?: (paths: string[]) => void
   children?: React.ReactNode
 }
 
@@ -71,6 +74,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   approvalResponding,
   onApproval,
   onOpenSubAgent,
+  onOpenChangedFiles,
   children
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
@@ -82,6 +86,8 @@ export const AssistantMessage = memo(function AssistantMessage({
   const useSegmentFlow = Boolean(segments && segments.length > 0)
 
   const browsedFiles = meta?.browsedFiles ?? []
+  const changedFiles = meta?.changedFiles ?? []
+  const changedLabel = formatChangedFilesLabel(changedFiles.length)
   const hadThinking = meta?.hadThinking ?? hadThinkingLive
   // Keep the UI at a high-level status; raw provider reasoning remains internal.
   const thinkingText = hadThinking
@@ -481,6 +487,30 @@ export const AssistantMessage = memo(function AssistantMessage({
               </div>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {!isStreaming && changedFiles.length > 0 ? (
+        <div className="assistant-changed-row">
+          {onOpenChangedFiles ? (
+            <button
+              type="button"
+              className="assistant-meta-chip"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenChangedFiles(changedFiles)
+              }}
+            >
+              <span>已改</span>
+              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
+            </button>
+          ) : (
+            <span className="assistant-meta-chip assistant-meta-chip--static" title={changedLabel}>
+              <span>已改</span>
+              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
+            </span>
+          )}
         </div>
       ) : null}
 

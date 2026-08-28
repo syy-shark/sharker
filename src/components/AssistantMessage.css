@@ -18,6 +18,14 @@
   border-bottom: 1px solid var(--glass-edge-soft);
 }
 
+.assistant-changed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
+
 .assistant-meta-chip {
   display: inline-flex;
   align-items: center;

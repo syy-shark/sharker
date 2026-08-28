@@ -81,7 +81,13 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   if (key === 'shortcuts' || key === 'keyboard' || key === 'keymap') {
     return { type: 'settings', tab: 'shortcuts' }
   }
-  if (key === 'appearance' || key === 'theme') {
+  if (
+    key === 'appearance' ||
+    key === 'theme' ||
+    key === 'notifications' ||
+    key === 'general' ||
+    key === 'personalization'
+  ) {
     return { type: 'settings', tab: 'appearance' }
   }
   if (key === 'permissions' || key === 'browser-use' || key.startsWith('computer-use')) {

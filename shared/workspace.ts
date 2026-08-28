@@ -137,6 +137,12 @@ export function normalizeSettings(
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),
     followUpBehavior: raw.followUpBehavior === 'steer' ? 'steer' : 'queue',
     requireModEnter: raw.requireModEnter === true,
+    turnNotifyMode:
+      raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
+        ? raw.turnNotifyMode
+        : 'background',
+    preventSleepWhileRunning: raw.preventSleepWhileRunning === true,
+    popoutAlwaysOnTop: raw.popoutAlwaysOnTop === true,
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  parseTurnNotifyMode,
   shouldMarkConversationUnread,
   shouldNotifyTurnComplete,
+  formatChangedFilesLabel,
+  turnNotifyBody,
   turnNotifyPreview,
   turnNotifyTitle,
   unreadDockBadgeCount
@@ -42,6 +45,20 @@ describe('background turn notifications', () => {
         outcome: 'success'
       })
     ).toBe(true)
+  })
+
+  it('honors never and always notify modes', () => {
+    const base = {
+      conversationId: 'a',
+      activeConversationId: 'a',
+      page: 'chat' as const,
+      windowFocused: true,
+      outcome: 'success' as const
+    }
+    expect(shouldNotifyTurnComplete({ ...base, mode: 'never' })).toBe(false)
+    expect(shouldNotifyTurnComplete({ ...base, mode: 'always' })).toBe(true)
+    expect(parseTurnNotifyMode('always')).toBe('always')
+    expect(parseTurnNotifyMode('')).toBe('background')
   })
 
   it('skips aborted turns', () => {
@@ -86,6 +103,10 @@ describe('background turn notifications', () => {
     expect(turnNotifyPreview('  已完成\n\n下一步  ')).toBe('已完成 下一步')
     expect(turnNotifyPreview('x'.repeat(200)).endsWith('…')).toBe(true)
     expect(turnNotifyPreview('')).toBe('回合已完成')
+    expect(turnNotifyBody('已完成', 3)).toBe('已完成 · 改了 3 个文件')
+    expect(turnNotifyBody('已完成', 0)).toBe('已完成')
+    expect(formatChangedFilesLabel(3)).toBe('已改 3 个文件')
+    expect(formatChangedFilesLabel(0)).toBe('')
   })
 
   it('counts unread conversations for the dock badge', () => {

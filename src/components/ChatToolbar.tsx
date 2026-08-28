@@ -14,7 +14,8 @@ import {
   SquarePen,
   AppWindow,
   FolderOpen,
-  GitBranch
+  GitBranch,
+  Pin
 } from 'lucide-react'
 import './ChatToolbar.css'
 
@@ -28,6 +29,9 @@ interface Props {
   /** 弹出当前对话到独立窗（对标 Codex Open in Popup Window） */
   onPopOut?: () => void
   popout?: boolean
+  /** 弹出窗 Always on top（对标 Codex） */
+  alwaysOnTop?: boolean
+  onToggleAlwaysOnTop?: () => void
   /** 当前分支若已有 PR，顶栏显示芯片并打开审查 */
   prLabel?: string | null
   onOpenPullRequest?: () => void
@@ -51,6 +55,8 @@ export function ChatToolbar({
   onNewConversation,
   onPopOut,
   popout = false,
+  alwaysOnTop = false,
+  onToggleAlwaysOnTop,
   prLabel = null,
   onOpenPullRequest,
   worktreePath = null,
@@ -187,7 +193,24 @@ export function ChatToolbar({
             </button>
           ) : null}
           {popout ? (
-            <span className="chat-toolbar-popout-label">弹出对话</span>
+            <>
+              <button
+                type="button"
+                className={`chat-toolbar-icon-btn${alwaysOnTop ? ' chat-toolbar-icon-btn--on' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onToggleAlwaysOnTop?.()
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title={alwaysOnTop ? '取消置顶' : '窗口置顶'}
+                aria-label={alwaysOnTop ? '取消置顶' : '窗口置顶'}
+                aria-pressed={alwaysOnTop}
+              >
+                <Pin size={18} strokeWidth={1.75} aria-hidden />
+              </button>
+              <span className="chat-toolbar-popout-label">弹出对话</span>
+            </>
           ) : (
           <button
             type="button"

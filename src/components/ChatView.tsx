@@ -230,6 +230,8 @@ interface Props {
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
   /** 主线程活动点开子 Agent */
   onOpenSubAgent?: (id: string | null) => void
+  /** 完成后改文件芯片打开审查 */
+  onOpenChangedFiles?: (paths: string[]) => void
   /** Codex 式线程目标：本地工作区或隔离 worktree */
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
@@ -291,6 +293,7 @@ export function ChatView({
   approvalResponding,
   onApproval,
   onOpenSubAgent,
+  onOpenChangedFiles,
   threadMode = 'local',
   threadGoal = null,
   onGoalCommand,
@@ -701,6 +704,7 @@ export function ChatView({
               meta={m.meta}
               modelLabel={m.meta?.model ?? modelLabel}
               onOpenSubAgent={onOpenSubAgent}
+              onOpenChangedFiles={onOpenChangedFiles}
               onRetry={
                 index === messages.length - 1 && m.meta?.retryOfUserMessageId && onRetry
                   ? () => onRetry(m.meta!.retryOfUserMessageId!)
@@ -718,6 +722,7 @@ export function ChatView({
       messages,
       modelLabel,
       onOpenSubAgent,
+      onOpenChangedFiles,
       onRetry,
       onEditUserMessage
     ]

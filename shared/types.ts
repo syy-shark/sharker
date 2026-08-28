@@ -94,6 +94,15 @@ export interface AppSettings {
   followUpBehavior?: 'queue' | 'steer'
   /** 用 ⌘/Ctrl+Enter 发送，Enter 换行（对标 Codex Require Cmd+Enter） */
   requireModEnter?: boolean
+  /**
+   * 回合完成通知（对标 Codex Settings → Notifications）。
+   * never / background（默认） / always
+   */
+  turnNotifyMode?: 'never' | 'background' | 'always'
+  /** 有回合在跑时阻止系统休眠（对标 Codex Prevent sleep while running） */
+  preventSleepWhileRunning?: boolean
+  /** 新弹出对话窗默认置顶（对标 Codex Always on top） */
+  popoutAlwaysOnTop?: boolean
 }
 
 /** 聊天消息角色 */
@@ -224,6 +233,8 @@ export interface AssistantMeta {
   model?: string
   /** 有序过程流（持久化，历史可重看） */
   segments?: TurnSegment[]
+  /** 本轮写盘的相对路径（对标 Codex 完成后的 changed-file summary） */
+  changedFiles?: string[]
 }
 
 /** 单条聊天消息 */
@@ -329,5 +340,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   memoryGeneration: true,
   keyboardShortcuts: {},
   followUpBehavior: 'queue',
-  requireModEnter: false
+  requireModEnter: false,
+  turnNotifyMode: 'background',
+  preventSleepWhileRunning: false,
+  popoutAlwaysOnTop: false
 }

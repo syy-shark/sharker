@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
+import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
 import type { AgentPersonality } from '../../../shared/personality'
 import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
 import {
@@ -205,6 +206,65 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 scheduleSave({ ...draftRef.current, requireModEnter })
               }}
               label="用 ⌘Enter 发送"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="通知">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parseTurnNotifyMode(draft.turnNotifyMode)}
+            onChange={(turnNotifyMode: TurnNotifyMode) => {
+              scheduleSave({ ...draftRef.current, turnNotifyMode })
+            }}
+            options={[
+              {
+                value: 'never',
+                title: '从不',
+                description: '回合完成不弹系统通知。',
+                icon: <span aria-hidden>静</span>
+              },
+              {
+                value: 'background',
+                title: '后台',
+                description: '正在看且窗口在前台时不打扰。',
+                icon: <span aria-hidden>后</span>
+              },
+              {
+                value: 'always',
+                title: '始终',
+                description: '每次回合完成都通知。',
+                icon: <span aria-hidden>通</span>
+              }
+            ]}
+          />
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="窗口">
+        <SettingsCard>
+          <SettingsRow
+            title="运行时防止休眠"
+            description="对标 Codex Prevent sleep while running：有回合在跑时阻止系统休眠。"
+          >
+            <SettingsToggle
+              checked={draft.preventSleepWhileRunning === true}
+              onChange={(preventSleepWhileRunning) => {
+                scheduleSave({ ...draftRef.current, preventSleepWhileRunning })
+              }}
+              label="运行时防止休眠"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="新弹出对话置顶"
+            description="对标 Codex Always on top：新弹出的对话窗默认浮在其它应用之上。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.popoutAlwaysOnTop === true}
+              onChange={(popoutAlwaysOnTop) => {
+                scheduleSave({ ...draftRef.current, popoutAlwaysOnTop })
+              }}
+              label="新弹出对话置顶"
             />
           </SettingsRow>
         </SettingsCard>
