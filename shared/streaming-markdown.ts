@@ -1,6 +1,6 @@
 /**
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
- * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱、裸 URL、下划线强调、文件引用、标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线 / 缩进代码。
+ * CRLF 按 LF 拆；散文尾廉价解析含闭合链接、引用式链接、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、脚注、硬换行、文件引用、ATX/Setext 标题/列表（含缩进嵌套与续行）/任务项/表格/分隔线 / 缩进代码。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -174,6 +174,8 @@ export type CheapInlineNode =
   | { type: 'link'; text: string; href: string; raw?: string }
   | { type: 'image'; alt: string; href: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
+  | { type: 'fn'; id: string }
+  | { type: 'br' }
 
 /** 直播列表项：可挂一层或多层嵌套列表，收束时少跳 */
 export type CheapListItem = {
@@ -189,10 +191,13 @@ export type CheapProseBlock =
   | { type: 'table'; header: CheapInlineNode[][]; rows: CheapInlineNode[][][] }
   | { type: 'hr' }
   | { type: 'pre'; text: string }
+  | { type: 'footnotes'; items: { id: string; nodes: CheapInlineNode[] }[] }
   | { type: 'p'; nodes: CheapInlineNode[] }
 
 const BARE_URL_RE = /^https?:\/\/[^\s<>]+/i
+const WWW_RE = /^www\.[^\s<>]+/i
 const BARE_EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+const SETEXT_RE = /^(=+|-+)\s*$/
 const EMPTY_LINK_DEFS: ReadonlyMap<string, string> = new Map()
 
 /** 去掉裸链接尾部标点，避免句号/括号被吃进 href */
@@ -215,6 +220,24 @@ function canCloseUnderscore(src: string, lastIndex: number): boolean {
 /** GFM 链接标签：去首尾空白、折叠空白、小写 */
 export function normalizeLinkLabel(label: string): string {
   return label.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** `[^id]: 正文` 脚注定义（对标 remark-gfm footnotes） */
+export function parseFootnoteDefinitionLine(line: string): { id: string; text: string } | null {
+  const match = /^\[\^([^\]]+)\]:\s?(.*)$/.exec(line)
+  if (!match) return null
+  const id = (match[1] ?? '').trim()
+  if (!id) return null
+  return { id, text: match[2] ?? '' }
+}
+
+export function collectFootnoteDefinitions(text: string): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const line of normalizeStreamingText(text).split('\n')) {
+    const def = parseFootnoteDefinitionLine(line)
+    if (def && !map.has(def.id)) map.set(def.id, def.text)
+  }
+  return map
 }
 
 /** `[id]: https://…` / `[id]: <https://…>` 定义行（对标 CommonMark / remark-gfm） */
@@ -370,6 +393,20 @@ export function parseCheapInlineMarkdown(
         }
       }
     }
+    if (src.startsWith('[^', i)) {
+      const end = src.indexOf(']', i + 2)
+      if (end === -1) {
+        buf += src.slice(i)
+        break
+      }
+      const id = src.slice(i + 2, end)
+      if (id && !id.includes('\n')) {
+        flush()
+        nodes.push({ type: 'fn', id })
+        i = end + 1
+        continue
+      }
+    }
     if (src.startsWith('![', i) || src[i] === '[') {
       const image = src.startsWith('![', i)
       const labelStart = i + (image ? 2 : 1)
@@ -466,6 +503,34 @@ export function parseCheapInlineMarkdown(
       }
     }
     if (!isWordChar(src[i - 1])) {
+      const wwwMatch = WWW_RE.exec(src.slice(i))
+      if (wwwMatch) {
+        const raw = trimBareUrl(wwwMatch[0])
+        if (raw.length > 'www.a'.length) {
+          flush()
+          nodes.push({ type: 'link', text: raw, href: `http://${raw}`, raw })
+          i += raw.length
+          continue
+        }
+      }
+    }
+    if (src[i] === '\n') {
+      if (buf.endsWith('\\')) {
+        buf = buf.slice(0, -1)
+        flush()
+        nodes.push({ type: 'br' })
+        i += 1
+        continue
+      }
+      if (buf.endsWith('  ')) {
+        buf = buf.slice(0, -2)
+        flush()
+        nodes.push({ type: 'br' })
+        i += 1
+        continue
+      }
+    }
+    if (!isWordChar(src[i - 1])) {
       const emailMatch = BARE_EMAIL_RE.exec(src.slice(i))
       if (emailMatch) {
         const email = emailMatch[0].replace(/[.,;:!?)]+$/, '')
@@ -485,6 +550,8 @@ export function parseCheapInlineMarkdown(
 }
 
 function cheapInlineSource(node: CheapInlineNode): string {
+  if (node.type === 'br') return '  \n'
+  if (node.type === 'fn') return `[^${node.id}]`
   if (node.type === 'code') return `\`${node.text}\``
   if (node.type === 'strong') {
     const mark = node.mark ?? '**'
@@ -619,6 +686,7 @@ export function parseCheapProseBlocks(
   const src = normalizeStreamingText(text)
   if (!src) return []
   const linkDefs = defs ?? collectLinkDefinitions(src)
+  const footnoteDefs = collectFootnoteDefinitions(src)
   const lines = src.split('\n')
   const blocks: CheapProseBlock[] = []
   let para: string[] = []
@@ -687,7 +755,7 @@ export function parseCheapProseBlocks(
   }
 
   for (const line of lines) {
-    if (parseLinkDefinitionLine(line)) {
+    if (parseLinkDefinitionLine(line) || parseFootnoteDefinitionLine(line)) {
       flushAll()
       continue
     }
@@ -707,6 +775,19 @@ export function parseCheapProseBlocks(
       if (!table) table = []
       table.push(line)
       continue
+    }
+    if (para.length && !list && !quote.length && !table && !pre && SETEXT_RE.test(line)) {
+      const marker = line.trim()[0]
+      if (marker === '=' || marker === '-') {
+        const title = para.join('\n')
+        para = []
+        blocks.push({
+          type: 'heading',
+          level: marker === '=' ? 1 : 2,
+          nodes: inline(title)
+        })
+        continue
+      }
     }
     if (HR_RE.test(line)) {
       flushAll()
@@ -782,6 +863,12 @@ export function parseCheapProseBlocks(
     para.push(line)
   }
   flushAll()
+  if (footnoteDefs.size) {
+    blocks.push({
+      type: 'footnotes',
+      items: [...footnoteDefs].map(([id, text]) => ({ id, nodes: inline(text) }))
+    })
+  }
   return blocks
 }
 
@@ -844,6 +931,17 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
   if (prev.type === 'hr' && next.type === 'hr') return prev
   if (prev.type === 'pre' && next.type === 'pre') {
     return prev.text === next.text ? prev : next
+  }
+  if (prev.type === 'footnotes' && next.type === 'footnotes') {
+    const items = next.items.map((item, i) => {
+      const prevItem = prev.items[i]
+      if (!prevItem || prevItem.id !== item.id) return item
+      const nodes = reuseInlineNodes(prevItem.nodes, item.nodes)
+      return nodes === prevItem.nodes ? prevItem : { id: item.id, nodes }
+    })
+    const same =
+      items.length === prev.items.length && items.every((item, i) => item === prev.items[i])
+    return same ? prev : { type: 'footnotes', items }
   }
   if (prev.type === 'heading' && next.type === 'heading') {
     if (prev.level !== next.level) return null

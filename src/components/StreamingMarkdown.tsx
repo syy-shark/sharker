@@ -77,6 +77,21 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
     if (node.type === 'image') {
       return <img key={index} src={node.href} alt={node.alt} loading="lazy" />
     }
+    if (node.type === 'fn') {
+      return (
+        <sup key={index}>
+          <a
+            href={`#user-content-fn-${node.id}`}
+            id={`user-content-fnref-${node.id}`}
+            data-footnote-ref
+            aria-describedby="footnote-label"
+          >
+            {node.id}
+          </a>
+        </sup>
+      )
+    }
+    if (node.type === 'br') return <br key={index} />
     return <span key={index}>{node.text}</span>
   })
 }
@@ -149,6 +164,32 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   if (block.type === 'hr') return <hr key={index} />
   if (block.type === 'pre') {
     return <LiveFenceTail key={index} code={block.text} />
+  }
+  if (block.type === 'footnotes') {
+    return (
+      <section key={index} data-footnotes className="footnotes">
+        <h2 className="sr-only" id="footnote-label">
+          Footnotes
+        </h2>
+        <ol>
+          {block.items.map((item) => (
+            <li key={item.id} id={`user-content-fn-${item.id}`}>
+              <p>
+                {renderCheapInline(item.nodes)}{' '}
+                <a
+                  href={`#user-content-fnref-${item.id}`}
+                  data-footnote-backref
+                  className="data-footnote-backref"
+                  aria-label="Back to content"
+                >
+                  ↩
+                </a>
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
   }
   return <p key={index}>{renderCheapInline(block.nodes)}</p>
 }

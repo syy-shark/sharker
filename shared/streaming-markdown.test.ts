@@ -134,6 +134,17 @@ describe('splitStreamingMarkdown', () => {
       { type: 'link', text: 'user@a.test', href: 'mailto:user@a.test', raw: 'user@a.test' },
       { type: 'text', text: ' 后' }
     ])
+    expect(parseCheapInlineMarkdown('见 www.a.test 与 注[^1]')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: 'www.a.test', href: 'http://www.a.test', raw: 'www.a.test' },
+      { type: 'text', text: ' 与 注' },
+      { type: 'fn', id: '1' }
+    ])
+    expect(parseCheapInlineMarkdown('上  \n下')).toEqual([
+      { type: 'text', text: '上' },
+      { type: 'br' },
+      { type: 'text', text: '下' }
+    ])
   })
 
   it('hides reference definitions and paints indented code in the live tail', () => {
@@ -153,6 +164,13 @@ describe('splitStreamingMarkdown', () => {
     expect(markdownBlockWithDefs('见 [文档][d]。\n', '[d]: https://a.test/x')).toBe(
       '见 [文档][d]。\n\n[d]: https://a.test/x'
     )
+    expect(parseCheapProseBlocks('Overview\n---').map((b) => b.type)).toEqual(['heading'])
+    expect(parseCheapProseBlocks('Title\n===')[0]).toMatchObject({ type: 'heading', level: 1 })
+    const notes = parseCheapProseBlocks('见注[^1]。\n[^1]: 说明')
+    expect(notes.map((b) => b.type)).toEqual(['p', 'footnotes'])
+    if (notes[0]?.type === 'p') {
+      expect(notes[0].nodes.some((n) => n.type === 'fn' && n.id === '1')).toBe(true)
+    }
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {

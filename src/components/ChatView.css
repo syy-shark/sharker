@@ -561,6 +561,27 @@
   margin-bottom: 0;
 }
 
+.streaming-markdown .sr-only,
+.live-prose-tail .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.streaming-markdown section.footnotes,
+.live-prose-tail section.footnotes {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+
 .message-body--assistant h1,
 .message-body--assistant h2,
 .message-body--assistant h3,
