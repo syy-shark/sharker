@@ -38,8 +38,13 @@ describe('file citations', () => {
     expect(parseFileCitation('https://example.com/a.ts')).toBeNull()
     expect(parseFileCitation('12:30')).toBeNull()
     expect(parseFileCitation('note:123')).toBeNull()
+    expect(parseFileCitation('www.a.test/x')).toBeNull()
     expect(looksLikeFilePath('hello')).toBe(false)
+    expect(looksLikeFilePath('www.a.test/x')).toBe(false)
     expect(looksLikeFilePath('src/App.tsx')).toBe(true)
+    expect(matchFileCitationAt('见 </span> 后', 2)).toBeNull()
+    expect(matchFileCitationAt('见 </span> 后', 3)).toBeNull()
+    expect(matchFileCitationAt('见 www.a.test/x 后', 2)).toBeNull()
   })
 
   it('matches at a boundary and leaves trailing punctuation', () => {

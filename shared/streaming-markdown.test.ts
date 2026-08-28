@@ -42,6 +42,12 @@ describe('splitStreamingMarkdown', () => {
     const spaced = splitStreamingMarkdown('   ```js\n1')
     expect(spaced.tailKind).toBe('fence')
     expect(spaced.tailLang).toBe('js')
+    const nested = splitStreamingMarkdown('````\n```\ninner\n```')
+    expect(nested.tailKind).toBe('fence')
+    expect(nested.tail).toContain('```\ninner\n```')
+    const closedNested = splitStreamingMarkdown('````\n```\ninner\n```\n````\n\nB')
+    expect(closedNested.blocks.some((b) => b.text.includes('inner'))).toBe(true)
+    expect(closedNested.tail).toBe('B')
   })
 
   it('commits a closed fence and does not remake earlier block ids', () => {
@@ -75,6 +81,10 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '见 ' },
       { type: 'code', text: 'a`b' },
       { type: 'text', text: ' 后' }
+    ])
+    expect(parseCheapInlineMarkdown('~~ not ~~')).toEqual([{ type: 'text', text: '~~ not ~~' }])
+    expect(parseCheapInlineMarkdown('[foo\nbar](https://a.test/x)')).toEqual([
+      { type: 'link', text: 'foo bar', href: 'https://a.test/x', raw: '[foo\nbar](https://a.test/x)' }
     ])
     expect(parseCheapInlineMarkdown('见 `foo` 与 **bar** 和 *baz* 及 ~~删~~')).toEqual([
       { type: 'text', text: '见 ' },
@@ -214,6 +224,12 @@ describe('splitStreamingMarkdown', () => {
       { type: 'link', text: 'user@a.test', href: 'mailto:user@a.test', raw: 'user@a.test' },
       { type: 'text', text: ' 后' }
     ])
+    expect(parseCheapInlineMarkdown('见 www.a.test/x).')).toEqual([
+      { type: 'text', text: '见 ' },
+      { type: 'link', text: 'www.a.test/x', href: 'http://www.a.test/x', raw: 'www.a.test/x' },
+      { type: 'text', text: ').' }
+    ])
+    expect(parseCheapInlineMarkdown('见 </span> 后')).toEqual([{ type: 'text', text: '见 </span> 后' }])
     expect(parseCheapInlineMarkdown('见 www.a.test 与 注[^1]')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'link', text: 'www.a.test', href: 'http://www.a.test', raw: 'www.a.test' },
@@ -322,6 +338,12 @@ describe('splitStreamingMarkdown', () => {
     expect(collectLinkDefinitions('见 [文档][D]。\n[D]: https://a.test/x').get('d')).toEqual({
       href: 'https://a.test/x'
     })
+    expect(
+      collectLinkDefinitions('见 [文档][D]。\n\n[D]: https://a.test/x\n     "题"').get('d')
+    ).toEqual({ href: 'https://a.test/x', title: '题' })
+    expect(
+      parseCheapProseBlocks('见 [文档][D]。\n\n[D]: https://a.test/x\n     "题"').map((b) => b.type)
+    ).toEqual(['p'])
     const titledDefs = collectLinkDefinitions('见 [文档][D]。\n\n[D]: https://a.test/x "题"')
     expect(titledDefs.get('d')).toEqual({ href: 'https://a.test/x', title: '题' })
     expect(parseCheapInlineMarkdown('见 [文档][D]。', titledDefs)).toEqual([
@@ -414,6 +436,8 @@ describe('splitStreamingMarkdown', () => {
       expect(quoteFence[0].blocks[0].lang).toBe('js')
       expect(quoteFence[0].blocks[0].text).toBe('const x = 1')
     }
+    const longFence = parseCheapProseBlocks('````\n```\ninner\n```\n````')
+    expect(longFence[0]).toMatchObject({ type: 'pre', text: '```\ninner\n```' })
     const openQuoteFence = parseCheapProseBlocks('> ```ts\n> let y = 2')
     if (openQuoteFence[0]?.type === 'quote' && openQuoteFence[0].blocks[0]?.type === 'pre') {
       expect(openQuoteFence[0].blocks[0].lang).toBe('ts')

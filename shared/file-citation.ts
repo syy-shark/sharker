@@ -36,6 +36,8 @@ export function looksLikeFilePath(path: string): boolean {
   const text = String(path || '').trim()
   if (!text || text.length > 260) return false
   if (/^(https?|mailto|sharker):/i.test(text)) return false
+  if (/^www\./i.test(text)) return false
+  if (text.startsWith('<')) return false
   if (text.includes('://')) return false
   if (/\s/.test(text)) return false
   if (text.startsWith('-')) return false
@@ -86,6 +88,9 @@ export function matchFileCitationAt(
   if (index < 0 || index >= src.length) return null
   if (!isBoundary(src[index - 1])) return null
   if (src.startsWith('http://', index) || src.startsWith('https://', index)) return null
+  if (/^www\./i.test(src.slice(index))) return null
+  if (src.startsWith('</', index) || src[index] === '<') return null
+  if (src[index] === '/' && src[index - 1] === '<') return null
 
   let end = index
   while (end < src.length && !/[\s`)\]>]/.test(src[end])) end += 1

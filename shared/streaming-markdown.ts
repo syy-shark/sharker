@@ -31,7 +31,28 @@ const EMPTY_SPLIT: StreamingMarkdownSplit = {
   closedEnd: 0
 }
 
-const FENCE_RE = /^ {0,3}(```|~~~)(.*)$/
+const FENCE_RE = /^ {0,3}(`{3,}|~{3,})(.*)$/
+
+function parseFenceLine(line: string): { marker: string; info: string } | null {
+  const match = FENCE_RE.exec(line)
+  if (!match) return null
+  const marker = match[1] ?? ''
+  const info = match[2] ?? ''
+  if (marker.startsWith('`') && info.includes('`')) return null
+  return { marker, info }
+}
+
+function fenceLang(info: string): string | undefined {
+  return info.trim().split(/\s+/)[0] || undefined
+}
+
+function isFenceClose(line: string, openMarker: string): boolean {
+  const parsed = parseFenceLine(line)
+  if (!parsed) return false
+  if (parsed.marker[0] !== openMarker[0]) return false
+  if (parsed.marker.length < openMarker.length) return false
+  return parsed.info.trim() === ''
+}
 
 /** 对标 Codex 0.150：CRLF 粘贴按 LF 拆，避免围栏/段落对不齐 */
 export function normalizeStreamingText(text: string): string {
@@ -50,7 +71,8 @@ export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
   const blocks: StreamingMarkdownBlock[] = []
   let current: string[] = []
   let inFence = false
-  let fenceLang: string | undefined
+  let fenceMarker = ''
+  let openFenceLang: string | undefined
   let blockIndex = 0
   let offset = 0
   let closedEnd = 0
@@ -66,18 +88,22 @@ export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const lineEnd = offset + line.length + (i < lines.length - 1 ? 1 : 0)
-    const fenceMatch = FENCE_RE.exec(line)
+    const fenceMatch = parseFenceLine(line)
     if (fenceMatch) {
       if (!inFence) {
         if (current.length > 0) flushBlock(offset)
         inFence = true
-        fenceLang = fenceMatch[2].trim().split(/\s+/)[0] || undefined
+        fenceMarker = fenceMatch.marker
+        openFenceLang = fenceLang(fenceMatch.info)
         current.push(line)
-      } else {
+      } else if (isFenceClose(line, fenceMarker)) {
         current.push(line)
         inFence = false
-        fenceLang = undefined
+        fenceMarker = ''
+        openFenceLang = undefined
         flushBlock(lineEnd)
+      } else {
+        current.push(line)
       }
       offset = lineEnd
       continue
@@ -105,7 +131,7 @@ export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
     blocks,
     tail: current.join('\n'),
     tailKind: inFence ? 'fence' : 'prose',
-    tailLang: inFence ? fenceLang : undefined,
+    tailLang: inFence ? openFenceLang : undefined,
     closedEnd
   }
 }
@@ -375,13 +401,54 @@ export function parseLinkDefinitionLine(line: string): { id: string; href: strin
     : { id: normalizeLinkLabel(match[1] ?? ''), href }
 }
 
-/** 链接标签里成对 `[]`（`[![alt](img)](url)`）对标 CommonMark */
+/** CommonMark 允许标题写在定义下一行：`[id]: url` + 缩进 `"title"` */
+export function parseLinkDefinitionTitleLine(line: string): string | null {
+  const match = /^[ \t]+(?:"([^"]*)"|'([^']*)'|\(([^)]*)\))\s*$/.exec(line)
+  if (!match) return null
+  return match[1] ?? match[2] ?? match[3] ?? ''
+}
+
+function scanLinkDefinitions(lines: string[]): {
+  defs: Map<string, CheapLinkDef>
+  skip: Set<number>
+} {
+  const defs = new Map<string, CheapLinkDef>()
+  const skip = new Set<number>()
+  for (let i = 0; i < lines.length; i++) {
+    const def = parseLinkDefinitionLine(lines[i]!)
+    if (!def) continue
+    let title = def.title
+    let end = i + 1
+    if (title == null) {
+      const next = lines[i + 1]
+      if (next !== undefined) {
+        const lined = parseLinkDefinitionTitleLine(next)
+        if (lined != null) {
+          title = lined
+          end = i + 2
+        }
+      }
+    }
+    if (!defs.has(def.id)) {
+      defs.set(def.id, title ? { href: def.href, title } : { href: def.href })
+    }
+    for (let j = i; j < end; j++) skip.add(j)
+    i = end - 1
+  }
+  return { defs, skip }
+}
+
+/** 链接标签里成对 `[]`（`[![alt](img)](url)`）对标 CommonMark；单行换行当空白，空行打断 */
 function findMatchingCloseBracket(src: string, from: number): number {
   let depth = 1
   let i = from
   while (i < src.length) {
     const ch = src[i]!
-    if (ch === '\n') return -1
+    if (ch === '\n') {
+      if (src[i + 1] === '\n') return -1
+      i += 1
+      continue
+    }
     if (ch === '\\') {
       i += src[i + 1] ? 2 : 1
       continue
@@ -506,30 +573,24 @@ function parseLinkDestination(dest: string): { href: string; title?: string } | 
 
 /** 从全文收集引用定义，供直播尾与已闭合块共用 */
 export function collectLinkDefinitions(text: string): Map<string, CheapLinkDef> {
-  const map = new Map<string, CheapLinkDef>()
-  for (const line of normalizeStreamingText(text).split('\n')) {
-    const def = parseLinkDefinitionLine(line)
-    if (def && !map.has(def.id)) {
-      map.set(def.id, def.title ? { href: def.href, title: def.title } : { href: def.href })
-    }
-  }
-  return map
+  return scanLinkDefinitions(normalizeStreamingText(text).split('\n')).defs
 }
 
 /** 把定义行拼回 Markdown，挂到已闭合块上让 remark 也能解析引用 */
 export function linkDefinitionBlob(text: string): string {
-  return normalizeStreamingText(text)
-    .split('\n')
-    .filter((line) => parseLinkDefinitionLine(line))
-    .join('\n')
+  const lines = normalizeStreamingText(text).split('\n')
+  const { skip } = scanLinkDefinitions(lines)
+  return lines.filter((_, index) => skip.has(index)).join('\n')
 }
 
 /** 整段只有引用定义时不要画成段落（remark 会吃掉，直播也不画） */
 export function isOnlyLinkDefinitions(text: string): boolean {
-  const lines = normalizeStreamingText(text)
-    .split('\n')
-    .filter((line) => line.trim() !== '')
-  return lines.length > 0 && lines.every((line) => parseLinkDefinitionLine(line))
+  const lines = normalizeStreamingText(text).split('\n')
+  const { skip } = scanLinkDefinitions(lines)
+  const nonempty = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => line.trim() !== '')
+  return nonempty.length > 0 && nonempty.every(({ index }) => skip.has(index))
 }
 
 export function markdownBlockWithDefs(blockText: string, defsBlob: string): string {
@@ -753,10 +814,13 @@ export function parseCheapInlineMarkdown(
         buf += src.slice(i)
         break
       }
-      flush()
-      nodes.push(applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(src.slice(i + 2, end)), ['strong', 'em']))
-      i = end + 2
-      continue
+      const inner = src.slice(i + 2, end)
+      if (inner && !/^[ \t]/.test(inner) && !/[ \t]$/.test(inner)) {
+        flush()
+        nodes.push(applyMarkedInner({ type: 'del', text: '' }, parseMarkedInner(inner), ['strong', 'em']))
+        i = end + 2
+        continue
+      }
     }
     if (src[i] === '*') {
       const end = src.indexOf('*', i + 1)
@@ -832,8 +896,9 @@ export function parseCheapInlineMarkdown(
         buf += src.slice(i)
         break
       }
-      const label = src.slice(labelStart, labelEnd)
-      if (!label.includes('\n')) {
+      const rawLabel = src.slice(labelStart, labelEnd)
+      const label = rawLabel.replace(/[ \t]*\n[ \t]*/g, ' ')
+      if (!rawLabel.includes('\n\n')) {
         if (src[labelEnd + 1] === '(') {
           const urlEnd = findInlineLinkCloser(src, labelEnd + 2)
           if (urlEnd === -1) {
@@ -843,10 +908,14 @@ export function parseCheapInlineMarkdown(
           const dest = parseLinkDestination(src.slice(labelEnd + 2, urlEnd))
           const href = dest?.href ?? ''
           const title = dest?.title
+          const wrapRaw = rawLabel.includes('\n') ? src.slice(i, urlEnd + 1) : undefined
           if (image && /^https?:\/\//i.test(href)) {
             flush()
             nodes.push(
-              cheapImage(label, href, title ? { title: decodeHtmlEntities(title) } : undefined)
+              cheapImage(label, href, {
+                ...(title ? { title: decodeHtmlEntities(title) } : {}),
+                ...(wrapRaw ? { raw: wrapRaw } : {})
+              })
             )
             i = urlEnd + 1
             continue
@@ -854,7 +923,10 @@ export function parseCheapInlineMarkdown(
           if (!image && (/^https?:\/\//i.test(href) || href.startsWith('mailto:'))) {
             flush()
             nodes.push(
-              linkWithLabel(label, href, title ? { title: decodeHtmlEntities(title) } : undefined)
+              linkWithLabel(label, href, {
+                ...(title ? { title: decodeHtmlEntities(title) } : {}),
+                ...(wrapRaw ? { raw: wrapRaw } : {})
+              })
             )
             i = urlEnd + 1
             continue
@@ -1234,7 +1306,12 @@ function isQuoteLazyLine(line: string): boolean {
 }
 
 function isIndentCodeLine(line: string): boolean {
-  return /^(?:    |\t)/.test(line) && !parseListLine(line) && !parseLinkDefinitionLine(line)
+  return (
+    /^(?:    |\t)/.test(line) &&
+    !parseListLine(line) &&
+    !parseLinkDefinitionLine(line) &&
+    parseLinkDefinitionTitleLine(line) == null
+  )
 }
 
 /** 把散文尾拆成标题 / 列表 / 引用 / 段落，直播时用对应标签减少收束跳动 */
@@ -1244,8 +1321,9 @@ export function parseCheapProseBlocks(
 ): CheapProseBlock[] {
   const src = normalizeStreamingText(text)
   if (!src) return []
-  const linkDefs = defs ?? collectLinkDefinitions(src)
   const lines = src.split('\n')
+  const linkDefScan = scanLinkDefinitions(lines)
+  const linkDefs = defs ?? linkDefScan.defs
   const footnoteScan = scanFootnoteDefinitions(lines)
   const footnoteDefs = footnoteScan.defs
   const blocks: CheapProseBlock[] = []
@@ -1343,15 +1421,14 @@ export function parseCheapProseBlocks(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex]!
     if (fence) {
-      const close = FENCE_RE.exec(line)
-      if (close && close[1] === fence.marker) {
+      if (isFenceClose(line, fence.marker)) {
         flushFence()
         continue
       }
       fence.lines.push(line)
       continue
     }
-    if (footnoteScan.skip.has(lineIndex) || parseLinkDefinitionLine(line)) {
+    if (footnoteScan.skip.has(lineIndex) || linkDefScan.skip.has(lineIndex)) {
       flushAll()
       continue
     }
@@ -1405,7 +1482,7 @@ export function parseCheapProseBlocks(
       blocks.push({ type: 'hr' })
       continue
     }
-    const fenceOpen = FENCE_RE.exec(line)
+    const fenceOpen = parseFenceLine(line)
     if (fenceOpen) {
       flushTable()
       flushPre()
@@ -1413,8 +1490,8 @@ export function parseCheapProseBlocks(
       flushList()
       flushQuote()
       fence = {
-        marker: fenceOpen[1] ?? '```',
-        lang: fenceOpen[2].trim().split(/\s+/)[0] || undefined,
+        marker: fenceOpen.marker,
+        lang: fenceLang(fenceOpen.info),
         lines: []
       }
       continue
