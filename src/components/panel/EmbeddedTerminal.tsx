@@ -1,10 +1,20 @@
 /**
  * 集成终端（xterm.js + node-pty IPC）。
+ * 按线程保留会话，线程内可开多个标签（对标 Codex terminal tabs per thread）。
  * 浅色主题强制水滴玻璃浅底（非黑屏）；无红绿灯。
  * @see ./ARCH.md
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus, X } from 'lucide-react'
 import { formatSideChatPrompt, normalizeTranscriptSelection } from '../../../shared/side-chat-quote'
+import {
+  addTerminalTab,
+  closeTerminalTab,
+  ensureTerminalTabs,
+  MAX_TERMINAL_TABS,
+  rememberThreadTerminal,
+  threadTerminalKey
+} from '../../../shared/terminal-tabs'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { Terminal, type ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -13,6 +23,9 @@ import './EmbeddedTerminal.css'
 
 interface Props {
   workspacePath: string
+  conversationId?: string | null
+  /** 当前线程的终端是否可见（切走对话或右侧 Tab 时仍挂着，避免杀 PTY） */
+  hostActive?: boolean
   /** Composer `!cmd`：PTY 就绪后写入并回车 */
   pendingCommand?: string | null
   onPendingCommandSent?: () => void
@@ -97,7 +110,6 @@ function cssVar(name: string, fallback: string): string {
 
 function resolveTermTheme(): ITheme {
   const base = isDarkUi() ? THEME_METAL_DARK : THEME_GLASS_LIGHT
-  // 跟随全局主题 token，避免终端光标/强调色与应用 accent 脱节
   return {
     ...base,
     cursor: cssVar('--accent', base.cursor || '#007aff'),
@@ -123,35 +135,34 @@ function safeFit(fit: FitAddon, term: Terminal): void {
   }
 }
 
-/** xterm 终端面板 */
-export function EmbeddedTerminal({
+function TerminalSession({
   workspacePath,
+  visible,
   pendingCommand = null,
   onPendingCommandSent,
   clearTick = 0,
-  onAskInSideChat
-}: Props) {
+  onAskInSideChat,
+  themeTick
+}: {
+  workspacePath: string
+  visible: boolean
+  pendingCommand?: string | null
+  onPendingCommandSent?: () => void
+  clearTick?: number
+  onAskInSideChat?: (prompt: string) => void
+  themeTick: number
+}) {
   const hostRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
+  const fitRef = useRef<FitAddon | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const appliedClearRef = useRef(0)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
-  /** 主题变化时强制重建 xterm（仅改 options 在部分版本不重绘底色） */
-  const [themeTick, setThemeTick] = useState(0)
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const onAskRef = useRef(onAskInSideChat)
   onAskRef.current = onAskInSideChat
-  const uiDark = useMemo(() => isDarkUi(), [themeTick])
-
-  useEffect(() => {
-    const obs = new MutationObserver(() => {
-      setThemeTick((n) => n + 1)
-    })
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
-    return () => obs.disconnect()
-  }, [])
 
   useEffect(() => {
     const host = hostRef.current
@@ -176,7 +187,6 @@ export function EmbeddedTerminal({
         getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() ||
         'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Monaco, monospace',
       theme,
-      // 透明底才能与面板 vibrancy / 水滴玻璃融合
       allowTransparency: true,
       scrollback: 5000
     })
@@ -185,6 +195,7 @@ export function EmbeddedTerminal({
     term.open(host)
     term.options.theme = theme
     termRef.current = term
+    fitRef.current = fit
 
     const syncSideAsk = () => {
       if (!onAskRef.current) {
@@ -269,7 +280,6 @@ export function EmbeddedTerminal({
           void window.sharker.writeTerminal(id, data)
         })
         syncSize(id)
-        // 强制刷新主题底色
         term.options.theme = resolveTermTheme()
         window.setTimeout(() => {
           if (disposed || !sessionId) return
@@ -307,8 +317,25 @@ export function EmbeddedTerminal({
       sessionIdRef.current = null
       term.dispose()
       termRef.current = null
+      fitRef.current = null
     }
   }, [workspacePath, themeTick])
+
+  useEffect(() => {
+    if (!visible) {
+      setSideAsk(null)
+      return
+    }
+    const term = termRef.current
+    const fit = fitRef.current
+    const id = sessionIdRef.current
+    if (!term || !fit) return
+    const t = window.requestAnimationFrame(() => {
+      safeFit(fit, term)
+      if (id) void window.sharker.resizeTerminal(id, term.cols, term.rows)
+    })
+    return () => window.cancelAnimationFrame(t)
+  }, [visible])
 
   useEffect(() => {
     if (!clearTick || clearTick === appliedClearRef.current || !ready) return
@@ -357,55 +384,23 @@ export function EmbeddedTerminal({
   }, [])
 
   useEffect(() => {
-    if (!ready || !pendingCommand || !sessionIdRef.current || !window.sharker.writeTerminal) {
+    if (!visible || !ready || !pendingCommand || !sessionIdRef.current || !window.sharker.writeTerminal) {
       return
     }
     const payload = pendingCommand.endsWith('\n') ? pendingCommand : `${pendingCommand}\n`
     void window.sharker.writeTerminal(sessionIdRef.current, payload)
     onPendingCommandSent?.()
-  }, [ready, pendingCommand, onPendingCommandSent])
-
-  const cwdLabel = workspacePath?.trim()
-    ? workspacePath.replace(/^\/Users\/[^/]+/, '~')
-    : '终端'
+  }, [visible, ready, pendingCommand, onPendingCommandSent])
 
   return (
-    <div
-      className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}
-      ref={shellRef}
-    >
-      <div className="embedded-terminal-chrome">
-        <span className="embedded-terminal-title" title={workspacePath}>
-          {cwdLabel}
-        </span>
-        <button
-          type="button"
-          className="embedded-terminal-clear"
-          aria-label="清终端"
-          title="清终端 · Ctrl+L / ⌘K"
-          onClick={() => {
-            const term = termRef.current
-            const id = sessionIdRef.current
-            if (!term) return
-            term.clear()
-            if (id && window.sharker.writeTerminal) {
-              void window.sharker.writeTerminal(id, '\x0c')
-            }
-          }}
-        >
-          清屏
-        </button>
-        <span className="embedded-terminal-status" aria-live="polite">
-          {error ? '错误' : ready ? '' : '连接中…'}
-        </span>
-      </div>
+    <div className="embedded-terminal-session" ref={shellRef}>
       {error ? <div className="embedded-terminal-error">{error}</div> : null}
       <div
         className="embedded-terminal"
         ref={hostRef}
-        data-term-theme={uiDark ? 'dark' : 'light'}
+        data-term-theme={isDarkUi() ? 'dark' : 'light'}
       />
-      {sideAsk && onAskInSideChat ? (
+      {visible && sideAsk && onAskInSideChat ? (
         <button
           type="button"
           className="embedded-terminal-side-ask glass-pill"
@@ -420,6 +415,180 @@ export function EmbeddedTerminal({
           旁路提问
         </button>
       ) : null}
+    </div>
+  )
+}
+
+/** 一个线程里的终端标签 */
+export function EmbeddedTerminal({
+  workspacePath,
+  hostActive = true,
+  pendingCommand = null,
+  onPendingCommandSent,
+  clearTick = 0,
+  onAskInSideChat
+}: Props) {
+  const [tabs, setTabs] = useState(() => ensureTerminalTabs())
+  const [activeId, setActiveId] = useState('t1')
+  const [tabClears, setTabClears] = useState<Record<string, number>>({})
+  const seenGlobalClear = useRef(clearTick)
+  const [themeTick, setThemeTick] = useState(0)
+  const uiDark = useMemo(() => isDarkUi(), [themeTick])
+
+  const bumpActiveClear = () => {
+    setTabClears((prev) => ({ ...prev, [activeId]: (prev[activeId] ?? 0) + 1 }))
+  }
+
+  useEffect(() => {
+    if (!clearTick || clearTick === seenGlobalClear.current) return
+    seenGlobalClear.current = clearTick
+    bumpActiveClear()
+  }, [clearTick, activeId])
+
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      setThemeTick((n) => n + 1)
+    })
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
+    return () => obs.disconnect()
+  }, [])
+
+  const cwdLabel = workspacePath?.trim()
+    ? workspacePath.replace(/^\/Users\/[^/]+/, '~')
+    : '终端'
+
+  return (
+    <div className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}>
+      <div className="embedded-terminal-chrome">
+        <div className="embedded-terminal-tabs" role="tablist" aria-label="终端标签">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={tab.id === activeId}
+              className={`embedded-terminal-tab ${tab.id === activeId ? 'is-active' : ''}`}
+              onClick={() => setActiveId(tab.id)}
+            >
+              <span>{tab.title}</span>
+              {tabs.length > 1 ? (
+                <span
+                  className="embedded-terminal-tab-close"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`关闭 ${tab.title}`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    const next = closeTerminalTab(tabs, tab.id, activeId)
+                    setTabs(next.tabs)
+                    setActiveId(next.activeId)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
+                    event.stopPropagation()
+                    const next = closeTerminalTab(tabs, tab.id, activeId)
+                    setTabs(next.tabs)
+                    setActiveId(next.activeId)
+                  }}
+                >
+                  <X size={10} aria-hidden />
+                </span>
+              ) : null}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="embedded-terminal-tab-add"
+            aria-label="新建终端标签"
+            title="新建终端标签"
+            disabled={tabs.length >= MAX_TERMINAL_TABS}
+            onClick={() => {
+              const next = addTerminalTab(tabs)
+              setTabs(next.tabs)
+              setActiveId(next.activeId)
+            }}
+          >
+            <Plus size={12} aria-hidden />
+          </button>
+        </div>
+        <span className="embedded-terminal-title" title={workspacePath}>
+          {cwdLabel}
+        </span>
+        <button
+          type="button"
+          className="embedded-terminal-clear"
+          aria-label="清终端"
+          title="清终端 · Ctrl+L / ⌘K"
+          onClick={bumpActiveClear}
+        >
+          清屏
+        </button>
+      </div>
+      <div className="embedded-terminal-panes">
+        {tabs.map((tab) => {
+          const selected = tab.id === activeId
+          return (
+            <div
+              key={tab.id}
+              className={`embedded-terminal-pane${selected ? ' is-active' : ''}`}
+              hidden={!selected}
+            >
+              <TerminalSession
+                workspacePath={workspacePath}
+                visible={hostActive && selected}
+                pendingCommand={selected ? pendingCommand : null}
+                onPendingCommandSent={onPendingCommandSent}
+                clearTick={tabClears[tab.id] ?? 0}
+                onAskInSideChat={onAskInSideChat}
+                themeTick={themeTick}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** 切对话不杀旧线程的 PTY；最多记住最近几条线程 */
+export function ThreadTerminalBank({
+  conversationId = null,
+  workspacePath,
+  hostActive = true,
+  pendingCommand = null,
+  onPendingCommandSent,
+  clearTick = 0,
+  onAskInSideChat
+}: Props) {
+  const key = threadTerminalKey(conversationId, workspacePath)
+  const [order, setOrder] = useState<string[]>([key])
+  const cwdRef = useRef(new Map<string, string>([[key, workspacePath]]))
+
+  useEffect(() => {
+    cwdRef.current.set(key, workspacePath)
+    setOrder((prev) => rememberThreadTerminal(prev, key))
+  }, [key, workspacePath])
+
+  return (
+    <div className="thread-terminal-bank">
+      {order.map((id) => (
+        <div
+          key={id}
+          className={`thread-terminal-pane${id === key ? ' is-active' : ''}`}
+          hidden={id !== key}
+        >
+          <EmbeddedTerminal
+            workspacePath={cwdRef.current.get(id) || workspacePath}
+            conversationId={id}
+            hostActive={hostActive && id === key}
+            pendingCommand={id === key ? pendingCommand : null}
+            onPendingCommandSent={onPendingCommandSent}
+            clearTick={clearTick}
+            onAskInSideChat={onAskInSideChat}
+          />
+        </div>
+      ))}
     </div>
   )
 }

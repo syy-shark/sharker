@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findInThread } from './thread-search'
+import { findInThread, seedFindQuery } from './thread-search'
 
 describe('thread search', () => {
   it('finds messages case-insensitively', () => {
@@ -16,5 +16,8 @@ describe('thread search', () => {
 
   it('returns nothing for empty query', () => {
     expect(findInThread([{ id: '1', content: 'hello' }], '   ')).toEqual([])
+    expect(seedFindQuery('  review\nthe pane  ')).toBe('review the pane')
+    expect(seedFindQuery('   ')).toBe('')
+    expect(seedFindQuery('abcdefghijklmnopqrstuvwxyz', 5)).toBe('abcde')
   })
 })

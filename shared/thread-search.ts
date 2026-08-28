@@ -24,3 +24,12 @@ export function findInThread(
   })
   return hits
 }
+
+/** ⌘F 用当前划选预填查找（对标 Codex Find starts with current text selection） */
+export function seedFindQuery(selected: string, max = 200): string {
+  const cap = Number.isFinite(max) && max > 0 ? Math.floor(max) : 200
+  return String(selected ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, cap)
+}

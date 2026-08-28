@@ -30,12 +30,105 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  height: 30px;
-  padding: 0 12px;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px 0 6px;
   border-bottom: 0.5px solid var(--glass-edge-soft);
   background: transparent;
   box-shadow: var(--glass-rim-soft);
+}
+
+.embedded-terminal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+}
+
+.embedded-terminal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 120px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.embedded-terminal-tab.is-active {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+  border-color: var(--glass-edge-soft);
+}
+
+.embedded-terminal-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.embedded-terminal-tab-close:hover {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-terminal-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.embedded-terminal-tab-add:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-terminal-tab-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.embedded-terminal-tab:focus-visible,
+.embedded-terminal-tab-add:focus-visible,
+.embedded-terminal-tab-close:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.embedded-terminal-panes,
+.embedded-terminal-session,
+.thread-terminal-bank,
+.thread-terminal-pane,
+.thread-terminal-pane.is-active,
+.embedded-terminal-pane.is-active {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.thread-terminal-pane[hidden],
+.embedded-terminal-pane[hidden] {
+  display: none;
 }
 
 .embedded-terminal-title {
@@ -195,8 +288,8 @@ html.theme-dark .embedded-terminal .xterm-viewport::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--text) 12%, transparent);
 }
 
-/* 面板内：少 padding，减少「白卡片嵌套」感 */
-.right-panel-body:has(.embedded-terminal-shell) {
+/* 面板内：少 padding，减少「白卡片嵌套」感。只用 --terminal 类，避免隐藏挂载时污染其它 Tab */
+.right-panel-body.right-panel-body--terminal {
   padding: 6px;
   overflow: hidden;
   display: flex;
@@ -205,9 +298,22 @@ html.theme-dark .embedded-terminal .xterm-viewport::-webkit-scrollbar-thumb {
   background: transparent !important;
 }
 
-.right-panel-body:has(.embedded-terminal-shell) > .embedded-terminal-shell {
+.right-panel-body.right-panel-body--terminal > .right-panel-terminal-host,
+.right-panel-body.right-panel-body--terminal .thread-terminal-bank,
+.right-panel-body.right-panel-body--terminal .embedded-terminal-shell {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.right-panel-terminal-host {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.right-panel-terminal-host.is-active {
+  display: flex;
 }
 
 .embedded-terminal-side-ask {

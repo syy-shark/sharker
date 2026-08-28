@@ -26,7 +26,7 @@ import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
-import { findInThread } from '../../shared/thread-search'
+import { findInThread, seedFindQuery } from '../../shared/thread-search'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
   formatSideChatPrompt,
@@ -421,13 +421,29 @@ export function ChatView({
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const modelLabel = activeProvider?.model?.trim() || activeProvider?.name
 
+  const openFindBar = useCallback((selected?: string) => {
+    const seeded = seedFindQuery(selected ?? '')
+    if (seeded) {
+      setFindQuery(seeded)
+      setFindHit(0)
+    }
+    setFindOpen(true)
+    requestAnimationFrame(() => {
+      findInputRef.current?.focus()
+      if (seeded) findInputRef.current?.select()
+    })
+  }, [])
+
   useEffect(() => {
     if (composerIntent === 'find') {
-      setFindOpen(true)
+      const selected =
+        typeof window !== 'undefined' && !findInputRef.current?.contains(document.activeElement)
+          ? window.getSelection()?.toString() ?? ''
+          : ''
+      openFindBar(selected)
       onComposerIntentHandled?.()
-      requestAnimationFrame(() => findInputRef.current?.focus())
     }
-  }, [composerIntent, onComposerIntentHandled])
+  }, [composerIntent, onComposerIntentHandled, openFindBar])
 
   const findHits = useMemo(() => findInThread(messages, findQuery), [messages, findQuery])
 
@@ -482,14 +498,17 @@ export function ChatView({
           }
           if (!target.closest('.composer-box')) return
         }
+        const selected =
+          target instanceof HTMLElement && target.closest('.chat-find')
+            ? ''
+            : window.getSelection()?.toString() ?? ''
         e.preventDefault()
-        setFindOpen(true)
-        requestAnimationFrame(() => findInputRef.current?.focus())
+        openFindBar(selected)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [openFindBar])
 
   /** 滚动度量：是否溢出、距底部距离 */
   const readScrollMetrics = useCallback(() => {

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Expand, Minimize2, X } from 'lucide-react'
 import { FileTree } from './panel/FileTree'
-import { EmbeddedTerminal } from './panel/EmbeddedTerminal'
+import { ThreadTerminalBank } from './panel/EmbeddedTerminal'
 import { EmbeddedBrowser } from './panel/EmbeddedBrowser'
 import { ChangesPanel } from './panel/ChangesPanel'
 import { AgentsPanel } from './panel/AgentsPanel'
@@ -99,6 +99,8 @@ export function RightPanel({
   /** 窄屏遮罩：关闭时先播 exit 再卸载，避免瞬隐 */
   const [backdropMounted, setBackdropMounted] = useState(false)
   const [backdropExiting, setBackdropExiting] = useState(false)
+  /** 开过终端后保持挂载，切 Tab / 对话不杀 PTY */
+  const [terminalTouched, setTerminalTouched] = useState(false)
   const backdropTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef({ startX: 0, startWidth: width })
   const panelRef = useRef<HTMLElement>(null)
@@ -156,6 +158,10 @@ export function RightPanel({
   useEffect(() => {
     if (!open) setFullscreen(false)
   }, [open])
+
+  useEffect(() => {
+    if (tab === 'terminal') setTerminalTouched(true)
+  }, [tab])
 
   /** 全屏时给 body 打标：隐藏下层侧栏/主区，杜绝文字透出叠字 */
   useEffect(() => {
@@ -354,7 +360,11 @@ export function RightPanel({
           </button>
         </div>
       </div>
-      <div className="right-panel-body view-enter" key={tab}>
+      <div
+        className={`right-panel-body${tab === 'terminal' ? ' right-panel-body--terminal' : ''}${
+          tab !== 'terminal' ? ' view-enter' : ''
+        }`}
+      >
         {tab === 'files' && (
           <FileTree
             workspacePath={workspacePath}
@@ -375,19 +385,26 @@ export function RightPanel({
             gitBranchPrefix={gitBranchPrefix}
           />
         )}
-        {tab === 'terminal' && (
-          <EmbeddedTerminal
-            workspacePath={workspacePath}
-            pendingCommand={pendingTerminalCommand}
-            onPendingCommandSent={onPendingTerminalCommandSent}
-            clearTick={terminalClearTick}
-            onAskInSideChat={onAskInSideChat}
-          />
-        )}
         {tab === 'browser' && <EmbeddedBrowser />}
         {tab === 'agents' && (
           <AgentsPanel conversationId={conversationId} focusId={focusSubAgentId} />
         )}
+        {terminalTouched ? (
+          <div
+            className={`right-panel-terminal-host${tab === 'terminal' ? ' is-active' : ''}`}
+            hidden={tab !== 'terminal'}
+          >
+            <ThreadTerminalBank
+              conversationId={conversationId}
+              workspacePath={workspacePath}
+              hostActive={open && tab === 'terminal'}
+              pendingCommand={pendingTerminalCommand}
+              onPendingCommandSent={onPendingTerminalCommandSent}
+              clearTick={terminalClearTick}
+              onAskInSideChat={onAskInSideChat}
+            />
+          </div>
+        ) : null}
       </div>
     </aside>
   )

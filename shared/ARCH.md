@@ -97,8 +97,10 @@
 | `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开 |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
-| `thread-search.ts` | 线程内查找（大小写不敏感） |
-| `thread-search.test.ts` | 命中消息 id |
+| `thread-search.ts` | 线程内查找（大小写不敏感）；`seedFindQuery` 把划选收成查找词 |
+| `thread-search.test.ts` | 命中消息 id；划选预填去空白并截断 |
+| `terminal-tabs.ts` | 集成终端按线程分标签：标题、上限 8、关最后一张不准、最近 6 条线程缓存 |
+| `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 |
 | `review-comment.ts` | 行内评论 → Agent 提示；解析 `/review` 的 `review-findings` 围栏 |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `review-file-click.ts` | 审查文件名打开预览、行背景展开/收起、⌘单击行跳预览（对标 Codex Review pane） |

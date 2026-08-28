@@ -16,7 +16,7 @@
 |------|------|
 | `FileTree.tsx` / `.css` | 工作区文件树；附加文件夹与主根并列顶层（对标 Codex Edit project）；打开预览 view-enter 并可跳到引用行（附加根按目录名前缀解析）；子目录展开 list-item-in |
 | `ChangesPanel.tsx` / `.css` | Git 变更审查：未提交 / 本轮 / 分支 / 指定 commit（对标 Codex Commit）、未暂存/已暂存、文件/hunk 暂存还原、提交/推送/创建 PR、detached 上创建分支（占位显示 Settings 前缀）、行内评论 + `/review` 发现 + GitHub PR 评论挂到 diff，本地评论可发布到 GitHub；点文件名打开右侧预览、点行背景展开/收起、⌘单击行跳预览（对标 Codex Review pane，不用外部默认编辑器）；「换行」切换长 diff 换行（写入 localStorage）；`revision` 随工具写盘刷新 |
-| `EmbeddedTerminal.tsx` / `.css` | 集成终端；挂载 view-enter；可接收 Composer `!` 待执行命令；`clearTick` / 清屏按钮对标 Ctrl+L；终端聚焦时 ⌘K / Ctrl+K 也清屏（⌘⇧P 仍开命令面板）；划选输出出「旁路提问」（对标 Codex Ask in side chat）；字号跟 `--ui-font-scale`，字体跟 `--mono`（Code font） |
+| `EmbeddedTerminal.tsx` / `.css` | 集成终端；按线程缓存最多 6 个会话，线程内最多 8 个标签（对标 Codex terminal tabs per thread）；切对话 / 右侧 Tab 不杀 PTY；可接收 Composer `!` 待执行命令（写入当前标签）；`clearTick` / 清屏只清当前标签；终端聚焦时 ⌘K / Ctrl+K 也清屏（⌘⇧P 仍开命令面板）；划选输出出「旁路提问」（对标 Codex Ask in side chat）；字号跟 `--code-font-scale`，字体跟 `--mono`（Code font） |
 | `EmbeddedBrowser.tsx` / `.css` | 内置浏览器；起始页主题跟随 App；避免 data URL 自激 reload |
 | `AgentsPanel.tsx` / `.css` | 当前线程的子 Agent：进行中/已结束、直播正文、停止、转向；主线程点开时选中对应孩子 |
 | `browser-start-page.ts` | 新标签起始页 HTML（data URL）；跟随 App light/dark，仅 Logo + 搜索 |
