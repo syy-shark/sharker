@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode
 } from 'react'
@@ -15,8 +16,10 @@ import { Check, Copy, Download } from 'lucide-react'
 import {
   canExportChatImage,
   chatImageAspectStyle,
+  chatImageSlotMinHeight,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
+  peekChatImageSizeFromDataUrl,
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveWorkspaceChatImagePath,
@@ -133,11 +136,24 @@ export function ChatImage({
 
   const displaySrc = remote ? src : workspaceDataUrl ?? ''
   const resolvedFilePath = filePath?.trim() || (absPath || undefined)
+  const peeked =
+    displaySrc.startsWith('data:image/') ? peekChatImageSizeFromDataUrl(displaySrc) : null
+  if (peeked) {
+    writeCachedChatImageSize(src, peeked)
+    writeCachedChatImageSize(displaySrc, peeked)
+    if (absPath) writeCachedChatImageSize(absPath, peeked)
+  }
   const known =
+    peeked ??
     readCachedChatImageSize(src) ??
     readCachedChatImageSize(displaySrc) ??
     readCachedChatImageSize(absPath)
   const aspect = chatImageAspectStyle(known)
+  const pending = !known && (remote || (workspaceSrc && !failed))
+  const slot = chatImageSlotMinHeight(known, pending)
+  const slotHighWater = useRef(slot)
+  if (slot > slotHighWater.current) slotHighWater.current = slot
+  const reserved = known ? 0 : slotHighWater.current
   const input: ChatImageExportInput = {
     src: displaySrc || src,
     filePath: resolvedFilePath,
@@ -145,7 +161,6 @@ export function ChatImage({
     alt
   }
   const canExport = canExportChatImage(input)
-  const pending = !known && (remote || (workspaceSrc && !failed))
 
   const copy = async () => {
     if (!canExport || !window.sharker?.copyChatImage) return
@@ -173,6 +188,7 @@ export function ChatImage({
       className={`chat-image${pending ? ' chat-image--pending' : ''}${
         workspaceSrc ? ' chat-image--workspace' : ''
       }`}
+      style={reserved ? { minHeight: reserved } : undefined}
     >
       {displaySrc ? (
         <img

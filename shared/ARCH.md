@@ -44,8 +44,8 @@
 | `file-citation.ts` | Codex 式文件引用：`path:line` / `#L` / `(line N)`、相对路径接到工作区或附加根（目录名前缀）；拒绝 `www.`、`</tag>` 与尾斜杠 / `a\\` 假路径，以免直播把自动链接 / HTML / 反斜杠硬换行收束成文件芯片 |
 | `mermaid-fence.ts` | ```mermaid / ```mmd 围栏判定；直播开闭都挂 MermaidBlock，只在闭合后画图；按主题缓存 SVG，避免重挂闪回源码；从 viewBox / 宽高解析固有尺寸；成图前按节点/边/行数估高并做高水位占位，避免代码尾换 SVG 跳贴底 |
 | `mermaid-fence.test.ts` | 认 mermaid / mmd，拒绝 js / diff；SVG 缓存按主题隔离并 LRU 淘汰；viewBox / px 尺寸、忽略百分宽高；估高 / 高度缓存 / 成图槽取高 |
-| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；按 src 缓存固有宽高与 data URL，直播重挂首帧占位 |
-| `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存 |
+| `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位（不再用 8rem 成图后塌贴底） |
+| `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高 |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
@@ -94,8 +94,8 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行 |
-| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限 |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到 |
+| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、写盘路径是否碰到预览 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
@@ -146,7 +146,7 @@
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id 单测 |
-| `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查） |
+| `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`liveAssistantMeta` 把已改路径带进直播元信息 |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |

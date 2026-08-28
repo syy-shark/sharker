@@ -283,7 +283,7 @@ export interface AssistantMeta {
   model?: string
   /** 有序过程流（持久化，历史可重看） */
   segments?: TurnSegment[]
-  /** 本轮写盘的相对路径（对标 Codex 完成后的 changed-file summary） */
+  /** 本轮写盘的相对路径；直播中随写盘增长，对标 Codex 回合内 N files edited */
   changedFiles?: string[]
 }
 

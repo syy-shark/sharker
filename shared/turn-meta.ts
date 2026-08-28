@@ -2,6 +2,7 @@
  * 工具活动的侧栏 label 格式化。
  * 详见 shared/ARCH.md
  */
+import type { AssistantMeta } from './types'
 import { parsePatch } from './patch'
 
 const PATH_TOOLS = new Set([
@@ -76,6 +77,20 @@ export function extractChangedRelPaths(
     if (rel) seen.add(rel)
   }
   return [...seen]
+}
+
+/** 直播回合元信息：浏览 / 活动 / 已改进程同一对象，避免收束才挂「已改」芯片跳贴底 */
+export function liveAssistantMeta(
+  browsedFiles: readonly string[],
+  activities: AssistantMeta['activities'],
+  changedFiles: readonly string[] = []
+): AssistantMeta {
+  const files = [...changedFiles]
+  return {
+    browsedFiles: [...browsedFiles],
+    activities: [...(activities ?? [])],
+    changedFiles: files.length ? files : undefined
+  }
 }
 
 /** 格式化工具活动侧栏 label（含路径/命令摘要） */

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   canExportChatImage,
   chatImageAspectStyle,
+  chatImageSlotMinHeight,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
+  peekChatImageSizeFromDataUrl,
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveWorkspaceChatImagePath,
@@ -64,5 +66,19 @@ describe('chat-image', () => {
     expect(readCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png')).toBe('data:image/png;base64,aa')
     writeCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png', 'https://evil.test/x.png')
     expect(readCachedWorkspaceImageDataUrl('/tmp/proj/docs/foo.png')).toBe('data:image/png;base64,aa')
+    const png = `data:image/png;base64,${Buffer.from(
+      new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x01, 0x40, 0x00, 0x00, 0x00, 0xc8
+      ])
+    ).toString('base64')}`
+    expect(peekChatImageSizeFromDataUrl(png)).toEqual({ width: 320, height: 200 })
+    expect(peekChatImageSizeFromDataUrl('data:image/png;base64,aa')).toBeNull()
+    expect(peekChatImageSizeFromDataUrl('https://a.test/p.png')).toBeNull()
+    writeCachedWorkspaceImageDataUrl('/tmp/proj/docs/header.png', png)
+    expect(readCachedChatImageSize('/tmp/proj/docs/header.png')).toEqual({ width: 320, height: 200 })
+    expect(chatImageSlotMinHeight(null, true)).toBe(48)
+    expect(chatImageSlotMinHeight({ width: 320, height: 200 }, true)).toBe(0)
+    expect(chatImageSlotMinHeight(null, false)).toBe(0)
   })
 })

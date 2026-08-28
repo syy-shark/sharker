@@ -34,8 +34,10 @@ import type {
 import {
   extractBrowsedPaths,
   extractChangedRelPaths,
-  formatToolActivity
+  formatToolActivity,
+  liveAssistantMeta
 } from '../shared/turn-meta'
+import { previewPathTouchedByWrites } from '../shared/file-preview'
 import { stampSubAgentActivity } from '../shared/subagent'
 import { prToolbarLabel } from '../shared/git-pr-context'
 import {
@@ -339,6 +341,7 @@ export default function App() {
       setChangesRevision((n) => n + 1)
     }, 400)
   }, [])
+  const refreshOpenPreviewRef = useRef<(written: string[]) => void>(() => {})
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [planMode, setPlanMode] = useState(false)
   const planModeByConvRef = useRef(new Map<string, boolean>())
@@ -486,10 +489,11 @@ export default function App() {
       activities: [...buf.turnMeta.activities]
     }
     setLiveTurnMeta(
-      buf.liveTurnMeta ?? {
-        browsedFiles: [...buf.turnMeta.browsedFiles],
-        activities: [...buf.turnMeta.activities]
-      }
+      liveAssistantMeta(
+        buf.liveTurnMeta?.browsedFiles ?? buf.turnMeta.browsedFiles,
+        buf.liveTurnMeta?.activities ?? buf.turnMeta.activities,
+        buf.liveTurnMeta?.changedFiles ?? buf.changedRelPaths ?? []
+      )
     )
     setTurnStartedAt(buf.turnStartedAt)
     if (buf.turnStartedAt) turnStartedAtRef.current = buf.turnStartedAt
@@ -655,10 +659,7 @@ export default function App() {
   /** 将 ref 中的回合元信息同步到 React state */
   const syncLiveTurnMeta = useCallback(() => {
     const m = turnMetaRef.current
-    setLiveTurnMeta({
-      browsedFiles: [...m.browsedFiles],
-      activities: [...m.activities]
-    })
+    setLiveTurnMeta(liveAssistantMeta(m.browsedFiles, m.activities, turnChangedPathsRef.current))
   }, [])
 
   /** 清空本轮助手元信息 */
@@ -682,7 +683,7 @@ export default function App() {
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     turnChangedPathsRef.current = []
     setTurnStartedAt(now)
-    setLiveTurnMeta({ browsedFiles: [], activities: [] })
+    setLiveTurnMeta(liveAssistantMeta([], []))
     const reservedId = crypto.randomUUID()
     liveAssistantIdRef.current = reservedId
     setLiveAssistantId(reservedId)
@@ -711,10 +712,11 @@ export default function App() {
       streaming: streamingRef.current,
       turnThinking: turnThinkingRef.current,
       approval: approvalRef.current,
-      liveTurnMeta: {
-        browsedFiles: [...turnMetaRef.current.browsedFiles],
-        activities: [...turnMetaRef.current.activities]
-      },
+      liveTurnMeta: liveAssistantMeta(
+        turnMetaRef.current.browsedFiles,
+        turnMetaRef.current.activities,
+        turnChangedPathsRef.current
+      ),
       turnStartedAt: turnStartedAtRef.current || null,
       turnHadThinking: turnHadThinkingRef.current,
       activeTool: (() => {
@@ -848,10 +850,11 @@ export default function App() {
           buf.loading = true
           buf.sendInFlight = sendInFlightRef.current || buf.loading
           buf.approval = approvalRef.current
-          buf.liveTurnMeta = {
-            browsedFiles: [...turnMetaRef.current.browsedFiles],
-            activities: [...turnMetaRef.current.activities]
-          }
+          buf.liveTurnMeta = liveAssistantMeta(
+            turnMetaRef.current.browsedFiles,
+            turnMetaRef.current.activities,
+            turnChangedPathsRef.current
+          )
           buf.turnMeta = {
             browsedFiles: [...turnMetaRef.current.browsedFiles],
             activities: [...turnMetaRef.current.activities]
@@ -1457,6 +1460,11 @@ export default function App() {
       if (chunk.type === 'tool_start' || chunk.type === 'tool_done') {
         buf.changedRelPaths ??= []
         collectWrites(buf.changedRelPaths, chunk.toolName, chunk.toolArgs)
+        buf.liveTurnMeta = liveAssistantMeta(
+          buf.turnMeta.browsedFiles,
+          buf.turnMeta.activities,
+          buf.changedRelPaths
+        )
       }
       if (chunk.type === 'tool_start' && chunk.toolName === 'agent_spawn') {
         setRightPanelTab('agents')
@@ -1472,10 +1480,11 @@ export default function App() {
             chunk.content
           )
         ) {
-          buf.liveTurnMeta = {
-            browsedFiles: [...buf.turnMeta.browsedFiles],
-            activities: [...buf.turnMeta.activities]
-          }
+          buf.liveTurnMeta = liveAssistantMeta(
+            buf.turnMeta.browsedFiles,
+            buf.turnMeta.activities,
+            buf.changedRelPaths
+          )
         }
       }
       if (chunk.type === 'tool_start' && chunk.toolName) {
@@ -1487,10 +1496,11 @@ export default function App() {
         if (acts.length === 0 || acts[acts.length - 1].label !== label) {
           acts.push({ kind: 'tool', label })
         }
-        buf.liveTurnMeta = {
-          browsedFiles: [...buf.turnMeta.browsedFiles],
-          activities: [...buf.turnMeta.activities]
-        }
+        buf.liveTurnMeta = liveAssistantMeta(
+          buf.turnMeta.browsedFiles,
+          buf.turnMeta.activities,
+          buf.changedRelPaths
+        )
       }
       if (chunk.type === 'tool_done' || chunk.type === 'status' || chunk.type === 'tool_start') {
         const stillActive = findLastSegment(
@@ -1696,6 +1706,10 @@ export default function App() {
         if (chunk.type === 'tool_done' || chunk.type === 'tool_start') {
           bumpChangesSoon()
           collectWrites(turnChangedPathsRef.current, chunk.toolName, chunk.toolArgs)
+          syncLiveTurnMeta()
+          if (chunk.type === 'tool_done') {
+            refreshOpenPreviewRef.current(turnChangedPathsRef.current)
+          }
         }
         if (chunk.type === 'tool_start' && chunk.toolName) {
           for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
@@ -2349,6 +2363,17 @@ export default function App() {
     line?: number
     token: number
   } | null>(null)
+  refreshOpenPreviewRef.current = (written) => {
+    const open = filePreview
+    if (!open?.path || written.length === 0) return
+    const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
+    const cwd =
+      threadWorktreePathRef.current || getActiveWorkspacePath(settingsRef.current) || ''
+    if (!previewPathTouchedByWrites(open.path, written, cwd, extra)) return
+    setFilePreview((prev) =>
+      prev && prev.path === open.path ? { ...prev, token: Date.now() } : prev
+    )
+  }
 
   useEffect(() => {
     const onCite = (event: Event) => {

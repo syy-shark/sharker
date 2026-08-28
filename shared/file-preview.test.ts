@@ -4,7 +4,8 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   maxDiffGotoLine,
-  parseGoToLineInput
+  parseGoToLineInput,
+  previewPathTouchedByWrites
 } from './file-preview'
 
 describe('file preview kinds', () => {
@@ -28,5 +29,12 @@ describe('file preview kinds', () => {
     expect(maxDiffGotoLine([{ newLine: 12 }, { oldLine: 40 }])).toBe(40)
     expect(maxDiffGotoLine([])).toBe(1)
     expect(maxDiffGotoLine(undefined)).toBe(1)
+    expect(previewPathTouchedByWrites('/proj/src/a.ts', ['src/a.ts'], '/proj')).toBe(true)
+    expect(previewPathTouchedByWrites('src/a.ts', ['src/a.ts'], '/proj')).toBe(true)
+    expect(previewPathTouchedByWrites('/proj/src/b.ts', ['src/a.ts'], '/proj')).toBe(false)
+    expect(
+      previewPathTouchedByWrites('/tmp/extra/lib.ts', ['extra/lib.ts'], '/proj', ['/tmp/extra'])
+    ).toBe(true)
+    expect(previewPathTouchedByWrites('/proj/src/a.ts', [], '/proj')).toBe(false)
   })
 })

@@ -4,6 +4,8 @@
  * @see shared/ARCH.md
  */
 
+import { resolveCitationPath } from './file-citation'
+
 export type FilePreviewKind = 'text' | 'image' | 'pdf' | 'unsupported'
 
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif', 'ico'])
@@ -90,6 +92,35 @@ export function maxDiffGotoLine(
     if (Number.isFinite(n) && n > max) max = n
   }
   return Math.max(1, max)
+}
+
+function normPreviewPath(path: string): string {
+  return path.replaceAll('\\', '/').replace(/\/$/, '')
+}
+
+/**
+ * 打开的预览是否被本轮写盘碰到。写完后重读同一文件，对标 Codex 打开文档跟着 Agent 改。
+ */
+export function previewPathTouchedByWrites(
+  previewPath: string,
+  writtenRelPaths: readonly string[],
+  workspacePath: string,
+  extraRoots: readonly string[] = []
+): boolean {
+  const extras = [...extraRoots]
+  const preview = normPreviewPath(
+    resolveCitationPath(previewPath, workspacePath, extras) || previewPath
+  )
+  if (!preview) return false
+  for (const rel of writtenRelPaths) {
+    const raw = String(rel ?? '').trim()
+    if (!raw) continue
+    const written = normPreviewPath(resolveCitationPath(raw, workspacePath, extras) || raw)
+    if (!written) continue
+    if (written === preview) return true
+    if (preview.endsWith(`/${written}`) || written.endsWith(`/${preview}`)) return true
+  }
+  return false
 }
 
 export function filePreviewUnsupportedMessage(filePath: string): string {

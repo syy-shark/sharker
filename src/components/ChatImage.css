@@ -17,7 +17,7 @@
 .live-prose-tail .chat-image--pending .chat-image-slot,
 .message-body--assistant .chat-image--pending .chat-image-slot {
   display: block;
-  min-height: 8rem;
+  min-height: inherit;
   background: var(--glass-fill-nested);
 }
 

@@ -496,12 +496,12 @@ export const AssistantMessage = memo(function AssistantMessage({
         />
       ) : null}
 
-      {!isStreaming && changedFiles.length > 0 ? (
+      {changedFiles.length > 0 ? (
         <div className="assistant-changed-row">
           {onOpenChangedFiles ? (
             <button
               type="button"
-              className="assistant-meta-chip"
+              className={`assistant-meta-chip${isStreaming ? ' assistant-meta-chip--live' : ''}`}
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()

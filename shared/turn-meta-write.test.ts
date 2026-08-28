@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractChangedRelPaths } from './turn-meta'
+import { extractChangedRelPaths, liveAssistantMeta } from './turn-meta'
 
 describe('extractChangedRelPaths', () => {
   it('strips the workspace prefix from write tools', () => {
@@ -10,6 +10,14 @@ describe('extractChangedRelPaths', () => {
     expect(
       extractChangedRelPaths('write_file', { path: '/extra/lib/a.ts' }, '/proj')
     ).toEqual(['/extra/lib/a.ts'])
+    expect(liveAssistantMeta(['a.ts'], [{ kind: 'tool', label: 'write_file' }], ['src/a.ts'])).toEqual(
+      {
+        browsedFiles: ['a.ts'],
+        activities: [{ kind: 'tool', label: 'write_file' }],
+        changedFiles: ['src/a.ts']
+      }
+    )
+    expect(liveAssistantMeta([], []).changedFiles).toBeUndefined()
   })
 
   it('extracts apply_patch hunk paths', () => {

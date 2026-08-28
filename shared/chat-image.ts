@@ -124,6 +124,152 @@ export function writeCachedChatImageSize(
   return size
 }
 
+function be16(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset]! << 8) | bytes[offset + 1]!
+}
+
+function be32(bytes: Uint8Array, offset: number): number {
+  return (
+    (bytes[offset]! << 24) |
+    (bytes[offset + 1]! << 16) |
+    (bytes[offset + 2]! << 8) |
+    bytes[offset + 3]!
+  ) >>> 0
+}
+
+function le16(bytes: Uint8Array, offset: number): number {
+  return bytes[offset]! | (bytes[offset + 1]! << 8)
+}
+
+function le24(bytes: Uint8Array, offset: number): number {
+  return bytes[offset]! | (bytes[offset + 1]! << 8) | (bytes[offset + 2]! << 16)
+}
+
+function ascii(bytes: Uint8Array, offset: number, length: number): string {
+  return String.fromCharCode(...bytes.slice(offset, offset + length))
+}
+
+function decodeDataUrlPrefix(dataUrl: string): Uint8Array | null {
+  const match = /^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i.exec(dataUrl.trim())
+  if (!match) return null
+  try {
+    const bin = atob(match[1].replace(/\s+/g, ''))
+    const n = Math.min(bin.length, 128)
+    const out = new Uint8Array(n)
+    for (let i = 0; i < n; i++) out[i] = bin.charCodeAt(i)
+    return out
+  } catch {
+    return null
+  }
+}
+
+function sizeFromPng(bytes: Uint8Array): ChatImageSize | null {
+  if (bytes.length < 24) return null
+  if (ascii(bytes, 1, 3) !== 'PNG' || ascii(bytes, 12, 4) !== 'IHDR') return null
+  const width = be32(bytes, 16)
+  const height = be32(bytes, 20)
+  return width > 0 && height > 0 ? { width, height } : null
+}
+
+function sizeFromGif(bytes: Uint8Array): ChatImageSize | null {
+  if (bytes.length < 10) return null
+  const head = ascii(bytes, 0, 6)
+  if (head !== 'GIF87a' && head !== 'GIF89a') return null
+  const width = le16(bytes, 6)
+  const height = le16(bytes, 8)
+  return width > 0 && height > 0 ? { width, height } : null
+}
+
+function le32s(bytes: Uint8Array, offset: number): number {
+  const u =
+    bytes[offset]! |
+    (bytes[offset + 1]! << 8) |
+    (bytes[offset + 2]! << 16) |
+    (bytes[offset + 3]! << 24)
+  return u | 0
+}
+
+function sizeFromBmp(bytes: Uint8Array): ChatImageSize | null {
+  if (bytes.length < 26 || ascii(bytes, 0, 2) !== 'BM') return null
+  const widthAbs = Math.abs(le32s(bytes, 18))
+  const heightAbs = Math.abs(le32s(bytes, 22))
+  return widthAbs > 0 && heightAbs > 0 ? { width: widthAbs, height: heightAbs } : null
+}
+
+function sizeFromJpeg(bytes: Uint8Array): ChatImageSize | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
+  let i = 2
+  while (i + 8 < bytes.length) {
+    if (bytes[i] !== 0xff) {
+      i += 1
+      continue
+    }
+    const marker = bytes[i + 1]!
+    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) {
+      i += 2
+      continue
+    }
+    const len = be16(bytes, i + 2)
+    if (len < 2) return null
+    if (marker >= 0xc0 && marker <= 0xc3 && i + 8 < bytes.length) {
+      const height = be16(bytes, i + 5)
+      const width = be16(bytes, i + 7)
+      return width > 0 && height > 0 ? { width, height } : null
+    }
+    i += 2 + len
+  }
+  return null
+}
+
+function sizeFromWebp(bytes: Uint8Array): ChatImageSize | null {
+  if (bytes.length < 30 || ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 4) !== 'WEBP') {
+    return null
+  }
+  const fourcc = ascii(bytes, 12, 4)
+  if (fourcc === 'VP8X' && bytes.length >= 30) {
+    const width = le24(bytes, 24) + 1
+    const height = le24(bytes, 27) + 1
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  if (fourcc === 'VP8 ' && bytes.length >= 30 && bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a) {
+    const width = le16(bytes, 26) & 0x3fff
+    const height = le16(bytes, 28) & 0x3fff
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  if (fourcc === 'VP8L' && bytes.length >= 25 && bytes[20] === 0x2f) {
+    const bits =
+      bytes[21]! | (bytes[22]! << 8) | (bytes[23]! << 16) | (bytes[24]! << 24)
+    const width = (bits & 0x3fff) + 1
+    const height = ((bits >> 14) & 0x3fff) + 1
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  return null
+}
+
+/** 从 data:image 文件头读固有宽高，直播首帧就能占位，不必等 <img> onLoad 再从 8rem 塌/涨 */
+export function peekChatImageSizeFromDataUrl(dataUrl?: string): ChatImageSize | null {
+  const bytes = dataUrl ? decodeDataUrlPrefix(dataUrl) : null
+  if (!bytes) return null
+  return (
+    sizeFromPng(bytes) ??
+    sizeFromGif(bytes) ??
+    sizeFromJpeg(bytes) ??
+    sizeFromWebp(bytes) ??
+    sizeFromBmp(bytes)
+  )
+}
+
+/** 未测到尺寸前的占位高；成图后高水位只升不降，避免 8rem 占位在小图上塌贴底 */
+export const CHAT_IMAGE_PENDING_MIN_PX = 48
+
+export function chatImageSlotMinHeight(
+  known: ChatImageSize | null | undefined,
+  pending: boolean
+): number {
+  if (known && known.width > 0 && known.height > 0) return 0
+  return pending ? CHAT_IMAGE_PENDING_MIN_PX : 0
+}
+
 export function chatImageAspectStyle(
   size: ChatImageSize | null | undefined
 ): { aspectRatio: string } | undefined {
@@ -143,6 +289,13 @@ export function writeCachedWorkspaceImageDataUrl(
 ): string {
   const key = imageCacheKey(absPath)
   const url = dataUrl.trim()
-  if (key && url.startsWith('data:image/')) workspaceDataUrlCache.set(key, url)
+  if (key && url.startsWith('data:image/')) {
+    workspaceDataUrlCache.set(key, url)
+    const peeked = peekChatImageSizeFromDataUrl(url)
+    if (peeked) {
+      writeCachedChatImageSize(absPath, peeked)
+      writeCachedChatImageSize(url, peeked)
+    }
+  }
   return url
 }
