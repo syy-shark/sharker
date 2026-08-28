@@ -930,6 +930,39 @@
   cursor: not-allowed;
 }
 
+.composer-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+
+.composer-skill-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.composer-skill-chip-name {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.composer-skill-chip-desc {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .composer-attachments {
   display: flex;
   flex-wrap: wrap;

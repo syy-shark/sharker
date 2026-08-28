@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { filterSkillMentions, insertSkillMention, parseSkillMention } from './skill-mention'
+import {
+  collectBoundSkills,
+  filterSkillMentions,
+  insertSkillFromAtMention,
+  insertSkillMention,
+  parseSkillMention,
+  removeBoundSkill
+} from './skill-mention'
 
 describe('skill mention', () => {
   it('parses $token after whitespace and ignores mid-word dollars', () => {
@@ -26,5 +33,26 @@ describe('skill mention', () => {
     ]
     expect(filterSkillMentions(skills, 'rev').map((s) => s.name)).toEqual(['code-review'])
     expect(filterSkillMentions(skills, '排查').map((s) => s.name)).toEqual(['debug'])
+  })
+
+  it('inserts skills from the @ menu and lists bound $tokens for chips', () => {
+    const skills = [
+      { name: 'code-review', description: '审查 diff' },
+      { name: 'debug', description: '排查运行时问题' }
+    ]
+    expect(insertSkillFromAtMention('@co', 3, 'code-review')).toEqual({
+      text: '$code-review ',
+      cursor: 13
+    })
+    expect(insertSkillFromAtMention('请用 @d', 6, 'debug')).toEqual({
+      text: '请用 $debug ',
+      cursor: 10
+    })
+    expect(collectBoundSkills('请用 $code-review 再 $debug', skills).map((s) => s.name)).toEqual([
+      'code-review',
+      'debug'
+    ])
+    expect(collectBoundSkills('price$100 $missing', skills)).toEqual([])
+    expect(removeBoundSkill('请用 $code-review 再看', 'code-review')).toBe('请用 再看')
   })
 })

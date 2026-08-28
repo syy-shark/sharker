@@ -103,8 +103,8 @@
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
 | `review-file-click.ts` | 审查文件名打开预览、行背景展开/收起、⌘单击行跳预览（对标 Codex Review pane） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行 |
-| `skill-mention.ts` | Composer `$` Skill 引用解析与插入 |
-| `skill-mention.test.ts` | `$token` 边界与过滤 |
+| `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
+| `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、清终端） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |

@@ -1,7 +1,9 @@
 /**
  * Composer `$` Skill 引用：对标 Codex `$skill-name`。
+ * `@` 统一引用菜单也可插入 Skill（对标 Codex @ menu skills）。
  * @see shared/ARCH.md
  */
+import { parseAtMention } from './at-mention'
 
 /** 当前光标处的 $ 查询 */
 export interface SkillMentionQuery {
@@ -58,4 +60,46 @@ export function filterSkillMentions(skills: SkillListItem[], query: string): Ski
   return skills.filter(
     (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
   )
+}
+
+/** 从 `@` 菜单插入时把当前 `@query` 换成 `$name ` */
+export function insertSkillFromAtMention(
+  text: string,
+  cursor: number,
+  skillName: string
+): { text: string; cursor: number } {
+  const mention = parseAtMention(text, cursor)
+  if (!mention) return insertSkillMention(text, cursor, skillName)
+  const token = `$${String(skillName || '').trim()}`
+  const after = text.slice(cursor)
+  const next = `${text.slice(0, mention.start)}${token}${after.startsWith(' ') ? after : ` ${after}`}`
+  return { text: next, cursor: mention.start + token.length + 1 }
+}
+
+const BOUND_SKILL_RE = /(?:^|[\s])\$([A-Za-z0-9][\w.-]*)/g
+
+/** 正文里已点名、且目录里找得到的 Skill（发送前内联确认） */
+export function collectBoundSkills(text: string, catalog: readonly SkillListItem[]): SkillListItem[] {
+  const catalogByName = new Map(catalog.map((skill) => [skill.name.toLowerCase(), skill]))
+  const found = new Map<string, SkillListItem>()
+  BOUND_SKILL_RE.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = BOUND_SKILL_RE.exec(text))) {
+    const key = (match[1] ?? '').toLowerCase()
+    const skill = catalogByName.get(key)
+    if (skill && !found.has(key)) found.set(key, skill)
+  }
+  return [...found.values()]
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** 点掉芯片时撤掉对应 `$name` */
+export function removeBoundSkill(text: string, skillName: string): string {
+  const name = skillName.trim()
+  if (!name) return text
+  const re = new RegExp(`(^|[\\s])\\$${escapeRegExp(name)}(?=\\s|$)`, 'gi')
+  return text.replace(re, '$1').replace(/[ \t]{2,}/g, ' ').replace(/^\s+/, '')
 }

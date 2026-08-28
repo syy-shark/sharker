@@ -22,9 +22,12 @@ import { parseBangCommand } from '../../shared/bang-command'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
 import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
 import {
+  collectBoundSkills,
   filterSkillMentions,
+  insertSkillFromAtMention,
   insertSkillMention,
   parseSkillMention,
+  removeBoundSkill,
   type SkillListItem
 } from '../../shared/skill-mention'
 import {
@@ -67,7 +70,7 @@ import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import { GoalProgressRow } from './GoalProgressRow'
 import './ChatView.css'
 
-type MentionOption = { kind: 'file' | 'chat'; name: string; value: string; detail: string }
+type MentionOption = { kind: 'file' | 'chat' | 'skill'; name: string; value: string; detail: string }
 type SpeechRecResult = { isFinal: boolean; 0?: { transcript?: string } }
 type SpeechRec = {
   lang: string
@@ -479,10 +482,22 @@ export const ComposerDock = memo(
         })),
       [mentionHits]
     )
+    const skillMentionHits = useMemo(() => {
+      if (!mentionQuery) return []
+      return filterSkillMentions(skillCatalog, mentionQuery.query)
+        .slice(0, 8)
+        .map((skill) => ({
+          kind: 'skill' as const,
+          name: skill.name,
+          value: skill.name,
+          detail: skill.description || 'Skill'
+        }))
+    }, [mentionQuery, skillCatalog])
     const mentionOptions: MentionOption[] = useMemo(
-      () => [...chatMentionHits, ...fileMentionHits],
-      [chatMentionHits, fileMentionHits]
+      () => [...chatMentionHits, ...skillMentionHits, ...fileMentionHits],
+      [chatMentionHits, skillMentionHits, fileMentionHits]
     )
+    const boundSkills = useMemo(() => collectBoundSkills(input, skillCatalog), [input, skillCatalog])
     const showMentionMenu = Boolean(mentionQuery && mentionOptions.length)
     const skillQuery =
       !showHistoryPicker &&
@@ -545,7 +560,7 @@ export const ComposerDock = memo(
       skillActiveIndexRef.current = 0
     }, [skillQuery?.query, skillQuery?.start])
     useEffect(() => {
-      if ((!skillQuery && slashQuery == null) || !window.sharker?.listSkills) return
+      if (!window.sharker?.listSkills) return
       let cancelled = false
       void window.sharker
         .listSkills(fileSearchRoot)
@@ -558,13 +573,11 @@ export const ComposerDock = memo(
       return () => {
         cancelled = true
       }
-    }, [fileSearchRoot, skillQuery?.start, slashQuery])
+    }, [fileSearchRoot])
 
-    const pickMention = (relativePath: string) => {
-      const next = insertAtMention(input, cursor, relativePath)
+    const applyComposerText = (next: { text: string; cursor: number }) => {
       setInput(next.text)
       setCursor(next.cursor)
-      setMentionDismissed(false)
       requestAnimationFrame(() => {
         const el = textareaRef.current
         if (!el) return
@@ -572,6 +585,15 @@ export const ComposerDock = memo(
         el.setSelectionRange(next.cursor, next.cursor)
         syncTextareaHeight()
       })
+    }
+
+    const pickMention = (hit: MentionOption) => {
+      const next =
+        hit.kind === 'skill'
+          ? insertSkillFromAtMention(input, cursor, hit.value)
+          : insertAtMention(input, cursor, hit.value)
+      setMentionDismissed(false)
+      applyComposerText(next)
     }
     const pickSkill = (name: string) => {
       const next = insertSkillMention(input, cursor, name)
@@ -1113,7 +1135,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="引用文件或对话"
+              aria-label="引用文件、对话或 Skill"
               aria-activedescendant={
                 mentionOptions[mentionActiveIndex] ? `mention-option-${mentionActiveIndex}` : undefined
               }
@@ -1133,10 +1155,12 @@ export const ComposerDock = memo(
                       }}
                       onMouseDown={(e) => {
                         e.preventDefault()
-                        pickMention(hit.value)
+                        pickMention(hit)
                       }}
                     >
-                      <span className="slash-menu-name">@{hit.name}</span>
+                      <span className="slash-menu-name">
+                        {hit.kind === 'skill' ? `$${hit.name}` : `@${hit.name}`}
+                      </span>
                       <span className="slash-menu-desc">{hit.detail}</span>
                     </button>
                   </li>
@@ -1492,7 +1516,7 @@ export const ComposerDock = memo(
               ) {
                 e.preventDefault()
                 const hit = mentionOptions[mentionActiveIndexRef.current]
-                if (hit) pickMention(hit.value)
+                if (hit) pickMention(hit)
                 return
               }
             }
@@ -1685,13 +1709,42 @@ export const ComposerDock = memo(
                   : 'Enter 排队 · ⌘⇧Enter 注入 · Tab 排队 · Esc 停止…'
                 : composerEnterBehavior === 'cmdAlways' ||
                     (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
-                  ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件，$ Skill…'
+                  ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
                   : composerEnterBehavior === 'cmdIfMultiline'
-                    ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件，$ Skill…'
-                    : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
+                    ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
+                    : '输入消息，/ 命令，! shell，@ 文件/对话/Skill，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
           }
           rows={1}
         />
+        {boundSkills.length > 0 ? (
+          <div className="composer-skill-chips" aria-label="将使用的 Skill">
+            {boundSkills.map((skill) => (
+              <button
+                key={skill.name}
+                type="button"
+                className="composer-skill-chip glass-pill"
+                title={skill.description || skill.name}
+                onClick={() => {
+                  const next = removeBoundSkill(input, skill.name)
+                  setInput(next)
+                  inputRef.current = next
+                  requestAnimationFrame(() => {
+                    const el = textareaRef.current
+                    if (!el) return
+                    el.focus()
+                    el.setSelectionRange(next.length, next.length)
+                    syncTextareaHeight()
+                  })
+                }}
+              >
+                <span className="composer-skill-chip-name">${skill.name}</span>
+                {skill.description ? (
+                  <span className="composer-skill-chip-desc">{skill.description}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {pendingAttachments.length > 0 || attachmentError ? (
           <div className="composer-attachments">
             {pendingAttachments.map((a) => (
