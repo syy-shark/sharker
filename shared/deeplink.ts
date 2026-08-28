@@ -18,7 +18,7 @@ export type DeeplinkAction =
       tab: 'permissions' | 'models' | 'appearance' | 'shortcuts' | 'archived'
     }
   | { type: 'skills' }
-  | { type: 'automations' }
+  | { type: 'automations'; create?: boolean }
 
 /** 把 git remote 收成可比较的 host/path（忽略协议与 .git） */
 export function normalizeGitRemoteUrl(url: string): string {
@@ -131,7 +131,7 @@ export function parseDeeplink(raw: string): DeeplinkAction {
   }
 
   if (host === 'skills') return { type: 'skills' }
-  if (host === 'automations') return { type: 'automations' }
+  if (host === 'automations') return { type: 'automations', create: true }
 
   if (host === 'settings') {
     return settingsTabFromPath(segments)

@@ -573,10 +573,13 @@ export function ChatView({
       programmaticScrollRef.current = true
       el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
       programmaticScrollRef.current = false
-      lockUserScroll()
+      userScrollLockRef.current = false
+      stickToBottomRef.current = true
+      setStickToBottom(true)
+      setCanJumpToBottom(false)
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [approval, lockUserScroll])
+  }, [approval])
 
   /** 内容增高时贴底：ResizeObserver 只在高度变化时写 scrollTop，避免每帧 rAF 抢布局 */
   useEffect(() => {

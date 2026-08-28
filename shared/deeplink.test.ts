@@ -54,7 +54,7 @@ describe('deeplink', () => {
 
   it('opens skills and automations, and noops plugins/pets', () => {
     expect(parseDeeplink('sharker://skills')).toEqual({ type: 'skills' })
-    expect(parseDeeplink('sharker://automations')).toEqual({ type: 'automations' })
+    expect(parseDeeplink('sharker://automations')).toEqual({ type: 'automations', create: true })
     expect(parseDeeplink('sharker://plugins/install')).toEqual({
       type: 'noop',
       reason: 'unsupported'

@@ -107,7 +107,7 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知 / 未读 / Dock 徽标（正在看且窗口在前台不打扰） |
 | `turn-notify.test.ts` | 失焦通知、同会话不标未读、徽标计数 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置 / Skills / 自动化；不解析 plugins、pets、SSH |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置 / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
@@ -119,7 +119,7 @@
 | `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |
 | `provider-validate.ts` | 当前 API 配置校验 |
 | `provider-vision.ts` | 模型是否支持视觉（截图回灌） |
-| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射；`stepThinkingLevel` 供 ⌥, / ⌥. |
+| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射；`stepThinkingLevel` 供 ⌥, / ⌥.；`/reasoning` 解析与状态文案 |
 | `oauth-gpt.ts` | ChatGPT 订阅凭据导入 |
 | `oauth-xai.ts` | xAI SuperGrok 设备码 OAuth |
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
@@ -130,7 +130,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/project、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/side、/project、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents） |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择 |

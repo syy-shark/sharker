@@ -55,6 +55,8 @@ import {
 import { knownModelsForProvider } from '../shared/provider-catalog'
 import {
   defaultThinkingLevel,
+  formatReasoningStatus,
+  parseReasoningArgs,
   resolveThinkingOptions,
   stepThinkingLevel
 } from '../shared/thinking-levels'
@@ -314,6 +316,7 @@ export default function App() {
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const [worktreeMissing, setWorktreeMissing] = useState(false)
   const [workspaceBranch, setWorkspaceBranch] = useState('')
+  const [automationsCreateNonce, setAutomationsCreateNonce] = useState(0)
   const appUndoRef = useRef(createAppUndoStack())
   const appUndoSilentRef = useRef(false)
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
@@ -2962,6 +2965,7 @@ export default function App() {
     }
     if (action.type === 'automations') {
       setPage('automations')
+      if (action.create) setAutomationsCreateNonce((n) => n + 1)
       return
     }
     if (action.type === 'skills') {
@@ -4116,6 +4120,29 @@ export default function App() {
             void persistActiveConversation(nextMsgs)
             return nextMsgs
           })
+          break
+        }
+        case 'set_reasoning': {
+          const settingsNow = settingsRef.current
+          const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+          const options = provider ? resolveThinkingOptions(provider) : []
+          const current =
+            provider?.thinkingLevel || (provider ? defaultThinkingLevel(provider) : '')
+          const parsed = parseReasoningArgs(args, options)
+          if (parsed.kind === 'set' && provider) {
+            await handleThinkingLevelChange(provider.id, parsed.id)
+          }
+          const after = settingsRef.current.providers.find(
+            (p) => p.id === settingsRef.current.activeProviderId
+          )
+          appendLocalNote(
+            formatReasoningStatus({
+              supported: options.length > 0,
+              current: after?.thinkingLevel || current,
+              options,
+              unknown: parsed.kind === 'unknown' ? parsed.raw : undefined
+            })
+          )
           break
         }
         case 'set_fast': {
@@ -5791,6 +5818,7 @@ export default function App() {
               <div className="main-drag-strip" aria-hidden />
               <AutomationsPage
                 queueRevision={queueRevision}
+                openCreateNonce={automationsCreateNonce}
                 onBack={() => setPage('chat')}
                 onOpenConversation={(conversationId) => {
                   const wsId = settingsRef.current.activeWorkspaceId

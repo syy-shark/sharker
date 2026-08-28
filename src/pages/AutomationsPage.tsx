@@ -19,10 +19,18 @@ interface Props {
   onTriage?: (item: AutomationQueueItem, action: QueueTriageAction) => void
   /** ⇧Esc 清未读后递增，刷新本页队列 */
   queueRevision?: number
+  /** 深链 `sharker://automations`：打开创建流（对标 Codex Scheduled create） */
+  openCreateNonce?: number
 }
 
 /** 自动化列表与编辑 */
-export function AutomationsPage({ onBack, onOpenConversation, onTriage, queueRevision = 0 }: Props) {
+export function AutomationsPage({
+  onBack,
+  onOpenConversation,
+  onTriage,
+  queueRevision = 0,
+  openCreateNonce = 0
+}: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
   const [busy, setBusy] = useState(false)
@@ -76,7 +84,21 @@ export function AutomationsPage({ onBack, onOpenConversation, onTriage, queueRev
       enabled: true
     }
     await save([...jobsRef.current, job])
+    return job.id
   }
+
+  const consumedCreateNonceRef = useRef(0)
+  useEffect(() => {
+    if (!openCreateNonce || openCreateNonce === consumedCreateNonceRef.current) return
+    consumedCreateNonceRef.current = openCreateNonce
+    void addJob().then((id) => {
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLInputElement>(`input[data-automation-id="${id}"]`)
+          ?.focus()
+      })
+    })
+  }, [openCreateNonce])
 
   const removeJob = async (id: string) => {
     await save(jobsRef.current.filter((x) => x.id !== id))
@@ -177,6 +199,7 @@ export function AutomationsPage({ onBack, onOpenConversation, onTriage, queueRev
                 <div className="automation-card-top">
                   <input
                     className="automation-title"
+                    data-automation-id={j.id}
                     value={j.title}
                     onChange={(e) => updateJob(j.id, { title: e.target.value })}
                     onBlur={persistCurrent}

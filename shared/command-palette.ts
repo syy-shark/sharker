@@ -108,6 +108,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'set_fast'
   },
   {
+    id: 'reasoning',
+    title: '查看或设定思考档',
+    keywords: 'reasoning thinking effort 思考 推理',
+    action: 'set_reasoning'
+  },
+  {
     id: 'skills',
     title: '浏览 Skills',
     keywords: 'skills $ 技能',

@@ -38,6 +38,7 @@ describe('command palette', () => {
     expect(ids).toContain('theme')
     expect(ids).toContain('debug-config')
     expect(ids).toContain('fast')
+    expect(ids).toContain('reasoning')
     expect(ids).toContain('skills')
     expect(ids).toContain('stop')
     expect(ids).toContain('nav-back')

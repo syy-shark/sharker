@@ -349,6 +349,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'other'
   },
   {
+    name: 'reasoning',
+    description: '查看或设定思考档（对标 Codex /reasoning）',
+    scope: 'ui',
+    action: 'set_reasoning',
+    argsHint: '[档位]',
+    category: 'mode'
+  },
+  {
     name: 'fast',
     description: '开关 Fast（关掉或降到最低思考）',
     scope: 'ui',

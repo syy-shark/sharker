@@ -256,6 +256,56 @@ export function stepThinkingLevel(
   return options[next]?.id ?? null
 }
 
+const REASONING_ALIASES: Record<string, string[]> = {
+  off: ['off', 'none', 'disable', 'disabled'],
+  none: ['none', 'off'],
+  minimal: ['minimal', 'min'],
+  low: ['low', 'l'],
+  medium: ['medium', 'mid', 'med'],
+  high: ['high', 'h'],
+  xhigh: ['xhigh', 'x-high', 'extra'],
+  max: ['max', 'maximum']
+}
+
+/** `/reasoning` 参数：空则查看；档位 id / 别名则设定（对标 Codex /reasoning） */
+export function parseReasoningArgs(
+  args: string,
+  options: Array<{ id: string; label?: string }>
+): { kind: 'status' } | { kind: 'set'; id: string } | { kind: 'unknown'; raw: string } {
+  const raw = args.trim().toLowerCase()
+  if (!raw) return { kind: 'status' }
+  const exact = options.find(
+    (o) => o.id.toLowerCase() === raw || String(o.label || '').toLowerCase() === raw
+  )
+  if (exact) return { kind: 'set', id: exact.id }
+  for (const [id, names] of Object.entries(REASONING_ALIASES)) {
+    if (names.includes(raw) && options.some((o) => o.id === id)) return { kind: 'set', id }
+  }
+  return { kind: 'unknown', raw }
+}
+
+/** `/reasoning` 状态文案 */
+export function formatReasoningStatus(opts: {
+  supported: boolean
+  current?: string
+  options: Array<{ id: string; label?: string }>
+  unknown?: string
+}): string {
+  if (!opts.supported) {
+    return '当前模型没有思考档位，`/reasoning` 不会改请求参数。'
+  }
+  const lines = ['**思考档位**（对标 Codex `/reasoning`）', '']
+  for (const o of opts.options) {
+    const mark = o.id === opts.current ? ' ← 当前' : ''
+    lines.push(`- \`${o.id}\` ${o.label || ''}${mark}`.trimEnd())
+  }
+  if (opts.unknown) {
+    lines.push('', `未识别档位 \`${opts.unknown}\`。`)
+  }
+  lines.push('', '用法：`/reasoning [off|low|medium|high|max|…]`，空参数查看当前档。⌥, / ⌥. 也可升降。')
+  return lines.join('\n')
+}
+
 type ProviderKind = 'deepseek' | 'xai' | 'openai' | 'kimi' | 'zhipu' | 'other'
 
 function hostOf(baseUrl: string): string {
