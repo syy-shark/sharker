@@ -23,6 +23,7 @@ import {
 import type { ConversationSummary } from '../../shared/conversation'
 import {
   filterSidebarChats,
+  nextActivitySidebarFilter,
   SIDEBAR_CHAT_FILTERS,
   splitLiveConversations,
   splitPinnedConversations,
@@ -44,6 +45,10 @@ interface Props {
   activeConversationId: string | null
   /** 有 in-flight turn 的会话（侧栏显示进行中点） */
   liveConversationIds?: Set<string> | string[]
+  /** 等待你回复审批的会话（对标 Codex Activity waiting） */
+  waitingConversationIds?: Set<string> | string[]
+  /** 递增以开关 Activity 视图（⌘⌥U） */
+  activityToggleNonce?: number
   onSelectWorkspace: (id: string) => void
   onSelectConversation: (workspaceId: string, conversationId: string) => void
   onAddWorkspace: () => void
@@ -74,7 +79,13 @@ const SIDEBAR_WIDTH_KEY = 'sharker-sidebar-width'
 
 function readSidebarChatFilter(): SidebarChatFilter {
   const raw = localStorage.getItem(SIDEBAR_CHAT_FILTER_KEY)
-  if (raw === 'live' || raw === 'unread' || raw === 'pinned' || raw === 'chronological') {
+  if (
+    raw === 'live' ||
+    raw === 'waiting' ||
+    raw === 'unread' ||
+    raw === 'pinned' ||
+    raw === 'chronological'
+  ) {
     return raw
   }
   return 'chronological'
@@ -110,6 +121,8 @@ export function Sidebar({
   conversations,
   activeConversationId,
   liveConversationIds,
+  waitingConversationIds,
+  activityToggleNonce = 0,
   onSelectWorkspace,
   onSelectConversation,
   onAddWorkspace,
@@ -138,6 +151,12 @@ export function Sidebar({
     return liveConversationIds instanceof Set
       ? liveConversationIds
       : new Set(liveConversationIds)
+  })()
+  const waitingIdSet = (() => {
+    if (!waitingConversationIds) return new Set<string>()
+    return waitingConversationIds instanceof Set
+      ? waitingConversationIds
+      : new Set(waitingConversationIds)
   })()
   const collapsed = collapsedProp ?? collapsedInner
   /** 单一写入口：不在 setState updater 里调父回调（StrictMode 会双调） */
@@ -257,8 +276,8 @@ export function Sidebar({
   const chatFilterRef = useRef<HTMLDivElement>(null)
   const groupedChats = chatFilter === 'chronological'
   const filteredConvs = useMemo(
-    () => filterSidebarChats(dialogConvs, chatFilter, liveIdSet),
-    [chatFilter, dialogConvs, liveIdSet]
+    () => filterSidebarChats(dialogConvs, chatFilter, liveIdSet, waitingIdSet),
+    [chatFilter, dialogConvs, liveIdSet, waitingIdSet]
   )
   const { live: liveConvs, rest: restConvs } = useMemo(
     () => splitLiveConversations(groupedChats ? dialogConvs : [], liveIdSet),
@@ -292,6 +311,16 @@ export function Sidebar({
     localStorage.setItem(SIDEBAR_CHAT_FILTER_KEY, next)
     setChatFilterOpen(false)
   }
+
+  useEffect(() => {
+    if (!activityToggleNonce) return
+    setChatFilter((current) => {
+      const next = nextActivitySidebarFilter(current)
+      localStorage.setItem(SIDEBAR_CHAT_FILTER_KEY, next)
+      return next
+    })
+    setChatFilterOpen(false)
+  }, [activityToggleNonce])
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)

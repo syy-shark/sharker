@@ -138,6 +138,7 @@ export function normalizeSettings(
     followUpBehavior: raw.followUpBehavior === 'steer' ? 'steer' : 'queue',
     requireModEnter: raw.requireModEnter === true,
     suggestedPrompts: raw.suggestedPrompts !== false,
+    reviewDelivery: raw.reviewDelivery === 'inline' ? 'inline' : 'detached',
     turnNotifyMode:
       raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
         ? raw.turnNotifyMode

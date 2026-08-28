@@ -3,6 +3,7 @@
  * @see src/ARCH.md
  */
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
+import { parseReviewDelivery, type ReviewDelivery } from '../../../shared/review-prompt'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
 import {
   FullModeIcon,
@@ -120,6 +121,33 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
               label="写入记忆"
             />
           </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="Git">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parseReviewDelivery(draft.reviewDelivery)}
+            onChange={(reviewDelivery: ReviewDelivery) => {
+              const next = { ...draft, reviewDelivery }
+              setDraft(next)
+              void onSave(next)
+            }}
+            options={[
+              {
+                value: 'inline',
+                title: '当前对话',
+                description: '对标 Codex Inline：能在当前对话跑 /review 就在当前对话。',
+                icon: <span aria-hidden>内</span>
+              },
+              {
+                value: 'detached',
+                title: '独立线程',
+                description: '对标 Codex Detached：/review 新开审查对话。here / detached 可单次覆盖。',
+                icon: <span aria-hidden>独</span>
+              }
+            ]}
+          />
         </SettingsCard>
       </SettingsSection>
 

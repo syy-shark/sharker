@@ -239,29 +239,70 @@ export function formatUnreadNote(): string {
   return '已将此对话标为未读。打开后会自动清未读。'
 }
 
-/** 侧栏对话筛选（对标 Codex：Chats 旁过滤器，Chronological 显示全部） */
-export type SidebarChatFilter = 'chronological' | 'live' | 'unread' | 'pinned'
+/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复） */
+export type SidebarChatFilter = 'chronological' | 'live' | 'waiting' | 'unread' | 'pinned'
 
 export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string }> = [
   { id: 'chronological', label: '按时间' },
   { id: 'live', label: '进行中' },
+  { id: 'waiting', label: '等待回复' },
   { id: 'unread', label: '未读' },
   { id: 'pinned', label: '置顶' }
 ]
+
+export function isActivitySidebarFilter(filter: SidebarChatFilter): boolean {
+  return filter === 'live' || filter === 'waiting' || filter === 'unread'
+}
+
+/** 对标 Codex ⌘⌥U：打开/关闭 Activity（默认落到等待回复） */
+export function nextActivitySidebarFilter(current: SidebarChatFilter): SidebarChatFilter {
+  return isActivitySidebarFilter(current) ? 'chronological' : 'waiting'
+}
 
 /** 按侧栏过滤器收对话；`chronological` 原样返回 */
 export function filterSidebarChats<T extends { id: string; unread?: boolean; pinned?: boolean }>(
   items: T[],
   filter: SidebarChatFilter,
-  liveIds: Iterable<string>
+  liveIds: Iterable<string>,
+  waitingIds?: Iterable<string>
 ): T[] {
   if (filter === 'chronological') return items
   if (filter === 'live') {
     const liveSet = liveIds instanceof Set ? liveIds : new Set(liveIds)
     return items.filter((item) => liveSet.has(item.id))
   }
+  if (filter === 'waiting') {
+    const waitingSet = waitingIds instanceof Set ? waitingIds : new Set(waitingIds ?? [])
+    return items.filter((item) => waitingSet.has(item.id))
+  }
   if (filter === 'unread') return items.filter((item) => item.unread)
   return items.filter((item) => item.pinned)
+}
+
+/** ⌘⌥A：先等你回复的审批，再切进行中对话 */
+export function collectAttentionConversationIds(input: {
+  conversations: Array<{ id: string }>
+  liveIds: Iterable<string>
+  waitingIds?: Iterable<string>
+}): string[] {
+  const waitingSet = input.waitingIds instanceof Set ? input.waitingIds : new Set(input.waitingIds ?? [])
+  const liveSet = input.liveIds instanceof Set ? input.liveIds : new Set(input.liveIds)
+  const ids: string[] = []
+  const seen = new Set<string>()
+  const push = (id: string) => {
+    if (!id || seen.has(id)) return
+    seen.add(id)
+    ids.push(id)
+  }
+  for (const item of input.conversations) {
+    if (waitingSet.has(item.id)) push(item.id)
+  }
+  for (const id of waitingSet) push(id)
+  for (const item of input.conversations) {
+    if (liveSet.has(item.id)) push(item.id)
+  }
+  for (const id of liveSet) push(id)
+  return ids
 }
 
 /** 侧栏：置顶组与其余（进行中拆分之后再用） */

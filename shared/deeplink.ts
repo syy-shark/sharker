@@ -90,7 +90,13 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   ) {
     return { type: 'settings', tab: 'appearance' }
   }
-  if (key === 'permissions' || key === 'browser-use' || key.startsWith('computer-use')) {
+  if (
+    key === 'permissions' ||
+    key === 'browser-use' ||
+    key === 'git' ||
+    key === 'review' ||
+    key.startsWith('computer-use')
+  ) {
     return { type: 'settings', tab: 'permissions' }
   }
   if (key === 'archived') return { type: 'settings', tab: 'archived' }

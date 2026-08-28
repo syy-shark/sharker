@@ -12,6 +12,7 @@ import {
   deriveConversationTitle,
   formatPinNote,
   formatRenameNote,
+  collectAttentionConversationIds,
   formatUnreadNote,
   nextLiveConversationId,
   parseRenameArgs,
@@ -342,6 +343,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
   )
+  const [activityToggleNonce, setActivityToggleNonce] = useState(0)
   /** 侧栏收起后的悬停 peek；peek 时侧栏可见，顶栏不必再显示新对话 */
   const [sidebarPeeking, setSidebarPeeking] = useState(false)
   const toggleSidebar = useCallback(() => {
@@ -1209,6 +1211,7 @@ export default function App() {
           followUpBehavior: updated.followUpBehavior,
           requireModEnter: updated.requireModEnter,
           suggestedPrompts: updated.suggestedPrompts,
+          reviewDelivery: updated.reviewDelivery,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -1267,6 +1270,7 @@ export default function App() {
       followUpBehavior: draft.followUpBehavior,
       requireModEnter: draft.requireModEnter,
       suggestedPrompts: draft.suggestedPrompts,
+      reviewDelivery: draft.reviewDelivery,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -1472,6 +1476,9 @@ export default function App() {
           }
           applyChunkToBuffer(buf, chunk)
         }
+        if (chunk.type === 'approval_needed' || chunk.type === 'approval_resolved') {
+          bumpSessionLive()
+        }
         if (chunk.type === 'turn_start' && ownerId) {
           // 后台会话只维护自身门闩，绝不抢当前可见会话的 streamOwner
           doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, ownerId)
@@ -1658,6 +1665,11 @@ export default function App() {
         if (chunk.type === 'approval_resolved') {
           setApproval(null)
           approvalRef.current = null
+          const waitingId = ownerId || activeId
+          if (waitingId) {
+            const parked = sessionBuffersRef.current.get(waitingId)
+            if (parked) parked.approval = null
+          }
         }
         if (chunk.type === 'turn_start' && ownerId) {
           streamOwnerRef.current = ownerId
@@ -1814,6 +1826,7 @@ export default function App() {
         const buf = sessionBuffersRef.current.get(req.conversationId)
         if (buf) buf.approval = req
         notifyApprovalIfNeeded(req)
+        bumpSessionLive()
         return
       }
       setApproval(req)
@@ -1835,6 +1848,7 @@ export default function App() {
     persistActiveConversation,
     syncActiveQueueUi,
     bumpChangesSoon,
+    bumpSessionLive,
     notifyApprovalIfNeeded
   ])
 
@@ -2674,6 +2688,7 @@ export default function App() {
       followUpBehavior: next.followUpBehavior,
       requireModEnter: next.requireModEnter,
       suggestedPrompts: next.suggestedPrompts,
+      reviewDelivery: next.reviewDelivery,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -3394,18 +3409,31 @@ export default function App() {
   const handleNextAttention = useCallback(() => {
     const liveIds: string[] = []
     const seen = new Set<string>()
+    const waitingIds = new Set<string>()
     for (const c of conversationListRef.current) {
       const buf = sessionBuffersRef.current.get(c.id)
       if (buf?.loading || buf?.sendInFlight) {
         liveIds.push(c.id)
         seen.add(c.id)
       }
+      if (buf?.approval) waitingIds.add(c.id)
     }
     for (const [id, buf] of sessionBuffersRef.current.entries()) {
+      if (buf.approval) waitingIds.add(id)
       if (seen.has(id)) continue
       if (buf.loading || buf.sendInFlight) liveIds.push(id)
     }
-    const nextId = nextLiveConversationId(liveIds, activeConversationIdRef.current)
+    const pending = approvalRef.current
+    if (pending) {
+      const waitingId = pending.conversationId || activeConversationIdRef.current
+      if (waitingId) waitingIds.add(waitingId)
+    }
+    const attentionIds = collectAttentionConversationIds({
+      conversations: conversationListRef.current,
+      liveIds,
+      waitingIds
+    })
+    const nextId = nextLiveConversationId(attentionIds, activeConversationIdRef.current)
     const wsId = settingsRef.current.activeWorkspaceId
     if (wsId && nextId) {
       setPage('chat')
@@ -3458,6 +3486,11 @@ export default function App() {
       await window.sharker.respondApproval(approval.id, decision)
       setApproval(null)
       approvalRef.current = null
+      const waitingId = approval.conversationId || activeConversationIdRef.current
+      if (waitingId) {
+        const buf = sessionBuffersRef.current.get(waitingId)
+        if (buf) buf.approval = null
+      }
     } finally {
       approvalBusyRef.current = false
       setApprovalResponding(false)
@@ -4146,7 +4179,9 @@ export default function App() {
           handleTogglePanel('changes')
           break
         case 'review_working_tree': {
-          const review = parseReviewRequest(args)
+          const review = parseReviewRequest(args, {
+            delivery: settingsRef.current.reviewDelivery
+          })
           handleTogglePanel('changes')
           const prompt =
             review.scope === 'branch' ? REVIEW_BRANCH_PROMPT : REVIEW_WORKING_TREE_PROMPT
@@ -4220,6 +4255,12 @@ export default function App() {
           break
         case 'toggle_agents':
           handleTogglePanel('agents')
+          break
+        case 'toggle_activity':
+          setPage('chat')
+          localStorage.setItem('sharker-sidebar-collapsed', '0')
+          setSidebarCollapsed(false)
+          setActivityToggleNonce((n) => n + 1)
           break
         case 'open_automations':
           setPage('automations')
@@ -4499,6 +4540,13 @@ export default function App() {
         handleNextAttention()
         return
       }
+      if (cmd.action === 'toggle_activity') {
+        setPage('chat')
+        localStorage.setItem('sharker-sidebar-collapsed', '0')
+        setSidebarCollapsed(false)
+        setActivityToggleNonce((n) => n + 1)
+        return
+      }
       if (cmd.action === 'rename_conversation') {
         const id = activeConversationIdRef.current
         if (id) {
@@ -4646,6 +4694,13 @@ export default function App() {
       }
       if (action === 'toggle_agents') {
         handleShortcutPanel('agents')
+        return
+      }
+      if (action === 'toggle_activity') {
+        setPage('chat')
+        localStorage.setItem('sharker-sidebar-collapsed', '0')
+        setSidebarCollapsed(false)
+        setActivityToggleNonce((n) => n + 1)
         return
       }
       if (action === 'pick_model') {
@@ -5920,6 +5975,19 @@ export default function App() {
     return ids
   })()
 
+  const waitingConversationIds = (() => {
+    void sessionLiveVersion
+    const ids = new Set<string>()
+    for (const [id, buf] of sessionBuffersRef.current.entries()) {
+      if (buf.approval) ids.add(id)
+    }
+    if (approval) {
+      const id = approval.conversationId || activeConversationId
+      if (id) ids.add(id)
+    }
+    return ids
+  })()
+
   return (
     <div className={`app-shell${popoutRoute ? ' app-shell--popout' : ''}`}>
       {/* Codex 风格全屏布局：侧栏通顶 + 主区自带顶栏，无整条 TitleBar */}
@@ -5933,6 +6001,8 @@ export default function App() {
           conversations={conversationList}
           activeConversationId={activeConversationId}
           liveConversationIds={liveConversationIds}
+          waitingConversationIds={waitingConversationIds}
+          activityToggleNonce={activityToggleNonce}
           onSelectWorkspace={handleSelectWorkspace}
           onSelectConversation={handleSelectConversation}
           onAddWorkspace={handleAddWorkspace}

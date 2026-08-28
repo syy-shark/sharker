@@ -94,6 +94,29 @@ function normalizeLanguage(language?: string): string {
   return value
 }
 
+/**
+ * 直播未闭合围栏：单块 `<pre>` 更新，避免每 token 重建行号节点。
+ * 闭合后走 MarkdownBody → CodeArtifactBlock。
+ */
+export function LiveFenceTail({ code, language }: CodeArtifactBlockProps) {
+  const label = normalizeLanguage(language)
+  return (
+    <div
+      className="code-artifact-shell live-fence-tail"
+      role="group"
+      aria-label={`${label} 直播代码`}
+    >
+      <div className="code-artifact-head">
+        <span className="code-artifact-label">{label}</span>
+        <span className="code-artifact-detail">写入中</span>
+      </div>
+      <pre className="live-fence-tail__pre">
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
 /** Markdown fenced code 的紧凑编辑器展示。 */
 export function CodeArtifactBlock({ code, language }: CodeArtifactBlockProps) {
   const normalizedCode = code.replace(/\n$/, '')

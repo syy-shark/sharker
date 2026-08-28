@@ -7,8 +7,10 @@ import {
   chatSearchMatchHint,
   conversationPreview,
   filterChatList,
+  collectAttentionConversationIds,
   filterSidebarChats,
   forkConversationTitle,
+  nextActivitySidebarFilter,
   formatPinNote,
   formatRenameNote,
   nextLiveConversationId,
@@ -125,5 +127,20 @@ describe('conversation search', () => {
     expect(filterSidebarChats(items, 'live', ['c']).map((c) => c.id)).toEqual(['c'])
     expect(filterSidebarChats(items, 'unread', []).map((c) => c.id)).toEqual(['a'])
     expect(filterSidebarChats(items, 'pinned', []).map((c) => c.id)).toEqual(['b'])
+    expect(filterSidebarChats(items, 'waiting', [], ['a', 'c']).map((c) => c.id)).toEqual([
+      'a',
+      'c'
+    ])
+    expect(nextActivitySidebarFilter('chronological')).toBe('waiting')
+    expect(nextActivitySidebarFilter('waiting')).toBe('chronological')
+    expect(nextActivitySidebarFilter('live')).toBe('chronological')
+    expect(nextActivitySidebarFilter('unread')).toBe('chronological')
+    expect(
+      collectAttentionConversationIds({
+        conversations: items,
+        liveIds: ['c'],
+        waitingIds: ['b']
+      }).map((id) => id)
+    ).toEqual(['b', 'c'])
   })
 })

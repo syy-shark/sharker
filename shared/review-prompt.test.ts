@@ -16,4 +16,13 @@ describe('review scope', () => {
     expect(parseReviewRequest('branch here').detached).toBe(false)
     expect(parseReviewRequest('branch here').scope).toBe('branch')
   })
+
+  it('uses Review delivery and allows here/detached overrides', () => {
+    expect(parseReviewRequest('', { delivery: 'inline' }).detached).toBe(false)
+    expect(parseReviewRequest('branch', { delivery: 'inline' }).detached).toBe(false)
+    expect(parseReviewRequest('here', { delivery: 'detached' }).detached).toBe(false)
+    expect(parseReviewRequest('detached', { delivery: 'inline' }).detached).toBe(true)
+    expect(parseReviewRequest('new', { delivery: 'inline' }).detached).toBe(true)
+    expect(parseReviewRequest('inline', { delivery: 'detached' }).detached).toBe(false)
+  })
 })

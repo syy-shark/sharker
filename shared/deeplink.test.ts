@@ -46,6 +46,14 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'permissions'
     })
+    expect(parseDeeplink('sharker://settings/git')).toEqual({
+      type: 'settings',
+      tab: 'permissions'
+    })
+    expect(parseDeeplink('sharker://settings/review')).toEqual({
+      type: 'settings',
+      tab: 'permissions'
+    })
     expect(parseDeeplink('sharker://settings/notifications')).toEqual({
       type: 'settings',
       tab: 'appearance'

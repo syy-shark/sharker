@@ -15,13 +15,25 @@ export const REVIEW_WORKING_TREE_PROMPT =
 export const REVIEW_BRANCH_PROMPT =
   `请审查当前分支相对基线（origin/HEAD，否则 main/master）的已提交变更（git diff base...HEAD）。只做只读审查：指出问题、风险、遗漏测试与可改进处。不要修改文件，不要 commit。先确认基线再看 name-status 与关键 diff，再给出结构化评审。\n\n${REVIEW_FINDINGS_TAIL}`
 
-/** `/review` 参数：范围 + 是否独立线程（对标 Codex detached review） */
-export function parseReviewRequest(args: string): {
+/** Settings → Git → Review delivery（对标 Codex：Inline 当前对话 / Detached 新线程） */
+export type ReviewDelivery = 'inline' | 'detached'
+
+export function parseReviewDelivery(raw: unknown): ReviewDelivery {
+  return raw === 'inline' ? 'inline' : 'detached'
+}
+
+/** `/review` 参数：范围 + 是否独立线程（设置默认，here/detached 单次覆盖） */
+export function parseReviewRequest(
+  args: string,
+  options?: { delivery?: unknown }
+): {
   scope: 'uncommitted' | 'branch'
   detached: boolean
 } {
   const tokens = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  const detached = !tokens.includes('here')
+  let detached = parseReviewDelivery(options?.delivery) === 'detached'
+  if (tokens.includes('here') || tokens.includes('inline')) detached = false
+  if (tokens.includes('detached') || tokens.includes('new')) detached = true
   const scope = tokens.some((t) => t === 'branch' || t === 'base' || t === 'against-base')
     ? 'branch'
     : 'uncommitted'

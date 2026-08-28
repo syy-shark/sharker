@@ -228,9 +228,16 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'agents',
     title: '打开子 Agent 活动',
-    shortcut: '⌘⌥U',
-    keywords: 'agents subagent activity 活动 子代理',
+    shortcut: '⌘⌥⇧U',
+    keywords: 'agents subagent 子代理',
     action: 'toggle_agents'
+  },
+  {
+    id: 'activity',
+    title: '活动视图',
+    shortcut: '⌘⌥U',
+    keywords: 'activity waiting unread running 活动 等待 未读 进行中',
+    action: 'toggle_activity'
   },
   {
     id: 'mention',

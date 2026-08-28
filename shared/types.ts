@@ -97,6 +97,11 @@ export interface AppSettings {
   /** 空对话显示上下文建议（对标 Codex Suggested prompts） */
   suggestedPrompts?: boolean
   /**
+   * `/review` 默认交付（对标 Codex Settings → Git → Review delivery）。
+   * detached（默认）：新开审查线程；inline：能在当前对话跑就在当前对话。
+   */
+  reviewDelivery?: 'inline' | 'detached'
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -346,6 +351,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   followUpBehavior: 'queue',
   requireModEnter: false,
   suggestedPrompts: true,
+  reviewDelivery: 'detached',
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

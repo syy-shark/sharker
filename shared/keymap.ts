@@ -28,6 +28,7 @@ const ACTION_SET = new Set<string>([
   'select_recent',
   'search_chats',
   'toggle_agents',
+  'toggle_activity',
   'nav_back',
   'nav_forward',
   'font_larger',

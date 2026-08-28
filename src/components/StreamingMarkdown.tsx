@@ -3,7 +3,7 @@
  * @see src/components/ARCH.md
  */
 import { memo, useMemo } from 'react'
-import { CodeArtifactBlock } from './CodeArtifactBlock'
+import { LiveFenceTail } from './CodeArtifactBlock'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import { MarkdownBody } from './MarkdownBody'
 import { extractOpenFenceBody, splitStreamingMarkdown } from '../../shared/streaming-markdown'
@@ -26,7 +26,7 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
           isInlineDemoLang(split.tailLang) && isInlineDemoPaintable(fenceBody) ? (
             <InlineDemo html={fenceBody} streaming />
           ) : (
-            <CodeArtifactBlock code={fenceBody} language={split.tailLang} />
+            <LiveFenceTail code={fenceBody} language={split.tailLang} />
           )
         ) : (
           <MarkdownBody>{split.tail}</MarkdownBody>

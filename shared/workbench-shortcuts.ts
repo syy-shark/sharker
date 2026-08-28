@@ -22,6 +22,7 @@ export type WorkbenchShortcutAction =
   | 'select_recent'
   | 'search_chats'
   | 'toggle_agents'
+  | 'toggle_activity'
   | 'nav_back'
   | 'nav_forward'
   | 'font_larger'
@@ -111,7 +112,8 @@ export function matchDefaultWorkbenchShortcut(event: {
   }
 
   if (key === 'b' && event.altKey && !event.shiftKey) return 'toggle_review'
-  if (key === 'u' && event.altKey && !event.shiftKey) return 'toggle_agents'
+  if (key === 'u' && event.altKey && event.shiftKey) return 'toggle_agents'
+  if (key === 'u' && event.altKey && !event.shiftKey) return 'toggle_activity'
   if (
     key === 'g' &&
     event.shiftKey &&
@@ -261,7 +263,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘B', title: '切换侧栏' },
   { keys: '⌘⌥B / ⌃⇧G', title: '打开审查' },
   { keys: '⌘Z / ⌘⇧Z', title: '撤销 / 重做上一次应用操作' },
-  { keys: '⌘⌥U', title: '子 Agent 活动' },
+  { keys: '⌘⌥U', title: '活动视图' },
+  { keys: '⌘⌥⇧U', title: '子 Agent 活动' },
   { keys: '⌘J / Ctrl+`', title: '打开终端' },
   { keys: '⌘⇧E', title: '打开文件树' },
   { keys: '⌘⇧B', title: '打开内置浏览器' },
@@ -351,7 +354,18 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'toggle_files', title: '打开文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },
   { action: 'toggle_browser', title: '打开内置浏览器', defaultKeys: '⌘⇧B', defaultChord: 'mod+shift+b' },
   { action: 'open_browser', title: '打开浏览器标签', defaultKeys: '⌘T', defaultChord: 'mod+t' },
-  { action: 'toggle_agents', title: '子 Agent 活动', defaultKeys: '⌘⌥U', defaultChord: 'mod+alt+u' },
+  {
+    action: 'toggle_activity',
+    title: '活动视图',
+    defaultKeys: '⌘⌥U',
+    defaultChord: 'mod+alt+u'
+  },
+  {
+    action: 'toggle_agents',
+    title: '子 Agent 活动',
+    defaultKeys: '⌘⌥⇧U',
+    defaultChord: 'mod+alt+shift+u'
+  },
   { action: 'new_conversation', title: '新对话', defaultKeys: '⌘N', defaultChord: ['mod+n', 'mod+shift+o'] },
   {
     action: 'standalone_conversation',

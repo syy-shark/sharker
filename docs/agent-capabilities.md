@@ -27,7 +27,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
-| `/review` | 打开审查并在**新线程**只读评审（对标 detached）；`/review here` 在当前线程；`/review branch` 相对基线 |
+| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线 |
 | `/personality` | 切换务实 / 共情 / 关闭（无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 打开 `$` Skill 选择器（对标 Codex `/skills`）；带过滤参数时列出匹配项；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
@@ -71,7 +71,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
-- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督；对话旁可按时间 / 进行中 / 未读 / 置顶筛选（找不到时选「按时间」）。空输入连按 Esc 回编上一条用户气泡并分叉。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 或 Ctrl+O 复制上一条助手回复，`/delete` 删除当前对话，`/theme` 打开外观，`/debug-config` 打印本机配置（不含 Key），直播中 Esc 停止当前回合，`/fast` 降思考档位，`/skills` 打开 Skill 选择器（带过滤参数则列出匹配项），`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；`/rename [标题]` 或 ⌘⌥R / 侧栏双击写入 `customTitle`；`/pin` 或 ⌘⌥P 置顶；`/unread` 或 ⌘⇧U 标未读（打开对话或 ⇧Esc 清除）；`/usage daily|weekly|cumulative` 看本机 Token 用量；⌘⌥O 独立新对话（弹出窗、不拷目标、不切走当前线程）；⌘⌥⇧O 打开项目选择器；⌘⇧C 复制工作目录（内置浏览器聚焦时仍复制网址）；⌘⌥C 复制会话 ID；⌘⌥⇧C 复制对话路径（隔离 worktree 优先，否则工作区 cwd）。查找栏打开时 ⌘G / ⌘⇧G / F3 / ⇧F3 跳到下一条/上一条命中。审批打开时 Enter 允许一次、Esc 拒绝（输入框菜单优先）。Ctrl+Y 重做应用操作；⌘+ / ⌘- / ⌘0 也认小键盘。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。`/task` 在全局工作区开无项目新对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
+- Composer **本地 / 隔离** 会交接代码：切到隔离时把当前未提交变更带进 worktree；切回本地时把隔离变更带回来（目标必须干净）。同一会话记住关联的 worktree（对标 Codex Hand off）。隔离可先选 **起点分支**（默认 HEAD）。仓库根目录 `.worktreeinclude` 列出的、且已被 gitignore 的文件（以及 `AGENTS.override.md`）会在创建时拷进新 worktree。侧栏把正在跑的线程单独列在 **进行中**，便于并行监督；对话旁可按时间 / 进行中 / 等待回复 / 未读 / 置顶筛选（找不到时选「按时间」）。`⌘⌥U` 开关 Activity（默认等待审批回复，对标 Codex Activity）。`⌘⌥A` 先切到等你回复的对话，再切进行中。空输入连按 Esc 回编上一条用户气泡并分叉。托管 worktree 默认只保留最近 15 个（设置 → 权限可改，0 为不自动删），删除前会快照未提交文件；目录被清理后输入区显示恢复横幅，再发送或点恢复会从快照重建。归档对话会清掉对应托管 worktree。`/init` 在仓库根写 `AGENTS.md`，`/memories` 可开关注入与写入。`/copy` 或 Ctrl+O 复制上一条助手回复，`/delete` 删除当前对话，`/theme` 打开外观，`/debug-config` 打印本机配置（不含 Key），直播中 Esc 停止当前回合，`/fast` 降思考档位，`/skills` 打开 Skill 选择器（带过滤参数则列出匹配项），`/stop` 中止回合并关掉集成终端。`/approve` 批准重试最近一次被拒操作（一次，对标 Codex）；`/rename [标题]` 或 ⌘⌥R / 侧栏双击写入 `customTitle`；`/pin` 或 ⌘⌥P 置顶；`/unread` 或 ⌘⇧U 标未读（打开对话或 ⇧Esc 清除）；`/usage daily|weekly|cumulative` 看本机 Token 用量；⌘⌥O 独立新对话（弹出窗、不拷目标、不切走当前线程）；⌘⌥⇧O 打开项目选择器；⌘⇧C 复制工作目录（内置浏览器聚焦时仍复制网址）；⌘⌥C 复制会话 ID；⌘⌥⇧C 复制对话路径（隔离 worktree 优先，否则工作区 cwd）。查找栏打开时 ⌘G / ⌘⇧G / F3 / ⇧F3 跳到下一条/上一条命中。审批打开时 Enter 允许一次、Esc 拒绝（输入框菜单优先）。Ctrl+Y 重做应用操作；⌘+ / ⌘- / ⌘0 也认小键盘。行首 `!command` 打开右侧终端直接执行。⌘⇧O 与 ⌘N 一样新建对话。`/task` 在全局工作区开无项目新对话。项目三点菜单可 **创建永久 worktree**（独立项目，不自动删）。
 
 ### 线程内查找
 
@@ -91,7 +91,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 命令面板
 
-`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘[` / `⌘]` 前进后退页面与对话（与 `⌘⇧[` / `⌘⇧]` / `⌃Tab` / `⌃⇧Tab` 切相邻线程分开；内置浏览器聚焦时不抢 ⌃Tab）；`⌘+` / `⌘-` / `⌘0` 放大、缩小、重置界面字号（写入设置 → 外观，主进程锁定 pinch 缩放以免只改视图比例）。`Ctrl+L` 打开并清集成终端；终端聚焦时 `⌘K` 也清屏（对标 Codex，此时不打开命令面板；`⌘⇧P` 仍开）。`⇧Esc` 把审查队列未读标成已读。`⌘⇧A` 归档当前对话，`⌘⌥S` 旁路新线程，`⌘⌥A` 跳到下一条进行中对话，`⌘P` 打开 `@` 文件搜索（对标 Codex Search files），`⌘T` 打开内置浏览器标签；右侧面板打开时 `⌘W` 先关面板（不关窗）。浏览器聚焦时 `⌘L` 选中地址栏、`⌘R` 刷新、`⌘←` / `⌘→` 前进后退、`⌘⇧C` 复制网址。鼠标侧键后退 / 前进（浏览区内走网页历史，其它区域走工作台历史）。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats expanded matching：标题、正文摘要、git 分支如 `fix/login-redirect`）；`⌘⌥⇧O` 或 `/project` 打开项目选择器；`⌘Z` / `⌘⇧Z` 撤销/重做上一次应用操作（归档、置顶、重命名、未读；输入框内仍是文本撤销）；`⌃⇧G` 打开审查（对标 Codex Open review tab）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`⌘⌥U` / `/agents` 子 Agent 活动、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。长对话在消息区 `⌘↑` / `⌘↓` 跳到顶/底（输入框内不抢光标）。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；`Ctrl⇧V` 或「语音」进入语音对话（听写自动发送，回复用系统 TTS 朗读）。顶栏可 **弹出当前对话** 到独立窗看直播（chunk 广播到所有窗）。空输入时 `↑` 恢复上一条用户提示。Composer 粘贴优先走 `text/plain`（及剥过的 HTML），避免 Word / PowerPoint 剪贴板把正文收成图片；超过约 1.6 万字收成 `Pasted text.txt`，可预览或「插入正文」。空输入或 `/goal` 无参数时把该附件折成真正的请求。用户气泡可编辑后从该条重发。后台线程完成会标未读并按设置 → 外观 → **通知**（从不 / 后台 / 始终，对标 Codex Notifications）弹系统通知；默认后台档在正在看且窗口在前台时不打扰。可打开 **运行时防止休眠**（主进程 `powerSaveBlocker`）与 **新弹出对话置顶**；弹出窗顶栏可再切 Always on top。完成后助手消息显示 **已改 N 个文件**（写入 `meta.changedFiles`，点开审查；通知正文也带改文件数）。Dock 徽标只计本机未读对话。`sharker://threads/new`、`sharker://new?prompt=` / `path=` / `originUrl=`、`sharker://threads/<id>`、`sharker://settings`、`sharker://skills`、`sharker://automations` 打开对应本机界面（自动化深链同时打开创建流；不自动发送 prompt；不实现 Cloud plugins / pets / SSH）。`/reasoning [档位]` 查看或设定思考档（对标 Codex `/reasoning`）。`/task` 在全局「对话」工作区开新聊天（不绑定项目，对标 Codex `/task`）。`/model` 打开模型选择（也可带模型名直接切）。⌘⌥L 或命令面板复制当前对话深链。macOS 菜单栏提供文件 / 编辑 / 显示 / 窗口 / 帮助（自定义项不抢渲染进程快捷键）。
+`⌘K` / `⌘⇧P` 打开命令面板；`⌘/` 打开快捷键一览。`⌘[` / `⌘]` 前进后退页面与对话（与 `⌘⇧[` / `⌘⇧]` / `⌃Tab` / `⌃⇧Tab` 切相邻线程分开；内置浏览器聚焦时不抢 ⌃Tab）；`⌘+` / `⌘-` / `⌘0` 放大、缩小、重置界面字号（写入设置 → 外观，主进程锁定 pinch 缩放以免只改视图比例）。`Ctrl+L` 打开并清集成终端；终端聚焦时 `⌘K` 也清屏（对标 Codex，此时不打开命令面板；`⌘⇧P` 仍开）。`⇧Esc` 把审查队列未读标成已读。`⌘⇧A` 归档当前对话，`⌘⌥S` 旁路新线程，`⌘⌥A` 跳到下一条需要关注的对话（先等审批），`⌘P` 打开 `@` 文件搜索（对标 Codex Search files），`⌘T` 打开内置浏览器标签；右侧面板打开时 `⌘W` 先关面板（不关窗）。浏览器聚焦时 `⌘L` 选中地址栏、`⌘R` 刷新、`⌘←` / `⌘→` 前进后退、`⌘⇧C` 复制网址。鼠标侧键后退 / 前进（浏览区内走网页历史，其它区域走工作台历史）。`⌘⇧[` / `⌘⇧]` 或 `⌘1–9` 切换当前项目对话；`⌘G` 搜索对话（对标 Codex Search chats expanded matching：标题、正文摘要、git 分支如 `fix/login-redirect`）；`⌘⌥⇧O` 或 `/project` 打开项目选择器；`⌘Z` / `⌘⇧Z` 撤销/重做上一次应用操作（归档、置顶、重命名、未读；输入框内仍是文本撤销）；`⌃⇧G` 打开审查（对标 Codex Open review tab）；`⌘⇧E` 文件树、`⌘⇧B` 浏览器、`⌘⌥U` 活动视图、`⌘⌥⇧U` / `/agents` 子 Agent 活动、`Ctrl+\`` 终端、`Ctrl⇧M` 模型选择。长对话在消息区 `⌘↑` / `⌘↓` 跳到顶/底（输入框内不抢光标）。Composer 麦克风或 `Ctrl⇧D` 听写（Web Speech API，对标 Codex Dictation）；`Ctrl⇧V` 或「语音」进入语音对话（听写自动发送，回复用系统 TTS 朗读）。顶栏可 **弹出当前对话** 到独立窗看直播（chunk 广播到所有窗）。空输入时 `↑` 恢复上一条用户提示。Composer 粘贴优先走 `text/plain`（及剥过的 HTML），避免 Word / PowerPoint 剪贴板把正文收成图片；超过约 1.6 万字收成 `Pasted text.txt`，可预览或「插入正文」。空输入或 `/goal` 无参数时把该附件折成真正的请求。用户气泡可编辑后从该条重发。后台线程完成会标未读并按设置 → 外观 → **通知**（从不 / 后台 / 始终，对标 Codex Notifications）弹系统通知；默认后台档在正在看且窗口在前台时不打扰。可打开 **运行时防止休眠**（主进程 `powerSaveBlocker`）与 **新弹出对话置顶**；弹出窗顶栏可再切 Always on top。完成后助手消息显示 **已改 N 个文件**（写入 `meta.changedFiles`，点开审查；通知正文也带改文件数）。Dock 徽标只计本机未读对话。`sharker://threads/new`、`sharker://new?prompt=` / `path=` / `originUrl=`、`sharker://threads/<id>`、`sharker://settings`、`sharker://skills`、`sharker://automations` 打开对应本机界面（自动化深链同时打开创建流；不自动发送 prompt；不实现 Cloud plugins / pets / SSH）。`/reasoning [档位]` 查看或设定思考档（对标 Codex `/reasoning`）。`/task` 在全局「对话」工作区开新聊天（不绑定项目，对标 Codex `/task`）。`/model` 打开模型选择（也可带模型名直接切）。⌘⌥L 或命令面板复制当前对话深链。macOS 菜单栏提供文件 / 编辑 / 显示 / 窗口 / 帮助（自定义项不抢渲染进程快捷键）。
 
 ### 排队与插队
 
@@ -99,6 +99,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
 - 可打开 **用 ⌘Enter 发送**（Enter 换行）
 - 可打开 **建议提示**（空对话显示审查 / 设定目标 / 继续最近对话，对标 Codex Suggested prompts）
+- 设置 → 权限 → Git **审查交付**：`/review` 默认独立线程或当前对话（对标 Codex Review delivery）
 - 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
 - 设置 → 外观 → **自定义说明** 写入 `~/.sharker/AGENTS.md`（对标 Codex Personalization → Custom instructions；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）
@@ -144,7 +145,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### Git / Tasks / Sub-agents
 
-见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥U`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。主线程时间线里的启动子 Agent / 转向 / 取结果步骤可点 **打开**，选中对应孩子（对标 Codex「Open a subagent thread from the activity shown in the main thread」）。快照落 `~/.sharker/subagents.json`，重启后仍能查看已结束的孩子；启动时仍在跑的标为「应用重启后中断」。
+见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥⇧U` / `/agents`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。主线程时间线里的启动子 Agent / 转向 / 取结果步骤可点 **打开**，选中对应孩子（对标 Codex「Open a subagent thread from the activity shown in the main thread」）。快照落 `~/.sharker/subagents.json`，重启后仍能查看已结束的孩子；启动时仍在跑的标为「应用重启后中断」。
 
 ### 子 Agent 活动
 
