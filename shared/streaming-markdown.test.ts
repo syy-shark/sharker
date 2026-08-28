@@ -33,7 +33,7 @@ describe('splitStreamingMarkdown', () => {
     expect(next.tail).toBe('Hello world')
     expect(streamingProseText('Hello world', next)).toBe('Hello world')
     expect(needsFullRemarkMarkdown('Hello world')).toBe(false)
-    expect(needsFullRemarkMarkdown('See the note.[^1]\n\n[^1]: hi')).toBe(true)
+    expect(needsFullRemarkMarkdown('See the note.[^1]\n\n[^1]: hi')).toBe(false)
     expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
     expect(streamingRenderSlots(next).map((slot) => slot.key)).toEqual(['prose-run-0'])
   })

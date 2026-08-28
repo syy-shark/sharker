@@ -298,9 +298,9 @@ export function streamingProseText(text: string, split: StreamingMarkdownSplit):
   return src
 }
 
-/** 只有脚注等跨块语法才需要收束后换 remark，普通回答保持廉价树以免贴底跳 */
-export function needsFullRemarkMarkdown(text: string): boolean {
-  return /\[\^[^\]]+\]/.test(String(text ?? ''))
+/** 收束后仍走廉价树。脚注已在廉价解析里画（定义续行 / 多段 / 无引用不画），不再换 remark 跳贴底。 */
+export function needsFullRemarkMarkdown(_text: string): boolean {
+  return false
 }
 
 /** 直播散文尾：廉价行内节点，避免每 token 跑 remark */

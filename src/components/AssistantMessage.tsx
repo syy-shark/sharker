@@ -24,7 +24,6 @@ import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
 import { StreamingMarkdown } from './StreamingMarkdown'
-import { needsFullRemarkMarkdown } from '../../shared/streaming-markdown'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { dispatchOpenWorkspaceFile } from '../lib/open-workspace-file'
 import './AssistantMessage.css'
@@ -481,18 +480,10 @@ export const AssistantMessage = memo(function AssistantMessage({
                 if (part.type === 'diff') {
                   return <LiveFileDiff key={part.id} diff={part.diff} />
                 }
-                return isStreaming || !needsFullRemarkMarkdown(part.content) ? (
-                  <StreamingMarkdown key={part.id} text={part.content} />
-                ) : (
-                  <MarkdownBody key={part.id}>{part.content}</MarkdownBody>
-                )
+                return <StreamingMarkdown key={part.id} text={part.content} />
               })
             ) : displayContent ? (
-              isStreaming || !needsFullRemarkMarkdown(displayContent) ? (
-                <StreamingMarkdown text={displayContent} />
-              ) : (
-                <MarkdownBody>{displayContent}</MarkdownBody>
-              )
+              <StreamingMarkdown text={displayContent} />
             ) : null)}
         </div>
       ) : null}
