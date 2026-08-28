@@ -1,6 +1,6 @@
 /**
- * 流式 Markdown：已闭合块 memo 住，只重绘增长中的尾部。
- * 收束后交给 MarkdownBody 走完整 remark（脚注等跨块语法）；mermaid 靠 SVG 缓存避免闪回源码。
+ * 流式 Markdown：整段散文走廉价增量，不在每段收束时换 remark 树。
+ * 未闭合围栏单独 LiveFenceTail；回合结束后 AssistantMessage 才整段交给 MarkdownBody。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -10,17 +10,15 @@ import { isMermaidLang } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
-import { MarkdownBody } from './MarkdownBody'
 import {
   collectLinkDefinitions,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
-  isOnlyLinkDefinitions,
   linkDefinitionBlob,
-  markdownBlockWithDefs,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
+  streamingProseText,
   type CheapInlineNode,
   type CheapLinkDef,
   type CheapListItem,
@@ -245,6 +243,9 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     if (isMermaidLang(block.lang)) {
       return <MermaidBlock key={index} code={block.text} />
     }
+    if (isInlineDemoLang(block.lang) && isInlineDemoPaintable(block.text)) {
+      return <InlineDemo key={index} html={block.text} streaming />
+    }
     return <LiveFenceTail key={index} code={block.text} language={block.lang} />
   }
   if (block.type === 'footnotes') {
@@ -300,7 +301,7 @@ const LiveProseTail = memo(function LiveProseTail({
   return <div className="live-prose-tail">{blocks.map(renderCheapBlock)}</div>
 })
 
-/** 直播正文：稳定块 + 尾部，避免每 token 重解析全文 */
+/** 直播正文：散文全文廉价增量；未闭合围栏单独画，避免每段收束换 remark */
 export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
   const prevRef = useRef({ text: '', split: splitStreamingMarkdown('') })
   const split = useMemo(() => {
@@ -314,22 +315,15 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
   )
   const defsBlob = useMemo(() => linkDefinitionBlob(text), [text])
   const defs = useMemo(() => collectLinkDefinitions(text), [defsBlob])
+  const proseText = useMemo(() => streamingProseText(text, split), [text, split])
   return (
     <div className="streaming-markdown">
-      {split.blocks.map((block) =>
-        isOnlyLinkDefinitions(block.text) ? null : (
-          <MarkdownBody key={block.id}>{markdownBlockWithDefs(block.text, defsBlob)}</MarkdownBody>
-        )
-      )}
-      {split.tail ? (
-        split.tailKind === 'fence' ? (
-          isInlineDemoLang(split.tailLang) && isInlineDemoPaintable(fenceBody) ? (
-            <InlineDemo html={fenceBody} streaming />
-          ) : (
-            <LiveFenceTail code={fenceBody} language={split.tailLang} />
-          )
+      {proseText ? <LiveProseTail text={proseText} defs={defs} /> : null}
+      {split.tailKind === 'fence' ? (
+        isInlineDemoLang(split.tailLang) && isInlineDemoPaintable(fenceBody) ? (
+          <InlineDemo html={fenceBody} streaming />
         ) : (
-          <LiveProseTail text={split.tail} defs={defs} />
+          <LiveFenceTail code={fenceBody} language={split.tailLang} />
         )
       ) : null}
     </div>

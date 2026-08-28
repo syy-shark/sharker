@@ -10,7 +10,8 @@ import {
   markdownBlockWithDefs,
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
-  splitStreamingMarkdown
+  splitStreamingMarkdown,
+  streamingProseText
 } from './streaming-markdown'
 
 describe('splitStreamingMarkdown', () => {
@@ -23,6 +24,7 @@ describe('splitStreamingMarkdown', () => {
     const next = splitStreamingMarkdown('Hello world')
     expect(next.blocks).toEqual([])
     expect(next.tail).toBe('Hello world')
+    expect(streamingProseText('Hello world', next)).toBe('Hello world')
   })
 
   it('commits a paragraph once a blank line arrives', () => {
@@ -40,6 +42,7 @@ describe('splitStreamingMarkdown', () => {
     expect(split.tailKind).toBe('fence')
     expect(split.tailLang).toBe('ts')
     expect(split.tail).toContain('const x = 1')
+    expect(streamingProseText('Intro\n\n```ts\nconst x = 1', split)).toBe('Intro\n\n')
     const spaced = splitStreamingMarkdown('   ```js\n1')
     expect(spaced.tailKind).toBe('fence')
     expect(spaced.tailLang).toBe('js')

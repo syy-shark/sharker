@@ -209,6 +209,14 @@ export function extractOpenFenceBody(tail: string): string {
   return nl === -1 ? '' : tail.slice(nl + 1)
 }
 
+/** 直播散文：未闭合围栏之前的原文；散文模式给全文，避免每收一段就换 remark 树 */
+export function streamingProseText(text: string, split: StreamingMarkdownSplit): string {
+  const src = normalizeStreamingText(text)
+  if (!src) return ''
+  if (split.tailKind === 'fence') return src.slice(0, Math.max(0, split.closedEnd))
+  return src
+}
+
 /** 直播散文尾：廉价行内节点，避免每 token 跑 remark */
 export type CheapInlineNode =
   | { type: 'text'; text: string }
