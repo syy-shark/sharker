@@ -15,7 +15,7 @@ import './SettingsPage.css'
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   permissions: {
     title: '权限',
-    desc: '控制 AI 可访问的文件与系统范围；高危操作仍会单独确认。'
+    desc: '控制 AI 可访问的文件与系统范围、托管 worktree 保留数；高危操作仍会单独确认。'
   },
   models: {
     title: '模型',
