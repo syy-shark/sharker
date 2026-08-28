@@ -152,12 +152,12 @@ describe('splitStreamingMarkdown', () => {
     expect(grown[0]).toBe(first[0])
     expect(grown[1]).toBe(first[1])
     expect(grown.map((n) => n.type)).toEqual(['text', 'code', 'text', 'strong'])
-    const imgFirst = '见图 ![示意](https://a.test/p.png)'
+    const imgFirst = '见图 ![示意](https://a.test/p.png) 与 '
     const imgNodes = parseCheapInlineMarkdown(imgFirst)
-    const imgGrown = continueCheapInlineMarkdown(imgFirst, imgNodes, `${imgFirst} 后`)
+    const imgGrown = continueCheapInlineMarkdown(imgFirst, imgNodes, `${imgFirst}**bar**`)
     expect(imgGrown[0]).toBe(imgNodes[0])
     expect(imgGrown[1]).toBe(imgNodes[1])
-    expect(imgGrown.map((n) => n.type)).toEqual(['text', 'image', 'text'])
+    expect(imgGrown.map((n) => n.type)).toEqual(['text', 'image', 'text', 'strong'])
   })
 
   it('reuses closed blocks when only the tail grows', () => {
