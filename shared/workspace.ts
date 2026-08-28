@@ -135,6 +135,8 @@ export function normalizeSettings(
     memoryInjection: raw.memoryInjection !== false,
     memoryGeneration: raw.memoryGeneration !== false,
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),
+    followUpBehavior: raw.followUpBehavior === 'steer' ? 'steer' : 'queue',
+    requireModEnter: raw.requireModEnter === true,
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

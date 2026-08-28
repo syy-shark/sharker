@@ -109,6 +109,63 @@ export function shouldApplyStreamToActive(
   return chunkConversationId === activeConversationId
 }
 
+/** 改排队正文（对标 Codex：queued messages can be edited） */
+export function updateQueuedPromptText(
+  queues: SessionQueueMap,
+  conversationId: string,
+  promptId: string,
+  text: string
+): SessionQueueMap {
+  const list = queues[conversationId]
+  if (!list) return queues
+  const nextText = String(text || '')
+  let changed = false
+  const next = list.map((item) => {
+    if (item.id !== promptId || item.conversationId !== conversationId) return item
+    changed = true
+    return { ...item, text: nextText }
+  })
+  if (!changed) return queues
+  return { ...queues, [conversationId]: next }
+}
+
+/** 上移 / 下移排队项（对标 Codex reorder） */
+export function moveQueuedPrompt(
+  queues: SessionQueueMap,
+  conversationId: string,
+  promptId: string,
+  direction: -1 | 1
+): SessionQueueMap {
+  const list = queues[conversationId]
+  if (!list || list.length < 2) return queues
+  const idx = list.findIndex((item) => item.id === promptId && item.conversationId === conversationId)
+  if (idx < 0) return queues
+  const nextIdx = idx + direction
+  if (nextIdx < 0 || nextIdx >= list.length) return queues
+  const next = [...list]
+  const [item] = next.splice(idx, 1)
+  next.splice(nextIdx, 0, item)
+  return { ...queues, [conversationId]: next }
+}
+
+/** 取出指定排队项立刻发送，其余顺序不变 */
+export function takeQueuedPrompt(
+  queues: SessionQueueMap,
+  conversationId: string,
+  promptId: string
+): { item: SessionQueuedPrompt | null; queues: SessionQueueMap } {
+  const list = queues[conversationId]
+  if (!list) return { item: null, queues }
+  const idx = list.findIndex((item) => item.id === promptId && item.conversationId === conversationId)
+  if (idx < 0) return { item: null, queues }
+  const item = list[idx]
+  const rest = list.filter((_, i) => i !== idx)
+  const nextQueues = { ...queues }
+  if (rest.length === 0) delete nextQueues[conversationId]
+  else nextQueues[conversationId] = rest
+  return { item, queues: nextQueues }
+}
+
 /**
  * 回合结束后应派发的下一跳：只从 **完成回合所属会话** 的队列取。
  * `held` 时保留队列、不自动出队（对标 Codex hold queue）。

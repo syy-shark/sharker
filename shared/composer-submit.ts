@@ -1,14 +1,37 @@
 /**
- * Composer 提交键：对标 Codex —— 忙时 Enter 注入当前回合，Tab 排队。
+ * Composer 提交键：对标 Codex 桌面端 Follow-up（默认排队）与 CLI Tab 排队。
  * @see shared/ARCH.md
  */
 
 /** 发送模式（与 UI PromptSubmitMode 对齐） */
 export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 
+/** 忙时后续：排队等到下一回合，或注入当前回合（对标 Codex Follow-up behavior） */
+export type FollowUpBehavior = 'queue' | 'steer'
+
+/** 设置里未写时按桌面端默认排队 */
+export function parseFollowUpBehavior(raw: unknown): FollowUpBehavior {
+  return raw === 'steer' ? 'steer' : 'queue'
+}
+
+/** ⌘⇧Enter / Ctrl⇧Enter：单条消息使用另一种后续行为 */
+export function isFollowUpInvertChord(options: {
+  key: string
+  shiftKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  altKey?: boolean
+}): boolean {
+  if (options.key !== 'Enter') return false
+  if (!options.shiftKey || options.altKey) return false
+  return Boolean(options.metaKey || options.ctrlKey)
+}
+
 /**
  * 输入框在无菜单时的 Enter / Tab。
- * 空闲 Enter 发送；忙时 Enter 插队注入，Tab 排队。Shift+Enter 换行，不在这里处理。
+ * 空闲 Enter 发送（`requireModEnter` 时需 ⌘/Ctrl+Enter）。
+ * 忙时 Enter 按 `followUpBehavior`（默认 queue）；⌘⇧Enter 反转；Tab 仍排队。
+ * 普通 Shift+Enter 换行。
  */
 export function resolveComposerSubmit(options: {
   key: string
@@ -18,13 +41,31 @@ export function resolveComposerSubmit(options: {
   altKey?: boolean
   loading: boolean
   menuOpen?: boolean
+  followUpBehavior?: FollowUpBehavior
+  requireModEnter?: boolean
 }): ComposerSubmitMode | null {
-  if (options.menuOpen || options.shiftKey) return null
-  if (options.key === 'Enter') return options.loading ? 'jump' : 'send'
-  // ⌃Tab / ⌘Tab 留给切对话 / 系统切应用，不排队
-  if (options.ctrlKey || options.metaKey || options.altKey) return null
-  if (options.key === 'Tab' && options.loading) return 'queue'
-  return null
+  if (options.menuOpen) return null
+  const follow = parseFollowUpBehavior(options.followUpBehavior)
+  const invert = isFollowUpInvertChord(options)
+  const mod = Boolean(options.metaKey || options.ctrlKey)
+
+  if (options.key === 'Tab') {
+    if (options.ctrlKey || options.metaKey || options.altKey) return null
+    return options.loading ? 'queue' : null
+  }
+
+  if (options.key !== 'Enter') return null
+
+  if (invert) {
+    if (!options.loading) return 'send'
+    return follow === 'steer' ? 'queue' : 'jump'
+  }
+
+  if (options.shiftKey) return null
+  if (options.requireModEnter && !mod) return null
+
+  if (!options.loading) return 'send'
+  return follow === 'steer' ? 'jump' : 'queue'
 }
 
 /** 输入框为空时 ↑ 恢复上一条用户提示（对标 Codex Restore previous composer prompt） */

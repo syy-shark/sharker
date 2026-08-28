@@ -24,7 +24,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   appearance: {
     title: '外观',
-    desc: '浅色苹果玻璃与深色金属；人格只改语气。'
+    desc: '浅色苹果玻璃与深色金属；后续排队/注入；人格只改语气。'
   },
   shortcuts: {
     title: '键盘快捷键',

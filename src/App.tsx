@@ -169,6 +169,9 @@ import {
   createQueuedPrompt,
   enqueueForConversation,
   listQueuedForConversation,
+  moveQueuedPrompt,
+  takeQueuedPrompt,
+  updateQueuedPromptText,
   markDoneCommitted,
   nextFollowUpAfterTurn,
   resolveCommitConversationId,
@@ -1155,7 +1158,9 @@ export default function App() {
           memoryInjection: updated.memoryInjection,
           memoryGeneration: updated.memoryGeneration,
           uiFontScale: updated.uiFontScale,
-          keyboardShortcuts: updated.keyboardShortcuts
+          keyboardShortcuts: updated.keyboardShortcuts,
+          followUpBehavior: updated.followUpBehavior,
+          requireModEnter: updated.requireModEnter
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1207,6 +1212,8 @@ export default function App() {
       memoryGeneration: draft.memoryGeneration,
       uiFontScale: draft.uiFontScale,
       keyboardShortcuts: draft.keyboardShortcuts,
+      followUpBehavior: draft.followUpBehavior,
+      requireModEnter: draft.requireModEnter,
       workspaces: current.workspaces?.length ? current.workspaces : draft.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || draft.activeWorkspaceId,
       workspacePath: current.workspacePath || draft.workspacePath
@@ -2378,6 +2385,39 @@ export default function App() {
     [syncActiveQueueUi]
   )
 
+  const handleEditQueued = useCallback(
+    (id: string, text: string) => {
+      const convId = activeConversationIdRef.current
+      if (!convId) return
+      const queues = updateQueuedPromptText(sessionQueuesRef.current, convId, id, text)
+      syncActiveQueueUi(queues, convId)
+    },
+    [syncActiveQueueUi]
+  )
+
+  const handleMoveQueued = useCallback(
+    (id: string, direction: -1 | 1) => {
+      const convId = activeConversationIdRef.current
+      if (!convId) return
+      const queues = moveQueuedPrompt(sessionQueuesRef.current, convId, id, direction)
+      syncActiveQueueUi(queues, convId)
+    },
+    [syncActiveQueueUi]
+  )
+
+  const handleSendQueued = useCallback(
+    (id: string) => {
+      const convId = activeConversationIdRef.current
+      if (!convId) return
+      const { item, queues } = takeQueuedPrompt(sessionQueuesRef.current, convId, id)
+      syncActiveQueueUi(queues, convId)
+      if (!item?.text.trim()) return
+      const busy = loading || sendInFlightRef.current
+      void handlePromptSubmit(item.text, busy ? 'jump' : 'send', item.attachments)
+    },
+    [handlePromptSubmit, loading, syncActiveQueueUi]
+  )
+
   /** Replay a user turn without duplicating its bubble; optional edited text. */
   const handleRetry = useCallback(
     async (userMessageId: string, contentOverride?: string) => {
@@ -2558,6 +2598,8 @@ export default function App() {
       memoryGeneration: next.memoryGeneration,
       uiFontScale: next.uiFontScale,
       keyboardShortcuts: next.keyboardShortcuts,
+      followUpBehavior: next.followUpBehavior,
+      requireModEnter: next.requireModEnter,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -5822,6 +5864,11 @@ export default function App() {
               queuedPrompts={queuedPrompts}
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}
+              onEditQueued={handleEditQueued}
+              onMoveQueued={handleMoveQueued}
+              onSendQueued={handleSendQueued}
+              followUpBehavior={settings.followUpBehavior === 'steer' ? 'steer' : 'queue'}
+              requireModEnter={settings.requireModEnter === true}
               onAbort={handleAbort}
               onSlashAction={handleComposerSlash}
               showHistoryPicker={showHistoryPicker}

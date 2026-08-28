@@ -17,9 +17,10 @@
 | 文件 | 说明 |
 |------|------|
 | `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；审查队列入口与未读徽标；**进行中**任务行（并行线程置顶）；**置顶**分组；对话旁 Codex 式筛选（按时间 / 进行中 / 未读 / 置顶）；进行中会话呼吸点；未读点；双击 / ⌘⌥R 行内改名；隔离 Worktree 线程小标；项目菜单含创建永久 worktree；enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
-| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、排队、滚动；输入区交给 `ComposerDock`（直播 token 不重绘输入框）；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；审批出现后仍贴底跟随（不锁上翻）；远离底部的旧消息才 `content-visibility`，贴底附近用 `message-row--near-live`（不受排队行挤偏）；历史行 `useMemo` + 用户气泡 `memo`；用户气泡可就地编辑并重发；空输入 Esc+Esc 回编上一条并分叉；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（`.composer-box` 内仍可触发）；查找打开时 ⌘G / ⌘⇧G 跳命中；⌘↑ / ⌘↓ 跳到对话顶/底（输入框内不抢）；隔离目录被清理时显示恢复横幅；主线程子 Agent 步骤点开活动 |
+| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、滚动；排队条在输入框上方（不进 `.messages`，直播贴底不受排队行影响）；输入区交给 `ComposerDock`（直播 token 不重绘输入框）；流式贴底用 ResizeObserver + 同帧 rAF 合并写 scrollTop；审批出现后仍贴底跟随（不锁上翻）；远离底部的旧消息才 `content-visibility`，贴底附近用 `message-row--near-live`；历史行 `useMemo` + 用户气泡 `memo`；用户气泡可就地编辑并重发；空输入 Esc+Esc 回编上一条并分叉；「回到底部」在滚动区与输入框之间的右侧槽；⌘F 线程内查找（`.composer-box` 内仍可触发）；查找打开时 ⌘G / ⌘⇧G 跳命中；⌘↑ / ⌘↓ 跳到对话顶/底（输入框内不抢）；隔离目录被清理时显示恢复横幅；主线程子 Agent 步骤点开活动 |
 | `GoalProgressRow.tsx` / `.css` | 输入框上方的线程目标进度行（对标 Codex Goal）：暂停 / 继续 / 编辑 / 清除；不接收直播 token |
-| `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史（标题/正文/分支扩匹配）、项目选择器、附件、听写/语音、Enter 注入 / Tab 排队（⌃Tab / ⌘Tab 不补全也不排队）、本地/隔离线程；`/` 列表并入已安装 Skill（选中写入 `$name`，不盖内置命令）；空输入 Esc+Esc 回编上一条用户气泡（不把草稿填回输入框）；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘；有目标时在输入框上方挂 `GoalProgressRow` |
+| `ComposerDock.tsx` | 输入区独立树：`/` `@` `$`、历史（标题/正文/分支扩匹配）、项目选择器、附件、听写/语音、忙时 Enter 按 `followUpBehavior`（默认排队）/ ⌘⇧Enter 反转 / Tab 排队（⌃Tab / ⌘Tab 不补全也不排队）、本地/隔离线程；`/` 列表并入已安装 Skill（选中写入 `$name`，不盖内置命令）；空输入 Esc+Esc 回编上一条用户气泡（不把草稿填回输入框）；粘贴优先 text/plain（避开 Office 图片层），超长收成 `Pasted text.txt` 可预览/回插；深链 `prompt=` 经 `composerSeed.nonce` 写入；不接收 `streaming` / `liveSegments`；直播中 `speechHint` 置空以免跟 token 重绘；有目标时在输入框上方挂 `GoalProgressRow` |
+| `ComposerQueue.tsx` / `.css` | 输入框上方排队条（对标 Codex）：编辑 / 重排 / 发送 / 删除；不进对话滚动区，避免直播贴底跳动 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、弹出对话、打开隔离 worktree、在此创建分支、当前分支 PR 芯片、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：`memo` 避免直播拖着历史行重绘；直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行；直播秒表不在本组件计时 |
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |

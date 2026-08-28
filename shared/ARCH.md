@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / `sharker://` 深链与应用菜单） |
-| `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter`）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 下一条进行中、侧栏 Chronological / 进行中 / 未读 / 置顶筛选、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
@@ -100,9 +100,9 @@
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
-| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送、忙时注入/排队（⌃Tab / ⌘Tab 不排队）；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
-| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、恢复上一条、空输入 Esc+Esc 回编 |
+| `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`requireModEnter` 时 ⌘Enter 才发送；Tab 仍排队；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、恢复上一条、空输入 Esc+Esc 回编 |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知 / 未读 / Dock 徽标（正在看且窗口在前台不打扰） |
@@ -111,7 +111,7 @@
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
-| `session-runtime.test.ts` | 队列隔离 / Stop-while-queued / persist 目标单测 |
+| `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标单测 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查） |
 | `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff |
 | `patch.ts` | apply_patch 格式解析与应用 |

@@ -6,6 +6,9 @@ import {
   createQueuedPrompt,
   dequeueForConversation,
   enqueueForConversation,
+  moveQueuedPrompt,
+  takeQueuedPrompt,
+  updateQueuedPromptText,
   isDoneCommittedFor,
   listQueuedForConversation,
   markDoneCommitted,
@@ -89,6 +92,33 @@ describe('session / queue isolation', () => {
     )
     queues = cancelQueuedPrompt(queues, 'conv-a', 'drop')
     expect(listQueuedForConversation(queues, 'conv-a').map((q) => q.id)).toEqual(['keep'])
+  })
+
+  it('edits, reorders, and takes a queued prompt in its conversation', () => {
+    let queues = {}
+    queues = enqueueForConversation(
+      queues,
+      'conv-a',
+      createQueuedPrompt('conv-a', 'first', undefined, 'a1')
+    )
+    queues = enqueueForConversation(
+      queues,
+      'conv-a',
+      createQueuedPrompt('conv-a', 'second', undefined, 'a2')
+    )
+    queues = enqueueForConversation(
+      queues,
+      'conv-b',
+      createQueuedPrompt('conv-b', 'other', undefined, 'b1')
+    )
+    queues = updateQueuedPromptText(queues, 'conv-a', 'a2', 'second edited')
+    queues = moveQueuedPrompt(queues, 'conv-a', 'a2', -1)
+    expect(listQueuedForConversation(queues, 'conv-a').map((q) => q.id)).toEqual(['a2', 'a1'])
+    expect(listQueuedForConversation(queues, 'conv-a')[0]?.text).toBe('second edited')
+    const taken = takeQueuedPrompt(queues, 'conv-a', 'a2')
+    expect(taken.item?.text).toBe('second edited')
+    expect(listQueuedForConversation(taken.queues, 'conv-a').map((q) => q.id)).toEqual(['a1'])
+    expect(listQueuedForConversation(taken.queues, 'conv-b').map((q) => q.id)).toEqual(['b1'])
   })
 
   it('does not drain the follow-up queue while held', () => {

@@ -5,15 +5,78 @@ import {
   isDoubleEscape,
   lastUserMessageId,
   lastUserPrompt,
+  isFollowUpInvertChord,
+  parseFollowUpBehavior,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   shouldEditLastUserOnEscape
 } from './composer-submit'
 
 describe('composer submit', () => {
-  it('sends on Enter when idle and steers when busy', () => {
+  it('sends on Enter when idle and queues when busy by default', () => {
     expect(resolveComposerSubmit({ key: 'Enter', loading: false })).toBe('send')
-    expect(resolveComposerSubmit({ key: 'Enter', loading: true })).toBe('jump')
+    expect(resolveComposerSubmit({ key: 'Enter', loading: true })).toBe('queue')
+    expect(resolveComposerSubmit({ key: 'Enter', loading: true, followUpBehavior: 'steer' })).toBe(
+      'jump'
+    )
+    expect(parseFollowUpBehavior(undefined)).toBe('queue')
+    expect(parseFollowUpBehavior('steer')).toBe('steer')
+  })
+
+  it('inverts follow-up with Cmd+Shift+Enter while a turn is running', () => {
+    expect(isFollowUpInvertChord({ key: 'Enter', shiftKey: true, metaKey: true })).toBe(true)
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        shiftKey: true,
+        metaKey: true,
+        loading: true
+      })
+    ).toBe('jump')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        shiftKey: true,
+        ctrlKey: true,
+        loading: true,
+        followUpBehavior: 'steer'
+      })
+    ).toBe('queue')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        shiftKey: true,
+        metaKey: true,
+        loading: false
+      })
+    ).toBe('send')
+  })
+
+  it('requires Cmd+Enter to send when that setting is on', () => {
+    expect(resolveComposerSubmit({ key: 'Enter', loading: false, requireModEnter: true })).toBeNull()
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        metaKey: true,
+        loading: false,
+        requireModEnter: true
+      })
+    ).toBe('send')
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        loading: true,
+        requireModEnter: true
+      })
+    ).toBeNull()
+    expect(
+      resolveComposerSubmit({
+        key: 'Enter',
+        metaKey: true,
+        loading: true,
+        requireModEnter: true
+      })
+    ).toBe('queue')
   })
 
   it('queues on Tab only while a turn is running', () => {

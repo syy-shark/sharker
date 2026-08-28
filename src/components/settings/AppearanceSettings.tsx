@@ -13,7 +13,13 @@ import {
   UI_FONT_SCALE_MAX,
   UI_FONT_SCALE_MIN
 } from '../../../shared/ui-font-scale'
-import { SettingsCard, SettingsChoiceGroup, SettingsRow, SettingsSection } from './SettingsPrimitives'
+import {
+  SettingsCard,
+  SettingsChoiceGroup,
+  SettingsRow,
+  SettingsSection,
+  SettingsToggle
+} from './SettingsPrimitives'
 import './AppearanceSettings.css'
 
 interface Props {
@@ -163,6 +169,43 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 +
               </button>
             </div>
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="输入">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={draft.followUpBehavior === 'steer' ? 'steer' : 'queue'}
+            onChange={(followUpBehavior: 'queue' | 'steer') => {
+              scheduleSave({ ...draftRef.current, followUpBehavior })
+            }}
+            options={[
+              {
+                value: 'queue',
+                title: '排队',
+                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为注入。',
+                icon: <span aria-hidden>排</span>
+              },
+              {
+                value: 'steer',
+                title: '注入',
+                description: '忙时 Enter 插入当前回合。⌘⇧Enter 改为排队。',
+                icon: <span aria-hidden>注</span>
+              }
+            ]}
+          />
+          <SettingsRow
+            title="用 ⌘Enter 发送"
+            description="对标 Codex Require Cmd+Enter：Enter 换行，⌘/Ctrl+Enter 发送。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.requireModEnter === true}
+              onChange={(requireModEnter) => {
+                scheduleSave({ ...draftRef.current, requireModEnter })
+              }}
+              label="用 ⌘Enter 发送"
+            />
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

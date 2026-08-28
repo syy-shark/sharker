@@ -33,7 +33,8 @@ import {
   lastUserPrompt,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
-  shouldEditLastUserOnEscape
+  shouldEditLastUserOnEscape,
+  type FollowUpBehavior
 } from '../../shared/composer-submit'
 import {
   decideClipboardPaste,
@@ -154,6 +155,8 @@ export interface ComposerDockProps {
   composerSeed?: { nonce: number; text: string } | null
   /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
   onEditLastUser?: () => void
+  followUpBehavior?: FollowUpBehavior
+  requireModEnter?: boolean
 }
 
 export const ComposerDock = memo(
@@ -191,7 +194,9 @@ export const ComposerDock = memo(
       speechHint = '',
       onSubmitted,
       composerSeed = null,
-      onEditLastUser
+      onEditLastUser,
+      followUpBehavior = 'queue',
+      requireModEnter = false
     },
     ref
   ) {
@@ -1550,7 +1555,9 @@ export const ComposerDock = memo(
               metaKey: e.metaKey,
               altKey: e.altKey,
               loading,
-              menuOpen
+              menuOpen,
+              followUpBehavior,
+              requireModEnter
             })
             if (mode) {
               e.preventDefault()
@@ -1591,8 +1598,12 @@ export const ComposerDock = memo(
             dictating
               ? '正在听写… Ctrl⇧D 结束'
               : loading
-                ? 'Enter 注入 · Tab 排队 · Esc 停止…'
-                : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
+                ? followUpBehavior === 'steer'
+                  ? 'Enter 注入 · ⌘⇧Enter 排队 · Tab 排队 · Esc 停止…'
+                  : 'Enter 排队 · ⌘⇧Enter 注入 · Tab 排队 · Esc 停止…'
+                : requireModEnter
+                  ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件，$ Skill…'
+                  : '输入消息，/ 命令，! shell，@ 文件，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
           }
           rows={1}
         />

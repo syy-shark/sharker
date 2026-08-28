@@ -87,6 +87,13 @@ export interface AppSettings {
   memoryGeneration?: boolean
   /** 快捷键覆盖（对标 Codex Settings → Keyboard Shortcuts） */
   keyboardShortcuts?: import('./keymap').KeymapOverrides
+  /**
+   * 忙时后续行为（对标 Codex Settings → General → Follow-up behavior）。
+   * 默认 queue：Enter 排队；steer：Enter 注入当前回合。⌘⇧Enter 反转单条。
+   */
+  followUpBehavior?: 'queue' | 'steer'
+  /** 用 ⌘/Ctrl+Enter 发送，Enter 换行（对标 Codex Require Cmd+Enter） */
+  requireModEnter?: boolean
 }
 
 /** 聊天消息角色 */
@@ -320,5 +327,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   worktreeKeepCount: 15,
   memoryInjection: true,
   memoryGeneration: true,
-  keyboardShortcuts: {}
+  keyboardShortcuts: {},
+  followUpBehavior: 'queue',
+  requireModEnter: false
 }

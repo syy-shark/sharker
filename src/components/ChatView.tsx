@@ -17,6 +17,7 @@ import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
 import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
+import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId } from '../../shared/composer-submit'
 import { isNearLiveMessageRow } from '../../shared/live-display'
@@ -211,6 +212,11 @@ interface Props {
   turnHadThinking: boolean
   onSend: (text: string, mode?: PromptSubmitMode, attachments?: ChatAttachment[]) => void
   onCancelQueued: (id: string) => void
+  onEditQueued?: (id: string, text: string) => void
+  onMoveQueued?: (id: string, direction: -1 | 1) => void
+  onSendQueued?: (id: string) => void
+  followUpBehavior?: 'queue' | 'steer'
+  requireModEnter?: boolean
   onAbort: () => void
   onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
   showHistoryPicker?: boolean
@@ -268,6 +274,11 @@ export function ChatView({
   turnHadThinking,
   onSend,
   onCancelQueued,
+  onEditQueued,
+  onMoveQueued,
+  onSendQueued,
+  followUpBehavior = 'queue',
+  requireModEnter = false,
   onAbort,
   onSlashAction,
   showHistoryPicker,
@@ -822,26 +833,6 @@ export function ChatView({
               </div>
             )}
 
-            {queuedPrompts.map((q) => (
-              <div key={q.id} className="message-row message-row--user message-row--queued">
-                <div className="message-user-wrap">
-                  <div className="message-bubble message-bubble--user message-bubble--queued">
-                    <span className="queued-badge">排队中</span>
-                    <MessageAttachments attachments={q.attachments} />
-                    <p>{q.text}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="queued-cancel"
-                    onClick={() => onCancelQueued(q.id)}
-                    title="取消排队"
-                    aria-label="取消排队"
-                  >
-                    取消
-                  </button>
-                </div>
-              </div>
-            ))}
             <div ref={bottomRef} className="messages-end" aria-hidden />
           </div>
         </div>
@@ -876,6 +867,15 @@ export function ChatView({
                 回到底部
               </button>
             </div>
+          ) : null}
+          {onEditQueued && onMoveQueued && onSendQueued ? (
+            <ComposerQueue
+              items={queuedPrompts}
+              onEdit={onEditQueued}
+              onMove={onMoveQueued}
+              onSend={onSendQueued}
+              onCancel={onCancelQueued}
+            />
           ) : null}
           <ComposerDock
             ref={composerRef}
@@ -912,6 +912,8 @@ export function ChatView({
             onSubmitted={handleComposerSubmitted}
             composerSeed={composerSeed}
             onEditLastUser={handleEditLastUser}
+            followUpBehavior={followUpBehavior}
+            requireModEnter={requireModEnter}
           />
         </div>
       </div>

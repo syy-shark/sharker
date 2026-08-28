@@ -95,9 +95,12 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 排队与插队
 
-- Agent 忙时 **Enter** 注入当前回合（中止并立即执行，对标 Codex steer）；**Tab** 将消息排队
+- 设置 → 外观 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（中止并立即执行）
+- **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
+- 可打开 **用 ⌘Enter 发送**（Enter 换行）
+- 排队消息出现在输入框上方，可编辑、重排、立即发送或删除（不进对话滚动区，避免直播贴底跳动）
 - 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
-- Composer 「注入」按钮与 Enter 相同
+- Composer 「注入」按钮始终注入当前回合
 
 ---
 
