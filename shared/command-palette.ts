@@ -72,6 +72,30 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_diff'
   },
   {
+    id: 'mcp',
+    title: 'MCP 状态',
+    keywords: 'mcp tools 工具',
+    action: 'show_mcp'
+  },
+  {
+    id: 'feedback',
+    title: '复制诊断反馈',
+    keywords: 'feedback diagnose 反馈 诊断',
+    action: 'show_feedback'
+  },
+  {
+    id: 'local',
+    title: '交接回本地',
+    keywords: 'local handoff 本地 交接',
+    action: 'set_thread_local'
+  },
+  {
+    id: 'worktree',
+    title: '交接进隔离 worktree',
+    keywords: 'worktree isolate 隔离',
+    action: 'set_thread_worktree'
+  },
+  {
     id: 'changes',
     title: '打开审查面板',
     shortcut: '⌃⇧G',

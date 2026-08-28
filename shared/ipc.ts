@@ -78,6 +78,12 @@ export const IPC = {
   SKILLS_LIST: 'skills:list',
   /** 为会话准备隔离 Git worktree */
   WORKSPACE_PREPARE_WORKTREE: 'workspace:prepare-worktree',
+  /** 项目菜单：创建永久 worktree */
+  WORKSPACE_CREATE_PERMANENT_WORKTREE: 'workspace:create-permanent-worktree',
+  /** 归档时移除会话托管 worktree */
+  WORKSPACE_REMOVE_WORKTREE: 'workspace:remove-worktree',
+  /** `/mcp` 已配置 Server 列表 */
+  MCP_STATUS: 'mcp:status',
   TERMINAL_CREATE: 'terminal:create',
   TERMINAL_WRITE: 'terminal:write',
   TERMINAL_RESIZE: 'terminal:resize',

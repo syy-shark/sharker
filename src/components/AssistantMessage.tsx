@@ -2,7 +2,7 @@
  * AI 助手消息：有序过程流（思考/旁白/工具）+ 最终回答
  * @see src/ARCH.md
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleStop, RotateCcw } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
 import type { ApprovalRequest, AssistantMeta, TurnSegment } from '../../shared/types'
@@ -54,8 +54,8 @@ function formatDuration(sec: number): string {
   return `${sec}s`
 }
 
-/** 单条助手消息：过程流 + 最终回答 */
-export function AssistantMessage({
+/** 单条助手消息：过程流 + 最终回答。历史消息 memo，避免直播 token 拖着整列重绘。 */
+export const AssistantMessage = memo(function AssistantMessage({
   messageId,
   content,
   meta,
@@ -523,4 +523,4 @@ export function AssistantMessage({
         )}
     </article>
   )
-}
+})

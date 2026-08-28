@@ -42,6 +42,7 @@ interface Props {
   onDeleteWorkspace: (id: string) => void
   onTogglePinWorkspace: (id: string) => void
   onRenameWorkspace: (id: string, label: string) => void
+  onCreatePermanentWorktree?: (workspaceId: string) => void
   onNewConversation: (workspaceId: string) => void
   onDeleteConversation: (workspaceId: string, conversationId: string) => void
   onArchiveConversation: (workspaceId: string, conversationId: string) => void
@@ -92,6 +93,7 @@ export function Sidebar({
   onDeleteWorkspace,
   onTogglePinWorkspace,
   onRenameWorkspace,
+  onCreatePermanentWorktree,
   onNewConversation,
   onDeleteConversation: _onDeleteConversation,
   onArchiveConversation,
@@ -476,6 +478,19 @@ export function Sidebar({
                   <Pin size={13} aria-hidden />
                   {ws.pinned ? '取消置顶' : '置顶项目'}
                 </button>
+                {onCreatePermanentWorktree && !ws.isHome ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeProjectMenu()
+                      onCreatePermanentWorktree(ws.id)
+                    }}
+                  >
+                    创建永久 worktree
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   role="menuitem"

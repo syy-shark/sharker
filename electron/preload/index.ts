@@ -165,8 +165,17 @@ contextBridge.exposeInMainWorld('sharker', {
     action: 'stage' | 'unstage' | 'revert',
     paths?: string[]
   ) => ipcRenderer.invoke(IPC.GIT_REVIEW_ACTION, cwd, action, paths),
-  prepareWorktree: (cwd: string, conversationId: string, opts?: { baseRef?: string }) =>
-    ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId, opts),
+  prepareWorktree: (
+    cwd: string,
+    conversationId: string,
+    opts?: { baseRef?: string; keep?: number }
+  ) => ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId, opts),
+  createPermanentWorktree: (cwd: string, name: string, opts?: { baseRef?: string }) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_CREATE_PERMANENT_WORKTREE, cwd, name, opts),
+  removeManagedWorktree: (cwd: string, conversationId: string) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_REMOVE_WORKTREE, cwd, conversationId),
+  listMcpStatus: (workspace: string, verbose?: boolean) =>
+    ipcRenderer.invoke(IPC.MCP_STATUS, workspace, verbose),
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'
     localCwd: string

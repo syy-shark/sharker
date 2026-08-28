@@ -22,6 +22,10 @@ describe('command palette', () => {
     expect(ids).toContain('diff')
     expect(ids).toContain('open-worktree')
     expect(ids).toContain('create-branch')
+    expect(ids).toContain('mcp')
+    expect(ids).toContain('feedback')
+    expect(ids).toContain('local')
+    expect(ids).toContain('worktree')
   })
 
   it('filters by title and keywords', () => {

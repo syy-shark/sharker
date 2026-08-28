@@ -16,6 +16,7 @@ import {
 import {
   DEFAULT_MANAGED_WORKTREE_LIMIT,
   isManagedWorktreeDirName,
+  sanitizePermanentWorktreeName,
   selectManagedWorktreesToPrune
 } from '../shared/worktree-prune'
 
@@ -105,6 +106,11 @@ export function managedWorktreeRoot(home = os.homedir()): string {
   return path.join(home, '.sharker', 'worktrees')
 }
 
+/** 永久 worktree 根（不参与自动清理） */
+export function permanentWorktreeRoot(home = os.homedir()): string {
+  return path.join(managedWorktreeRoot(home), 'permanent')
+}
+
 function snapshotFileFor(dest: string, home: string): string {
   return path.join(home, '.sharker', 'worktree-snapshots', `${path.basename(dest)}.json`)
 }
@@ -179,6 +185,8 @@ export async function pruneManagedWorktrees(options: {
 }): Promise<string[]> {
   const cwd = path.resolve(options.workspacePath)
   const home = options.home ?? os.homedir()
+  const keep = options.keep ?? DEFAULT_MANAGED_WORKTREE_LIMIT
+  if (keep === 0) return []
   const root = path.resolve(managedWorktreeRoot(home))
   let porcelain = ''
   try {
@@ -199,7 +207,7 @@ export async function pruneManagedWorktrees(options: {
   }
   const removed: string[] = []
   for (const dest of selectManagedWorktreesToPrune(entries, {
-    keep: options.keep ?? DEFAULT_MANAGED_WORKTREE_LIMIT,
+    keep,
     protectPaths: options.protectPaths
   })) {
     try {
@@ -304,5 +312,76 @@ export async function prepareThreadWorktree(options: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return { ok: false, error: msg || '创建 worktree 失败' }
+  }
+}
+
+async function resolveRepoName(cwd: string): Promise<string> {
+  try {
+    const toplevel = (await runGit(cwd, ['rev-parse', '--show-toplevel'])).trim()
+    if (toplevel) return path.basename(toplevel)
+  } catch {
+    /* keep basename */
+  }
+  return path.basename(cwd)
+}
+
+/** 项目菜单：创建永久 worktree 并作为独立 checkout */
+export async function createPermanentWorktree(options: {
+  workspacePath: string
+  name: string
+  baseRef?: string
+  home?: string
+}): Promise<PrepareWorktreeResult> {
+  const cwd = path.resolve(options.workspacePath)
+  const name = sanitizePermanentWorktreeName(options.name)
+  if (!name) return { ok: false, error: '名称只能包含字母、数字、点、下划线和连字符' }
+  try {
+    const inside = await runGit(cwd, ['rev-parse', '--is-inside-work-tree'])
+    if (inside.trim() !== 'true') {
+      return { ok: false, error: '当前工作区不是 git 仓库，无法创建永久 Worktree' }
+    }
+  } catch {
+    return { ok: false, error: '当前工作区不是 git 仓库，无法创建永久 Worktree' }
+  }
+  const home = options.home ?? os.homedir()
+  const repoName = await resolveRepoName(cwd)
+  const dest = path.join(permanentWorktreeRoot(home), `${repoName}-${name}`)
+  await mkdir(path.dirname(dest), { recursive: true })
+  const start = sanitizeWorktreeBaseRef(options.baseRef)
+  const branch = `perm/${name}`
+  try {
+    await runGit(cwd, ['worktree', 'add', '-b', branch, dest, start])
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: msg || '创建永久 worktree 失败' }
+  }
+  try {
+    await copyWorktreeIncludes(cwd, dest)
+  } catch (e) {
+    console.warn('[worktree] copy include files failed', e)
+  }
+  return { ok: true, path: dest, branch }
+}
+
+/** 归档对话时删掉该会话的托管 worktree（先快照） */
+export async function removeManagedWorktree(options: {
+  workspacePath: string
+  conversationId: string
+  home?: string
+}): Promise<{ ok: true; removed: boolean } | { ok: false; error: string }> {
+  const cwd = path.resolve(options.workspacePath)
+  const home = options.home ?? os.homedir()
+  const repoName = await resolveRepoName(cwd)
+  const dest = path.join(managedWorktreeRoot(home), `${repoName}-${shortId(options.conversationId)}`)
+  try {
+    const listed = await runGit(cwd, ['worktree', 'list', '--porcelain'], { trim: false })
+    if (!listed.split('\n').some((line) => line === `worktree ${dest}`)) {
+      return { ok: true, removed: false }
+    }
+    await snapshotManagedWorktree(dest, home)
+    await runGit(cwd, ['worktree', 'remove', '--force', dest])
+    return { ok: true, removed: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }

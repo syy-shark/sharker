@@ -206,8 +206,23 @@ export interface SharkerApi {
   prepareWorktree: (
     cwd: string,
     conversationId: string,
+    opts?: { baseRef?: string; keep?: number }
+  ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
+  createPermanentWorktree: (
+    cwd: string,
+    name: string,
     opts?: { baseRef?: string }
   ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
+  removeManagedWorktree: (
+    cwd: string,
+    conversationId: string
+  ) => Promise<{ ok: true; removed: boolean } | { ok: false; error: string }>
+  listMcpStatus: (
+    workspace: string,
+    verbose?: boolean
+  ) => Promise<
+    Array<{ name: string; command: string; args?: string[]; tools?: string[]; error?: string }>
+  >
   handoffThread: (payload: {
     direction: 'to_local' | 'to_worktree'
     localCwd: string

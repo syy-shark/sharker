@@ -14,8 +14,8 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置 |
-| `ipc.ts` | IPC channel 名称常量 |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态） |
 | `workspace.ts` | 工作区列表、排序、设置归一化、全局工作区 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序、⌘G 标题过滤、进行中任务拆分、`/fork` 分叉标题与拷贝 |
@@ -82,7 +82,7 @@
 | `thread-goal.test.ts` | 设定 / 暂停 / 芯片文案 |
 | `thread-status.ts` | `/status` Markdown 快照 |
 | `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径 |
-| `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删 |
+| `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表 |
@@ -111,7 +111,11 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/status、/diff、/goal、/plan-mode） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork、/status、/diff、/goal、/plan-mode、/mcp、/feedback、/local、/worktree） |
+| `mcp-status.ts` | `/mcp` 已配置 Server 文案 |
+| `mcp-status.test.ts` | 空配置与 verbose 工具列表 |
+| `feedback-bundle.ts` | `/feedback` 本地诊断包 |
+| `feedback-bundle.test.ts` | 含状态且声明不外发 |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `personality.ts` | 务实 / 共情 / 关闭人格与 system 语气段 |
 | `personality.test.ts` | 别名解析、循环、提示词 |

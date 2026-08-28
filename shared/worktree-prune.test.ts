@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MANAGED_WORKTREE_LIMIT,
+  clampWorktreeKeepCount,
   isManagedWorktreeDirName,
+  sanitizePermanentWorktreeName,
   selectManagedWorktreesToPrune
 } from './worktree-prune'
 
@@ -33,5 +35,13 @@ describe('worktree prune', () => {
     expect(isManagedWorktreeDirName('sharker', 'sharker-abc123')).toBe(true)
     expect(isManagedWorktreeDirName('sharker', 'other-abc123')).toBe(false)
     expect(isManagedWorktreeDirName('sharker', 'sharker-')).toBe(false)
+  })
+
+  it('clamps keep count and sanitizes permanent names', () => {
+    expect(clampWorktreeKeepCount(undefined)).toBe(15)
+    expect(clampWorktreeKeepCount(0)).toBe(0)
+    expect(clampWorktreeKeepCount(200)).toBe(99)
+    expect(sanitizePermanentWorktreeName('  Feature A!!  ')).toBe('Feature-A')
+    expect(sanitizePermanentWorktreeName('***')).toBeNull()
   })
 })

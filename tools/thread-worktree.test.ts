@@ -4,7 +4,11 @@ import path from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { afterEach, describe, expect, it } from 'vitest'
-import { prepareThreadWorktree } from './thread-worktree'
+import {
+  createPermanentWorktree,
+  prepareThreadWorktree,
+  removeManagedWorktree
+} from './thread-worktree'
 import { readFile as readUtf, utimes } from 'fs/promises'
 
 const execFileAsync = promisify(execFile)
@@ -173,5 +177,57 @@ describe('prepareThreadWorktree', () => {
     if (!restored.ok) return
     temps.push(restored.path)
     expect(await readUtf(path.join(restored.path, 'scratch.txt'), 'utf8')).toBe('keep-me\n')
+  })
+
+  it('creates a permanent worktree outside the managed prune root', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-perm-'))
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-perm-'))
+    temps.push(repo, home)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'hello\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+
+    const result = await createPermanentWorktree({
+      workspacePath: repo,
+      name: 'Feature A',
+      home
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    temps.push(result.path)
+    expect(result.path).toContain(`${path.sep}permanent${path.sep}`)
+    expect(result.branch).toBe('perm/Feature-A')
+  })
+
+  it('removes a managed worktree after archive', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'sharker-wt-rm-'))
+    const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-rm-'))
+    temps.push(repo, home)
+    await execFileAsync('git', ['init'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
+    await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
+    await writeFile(path.join(repo, 'README.md'), 'hello\n')
+    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
+
+    const prepared = await prepareThreadWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-archive-1',
+      home,
+      keep: 0
+    })
+    expect(prepared.ok).toBe(true)
+    if (!prepared.ok) return
+    const removed = await removeManagedWorktree({
+      workspacePath: repo,
+      conversationId: 'conv-archive-1',
+      home
+    })
+    expect(removed).toEqual({ ok: true, removed: true })
+    const { stdout } = await execFileAsync('git', ['worktree', 'list'], { cwd: repo })
+    expect(stdout).not.toContain(prepared.path)
   })
 })

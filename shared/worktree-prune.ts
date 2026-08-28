@@ -6,6 +6,25 @@
 /** Codex 默认保留最近 15 个托管 worktree */
 export const DEFAULT_MANAGED_WORKTREE_LIMIT = 15
 
+/** 0 表示不自动删；其余夹到 1–99 */
+export function clampWorktreeKeepCount(value: unknown): number {
+  if (value == null || value === '') return DEFAULT_MANAGED_WORKTREE_LIMIT
+  const n = Number(value)
+  if (!Number.isFinite(n)) return DEFAULT_MANAGED_WORKTREE_LIMIT
+  if (n <= 0) return 0
+  return Math.min(99, Math.round(n))
+}
+
+/** 永久 worktree 目录名：字母数字 . _ - */
+export function sanitizePermanentWorktreeName(raw: string): string | null {
+  const safe = String(raw || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return safe || null
+}
+
 /** 待清理的托管 worktree 条目（按目录 mtime） */
 export interface ManagedWorktreeEntry {
   path: string

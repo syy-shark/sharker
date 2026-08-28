@@ -121,6 +121,35 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'session'
   },
   {
+    name: 'local',
+    description: '交接回本地工作区',
+    scope: 'ui',
+    action: 'set_thread_local',
+    category: 'mode'
+  },
+  {
+    name: 'worktree',
+    description: '交接进隔离 worktree',
+    scope: 'ui',
+    action: 'set_thread_worktree',
+    category: 'mode'
+  },
+  {
+    name: 'mcp',
+    description: '查看已配置的 MCP Server',
+    scope: 'ui',
+    action: 'show_mcp',
+    argsHint: '[verbose]',
+    category: 'tools'
+  },
+  {
+    name: 'feedback',
+    description: '生成本地诊断（不外发）',
+    scope: 'ui',
+    action: 'show_feedback',
+    category: 'other'
+  },
+  {
     name: 'model',
     description: '切换对话模型',
     scope: 'ui',

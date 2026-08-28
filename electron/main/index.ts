@@ -70,7 +70,12 @@ import { getUsageHistory } from '../../shared/token-usage-store'
 import { buildWorkspaceTree, searchWorkspaceFiles } from '../../shared/workspace-tree'
 import { loadSkills } from '../../skills/loader'
 import { runGit } from '../../tools/shared/git-runner'
-import { prepareThreadWorktree } from '../../tools/thread-worktree'
+import {
+  createPermanentWorktree,
+  prepareThreadWorktree,
+  removeManagedWorktree
+} from '../../tools/thread-worktree'
+import { loadMcpConfig, listMcpToolsQuick } from '../../tools/services/mcp-registry'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
 import {
   applyGitReviewAction,
@@ -1430,11 +1435,65 @@ function registerIpc(): void {
 
   ipcMain.handle(
     IPC.WORKSPACE_PREPARE_WORKTREE,
-    async (_e, cwd: string, conversationId: string, opts?: { baseRef?: string }) => {
+    async (
+      _e,
+      cwd: string,
+      conversationId: string,
+      opts?: { baseRef?: string; keep?: number }
+    ) => {
       return prepareThreadWorktree({
         workspacePath: String(cwd || ''),
         conversationId: String(conversationId || ''),
+        baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined,
+        keep: typeof opts?.keep === 'number' ? opts.keep : undefined
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC.WORKSPACE_CREATE_PERMANENT_WORKTREE,
+    async (_e, cwd: string, name: string, opts?: { baseRef?: string }) => {
+      return createPermanentWorktree({
+        workspacePath: String(cwd || ''),
+        name: String(name || ''),
         baseRef: typeof opts?.baseRef === 'string' ? opts.baseRef : undefined
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC.WORKSPACE_REMOVE_WORKTREE,
+    async (_e, cwd: string, conversationId: string) => {
+      return removeManagedWorktree({
+        workspacePath: String(cwd || ''),
+        conversationId: String(conversationId || '')
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC.MCP_STATUS,
+    async (_e, workspace: string, verbose = false) => {
+      const cwd = String(workspace || '')
+      const servers = await loadMcpConfig(cwd)
+      if (!verbose) {
+        return servers.map((s) => ({
+          name: s.name,
+          command: s.command,
+          args: s.args
+        }))
+      }
+      const tools = await listMcpToolsQuick(cwd).catch(() => [])
+      return servers.map((s) => {
+        const owned = tools.filter((t) => t.server === s.name)
+        const failed = owned.find((t) => t.name === '(connection failed)')
+        return {
+          name: s.name,
+          command: s.command,
+          args: s.args,
+          error: failed?.description,
+          tools: owned.filter((t) => !t.name.startsWith('(')).map((t) => t.name)
+        }
       })
     }
   )

@@ -82,6 +82,27 @@
   max-width: 42ch;
 }
 
+.st-number {
+  width: 64px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 8px;
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  font-size: 13px;
+  text-align: right;
+}
+
+.st-number:focus {
+  outline: none;
+  box-shadow: var(--glass-rim-soft);
+}
+
+html.theme-dark .st-number {
+  background: var(--metal-control-fill-soft);
+}
+
 .st-row-control {
   position: relative;
   z-index: 2;

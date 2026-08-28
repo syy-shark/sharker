@@ -95,6 +95,9 @@ import {
   type ThreadGoal
 } from '../shared/thread-goal'
 import { formatThreadStatus } from '../shared/thread-status'
+import { formatMcpStatus } from '../shared/mcp-status'
+import { formatFeedbackBundle } from '../shared/feedback-bundle'
+import type { McpStatusServer } from '../shared/mcp-status'
 import { estimateContextUsage } from '../shared/token-estimate'
 import { resolveContextLimit } from '../shared/context-limit'
 import {
@@ -248,6 +251,14 @@ export default function App() {
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
   const [prChipLabel, setPrChipLabel] = useState<string | null>(null)
   const [changesRevision, setChangesRevision] = useState(0)
+  const changesFlushTimerRef = useRef<number | null>(null)
+  const bumpChangesSoon = useCallback(() => {
+    if (changesFlushTimerRef.current != null) return
+    changesFlushTimerRef.current = window.setTimeout(() => {
+      changesFlushTimerRef.current = null
+      setChangesRevision((n) => n + 1)
+    }, 400)
+  }, [])
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
   const [threadGoal, setThreadGoal] = useState<ThreadGoal | null>(null)
@@ -894,7 +905,9 @@ export default function App() {
         let workspacePath = cwd || undefined
         if (cwd && window.sharker.prepareWorktree) {
           saveThreadRuntime(conv.id, { mode: 'worktree' })
-          const prepared = await window.sharker.prepareWorktree(cwd, conv.id)
+          const prepared = await window.sharker.prepareWorktree(cwd, conv.id, {
+            keep: settingsRef.current.worktreeKeepCount
+          })
           if (prepared.ok) {
             saveThreadRuntime(conv.id, { mode: 'worktree', worktreePath: prepared.path })
             workspacePath = prepared.path
@@ -952,7 +965,8 @@ export default function App() {
           browserUseEnabled: updated.browserUseEnabled,
           uiGlass: updated.uiGlass,
           uiTheme: updated.uiTheme,
-          personality: updated.personality
+          personality: updated.personality,
+          worktreeKeepCount: updated.worktreeKeepCount
         }
         settingsRef.current = merged
         setSettings(merged)
@@ -1312,7 +1326,7 @@ export default function App() {
         segmentsRef.current = applyStreamChunk(segmentsRef.current, chunk)
         // 同步 turnMeta 供侧栏/旧逻辑
         if (chunk.type === 'tool_done' || chunk.type === 'tool_start') {
-          setChangesRevision((n) => n + 1)
+          bumpChangesSoon()
           collectWrites(turnChangedPathsRef.current, chunk.toolName, chunk.toolArgs)
         }
         if (chunk.type === 'tool_start' && chunk.toolName) {
@@ -1541,7 +1555,8 @@ export default function App() {
     syncLiveTurnMeta,
     refreshConversationList,
     persistActiveConversation,
-    syncActiveQueueUi
+    syncActiveQueueUi,
+    bumpChangesSoon
   ])
 
   /** 带超时的 Promise，防止 IPC/数据库卡住导致「发了没反应」 */
@@ -1590,7 +1605,8 @@ export default function App() {
     if (mode === 'worktree') {
       if (!worktreePath && localCwd && convId && window.sharker.prepareWorktree) {
         const prepared = await window.sharker.prepareWorktree(localCwd, convId, {
-          baseRef: worktreeBaseRef || prev.baseRef
+          baseRef: worktreeBaseRef || prev.baseRef,
+          keep: settingsRef.current.worktreeKeepCount
         })
         if (!prepared.ok) {
           note(`**交接失败**：${prepared.error}`)
@@ -1644,7 +1660,8 @@ export default function App() {
     const cwd = getActiveWorkspacePath(settingsRef.current)
     if (!cwd || !convId || !window.sharker?.prepareWorktree) return undefined
     const result = await window.sharker.prepareWorktree(cwd, convId, {
-      baseRef: runtime.baseRef
+      baseRef: runtime.baseRef,
+      keep: settingsRef.current.worktreeKeepCount
     })
     if (!result.ok) {
       worktreeWarningRef.current = result.error
@@ -2312,6 +2329,8 @@ export default function App() {
       browserUseEnabled: next.browserUseEnabled,
       uiGlass: next.uiGlass,
       uiTheme: next.uiTheme,
+      personality: next.personality,
+      worktreeKeepCount: next.worktreeKeepCount,
       // 工作区选择以当前 live 状态为准（侧栏切换优先）
       workspaces: current.workspaces?.length ? current.workspaces : next.workspaces,
       activeWorkspaceId: current.activeWorkspaceId || next.activeWorkspaceId,
@@ -2521,6 +2540,14 @@ export default function App() {
 
     try {
       await window.sharker.archiveConversation(workspaceId, conversationId, true)
+      const cwd = settingsRef.current.workspaces.find((w) => w.id === workspaceId)?.path
+      if (cwd && window.sharker.removeManagedWorktree) {
+        const cleaned = await window.sharker.removeManagedWorktree(cwd, conversationId)
+        if (cleaned.ok && cleaned.removed) {
+          const runtime = loadThreadRuntime(conversationId)
+          saveThreadRuntime(conversationId, { ...runtime, worktreePath: undefined })
+        }
+      }
     } catch (e) {
       console.error('归档失败', e)
       window.alert(e instanceof Error ? e.message : '归档失败')
@@ -2663,7 +2690,43 @@ export default function App() {
     }
   }
 
-  /** 删除工作区 */
+  /** 项目菜单：创建永久 worktree 并加为独立项目 */
+  const handleCreatePermanentWorktree = useCallback(async (workspaceId: string) => {
+    const source = settingsRef.current.workspaces.find((w) => w.id === workspaceId)
+    if (!source?.path || !window.sharker.createPermanentWorktree) return
+    const raw = window.prompt('永久 worktree 名称', '')
+    if (raw == null) return
+    const result = await window.sharker.createPermanentWorktree(source.path, raw)
+    if (!result.ok) {
+      window.alert(result.error)
+      return
+    }
+    const current = settingsRef.current
+    const existing = current.workspaces.find((w) => w.path === result.path)
+    if (existing) {
+      await handleSelectWorkspace(existing.id)
+      return
+    }
+    const newItem = {
+      id: crypto.randomUUID(),
+      path: result.path,
+      label: `${source.label} · ${raw.trim() || result.branch}`
+    }
+    const next = withActiveWorkspace(
+      { ...current, workspaces: [...current.workspaces, newItem] },
+      newItem.id
+    )
+    settingsRef.current = next
+    setSettings(next)
+    setSettingsDraft(next)
+    setPage('chat')
+    try {
+      await window.sharker.saveSettings(next)
+      void loadWorkspaceSession(newItem.id)
+    } catch (e) {
+      console.error('添加永久 worktree 失败', e)
+    }
+  }, [handleSelectWorkspace])
   const handleDeleteWorkspace = async (id: string) => {
     const current = settingsRef.current
     const item = current.workspaces.find((w) => w.id === id)
@@ -2938,6 +3001,86 @@ export default function App() {
         case 'create_branch_here':
           void handleCreateBranchHere()
           break
+        case 'set_thread_local':
+          await handleThreadModeChange('local')
+          break
+        case 'set_thread_worktree':
+          await handleThreadModeChange('worktree')
+          break
+        case 'show_mcp': {
+          const cwd = getActiveWorkspacePath(settingsRef.current) || ''
+          const verbose = /^\s*verbose\b/i.test(args)
+          const servers: McpStatusServer[] = window.sharker.listMcpStatus
+            ? await window.sharker.listMcpStatus(cwd, verbose)
+            : []
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: formatMcpStatus(servers, verbose)
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
+        case 'show_feedback': {
+          const settingsNow = settingsRef.current
+          const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+          const model = provider?.model || settingsNow.activeProviderId
+          const cwd =
+            (threadMode === 'worktree' ? threadWorktreePath : undefined) ||
+            getActiveWorkspacePath(settingsNow) ||
+            ''
+          let branch = ''
+          if (cwd && window.sharker.getGitBranchInfo) {
+            try {
+              const info = await window.sharker.getGitBranchInfo(cwd)
+              branch = info.branch
+            } catch {
+              /* optional */
+            }
+          }
+          const usage = estimateContextUsage(messagesRef.current, streamingRef.current, '')
+          const { limit } = resolveContextLimit(model, provider?.contextWindow)
+          const mcpCount = window.sharker.listMcpStatus
+            ? (await window.sharker.listMcpStatus(getActiveWorkspacePath(settingsNow) || '')).length
+            : 0
+          const text = formatFeedbackBundle({
+            modelLabel: provider ? `${provider.name} / ${model}` : model,
+            permissionMode: settingsNow.permissionMode,
+            networkMode: settingsNow.networkMode ?? 'open',
+            threadMode,
+            workspacePath: getActiveWorkspacePath(settingsNow) || '',
+            worktreePath: threadWorktreePath,
+            branch,
+            goal: threadGoalRef.current?.text,
+            contextUsed: usage.total,
+            contextLimit: limit,
+            conversationId: activeConversationIdRef.current ?? undefined,
+            mcpServerCount: mcpCount,
+            appVersion: '0.1.0'
+          })
+          try {
+            await navigator.clipboard.writeText(text)
+          } catch {
+            /* ignore */
+          }
+          const note = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: `${text}\n\n已尝试复制到剪贴板。`
+          }
+          setMessages((msgs) => {
+            const nextMsgs = [...msgs, note]
+            messagesRef.current = nextMsgs
+            void persistActiveConversation(nextMsgs)
+            return nextMsgs
+          })
+          break
+        }
         case 'resume_conversation': {
           const prev = conversationList.filter((c) => c.id !== activeConversationIdRef.current)[0]
           if (prev && settingsRef.current.activeWorkspaceId) {
@@ -3045,6 +3188,7 @@ export default function App() {
       conversationList,
       handleCreateBranchHere,
       handleOpenWorktree,
+      handleThreadModeChange,
       handleSelectConversation,
       handleTogglePanel,
       persistActiveConversation,
@@ -4066,6 +4210,7 @@ export default function App() {
           onDeleteWorkspace={handleDeleteWorkspace}
           onTogglePinWorkspace={handleTogglePinWorkspace}
           onRenameWorkspace={(id, label) => void handleRenameWorkspace(id, label)}
+          onCreatePermanentWorktree={(id) => void handleCreatePermanentWorktree(id)}
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           onArchiveConversation={(ws, id) => void handleArchiveConversation(ws, id)}

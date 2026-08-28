@@ -3,6 +3,7 @@
  * @see src/ARCH.md
  */
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
+import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
 import {
   FullModeIcon,
   SandboxModeIcon,
@@ -84,6 +85,33 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title="Worktree">
+        <SettingsCard>
+          <SettingsRow
+            title="托管 worktree 保留数"
+            description="对标 Codex：默认保留最近 15 个。填 0 则不自动删除。归档对话仍会清掉对应托管 worktree。"
+            last
+          >
+            <input
+              className="st-number"
+              type="number"
+              min={0}
+              max={99}
+              value={draft.worktreeKeepCount ?? 15}
+              onChange={(e) => {
+                const next = {
+                  ...draft,
+                  worktreeKeepCount: clampWorktreeKeepCount(e.target.value)
+                }
+                setDraft(next)
+                void onSave(next)
+              }}
+              aria-label="托管 worktree 保留数"
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
 

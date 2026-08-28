@@ -77,6 +77,8 @@ export interface AppSettings {
   uiTheme?: 'light' | 'dark'
   /** Codex 式人格：只改语气 */
   personality?: import('./personality').AgentPersonality
+  /** 托管 worktree 保留个数；0 表示不自动删。默认 15 */
+  worktreeKeepCount?: number
 }
 
 /** 聊天消息角色 */
@@ -300,5 +302,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   browserUseEnabled: true,
   uiGlass: 0.82,
   uiTheme: 'light',
-  personality: 'pragmatic'
+  personality: 'pragmatic',
+  worktreeKeepCount: 15
 }
