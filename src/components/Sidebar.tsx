@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
+  Bell,
   ChartNoAxesColumn,
   Folder,
   Inbox,
@@ -24,6 +25,7 @@ import {
 import type { ConversationSummary } from '../../shared/conversation'
 import {
   filterSidebarChats,
+  isActivitySidebarFilter,
   nextActivitySidebarFilter,
   SIDEBAR_CHAT_FILTERS,
   splitLiveConversations,
@@ -68,6 +70,8 @@ interface Props {
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
   /** Activity「全部标为已读」：只清对话未读，不动审查队列 */
   onClearUnread?: () => void
+  /** 侧栏铃铛：开关 Activity（对标 Codex 铃铛 / ⌘⌥U） */
+  onToggleActivity?: () => void
   /** 自动化审查队列未读数（Codex Triage） */
   queueUnread?: number
   /** 受控收起态（与主区顶栏同步） */
@@ -143,6 +147,7 @@ export function Sidebar({
   onRenameRequestHandled,
   onNavigate,
   onClearUnread,
+  onToggleActivity,
   queueUnread = 0,
   collapsed: collapsedProp,
   onCollapsedChange,
@@ -317,7 +322,9 @@ export function Sidebar({
     setChatFilterOpen(false)
   }
 
-  const hasUnread = conversations.some((c) => c.unread)
+  const unreadChatCount = conversations.reduce((n, c) => n + (c.unread ? 1 : 0), 0)
+  const hasUnread = unreadChatCount > 0
+  const activityOpen = isActivitySidebarFilter(chatFilter)
 
   useEffect(() => {
     if (!activityToggleNonce) return
@@ -744,6 +751,22 @@ export function Sidebar({
           <button type="button" className="sidebar-nav-item" onClick={handleNewChat}>
             <SquarePen size={18} className="sidebar-nav-ico" aria-hidden />
             <span>新对话</span>
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item${activityOpen ? ' active' : ''}`}
+            title="活动视图（⌘⌥U）"
+            aria-pressed={activityOpen}
+            aria-label="活动视图"
+            onClick={() => onToggleActivity?.()}
+          >
+            <Bell size={18} className="sidebar-nav-ico" aria-hidden />
+            <span>活动</span>
+            {unreadChatCount > 0 ? (
+              <span className="sidebar-nav-badge" aria-label={`${unreadChatCount} 条未读对话`}>
+                {unreadChatCount}
+              </span>
+            ) : null}
           </button>
           <button
             type="button"

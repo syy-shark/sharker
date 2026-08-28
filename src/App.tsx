@@ -3435,6 +3435,13 @@ export default function App() {
     setRightPanelOpen(true)
   }, [])
 
+  const handleToggleActivity = useCallback(() => {
+    setPage('chat')
+    localStorage.setItem('sharker-sidebar-collapsed', '0')
+    setSidebarCollapsed(false)
+    setActivityToggleNonce((n) => n + 1)
+  }, [])
+
   const handleMarkConversationsRead = useCallback(async () => {
     const ws = settingsRef.current.activeWorkspaceId
     if (ws && window.sharker.clearConversationUnread) {
@@ -4324,10 +4331,7 @@ export default function App() {
           handleTogglePanel('agents')
           break
         case 'toggle_activity':
-          setPage('chat')
-          localStorage.setItem('sharker-sidebar-collapsed', '0')
-          setSidebarCollapsed(false)
-          setActivityToggleNonce((n) => n + 1)
+          handleToggleActivity()
           break
         case 'open_automations':
           setPage('automations')
@@ -4491,6 +4495,7 @@ export default function App() {
       handleThreadModeChange,
       handleTogglePinConversation,
       handleSelectConversation,
+      handleToggleActivity,
       handleTogglePanel,
       persistActiveConversation,
       persistSettings,
@@ -4612,10 +4617,7 @@ export default function App() {
         return
       }
       if (cmd.action === 'toggle_activity') {
-        setPage('chat')
-        localStorage.setItem('sharker-sidebar-collapsed', '0')
-        setSidebarCollapsed(false)
-        setActivityToggleNonce((n) => n + 1)
+        handleToggleActivity()
         return
       }
       if (cmd.action === 'rename_conversation') {
@@ -4649,6 +4651,7 @@ export default function App() {
       handleNextAttention,
       handleOpenBrowserTab,
       handleStandaloneConversation,
+      handleToggleActivity,
       persistFontScale,
       toggleSidebar
     ]
@@ -4768,10 +4771,7 @@ export default function App() {
         return
       }
       if (action === 'toggle_activity') {
-        setPage('chat')
-        localStorage.setItem('sharker-sidebar-collapsed', '0')
-        setSidebarCollapsed(false)
-        setActivityToggleNonce((n) => n + 1)
+        handleToggleActivity()
         return
       }
       if (action === 'pick_model') {
@@ -5041,7 +5041,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -6091,6 +6091,7 @@ export default function App() {
           onRenameRequestHandled={() => setRenameRequestId(null)}
           onNavigate={handleNavigate}
           onClearUnread={() => void handleMarkConversationsRead()}
+          onToggleActivity={handleToggleActivity}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           onPeekChange={setSidebarPeeking}
