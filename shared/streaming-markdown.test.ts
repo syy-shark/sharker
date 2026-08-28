@@ -65,13 +65,15 @@ describe('splitStreamingMarkdown', () => {
   })
 
   it('parses paired inline marks and keeps an open mark as text', () => {
-    expect(parseCheapInlineMarkdown('见 `foo` 与 **bar** 和 *baz*')).toEqual([
+    expect(parseCheapInlineMarkdown('见 `foo` 与 **bar** 和 *baz* 及 ~~删~~')).toEqual([
       { type: 'text', text: '见 ' },
       { type: 'code', text: 'foo' },
       { type: 'text', text: ' 与 ' },
       { type: 'strong', text: 'bar' },
       { type: 'text', text: ' 和 ' },
-      { type: 'em', text: 'baz' }
+      { type: 'em', text: 'baz' },
+      { type: 'text', text: ' 及 ' },
+      { type: 'del', text: '删' }
     ])
     expect(parseCheapInlineMarkdown('半截 **粗')).toEqual([{ type: 'text', text: '半截 **粗' }])
     expect(parseCheapInlineMarkdown('')).toEqual([])
@@ -121,7 +123,7 @@ describe('splitStreamingMarkdown', () => {
     if (blocks[1]?.type === 'list') {
       expect(blocks[1].ordered).toBe(false)
       expect(blocks[1].items).toHaveLength(2)
-      expect(blocks[1].items[0]?.some((n) => n.type === 'file')).toBe(true)
+      expect(blocks[1].items[0]?.nodes.some((n) => n.type === 'file')).toBe(true)
     }
   })
 
@@ -136,6 +138,45 @@ describe('splitStreamingMarkdown', () => {
     }
     const tableText = '| A | B |\n| --- | --- |\n| 1 | 2 |'
     const table = parseCheapProseBlocks(tableText)
+    const nestedText = '- 一项\n  - 嵌套'
+    const nested = parseCheapProseBlocks(nestedText)
+    expect(nested[0]?.type).toBe('list')
+    if (nested[0]?.type === 'list') {
+      expect(nested[0].items).toHaveLength(1)
+      expect(nested[0].items[0]?.nested?.items).toHaveLength(1)
+      expect(nested[0].items[0]?.nested?.items[0]?.nodes[0]).toMatchObject({
+        type: 'text',
+        text: '嵌套'
+      })
+    }
+    const nestedGrown = continueCheapProseBlocks(nestedText, nested, `${nestedText}更长`)
+    if (nested[0]?.type === 'list' && nestedGrown[0]?.type === 'list') {
+      expect(nestedGrown[0].items[0]?.nodes).toBe(nested[0].items[0]?.nodes)
+      expect(nestedGrown[0].items[0]?.nested?.items[0]).not.toBe(nested[0].items[0]?.nested?.items[0])
+    }
+    const wrap = parseCheapProseBlocks('- 一项\n续行仍在项内')
+    expect(wrap).toHaveLength(1)
+    if (wrap[0]?.type === 'list') {
+      expect(wrap[0].items).toHaveLength(1)
+      expect(wrap[0].items[0]?.nodes[0]).toMatchObject({ type: 'text', text: '一项' })
+      expect(wrap[0].items[0]?.nodes.some((n) => n.type === 'text' && n.text.includes('续行'))).toBe(
+        true
+      )
+    }
+    const nestedWrap = parseCheapProseBlocks('- 一项\n  - 嵌套\n    续写')
+    if (nestedWrap[0]?.type === 'list') {
+      expect(nestedWrap[0].items).toHaveLength(1)
+      expect(nestedWrap[0].items[0]?.nested?.items[0]?.nodes.some((n) => n.type === 'text' && n.text.includes('续写'))).toBe(
+        true
+      )
+    }
+    const loose = parseCheapProseBlocks('- 一项\n\n- 二项')
+    expect(loose).toHaveLength(1)
+    if (loose[0]?.type === 'list') {
+      expect(loose[0].items).toHaveLength(2)
+    }
+    const afterList = parseCheapProseBlocks('- 一项\n\n下一段')
+    expect(afterList.map((b) => b.type)).toEqual(['list', 'p'])
     const tableGrown = continueCheapProseBlocks(tableText, table, `${tableText}\n| 3 | 4 |`)
     if (table[0]?.type === 'table' && tableGrown[0]?.type === 'table') {
       expect(tableGrown[0].header[0]).toBe(table[0].header[0])

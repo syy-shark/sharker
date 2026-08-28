@@ -14,6 +14,7 @@ import {
   parseCheapProseBlocks,
   splitStreamingMarkdown,
   type CheapInlineNode,
+  type CheapListItem,
   type CheapProseBlock
 } from '../../shared/streaming-markdown'
 import { isInlineDemoPaintable } from '../../shared/live-display'
@@ -38,6 +39,7 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
   return nodes.map((node, index) => {
     if (node.type === 'code') return <code key={index}>{node.text}</code>
     if (node.type === 'strong') return <strong key={index}>{node.text}</strong>
+    if (node.type === 'del') return <del key={index}>{node.text}</del>
     if (node.type === 'em') return <em key={index}>{node.text}</em>
     if (node.type === 'link') {
       return (
@@ -71,6 +73,35 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
   })
 }
 
+/** 廉价列表（含嵌套），任务项用 GFM class */
+function renderCheapList(ordered: boolean, items: CheapListItem[], key?: number): ReactNode {
+  const Tag = ordered ? 'ol' : 'ul'
+  const hasTask = items.some((item) => parseCheapTaskItem(item.nodes))
+  return (
+    <Tag key={key} className={hasTask ? 'contains-task-list' : undefined}>
+      {items.map((item, i) => {
+        const task = parseCheapTaskItem(item.nodes)
+        const nested = item.nested ? renderCheapList(item.nested.ordered, item.nested.items) : null
+        if (!task) {
+          return (
+            <li key={i}>
+              {renderCheapInline(item.nodes)}
+              {nested}
+            </li>
+          )
+        }
+        return (
+          <li key={i} className="task-list-item live-prose-task">
+            <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+            {renderCheapInline(task.nodes)}
+            {nested}
+          </li>
+        )
+      })}
+    </Tag>
+  )
+}
+
 /** 廉价块用与收束后 MarkdownBody 接近的标签，减少贴底跳动 */
 function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
   if (block.type === 'heading') {
@@ -78,23 +109,7 @@ function renderCheapBlock(block: CheapProseBlock, index: number): ReactNode {
     return <Tag key={index}>{renderCheapInline(block.nodes)}</Tag>
   }
   if (block.type === 'list') {
-    const Tag = block.ordered ? 'ol' : 'ul'
-    const tasks = block.items.map((item) => parseCheapTaskItem(item))
-    const hasTask = tasks.some(Boolean)
-    return (
-      <Tag key={index} className={hasTask ? 'contains-task-list' : undefined}>
-        {block.items.map((item, i) => {
-          const task = tasks[i]
-          if (!task) return <li key={i}>{renderCheapInline(item)}</li>
-          return (
-            <li key={i} className="task-list-item live-prose-task">
-              <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-              {renderCheapInline(task.nodes)}
-            </li>
-          )
-        })}
-      </Tag>
-    )
+    return renderCheapList(block.ordered, block.items, index)
   }
   if (block.type === 'quote') {
     return <blockquote key={index}>{renderCheapInline(block.nodes)}</blockquote>

@@ -486,6 +486,16 @@
   padding-left: 1.4em;
 }
 
+.streaming-markdown li > ul,
+.streaming-markdown li > ol,
+.live-prose-tail li > ul,
+.live-prose-tail li > ol,
+.message-body--assistant li > ul,
+.message-body--assistant li > ol {
+  margin: 4px 0 0;
+  padding-left: 1.4em;
+}
+
 .message-body--assistant .contains-task-list,
 .live-prose-tail .contains-task-list {
   list-style: none;
