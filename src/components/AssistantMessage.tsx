@@ -5,7 +5,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleStop, RotateCcw } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
-import type { ApprovalRequest, AssistantMeta, TurnSegment } from '../../shared/types'
+import type { ApprovalRequest, AssistantMeta, FileDiff, TurnSegment } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { buildProcessSteps, canExpandProcess } from '../../shared/process-steps'
 import {
@@ -54,6 +54,27 @@ interface Props {
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   children?: React.ReactNode
 }
+
+/** 直播文件 diff：同一份 diff 引用不跟后续 token 重绘 */
+const LiveFileDiff = memo(function LiveFileDiff({
+  diff,
+  streaming
+}: {
+  diff: FileDiff
+  streaming: boolean
+}) {
+  return (
+    <div className="assistant-live-diff">
+      <CodeDiffBlock
+        diff={diff}
+        showHeader
+        wrapLines
+        maxPreviewLines={streaming ? 20 : 40}
+        onOpenLine={(line) => dispatchOpenWorkspaceFile({ path: diff.path, line })}
+      />
+    </div>
+  )
+})
 
 /** 秒数 → 显示用耗时文案 */
 function formatDuration(sec: number): string {
@@ -410,19 +431,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                   )
                 }
                 if (part.type === 'diff') {
-                  return (
-                    <div key={part.id} className="assistant-live-diff">
-                      <CodeDiffBlock
-                        diff={part.diff}
-                        showHeader
-                        wrapLines
-                        maxPreviewLines={isStreaming ? 20 : 40}
-                        onOpenLine={(line) =>
-                          dispatchOpenWorkspaceFile({ path: part.diff.path, line })
-                        }
-                      />
-                    </div>
-                  )
+                  return <LiveFileDiff key={part.id} diff={part.diff} streaming={Boolean(isStreaming)} />
                 }
                 return isStreaming ? (
                   <StreamingMarkdown key={part.id} text={part.content} />

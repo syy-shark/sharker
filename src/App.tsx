@@ -2303,6 +2303,12 @@ export default function App() {
     setPage('chat')
   }, [])
 
+  /** 对标 Codex Toggle bottom panel：⌘J 只开关面板，不改当前 Tab */
+  const handleToggleRightPanel = useCallback(() => {
+    setPage('chat')
+    setRightPanelOpen((open) => !open)
+  }, [])
+
   const [filePreview, setFilePreview] = useState<{
     path: string
     line?: number
@@ -4355,6 +4361,9 @@ export default function App() {
         case 'git_branch':
           await dispatchTurnRef.current('请用 git 工具查看当前分支与工作区状态，并简要汇报。')
           break
+        case 'toggle_panel':
+          handleToggleRightPanel()
+          break
         case 'toggle_terminal':
           handleTogglePanel('terminal')
           break
@@ -4631,6 +4640,10 @@ export default function App() {
         toggleSidebar()
         return
       }
+      if (cmd.action === 'toggle_panel') {
+        handleToggleRightPanel()
+        return
+      }
       if (cmd.action === 'open_folder') {
         void handleAddWorkspace()
         return
@@ -4781,6 +4794,7 @@ export default function App() {
       handleOpenBrowserTab,
       handleStandaloneConversation,
       handleToggleActivity,
+      handleToggleRightPanel,
       persistFontScale,
       toggleSidebar
     ]
@@ -4881,6 +4895,10 @@ export default function App() {
       }
       if (action === 'toggle_review') {
         handleShortcutPanel('changes')
+        return
+      }
+      if (action === 'toggle_panel') {
+        handleToggleRightPanel()
         return
       }
       if (action === 'toggle_terminal') {
@@ -5170,7 +5188,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -5202,6 +5220,10 @@ export default function App() {
         handleShortcutPanel('changes')
         return
       }
+      if (action === 'toggle_panel') {
+        handleToggleRightPanel()
+        return
+      }
       if (action === 'toggle_terminal') {
         handleShortcutPanel('terminal')
         return
@@ -5229,6 +5251,7 @@ export default function App() {
     handleNewConversation,
     handleShortcutPanel,
     handleStandaloneConversation,
+    handleToggleRightPanel,
     toggleSidebar
   ])
 

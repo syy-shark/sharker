@@ -98,8 +98,14 @@ export function installApplicationMenu(): void {
           ...send('toggle_sidebar')
         },
         {
-          label: '打开终端',
+          label: '开关工作区面板',
           accelerator: 'Command+J',
+          registerAccelerator: false,
+          ...send('toggle_panel')
+        },
+        {
+          label: '打开终端',
+          accelerator: 'Control+`',
           registerAccelerator: false,
           ...send('toggle_terminal')
         },

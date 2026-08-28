@@ -219,9 +219,16 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'toggle_files'
   },
   {
+    id: 'panel',
+    title: '开关工作区面板',
+    shortcut: '⌘J',
+    keywords: 'panel bottom 面板 右侧',
+    action: 'toggle_panel'
+  },
+  {
     id: 'terminal',
     title: '打开终端',
-    shortcut: '⌘J',
+    shortcut: 'Ctrl+`',
     keywords: 'terminal 终端',
     action: 'toggle_terminal'
   },

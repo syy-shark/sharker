@@ -39,7 +39,7 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'z', metaKey: true, shiftKey: true }))).toBe(
       'redo_app'
     )
-    expect(matchWorkbenchShortcut(ev({ key: 'j', metaKey: true }))).toBe('toggle_terminal')
+    expect(matchWorkbenchShortcut(ev({ key: 'j', metaKey: true }))).toBe('toggle_panel')
     expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true }))).toBe('new_conversation')
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, shiftKey: true }))).toBe(
       'new_conversation'
@@ -71,6 +71,8 @@ describe('workbench shortcuts', () => {
     )
     expect(matchWorkbenchShortcut(ev({ key: '3', metaKey: true }))).toBe('select_chat')
     expect(matchWorkbenchShortcut(ev({ key: '`', ctrlKey: true }))).toBe('toggle_terminal')
+    expect(matchWorkbenchShortcut(ev({ key: '`', metaKey: true }))).toBe('toggle_terminal')
+    expect(matchWorkbenchShortcut(ev({ key: 'j', ctrlKey: true }))).toBe('toggle_panel')
     expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true }))).toBe('search_chats')
     expect(matchWorkbenchShortcut(ev({ key: 'u', metaKey: true, altKey: true }))).toBe(
       'toggle_activity'

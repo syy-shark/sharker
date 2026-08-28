@@ -7,6 +7,7 @@
 export type WorkbenchShortcutAction =
   | 'toggle_sidebar'
   | 'toggle_review'
+  | 'toggle_panel'
   | 'toggle_terminal'
   | 'new_conversation'
   | 'open_settings'
@@ -150,7 +151,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   if ((key === '`' || code === 'Backquote') && !event.altKey && !event.shiftKey) {
     return 'toggle_terminal'
   }
-  if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_terminal'
+  if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_panel'
   if (key === 'e' && event.shiftKey && !event.altKey) return 'toggle_files'
   if (key === 'b' && event.shiftKey && !event.altKey) return 'toggle_browser'
   if (key === 'm' && event.shiftKey && !event.altKey) return 'pick_model'
@@ -266,7 +267,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘Z / ⌘⇧Z', title: '撤销 / 重做上一次应用操作' },
   { keys: '⌘⌥U', title: '活动视图' },
   { keys: '⌘⌥⇧U', title: '子 Agent 活动' },
-  { keys: '⌘J / Ctrl+`', title: '打开终端' },
+  { keys: '⌘J', title: '开关工作区面板' },
+  { keys: 'Ctrl+`', title: '打开终端' },
   { keys: '⌘⇧E', title: '打开文件树' },
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
@@ -345,7 +347,13 @@ export const SHORTCUT_CATALOG: Array<{
     defaultKeys: '⌘⇧Z / Ctrl+Y',
     defaultChord: ['mod+shift+z', 'mod+ctrl+y']
   },
-  { action: 'toggle_terminal', title: '打开终端', defaultKeys: '⌘J', defaultChord: ['mod+j', 'mod+`'] },
+  {
+    action: 'toggle_panel',
+    title: '开关工作区面板',
+    defaultKeys: '⌘J',
+    defaultChord: 'mod+j'
+  },
+  { action: 'toggle_terminal', title: '打开终端', defaultKeys: 'Ctrl+`', defaultChord: 'mod+`' },
   {
     action: 'clear_terminal',
     title: '清终端',

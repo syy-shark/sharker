@@ -3,7 +3,7 @@
  * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
 import { shouldOpenReviewLine } from '../../shared/review-file-click'
 import { statsFromLines } from '../../shared/line-diff'
@@ -135,8 +135,8 @@ function DiffLineRow({
   )
 }
 
-/** 行级 diff 块 */
-export function CodeDiffBlock({
+/** 行级 diff 块；直播里同一份 fileDiff 引用不变时不跟 token 重绘 */
+export const CodeDiffBlock = memo(function CodeDiffBlock({
   diff,
   lines,
   path,
@@ -303,4 +303,4 @@ export function CodeDiffBlock({
       </div>
     </CodeArtifactShell>
   )
-}
+})

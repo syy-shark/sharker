@@ -46,6 +46,7 @@ describe('command palette', () => {
     expect(ids).toContain('nav-back')
     expect(ids).toContain('nav-forward')
     expect(ids).toContain('font-larger')
+    expect(ids).toContain('panel')
     expect(ids).toContain('clear-terminal')
     expect(ids).toContain('clear-unread')
     expect(ids).toContain('search-files')
@@ -70,6 +71,7 @@ describe('command palette', () => {
   it('filters by title and keywords', () => {
     expect(filterPaletteCommands('审查').some((c) => c.id === 'review')).toBe(true)
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
+    expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
