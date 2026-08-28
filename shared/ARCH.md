@@ -26,6 +26,10 @@
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
 | `process-steps.ts` | 旧消息回退：过程时间线步骤 |
 | `live-display.ts` | 直播头标签/合成「规划下一步」/思考正文（去尾部 CSS）/演示可绘判断，与 TurnFlow 共用 |
+| `streaming-markdown.ts` | 流式 Markdown 拆成稳定块 + 尾部，避免每 token 重解析全文 |
+| `streaming-markdown.test.ts` | 流式拆分：段落收束、未闭合围栏、稳定 id |
+| `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
+| `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳与中止态不污染完成态详情；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计） |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；`tool_start` 保留 `toolArgs`；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程 |
 | `turn-segments.test.ts` | turn-segments / phases 单测 |
@@ -51,6 +55,7 @@
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help） |
+| `slash-commands.test.ts` | 斜杠目录含审查命令与过滤 |
 | `ARCH.md` | 本层架构说明 |
 
 ## 设计原则

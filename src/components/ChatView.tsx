@@ -19,7 +19,8 @@ import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
 import { ModelPicker } from './ModelPicker'
-import { SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
+import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
+import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatView.css'
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
@@ -104,6 +105,9 @@ interface Props {
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
+  /** Codex 式线程目标：本地工作区或隔离 worktree */
+  threadMode?: ThreadMode
+  onThreadModeChange?: (mode: ThreadMode) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -137,7 +141,9 @@ export function ChatView({
   onRetry,
   approval,
   approvalResponding,
-  onApproval
+  onApproval,
+  threadMode = 'local',
+  onThreadModeChange
 }: Props) {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
@@ -153,7 +159,11 @@ export function ChatView({
   const [historyExiting, setHistoryExiting] = useState(false)
   const historyMountedRef = useRef(false)
   const historyCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [slashActiveIndex, setSlashActiveIndex] = useState(0)
+  const [slashDismissed, setSlashDismissed] = useState(false)
+  const slashActiveIndexRef = useRef(0)
   const messagesRef = useRef<HTMLDivElement>(null)
+  const messagesInnerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerFocusOriginRef = useRef<'pointer' | 'keyboard'>('pointer')
@@ -295,6 +305,44 @@ export function ChatView({
   const hasWorkspace = Boolean(activeWorkspace?.path?.trim())
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const modelLabel = activeProvider?.model?.trim() || activeProvider?.name
+  const slashQuery =
+    !showHistoryPicker &&
+    !slashDismissed &&
+    input.startsWith('/') &&
+    !input.includes('\n') &&
+    !/\s/.test(input.slice(1))
+      ? input.slice(1)
+      : null
+  const slashItems = slashQuery != null ? filterSlashCommands(slashQuery) : []
+  const showSlashMenu = slashItems.length > 0
+
+  useEffect(() => {
+    slashActiveIndexRef.current = slashActiveIndex
+  }, [slashActiveIndex])
+
+  useEffect(() => {
+    setSlashActiveIndex(0)
+    slashActiveIndexRef.current = 0
+  }, [slashQuery])
+
+  const pickSlashCommand = (cmd: SlashCommandMeta) => {
+    if (cmd.scope === 'ui' && onSlashAction) {
+      setInput('')
+      setPendingAttachments([])
+      setAttachmentError('')
+      onSlashAction(cmd, '')
+      requestAnimationFrame(() => {
+        syncTextareaHeight()
+        textareaRef.current?.focus()
+      })
+      return
+    }
+    setInput(`/${cmd.name}${cmd.argsHint ? ' ' : ''}`)
+    requestAnimationFrame(() => {
+      syncTextareaHeight()
+      textareaRef.current?.focus()
+    })
+  }
 
   useEffect(() => {
     const onPointerDown = () => {
@@ -481,29 +529,27 @@ export function ChatView({
     return () => window.cancelAnimationFrame(frame)
   }, [approval, lockUserScroll])
 
-  /** 流式输出：内容增高时贴底，避免每帧强制写 scrollTop */
+  /** 内容增高时贴底：ResizeObserver 只在高度变化时写 scrollTop，避免每帧 rAF 抢布局 */
   useEffect(() => {
-    if (isEmpty || !loading) return
-    let rafId = 0
+    if (isEmpty) return
+    const scroller = messagesRef.current
+    const content = messagesInnerRef.current
+    if (!scroller || !content) return
     let lastHeight = 0
     const follow = () => {
-      if (stickToBottomRef.current && !userScrollLockRef.current) {
-        const el = messagesRef.current
-        if (el) {
-          const h = el.scrollHeight
-          if (h !== lastHeight) {
-            lastHeight = h
-            programmaticScrollRef.current = true
-            el.scrollTop = Math.max(0, h - el.clientHeight)
-            programmaticScrollRef.current = false
-          }
-        }
-      }
-      rafId = requestAnimationFrame(follow)
+      if (!stickToBottomRef.current || userScrollLockRef.current) return
+      const h = scroller.scrollHeight
+      if (h === lastHeight) return
+      lastHeight = h
+      programmaticScrollRef.current = true
+      scroller.scrollTop = Math.max(0, h - scroller.clientHeight)
+      programmaticScrollRef.current = false
     }
-    rafId = requestAnimationFrame(follow)
-    return () => cancelAnimationFrame(rafId)
-  }, [loading, isEmpty])
+    const ro = new ResizeObserver(follow)
+    ro.observe(content)
+    follow()
+    return () => ro.disconnect()
+  }, [isEmpty, loading, sessionKey])
 
   useEffect(() => {
     if (isEmpty || loading) return
@@ -593,6 +639,45 @@ export function ChatView({
         }
       }}
     >
+      {showSlashMenu ? (
+        <div className="composer-popover-slot">
+          <div
+            className="slash-menu popover-enter"
+            role="listbox"
+            aria-label="斜杠命令"
+            aria-activedescendant={
+              slashItems[slashActiveIndex]
+                ? `slash-option-${slashItems[slashActiveIndex].name}`
+                : undefined
+            }
+          >
+            <ul className="slash-menu-list">
+              {slashItems.map((cmd, index) => (
+                <li key={cmd.name} role="presentation">
+                  <button
+                    type="button"
+                    id={`slash-option-${cmd.name}`}
+                    role="option"
+                    aria-selected={index === slashActiveIndex}
+                    className={`slash-menu-item${index === slashActiveIndex ? ' slash-menu-item--active' : ''}`}
+                    onMouseEnter={() => {
+                      setSlashActiveIndex(index)
+                      slashActiveIndexRef.current = index
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      pickSlashCommand(cmd)
+                    }}
+                  >
+                    <span className="slash-menu-name">/{cmd.name}</span>
+                    <span className="slash-menu-desc">{cmd.description}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
       {historyMounted && conversationTitles?.length ? (
         <div className="composer-popover-slot">
           <div
@@ -643,6 +728,7 @@ export function ChatView({
         className="composer-input"
         value={input}
         onChange={(e) => {
+          setSlashDismissed(false)
           setInput(e.target.value)
         }}
         onKeyDown={(e) => {
@@ -652,6 +738,43 @@ export function ChatView({
             e.key === 'Process' ||
             (e.nativeEvent as KeyboardEvent).keyCode === 229
           if (composing) return
+          if (showSlashMenu) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setSlashActiveIndex((i) => {
+                const n = (i + 1) % slashItems.length
+                slashActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setSlashActiveIndex((i) => {
+                const n = (i - 1 + slashItems.length) % slashItems.length
+                slashActiveIndexRef.current = n
+                return n
+              })
+              return
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setSlashDismissed(true)
+              return
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              const cmd = slashItems[slashActiveIndexRef.current]
+              if (cmd) pickSlashCommand(cmd)
+              return
+            }
+            if (e.key === 'Tab') {
+              e.preventDefault()
+              const cmd = slashItems[slashActiveIndexRef.current]
+              if (cmd) pickSlashCommand(cmd)
+              return
+            }
+          }
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             submit(loading ? 'queue' : 'send')
@@ -713,6 +836,28 @@ export function ChatView({
                 {activeWorkspace.label || activeWorkspace.path}
               </span>
             </span>
+          ) : null}
+          {onThreadModeChange ? (
+            <div className="composer-thread-mode" role="group" aria-label="线程模式">
+              <button
+                type="button"
+                className={`composer-thread-chip${threadMode === 'local' ? ' is-active' : ''}`}
+                aria-pressed={threadMode === 'local'}
+                onClick={() => onThreadModeChange('local')}
+                title="直接在当前工作区改文件"
+              >
+                本地
+              </button>
+              <button
+                type="button"
+                className={`composer-thread-chip${threadMode === 'worktree' ? ' is-active' : ''}`}
+                aria-pressed={threadMode === 'worktree'}
+                onClick={() => onThreadModeChange('worktree')}
+                title="隔离到 Git worktree，不碰当前工作区"
+              >
+                隔离
+              </button>
+            </div>
           ) : null}
         </div>
         <div className="composer-footer-right">
@@ -780,7 +925,7 @@ export function ChatView({
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
         <div className="messages-scroll" ref={messagesRef}>
-          <div className="messages">
+          <div className="messages" ref={messagesInnerRef}>
             {messages.map((m, index) =>
               m.role === 'user' ? (
                 <div key={m.id} className="message-row message-row--user">

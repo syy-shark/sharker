@@ -22,6 +22,7 @@ import { ProcessTimeline } from './ProcessTimeline'
 import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
+import { StreamingMarkdown } from './StreamingMarkdown'
 import './AssistantMessage.css'
 import './TurnFlow.css'
 
@@ -399,10 +400,18 @@ export function AssistantMessage({
                     />
                   )
                 }
-                return <MarkdownBody key={part.id}>{part.content}</MarkdownBody>
+                return isStreaming ? (
+                  <StreamingMarkdown key={part.id} text={part.content} />
+                ) : (
+                  <MarkdownBody key={part.id}>{part.content}</MarkdownBody>
+                )
               })
             ) : displayContent ? (
-              <MarkdownBody>{displayContent}</MarkdownBody>
+              isStreaming ? (
+                <StreamingMarkdown text={displayContent} />
+              ) : (
+                <MarkdownBody>{displayContent}</MarkdownBody>
+              )
             ) : null)}
         </div>
       ) : null}

@@ -38,6 +38,7 @@
   width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  overflow-anchor: none;
   scroll-behavior: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -47,6 +48,7 @@
   width: 100%;
   height: 1px;
   pointer-events: none;
+  overflow-anchor: auto;
 }
 
 .messages {
@@ -237,6 +239,8 @@
 .message-row--user,
 .message-row--assistant:not(.message-row--live) {
   animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 140px;
 }
 
 .message-bubble--user {
@@ -661,9 +665,56 @@
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
   height: 28px;
   z-index: 1;
   overflow: visible;
+}
+
+.composer-thread-mode {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  border: 0.5px solid var(--glass-edge-soft);
+  background: var(--glass-fill-nested);
+  box-shadow: var(--glass-rim-soft);
+}
+
+.composer-thread-chip {
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background-color var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.composer-thread-chip.is-active {
+  background: var(--glass-fill-raised);
+  color: var(--text);
+  box-shadow: var(--glass-rim-soft);
+}
+
+.composer-thread-chip:hover:not(.is-active) {
+  color: var(--text-secondary);
+}
+
+html.theme-dark .composer-thread-mode {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  backdrop-filter: none;
+}
+
+html.theme-dark .composer-thread-chip.is-active {
+  background: var(--metal-control-fill-soft);
 }
 
 .composer-footer-right {
@@ -1432,14 +1483,23 @@ html.theme-light .composer-send:not(.composer-send--active):not(.composer-send--
   transform: scale(0.99);
 }
 
+.slash-menu-name {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 620;
+}
+
 .slash-menu-desc {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
-  font-weight: 520;
+  font-size: 12.5px;
+  font-weight: 450;
   line-height: 1.35;
+  color: var(--text-secondary);
 }
 
 html.theme-dark .slash-menu,

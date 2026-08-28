@@ -4,10 +4,12 @@
  */
 export type HarnessPhase = 'normal' | 'plan' | 'build'
 
+const DEFAULT_WORKTREE_KEY = '__default__'
+
 interface HarnessState {
   phase: HarnessPhase
-  /** 当前 worktree 覆盖 cwd（enter_worktree 后生效） */
-  worktreePath: string | null
+  /** 按会话隔离的 worktree 覆盖 cwd */
+  worktreeByConversation: Map<string, string>
   /** exit_plan_mode 产出的计划正文 */
   planDocument: string | null
   planFilePath: string | null
@@ -15,7 +17,7 @@ interface HarnessState {
 
 const state: HarnessState = {
   phase: 'normal',
-  worktreePath: null,
+  worktreeByConversation: new Map(),
   planDocument: null,
   planFilePath: null
 }
@@ -56,20 +58,26 @@ export function getPlanDocument(): { document: string | null; filePath: string |
   return { document: state.planDocument, filePath: state.planFilePath }
 }
 
-/** 设置 worktree 路径覆盖 */
-export function setWorktreePath(p: string | null): void {
-  state.worktreePath = p
+/** 设置 worktree 路径覆盖；可按会话隔离，避免并行线程互踩 */
+export function setWorktreePath(p: string | null, conversationId?: string | null): void {
+  const key = conversationId?.trim() || DEFAULT_WORKTREE_KEY
+  if (p?.trim()) state.worktreeByConversation.set(key, p.trim())
+  else state.worktreeByConversation.delete(key)
 }
 
-/** 当前 worktree 路径（无则 null） */
-export function getWorktreePath(): string | null {
-  return state.worktreePath
+/** 当前 worktree 路径（优先会话，其次默认） */
+export function getWorktreePath(conversationId?: string | null): string | null {
+  const key = conversationId?.trim()
+  if (key && state.worktreeByConversation.has(key)) {
+    return state.worktreeByConversation.get(key) ?? null
+  }
+  return state.worktreeByConversation.get(DEFAULT_WORKTREE_KEY) ?? null
 }
 
 /** 重置全部 Harness 状态（切换工作区时可选调用） */
 export function resetHarnessState(): void {
   state.phase = 'normal'
-  state.worktreePath = null
+  state.worktreeByConversation.clear()
   state.planDocument = null
   state.planFilePath = null
 }

@@ -201,7 +201,8 @@ export async function executeRegisteredTool(
   args: Record<string, unknown>,
   settings: AppSettings,
   signal?: AbortSignal,
-  onStatus?: (content: string) => void
+  onStatus?: (content: string) => void,
+  conversationId?: string
 ): Promise<ToolRunResult> {
   assertToolAllowed(name, settings)
   if (isMcpDynamicToolName(name)) {
@@ -211,7 +212,7 @@ export async function executeRegisteredTool(
   }
   const tool = TOOL_MAP.get(name)
   if (!tool) throw new Error(`Unknown tool: ${name}`)
-  const ctx: ToolContext = { settings, signal, onStatus }
+  const ctx: ToolContext = { settings, signal, onStatus, conversationId }
   return tool.execute(args, ctx)
 }
 

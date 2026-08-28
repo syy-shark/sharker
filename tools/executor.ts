@@ -12,9 +12,10 @@ export async function executeToolWithMeta(
   args: Record<string, unknown>,
   settings: AppSettings,
   signal?: AbortSignal,
-  onStatus?: (content: string) => void
+  onStatus?: (content: string) => void,
+  conversationId?: string
 ): Promise<ToolRunResult> {
-  const result = await executeRegisteredTool(name, args, settings, signal, onStatus)
+  const result = await executeRegisteredTool(name, args, settings, signal, onStatus, conversationId)
   return {
     output: truncateToolOutput(result.output, undefined, name),
     fileDiff: result.fileDiff,
@@ -31,7 +32,8 @@ export async function executeTool(
   args: Record<string, unknown>,
   settings: AppSettings,
   signal?: AbortSignal,
-  onStatus?: (content: string) => void
+  onStatus?: (content: string) => void,
+  conversationId?: string
 ): Promise<string> {
-  return (await executeToolWithMeta(name, args, settings, signal, onStatus)).output
+  return (await executeToolWithMeta(name, args, settings, signal, onStatus, conversationId)).output
 }

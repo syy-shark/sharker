@@ -16,7 +16,7 @@ import { expandFileReferences } from './file-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { killAllShellChildren } from '../tools/shell-runner'
-import { enterBuildMode } from '../tools/harness-state'
+import { enterBuildMode, setWorktreePath } from '../tools/harness-state'
 import { assembleMemoryContext } from './memory/assembler'
 import { writeMemoriesFromTurn } from './memory/writer'
 import { getActiveSessionId, getWorkspaceProjectId } from './memory/workspaces-sync'
@@ -58,6 +58,8 @@ export interface ExecuteUserInputContext {
   conversationId?: string
   /** 会话级 once/session 审批表 */
   sessionApprovals?: import('../shared/approval-session').SessionApprovalStore
+  /** 本轮隔离 worktree；空则清掉覆盖，回到工作区 */
+  worktreePath?: string | null
 }
 
 type TurnSlot = {
@@ -142,7 +144,7 @@ async function* onQuery(
   signal: AbortSignal
 ): AsyncGenerator<StreamChunk> {
   const { settings, history, userText, attachments, onApproval, send } = ctx
-  const workspace = getActiveWorkspacePath(settings)
+  const workspace = ctx.worktreePath || getActiveWorkspacePath(settings)
 
   const providerError = validateActiveProvider(settings)
   if (providerError) {
@@ -190,6 +192,12 @@ async function* onQuery(
   })
 
   let systemContent = systemBaseRaw
+  if (ctx.worktreePath) {
+    systemContent +=
+      `\n\nThis thread is isolated to Git worktree: ${ctx.worktreePath}. ` +
+      `Treat that path as the current workspace for all file, git, and terminal tools. ` +
+      `Do not modify the original checkout.`
+  }
 
   try {
     const memoryCtx = await memoryPromise
@@ -271,6 +279,7 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       }
 
       queryServe(turnCtx.send, conversationId)
+      setWorktreePath(ctx.worktreePath ?? null, conversationId)
 
       const processed = processUserInput(ctx.userText)
 

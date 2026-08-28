@@ -76,9 +76,10 @@ contextBridge.exposeInMainWorld('sharker', {
     text: string,
     history: ChatMessage[],
     attachments?: ChatAttachment[],
-    conversationId?: string
+    conversationId?: string,
+    options?: { worktreePath?: string | null }
   ): Promise<void> =>
-    ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments, conversationId),
+    ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments, conversationId, options),
   saveAttachment: (input: {
     name: string
     mimeType: string
@@ -126,6 +127,10 @@ contextBridge.exposeInMainWorld('sharker', {
   gitCheckout: (cwd: string, branch: string) =>
     ipcRenderer.invoke(IPC.GIT_CHECKOUT, cwd, branch),
   getGitStatusChanges: (cwd: string) => ipcRenderer.invoke(IPC.GIT_STATUS_CHANGES, cwd),
+  getGitFileDiff: (cwd: string, filePath: string, status?: string) =>
+    ipcRenderer.invoke(IPC.GIT_FILE_DIFF, cwd, filePath, status),
+  prepareWorktree: (cwd: string, conversationId: string) =>
+    ipcRenderer.invoke(IPC.WORKSPACE_PREPARE_WORKTREE, cwd, conversationId),
   createTerminal: (cwd: string) => ipcRenderer.invoke(IPC.TERMINAL_CREATE, cwd),
   writeTerminal: (id: string, data: string) =>
     ipcRenderer.invoke(IPC.TERMINAL_WRITE, id, data),

@@ -11,9 +11,9 @@
 | Permission Ask default; Allow once / Allow for session / Deny | have | 默认需确认（Ask）；`InlineApproval` + `SessionApprovalStore` 强制 once/session/deny；全局 always-allow 非默认（`permissionMode` 沙箱/完整是路径策略，不是 YOLO 默认） |
 | Multi-session stream continuity (switch without clobber) | have | 流式 chunk 带 `conversationId`；渲染层按会话缓冲；切换不 abort 进行中 turn；返回仍见该会话 in-flight/完成态 |
 | Composer follow-up queue while busy | have | 忙时排队；队列按 `conversationId` 归属，A 的 follow-up 不会在 B 上派发 |
-| Composer slash + attachments | partial | 斜杠目录与图片附件已有；部分斜杠 UI 菜单曾收起，附件路径稳定 |
+| Composer slash + attachments | have | 输入 `/` 弹出斜杠目录（↑↓/Enter/Esc）；图片附件路径稳定 |
 | Resources / files pane | have | 右侧面板「文件」树 + 终端 + 浏览器 |
-| Changes / session diffs + workspace git | partial | 右侧「变更」Tab：工作区 git porcelain 列表；会话内工具 diff 仍在消息流 `CodeDiffBlock` |
+| Changes / session diffs + workspace git | have | 右侧「变更」审查：文件列表 + 点选 unified diff；工具写盘后即时刷新；会话内工具 diff 仍在消息流 |
 | Automations (scheduled list / NL create) | partial | `AutomationsPage` 列表与保存；无 grok-app 级 NL 静默建任务 |
 | Settings: providers | have | 设置 → 模型：多 provider、Key/订阅导入、测通 |
 | Settings: theme (light/dark) | have | 浅色水滴玻璃 / 深色金属（`uiTheme`） |
@@ -29,8 +29,8 @@
 1. projects+sessions → **have**
 2. permission Ask/once/session/deny → **have**
 3. multi-session stream continuity → **have**
-4. composer queue+slash+attachments → **partial**（queue 为 have；slash/attachments 为 partial）
-5. resources/Changes → **have** / **partial**（resources have；Changes partial 但有工作替代）
+4. composer queue+slash+attachments → **have**
+5. resources/Changes → **have**
 6. automations → **partial**
 7. settings providers/theme → **have**
 

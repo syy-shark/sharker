@@ -115,6 +115,20 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'panel'
   },
   {
+    name: 'changes',
+    description: '打开右侧变更审查',
+    scope: 'ui',
+    action: 'toggle_changes',
+    category: 'panel'
+  },
+  {
+    name: 'review',
+    description: '打开右侧变更审查（别名）',
+    scope: 'ui',
+    action: 'toggle_changes',
+    category: 'panel'
+  },
+  {
     name: 'browser',
     description: '打开 / 关闭内置浏览器',
     scope: 'ui',

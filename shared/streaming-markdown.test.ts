@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest'
+import { extractOpenFenceBody, splitStreamingMarkdown } from './streaming-markdown'
+
+describe('splitStreamingMarkdown', () => {
+  it('keeps a growing paragraph in the tail', () => {
+    const first = splitStreamingMarkdown('Hello')
+    expect(first.blocks).toEqual([])
+    expect(first.tail).toBe('Hello')
+    expect(first.tailKind).toBe('prose')
+
+    const next = splitStreamingMarkdown('Hello world')
+    expect(next.blocks).toEqual([])
+    expect(next.tail).toBe('Hello world')
+  })
+
+  it('commits a paragraph once a blank line arrives', () => {
+    const split = splitStreamingMarkdown('Hello world.\n\nNext')
+    expect(split.blocks).toHaveLength(1)
+    expect(split.blocks[0]?.id).toBe('md-0')
+    expect(split.blocks[0]?.text).toBe('Hello world.\n')
+    expect(split.tail).toBe('Next')
+  })
+
+  it('keeps an open fence entirely in the tail', () => {
+    const split = splitStreamingMarkdown('Intro\n\n```ts\nconst x = 1')
+    expect(split.blocks).toHaveLength(1)
+    expect(split.blocks[0]?.text).toBe('Intro\n')
+    expect(split.tailKind).toBe('fence')
+    expect(split.tailLang).toBe('ts')
+    expect(split.tail).toContain('const x = 1')
+  })
+
+  it('commits a closed fence and does not remake earlier block ids', () => {
+    const mid = splitStreamingMarkdown('A\n\n```js\n1')
+    expect(mid.blocks.map((b) => b.id)).toEqual(['md-0'])
+
+    const done = splitStreamingMarkdown('A\n\n```js\n1\n```\n\nB')
+    expect(done.blocks.map((b) => b.id)).toEqual(['md-0', 'md-1'])
+    expect(done.blocks[1]?.text).toContain('```js')
+    expect(done.tail).toBe('B')
+    expect(done.tailKind).toBe('prose')
+  })
+
+  it('extracts open fence body without the opener', () => {
+    expect(extractOpenFenceBody('```ts\nconst a = 1\nconst b = 2')).toBe(
+      'const a = 1\nconst b = 2'
+    )
+    expect(extractOpenFenceBody('```ts')).toBe('')
+  })
+})

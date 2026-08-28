@@ -596,8 +596,6 @@ export function TurnFlow({
 
   const displayLiveLabel = isStreaming ? stickyLive.label : '处理中'
   const displayLiveDetail = isStreaming ? stickyLive.detail : undefined
-  const labelSwapKey = displayLiveLabel
-  const detailSwapKey = displayLiveDetail || ''
   const listSteps = displaySteps.filter(
     (s) =>
       s.kind === 'tool' ||
@@ -641,7 +639,6 @@ export function TurnFlow({
         <div className="turn-flow-live-head">
           <div className="turn-flow-live-copy">
             <span
-              key={`lbl-${labelSwapKey}`}
               className="turn-flow-live-label live-text-shimmer"
               data-live-label={displayLiveLabel}
             >
@@ -649,8 +646,7 @@ export function TurnFlow({
             </span>
             {displayLiveDetail ? (
               <span
-                key={`dtl-${detailSwapKey}`}
-                className="turn-flow-live-detail turn-flow-live-detail--swap"
+                className="turn-flow-live-detail"
                 data-live-detail={displayLiveDetail}
                 title={displayLiveDetail}
               >

@@ -26,6 +26,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|------|
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
+| `/changes` `/review` | 打开右侧变更审查 |
+| `/files` `/terminal` `/browser` | 打开右侧对应面板 |
 
 ### @file 引用
 

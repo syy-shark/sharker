@@ -10,7 +10,7 @@ import { streamChat, type ChatCompletionMessage } from '../providers/openai'
 import { executeToolWithMeta } from '../tools/executor'
 import { needsPathApproval } from '../tools/permissions'
 import { assertToolAllowed, getToolDefinitionsForPhase, isHighRiskTool } from '../tools/registry'
-import { getHarnessPhase, enterPlanMode, finishBuildMode } from '../tools/harness-state'
+import { getHarnessPhase, enterPlanMode, finishBuildMode, getWorktreePath } from '../tools/harness-state'
 import { pickVerifyCommand, shouldSkipAutoVerify } from './verify'
 import { parseTextToolCalls, stripPartialToolXmlForDisplay, stripTextToolCalls, TEXT_TOOL_EXECUTED_HINT } from './text-tool-fallback'
 import {
@@ -317,12 +317,19 @@ async function* runToolWithLiveStatus(
 ): AsyncGenerator<StreamChunk, Awaited<ReturnType<typeof executeToolWithMeta>>> {
   const pending: string[] = []
   let last = ''
-  const job = executeToolWithMeta(toolName, args, settings, signal, (content) => {
-    const clean = (content || '').trim()
-    if (!clean || clean === last) return
-    last = clean
-    pending.push(clean)
-  })
+  const job = executeToolWithMeta(
+    toolName,
+    args,
+    settings,
+    signal,
+    (content) => {
+      const clean = (content || '').trim()
+      if (!clean || clean === last) return
+      last = clean
+      pending.push(clean)
+    },
+    conversationId
+  )
   // 挂上 catch 避免未处理 rejection；结果仍由 await job 获取
   void job.catch(() => {})
   while (true) {
@@ -361,7 +368,6 @@ export async function* queryLoop(
   signal: AbortSignal | undefined,
   opts: QueryLoopOptions
 ): AsyncGenerator<StreamChunk> {
-  const workspace = getActiveWorkspacePath(settings)
   const {
     userText,
     history,
@@ -369,6 +375,7 @@ export async function* queryLoop(
     sessionApprovals,
     conversationId
   } = opts
+  const workspace = getWorktreePath(conversationId) || getActiveWorkspacePath(settings)
   let iterations = 0
   let verifyDoneForTurn = false
   let warnedNearLimit = false
@@ -671,7 +678,14 @@ export async function* queryLoop(
         toolCalls.map(async (tc) => {
           const args = parseToolArgs(tc)
           try {
-            const result = await executeToolWithMeta(tc.function.name, args, settings, signal)
+            const result = await executeToolWithMeta(
+              tc.function.name,
+              args,
+              settings,
+              signal,
+              undefined,
+              conversationId
+            )
             return { ok: true as const, result }
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error)

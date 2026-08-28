@@ -51,6 +51,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
 import type { ApprovalDecision } from '../shared/approval-session'
+import { loadThreadRuntime, saveThreadRuntime, type ThreadMode } from './lib/thread-runtime'
 import {
   appendAssistantMessage,
   cancelQueuedPrompt,
@@ -196,6 +197,10 @@ export default function App() {
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
+  const [changesRevision, setChangesRevision] = useState(0)
+  const [threadMode, setThreadMode] = useState<ThreadMode>('local')
+  const [threadWorktreePath, setThreadWorktreePath] = useState<string | undefined>()
+  const threadRuntimeRef = useRef<{ mode: ThreadMode; worktreePath?: string }>({ mode: 'local' })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sharker-sidebar-collapsed') === '1'
   )
@@ -779,6 +784,13 @@ export default function App() {
   }, [settingsDraft])
 
   useEffect(() => {
+    const runtime = loadThreadRuntime(activeConversationId)
+    setThreadMode(runtime.mode)
+    setThreadWorktreePath(runtime.worktreePath)
+    threadRuntimeRef.current = runtime
+  }, [activeConversationId])
+
+  useEffect(() => {
     const off = window.sharker?.onAutomationRun?.((job) => {
       const j = job as { prompt?: string }
       if (j.prompt) void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
@@ -1108,6 +1120,9 @@ export default function App() {
         }
         segmentsRef.current = applyStreamChunk(segmentsRef.current, chunk)
         // 同步 turnMeta 供侧栏/旧逻辑
+        if (chunk.type === 'tool_done' || chunk.type === 'tool_start') {
+          setChangesRevision((n) => n + 1)
+        }
         if (chunk.type === 'tool_start' && chunk.toolName) {
           for (const p of extractBrowsedPaths(chunk.toolName, chunk.toolArgs)) {
             if (!turnMetaRef.current.browsedFiles.includes(p)) {
@@ -1338,6 +1353,39 @@ export default function App() {
     []
   )
 
+  const handleThreadModeChange = useCallback(
+    (mode: ThreadMode) => {
+      const next = {
+        mode,
+        worktreePath: mode === 'worktree' ? threadRuntimeRef.current.worktreePath : undefined
+      }
+      threadRuntimeRef.current = next
+      setThreadMode(mode)
+      setThreadWorktreePath(next.worktreePath)
+      const id = activeConversationIdRef.current
+      if (id) saveThreadRuntime(id, next)
+    },
+    []
+  )
+
+  const ensureWorktreeForTurn = useCallback(async (convId: string | null | undefined) => {
+    const runtime = threadRuntimeRef.current
+    if (runtime.mode !== 'worktree') return undefined
+    if (runtime.worktreePath) return runtime.worktreePath
+    const cwd = getActiveWorkspacePath(settingsRef.current)
+    if (!cwd || !convId || !window.sharker?.prepareWorktree) return undefined
+    const result = await window.sharker.prepareWorktree(cwd, convId)
+    if (!result.ok) {
+      console.warn('[worktree]', result.error)
+      return undefined
+    }
+    const next = { mode: 'worktree' as const, worktreePath: result.path }
+    threadRuntimeRef.current = next
+    setThreadWorktreePath(result.path)
+    saveThreadRuntime(convId, next)
+    return result.path
+  }, [])
+
   /** 派发单条 turn：立刻展示用户消息，再触发 IPC（绑定 conversationId） */
   const dispatchTurn = useCallback(
     async (text: string, attachments: ChatAttachment[] = [], conversationId?: string) => {
@@ -1395,7 +1443,8 @@ export default function App() {
         sessionBuffersRef.current.set(convId, buf)
         doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
         try {
-          await window.sharker.sendMessage(text, history, attachments, convId)
+          const worktreePath = await ensureWorktreeForTurn(convId)
+          await window.sharker.sendMessage(text, history, attachments, convId, { worktreePath })
           void persistActiveConversation(buf.messages, convId)
         } catch (e) {
           console.error('后台会话发送失败', e)
@@ -1494,7 +1543,10 @@ export default function App() {
           })
         }
 
-        await window.sharker.sendMessage(text, history, attachments, convId ?? undefined)
+        const worktreePath = await ensureWorktreeForTurn(convId)
+        await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
+          worktreePath
+        })
       } catch (e) {
         console.error('发送失败', e)
         if (turnGenRef.current === myTurn) {
@@ -1539,6 +1591,7 @@ export default function App() {
       beginTurnMeta,
       commitAssistantReply,
       ensureActiveConversation,
+      ensureWorktreeForTurn,
       persistActiveConversation,
       withTimeout
     ]
@@ -2422,6 +2475,9 @@ export default function App() {
         case 'toggle_files':
           handleTogglePanel('files')
           break
+        case 'toggle_changes':
+          handleTogglePanel('changes')
+          break
         case 'toggle_browser':
           handleTogglePanel('browser')
           break
@@ -3261,6 +3317,8 @@ export default function App() {
                 if (ws) void handleSelectConversation(ws, id)
                 setShowHistoryPicker(false)
               }}
+              threadMode={threadMode}
+              onThreadModeChange={handleThreadModeChange}
               onRetry={(userMessageId) => void handleRetry(userMessageId)}
               approval={approval}
               approvalResponding={approvalResponding}
@@ -3288,10 +3346,15 @@ export default function App() {
         <RightPanel
           open={rightPanelOpen && page === 'chat'}
           tab={rightPanelTab}
-          workspacePath={getActiveWorkspacePath(settings) ?? ''}
+          workspacePath={
+            threadMode === 'worktree' && threadWorktreePath
+              ? threadWorktreePath
+              : (getActiveWorkspacePath(settings) ?? '')
+          }
           isHome={false}
           onTabChange={setRightPanelTab}
           onClose={() => setRightPanelOpen(false)}
+          changesRevision={changesRevision}
         />
       </div>
     </div>

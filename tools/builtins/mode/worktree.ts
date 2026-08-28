@@ -65,7 +65,7 @@ export const enterWorktreeTool: ToolHandler = {
   async execute(args, ctx) {
     const p = String(args.path)
     assertAccess(ctx, p)
-    setWorktreePath(p)
+    setWorktreePath(p, ctx.conversationId)
     return ok(`Active worktree set to: ${p}. File/shell tools will use this path as cwd overlay.`)
   }
 }
@@ -75,7 +75,7 @@ export const exitWorktreeTool: ToolHandler = {
   title: '退出 Worktree',
   async execute(_args, ctx) {
     const ws = getActiveWorkspacePath(ctx.settings)
-    setWorktreePath(null)
+    setWorktreePath(null, ctx.conversationId)
     return ok(`Worktree overlay cleared. Back to workspace: ${ws}`)
   }
 }
@@ -89,8 +89,12 @@ export const worktreeTools: ToolHandler[] = [
 ]
 
 /** 解析有效 cwd（worktree 覆盖优先） */
-export function resolveEffectiveCwd(settings: Parameters<typeof getActiveWorkspacePath>[0], cwd?: string): string {
-  const overlay = getWorktreePath()
+export function resolveEffectiveCwd(
+  settings: Parameters<typeof getActiveWorkspacePath>[0],
+  cwd?: string,
+  conversationId?: string
+): string {
+  const overlay = getWorktreePath(conversationId)
   if (overlay) return overlay
   const ws = getActiveWorkspacePath(settings)
   return cwd ?? ws

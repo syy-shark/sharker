@@ -25,6 +25,8 @@ export interface ToolContext {
   signal?: AbortSignal
   /** 长耗时工具进度文案（写回直播步骤详情，避免 UI 像停住） */
   onStatus?: (content: string) => void
+  /** 多会话隔离：worktree 覆盖按会话取 */
+  conversationId?: string
 }
 
 /** 高危审批评估结果 */

@@ -62,6 +62,9 @@ import { compressContextForce } from '../../shared/context-compress'
 import { getUsageHistory } from '../../shared/token-usage-store'
 import { buildWorkspaceTree } from '../../shared/workspace-tree'
 import { runGit } from '../../tools/shared/git-runner'
+import { prepareThreadWorktree } from '../../tools/thread-worktree'
+import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
+import { readFile } from 'fs/promises'
 import {
   createTerminal,
   killAllTerminals,
@@ -961,7 +964,8 @@ function registerIpc(): void {
       userText: string,
       history: ChatMessage[],
       attachments: ChatAttachment[] = [],
-      conversationId?: string
+      conversationId?: string,
+      options?: { worktreePath?: string | null }
     ) => {
       const send = (chunk: StreamChunk) => {
         if (event.sender.isDestroyed()) return
@@ -990,6 +994,7 @@ function registerIpc(): void {
           userText,
           attachments,
           conversationId,
+          worktreePath: options?.worktreePath,
           sessionApprovals,
           onApproval: approvalHandler,
           send,
@@ -1041,6 +1046,55 @@ function registerIpc(): void {
     } catch {
       return { isRepo: false, branch: '', files: [] as { status: string; path: string; raw: string }[] }
     }
+  })
+
+  ipcMain.handle(
+    IPC.GIT_FILE_DIFF,
+    async (_e, cwd: string, filePath: string, status = 'M') => {
+      const root = path.resolve(String(cwd || ''))
+      const rel = String(filePath || '').replace(/^[/\\]+/, '')
+      if (!root || !rel) {
+        return { ok: false, path: rel, status, error: '缺少路径' }
+      }
+      const abs = path.resolve(root, rel)
+      if (abs !== root && !abs.startsWith(root + path.sep)) {
+        return { ok: false, path: rel, status, error: '路径超出工作区' }
+      }
+      let oldText: string | null = null
+      try {
+        oldText = await runGit(root, ['show', `HEAD:${rel.replaceAll('\\', '/')}`])
+      } catch {
+        oldText = null
+      }
+      let newText = ''
+      try {
+        const buf = await readFile(abs)
+        if (buf.includes(0)) {
+          return { ok: false, path: rel, status, binary: true, error: '二进制文件，无法预览 diff' }
+        }
+        if (buf.byteLength > 400_000) {
+          return { ok: false, path: rel, status, error: '文件过大，请在编辑器中查看' }
+        }
+        newText = buf.toString('utf8')
+      } catch {
+        if (!isDeletedGitChange(status)) {
+          return { ok: false, path: rel, status, error: '无法读取工作区文件' }
+        }
+      }
+      return {
+        ok: true,
+        path: rel,
+        status,
+        diff: diffFromGitTexts({ path: rel, status, oldText, newText })
+      }
+    }
+  )
+
+  ipcMain.handle(IPC.WORKSPACE_PREPARE_WORKTREE, async (_e, cwd: string, conversationId: string) => {
+    return prepareThreadWorktree({
+      workspacePath: String(cwd || ''),
+      conversationId: String(conversationId || '')
+    })
   })
 }
 

@@ -48,6 +48,10 @@ export const IPC = {
   GIT_CHECKOUT: 'git:checkout',
   /** 工作区 git 变更文件列表（Changes 面板） */
   GIT_STATUS_CHANGES: 'git:status-changes',
+  /** 单个变更文件相对 HEAD 的审查 diff */
+  GIT_FILE_DIFF: 'git:file-diff',
+  /** 为会话准备隔离 Git worktree */
+  WORKSPACE_PREPARE_WORKTREE: 'workspace:prepare-worktree',
   TERMINAL_CREATE: 'terminal:create',
   TERMINAL_WRITE: 'terminal:write',
   TERMINAL_RESIZE: 'terminal:resize',

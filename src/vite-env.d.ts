@@ -77,7 +77,8 @@ export interface SharkerApi {
     text: string,
     history: ChatMessage[],
     attachments?: ChatAttachment[],
-    conversationId?: string
+    conversationId?: string,
+    options?: { worktreePath?: string | null }
   ) => Promise<void>
   saveAttachment: (input: {
     name: string
@@ -121,6 +122,22 @@ export interface SharkerApi {
     branch: string
     files: { status: string; path: string; raw: string }[]
   }>
+  getGitFileDiff: (
+    cwd: string,
+    filePath: string,
+    status?: string
+  ) => Promise<{
+    ok: boolean
+    path: string
+    status: string
+    binary?: boolean
+    error?: string
+    diff?: import('../shared/types').FileDiff
+  }>
+  prepareWorktree: (
+    cwd: string,
+    conversationId: string
+  ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
   createTerminal: (cwd: string) => Promise<{ id: string }>
   writeTerminal: (id: string, data: string) => Promise<void>
   resizeTerminal: (id: string, cols: number, rows: number) => Promise<void>

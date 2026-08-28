@@ -17,7 +17,7 @@
 | 文件 | 说明 |
 |------|------|
 | `Sidebar.tsx` / `.css` | 侧栏：导航/项目/对话（`data-conversation-id/title` 便于自动化恢复）；进行中会话呼吸点；项目菜单 enter/exit 统一 180ms 卸载；展开时顶栏收起按钮；收起后左缘热区 peek（pointer/mouse）滑入 |
-| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；「回到底部」在滚动区与输入框之间的右侧槽（不进滚动层、不盖正文），仅内容溢出且离开底部时出现；消息列表底部留白；提交时拦截 UI 斜杠命令；`/history` 历史选择弹层（浅色玻璃/深色金属，↑↓/Enter/Esc 与 hover 同步，关闭有退出动画并真正卸载、回焦输入框） |
+| `ChatView.tsx` / `.css` | 聊天主视图：消息列表、输入、排队、滚动；流式贴底用 ResizeObserver（不再每帧 rAF）；「回到底部」在滚动区与输入框之间的右侧槽；提交时拦截 UI 斜杠命令；`/` 斜杠目录与 `/history` 历史选择弹层；composer 本地/隔离线程模式 |
 | `ChatToolbar.tsx` / `.css` | 聊天顶栏：侧栏展开/收起、新对话、右侧面板 |
 | `AssistantMessage.tsx` / `.css` | 助手消息：直播思考/工具在上；Cursor 式可折叠 Thought（无灰卡片）；正文/内联演示在下且仅可绘时上屏；完成后「已思考 · Ns」可展开，真实工具另有过程行 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考为 chevron 折叠旁白；连接中一行状态字+耗时；生成演示时改头标签；有工具才展开时间线 |
@@ -25,6 +25,7 @@
 | `InlineApproval.tsx` / `.css` | 过程内高危操作审批块；出现时 view-enter + 呼吸 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量「思考中」；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff 分流 |
+| `StreamingMarkdown.tsx` | 直播正文：已闭合块 memo，只重绘增长尾部 |
 | `CodeArtifactBlock.tsx` / `.css` | 代码与命令输出编辑器外壳 |
 | `CodeDiffBlock.tsx` / `.css` | 行级 diff 展示 |
 | `CompareBlock.tsx` / `.css` | 旧/新对比行布局 |

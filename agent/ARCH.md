@@ -16,7 +16,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `pipeline.ts` | 用户输入入口与多会话 turn 队列；新输入会清掉该会话 `cancelledBeforeStart`，避免 abort 后立即续跑被短路 |
+| `pipeline.ts` | 用户输入入口与多会话 turn 队列；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
 | `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表）↔ verify；工具批次后发「规划下一步」status 保直播连续性 |
 | `loop.ts` | `buildSystemPrompt`、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |

@@ -75,27 +75,65 @@
   animation: ui-spin 0.9s linear infinite;
 }
 
+.changes-panel__count {
+  min-width: 1.25em;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.changes-panel__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .changes-panel__list {
   margin: 0;
-  padding: 6px 0 12px;
+  padding: 6px 0;
   overflow: auto;
+  max-height: 38%;
   list-style: none;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .changes-panel__item {
   display: flex;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
   font-size: 12px;
   line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
   animation: list-item-in var(--motion-duration-fast) var(--motion-ease-soft) both;
   transition: background-color var(--motion-duration-fast) var(--motion-ease-soft);
 }
 
 .changes-panel__item:hover {
   background: var(--glass-fill-nested);
+}
+
+.changes-panel__item.is-selected {
+  background: color-mix(in srgb, var(--accent) 10%, var(--glass-fill-nested));
+}
+
+.changes-panel__diff {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 10px 14px;
 }
 
 .changes-panel__status {
