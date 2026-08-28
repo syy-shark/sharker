@@ -46,7 +46,9 @@ const ACTION_SET = new Set<string>([
   'standalone_conversation',
   'copy_cwd',
   'copy_session_id',
+  'copy_conversation_path',
   'copy_deep_link',
+  'open_project_picker',
   'copy_last_output',
   'thinking_lower',
   'thinking_higher'

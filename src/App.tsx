@@ -8,12 +8,15 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   applyCustomTitle,
   buildForkedConversation,
+  conversationPreview,
   deriveConversationTitle,
   formatPinNote,
   formatRenameNote,
   formatUnreadNote,
   nextLiveConversationId,
   parseRenameArgs,
+  resolveConversationGitBranch,
+  resolveConversationPath,
   sortConversationsByCreatedAt
 } from '../shared/conversation'
 import { formatUsageReport, parseUsageScope, usageHistoryDays } from '../shared/token-usage-format'
@@ -38,6 +41,7 @@ import {
   browsedFilesFromSegments,
   cloneSegments,
   extractFinalContent,
+  findLastSegment,
   finalizeSegments,
   thinkingPreviewFromSegments
 } from '../shared/turn-segments'
@@ -303,6 +307,7 @@ export default function App() {
   const threadGoalRef = useRef<ThreadGoal | null>(null)
   const [worktreeBaseRef, setWorktreeBaseRef] = useState('')
   const [worktreeMissing, setWorktreeMissing] = useState(false)
+  const [workspaceBranch, setWorkspaceBranch] = useState('')
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
   const [terminalClearTick, setTerminalClearTick] = useState(0)
   const navStackRef = useRef<NavEntry[]>([{ page: 'chat' }])
@@ -327,7 +332,7 @@ export default function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const [composerIntent, setComposerIntent] = useState<
-    'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | null
+    'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | 'project' | null
   >(null)
   const [composerSeed, setComposerSeed] = useState<{ nonce: number; text: string } | null>(null)
   const composerSeedNonceRef = useRef(0)
@@ -437,6 +442,26 @@ export default function App() {
   }, [settings])
 
   useEffect(() => {
+    const cwd = getActiveWorkspacePath(settings)
+    if (!cwd || !window.sharker.getGitBranchInfo) {
+      setWorkspaceBranch('')
+      return
+    }
+    let cancelled = false
+    void window.sharker
+      .getGitBranchInfo(cwd)
+      .then((info) => {
+        if (!cancelled) setWorkspaceBranch(info.branch || '')
+      })
+      .catch(() => {
+        if (!cancelled) setWorkspaceBranch('')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [settings.activeWorkspaceId, settings.workspacePath])
+
+  useEffect(() => {
     threadWorktreePathRef.current = threadWorktreePath
   }, [threadWorktreePath])
 
@@ -488,7 +513,8 @@ export default function App() {
           ...c,
           title: c.customTitle?.trim() ? c.title : title,
           messageCount: msgs.length,
-          updatedAt: now
+          updatedAt: now,
+          preview: conversationPreview(msgs) || undefined
         }
       })
       return found ? next : list
@@ -616,9 +642,10 @@ export default function App() {
       turnStartedAt: turnStartedAtRef.current || null,
       turnHadThinking: turnHadThinkingRef.current,
       activeTool: (() => {
-        const active = [...segmentsRef.current]
-          .reverse()
-          .find((s) => s.kind === 'tool' && s.status === 'active')
+        const active = findLastSegment(
+          segmentsRef.current,
+          (s) => s.kind === 'tool' && s.status === 'active'
+        )
         return active?.toolName ?? null
       })(),
       sendInFlight: sendInFlightRef.current,
@@ -700,9 +727,10 @@ export default function App() {
       setStreaming((prev) => (prev === finalPreview ? prev : finalPreview))
       const thinkPreview = thinkingPreviewFromSegments(segmentsRef.current)
       setTurnThinking((prev) => (prev === thinkPreview ? prev : thinkPreview))
-      const activeToolSeg = [...segmentsRef.current]
-        .reverse()
-        .find((s) => s.kind === 'tool' && s.status === 'active')
+      const activeToolSeg = findLastSegment(
+        segmentsRef.current,
+        (s) => s.kind === 'tool' && s.status === 'active'
+      )
       const nextTool = activeToolSeg?.toolName ?? null
       setActiveTool((prev) => (prev === nextTool ? prev : nextTool))
       // 当前可见会话也持续写 buffer，切换对话返回时不会丢 live 步骤
@@ -1302,9 +1330,10 @@ export default function App() {
         }
       }
       if (chunk.type === 'tool_done' || chunk.type === 'status' || chunk.type === 'tool_start') {
-        const stillActive = [...buf.segments]
-          .reverse()
-          .find((s) => s.kind === 'tool' && s.status === 'active')
+        const stillActive = findLastSegment(
+          buf.segments,
+          (s) => s.kind === 'tool' && s.status === 'active'
+        )
         buf.activeTool = stillActive?.toolName ?? null
       }
       if (chunk.type === 'approval_needed' && chunk.approval) {
@@ -3512,6 +3541,20 @@ export default function App() {
           appendLocalNote(ok && href ? `已复制对话深链：\n\n\`${href}\`` : '没有当前会话。')
           break
         }
+        case 'copy_conversation_path': {
+          const runtime = runtimeForConversation(
+            activeConversationIdRef.current,
+            activeConversationIdRef.current,
+            threadRuntimeRef.current
+          )
+          const path = resolveConversationPath({
+            worktreePath: runtime.worktreePath || threadWorktreePath,
+            workspacePath: getActiveWorkspacePath(settingsRef.current)
+          })
+          const ok = await copyPlainText(path)
+          appendLocalNote(ok && path ? `已复制对话路径：\n\n\`${path}\`` : '没有可复制的对话路径。')
+          break
+        }
         case 'init_agents': {
           const cwd = getActiveWorkspacePath(settingsRef.current) || ''
           if (!cwd || !window.sharker.initAgentsMd) {
@@ -4089,6 +4132,12 @@ export default function App() {
         setShowHistoryPicker(true)
         return
       }
+      if (cmd.action === 'open_project_picker') {
+        setPage('chat')
+        setShowHistoryPicker(false)
+        setComposerIntent('project')
+        return
+      }
       if (cmd.action === 'start_dictation') {
         setPage('chat')
         setComposerIntent('dictate')
@@ -4270,6 +4319,12 @@ export default function App() {
       if (action === 'search_chats') {
         setPage('chat')
         setShowHistoryPicker(true)
+        return
+      }
+      if (action === 'open_project_picker') {
+        setPage('chat')
+        setShowHistoryPicker(false)
+        setComposerIntent('project')
         return
       }
       if (action === 'shortcut_help') {
@@ -4488,6 +4543,19 @@ export default function App() {
             scope: 'ui',
             action: 'copy_deep_link',
             category: 'session'
+          },
+          ''
+        )
+        return
+      }
+      if (action === 'copy_conversation_path') {
+        void handleSlashActionRef.current(
+          {
+            name: 'path',
+            description: '复制对话路径',
+            scope: 'ui',
+            action: 'copy_conversation_path',
+            category: 'workspace'
           },
           ''
         )
@@ -5301,8 +5369,8 @@ export default function App() {
   }, [bumpSessionLive, snapshotActiveSessionBuffer])
 
   const reviewFindings = useMemo(() => {
-    const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.content.trim())
-    return last ? parseReviewFindings(last.content) : []
+    const last = lastCompletedAssistantText(messages)
+    return last ? parseReviewFindings(last) : []
   }, [messages])
 
   const handleQueueTriage = useCallback(
@@ -5390,8 +5458,23 @@ export default function App() {
   }, [])
 
   const conversationTitles = useMemo(
-    () => conversationList.map((c) => ({ id: c.id, title: c.title })),
-    [conversationList]
+    () =>
+      conversationList.map((c) => {
+        const runtime = loadThreadRuntime(c.id)
+        const gitBranch = resolveConversationGitBranch({
+          gitBranch: c.gitBranch,
+          baseRef: runtime.baseRef,
+          workspaceBranch
+        })
+        return {
+          id: c.id,
+          title: c.title,
+          customTitle: c.customTitle,
+          preview: c.preview,
+          gitBranch: gitBranch || undefined
+        }
+      }),
+    [conversationList, workspaceBranch]
   )
 
   const handlePickConversation = useCallback((id: string) => {

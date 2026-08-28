@@ -123,11 +123,21 @@ export async function listWorkspaceConversations(
     pinned: boolean | null
     unread: boolean | null
     msg_count: number
+    preview: string | null
   }>(
     `SELECT s.id, s.title, s.custom_title, s.created_at, s.updated_at, s.status,
             COALESCE(s.pinned, false) AS pinned,
             COALESCE(s.unread, false) AS unread,
-            COALESCE(c.msg_count, 0)::int AS msg_count
+            COALESCE(c.msg_count, 0)::int AS msg_count,
+            (
+              SELECT left(m.content, 240)
+              FROM session_messages m
+              WHERE m.session_id = s.id
+                AND m.role IN ('user', 'assistant')
+                AND length(trim(m.content)) > 0
+              ORDER BY m.seq DESC
+              LIMIT 1
+            ) AS preview
      FROM sessions s
      LEFT JOIN (
        SELECT session_id, COUNT(*)::int AS msg_count
@@ -150,7 +160,8 @@ export async function listWorkspaceConversations(
       updatedAt: Number(s.updated_at),
       status: 'active',
       pinned: Boolean(s.pinned),
-      unread: Boolean(s.unread)
+      unread: Boolean(s.unread),
+      preview: s.preview?.replace(/\s+/g, ' ').trim() || undefined
     }
     return {
       ...toConversationSummary(conv),

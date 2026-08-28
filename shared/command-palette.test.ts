@@ -56,6 +56,8 @@ describe('command palette', () => {
     expect(ids).toContain('copy-cwd')
     expect(ids).toContain('copy-session')
     expect(ids).toContain('copy-deeplink')
+    expect(ids).toContain('project-picker')
+    expect(ids).toContain('copy-conversation-path')
   })
 
   it('filters by title and keywords', () => {

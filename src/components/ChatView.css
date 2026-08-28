@@ -1802,6 +1802,24 @@ html.theme-light .composer-send:not(.composer-send--active):not(.composer-send--
   transform: scale(0.99);
 }
 
+.history-picker-hit {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.history-picker-hint {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .slash-menu-name {
   flex-shrink: 0;
   color: var(--accent);

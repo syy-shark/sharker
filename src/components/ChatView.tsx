@@ -16,7 +16,9 @@ import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { MessageActions } from './MessageActions'
-import { ComposerDock, type ComposerDockHandle } from './ComposerDock'
+import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from './ComposerDock'
+import type { ChatSearchItem } from '../../shared/conversation'
+import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread } from '../../shared/thread-search'
 import { textForSpeech } from '../../shared/composer-dictation'
@@ -191,7 +193,7 @@ interface Props {
   onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
   showHistoryPicker?: boolean
   onCloseHistoryPicker?: () => void
-  conversationTitles?: Array<{ id: string; title: string }>
+  conversationTitles?: ChatSearchItem[]
   onPickConversation?: (id: string) => void
   onRetry?: (userMessageId: string) => void
   onEditUserMessage?: (userMessageId: string, text: string) => void
@@ -211,7 +213,7 @@ interface Props {
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
   /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
-  composerIntent?: 'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | null
+  composerIntent?: ComposerDockIntent | 'find'
   onComposerIntentHandled?: () => void
   /** 暂停自动出队（对标 Codex hold queue） */
   queueHeld?: boolean
@@ -227,6 +229,7 @@ export function ChatView({
   sessionKey = null,
   workspaces,
   activeWorkspaceId,
+  onSelectWorkspace,
   providers,
   activeProviderId,
   onSelectProvider,
@@ -464,10 +467,7 @@ export function ChatView({
   const dockIntent = composerIntent === 'find' ? null : composerIntent
   const speechHint = loading
     ? ''
-    : textForSpeech(
-        [...messages].reverse().find((m) => m.role === 'assistant' && m.content.trim())?.content ||
-          streaming
-      )
+    : textForSpeech(lastCompletedAssistantText(messages) || streaming)
 
   /** ⌘↑ / ⌘↓：长对话跳到顶/底（输入框内不抢光标） */
   useEffect(() => {
@@ -837,6 +837,7 @@ export function ChatView({
             onCloseHistoryPicker={onCloseHistoryPicker}
             conversationTitles={conversationTitles}
             onPickConversation={onPickConversation}
+            onSelectWorkspace={onSelectWorkspace}
             threadMode={threadMode}
             threadGoal={threadGoal}
             onClearThreadGoal={onClearThreadGoal}

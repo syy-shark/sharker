@@ -411,6 +411,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'standalone_conversation'
   },
   {
+    id: 'project-picker',
+    title: '打开项目选择器',
+    shortcut: '⌘⌥⇧O',
+    keywords: 'project picker workspace folder 项目 工作区',
+    action: 'open_project_picker'
+  },
+  {
     id: 'usage',
     title: '查看 Token 用量',
     keywords: 'usage tokens 用量 token',
@@ -436,6 +443,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥L',
     keywords: 'copy deep link url sharker:// 深链',
     action: 'copy_deep_link'
+  },
+  {
+    id: 'copy-conversation-path',
+    title: '复制对话路径',
+    shortcut: '⌘⌥⇧C',
+    keywords: 'copy conversation path worktree 对话路径 隔离',
+    action: 'copy_conversation_path'
   }
 ]
 

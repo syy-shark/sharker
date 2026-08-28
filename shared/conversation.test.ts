@@ -4,12 +4,16 @@ import {
   applyCustomTitle,
   buildForkedConversation,
   createEmptyConversation,
+  chatSearchMatchHint,
+  conversationPreview,
   filterChatList,
   forkConversationTitle,
   formatPinNote,
   formatRenameNote,
   nextLiveConversationId,
   parseRenameArgs,
+  resolveConversationGitBranch,
+  resolveConversationPath,
   sortConversationsByCreatedAt,
   splitLiveConversations,
   splitPinnedConversations
@@ -26,6 +30,29 @@ describe('conversation search', () => {
     expect(filterChatList(items, 'c2').map((c) => c.id)).toEqual(['c2'])
     expect(filterChatList(items, '')).toEqual(items)
     expect(filterChatList(items, 'zzz')).toEqual([])
+  })
+
+  it('matches chat content and git branch like Codex expanded search', () => {
+    const items = [
+      {
+        id: 'c1',
+        title: '修好滚动',
+        preview: '直播时贴底滚动会卡一帧',
+        gitBranch: 'fix/login-redirect'
+      },
+      { id: 'c2', title: '审查队列', preview: '只暂存本任务改过的文件' }
+    ]
+    expect(filterChatList(items, '贴底').map((c) => c.id)).toEqual(['c1'])
+    expect(filterChatList(items, 'fix/login-redirect').map((c) => c.id)).toEqual(['c1'])
+    expect(chatSearchMatchHint(items[0], '贴底')).toBe('直播时贴底滚动会卡一帧')
+    expect(chatSearchMatchHint(items[0], 'fix/login')).toBe('fix/login-redirect')
+    expect(chatSearchMatchHint(items[0], '滚动')).toBe('')
+    expect(conversationPreview([{ role: 'user', content: '先改滚动' }])).toBe('先改滚动')
+    expect(resolveConversationGitBranch({ baseRef: 'HEAD', workspaceBranch: 'main' })).toBe('main')
+    expect(resolveConversationPath({ worktreePath: '/tmp/wt', workspacePath: '/repo' })).toBe(
+      '/tmp/wt'
+    )
+    expect(resolveConversationPath({ workspacePath: '/repo' })).toBe('/repo')
   })
 
   it('parses /rename and formats the note', () => {

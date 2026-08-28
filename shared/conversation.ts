@@ -29,6 +29,10 @@ export interface Conversation {
   pinned?: boolean
   /** 未读（对标 Codex ⌘⇧U） */
   unread?: boolean
+  /** 最近一条用户/助手正文摘要（Search chats 扩匹配） */
+  preview?: string
+  /** 关联 git 分支 / worktree 名（Search chats 扩匹配） */
+  gitBranch?: string
 }
 
 /** 侧栏展示的对话摘要（无消息体） */
@@ -45,6 +49,10 @@ export interface ConversationSummary {
   workspaceLabel?: string
   pinned?: boolean
   unread?: boolean
+  /** 最近一条用户/助手正文摘要（Search chats 扩匹配） */
+  preview?: string
+  /** 关联 git 分支 / worktree 名（Search chats 扩匹配） */
+  gitBranch?: string
 }
 
 /** 只改标题 / 置顶 / 未读，不重写消息、不抢活跃会话 */
@@ -150,18 +158,59 @@ export function nextLiveConversationId(
   return liveIds[(idx + 1) % liveIds.length] ?? null
 }
 
-/** ⌘G 搜索对话：按标题、自定义标题或 id 过滤（对标 Codex Search chats） */
-export function filterChatList<T extends { id: string; title?: string; customTitle?: string }>(
-  items: T[],
-  query: string
-): T[] {
+/** 从后往前取最近一条用户/助手正文，压空白后截断（Search chats / 侧栏摘要） */
+export function conversationPreview(
+  messages: Array<{ role?: string; content?: string }>,
+  max = 240
+): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if ((m.role === 'user' || m.role === 'assistant') && String(m.content || '').trim()) {
+      return String(m.content).replace(/\s+/g, ' ').trim().slice(0, max)
+    }
+  }
+  return ''
+}
+
+/** 可被 Search chats 扩匹配的字段 */
+export type ChatSearchItem = {
+  id: string
+  title?: string
+  customTitle?: string
+  preview?: string
+  gitBranch?: string
+}
+
+/** ⌘G 搜索对话：标题 / 自定义标题 / id / 正文摘要 / git 分支（对标 Codex expanded matching） */
+export function filterChatList<T extends ChatSearchItem>(items: T[], query: string): T[] {
   const q = query.trim().toLowerCase()
   if (!q) return items
-  return items.filter((c) => {
-    const title = String(c.customTitle || c.title || '').toLowerCase()
-    const stored = String(c.title || '').toLowerCase()
-    return title.includes(q) || stored.includes(q) || c.id.toLowerCase().includes(q)
-  })
+  return items.filter((c) => chatSearchHaystack(c).includes(q))
+}
+
+/** 命中正文或分支时的副文案（标题命中则不重复） */
+export function chatSearchMatchHint(item: ChatSearchItem, query: string): string {
+  const q = query.trim().toLowerCase()
+  if (!q) return ''
+  const title = String(item.customTitle || item.title || '').toLowerCase()
+  if (title.includes(q) || item.id.toLowerCase().includes(q)) return ''
+  const branch = String(item.gitBranch || '').trim()
+  if (branch.toLowerCase().includes(q)) return branch
+  const preview = String(item.preview || '').trim()
+  if (preview.toLowerCase().includes(q)) return preview
+  return ''
+}
+
+function chatSearchHaystack(item: ChatSearchItem): string {
+  return [
+    item.customTitle,
+    item.title,
+    item.id,
+    item.preview,
+    item.gitBranch
+  ]
+    .map((v) => String(v || '').toLowerCase())
+    .join('\n')
 }
 
 /** `/rename` 参数：空则进入行内改名；有文本则立刻写入 customTitle */
@@ -215,6 +264,31 @@ export function toConversationSummary(c: Conversation): ConversationSummary {
     messageCount: c.messages.length,
     status: c.status ?? 'active',
     pinned: c.pinned,
-    unread: c.unread
+    unread: c.unread,
+    preview: c.preview || conversationPreview(c.messages) || undefined,
+    gitBranch: c.gitBranch
   }
+}
+
+/** Search chats 用的 git 分支：显式字段 > worktree 起点 > 工作区当前分支 */
+export function resolveConversationGitBranch(input: {
+  gitBranch?: string
+  baseRef?: string
+  workspaceBranch?: string
+}): string {
+  for (const raw of [input.gitBranch, input.baseRef, input.workspaceBranch]) {
+    const v = String(raw || '').trim()
+    if (v && v !== 'HEAD' && v !== 'detached') return v
+  }
+  return ''
+}
+
+/** 对话路径：隔离 worktree 优先，否则工作区 cwd（对标 Codex Copy conversation path） */
+export function resolveConversationPath(input: {
+  worktreePath?: string
+  workspacePath?: string
+}): string {
+  const isolated = String(input.worktreePath || '').trim()
+  if (isolated) return isolated
+  return String(input.workspacePath || '').trim()
 }

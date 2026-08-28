@@ -93,6 +93,9 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true }))).toBe(
       'standalone_conversation'
     )
+    expect(
+      matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true, shiftKey: true }))
+    ).toBe('open_project_picker')
     expect(matchWorkbenchShortcut(ev({ key: 'r', metaKey: true, altKey: true }))).toBe(
       'rename_conversation'
     )
@@ -108,6 +111,9 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, altKey: true }))).toBe(
       'copy_session_id'
     )
+    expect(
+      matchWorkbenchShortcut(ev({ key: 'c', metaKey: true, altKey: true, shiftKey: true }))
+    ).toBe('copy_conversation_path')
     expect(matchWorkbenchShortcut(ev({ key: 'l', metaKey: true, altKey: true }))).toBe(
       'copy_deep_link'
     )

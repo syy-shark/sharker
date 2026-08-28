@@ -14,7 +14,7 @@ import {
 } from 'react'
 import { ArrowUp, FileText, Folder, Mic } from 'lucide-react'
 import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from '../../shared/types'
-import { sortWorkspaces } from '../../shared/workspace'
+import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
 import { filterSlashCommands, SLASH_COMMANDS, type SlashCommandMeta } from '../../shared/slash-commands'
@@ -47,7 +47,11 @@ import {
   isVoiceChatShortcut,
   textForSpeech
 } from '../../shared/composer-dictation'
-import { filterChatList } from '../../shared/conversation'
+import {
+  chatSearchMatchHint,
+  filterChatList,
+  type ChatSearchItem
+} from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { formatGoalChip, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
@@ -104,7 +108,14 @@ function AttachmentImage({ attachment }: { attachment: ChatAttachment }) {
 
 export type ComposerDockHandle = { focus: () => void }
 
-export type ComposerDockIntent = 'mention' | 'skill' | 'model' | 'dictate' | 'voice' | null
+export type ComposerDockIntent =
+  | 'mention'
+  | 'skill'
+  | 'model'
+  | 'dictate'
+  | 'voice'
+  | 'project'
+  | null
 
 export interface ComposerDockProps {
   sessionKey?: string | null
@@ -122,8 +133,9 @@ export interface ComposerDockProps {
   onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
   showHistoryPicker?: boolean
   onCloseHistoryPicker?: () => void
-  conversationTitles?: Array<{ id: string; title: string }>
+  conversationTitles?: ChatSearchItem[]
   onPickConversation?: (id: string) => void
+  onSelectWorkspace?: (id: string) => void
   threadMode?: ThreadMode
   threadGoal?: ThreadGoal | null
   onClearThreadGoal?: () => void
@@ -161,6 +173,7 @@ export const ComposerDock = memo(
       onCloseHistoryPicker,
       conversationTitles,
       onPickConversation,
+      onSelectWorkspace,
       threadMode = 'local',
       threadGoal = null,
       onClearThreadGoal,
@@ -219,6 +232,11 @@ export const ComposerDock = memo(
     const submitVoiceRef = useRef<(text: string) => void>(() => {})
     const wasLoadingRef = useRef(false)
     const historySearchRef = useRef<HTMLInputElement>(null)
+    const projectSearchRef = useRef<HTMLInputElement>(null)
+    const [projectPickerOpen, setProjectPickerOpen] = useState(false)
+    const [projectQuery, setProjectQuery] = useState('')
+    const [projectActiveIndex, setProjectActiveIndex] = useState(0)
+    const projectActiveIndexRef = useRef(0)
     const recognitionRef = useRef<SpeechRec | null>(null)
     const toggleDictationRef = useRef<() => void>(() => {})
     const toggleVoiceChatRef = useRef<() => void>(() => {})
@@ -229,6 +247,11 @@ export const ComposerDock = memo(
       () => filterChatList(conversationTitles ?? [], historyQuery),
       [conversationTitles, historyQuery]
     )
+    const projectHits = useMemo(
+      () => filterWorkspaces(sortWorkspaces(workspaces ?? []), projectQuery),
+      [workspaces, projectQuery]
+    )
+    const showProjectPicker = projectPickerOpen && !showHistoryPicker
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus()
@@ -251,6 +274,7 @@ export const ComposerDock = memo(
         setHistoryMounted(true)
         historyMountedRef.current = true
         setHistoryQuery('')
+        setProjectPickerOpen(false)
         requestAnimationFrame(() => historySearchRef.current?.focus())
         return
       }
@@ -321,12 +345,60 @@ export const ComposerDock = memo(
       return () => window.removeEventListener('keydown', onKey)
     }, [showHistoryPicker, historyHits, onCloseHistoryPicker, onPickConversation])
 
+    useEffect(() => {
+      projectActiveIndexRef.current = projectActiveIndex
+    }, [projectActiveIndex])
+
+    useEffect(() => {
+      if (!showProjectPicker) return
+      setProjectActiveIndex(0)
+      projectActiveIndexRef.current = 0
+      const total = projectHits.length
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setProjectPickerOpen(false)
+          requestAnimationFrame(() => textareaRef.current?.focus())
+          return
+        }
+        if (!total) return
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setProjectActiveIndex((i) => {
+            const n = (i + 1) % total
+            projectActiveIndexRef.current = n
+            return n
+          })
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setProjectActiveIndex((i) => {
+            const n = (i - 1 + total) % total
+            projectActiveIndexRef.current = n
+            return n
+          })
+          return
+        }
+        if (e.key === 'Enter') {
+          const item = projectHits[projectActiveIndexRef.current]
+          if (!item) return
+          e.preventDefault()
+          onSelectWorkspace?.(item.id)
+          setProjectPickerOpen(false)
+        }
+      }
+      window.addEventListener('keydown', onKey)
+      return () => window.removeEventListener('keydown', onKey)
+    }, [showProjectPicker, projectHits, onSelectWorkspace])
+
     const canSend = Boolean(input.trim() || pendingAttachments.length > 0)
     const activeWorkspace =
       sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
       sortWorkspaces(workspaces ?? [])[0]
     const slashQuery =
       !showHistoryPicker &&
+      !showProjectPicker &&
       !slashDismissed &&
       input.startsWith('/') &&
       !input.includes('\n') &&
@@ -345,7 +417,9 @@ export const ComposerDock = memo(
     )
     const showPromptSearch = promptSearchOpen && promptHits.length > 0
     const mentionQuery =
-      !showHistoryPicker && !showSlashMenu && !mentionDismissed ? parseAtMention(input, cursor) : null
+      !showHistoryPicker && !showProjectPicker && !showSlashMenu && !mentionDismissed
+        ? parseAtMention(input, cursor)
+        : null
     const chatMentionHits = useMemo(() => {
       if (!mentionQuery) return []
       return filterChatMentions(conversationTitles ?? [], mentionQuery.query, sessionKey).map((c) => ({
@@ -371,7 +445,11 @@ export const ComposerDock = memo(
     )
     const showMentionMenu = Boolean(mentionQuery && mentionOptions.length)
     const skillQuery =
-      !showHistoryPicker && !showSlashMenu && !showMentionMenu && !skillDismissed
+      !showHistoryPicker &&
+      !showProjectPicker &&
+      !showSlashMenu &&
+      !showMentionMenu &&
+      !skillDismissed
         ? parseSkillMention(input, cursor)
         : null
     const skillHits = skillQuery ? filterSkillMentions(skillCatalog, skillQuery.query) : []
@@ -483,6 +561,15 @@ export const ComposerDock = memo(
       if (composerIntent === 'model') {
         setModelOpenSignal((n) => n + 1)
         onComposerIntentHandled?.()
+        return
+      }
+      if (composerIntent === 'project') {
+        setProjectPickerOpen(true)
+        setProjectQuery('')
+        setProjectActiveIndex(0)
+        projectActiveIndexRef.current = 0
+        onComposerIntentHandled?.()
+        requestAnimationFrame(() => projectSearchRef.current?.focus())
         return
       }
       if (composerIntent === 'skill') {
@@ -1038,6 +1125,69 @@ export const ComposerDock = memo(
             </div>
           </div>
         ) : null}
+        {showProjectPicker ? (
+          <div className="composer-popover-slot">
+            <div
+              className="slash-menu history-picker popover-enter"
+              role="listbox"
+              aria-label="打开项目"
+              aria-activedescendant={
+                projectHits[projectActiveIndex]
+                  ? `project-option-${projectHits[projectActiveIndex].id}`
+                  : undefined
+              }
+            >
+              <input
+                ref={projectSearchRef}
+                className="history-picker-search"
+                value={projectQuery}
+                placeholder="搜索项目名称或路径…"
+                aria-label="搜索项目"
+                onChange={(e) => {
+                  setProjectQuery(e.target.value)
+                  setProjectActiveIndex(0)
+                  projectActiveIndexRef.current = 0
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') e.preventDefault()
+                }}
+              />
+              <ul className="slash-menu-list">
+                {projectHits.length ? (
+                  projectHits.map((w, index) => (
+                    <li key={w.id} role="presentation">
+                      <button
+                        type="button"
+                        id={`project-option-${w.id}`}
+                        role="option"
+                        aria-selected={index === projectActiveIndex}
+                        className={`slash-menu-item${index === projectActiveIndex ? ' slash-menu-item--active' : ''}`}
+                        onMouseEnter={() => {
+                          setProjectActiveIndex(index)
+                          projectActiveIndexRef.current = index
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          onSelectWorkspace?.(w.id)
+                          setProjectPickerOpen(false)
+                        }}
+                      >
+                        <span className="history-picker-hit">
+                          <span className="slash-menu-desc">{w.label || w.path || '未命名项目'}</span>
+                          {w.path && w.label ? (
+                            <span className="history-picker-hint">{w.path}</span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li className="slash-menu-empty">没有匹配的项目</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        ) : null}
         {historyMounted ? (
           <div className="composer-popover-slot">
             <div
@@ -1054,7 +1204,7 @@ export const ComposerDock = memo(
                 ref={historySearchRef}
                 className="history-picker-search"
                 value={historyQuery}
-                placeholder="搜索对话标题…"
+                placeholder="搜索标题、正文或分支…"
                 aria-label="搜索对话"
                 onChange={(e) => {
                   setHistoryQuery(e.target.value)
@@ -1085,7 +1235,15 @@ export const ComposerDock = memo(
                           onCloseHistoryPicker?.()
                         }}
                       >
-                        <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                        <span className="history-picker-hit">
+                          <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                          {(() => {
+                            const hint = chatSearchMatchHint(c, historyQuery)
+                            return hint ? (
+                              <span className="history-picker-hint">{hint}</span>
+                            ) : null
+                          })()}
+                        </span>
                       </button>
                     </li>
                   ))

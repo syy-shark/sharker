@@ -18,7 +18,7 @@
 | `db.ts` | PGlite 单例连接与数据目录 |
 | `schema.ts` | 表结构与迁移（v2：sessions.pinned / unread） |
 | `types.ts` | Memory 域类型（scope/kind、检索上下文等） |
-| `conversations.ts` | 会话与消息 CRUD；`patchConversationMeta` 只改标题/置顶/未读；旁路/独立窗可 `activate: false` |
+| `conversations.ts` | 会话与消息 CRUD；列表带最近用户/助手正文 `preview` 供 Search chats；`patchConversationMeta` 只改标题/置顶/未读；旁路/独立窗可 `activate: false` |
 | `memories.ts` | 长期记忆 CRUD、hash、embedding 候选 |
 | `events.ts` | Agent 执行事件落库 |
 | `projects.ts` | 代码项目识别与 upsert（git 根 / package.json） |

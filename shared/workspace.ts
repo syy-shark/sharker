@@ -296,6 +296,22 @@ function dedupeByPath(workspaces: WorkspaceItem[]): WorkspaceItem[] {
   return out
 }
 
+/** 可被项目选择器匹配的字段 */
+export type WorkspaceSearchItem = {
+  id: string
+  label?: string
+  path?: string
+}
+
+/** ⌘⌥⇧O 项目选择器：按显示名 / 路径 / id 过滤（对标 Codex Open project picker） */
+export function filterWorkspaces<T extends WorkspaceSearchItem>(items: T[], query: string): T[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return items
+  return items.filter((w) =>
+    [w.label, w.path, w.id].some((v) => String(v || '').toLowerCase().includes(q))
+  )
+}
+
 /** 切换激活工作区并同步 workspacePath */
 export function withActiveWorkspace(settings: AppSettings, workspaceId: string): AppSettings {
   const next = {

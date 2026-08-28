@@ -219,7 +219,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     // 工具进行中的状态：写回 active tool 详情，直播步骤不会看起来“卡住不动”
     const activeTools = next.filter((s) => s.kind === 'tool' && s.status === 'active')
     const activeTool = chunk.toolName
-      ? [...activeTools].reverse().find((s) => s.toolName === chunk.toolName)
+      ? findLastSegment(next, (s) => s.kind === 'tool' && s.status === 'active' && s.toolName === chunk.toolName)
       : activeTools.length === 1
         ? activeTools[0]
         : undefined
@@ -404,8 +404,11 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'approval_needed' && chunk.approval) {
-    const active = [...next].reverse().find(
-      (segment) => segment.kind === 'tool' && segment.status === 'active' &&
+    const active = findLastSegment(
+      next,
+      (segment) =>
+        segment.kind === 'tool' &&
+        segment.status === 'active' &&
         segment.toolName === chunk.approval?.toolName
     )
     if (active) active.approval = chunk.approval
@@ -430,9 +433,10 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'approval_resolved' && chunk.toolName) {
-    const active = [...next].reverse().find(
-      (segment) => segment.kind === 'tool' && segment.status === 'active' &&
-        segment.toolName === chunk.toolName
+    const active = findLastSegment(
+      next,
+      (segment) =>
+        segment.kind === 'tool' && segment.status === 'active' && segment.toolName === chunk.toolName
     )
     if (active && chunk.approved) active.approval = undefined
     for (const s of next) {
@@ -467,7 +471,8 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       marked = true
     }
     if (!marked) {
-      const latestTool = [...next].reverse().find(
+      const latestTool = findLastSegment(
+        next,
         (segment) => segment.kind === 'tool' && segment.status === 'error'
       )
       if (latestTool) {
@@ -575,7 +580,7 @@ function hasActiveWork(segments: TurnSegment[]): boolean {
 }
 
 /** 从后往前找片段，避免每 token `[...].reverse()` 拷数组 */
-function findLastSegment(
+export function findLastSegment(
   segments: TurnSegment[],
   pred: (s: TurnSegment) => boolean
 ): TurnSegment | undefined {
@@ -958,10 +963,11 @@ export function summarizeLiveSegments(segments: TurnSegment[], durationSec?: num
   if (runCount > 0) parts.push(`已运行 ${runCount} 个命令`)
   if (otherCount > 0) parts.push(`已完成 ${otherCount} 步`)
 
-  const activeStatus = [...segments].reverse().find(
-    (s) => s.kind === 'status' && s.status === 'active' && s.content?.trim()
+  const activeStatus = findLastSegment(
+    segments,
+    (s) => s.kind === 'status' && s.status === 'active' && Boolean(s.content?.trim())
   )
-  const active = [...segments].reverse().find((s) => s.kind === 'tool' && s.status === 'active')
+  const active = findLastSegment(segments, (s) => s.kind === 'tool' && s.status === 'active')
   if (activeStatus?.content) {
     parts.push(activeStatus.content)
   } else if (active) {
