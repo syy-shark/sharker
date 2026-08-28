@@ -175,7 +175,16 @@ describe('turn segment event state machine', () => {
     expect(previewSegs[0]!.id).toBe(previewId)
     expect(buildAnswerParts(previewSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
       id: `${previewId}-diff-0`,
-      diff: { path: 'c.ts', lines: [], stats: { added: 4, removed: 0 } }
+      diff: {
+        path: 'c.ts',
+        lines: [
+          { kind: 'add', content: 'one', newLine: 1 },
+          { kind: 'add', content: 'two', newLine: 2 },
+          { kind: 'add', content: 'three', newLine: 3 },
+          { kind: 'add', content: 'four', newLine: 4 }
+        ],
+        stats: { added: 4, removed: 0 }
+      }
     })
     previewSegs = applyStreamChunk(previewSegs, {
       type: 'tool_start',
@@ -229,7 +238,14 @@ describe('turn segment event state machine', () => {
     expect(patchSegs[0]!.id).toBe(patchId)
     expect(buildAnswerParts(patchSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
       id: `${patchId}-diff-0`,
-      diff: { path: 'd.ts', lines: [], stats: { added: 1, removed: 1 } }
+      diff: {
+        path: 'd.ts',
+        lines: [
+          { kind: 'del', content: 'old' },
+          { kind: 'add', content: 'new' }
+        ],
+        stats: { added: 1, removed: 1 }
+      }
     })
 
     let demoSegs: TurnSegment[] = []

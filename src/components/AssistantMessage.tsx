@@ -55,7 +55,7 @@ interface Props {
   children?: React.ReactNode
 }
 
-/** 直播文件 diff：写入一开始占槽，完成后填行；同一引用不跟后续 token 重绘，预览 20 行 */
+/** 直播文件 diff：写入一开始占槽，参数流填 +/-，完成后换核实行；预览 20 行 */
 const LiveFileDiff = memo(function LiveFileDiff({ diff }: { diff: FileDiff }) {
   return (
     <div className="assistant-live-diff">

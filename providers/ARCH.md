@@ -15,7 +15,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `openai.ts` | OpenAI 兼容流式；读 SSE 时响应 AbortSignal，Stop 立即打断；`listProviderModels` 会按预设剔除 Chat Completions 调不了的 id；写入/补丁参数流抽出 `partialToolArgs`（`extractPartialWriteToolArgs`），首个 path 立刻推 `tool_status` |
+| `openai.ts` | OpenAI 兼容流式；读 SSE 时响应 AbortSignal，Stop 立即打断；`listProviderModels` 会按预设剔除 Chat Completions 调不了的 id；写入/补丁参数流抽出 `partialToolArgs`（`extractPartialWriteToolArgs`），首个 path 立刻推 `tool_status`，之后约 500ms / 240 字符对齐 Codex PatchApplyUpdated |
 | `openai.test.ts` | 未闭合 write / replace / patch JSON 抽出 path 与内容片段，不把读文件当写入 |
 | `ARCH.md` | 本层架构说明 |
 

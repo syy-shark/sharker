@@ -59,9 +59,9 @@ const STREAM_TOTAL_MS = 600_000
 const TOOL_STATUS_THROTTLE_MS = 700
 /** 内联演示 HTML 流式预览更勤，才能「做多少显示多少」 */
 const DEMO_PREVIEW_THROTTLE_MS = 100
-/** 写入/补丁参数流：官方 PatchApplyUpdated 约 500ms，首个 path 立刻出槽 */
-const WRITE_PREVIEW_THROTTLE_MS = 200
-const WRITE_PREVIEW_GROW_CHARS = 80
+/** 写入/补丁参数流：官方 PatchApplyUpdated 约 500ms 缓冲，首个 path 立刻出槽 */
+const WRITE_PREVIEW_THROTTLE_MS = 500
+const WRITE_PREVIEW_GROW_CHARS = 240
 const WRITE_PREVIEW_TOOLS = new Set(['write_file', 'search_replace', 'apply_patch'])
 
 /** 从设置中解析当前激活的 API 配置，缺失时抛错 */

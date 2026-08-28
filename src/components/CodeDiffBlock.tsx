@@ -1,6 +1,6 @@
 /**
  * 行级代码 diff 展示：过程流 / Markdown 用只读块；审查模式带 hunk 动作与行内评论。
- * 直播写入未出行使按 stats 占位，同一外壳填行，避免整块突然冒出来。
+ * 直播写入：无行时按 stats 占位，有参数流 +/- 就画行；同一外壳填核实 diff。
  * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'

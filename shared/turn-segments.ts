@@ -2,7 +2,7 @@
  * 将流式 chunk 归并为有序 TurnSegment[]，供直播式过程流渲染。
  * @see shared/ARCH.md
  */
-import type { FileDiff, FileEditPreview, StreamChunk, TurnSegment } from './types'
+import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
 
@@ -27,14 +27,21 @@ function splitLines(text: string): string[] {
   return lines
 }
 
-function editPreviewFromPatch(patch: string): FileEditPreview[] {
-  const previews: FileEditPreview[] = []
-  let current: FileEditPreview | null = null
+interface StreamingPatchFile {
+  path: string
+  stats: { added: number; removed: number }
+  lines: FileDiffLine[]
+}
+
+/** 从尚未写完的 apply_patch 正文抽出各文件 +/-（对标 Codex PatchApplyUpdated，不编造 hunk） */
+function parseStreamingPatch(patch: string): StreamingPatchFile[] {
+  const files: StreamingPatchFile[] = []
+  let current: StreamingPatchFile | null = null
+  let oldLine = 0
+  let newLine = 0
 
   const flush = () => {
-    if (!current) return
-    // 路径一出现就占槽；+/- 还没流到时 stats 可为 0（对标 Codex PatchApplyUpdated）
-    if (current.path) previews.push(current)
+    if (current?.path) files.push(current)
     current = null
   }
 
@@ -43,16 +50,89 @@ function editPreviewFromPatch(patch: string): FileEditPreview[] {
       flush()
       current = {
         path: line.slice(line.indexOf(':') + 1).trim(),
-        stats: { added: 0, removed: 0 }
+        stats: { added: 0, removed: 0 },
+        lines: []
       }
+      oldLine = 0
+      newLine = 0
       continue
     }
     if (!current) continue
-    if (line.startsWith('+') && !line.startsWith('+++')) current.stats.added++
-    if (line.startsWith('-') && !line.startsWith('---')) current.stats.removed++
+    if (line.startsWith('@@')) {
+      const hunk = line.match(/@@\s*-(\d+)(?:,\d+)?\s*\+(\d+)/)
+      if (hunk) {
+        oldLine = Number(hunk[1])
+        newLine = Number(hunk[2])
+      }
+      continue
+    }
+    if (line.startsWith('***') || line.startsWith('+++') || line.startsWith('---')) continue
+    if (line.startsWith('+')) {
+      current.stats.added++
+      current.lines.push({
+        kind: 'add',
+        content: line.slice(1),
+        newLine: newLine || undefined
+      })
+      if (newLine) newLine++
+      continue
+    }
+    if (line.startsWith('-')) {
+      current.stats.removed++
+      current.lines.push({
+        kind: 'del',
+        content: line.slice(1),
+        oldLine: oldLine || undefined
+      })
+      if (oldLine) oldLine++
+      continue
+    }
+    if (line.startsWith(' ')) {
+      current.lines.push({
+        kind: 'ctx',
+        content: line.slice(1),
+        oldLine: oldLine || undefined,
+        newLine: newLine || undefined
+      })
+      if (oldLine) oldLine++
+      if (newLine) newLine++
+    }
   }
   flush()
-  return previews
+  return files
+}
+
+function editPreviewFromPatch(patch: string): FileEditPreview[] {
+  return parseStreamingPatch(patch).map(({ path, stats }) => ({ path, stats }))
+}
+
+function linesFromText(text: string, kind: 'add' | 'del'): FileDiffLine[] {
+  return splitLines(text).map((content, index) =>
+    kind === 'add'
+      ? { kind, content, newLine: index + 1 }
+      : { kind, content, oldLine: index + 1 }
+  )
+}
+
+/** 参数流里已经出现的 +/-，供同一 `s.id-diff-N` 边写边画 */
+function liveDiffLinesFromToolArgs(
+  toolName: string | undefined,
+  toolArgs: Record<string, unknown> | undefined,
+  fileIndex: number
+): FileDiffLine[] {
+  if (!toolName || !toolArgs) return []
+  if (toolName === 'write_file' && fileIndex === 0 && typeof toolArgs.content === 'string') {
+    return linesFromText(toolArgs.content, 'add')
+  }
+  if (toolName === 'search_replace' && fileIndex === 0) {
+    const oldString = typeof toolArgs.old_string === 'string' ? toolArgs.old_string : ''
+    const newString = typeof toolArgs.new_string === 'string' ? toolArgs.new_string : ''
+    return [...linesFromText(oldString, 'del'), ...linesFromText(newString, 'add')]
+  }
+  if (toolName === 'apply_patch' && typeof toolArgs.patch === 'string') {
+    return parseStreamingPatch(toolArgs.patch)[fileIndex]?.lines ?? []
+  }
+  return []
 }
 
 function editPreviewFromToolArgs(
@@ -891,7 +971,7 @@ function extractStreamingDemoFence(text: string): {
 /**
  * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo + 写盘 diff，按先后顺序。
  * 供结束后与直播时主区融合渲染（文字可在 demo 上/下）。
- * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；写入/补丁参数流用 editPreview 占同一 `s.id-diff-N` 槽，完成后填行（对标 Codex PatchApplyUpdated）。
+ * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；写入/补丁参数流占同一 `s.id-diff-N`，用已解析的 +/- 行边写边画（对标 Codex 约 0.5s 逐文件 diff），完成后换核实 fileDiff。
  */
 export function buildAnswerParts(
   segments: TurnSegment[],
@@ -917,7 +997,7 @@ export function buildAnswerParts(
             id: `${s.id}-diff-${index}`,
             diff: {
               path: preview.path,
-              lines: [],
+              lines: liveDiffLinesFromToolArgs(s.toolName, s.toolArgs, index),
               stats: { added: preview.stats.added, removed: preview.stats.removed }
             }
           })
