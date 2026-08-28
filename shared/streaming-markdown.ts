@@ -209,6 +209,27 @@ export function extractOpenFenceBody(tail: string): string {
   return nl === -1 ? '' : tail.slice(nl + 1)
 }
 
+/**
+ * 已闭合围栏块：抽出语言与正文（去掉开闭行）。
+ * 给直播顶层围栏槽复用同一 `LiveFenceTail`，闭合时不搬进散文尾重挂。
+ */
+export function extractClosedFenceParts(
+  text: string
+): { lang?: string; body: string } | null {
+  const src = normalizeStreamingText(text)
+  if (!src) return null
+  const lines = src.split('\n')
+  const open = parseFenceLine(lines[0] ?? '')
+  if (!open) return null
+  let last = lines.length - 1
+  while (last > 0 && lines[last] === '') last -= 1
+  const closed = last > 0 && isFenceClose(lines[last]!, open.marker)
+  return {
+    lang: fenceLang(open.info),
+    body: lines.slice(1, closed ? last : lines.length).join('\n')
+  }
+}
+
 /** 直播散文：未闭合围栏之前的原文；散文模式给全文，避免每收一段就换 remark 树 */
 export function streamingProseText(text: string, split: StreamingMarkdownSplit): string {
   const src = normalizeStreamingText(text)

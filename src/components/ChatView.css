@@ -788,9 +788,9 @@
 .message-body--streaming-active > p:last-child::after,
 .message-body--streaming-active > ul:last-child > li:last-child::after,
 .message-body--streaming-active > ol:last-child > li:last-child::after,
-.message-body--streaming-active .live-prose-tail > p:last-child::after,
-.message-body--streaming-active .live-prose-tail > ul:last-child > li:last-child::after,
-.message-body--streaming-active .live-prose-tail > ol:last-child > li:last-child::after {
+.message-body--streaming-active .live-prose-tail:not(.live-prose-closed) > p:last-child::after,
+.message-body--streaming-active .live-prose-tail:not(.live-prose-closed) > ul:last-child > li:last-child::after,
+.message-body--streaming-active .live-prose-tail:not(.live-prose-closed) > ol:last-child > li:last-child::after {
   content: '';
   display: inline-block;
   width: 1.5px;

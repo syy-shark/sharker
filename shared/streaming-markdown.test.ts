@@ -8,6 +8,7 @@ import {
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   finalizeStreamingMarkdownSplit,
+  extractClosedFenceParts,
   extractOpenFenceBody,
   isOnlyLinkDefinitions,
   linkDefinitionBlob,
@@ -70,6 +71,11 @@ describe('splitStreamingMarkdown', () => {
     expect(done.blocks[1]?.text).toContain('```js')
     expect(done.tail).toBe('B')
     expect(done.tailKind).toBe('prose')
+    expect(extractClosedFenceParts(done.blocks[1]?.text ?? '')).toEqual({
+      lang: 'js',
+      body: '1'
+    })
+    expect(extractClosedFenceParts('Intro\n')).toBeNull()
   })
 
   it('treats CRLF like LF so an open fence stays in the tail', () => {
