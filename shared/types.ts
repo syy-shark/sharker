@@ -94,6 +94,8 @@ export interface AppSettings {
   followUpBehavior?: 'queue' | 'steer'
   /** 用 ⌘/Ctrl+Enter 发送，Enter 换行（对标 Codex Require Cmd+Enter） */
   requireModEnter?: boolean
+  /** 空对话显示上下文建议（对标 Codex Suggested prompts） */
+  suggestedPrompts?: boolean
   /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
@@ -343,6 +345,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   keyboardShortcuts: {},
   followUpBehavior: 'queue',
   requireModEnter: false,
+  suggestedPrompts: true,
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

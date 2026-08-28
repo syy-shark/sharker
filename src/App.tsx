@@ -129,6 +129,8 @@ import {
 import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
 import { formatFeedbackBundle } from '../shared/feedback-bundle'
+import { resolveApprovalHotkey } from '../shared/composer-submit'
+import { buildSuggestedPrompts } from '../shared/suggested-prompts'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import { lastCompletedAssistantText } from '../shared/copy-output'
 import {
@@ -303,6 +305,7 @@ export default function App() {
   const [turnHadThinking, setTurnHadThinking] = useState(false)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
+  const approvalBusyRef = useRef(false)
   const [pendingPlan, setPendingPlan] = useState<{ document: string; filePath?: string } | null>(
     null
   )
@@ -1205,6 +1208,7 @@ export default function App() {
           keyboardShortcuts: updated.keyboardShortcuts,
           followUpBehavior: updated.followUpBehavior,
           requireModEnter: updated.requireModEnter,
+          suggestedPrompts: updated.suggestedPrompts,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -1262,6 +1266,7 @@ export default function App() {
       keyboardShortcuts: draft.keyboardShortcuts,
       followUpBehavior: draft.followUpBehavior,
       requireModEnter: draft.requireModEnter,
+      suggestedPrompts: draft.suggestedPrompts,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -2668,6 +2673,7 @@ export default function App() {
       keyboardShortcuts: next.keyboardShortcuts,
       followUpBehavior: next.followUpBehavior,
       requireModEnter: next.requireModEnter,
+      suggestedPrompts: next.suggestedPrompts,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -3409,7 +3415,8 @@ export default function App() {
 
   /** 执行轨道内审批响应：once / session / deny → 主进程真实授权路径 */
   const handleApproval = async (decision: ApprovalDecision) => {
-    if (!approval || approvalResponding) return
+    if (!approval || approvalResponding || approvalBusyRef.current) return
+    approvalBusyRef.current = true
     setApprovalResponding(true)
     try {
       // DEV 注入的审批没有主进程 pending，直接收起 UI 以便验收按钮链路
@@ -3452,6 +3459,7 @@ export default function App() {
       setApproval(null)
       approvalRef.current = null
     } finally {
+      approvalBusyRef.current = false
       setApprovalResponding(false)
     }
   }
@@ -4529,6 +4537,29 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const approvalChoice = resolveApprovalHotkey({
+        approvalOpen: pageRef.current === 'chat' && Boolean(approvalRef.current),
+        responding: approvalBusyRef.current,
+        key: e.key,
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        altKey: e.altKey
+      })
+      if (approvalChoice) {
+        const t = e.target
+        if (
+          t instanceof HTMLElement &&
+          (t.closest('.chat-find, .command-palette, .slash-menu, .history-picker') ||
+            t instanceof HTMLInputElement)
+        ) {
+          /* 查找 / 命令面板里不抢 Enter */
+        } else {
+          e.preventDefault()
+          void handleApproval(approvalChoice)
+          return
+        }
+      }
       if (
         !e.isComposing &&
         (e.metaKey || e.ctrlKey) &&
@@ -4884,7 +4915,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -5779,6 +5810,41 @@ export default function App() {
     void handleSlashActionRef.current(cmd, args)
   }, [])
 
+  const suggestedPromptItems = useMemo(() => {
+    const recent = conversationList.find((c) => c.id !== activeConversationId)
+    return buildSuggestedPrompts({
+      enabled: settings.suggestedPrompts !== false,
+      hasWorkspace: Boolean(getActiveWorkspacePath(settings)),
+      hasGoal: Boolean(threadGoal?.text?.trim()),
+      recent: recent
+        ? { id: recent.id, title: recent.customTitle || recent.title || '' }
+        : null
+    })
+  }, [
+    activeConversationId,
+    conversationList,
+    settings,
+    threadGoal?.text
+  ])
+
+  const handleSuggestedPrompt = useCallback(
+    (item: { kind: 'slash' | 'resume'; payload: string }) => {
+      if (item.kind === 'resume') {
+        const ws = settingsRef.current.activeWorkspaceId
+        if (ws) void handleSelectConversation(ws, item.payload)
+        return
+      }
+      if (item.payload === 'goal') {
+        composerSeedNonceRef.current += 1
+        setComposerSeed({ nonce: composerSeedNonceRef.current, text: '/goal ' })
+        return
+      }
+      const cmd = SLASH_COMMANDS.find((c) => c.name === item.payload)
+      if (cmd) void handleSlashActionRef.current(cmd, '')
+    },
+    [handleSelectConversation]
+  )
+
   const handleCloseHistoryPicker = useCallback(() => {
     setShowHistoryPicker(false)
   }, [])
@@ -5953,6 +6019,8 @@ export default function App() {
               onSendQueued={handleSendQueued}
               followUpBehavior={settings.followUpBehavior === 'steer' ? 'steer' : 'queue'}
               requireModEnter={settings.requireModEnter === true}
+              suggestedPrompts={suggestedPromptItems}
+              onSuggestedPrompt={handleSuggestedPrompt}
               onAbort={handleAbort}
               onSlashAction={handleComposerSlash}
               showHistoryPicker={showHistoryPicker}

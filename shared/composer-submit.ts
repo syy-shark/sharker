@@ -33,6 +33,28 @@ export function isFollowUpInvertChord(options: {
  * 忙时 Enter 按 `followUpBehavior`（默认 queue）；⌘⇧Enter 反转；Tab 仍排队。
  * 普通 Shift+Enter 换行。
  */
+/** 审批打开时的快捷键（对标 Codex：Enter 允许一次，Esc 拒绝） */
+export type ApprovalHotkey = 'once' | 'deny'
+
+export function resolveApprovalHotkey(options: {
+  approvalOpen: boolean
+  responding?: boolean
+  key: string
+  shiftKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  altKey?: boolean
+  menuOpen?: boolean
+}): ApprovalHotkey | null {
+  if (!options.approvalOpen || options.responding || options.menuOpen) return null
+  if (options.altKey) return null
+  if (options.key === 'Enter' && !options.shiftKey && !options.metaKey && !options.ctrlKey) {
+    return 'once'
+  }
+  if (options.key === 'Escape') return 'deny'
+  return null
+}
+
 export function resolveComposerSubmit(options: {
   key: string
   shiftKey?: boolean

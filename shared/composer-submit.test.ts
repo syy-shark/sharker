@@ -7,12 +7,30 @@ import {
   lastUserPrompt,
   isFollowUpInvertChord,
   parseFollowUpBehavior,
+  resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   shouldEditLastUserOnEscape
 } from './composer-submit'
 
 describe('composer submit', () => {
+  it('approves or denies when an approval card is open', () => {
+    expect(
+      resolveApprovalHotkey({ approvalOpen: true, key: 'Enter' })
+    ).toBe('once')
+    expect(resolveApprovalHotkey({ approvalOpen: true, key: 'Escape' })).toBe('deny')
+    expect(
+      resolveApprovalHotkey({ approvalOpen: true, key: 'Enter', shiftKey: true })
+    ).toBeNull()
+    expect(
+      resolveApprovalHotkey({ approvalOpen: true, key: 'Enter', menuOpen: true })
+    ).toBeNull()
+    expect(resolveApprovalHotkey({ approvalOpen: false, key: 'Enter' })).toBeNull()
+    expect(
+      resolveApprovalHotkey({ approvalOpen: true, responding: true, key: 'Escape' })
+    ).toBeNull()
+  })
+
   it('sends on Enter when idle and queues when busy by default', () => {
     expect(resolveComposerSubmit({ key: 'Enter', loading: false })).toBe('send')
     expect(resolveComposerSubmit({ key: 'Enter', loading: true })).toBe('queue')

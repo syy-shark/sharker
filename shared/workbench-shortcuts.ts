@@ -124,6 +124,9 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'g' && !event.shiftKey && !event.altKey) return 'search_chats'
   if (key === 'z' && event.shiftKey && !event.altKey) return 'redo_app'
   if (key === 'z' && !event.shiftKey && !event.altKey) return 'undo_app'
+  if (key === 'y' && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+    return 'redo_app'
+  }
   if (key === 'k' && !event.altKey && !event.shiftKey) return 'command_palette'
   if (key === 'p' && event.shiftKey && !event.altKey) return 'command_palette'
   if (key === 'p' && !event.altKey && !event.shiftKey) return 'search_files'
@@ -171,10 +174,20 @@ export function matchDefaultWorkbenchShortcut(event: {
   ) {
     return 'font_larger'
   }
-  if (!event.altKey && !event.shiftKey && (key === '-' || key === '_' || code === 'Minus')) {
+  if (
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === '-' || key === '_' || code === 'Minus' || code === 'NumpadSubtract')
+  ) {
     return 'font_smaller'
   }
-  if (!event.altKey && !event.shiftKey && key === '0') return 'font_reset'
+  if (
+    !event.altKey &&
+    !event.shiftKey &&
+    (key === '0' || code === 'Numpad0')
+  ) {
+    return 'font_reset'
+  }
   if (
     event.shiftKey &&
     !event.altKey &&
@@ -325,8 +338,8 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'redo_app',
     title: '重做上一次应用操作',
-    defaultKeys: '⌘⇧Z',
-    defaultChord: 'mod+shift+z'
+    defaultKeys: '⌘⇧Z / Ctrl+Y',
+    defaultChord: ['mod+shift+z', 'mod+ctrl+y']
   },
   { action: 'toggle_terminal', title: '打开终端', defaultKeys: '⌘J', defaultChord: ['mod+j', 'mod+`'] },
   {

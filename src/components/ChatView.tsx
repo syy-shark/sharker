@@ -20,6 +20,7 @@ import { ComposerDock, type ComposerDockHandle, type ComposerDockIntent } from '
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import { lastUserMessageId } from '../../shared/composer-submit'
+import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import { isNearLiveMessageRow } from '../../shared/live-display'
 import { lastCompletedAssistantText } from '../../shared/copy-output'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -217,6 +218,8 @@ interface Props {
   onSendQueued?: (id: string) => void
   followUpBehavior?: 'queue' | 'steer'
   requireModEnter?: boolean
+  suggestedPrompts?: SuggestedPrompt[]
+  onSuggestedPrompt?: (item: SuggestedPrompt) => void
   onAbort: () => void
   onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
   showHistoryPicker?: boolean
@@ -281,6 +284,8 @@ export function ChatView({
   onSendQueued,
   followUpBehavior = 'queue',
   requireModEnter = false,
+  suggestedPrompts = [],
+  onSuggestedPrompt,
   onAbort,
   onSlashAction,
   showHistoryPicker,
@@ -377,6 +382,15 @@ export function ChatView({
     if (!findOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing) return
+      if (e.key === 'F3') {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!findHits.length) return
+        setFindHit((i) =>
+          e.shiftKey ? (i - 1 + findHits.length) % findHits.length : (i + 1) % findHits.length
+        )
+        return
+      }
       if (!(e.metaKey || e.ctrlKey) || e.altKey) return
       if (e.key !== 'g' && e.key !== 'G') return
       e.preventDefault()
@@ -850,6 +864,22 @@ export function ChatView({
             请先在侧栏或设置中添加一个工作区文件夹，然后开始对话。
           </h2>
         )}
+        {isEmpty && hasWorkspace && suggestedPrompts.length > 0 && onSuggestedPrompt ? (
+          <div className="suggested-prompts" role="list">
+            {suggestedPrompts.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="suggested-prompts__chip"
+                role="listitem"
+                onClick={() => onSuggestedPrompt(item)}
+              >
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="composer-wrap">
           {worktreeMissing ? (
             <div className="composer-worktree-banner" role="status">
@@ -919,6 +949,9 @@ export function ChatView({
             onEditLastUser={handleEditLastUser}
             followUpBehavior={followUpBehavior}
             requireModEnter={requireModEnter}
+            approvalOpen={Boolean(approval)}
+            approvalResponding={approvalResponding}
+            onApprovalHotkey={onApproval}
           />
         </div>
       </div>

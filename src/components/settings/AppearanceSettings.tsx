@@ -212,7 +212,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           <SettingsRow
             title="用 ⌘Enter 发送"
             description="对标 Codex Require Cmd+Enter：Enter 换行，⌘/Ctrl+Enter 发送。"
-            last
           >
             <SettingsToggle
               checked={draft.requireModEnter === true}
@@ -220,6 +219,19 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 scheduleSave({ ...draftRef.current, requireModEnter })
               }}
               label="用 ⌘Enter 发送"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="建议提示"
+            description="对标 Codex Suggested prompts：空对话显示审查、目标或继续最近对话。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.suggestedPrompts !== false}
+              onChange={(suggestedPrompts) => {
+                scheduleSave({ ...draftRef.current, suggestedPrompts })
+              }}
+              label="建议提示"
             />
           </SettingsRow>
         </SettingsCard>

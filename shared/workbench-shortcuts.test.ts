@@ -78,6 +78,13 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: '=', metaKey: true }))).toBe('font_larger')
     expect(matchWorkbenchShortcut(ev({ key: '-', metaKey: true }))).toBe('font_smaller')
     expect(matchWorkbenchShortcut(ev({ key: '0', metaKey: true }))).toBe('font_reset')
+    expect(matchWorkbenchShortcut(ev({ key: 'y', ctrlKey: true }))).toBe('redo_app')
+    expect(
+      matchWorkbenchShortcut(ev({ key: '-', code: 'NumpadSubtract', metaKey: true }))
+    ).toBe('font_smaller')
+    expect(matchWorkbenchShortcut(ev({ key: '0', code: 'Numpad0', metaKey: true }))).toBe(
+      'font_reset'
+    )
     expect(matchWorkbenchShortcut(ev({ key: '[', code: 'BracketLeft', metaKey: true }))).toBe(
       'nav_back'
     )

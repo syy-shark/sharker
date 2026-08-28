@@ -31,6 +31,7 @@ import {
   collectUserPrompts,
   filterPromptHistory,
   lastUserPrompt,
+  resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   shouldEditLastUserOnEscape,
@@ -157,6 +158,10 @@ export interface ComposerDockProps {
   onEditLastUser?: () => void
   followUpBehavior?: FollowUpBehavior
   requireModEnter?: boolean
+  /** 审批打开时 Enter 允许 / Esc 拒绝（对标 Codex），不跟直播 token 变 */
+  approvalOpen?: boolean
+  approvalResponding?: boolean
+  onApprovalHotkey?: (decision: 'once' | 'deny') => void
 }
 
 export const ComposerDock = memo(
@@ -196,7 +201,10 @@ export const ComposerDock = memo(
       composerSeed = null,
       onEditLastUser,
       followUpBehavior = 'queue',
-      requireModEnter = false
+      requireModEnter = false,
+      approvalOpen = false,
+      approvalResponding = false,
+      onApprovalHotkey
     },
     ref
   ) {
@@ -1504,6 +1512,21 @@ export const ComposerDock = memo(
               showSlashMenu ||
               historyMounted ||
               showPromptSearch
+            const approvalChoice = resolveApprovalHotkey({
+              approvalOpen,
+              responding: approvalResponding,
+              key: e.key,
+              shiftKey: e.shiftKey,
+              ctrlKey: e.ctrlKey,
+              metaKey: e.metaKey,
+              altKey: e.altKey,
+              menuOpen
+            })
+            if (approvalChoice && onApprovalHotkey) {
+              e.preventDefault()
+              void onApprovalHotkey(approvalChoice)
+              return
+            }
             if (e.key === 'Escape' && loading && !menuOpen) {
               e.preventDefault()
               onAbort()

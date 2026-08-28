@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `worktreeKeepCount`、`uiFontScale`、`keyboardShortcuts`、`followUpBehavior` / `requireModEnter` / `suggestedPrompts`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `followUpBehavior` / `requireModEnter` / `suggestedPrompts` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC） |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、⌘G Search chats 扩匹配（标题 / 正文摘要 / git 分支）、对话路径、进行中任务拆分、⌘⌥A 下一条进行中、侧栏 Chronological / 进行中 / 未读 / 置顶筛选、`/fork` 分叉标题与拷贝、`/rename` `/pin` 未读 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题、置顶排序、`/rename` |
@@ -44,8 +44,8 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z 应用撤销、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话；终端聚焦 ⌘K 清屏判定） |
-| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话；终端聚焦 ⌘K 清屏判定） |
+| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑 |
@@ -101,8 +101,10 @@
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`requireModEnter` 时 ⌘Enter 才发送；Tab 仍排队；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
-| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、恢复上一条、空输入 Esc+Esc 回编 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`requireModEnter` 时 ⌘Enter 才发送；Tab 仍排队；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复上一条；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、审批热键、恢复上一条、空输入 Esc+Esc 回编 |
+| `suggested-prompts.ts` | 空对话建议：审查 / 目标 / 继续最近对话（对标 Codex Suggested prompts） |
+| `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片 |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |

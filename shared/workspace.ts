@@ -137,6 +137,7 @@ export function normalizeSettings(
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),
     followUpBehavior: raw.followUpBehavior === 'steer' ? 'steer' : 'queue',
     requireModEnter: raw.requireModEnter === true,
+    suggestedPrompts: raw.suggestedPrompts !== false,
     turnNotifyMode:
       raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
         ? raw.turnNotifyMode
