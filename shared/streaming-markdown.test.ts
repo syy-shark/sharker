@@ -11,7 +11,8 @@ import {
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
-  streamingProseText
+  streamingProseText,
+  needsFullRemarkMarkdown
 } from './streaming-markdown'
 
 describe('splitStreamingMarkdown', () => {
@@ -25,6 +26,8 @@ describe('splitStreamingMarkdown', () => {
     expect(next.blocks).toEqual([])
     expect(next.tail).toBe('Hello world')
     expect(streamingProseText('Hello world', next)).toBe('Hello world')
+    expect(needsFullRemarkMarkdown('Hello world')).toBe(false)
+    expect(needsFullRemarkMarkdown('See the note.[^1]\n\n[^1]: hi')).toBe(true)
   })
 
   it('commits a paragraph once a blank line arrives', () => {

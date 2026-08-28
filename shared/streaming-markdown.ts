@@ -217,6 +217,11 @@ export function streamingProseText(text: string, split: StreamingMarkdownSplit):
   return src
 }
 
+/** 只有脚注等跨块语法才需要收束后换 remark，普通回答保持廉价树以免贴底跳 */
+export function needsFullRemarkMarkdown(text: string): boolean {
+  return /\[\^[^\]]+\]/.test(String(text ?? ''))
+}
+
 /** 直播散文尾：廉价行内节点，避免每 token 跑 remark */
 export type CheapInlineNode =
   | { type: 'text'; text: string }
