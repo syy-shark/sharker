@@ -115,6 +115,40 @@ describe('turn segment event state machine', () => {
     const liveParts = buildAnswerParts(segments, { isStreaming: true })
     expect(liveParts.some((part) => part.type === 'diff' && part.diff.path === 'a.ts')).toBe(true)
 
+    let pendingSegs: TurnSegment[] = []
+    pendingSegs = applyStreamChunk(pendingSegs, {
+      type: 'tool_start',
+      toolName: 'write_file',
+      toolCallId: 'w2',
+      timestamp: 5,
+      toolArgs: { path: 'b.ts', content: 'one\ntwo\nthree' }
+    })
+    const pendingParts = buildAnswerParts(pendingSegs, { isStreaming: true })
+    const pendingDiff = pendingParts.find((part) => part.type === 'diff')
+    expect(pendingDiff).toMatchObject({
+      type: 'diff',
+      id: `${pendingSegs[0]!.id}-diff-0`,
+      diff: { path: 'b.ts', lines: [], stats: { added: 3, removed: 0 } }
+    })
+    pendingSegs = applyStreamChunk(pendingSegs, {
+      type: 'tool_done',
+      toolName: 'write_file',
+      toolCallId: 'w2',
+      timestamp: 6,
+      fileDiff: {
+        path: 'b.ts',
+        lines: [
+          { kind: 'add', content: 'one', newLine: 1 },
+          { kind: 'add', content: 'two', newLine: 2 },
+          { kind: 'add', content: 'three', newLine: 3 }
+        ],
+        stats: { added: 3, removed: 0 }
+      }
+    })
+    const filledParts = buildAnswerParts(pendingSegs, { isStreaming: true })
+    expect(filledParts.find((part) => part.type === 'diff')?.id).toBe(`${pendingSegs[0]!.id}-diff-0`)
+    expect(filledParts.find((part) => part.type === 'diff' && part.diff.lines.length === 3)).toBeTruthy()
+
     let demoSegs: TurnSegment[] = []
     demoSegs = applyStreamChunk(demoSegs, {
       type: 'token',

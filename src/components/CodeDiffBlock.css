@@ -3,6 +3,14 @@
   animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
+.code-diff-block--pending {
+  animation: none;
+}
+
+.code-diff-code--pending {
+  min-width: 0;
+}
+
 .code-diff-language {
   color: var(--text-muted);
 }

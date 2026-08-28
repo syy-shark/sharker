@@ -259,6 +259,10 @@ html.theme-dark .assistant-process-below--separated {
   margin: 8px 0 12px;
 }
 
+.assistant-live-diff .code-diff-block {
+  animation: none;
+}
+
 .assistant-message-meta { border-bottom-color: var(--border-subtle); }
 
 .assistant-message-meta-panel {

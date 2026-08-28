@@ -1,5 +1,6 @@
 /**
  * 行级代码 diff 展示：过程流 / Markdown 用只读块；审查模式带 hunk 动作与行内评论。
+ * 直播写入未出行使按 stats 占位，同一外壳填行，避免整块突然冒出来。
  * @see src/ARCH.md
  */
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
@@ -152,12 +153,16 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   const [draft, setDraft] = useState('')
   const displayLines = diff?.lines ?? lines ?? []
   const hunks = useMemo(() => (review ? splitDiffHunks(displayLines) : []), [displayLines, review])
-  if (displayLines.length === 0) return null
-
   const stats = diff?.stats ?? statsFromLines(displayLines)
   const filePath = diff?.path ?? path ?? ''
+  if (displayLines.length === 0 && !filePath) return null
+
   const label = filePath || 'diff'
   const previewLimit = Math.max(1, maxPreviewLines)
+  const pendingRows =
+    displayLines.length === 0
+      ? Math.min(previewLimit, Math.max(1, (stats.added || 0) + (stats.removed || 0)))
+      : 0
   const needsCollapse = !review && displayLines.length > previewLimit
   const visible = expanded || !needsCollapse ? displayLines : displayLines.slice(0, previewLimit)
 
@@ -245,13 +250,20 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     <CodeArtifactShell
       label={label}
       detail={detail}
-      copyText={serializeDiff(displayLines)}
-      className={`code-diff-block${wrapLines ? ' code-diff-block--wrap' : ''}`}
+      copyText={displayLines.length ? serializeDiff(displayLines) : undefined}
+      className={`code-diff-block${pendingRows ? ' code-diff-block--pending' : ''}${wrapLines ? ' code-diff-block--wrap' : ''}`}
       bodyClassName="code-diff-body"
       footer={footer}
       showHeader={showHeader}
       ariaLabel={filePath ? `${filePath} 文件差异` : '代码差异'}
     >
+      {pendingRows ? (
+        <div
+          className="code-diff-code code-diff-code--pending"
+          style={{ minHeight: pendingRows * 19 + 14 }}
+          aria-hidden
+        />
+      ) : (
       <div className="code-diff-code">
         {review && hunks.length > 0
           ? hunks.map((hunk) => (
@@ -301,6 +313,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
             ))
           : visible.map((line, index) => renderLine(line, index))}
       </div>
+      )}
     </CodeArtifactShell>
   )
 })

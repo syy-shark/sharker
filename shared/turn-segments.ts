@@ -826,7 +826,7 @@ function extractStreamingDemoFence(text: string): {
 /**
  * 从片段抽出「回答流」：旁白/终稿文字 + present_inline_demo + 写盘 diff，按先后顺序。
  * 供结束后与直播时主区融合渲染（文字可在 demo 上/下）。
- * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；工具完成后立刻画出 fileDiff（对标 Codex 回合中逐文件 diff）。
+ * 直播时含 tool_preview / ```demo 渐进 HTML（开闭同一 demo key）；写入一开始用 editPreview 占同一 `s.id-diff-N` 槽，完成后填行（对标 Codex 回合中逐文件 diff）。
  */
 export function buildAnswerParts(
   segments: TurnSegment[],
@@ -839,10 +839,25 @@ export function buildAnswerParts(
   for (const s of segments) {
     if (s.kind === 'tool' && s.toolName !== 'present_inline_demo') {
       const diffs = s.fileDiffs ?? (s.fileDiff ? [s.fileDiff] : [])
-      diffs.forEach((diff, index) => {
-        if (!diff?.path || !diff.lines?.length) return
-        parts.push({ type: 'diff', id: `${s.id}-diff-${index}`, diff })
-      })
+      if (diffs.length) {
+        diffs.forEach((diff, index) => {
+          if (!diff?.path || !diff.lines?.length) return
+          parts.push({ type: 'diff', id: `${s.id}-diff-${index}`, diff })
+        })
+      } else if (isStreaming && s.status === 'active') {
+        for (const [index, preview] of (s.editPreview ?? []).entries()) {
+          if (!preview.path) continue
+          parts.push({
+            type: 'diff',
+            id: `${s.id}-diff-${index}`,
+            diff: {
+              path: preview.path,
+              lines: [],
+              stats: { added: preview.stats.added, removed: preview.stats.removed }
+            }
+          })
+        }
+      }
     }
     if (s.kind === 'tool' && s.toolName === 'present_inline_demo') {
       if (s.status === 'error') continue
