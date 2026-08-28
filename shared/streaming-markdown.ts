@@ -1380,6 +1380,17 @@ function cheapInlineSourceAll(nodes: CheapInlineNode[]): string {
   return nodes.map(cheapInlineSource).join('')
 }
 
+/** 直播行内 key：用类型 + 前缀长度，闭合标记时已画节点不换下标 */
+export function cheapInlineNodeKeys(nodes: CheapInlineNode[]): string[] {
+  const keys: string[] = []
+  let prefix = 0
+  for (const node of nodes) {
+    keys.push(`${node.type}:${prefix}`)
+    prefix += cheapInlineSource(node).length
+  }
+  return keys
+}
+
 /**
  * 直播散文尾增量解析：复用已闭合的行内节点，只重扫最后一段增长文本。
  */

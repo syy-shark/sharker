@@ -12,6 +12,7 @@ import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import {
   collectLinkDefinitions,
+  cheapInlineNodeKeys,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   extractOpenFenceBody,
@@ -51,21 +52,23 @@ function cheapMarkBody(node: Extract<CheapInlineNode, { type: 'strong' | 'em' | 
 
 /** 廉价行内节点 → 元素（含可点文件引用） */
 function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
+  const keys = cheapInlineNodeKeys(nodes)
   return nodes.map((node, index) => {
-    if (node.type === 'code') return <code key={index}>{node.text}</code>
+    const key = keys[index]!
+    if (node.type === 'code') return <code key={key}>{node.text}</code>
     if (node.type === 'strong') {
-      return <strong key={index}>{cheapMarkBody(node)}</strong>
+      return <strong key={key}>{cheapMarkBody(node)}</strong>
     }
     if (node.type === 'del') {
-      return <del key={index}>{cheapMarkBody(node)}</del>
+      return <del key={key}>{cheapMarkBody(node)}</del>
     }
     if (node.type === 'em') {
-      return <em key={index}>{cheapMarkBody(node)}</em>
+      return <em key={key}>{cheapMarkBody(node)}</em>
     }
     if (node.type === 'link') {
       return (
         <a
-          key={index}
+          key={key}
           href={node.href}
           title={node.title}
           target="_blank"
@@ -87,17 +90,17 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
     }
     if (node.type === 'file') {
       return (
-        <FileCiteLink key={index} path={node.path} line={node.line} column={node.column}>
+        <FileCiteLink key={key} path={node.path} line={node.line} column={node.column}>
           {node.text}
         </FileCiteLink>
       )
     }
     if (node.type === 'image') {
-      return <ChatImage key={index} src={node.href} alt={node.alt} title={node.title} />
+      return <ChatImage key={key} src={node.href} alt={node.alt} title={node.title} />
     }
     if (node.type === 'fn') {
       return (
-        <sup key={index}>
+        <sup key={key}>
           <a
             href={`#user-content-fn-${node.id}`}
             id={`user-content-fnref-${node.id}`}
@@ -109,8 +112,8 @@ function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
         </sup>
       )
     }
-    if (node.type === 'br') return <br key={index} />
-    return <span key={index}>{node.text}</span>
+    if (node.type === 'br') return <br key={key} />
+    return <span key={key}>{node.text}</span>
   })
 }
 

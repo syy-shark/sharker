@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   collectLinkDefinitions,
+  cheapInlineNodeKeys,
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
@@ -862,6 +863,12 @@ describe('splitStreamingMarkdown', () => {
     expect(grown[0]).toBe(first[0])
     expect(grown[1]).toBe(first[1])
     expect(grown.map((n) => n.type)).toEqual(['text', 'code', 'text', 'strong'])
+    const firstKeys = cheapInlineNodeKeys(first)
+    const grownKeys = cheapInlineNodeKeys(grown)
+    expect(grownKeys[0]).toBe(firstKeys[0])
+    expect(grownKeys[1]).toBe(firstKeys[1])
+    expect(grownKeys[2]).toBe(firstKeys[2])
+    expect(grownKeys[3]).not.toBe(grownKeys[2])
     const imgFirst = '见图 ![示意](https://a.test/p.png) 与 '
     const imgNodes = parseCheapInlineMarkdown(imgFirst)
     const imgGrown = continueCheapInlineMarkdown(imgFirst, imgNodes, `${imgFirst}**bar**`)
