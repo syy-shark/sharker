@@ -156,6 +156,10 @@ export interface SharkerApi {
     cwd: string,
     payload: { title: string; body?: string; base?: string }
   ) => Promise<{ ok: true; url: string } | { ok: false; error: string }>
+  createGitBranch: (
+    cwd: string,
+    name: string
+  ) => Promise<{ ok: true; branch: string } | { ok: false; error: string }>
   getGitBranchChanges: (cwd: string) => Promise<{
     base: string | null
     files: {

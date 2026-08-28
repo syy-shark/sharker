@@ -74,6 +74,7 @@ import { parseGitStatusPorcelain } from '../../shared/git-status'
 import { commitStagedChanges, pushCurrentBranch } from '../../shared/git-commit'
 import { listBranchChanges } from '../../shared/git-compare'
 import { createPullRequest } from '../../shared/git-pr'
+import { createNamedBranch } from '../../shared/git-branch-create'
 import { readFile, rm, stat, unlink } from 'fs/promises'
 import { spawn } from 'child_process'
 import {
@@ -1243,6 +1244,12 @@ function registerIpc(): void {
       })
     }
   )
+
+  ipcMain.handle(IPC.GIT_CREATE_BRANCH, async (_e, cwd: string, name: string) => {
+    const root = path.resolve(String(cwd || ''))
+    if (!root) return { ok: false as const, error: '缺少工作区' }
+    return createNamedBranch({ cwd: root, name: String(name || ''), io: reviewIo() })
+  })
 
   ipcMain.handle(IPC.GIT_BRANCH_CHANGES, async (_e, cwd: string) => {
     const root = path.resolve(String(cwd || ''))

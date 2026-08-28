@@ -49,6 +49,8 @@
 | `git-compare.test.ts` | 重命名解析、本轮命中、feature 相对 main |
 | `git-pr.ts` | `gh pr create` 标题校验与 URL 解析 |
 | `git-pr.test.ts` | 拒绝 flag 标题、解析 URL、缺 gh 报错 |
+| `git-branch-create.ts` | detached HEAD 上创建命名分支 |
+| `git-branch-create.test.ts` | 拒绝非法名、临时仓库 checkout -b |
 | `thread-search.ts` | 线程内查找（大小写不敏感） |
 | `thread-search.test.ts` | 命中消息 id |
 | `review-comment.ts` | 行内评论 → Agent 提示 |

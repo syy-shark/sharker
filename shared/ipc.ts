@@ -62,6 +62,8 @@ export const IPC = {
   GIT_BRANCH_CHANGES: 'git:branch-changes',
   /** 审查面板：用 gh 创建 Pull Request */
   GIT_CREATE_PR: 'git:create-pr',
+  /** 隔离 worktree：在 HEAD 上创建命名分支 */
+  GIT_CREATE_BRANCH: 'git:create-branch',
   /** Composer `@` 工作区文件模糊搜索 */
   WORKSPACE_SEARCH_FILES: 'workspace:search-files',
   /** 为会话准备隔离 Git worktree */

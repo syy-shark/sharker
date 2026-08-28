@@ -48,6 +48,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
+- 隔离 worktree 若仍是 detached HEAD，可在审查面板 **创建分支**（对标 Codex Create branch here）
 
 ### 线程内查找
 

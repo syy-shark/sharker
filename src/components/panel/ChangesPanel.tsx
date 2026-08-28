@@ -82,6 +82,7 @@ export function ChangesPanel({
   const [commitHint, setCommitHint] = useState<string | null>(null)
   const [prTitle, setPrTitle] = useState('')
   const [prUrl, setPrUrl] = useState<string | null>(null)
+  const [branchName, setBranchName] = useState('')
 
   const sourceFiles = compare === 'branch' ? branchFiles : files
   const readOnly = compare === 'branch'
@@ -216,6 +217,26 @@ export function ChangesPanel({
       setActing(false)
     }
   }, [acting, commitMessage, refresh, workspacePath])
+
+  const runCreateBranch = useCallback(async () => {
+    if (!workspacePath || !window.sharker?.createGitBranch || acting) return
+    setActing(true)
+    setError(null)
+    try {
+      const result = await window.sharker.createGitBranch(workspacePath, branchName)
+      if (!result.ok) {
+        setError(result.error || '创建分支失败')
+        return
+      }
+      setBranchName('')
+      setCommitHint(`已创建分支 ${result.branch}`)
+      await refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing(false)
+    }
+  }, [acting, branchName, refresh, workspacePath])
 
   const runCreatePr = useCallback(async () => {
     if (!workspacePath || !window.sharker?.createGitPullRequest || acting) return
@@ -355,6 +376,28 @@ export function ChangesPanel({
           <RefreshCw size={14} className={loading ? 'is-spinning' : undefined} aria-hidden />
         </button>
       </div>
+
+      {isRepo && branch === 'HEAD' ? (
+        <form
+          className="changes-panel__commit"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void runCreateBranch()
+          }}
+        >
+          <input
+            className="changes-panel__commit-input"
+            value={branchName}
+            placeholder="在此创建分支（隔离 worktree）"
+            aria-label="新分支名"
+            disabled={acting}
+            onChange={(e) => setBranchName(e.target.value)}
+          />
+          <button type="submit" className="changes-panel__action" disabled={acting || !branchName.trim()}>
+            创建分支
+          </button>
+        </form>
+      ) : null}
 
       {isRepo ? (
         <div className="changes-panel__compare" role="tablist" aria-label="对比范围">
