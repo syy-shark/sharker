@@ -124,6 +124,22 @@ export async function pushAfterApproveCommit(options: {
   }
 }
 
+/** 推送成功且当前分支还没有 PR 时再 `gh pr create`；失败不回滚提交/推送 */
+export async function createPrAfterApprovePush(options: {
+  pushed: 'skipped' | 'pushed' | 'push_failed'
+  hasExistingPr?: () => Promise<boolean>
+  createPr?: () => Promise<{ ok: boolean; error?: string; url?: string }>
+}): Promise<'skipped' | 'exists' | 'created' | 'create_failed'> {
+  if (options.pushed !== 'pushed' || !options.createPr) return 'skipped'
+  try {
+    if (options.hasExistingPr && (await options.hasExistingPr())) return 'exists'
+    const result = await options.createPr()
+    return result.ok ? 'created' : 'create_failed'
+  } catch {
+    return 'create_failed'
+  }
+}
+
 /** 展示用：未读在前，已读次之，归档最后 */
 export function sortAutomationQueue(items: AutomationQueueItem[]): AutomationQueueItem[] {
   const rank: Record<AutomationQueueStatus, number> = { unread: 0, read: 1, archived: 2 }

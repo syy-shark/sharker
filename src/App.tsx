@@ -62,6 +62,7 @@ import {
 } from '../shared/personality'
 import {
   attachQueueChangedPaths,
+  createPrAfterApprovePush,
   enqueueAutomationRun,
   pushAfterApproveCommit,
   resolveQueueTriagePaths,
@@ -3718,6 +3719,24 @@ export default function App() {
             })
             if (pushed === 'push_failed') {
               console.warn('[queue] approve push failed（可稍后在审查面板重试）')
+            }
+            const opened = await createPrAfterApprovePush({
+              pushed,
+              hasExistingPr: window.sharker.getPullRequestContext
+                ? async () => {
+                    const pr = await window.sharker.getPullRequestContext(cwd)
+                    return pr.ok
+                  }
+                : undefined,
+              createPr: window.sharker.createGitPullRequest
+                ? () =>
+                    window.sharker.createGitPullRequest(cwd, {
+                      title: item.title.trim() || '自动化'
+                    })
+                : undefined
+            })
+            if (opened === 'create_failed') {
+              console.warn('[queue] approve create PR failed（可稍后在审查面板重试）')
             }
           }
         }

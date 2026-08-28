@@ -4,6 +4,7 @@ import {
   attachQueueChangedPaths,
   enqueueAutomationRun,
   markQueueItem,
+  createPrAfterApprovePush,
   pushAfterApproveCommit,
   resolveQueueTriagePaths,
   sortAutomationQueue,
@@ -75,5 +76,34 @@ describe('automation queue', () => {
         }
       })
     ).toBe('push_failed')
+  })
+
+  it('creates a PR only after a successful push when none exists', async () => {
+    expect(
+      await createPrAfterApprovePush({
+        pushed: 'push_failed',
+        createPr: async () => ({ ok: true, url: 'https://example.com/p' })
+      })
+    ).toBe('skipped')
+    expect(
+      await createPrAfterApprovePush({
+        pushed: 'pushed',
+        hasExistingPr: async () => true,
+        createPr: async () => ({ ok: true, url: 'https://example.com/p' })
+      })
+    ).toBe('exists')
+    expect(
+      await createPrAfterApprovePush({
+        pushed: 'pushed',
+        hasExistingPr: async () => false,
+        createPr: async () => ({ ok: true, url: 'https://example.com/p' })
+      })
+    ).toBe('created')
+    expect(
+      await createPrAfterApprovePush({
+        pushed: 'pushed',
+        createPr: async () => ({ ok: false, error: 'no gh' })
+      })
+    ).toBe('create_failed')
   })
 })
