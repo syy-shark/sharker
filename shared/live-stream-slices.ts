@@ -278,6 +278,93 @@ export function isLiveSettledToolAppendChange(
   return hasLiveToolAppendPrefixClose(prev, next)
 }
 
+/** 规划下一步后同一帧 think + tool_start + tool_done：旁白可先标 done，再追加已收束工具 */
+export function isLiveThinkSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) {
+    return false
+  }
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 规划下一步 + think + 立刻收束的工具：status 可先收口，思考不进过程 */
+export function isLiveStatusThinkSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
+}
+
+function isLiveAddedAnswerPair(segment: TurnSegment | undefined): boolean {
+  return Boolean(
+    segment &&
+      segment.kind === 'text' &&
+      (segment.status === 'active' || segment.status === 'done') &&
+      !hasStreamingDemoFence(segment.content ?? '')
+  )
+}
+
+/** 规划下一步后同一帧首枚 token + tool_start + tool_done：散文可先标 done，再追加已收束工具 */
+export function isLiveAnswerSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedAnswerPair(next[prev!.length])) {
+    return false
+  }
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 写盘收束同时下一工具已在同一帧 complete_call：过程 remap 并追加已收束工具，回答只换 diff 槽 */
+export function isLiveWriteStatSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveWriteStatPrefix(prev, next) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length, next)
+}
+
+/** 正文 ```demo 与 present_inline_demo 同一帧：过程不追加演示步，回答开演示槽（对标 query-loop token + tool_preview） */
+export function isLiveAnswerDemoAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev) return false
+  if (next.length === prev.length + 2) {
+    if (!hasLiveToolAppendPrefixClose(prev, next)) return false
+    const text = next[prev.length]
+    if (!text || text.kind !== 'text' || !hasStreamingDemoFence(text.content ?? '')) return false
+    return isLiveAddedInlineDemo(next[prev.length + 1])
+  }
+  if (next.length !== prev.length + 1) return false
+  if (!isLiveAddedInlineDemo(next[next.length - 1])) return false
+  let fenceGrew = false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (
+      i === prev.length - 1 &&
+      before.kind === 'text' &&
+      after.kind === 'text' &&
+      before.id === after.id &&
+      hasStreamingDemoFence(after.content ?? '')
+    ) {
+      fenceGrew = true
+      continue
+    }
+    if (isLivePrefixClose(before, after) || isLiveTextGrowClose(before, after)) continue
+    return false
+  }
+  return fenceGrew
+}
+
 export function isLiveToolAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -1801,6 +1888,11 @@ export function shouldSkipLiveStreamDerivation(
   if (!prevSegments) return null
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveSettledToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveThinkSettledToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusThinkSettledToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAnswerSettledToolAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatSettledToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAnswerDemoAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveToolWriteStatAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveStatusToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveThinkToolAppendChange(prevSegments, segments)) return 'tool'
@@ -1941,6 +2033,7 @@ export function nextLiveThinkText(
   if (
     prevSegments &&
     (isLiveThinkToolAppendChange(prevSegments, segments) ||
+      isLiveThinkSettledToolAppendChange(prevSegments, segments) ||
       isLiveWriteStatThinkToolAppendChange(prevSegments, segments) ||
       isLiveThinkStatusAppendChange(prevSegments, segments) ||
       isLiveWriteStatThinkStatusAppendChange(prevSegments, segments))
@@ -1971,6 +2064,7 @@ export function nextLiveThinkText(
       isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments) ||
       isLiveStatusThinkToolAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkSettledToolAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkToolAppendChange(prevSegments, segments) ||
       isLiveStatusThinkDemoAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments) ||
@@ -2275,6 +2369,10 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     (isLiveToolAppendChange(processHold.segments, segments) ||
       isLiveSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveThinkSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveAnswerSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatSettledToolAppendChange(processHold.segments, segments) ||
       isLiveToolWriteStatAppendChange(processHold.segments, segments) ||
       isLiveStatusToolAppendChange(processHold.segments, segments) ||
       isLiveThinkToolAppendChange(processHold.segments, segments) ||
@@ -2465,6 +2563,7 @@ export function nextLiveProcessView(
     prev &&
     processHold?.view === prev &&
     (isLiveDemoAppendChange(processHold.segments, segments) ||
+      isLiveAnswerDemoAppendChange(processHold.segments, segments) ||
       isLiveWriteStatDemoAppendChange(processHold.segments, segments) ||
       isLiveThinkDemoAppendChange(processHold.segments, segments) ||
       isLiveWriteStatThinkDemoAppendChange(processHold.segments, segments))
@@ -2710,14 +2809,22 @@ export function shouldSkipLiveAnswerIdentity(input: {
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
   if (
-    isLiveSettledToolAppendChange(input.prevSegments, input.segments) &&
+    (isLiveSettledToolAppendChange(input.prevSegments, input.segments) ||
+      isLiveThinkSettledToolAppendChange(input.prevSegments, input.segments) ||
+      isLiveStatusThinkSettledToolAppendChange(input.prevSegments, input.segments) ||
+      isLiveWriteStatSettledToolAppendChange(input.prevSegments, input.segments)) &&
     addedSettledToolsHaveWriteStat(input.prevSegments.length, input.segments)
   ) {
     return false
   }
+  if (isLiveWriteStatSettledToolAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAnswerSettledToolAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAnswerDemoAppendChange(input.prevSegments, input.segments)) return false
   if (
     isLiveToolAppendChange(input.prevSegments, input.segments) ||
     isLiveSettledToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveThinkSettledToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveStatusThinkSettledToolAppendChange(input.prevSegments, input.segments) ||
     isLiveStatusToolAppendChange(input.prevSegments, input.segments) ||
     isLiveThinkToolAppendChange(input.prevSegments, input.segments) ||
     isLiveStatusThinkToolAppendChange(input.prevSegments, input.segments) ||
@@ -3114,6 +3221,8 @@ export function nextLiveAnswerView(
     prev &&
     (isLiveToolAppendChange(prevSegments, segments) ||
       isLiveSettledToolAppendChange(prevSegments, segments) ||
+      isLiveThinkSettledToolAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkSettledToolAppendChange(prevSegments, segments) ||
       isLiveStatusToolAppendChange(prevSegments, segments) ||
       isLiveThinkToolAppendChange(prevSegments, segments) ||
       isLiveStatusThinkToolAppendChange(prevSegments, segments) ||
@@ -3128,6 +3237,13 @@ export function nextLiveAnswerView(
       answerGrowHold = { view, segments, tailPlain: false }
       return view
     }
+  }
+  if (prev && isLiveAnswerSettledToolAppendChange(prevSegments, segments)) {
+    const text = segments[prevSegments!.length]!
+    const appended = appendLiveAnswerView(prev, text)
+    const view = text.status === 'done' ? sealLiveAnswerTail(appended, text) : appended
+    answerGrowHold = { view, segments, tailPlain: text.status === 'active' }
+    return view
   }
   if (
     prev &&
@@ -3175,6 +3291,7 @@ export function nextLiveAnswerView(
   if (
     prev &&
     (isLiveDemoAppendChange(prevSegments, segments) ||
+      isLiveAnswerDemoAppendChange(prevSegments, segments) ||
       isLiveStatusDemoAppendChange(prevSegments, segments) ||
       isLiveThinkDemoAppendChange(prevSegments, segments) ||
       isLiveStatusThinkDemoAppendChange(prevSegments, segments))

@@ -198,6 +198,16 @@ describe('process phases privacy', () => {
     expect(settledAppend![0]).toBe(doneRetargeted![0])
     expect(settledAppend![1].segment).toBe(cmdNextSettled)
     expect(settledAppend![1].status).toBe('done')
+    const writeThenSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, cmdNextSettled],
+      true
+    )
+    expect(writeThenSettled).not.toBeNull()
+    expect(writeThenSettled).toHaveLength(2)
+    expect(writeThenSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writeThenSettled![1].segment).toBe(cmdNextSettled)
     const writeAndAppend = appendProcessPhaseStepOnToolStart(
       cmdSteps,
       [cmdRunning],
@@ -216,6 +226,16 @@ describe('process phases privacy', () => {
       status: 'active',
       startedAt: 10
     }
+    const thinkThenSettled = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, nextThink, cmdNextSettled],
+      true
+    )
+    expect(thinkThenSettled).not.toBeNull()
+    expect(thinkThenSettled).toHaveLength(2)
+    expect(thinkThenSettled![0]).toBe(doneRetargeted![0])
+    expect(thinkThenSettled![1].segment).toBe(cmdNextSettled)
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
     ).toBe(appended)
