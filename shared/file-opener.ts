@@ -24,7 +24,10 @@ export function parseFileOpener(raw: unknown): FileOpener {
 
 /** 相对/Windows 路径收成 `vscode://file` 用的绝对 POSIX 段 */
 export function fileOpenerPathSegment(absPath: string): string {
-  const normalized = String(absPath || '').trim().replace(/\\/g, '/')
+  const normalized = String(absPath || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/{2,}/g, '/')
   if (!normalized) return ''
   if (/^[A-Za-z]:\//.test(normalized)) return `/${normalized}`
   return normalized.startsWith('/') ? normalized : `/${normalized}`

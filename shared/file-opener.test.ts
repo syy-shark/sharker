@@ -19,6 +19,7 @@ describe('file opener', () => {
     expect(shouldOpenCitationInApp('vscode')).toBe(false)
     expect(fileOpenerPathSegment('/Users/me/app/src/foo.ts')).toBe('/Users/me/app/src/foo.ts')
     expect(fileOpenerPathSegment('C:\\Users\\me\\app\\foo.ts')).toBe('/C:/Users/me/app/foo.ts')
+    expect(fileOpenerPathSegment('C:\\\\repo\\\\a.ts')).toBe('/C:/repo/a.ts')
     expect(fileOpenerUri('none', '/Users/me/app/src/foo.ts', 12)).toBeNull()
     expect(fileOpenerUri('vscode', '/Users/me/app/src/foo.ts', 12, 4)).toBe(
       'vscode://file/Users/me/app/src/foo.ts:12:4'
