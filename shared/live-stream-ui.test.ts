@@ -72,6 +72,12 @@ import {
   isLiveWriteStatStatusCompressAppendChange,
   isLiveWriteStatThinkCompressAppendChange,
   isLiveWriteStatStatusThinkCompressAppendChange,
+  isLiveStatusCancelAppendChange,
+  isLiveThinkCancelAppendChange,
+  isLiveStatusThinkCancelAppendChange,
+  isLiveWriteStatStatusCancelAppendChange,
+  isLiveWriteStatThinkCancelAppendChange,
+  isLiveWriteStatStatusThinkCancelAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1584,6 +1590,69 @@ describe('live stream ui snapshot', () => {
     expect(
       processAfterThinkCompress.processForFlow.some((segment) => segment.toolName === 'compress')
     ).toBe(true)
+    const stopRound = applyStreamChunk(afterPlanStatus, { type: 'turn_cancelled', timestamp: 32 })
+    expect(isLiveCancelChange(afterPlanStatus, stopRound)).toBe(true)
+    expect(isLiveStatusCancelAppendChange([hello, running], stopRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], stopRound)).toBe('text')
+    let thinkThenStop = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 33 })
+    thinkThenStop = applyStreamChunk(thinkThenStop, { type: 'turn_cancelled', timestamp: 34 })
+    expect(isLiveThinkCancelAppendChange(afterPlanStatus, thinkThenStop)).toBe(true)
+    expect(isLiveStatusThinkCancelAppendChange([hello, running], thinkThenStop)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], thinkThenStop)).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello, running], thinkThenStop)).toBe('HmmNext')
+    const helloCancelled: TurnSegment = { ...hello, status: 'cancelled' }
+    const reconnectCancelled: TurnSegment = { ...reconnectStatus, status: 'cancelled' }
+    const nextThinkCancelled: TurnSegment = { ...nextThink, status: 'cancelled' }
+    expect(
+      isLiveWriteStatStatusCancelAppendChange(
+        [hello, running],
+        [helloCancelled, ranDiff, reconnectCancelled]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatThinkCancelAppendChange(
+        [hello, running],
+        [helloCancelled, ranDiff, nextThinkCancelled]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusThinkCancelAppendChange(
+        [hello, running],
+        [helloCancelled, ranDiff, reconnectCancelled, nextThinkCancelled]
+      )
+    ).toBe(true)
+    const processReadyForPlanStop = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterPlanStop = nextLiveProcessView(processReadyForPlanStop, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: stopRound
+    })
+    expect(processAfterPlanStop.processForFlow.some((segment) => segment.kind === 'status')).toBe(true)
+    expect(processAfterPlanStop.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    const processAfterThinkStop = nextLiveProcessView(processReadyForPlanStop, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenStop
+    })
+    expect(processAfterThinkStop.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkStop.thinkText).toBe(processReadyForPlanStop.thinkText + 'Next')
+    const answerReadyForPlanStop = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloPlanStopPart = answerReadyForPlanStop.parts.find((part) => part.type === 'text')
+    const answerAfterPlanStop = nextLiveAnswerView(answerReadyForPlanStop, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: stopRound
+    })
+    expect(
+      answerAfterPlanStop.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanStopPart)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

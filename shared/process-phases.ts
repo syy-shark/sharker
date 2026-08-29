@@ -82,6 +82,12 @@ import {
   isLiveWriteStatStatusCompressAppendChange,
   isLiveWriteStatThinkCompressAppendChange,
   isLiveWriteStatStatusThinkCompressAppendChange,
+  isLiveStatusCancelAppendChange,
+  isLiveThinkCancelAppendChange,
+  isLiveStatusThinkCancelAppendChange,
+  isLiveWriteStatStatusCancelAppendChange,
+  isLiveWriteStatThinkCancelAppendChange,
+  isLiveWriteStatStatusThinkCancelAppendChange,
   isLiveWriteStatErrorAppendChange,
   isLiveWriteStatDemoAppendChange,
   isLiveToolWriteStatChange
@@ -676,6 +682,12 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatThinkCompressAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusThinkCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusCancelAppendChange(prevSegments, segments) &&
+    !isLiveThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusThinkCancelAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&
     !isLiveStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalNeededChange(prevSegments, segments) &&

@@ -812,6 +812,38 @@ describe('process phases privacy', () => {
     expect(settleAndThinkCompress).toHaveLength(3)
     expect(settleAndThinkCompress!.at(-1)?.segment).toBe(compressDone)
     expect(settleAndThinkCompress!.some((step) => step.segment === nextThinkDone)).toBe(false)
+    const reconnectCancelled: TurnSegment = { ...reconnectStatus, status: 'cancelled', endedAt: 17 }
+    const nextThinkCancelled: TurnSegment = { ...nextThink, status: 'cancelled', endedAt: 17 }
+    const settleAndStatusCancel = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectCancelled],
+      true
+    )
+    expect(settleAndStatusCancel).not.toBeNull()
+    expect(settleAndStatusCancel).toHaveLength(3)
+    expect(settleAndStatusCancel!.at(-1)?.segment).toBe(reconnectCancelled)
+    const settleAndThinkCancel = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkCancelled],
+      true
+    )
+    expect(settleAndThinkCancel).not.toBeNull()
+    expect(settleAndThinkCancel).toHaveLength(2)
+    expect(settleAndThinkCancel!.some((step) => step.segment === nextThinkCancelled)).toBe(false)
+    const settleAndStatusThinkCancel = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectCancelled, nextThinkCancelled],
+      true
+    )
+    expect(settleAndStatusThinkCancel).not.toBeNull()
+    expect(settleAndStatusThinkCancel).toHaveLength(3)
+    expect(settleAndStatusThinkCancel!.at(-1)?.segment).toBe(reconnectCancelled)
+    expect(settleAndStatusThinkCancel!.some((step) => step.segment === nextThinkCancelled)).toBe(
+      false
+    )
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',
