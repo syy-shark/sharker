@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractChangedRelPaths, liveAssistantMeta } from './turn-meta'
+import { extractChangedRelPaths, liveAssistantMeta, mergeChangedRelPaths } from './turn-meta'
 
 describe('extractChangedRelPaths', () => {
   it('strips the workspace prefix from write tools', () => {
@@ -28,5 +28,9 @@ describe('extractChangedRelPaths', () => {
         '/proj'
       )
     ).toEqual(['src/b.ts'])
+    const dest = ['src/b.ts']
+    expect(mergeChangedRelPaths(dest, ['src/b.ts', 'src/c.ts'])).toBe(true)
+    expect(dest).toEqual(['src/b.ts', 'src/c.ts'])
+    expect(mergeChangedRelPaths(dest, ['src/c.ts'])).toBe(false)
   })
 })

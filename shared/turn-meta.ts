@@ -79,6 +79,18 @@ export function extractChangedRelPaths(
   return [...seen]
 }
 
+/** 把新写出的相对路径并进本轮列表；有新增才 true，避免预览 token 反复刷审查 */
+export function mergeChangedRelPaths(dest: string[], incoming: readonly string[]): boolean {
+  let grew = false
+  for (const path of incoming) {
+    const next = path.trim()
+    if (!next || dest.includes(next)) continue
+    dest.push(next)
+    grew = true
+  }
+  return grew
+}
+
 /** 直播回合元信息：浏览 / 活动 / 已改进程同一对象，避免收束才挂「已改」芯片跳贴底 */
 export function liveAssistantMeta(
   browsedFiles: readonly string[],

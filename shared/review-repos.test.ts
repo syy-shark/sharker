@@ -60,6 +60,13 @@ describe('review repos', () => {
     ).toBe(ALL_REPOS_ID)
     expect(
       resolveReviewRepoId({
+        compare: 'last_turn',
+        selectedId: '/extra',
+        repoRoots: ['/proj', '/extra']
+      })
+    ).toBe(ALL_REPOS_ID)
+    expect(
+      resolveReviewRepoId({
         compare: 'uncommitted',
         selectedId: ALL_REPOS_ID,
         repoRoots: ['/proj', '/extra']

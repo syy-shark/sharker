@@ -1046,16 +1046,17 @@ export function ChangesPanel({
                   ? `  ${formatReviewLineStats(allRepoStats.added, allRepoStats.removed)}`
                   : ''}
               </option>
-            ) : null}
-            {gitRepos.map((repo) => {
-              const stats = formatReviewLineStats(repo.added, repo.removed)
-              return (
-                <option key={repo.root} value={repo.root} title={repo.root}>
-                  {repo.label}
-                  {stats ? `  ${stats}` : ''}
-                </option>
-              )
-            })}
+            ) : (
+              gitRepos.map((repo) => {
+                const stats = formatReviewLineStats(repo.added, repo.removed)
+                return (
+                  <option key={repo.root} value={repo.root} title={repo.root}>
+                    {repo.label}
+                    {stats ? `  ${stats}` : ''}
+                  </option>
+                )
+              })
+            )}
           </select>
         </label>
       ) : null}
@@ -1128,7 +1129,10 @@ export function ChangesPanel({
             role="tab"
             aria-selected={compare === 'last_turn'}
             className={`changes-panel__scope${compare === 'last_turn' ? ' is-active' : ''}`}
-            onClick={() => setCompare('last_turn')}
+            onClick={() => {
+              setRepoId(ALL_REPOS_ID)
+              setCompare('last_turn')
+            }}
           >
             本轮
           </button>

@@ -81,7 +81,7 @@ export function uniqueReviewRepos(probes: ReviewRepoProbe[]): ReviewRepo[] {
 }
 
 /**
- * 本轮默认 All repos；其它范围落到选中仓库，非法选择回主根。
+ * 本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动）；其它范围落到选中仓库。
  */
 export function resolveReviewRepoId(options: {
   compare: ReviewCompareMode
@@ -90,11 +90,8 @@ export function resolveReviewRepoId(options: {
 }): string {
   const roots = options.repoRoots.map(posixPath).filter(Boolean)
   if (roots.length <= 1) return roots[0] ?? ''
+  if (options.compare === 'last_turn') return ALL_REPOS_ID
   const selected = posixPath(options.selectedId)
-  if (options.compare === 'last_turn') {
-    if (!selected || selected === ALL_REPOS_ID || !roots.includes(selected)) return ALL_REPOS_ID
-    return selected
-  }
   if (!selected || selected === ALL_REPOS_ID || !roots.includes(selected)) return roots[0] ?? ''
   return selected
 }

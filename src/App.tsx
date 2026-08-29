@@ -38,7 +38,8 @@ import {
   extractBrowsedPaths,
   extractChangedRelPaths,
   formatToolActivity,
-  liveAssistantMeta
+  liveAssistantMeta,
+  mergeChangedRelPaths
 } from '../shared/turn-meta'
 import { previewPathTouchedByWrites } from '../shared/file-preview'
 import { stampSubAgentActivity } from '../shared/subagent'
@@ -2079,10 +2080,11 @@ export default function App() {
       toolName?: string,
       args?: Record<string, unknown>
     ) => {
-      if (!toolName) return
-      for (const p of extractChangedRelPaths(toolName, args, writeWorkspace())) {
-        if (!dest.includes(p)) dest.push(p)
-      }
+      if (!toolName) return false
+      return mergeChangedRelPaths(
+        dest,
+        extractChangedRelPaths(toolName, args, writeWorkspace())
+      )
     }
 
     const rememberLastTurn = (convId: string | null | undefined, paths: string[]) => {
@@ -2107,14 +2109,21 @@ export default function App() {
         buf.streaming += chunk.content
       }
       buf.segments = applyStreamChunk(buf.segments, chunk)
-      if (chunk.type === 'tool_start' || chunk.type === 'tool_done') {
+      if (
+        chunk.type === 'tool_start' ||
+        chunk.type === 'tool_done' ||
+        chunk.type === 'tool_preview'
+      ) {
         buf.changedRelPaths ??= []
-        collectWrites(buf.changedRelPaths, chunk.toolName, chunk.toolArgs)
-        buf.liveTurnMeta = liveAssistantMeta(
-          buf.turnMeta.browsedFiles,
-          buf.turnMeta.activities,
-          buf.changedRelPaths
-        )
+        const grew = collectWrites(buf.changedRelPaths, chunk.toolName, chunk.toolArgs)
+        if (grew) buf.lastTurnPaths = [...buf.changedRelPaths]
+        if (grew || chunk.type !== 'tool_preview') {
+          buf.liveTurnMeta = liveAssistantMeta(
+            buf.turnMeta.browsedFiles,
+            buf.turnMeta.activities,
+            buf.changedRelPaths
+          )
+        }
       }
       if (chunk.type === 'tool_start' && chunk.toolName === 'agent_spawn') {
         setRightPanelTab('agents')
@@ -2409,12 +2418,26 @@ export default function App() {
         }
         segmentsRef.current = applyStreamChunk(segmentsRef.current, chunk)
         // 同步 turnMeta 供侧栏/旧逻辑
-        if (chunk.type === 'tool_done' || chunk.type === 'tool_start') {
-          bumpChangesSoon()
-          collectWrites(turnChangedPathsRef.current, chunk.toolName, chunk.toolArgs)
-          syncLiveTurnMeta()
-          if (chunk.type === 'tool_done') {
-            refreshOpenPreviewRef.current(turnChangedPathsRef.current)
+        if (
+          chunk.type === 'tool_done' ||
+          chunk.type === 'tool_start' ||
+          chunk.type === 'tool_preview'
+        ) {
+          const grew = collectWrites(turnChangedPathsRef.current, chunk.toolName, chunk.toolArgs)
+          if (chunk.type !== 'tool_preview') {
+            bumpChangesSoon()
+            syncLiveTurnMeta()
+            if (chunk.type === 'tool_done') {
+              refreshOpenPreviewRef.current(turnChangedPathsRef.current)
+            }
+          } else if (grew) {
+            syncLiveTurnMeta()
+          }
+          if (grew) {
+            rememberLastTurn(
+              ownerId ?? activeConversationIdRef.current,
+              [...turnChangedPathsRef.current]
+            )
           }
         }
         if (chunk.type === 'tool_start' && chunk.toolName) {
