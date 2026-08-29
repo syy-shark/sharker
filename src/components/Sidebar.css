@@ -472,6 +472,16 @@ html.window-rounded .sidebar {
   opacity: 0.85;
 }
 
+.sidebar-row-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  min-height: 7px;
+  margin-left: 4px;
+}
+
 .sidebar-unread-dot {
   flex-shrink: 0;
   width: 7px;
@@ -851,7 +861,6 @@ html.theme-dark .sidebar-project-menu {
   flex-shrink: 0;
   width: 7px;
   height: 7px;
-  margin-left: 6px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent);

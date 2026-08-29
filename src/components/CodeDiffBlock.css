@@ -24,8 +24,14 @@
 }
 
 .code-diff-stat {
+  display: inline-block;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.code-diff-stat.is-empty {
+  visibility: hidden;
 }
 
 .code-diff-stat-add {

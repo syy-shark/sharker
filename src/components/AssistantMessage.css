@@ -51,8 +51,11 @@
 }
 
 .assistant-meta-chip-value {
+  display: inline-block;
+  min-width: 7ch;
   color: var(--text-secondary);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .assistant-meta-chevron {

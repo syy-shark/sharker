@@ -11,10 +11,13 @@ import { shouldOpenReviewLine } from '../../shared/review-file-click'
 import { splitFindHighlights } from '../../shared/review-diff-search'
 import {
   canOfferDiffPreviewCollapse,
+  DIFF_STAT_RESERVE_CH,
   estimateDiffBodyHeight,
+  formatDiffStatLabel,
   liveDiffBodyMinHeight,
   shouldCollapseDiffPreview,
   shouldReserveDiffCollapseFooter,
+  shouldReserveDiffStat,
   statsFromLines
 } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
@@ -25,12 +28,23 @@ import './CodeDiffBlock.css'
 
 const DEFAULT_MAX_LINES = 40
 
-function DiffStat({ kind, value }: { kind: 'add' | 'del'; value: number }) {
-  if (value <= 0) return null
+function DiffStat({
+  kind,
+  value,
+  reserve = false
+}: {
+  kind: 'add' | 'del'
+  value: number
+  reserve?: boolean
+}) {
+  if (!shouldReserveDiffStat(reserve, value)) return null
+  const label = formatDiffStatLabel(kind, value)
   return (
-    <span className={`code-diff-stat code-diff-stat-${kind}`}>
-      {kind === 'add' ? '+' : '-'}
-      {value}
+    <span
+      className={`code-diff-stat code-diff-stat-${kind}${label ? '' : ' is-empty'}`}
+      style={{ minWidth: `${DIFF_STAT_RESERVE_CH}ch` }}
+    >
+      {label || '\u00a0'}
     </span>
   )
 }
@@ -323,8 +337,8 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     <>
       {diff?.language ? <span className="code-diff-language">{diff.language}</span> : null}
       <span className="code-diff-stats" aria-label="变更行数">
-        <DiffStat kind="add" value={stats.added} />
-        <DiffStat kind="del" value={stats.removed} />
+        <DiffStat kind="add" value={stats.added} reserve={live} />
+        <DiffStat kind="del" value={stats.removed} reserve={live} />
       </span>
     </>
   )

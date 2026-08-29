@@ -115,6 +115,11 @@ export function fileTreeReloadMode(reason: FileTreeReloadReason): {
   return { clearPreview: false, resetExpanded: false, showLoading: false }
 }
 
+/** 写盘静默重拉后不再播进入动画，避免文件树/侧栏跟着直播抖（对标 Codex sidebar jitter） */
+export function shouldAnimateFileTreeInsert(settled: boolean): boolean {
+  return !settled
+}
+
 export function previewPathTouchedByWrites(
   previewPath: string,
   writtenRelPaths: readonly string[],

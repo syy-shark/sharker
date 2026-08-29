@@ -546,10 +546,13 @@ export function Sidebar({
                 隔离
               </span>
             ) : null}
-            {c.unread && !live ? (
-              <span className="sidebar-unread-dot" aria-label="未读" title="未读" />
-            ) : null}
-            {live ? <span className="sidebar-live-dot" aria-label="进行中" title="进行中" /> : null}
+            <span className="sidebar-row-status">
+              {live ? (
+                <span className="sidebar-live-dot" aria-label="进行中" title="进行中" />
+              ) : c.unread ? (
+                <span className="sidebar-unread-dot" aria-label="未读" title="未读" />
+              ) : null}
+            </span>
           </button>
         )}
         {onTogglePinConversation ? (

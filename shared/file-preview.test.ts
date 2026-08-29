@@ -4,6 +4,7 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  shouldAnimateFileTreeInsert,
   maxDiffGotoLine,
   parseGoToLineInput,
   previewPathTouchedByWrites
@@ -48,5 +49,7 @@ describe('file preview kinds', () => {
       showLoading: false
     })
     expect(fileTreeReloadMode('focus')).toEqual(fileTreeReloadMode('revision'))
+    expect(shouldAnimateFileTreeInsert(false)).toBe(true)
+    expect(shouldAnimateFileTreeInsert(true)).toBe(false)
   })
 })

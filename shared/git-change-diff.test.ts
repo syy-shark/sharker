@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DIFF_STAT_RESERVE_CH, formatDiffStatLabel, shouldReserveDiffStat } from './line-diff'
 import { diffFromGitTexts, isDeletedGitChange, isNewGitChange } from './git-change-diff'
 
 describe('git change diff', () => {
@@ -13,6 +14,11 @@ describe('git change diff', () => {
     expect(diff.stats.added).toBe(1)
     expect(diff.stats.removed).toBe(0)
     expect(diff.lines.every((l) => l.kind === 'add')).toBe(true)
+    expect(formatDiffStatLabel('add', 12)).toBe('+12')
+    expect(formatDiffStatLabel('del', 0)).toBe('')
+    expect(shouldReserveDiffStat(true, 0)).toBe(true)
+    expect(shouldReserveDiffStat(false, 0)).toBe(false)
+    expect(DIFF_STAT_RESERVE_CH).toBe(4)
   })
 
   it('treats deletions as all removals', () => {

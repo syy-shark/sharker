@@ -96,7 +96,7 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树 |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树；`shouldAnimateFileTreeInsert` 定居后不再播进入动画（对标 Codex sidebar jitter） |
 | `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、写盘路径是否碰到预览、写盘重拉树不清预览 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
@@ -154,7 +154,7 @@
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id / 收束空窗单测 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`liveAssistantMeta` 把已改路径带进直播元信息 |
-| `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff；直播占位按行估高，`liveDiffBodyMinHeight` 只升不降以免占位换行跳贴底；`canOfferDiffPreviewCollapse` / `shouldCollapseDiffPreview` 历史长 diff 才折预览，直播中不折以免 +/- 停在第 20 行（对标 Codex #32030 / #38695）；`shouldReserveDiffCollapseFooter` 直播先占「收起变更」页脚，收束不再冒出 32px（对标 Codex #40788） |
+| `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff；直播占位按行估高，`liveDiffBodyMinHeight` 只升不降以免占位换行跳贴底；`canOfferDiffPreviewCollapse` / `shouldCollapseDiffPreview` 历史长 diff 才折预览，直播中不折以免 +/- 停在第 20 行（对标 Codex #32030 / #38695）；`shouldReserveDiffCollapseFooter` 直播先占「收起变更」页脚，收束不再冒出 32px（对标 Codex #40788）；`DIFF_STAT_RESERVE_CH` / `formatDiffStatLabel` 给直播 +/- 预留宽（对标 Codex animated diff stat alignment） |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |
 | `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |

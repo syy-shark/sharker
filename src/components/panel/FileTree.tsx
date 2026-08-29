@@ -1,7 +1,7 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
- * 写盘 revision 静默重拉树，不清预览、不折叠已展开目录。
+ * 写盘 revision 静默重拉树，不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
@@ -9,6 +9,7 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  shouldAnimateFileTreeInsert,
   parseGoToLineInput,
   type FilePreviewKind,
   type FileTreeReloadReason
@@ -117,6 +118,7 @@ export function FileTree({
   const [tree, setTree] = useState<WorkspaceTreeNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [loading, setLoading] = useState(false)
+  const [treeSettled, setTreeSettled] = useState(false)
   const [openFile, setOpenFile] = useState<{
     path: string
     kind: FilePreviewKind
@@ -154,7 +156,10 @@ export function FileTree({
 
   useEffect(() => {
     setOpenFile(null)
-    void load('workspace')
+    setTreeSettled(false)
+    void load('workspace').then(() => {
+      window.requestAnimationFrame(() => setTreeSettled(true))
+    })
   }, [load])
 
   useEffect(() => {
@@ -333,7 +338,11 @@ export function FileTree({
   }
 
   return (
-    <div className="file-tree" ref={treeRef} tabIndex={-1}>
+    <div
+      className={`file-tree${shouldAnimateFileTreeInsert(treeSettled) ? '' : ' file-tree--settled'}`}
+      ref={treeRef}
+      tabIndex={-1}
+    >
       {openFile ? (
         <div className="file-tree-viewer">
           <div className="file-tree-viewer-head">

@@ -103,6 +103,19 @@ export function shouldCollapseDiffPreview(options: {
   return canOfferDiffPreviewCollapse(options)
 }
 
+/** 直播 +/- 预留「+999」宽，数字涨时不对齐跳动（对标 Codex animated diff stat alignment） */
+export const DIFF_STAT_RESERVE_CH = 4
+
+export function formatDiffStatLabel(kind: 'add' | 'del', value: number): string {
+  const n = Math.max(0, Math.floor(Number(value) || 0))
+  if (n <= 0) return ''
+  return `${kind === 'add' ? '+' : '-'}${n}`
+}
+
+export function shouldReserveDiffStat(live: boolean, value: number): boolean {
+  return live || Math.max(0, Number(value) || 0) > 0
+}
+
 /** 统计 add/del 行数 */
 export function statsFromLines(lines: FileDiffLine[]): { added: number; removed: number } {
   let added = 0
