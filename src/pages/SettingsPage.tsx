@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 外观 / 键盘快捷键 / 已归档 / 用量
+ * 设置页壳：权限 / 模型 / 外观 / 个性化 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -9,6 +9,7 @@ import type { SettingsTab } from '../types/navigation'
 import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
+import { PersonalizationSettings } from '../components/settings/PersonalizationSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
@@ -25,7 +26,11 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   appearance: {
     title: '外观',
-    desc: '浅色苹果玻璃与深色金属；后续排队/注入；人格只改语气；记忆与个人说明在此。'
+    desc: '浅色苹果玻璃与深色金属；后续排队/注入；记忆与通知在此。人格与个人说明在个性化。'
+  },
+  personalization: {
+    title: '个性化',
+    desc: '默认人格与个人 AGENTS.md。对标 Codex Settings → Personalization。'
   },
   shortcuts: {
     title: '键盘快捷键',
@@ -71,6 +76,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           )}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'personalization' && (
+            <PersonalizationSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'shortcuts' && (
             <ShortcutSettings draft={draft} setDraft={setDraft} onSave={onSave} />

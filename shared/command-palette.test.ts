@@ -40,6 +40,7 @@ describe('command palette', () => {
     expect(ids).toContain('compact')
     expect(ids).toContain('delete')
     expect(ids).toContain('theme')
+    expect(ids).toContain('personalization')
     expect(ids).toContain('debug-config')
     expect(ids).toContain('fast')
     expect(ids).toContain('reasoning')
@@ -76,6 +77,9 @@ describe('command palette', () => {
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
+    expect(filterPaletteCommands('个性化').some((c) => c.action === 'open_personalization')).toBe(
+      true
+    )
     expect(filterPaletteCommands('归档项目').some((c) => c.action === 'archive_project_chats')).toBe(
       true
     )

@@ -1,6 +1,7 @@
 /**
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
+ * 人格与个人说明在 `PersonalizationSettings`。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -10,8 +11,6 @@ import {
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
 import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
-import type { AgentPersonality } from '../../../shared/personality'
-import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
 import {
   clampUiFontScale,
   formatUiFontScale,
@@ -78,13 +77,9 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     draft.uiTheme === 'dark' ? 'dark' : 'light'
   )
-  const [instructions, setInstructions] = useState('')
-  const [instructionsPath, setInstructionsPath] = useState('')
-  const [overrideActive, setOverrideActive] = useState(false)
   const themeRef = useRef(theme)
   const draftRef = useRef(draft)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const instructionsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     draftRef.current = draft
@@ -97,17 +92,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
-      if (instructionsTimer.current) clearTimeout(instructionsTimer.current)
     }
-  }, [])
-
-  useEffect(() => {
-    if (!window.sharker.getPersonalAgentsMd) return
-    void window.sharker.getPersonalAgentsMd().then((doc) => {
-      setInstructions(doc.content)
-      setInstructionsPath(doc.path)
-      setOverrideActive(doc.overrideActive)
-    })
   }, [])
 
   // 外部 draft 同步
@@ -425,7 +410,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
         <SettingsCard>
           <SettingsRow
             title="注入记忆"
-            description="对标 Codex Settings → Personalization：把检索到的长期记忆写入本轮 system。"
+            description="把检索到的长期记忆写入本轮 system。人格与个人说明在设置 → 个性化。"
           >
             <SettingsToggle
               checked={draft.memoryInjection !== false}
@@ -448,54 +433,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               label="写入记忆"
             />
           </SettingsRow>
-        </SettingsCard>
-      </SettingsSection>
-      <SettingsSection title="人格">
-        <SettingsCard>
-          <SettingsChoiceGroup
-            value={parsePersonality(draft.personality)}
-            onChange={(personality: AgentPersonality) => {
-              const next = { ...draftRef.current, personality }
-              scheduleSave(next)
-            }}
-            options={PERSONALITY_OPTIONS.map((o) => ({
-              value: o.id,
-              title: o.title,
-              description: o.description,
-              icon: <span aria-hidden>{o.title.slice(0, 1)}</span>
-            }))}
-          />
-        </SettingsCard>
-      </SettingsSection>
-      <SettingsSection title="自定义说明">
-        <SettingsCard>
-          <SettingsRow
-            title="个人 AGENTS.md"
-            description={
-              overrideActive
-                ? `写入 ${instructionsPath || '~/.sharker/AGENTS.md'}。当前有 AGENTS.override.md，注入会优先用 override。`
-                : `对标 Codex Settings → Personalization：写入 ${instructionsPath || '~/.sharker/AGENTS.md'}，所有项目都会注入。`
-            }
-            last
-          >
-            <span className="appearance-instructions-hint">~/.sharker</span>
-          </SettingsRow>
-          <textarea
-            className="appearance-instructions"
-            value={instructions}
-            spellCheck={false}
-            placeholder="跨项目都要遵守的约定，例如：改 JS 后跑 npm test；优先 pnpm。"
-            aria-label="个人自定义说明"
-            onChange={(e) => {
-              const content = e.target.value
-              setInstructions(content)
-              if (!window.sharker.savePersonalAgentsMd) return
-              if (instructionsTimer.current) clearTimeout(instructionsTimer.current)
-              instructionsTimer.current = setTimeout(() => {
-                void window.sharker.savePersonalAgentsMd(content)
-              }, 320)
-            }}
-          />
         </SettingsCard>
       </SettingsSection>
     </>

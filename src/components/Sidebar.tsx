@@ -17,6 +17,7 @@ import {
   Keyboard,
   Palette,
   Pin,
+  Smile,
   Settings,
   Shield,
   Sparkles,
@@ -111,6 +112,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'permissions', label: '权限', icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'appearance', label: '外观', icon: Palette },
+  { id: 'personalization', label: '个性化', icon: Smile },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
   { id: 'archived', label: '已归档', icon: Archive },
   { id: 'usage', label: '用量', icon: ChartNoAxesColumn }

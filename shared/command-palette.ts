@@ -121,6 +121,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'open_appearance'
   },
   {
+    id: 'personalization',
+    title: '个性化',
+    keywords: 'personalization personality agents.md 个性化 人格 自定义说明',
+    action: 'open_personalization'
+  },
+  {
     id: 'debug-config',
     title: '调试配置',
     keywords: 'debug config 配置 诊断',
@@ -221,7 +227,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     id: 'changes',
     title: '打开审查面板',
     shortcut: '⌃⇧G',
-    keywords: 'changes panel 审查 面板',
+    keywords: 'changes panel review 审查 面板 open review',
     action: 'toggle_changes'
   },
   {

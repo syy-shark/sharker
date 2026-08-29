@@ -57,8 +57,8 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；浏览器聚焦 ⌘R / ⌘⇧R 刷新 / 无缓存刷新；终端聚焦 ⌘K 清屏判定） |
-| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌘⌥B 开关审查面板、⌃⇧G 打开审查（对标 Codex Toggle review panel / Open review tab）、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；浏览器聚焦 ⌘R / ⌘⇧R 刷新 / 无缓存刷新；终端聚焦 ⌘K 清屏判定） |
+| `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌘⌥B 开关审查 / ⌃⇧G 打开审查（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 项目批量归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑；`shouldInterruptTurn` 默认裸 Esc（可改绑 / 解绑；IME 选词与 keyCode 229 不触发）；F1–F24 可单独成键（对标 Codex `interrupt_turn = "f12"`） |
@@ -118,7 +118,7 @@
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、打开个性化、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
@@ -156,8 +156,8 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/memories/code-font→外观、git/review/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
-| `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、git/review/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/memories/code-font→外观、personalization/personality→个性化、git/review/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
+| `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、personalization 进个性化、git/review/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id / 收束空窗单测 |

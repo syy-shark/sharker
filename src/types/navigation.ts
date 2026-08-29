@@ -10,6 +10,7 @@ export type SettingsTab =
   | 'permissions'
   | 'models'
   | 'appearance'
+  | 'personalization'
   | 'shortcuts'
   | 'archived'
   | 'usage'

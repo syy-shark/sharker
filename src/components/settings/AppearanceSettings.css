@@ -192,34 +192,6 @@ html.theme-dark .appearance-theme-card.is-selected .appearance-theme-check {
   min-width: 148px;
 }
 
-.appearance-instructions-hint {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.appearance-instructions {
-  display: block;
-  width: calc(100% - 24px);
-  min-height: 148px;
-  margin: 0 12px 12px;
-  padding: 10px 12px;
-  border: 0.5px solid var(--glass-edge);
-  border-radius: 10px;
-  background: var(--glass-fill);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  line-height: 1.45;
-  resize: vertical;
-  box-shadow: var(--glass-rim-soft);
-}
-
-.appearance-instructions:focus-visible {
-  outline: 2px solid var(--accent-ring);
-  outline-offset: 2px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .appearance-theme-card {
     transition-duration: 0.01ms !important;

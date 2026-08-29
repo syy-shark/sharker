@@ -15,7 +15,14 @@ export type DeeplinkAction =
   | { type: 'open_thread'; conversationId: string }
   | {
       type: 'settings'
-      tab: 'permissions' | 'models' | 'appearance' | 'shortcuts' | 'archived' | 'usage'
+      tab:
+        | 'permissions'
+        | 'models'
+        | 'appearance'
+        | 'personalization'
+        | 'shortcuts'
+        | 'archived'
+        | 'usage'
     }
   | { type: 'skills' }
   | { type: 'automations'; create?: boolean }
@@ -81,12 +88,14 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   if (key === 'shortcuts' || key === 'keyboard' || key === 'keymap') {
     return { type: 'settings', tab: 'shortcuts' }
   }
+  if (key === 'personalization' || key === 'personality' || key === 'agents.md') {
+    return { type: 'settings', tab: 'personalization' }
+  }
   if (
     key === 'appearance' ||
     key === 'theme' ||
     key === 'notifications' ||
     key === 'general' ||
-    key === 'personalization' ||
     key === 'memories' ||
     key === 'code-font' ||
     key === 'codefont'
