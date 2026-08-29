@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换时间线末步引用。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用；命令末行不换过程数组。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -8,6 +8,7 @@ import {
   liveThinkingText,
   sameRefList
 } from './live-display'
+import { isLiveStableToolDetail } from './tool-output-display'
 import { hasLiveAssistantBody } from './session-runtime'
 import type { TurnSegment } from './types'
 import {
@@ -94,6 +95,13 @@ function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean
     prev.fileDiffs === next.fileDiffs &&
     prev.editPreview === next.editPreview
   )
+}
+
+/** 同一工具只把详情换成命令末行：过程切片保持原数组，不抬 TurnFlow */
+export function isLiveLastLineOnlyToolChange(prev: TurnSegment, next: TurnSegment): boolean {
+  if (!isLiveToolMetaOnlyChange(prev, next)) return false
+  if ((prev.toolDetail ?? '') === (next.toolDetail ?? '')) return false
+  return !isLiveStableToolDetail(next.toolDetail)
 }
 
 export function shouldSkipLiveStreamDerivation(
@@ -356,6 +364,9 @@ export function nextLiveProcessView(
   ) {
     const prevTail = processHold.segments[processHold.segments.length - 1]!
     const nextTail = segments[segments.length - 1]!
+    if (isLiveLastLineOnlyToolChange(prevTail, nextTail)) {
+      return prev
+    }
     const processForFlow = retargetProcessFlow(prev.processForFlow, prevTail, nextTail)
     const view =
       processForFlow === prev.processForFlow ? prev : { ...prev, processForFlow }

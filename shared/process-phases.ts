@@ -20,7 +20,7 @@ import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
 } from './stream-reconnect'
-import { isToolProgressSummary } from './tool-output-display'
+import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
   formatViewImageActivity,
@@ -428,15 +428,20 @@ function buildStepsFromSource(
               // 秒表心跳只走预留宽时钟，不进过程行 / 直播头（对标 Codex #19260）
               if (progressLike || summary === '已停止') {
                 if (summary === '已停止') return '已停止'
-                return stableDetail
+                return isStreaming && segment.status === 'active' && !isLiveStableToolDetail(stableDetail)
+                  ? undefined
+                  : stableDetail
               }
-              // 直播中：真正状态字（如「通过 12 个测试」）可以上 detail
+              // 直播中：命令末行不上 detail，避免展开过程行跟每条输出长高（对标 Codex #19260）
               if (
                 segment.status === 'active' &&
                 summary &&
                 !/^(L\d+:|[{}\[\]]|```)/.test(summary) &&
                 !isMcpJsonDump(summary)
               ) {
+                if (isStreaming && !isLiveStableToolDetail(summary)) {
+                  return isLiveStableToolDetail(stableDetail) ? stableDetail : undefined
+                }
                 return summary
               }
               if (isMcpActivityToolName(segment.toolName || '') && isMcpJsonDump(stableDetail || summary)) {
@@ -449,6 +454,9 @@ function buildStepsFromSource(
                   )
                 }
                 return exploreNameFromPath(stableDetail) || (isViewImageDump(summary) ? undefined : summary)
+              }
+              if (isStreaming && segment.status === 'active' && !isLiveStableToolDetail(stableDetail)) {
+                return undefined
               }
               return stableDetail || summary
             })(),
@@ -559,7 +567,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 同一工具只改详情：只换该步，不重扫整条时间线（对标 Codex #22860） */
+/** 同一工具只改短路径详情：只换该步；命令末行退回原数组（对标 Codex #22860 / #19260） */
 export function retargetProcessPhaseStepsOnToolMeta(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -595,11 +603,7 @@ export function retargetProcessPhaseStepsOnToolMeta(
     rebuilt.detail === prev.detail &&
     rebuilt.status === prev.status
   ) {
-    if (prev.segment === nextTail) return prevSteps
-    const same: ProcessPhaseStep = { ...prev, segment: nextTail }
-    const out = prevSteps.slice()
-    out[index] = same
-    return out
+    return prevSteps
   }
   const nextStep: ProcessPhaseStep = {
     ...rebuilt,

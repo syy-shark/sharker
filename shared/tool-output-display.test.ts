@@ -7,6 +7,7 @@ import {
   shouldMountToolOutputDetails,
   shouldMountToolResultSummary,
   shouldMountToolStepDetail,
+  isLiveStableToolDetail,
   isToolProgressSummary
 } from './tool-output-display'
 
@@ -97,6 +98,10 @@ describe('tool output display', () => {
     expect(isToolProgressSummary('执行中… 9s')).toBe(true)
     expect(isToolProgressSummary('已启动')).toBe(true)
     expect(isToolProgressSummary('通过 12 个测试…')).toBe(false)
+    expect(isLiveStableToolDetail('src/a.ts')).toBe(true)
+    expect(isLiveStableToolDetail('PASS src/a.test.ts')).toBe(false)
+    expect(isLiveStableToolDetail('通过 12 个测试…')).toBe(false)
+    expect(isLiveStableToolDetail('执行中… 9s')).toBe(false)
     expect(
       shouldMountToolStepDetail({
         detail: '执行中… 4s',

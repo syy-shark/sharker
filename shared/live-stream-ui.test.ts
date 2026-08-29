@@ -27,6 +27,7 @@ import {
   nextLiveProcessView,
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
+  isLiveLastLineOnlyToolChange,
   shouldRetargetLiveProcessOnToolMeta,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveProcessIdentity,
@@ -283,12 +284,20 @@ describe('live stream ui snapshot', () => {
         segments: [hello, runningPreview]
       })
     ).toBe(false)
-    expect(processWhileLine.answerStreaming).toBe(processWhileTool.answerStreaming)
-    expect(processWhileLine.thinkText).toBe(processWhileTool.thinkText)
-    expect(processWhileLine.processForFlow.some((segment) => segment === runningLine)).toBe(true)
-    expect(processWhileLine.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(isLiveLastLineOnlyToolChange(running, runningLine)).toBe(true)
+    expect(isLiveLastLineOnlyToolChange(running, runningPreview)).toBe(false)
+    expect(processWhileLine).toBe(processWhileTool)
+    expect(processWhileLine.processForFlow).toBe(processWhileTool.processForFlow)
+    const runningPath: TurnSegment = { ...running, toolDetail: 'src/a.ts' }
+    const processWhilePath = nextLiveProcessView(processWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningPath]
+    })
+    expect(processWhilePath).not.toBe(processWhileTool)
+    expect(processWhilePath.processForFlow.some((segment) => segment === runningPath)).toBe(true)
+    expect(processWhilePath.processForFlow.some((segment) => segment === running)).toBe(false)
     const prevKept = processWhileTool.processForFlow.filter((segment) => segment !== running)
-    const nextKept = processWhileLine.processForFlow.filter((segment) => segment !== runningLine)
+    const nextKept = processWhilePath.processForFlow.filter((segment) => segment !== runningPath)
     expect(nextKept.length).toBe(prevKept.length)
     prevKept.forEach((segment, index) => expect(segment).toBe(nextKept[index]))
     const sharedSegs = [tool, text('Same ref')]

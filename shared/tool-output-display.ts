@@ -85,6 +85,19 @@ export function isToolProgressSummary(text: string | null | undefined): boolean 
 }
 
 /**
+ * 直播头 / 过程行可挂的短路径或叶名。
+ * 命令末行（`PASS src/a.test.ts`、`通过 12 个测试…`）带空白或过长，不挂以免每条输出顶贴底
+ * （对标 Codex #19260）。检索 query 等带空格的稳定文案由过程派生从 toolArgs 另写，不走这里。
+ */
+export function isLiveStableToolDetail(text: string | null | undefined): boolean {
+  const value = String(text || '').trim()
+  if (!value) return false
+  if (isToolProgressSummary(value)) return false
+  if (/\s/.test(value)) return false
+  return value.length <= 48
+}
+
+/**
  * 直播中不挂结果摘要：「执行中… Ns」每秒更新还会另起一行顶过程区。
  * 进度只留在直播头秒表；收束后点开 Worked for 再看真正摘要。
  */

@@ -96,7 +96,7 @@ describe('live process seed', () => {
   })
 
 
-  it('active tool detail prefers resultSummary for live progress', () => {
+  it('active tool detail keeps last-line command output off the live process row', () => {
     let segments = applyStreamChunk([], {
       type: 'tool_start',
       toolName: 'run_terminal_cmd',
@@ -112,7 +112,8 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.detail).toContain('测试')
+    expect(active?.detail || '').not.toMatch(/测试/)
+    expect(active?.title).toMatch(/npm test|Running|运行/)
     segments = applyStreamChunk(segments, {
       type: 'status',
       toolName: 'run_terminal_cmd',

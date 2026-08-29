@@ -6,7 +6,7 @@
  */
 
 import { exploreNameFromPath } from './explore-activity'
-import { isToolProgressSummary } from './tool-output-display'
+import { isLiveStableToolDetail } from './tool-output-display'
 
 export type ThinkPreviewSource = {
   kind?: string
@@ -246,11 +246,7 @@ export function isPlanningNextLiveTitle(title: string): boolean {
 
 /** 直播头只挂短路径/叶名，不挂命令末行以免每条输出顶贴底（对标 Codex #19260） */
 export function shouldMountLiveHeadDetail(detail: string | undefined): boolean {
-  const value = String(detail || '').trim()
-  if (!value) return false
-  if (isToolProgressSummary(value)) return false
-  if (/\s/.test(value)) return false
-  return value.length <= 48
+  return isLiveStableToolDetail(detail)
 }
 
 /** 当前头步骤：优先最后一个 active，否则最后一项。跳过规划桥接以免闪头。 */
