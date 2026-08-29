@@ -654,6 +654,25 @@ describe('process phases privacy', () => {
     expect(afterWriteAllowThinkToken!.some((step) => step.segment === firstReply)).toBe(false)
     expect(afterWriteAllowThinkToken!.some((step) => step.segment === nextThink)).toBe(false)
     expect(afterWriteAllowThinkToken!.some((step) => step.segment === awaitingDone)).toBe(true)
+    const afterWriteAllowThinkTokenCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, runningCmdAfterAllow, awaitingDone, nextThink, firstReply, approvalCompressDone],
+      true
+    )
+    expect(afterWriteAllowThinkTokenCompress).not.toBeNull()
+    expect(afterWriteAllowThinkTokenCompress!.some((step) => step.segment === firstReply)).toBe(false)
+    expect(afterWriteAllowThinkTokenCompress!.some((step) => step.segment === nextThink)).toBe(false)
+    expect(afterWriteAllowThinkTokenCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const afterWriteAllowThinkNext = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, runningCmdAfterAllow, awaitingDone, nextThink, cmdNext],
+      true
+    )
+    expect(afterWriteAllowThinkNext).not.toBeNull()
+    expect(afterWriteAllowThinkNext!.at(-1)?.segment).toBe(cmdNext)
+    expect(afterWriteAllowThinkNext!.some((step) => step.segment === nextThink)).toBe(false)
     const afterReconnectAllowThinkToken = appendProcessPhaseStepOnToolStart(
       helloApprovalHangSteps,
       [helloApprovalHang],
@@ -663,6 +682,23 @@ describe('process phases privacy', () => {
     expect(afterReconnectAllowThinkToken).not.toBeNull()
     expect(afterReconnectAllowThinkToken!.some((step) => step.segment === firstReply)).toBe(false)
     expect(afterReconnectAllowThinkToken!.some((step) => step.segment === awaitingDone)).toBe(true)
+    const afterReconnectAllowThinkTokenCompress = appendProcessPhaseStepOnToolStart(
+      helloApprovalHangSteps,
+      [helloApprovalHang],
+      [
+        helloApprovalHangDone,
+        reconnectApprovalStatus,
+        runningCmdAfterAllow,
+        awaitingDone,
+        nextThink,
+        firstReply,
+        approvalCompressDone
+      ],
+      true
+    )
+    expect(afterReconnectAllowThinkTokenCompress).not.toBeNull()
+    expect(afterReconnectAllowThinkTokenCompress!.some((step) => step.segment === firstReply)).toBe(false)
+    expect(afterReconnectAllowThinkTokenCompress!.at(-1)?.segment).toBe(approvalCompressDone)
     const cmdAllowedCancelled: TurnSegment = {
       ...runningCmd,
       status: 'cancelled',
@@ -1291,6 +1327,55 @@ describe('process phases privacy', () => {
     expect(afterAskResolveThinkCancel).not.toBeNull()
     expect(afterAskResolveThinkCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
     expect(afterAskResolveThinkCancel!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const demoFenceReply: TurnSegment = {
+      ...firstReply,
+      content: '\n```demo\n<div>x'
+    }
+    const afterAskResolveThinkDemoCompress = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [
+        helloAskHangDone,
+        askReady,
+        askStatusDoneForHang,
+        nextThink,
+        demoFenceReply,
+        inlineDemo,
+        approvalCompressDone
+      ],
+      true
+    )
+    expect(afterAskResolveThinkDemoCompress).not.toBeNull()
+    expect(afterAskResolveThinkDemoCompress!.some((step) => step.segment === askStatusDoneForHang)).toBe(true)
+    expect(afterAskResolveThinkDemoCompress!.some((step) => step.segment === demoFenceReply)).toBe(false)
+    expect(afterAskResolveThinkDemoCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const afterAskResolveNext = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReady, askStatusDoneForHang, cmdNext],
+      true
+    )
+    expect(afterAskResolveNext).not.toBeNull()
+    expect(afterAskResolveNext!.at(-1)?.segment).toBe(cmdNext)
+    const firstReplyCancelled: TurnSegment = { ...firstReply, status: 'cancelled' }
+    const afterAskHangTokenCancelCompress = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusDoneForHang, firstReplyCancelled, approvalCompressDone],
+      true
+    )
+    expect(afterAskHangTokenCancelCompress).not.toBeNull()
+    expect(afterAskHangTokenCancelCompress!.some((step) => step.segment === firstReplyCancelled)).toBe(false)
+    expect(afterAskHangTokenCancelCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const afterWriteAllowAsk = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, runningCmdAfterAllow, awaitingDone, askReady, askStatus],
+      true
+    )
+    expect(afterWriteAllowAsk).not.toBeNull()
+    expect(afterWriteAllowAsk!.some((step) => step.segment === awaitingDone)).toBe(true)
+    expect(afterWriteAllowAsk!.some((step) => step.segment === askReady)).toBe(true)
     const nextThinkCancelledAsk: TurnSegment = { ...nextThink, status: 'cancelled', endedAt: 24 }
     const afterAskHangThinkCancel = appendProcessPhaseStepOnToolStart(
       helloAskHangSteps,
