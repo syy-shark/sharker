@@ -33,6 +33,7 @@ import {
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
   isLiveDemoHtmlChange,
+  isLiveStatusAppendChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
   isLiveToolSettleChange,
@@ -578,16 +579,24 @@ describe('live stream ui snapshot', () => {
         segments: [ran, inlineDemo]
       })
     ).toBe(false)
-    const processAfterDemo = nextLiveProcessView(processToolsOnly, {
+    const processReadyForDemo = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const processAfterDemo = nextLiveProcessView(processReadyForDemo, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [ran, inlineDemo]
     })
-    expect(processAfterDemo.processForFlow).toEqual(processToolsOnly.processForFlow)
+    expect(processAfterDemo.processForFlow).toEqual(processReadyForDemo.processForFlow)
     expect(
       processAfterDemo.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')
     ).toBe(false)
     expect(processAfterDemo.generatingDemo).toBe(true)
-    const answerAfterDemo = nextLiveAnswerView(answerToolsOnly, {
+    const answerReadyForDemo = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const answerAfterDemo = nextLiveAnswerView(answerReadyForDemo, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [ran, inlineDemo]
     })
@@ -643,6 +652,55 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(answerHelloThenDemo.tail?.type).toBe('demo')
+    const reconnectStatus: TurnSegment = {
+      id: 're-1',
+      kind: 'status',
+      status: 'active',
+      content: 'Reconnecting... 1/5'
+    }
+    expect(isLiveStatusAppendChange([ran], [ran, reconnectStatus])).toBe(true)
+    expect(isLiveStatusAppendChange([thinking], [thinkingDone, reconnectStatus])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([ran], [ran, reconnectStatus])).toBe('status')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [ran],
+        segments: [ran, reconnectStatus]
+      })
+    ).toBe(true)
+    const processReadyForStatus = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const processAfterReconnect = nextLiveProcessView(processReadyForStatus, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, reconnectStatus]
+    })
+    expect(processAfterReconnect.processForFlow.some((segment) => segment === reconnectStatus)).toBe(true)
+    const answerReadyForStatus = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    expect(nextLiveAnswerView(answerReadyForStatus, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, reconnectStatus]
+    })).toBe(answerReadyForStatus)
+    const compactStatus: TurnSegment = {
+      id: 'compact-1',
+      kind: 'status',
+      status: 'active',
+      content: 'Automatically compacting context'
+    }
+    expect(isLiveStatusAppendChange([ran], [ran, compactStatus])).toBe(true)
+    const processReadyForCompact = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const processAfterCompact = nextLiveProcessView(processReadyForCompact, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, compactStatus]
+    })
+    expect(processAfterCompact.processForFlow.some((segment) => segment === compactStatus)).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

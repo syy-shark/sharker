@@ -25,6 +25,7 @@ import {
   findLiveToolRetargetChange,
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
+  isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange,
   isLiveToolWriteStatChange
@@ -576,14 +577,19 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
+/** 前缀没变或只收束思考/status/散文、末尾新开工具或 status：只追加一步（对标 Codex exec_cell add_call / Reconnecting... n/5） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
   segments: readonly TurnSegment[],
   isStreaming: boolean
 ): ProcessPhaseStep[] | null {
-  if (!isLiveToolAppendChange(prevSegments, segments)) return null
+  if (
+    !isLiveToolAppendChange(prevSegments, segments) &&
+    !isLiveStatusAppendChange(prevSegments, segments)
+  ) {
+    return null
+  }
   const added = segments[segments.length - 1]
   if (!added) return prevSteps
   const remapped = prevSteps.map((step) => {

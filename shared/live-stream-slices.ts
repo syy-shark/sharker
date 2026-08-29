@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 present_inline_demo 只开演示槽（过程不追加、```demo 围栏仍整拆）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、新 present_inline_demo 只开演示槽（过程不追加、```demo 围栏仍整拆）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -168,6 +168,24 @@ export function isLiveToolAppendChange(
   ) {
     return false
   }
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLivePrefixClose(before, after)) return false
+  }
+  return true
+}
+
+/** 前缀没变或只收束思考/status/散文、末尾新开 status：只追加过程步（对标 Codex Reconnecting... n/5 / Compacting） */
+export function isLiveStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  const added = next[next.length - 1]
+  if (!added || added.kind !== 'status' || added.status !== 'active') return false
   for (let i = 0; i < prev.length; i++) {
     const before = prev[i]
     const after = next[i]
@@ -364,6 +382,7 @@ export function shouldSkipLiveStreamDerivation(
 ): LiveStreamDerivationSkip | null {
   if (!prevSegments) return null
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
   if (isLiveDemoAppendChange(prevSegments, segments)) return 'tool'
@@ -404,6 +423,7 @@ export function nextLiveThinkText(
     return prev + (segments[segments.length - 1]?.content ?? '')
   }
   if (isLiveAnswerAppendChange(prevSegments, segments)) return prev
+  if (isLiveStatusAppendChange(prevSegments, segments)) return prev
   if (isLiveDemoAppendChange(prevSegments, segments)) return prev
   if (findLiveDemoHtmlChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
@@ -663,6 +683,22 @@ export function nextLiveProcessView(
   if (
     prev &&
     processHold?.view === prev &&
+    isLiveStatusAppendChange(processHold.segments, segments)
+  ) {
+    const added = segments[segments.length - 1]!
+    const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
+    const view = { ...prev, processForFlow: [...remapped, added] }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
     isLiveThinkAppendChange(processHold.segments, segments)
   ) {
     const processForFlow = remapProcessFlowRefs(
@@ -881,6 +917,9 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (isLiveToolAppendChange(input.prevSegments, input.segments)) {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
+  if (isLiveStatusAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
   if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
@@ -1071,7 +1110,11 @@ export function nextLiveAnswerView(
     answerGrowHold = { view: prev, segments, tailPlain: Boolean(grow.tail) }
     return prev
   }
-  if (prev && isLiveToolAppendChange(prevSegments, segments)) {
+  if (
+    prev &&
+    (isLiveToolAppendChange(prevSegments, segments) ||
+      isLiveStatusAppendChange(prevSegments, segments))
+  ) {
     const sealed = findLiveClosedAnswerText(prevSegments, segments)
     if (sealed) {
       const view = sealLiveAnswerTail(prev, sealed)

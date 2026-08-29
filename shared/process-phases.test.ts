@@ -194,6 +194,23 @@ describe('process phases privacy', () => {
         [cmdDone, cmdNext, demoHtml]
       )
     ).toBe(appended)
+    const reconnectStatus: TurnSegment = {
+      id: 're-1',
+      kind: 'status',
+      status: 'active',
+      content: 'Reconnecting... 1/5',
+      startedAt: 13
+    }
+    const afterReconnect = appendProcessPhaseStepOnToolStart(
+      appended!,
+      [cmdDone, cmdNext],
+      [cmdDone, cmdNext, reconnectStatus],
+      true
+    )
+    expect(afterReconnect).not.toBeNull()
+    expect(afterReconnect).toHaveLength(3)
+    expect(afterReconnect!.at(-1)?.segment).toBe(reconnectStatus)
+    expect(afterReconnect!.at(-1)?.title).toBe('Reconnecting... 1/5')
     const liveText: TurnSegment = {
       id: 'ans1',
       kind: 'text',
