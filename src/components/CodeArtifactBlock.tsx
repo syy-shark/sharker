@@ -6,8 +6,10 @@
 import { Check, Copy } from 'lucide-react'
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
+  continueLiveFenceLines,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  nextClosedFenceLines,
   shouldFollowArtifactTail
 } from '../../shared/live-display'
 import './CodeArtifactBlock.css'
@@ -193,14 +195,28 @@ const ArtifactCodeLine = memo(function ArtifactCodeLine({
   )
 })
 
-/** 直播与收束共用行节点，闭合围栏时文字/行号不再换一套 DOM */
-export function ArtifactCodeLines({ code }: { code: string }) {
-  const lines = code.replace(/\n$/, '').split('\n')
+/** 已完成围栏行：lines 引用没变就不重绘（对标 Codex #39061 / #22860） */
+const ClosedFenceLines = memo(function ClosedFenceLines({ lines }: { lines: string[] }) {
   return (
-    <div className="code-artifact-code">
+    <>
       {lines.map((line, index) => (
         <ArtifactCodeLine key={index} index={index} text={line} />
       ))}
+    </>
+  )
+})
+
+/** 直播与收束共用行节点，闭合围栏时文字/行号不再换一套 DOM */
+export function ArtifactCodeLines({ code }: { code: string }) {
+  const prevRef = useRef({ lines: [] as string[], closed: [] as string[] })
+  const lines = continueLiveFenceLines(prevRef.current.lines, code)
+  const closed = nextClosedFenceLines(prevRef.current.closed, lines)
+  prevRef.current = { lines, closed }
+  const tail = lines.length ? lines[lines.length - 1]! : null
+  return (
+    <div className="code-artifact-code">
+      {closed.length ? <ClosedFenceLines lines={closed} /> : null}
+      {tail !== null ? <ArtifactCodeLine key={closed.length} index={closed.length} text={tail} /> : null}
     </div>
   )
 }

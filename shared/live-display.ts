@@ -431,6 +431,34 @@ export function shouldFollowArtifactTail(options: {
   return options.followTail && !options.userLocked
 }
 
+/**
+ * 直播围栏行：已完成行退回同一字符串引用，只换增长行。
+ * 对标 Codex #39061 / #22860（长围栏不跟每枚 token 重拆全文）。
+ */
+export function continueLiveFenceLines(
+  prev: readonly string[] | null | undefined,
+  code: string
+): string[] {
+  const next = code.replace(/\n$/, '').split('\n')
+  if (!prev?.length) return next
+  if (next.length === prev.length && next.every((line, index) => line === prev[index])) {
+    return prev as string[]
+  }
+  return next.map((line, index) => (index < prev.length && prev[index] === line ? prev[index]! : line))
+}
+
+/** 已完成围栏行：对象没变就退回 prev，给 memo 子树当稳定 props */
+export function nextClosedFenceLines(
+  prev: readonly string[] | null | undefined,
+  lines: readonly string[]
+): string[] {
+  const next = lines.length > 1 ? lines.slice(0, -1) : []
+  if (prev && prev.length === next.length && next.every((line, index) => line === prev[index])) {
+    return prev as string[]
+  }
+  return next
+}
+
 export type TranscriptNavIntent = 'top' | 'bottom'
 
 /** 输入框 / 查找 / 右侧预览 / 终端 / 浏览器里不抢 Home End */

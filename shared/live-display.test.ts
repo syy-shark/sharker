@@ -32,6 +32,8 @@ import {
   shouldClearUnseenLive,
   shouldMarkUnseenLive,
   shouldFollowArtifactTail,
+  continueLiveFenceLines,
+  nextClosedFenceLines,
   shouldMountMessageActions,
   shouldReserveMessageActions,
   LIVE_TAIL_SAFE_PX,
@@ -232,6 +234,14 @@ describe('near-live message rows', () => {
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: false })).toBe(true)
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: true })).toBe(false)
     expect(shouldFollowArtifactTail({ followTail: false, userLocked: false })).toBe(false)
+    const fenceFirst = continueLiveFenceLines(null, 'const a = 1\nconst b =')
+    const fenceGrown = continueLiveFenceLines(fenceFirst, 'const a = 1\nconst b = 2')
+    expect(fenceGrown[0]).toBe(fenceFirst[0])
+    expect(fenceGrown).not.toBe(fenceFirst)
+    expect(continueLiveFenceLines(fenceGrown, 'const a = 1\nconst b = 2')).toBe(fenceGrown)
+    const closedFirst = nextClosedFenceLines(null, fenceFirst)
+    expect(closedFirst).toEqual(['const a = 1'])
+    expect(nextClosedFenceLines(closedFirst, fenceGrown)).toBe(closedFirst)
     expect(shouldMountMessageActions({ showBody: true })).toBe(true)
     expect(shouldMountMessageActions({ showBody: true, isError: true })).toBe(false)
     expect(shouldMountMessageActions({ showBody: false })).toBe(false)
