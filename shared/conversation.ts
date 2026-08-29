@@ -220,6 +220,27 @@ export function nextLiveConversationId(
   return liveIds[(idx + 1) % liveIds.length] ?? null
 }
 
+/** ⌘1–9 Go to chat：侧栏顺序 1-based（对标 Codex Go to chat 1–9） */
+export function conversationIdAtIndex(
+  ids: readonly string[],
+  index: number
+): string | null {
+  if (!Number.isInteger(index) || index < 1) return null
+  return ids[index - 1] ?? null
+}
+
+/** ⌘⌥1–6 Open recent chat：按 updatedAt 新到旧 1-based（对标 Codex Open recent chat 1–6） */
+export function recentConversationIdAtIndex(
+  items: readonly { id: string; updatedAt: number }[],
+  index: number
+): string | null {
+  if (!Number.isInteger(index) || index < 1 || index > 6) return null
+  const ranked = items
+    .map((item, order) => ({ item, order }))
+    .sort((a, b) => b.item.updatedAt - a.item.updatedAt || a.order - b.order)
+  return ranked[index - 1]?.item.id ?? null
+}
+
 /** 从后往前取最近一条用户/助手正文，压空白后截断（Search chats / 侧栏摘要） */
 export function conversationPreview(
   messages: Array<{ role?: string; content?: string }>,

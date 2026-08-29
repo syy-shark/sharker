@@ -39,7 +39,11 @@ import {
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   NEW_WINDOW_LABEL,
+  GO_TO_CHAT_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
+  NEXT_CHAT_OR_TAB_LABEL,
+  OPEN_RECENT_CHAT_LABEL,
+  PREVIOUS_CHAT_OR_TAB_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
   OPEN_BROWSER_TAB_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
@@ -581,6 +585,34 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥A',
     keywords: 'attention live next 进行中 关注',
     action: 'next_attention'
+  },
+  {
+    id: 'prev-chat',
+    title: PREVIOUS_CHAT_OR_TAB_LABEL,
+    shortcut: '⌘⇧[',
+    keywords: 'previous chat tab 上一条 对话',
+    action: 'prev_thread'
+  },
+  {
+    id: 'next-chat',
+    title: NEXT_CHAT_OR_TAB_LABEL,
+    shortcut: '⌘⇧]',
+    keywords: 'next chat tab 下一条 对话',
+    action: 'next_thread'
+  },
+  {
+    id: 'go-to-chat',
+    title: GO_TO_CHAT_LABEL,
+    shortcut: '⌘1–9',
+    keywords: 'go to chat 1 9 sidebar 第几个 对话',
+    action: 'select_chat'
+  },
+  {
+    id: 'open-recent-chat',
+    title: OPEN_RECENT_CHAT_LABEL,
+    shortcut: '⌘⌥1–6',
+    keywords: 'open recent chat 1 6 最近 对话',
+    action: 'select_recent'
   },
   {
     id: 'approve',

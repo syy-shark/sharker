@@ -167,6 +167,16 @@ describe('command palette', () => {
       'Reload Browser Page'
     )
     expect(ids).toContain('next-attention')
+    expect(ids).toContain('prev-chat')
+    expect(ids).toContain('next-chat')
+    expect(ids).toContain('go-to-chat')
+    expect(ids).toContain('open-recent-chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'prev-chat')?.title).toBe('Previous chat or tab')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'next-chat')?.title).toBe('Next chat or tab')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'go-to-chat')?.title).toBe('Go to chat 1–9')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-recent-chat')?.title).toBe(
+      'Open recent chat 1–6'
+    )
     expect(ids).toContain('approve')
     expect(ids).toContain('plan')
     expect(ids).toContain('rename')
@@ -278,6 +288,12 @@ describe('command palette', () => {
     expect(filterPaletteCommands('Start dictation').some((c) => c.id === 'dictate')).toBe(true)
     expect(filterPaletteCommands('Skills').some((c) => c.id === 'skills')).toBe(true)
     expect(filterPaletteCommands('Scheduled').some((c) => c.id === 'automations')).toBe(true)
+    expect(filterPaletteCommands('Go to chat').some((c) => c.id === 'go-to-chat')).toBe(true)
+    expect(filterPaletteCommands('Open recent chat').some((c) => c.id === 'open-recent-chat')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('Previous chat or tab').some((c) => c.id === 'prev-chat')).toBe(true)
+    expect(filterPaletteCommands('Next chat or tab').some((c) => c.id === 'next-chat')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

@@ -21,7 +21,9 @@ import {
   formatRenameNote,
   collectAttentionConversationIds,
   formatUnreadNote,
+  conversationIdAtIndex,
   nextLiveConversationId,
+  recentConversationIdAtIndex,
   parseRenameArgs,
   resolveConversationGitBranch,
   resolveConversationPath,
@@ -6707,6 +6709,40 @@ export default function App() {
         handleNextAttention()
         return
       }
+      if (cmd.action === 'prev_thread' || cmd.action === 'next_thread') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        const nextId = adjacentConversationId(
+          conversationListRef.current.map((c) => c.id),
+          activeConversationIdRef.current,
+          cmd.action === 'next_thread' ? 1 : -1
+        )
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
+        return
+      }
+      if (cmd.action === 'select_recent') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        const nextId = recentConversationIdAtIndex(conversationListRef.current, 1)
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
+        return
+      }
+      if (cmd.action === 'select_chat') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        const nextId = conversationIdAtIndex(
+          conversationListRef.current.map((c) => c.id),
+          1
+        )
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
+        return
+      }
       if (cmd.action === 'toggle_activity') {
         handleToggleActivity()
         return
@@ -6970,9 +7006,10 @@ export default function App() {
         return
       }
       if (action === 'select_recent') {
-        const n = Number(e.key)
-        const recent = [...conversationListRef.current].sort((a, b) => b.updatedAt - a.updatedAt)
-        const nextId = recent[n - 1]?.id
+        const nextId = recentConversationIdAtIndex(
+          conversationListRef.current,
+          Number(e.key)
+        )
         const wsId = settingsRef.current.activeWorkspaceId
         if (wsId && nextId) {
           setPage('chat')
@@ -6981,8 +7018,10 @@ export default function App() {
         return
       }
       if (action === 'select_chat') {
-        const n = Number(e.key)
-        const nextId = conversationListRef.current[n - 1]?.id
+        const nextId = conversationIdAtIndex(
+          conversationListRef.current.map((c) => c.id),
+          Number(e.key)
+        )
         const wsId = settingsRef.current.activeWorkspaceId
         if (wsId && nextId) {
           setPage('chat')

@@ -18,7 +18,9 @@ import {
   nextActivitySidebarFilter,
   formatPinNote,
   formatRenameNote,
+  conversationIdAtIndex,
   nextLiveConversationId,
+  recentConversationIdAtIndex,
   parseRenameArgs,
   resolveConversationGitBranch,
   resolveConversationPath,
@@ -148,6 +150,29 @@ describe('conversation search', () => {
     expect(nextLiveConversationId(['a', 'b', 'c'], 'c')).toBe('a')
     expect(nextLiveConversationId(['a'], 'a')).toBe('a')
     expect(nextLiveConversationId([], 'a')).toBeNull()
+    expect(conversationIdAtIndex(['a', 'b', 'c'], 2)).toBe('b')
+    expect(conversationIdAtIndex(['a'], 9)).toBeNull()
+    expect(conversationIdAtIndex(['a'], 0)).toBeNull()
+    expect(
+      recentConversationIdAtIndex(
+        [
+          { id: 'old', updatedAt: 1 },
+          { id: 'new', updatedAt: 3 },
+          { id: 'mid', updatedAt: 2 }
+        ],
+        1
+      )
+    ).toBe('new')
+    expect(
+      recentConversationIdAtIndex(
+        [
+          { id: 'old', updatedAt: 1 },
+          { id: 'new', updatedAt: 3 }
+        ],
+        6
+      )
+    ).toBeNull()
+    expect(recentConversationIdAtIndex([{ id: 'only', updatedAt: 1 }], 7)).toBeNull()
   })
 
   it('splits live conversations into a first-class task list', () => {
