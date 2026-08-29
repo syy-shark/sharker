@@ -243,7 +243,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.title || '').toMatch(/package\.json|读取/)
+    expect(active?.title || '').toMatch(/package\.json|Read/)
     expect(active?.detail || '').not.toMatch(/^L1:/)
   })
 
@@ -261,7 +261,7 @@ describe('live process seed', () => {
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
     expect(active?.title).toBe('规划下一步')
-    expect(steps.some((s) => s.kind === 'tool' && s.title.includes('读取'))).toBe(true)
+    expect(steps.some((s) => s.kind === 'tool' && /读取|Read/.test(s.title))).toBe(true)
   })
 
   it('prepare list_directory status title is compact', () => {
@@ -352,8 +352,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.title).toMatch(/读取/)
-    expect(active?.title).toContain('package.json')
+    expect(active?.title).toBe('Read package.json')
   })
 
   it('run_terminal_cmd titles include short command leaf', () => {

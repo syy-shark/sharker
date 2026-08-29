@@ -156,10 +156,10 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 工具 | 能做什么 |
 |------|----------|
-| `list_dir` | 列目录（可指定深度） |
-| `glob_file_search` | 按文件名模式找文件 |
-| `grep` | 在目录下搜文本（结果截断 200 行） |
-| `read_file` | 读文件（支持 offset/limit） |
+| `list_dir` | 列目录（可指定深度）。直播头 `List basename`（对标 Codex List） |
+| `glob_file_search` | 按文件名模式找文件。直播头 `Search pattern`（对标 Codex Search） |
+| `grep` | 在目录下搜文本（结果截断 200 行）。直播头 `Search query in path`（对标 Codex Search） |
+| `read_file` | 读文件（支持 offset/limit）。直播头 `Read basename`（对标 Codex exec_cell Read） |
 | `view_image` | 查看本地图片（对标 Codex `view_image` / #36966）：工具结果只报路径与体积，视觉模型再回灌像素；`detail=original` 提高保真。`read_image` 同路径别名。不发明 ImageGen 或关闭开关 |
 
 ### 改 · 整理文件
@@ -304,6 +304,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | web search 活动 | **done** | 直播 Searching the web / Searched the web for（#9960 / #24693）；过程区 title+url 来源花片（#32898）。不发明 find_in_page / 官方 search API |
 | MCP 工具调用活动 | **done** | 直播 Calling / Called `server.tool(args)`（#20677 / #23236）；不倾倒 JSON、不抄 InProgress 当完成（#22300）。不发明 Apps / node_repl |
 | 命令 Running / Ran | **done** | 直播头 `Running cmd` / `Ran cmd`（对标 Codex exec_cell）。不发明 You ran / unified-exec |
+| 探索 Read / List / Search | **done** | `read_file` / `list_dir` / `grep` / `glob_file_search` 过程行用官方 Read / List / Search + basename。不发明 Exploring 分组头或完整路径标题 |
 | Accessibility 窗口树 | **partial** | `desktop_get_ui_tree` / `desktop_list_windows` |
 | Agent Workspace 隔离 | **partial** | networkMode MVP |
 | Voice STT/TTS | **partial** | voice_* 本地 say；无 conversation-mode STT 循环 |

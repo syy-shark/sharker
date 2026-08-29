@@ -149,5 +149,45 @@ describe('process phases privacy', () => {
       }
     ])
     expect(ran[0]?.title).toBe('Ran sleep 2')
+    const reading = deriveChronologicalSteps([
+      {
+        id: 'rd1',
+        kind: 'tool',
+        toolName: 'read_file',
+        toolTitle: '读取文件',
+        toolArgs: { path: 'src/App.tsx' },
+        toolDetail: 'src/App.tsx',
+        status: 'active',
+        startedAt: 15
+      }
+    ])
+    expect(reading[0]?.title).toBe('Read App.tsx')
+    expect(reading[0]?.detail).toBeUndefined()
+    const listing = deriveChronologicalSteps([
+      {
+        id: 'ls1',
+        kind: 'tool',
+        toolName: 'list_dir',
+        toolTitle: '列出目录',
+        toolArgs: { path: 'src' },
+        status: 'done',
+        startedAt: 16,
+        endedAt: 17
+      }
+    ])
+    expect(listing[0]?.title).toBe('List src')
+    const searching = deriveChronologicalSteps([
+      {
+        id: 'gr1',
+        kind: 'tool',
+        toolName: 'grep',
+        toolTitle: '搜索内容',
+        toolArgs: { pattern: 'LiveHead', path: 'shared' },
+        status: 'done',
+        startedAt: 18,
+        endedAt: 19
+      }
+    ])
+    expect(searching[0]?.title).toBe('Search LiveHead in shared')
   })
 })

@@ -143,8 +143,8 @@
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链 / 复制为 Markdown、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
-| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；MCP 用 Calling / Called `server.tool` 且 JSON 结果不进 detail（对标 Codex #20677）；`run_terminal_cmd` 用 Running / Ran + 命令（对标 Codex exec_cell）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
-| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步；MCP Calling / Called 且 JSON 不当 detail；命令 Running / Ran |
+| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；探索工具用 Read / List / Search（对标 Codex exec_cell）；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；MCP 用 Calling / Called `server.tool` 且 JSON 结果不进 detail（对标 Codex #20677）；`run_terminal_cmd` 用 Running / Ran + 命令（对标 Codex exec_cell）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
+| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步；MCP Calling / Called 且 JSON 不当 detail；命令 Running / Ran；探索 Read / List / Search |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think / status / 写入预览 / 收束都只换数组和改过的段（已完成工具保持引用，避免心跳打穿过程行 memo）；`cloneSegments` 只给会话缓冲隔离用；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；写入/补丁 `tool_preview` 先占同一 tool 段与 `s.id-diff-N`（`isWritePreviewTool`），参数流把已解析的 +/- 填进同一槽（对标 Codex 约 0.5s 逐文件 diff），`tool_start` / `tool_done` 合并不换 id；`context_compress` 先把进行中 status 收成 done 再挂压缩步骤；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程；`buildAnswerParts` 写入一开始用 `editPreview` 占 `s.id-diff-N`，完成后填 `fileDiff`；`reuseAnswerParts` 在预览 token / 元信息刷新时保住已闭合文字与 diff 对象；正文 ```demo 开闭都拆成 `s.id` / `s.id-demo-stream` / `s.id-post`（直播未写完 `dem` / `viz` 就占槽，不认 ```diff / ```html / ```vim），收束不把演示搬回 Markdown 重挂 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；status 心跳 / 写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
@@ -165,6 +165,8 @@
 | `update-plan.test.ts` | 状态解析、空参、直播头当前步 / `Plan · n/m`、计划模式白名单 |
 | `exec-activity.ts` | 官方命令过程：Running / Ran + 短命令（对标 Codex `exec_cell`）。不发明 You ran / unified-exec |
 | `exec-activity.test.ts` | 短选项、Running/Ran、过长截断 |
+| `explore-activity.ts` | 官方探索过程：Read / List / Search + basename（对标 Codex exec_cell parsed Read/List/Search）。不发明 Exploring 分组头，也不发明比官方更长的完整路径 |
+| `explore-activity.test.ts` | Read/List/Search、basename、Search query in path |
 | `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用；审批条 `formatMcpApprovalLabel`。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
 | `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定 |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 |

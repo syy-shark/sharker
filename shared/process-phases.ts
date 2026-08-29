@@ -4,6 +4,11 @@
  */
 import type { TurnSegment } from './types'
 import { formatExecActivity, summarizeExecCommand } from './exec-activity'
+import {
+  exploreNameFromPath,
+  formatExploreActivity,
+  isExploreActivityToolName
+} from './explore-activity'
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
@@ -180,16 +185,16 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
   if (segment.kind === 'tool') {
     const base = segment.toolTitle ?? segment.toolName ?? '执行操作'
     const tool = segment.toolName || ''
-    // 读/列/改文件类：标题带上目标，避免多个「列出目录」像卡住重复
+    if (isExploreActivityToolName(tool)) {
+      return formatExploreActivity(tool, segment.toolArgs, segment.toolDetail) ?? base
+    }
+    // 改文件类：标题带上目标，避免多个「写入文件」像卡住重复
     if (
-      tool === 'list_dir' ||
-      tool === 'read_file' ||
       tool === 'write_file' ||
       tool === 'search_replace' ||
       tool === 'apply_patch' ||
       tool === 'delete_file' ||
-      tool === 'glob_file_search' ||
-      tool === 'grep'
+      tool === 'delete_path'
     ) {
       const leaf = shortNameFromDetail(segment.toolDetail)
       if (leaf && !base.includes(leaf)) return `${base} · ${leaf}`
@@ -415,6 +420,20 @@ function buildStepsFromSource(
     // 标题已含 path/command 时不再重复 detail（直播中也不另起一行顶过程区）
     if (detail && segment.kind === 'tool' && title.includes(detail)) {
       detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
+    }
+    if (
+      detail &&
+      segment.kind === 'tool' &&
+      isExploreActivityToolName(segment.toolName || '')
+    ) {
+      const leaf =
+        exploreNameFromPath(segment.toolDetail) ||
+        exploreNameFromPath(
+          typeof segment.toolArgs?.path === 'string' ? segment.toolArgs.path : undefined
+        )
+      if (leaf && title.includes(leaf)) {
+        detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
+      }
     }
 
     steps.push({
