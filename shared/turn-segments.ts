@@ -3,9 +3,11 @@
  * 自动压缩 status 在 `context_compress` 时收成 done，避免准备中卡到摘要结束。
  * @see shared/ARCH.md
  */
+import { formatCompactActivity } from './compact-activity'
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
+import { REQUEST_USER_INPUT_TOOL, summarizeUserInputRequest } from './user-input'
 
 /**
  * 浅拷贝片段数组：每个 segment 新对象，嵌套 diff 行共享。
@@ -590,22 +592,31 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   if (chunk.type === 'user_input_needed' && chunk.userInput) {
     const lastIndex = next.length - 1
     const last = next[lastIndex]
-    const summary = chunk.userInput.questions[0]?.header || chunk.toolName || 'request_user_input'
+    const summary = summarizeUserInputRequest(chunk.userInput.questions)
     if (last?.kind === 'status' && last.status === 'active') {
       const written = writeSegmentAt(next, lastIndex)
-      written.content = `等待选择 · ${summary}`
+      written.content = summary
       written.toolName = chunk.toolName
       written.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : written.toolTitle
     } else {
       next.push({
         id: `status-user-input-${timestamp}`,
         kind: 'status',
-        content: `等待选择 · ${summary}`,
+        content: summary,
         toolName: chunk.toolName,
         toolTitle: chunk.toolName ? toolTitle(chunk.toolName) : undefined,
         status: 'active',
         startedAt: timestamp
       })
+    }
+    for (let i = next.length - 1; i >= 0; i--) {
+      const s = next[i]
+      if (s?.kind === 'tool' && s.toolName === REQUEST_USER_INPUT_TOOL && s.status === 'active') {
+        const written = writeSegmentAt(next, i)
+        written.toolTitle = summary
+        written.toolDetail = summary
+        break
+      }
     }
     return next
   }
@@ -616,12 +627,11 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       if (
         s.kind === 'status' &&
         s.status === 'active' &&
-        (s.content ?? '').includes('等待选择')
+        (s.toolName === REQUEST_USER_INPUT_TOOL || (s.content ?? '').includes('等待选择'))
       ) {
         const written = writeSegmentAt(next, i)
         written.status = 'done'
         written.endedAt = timestamp
-        written.content = '已回答，继续'
       }
     }
     return next
@@ -726,11 +736,12 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       written.status = 'done'
       written.endedAt = timestamp
     }
+    const prevContent = activeStatus >= 0 ? next[activeStatus]?.content : undefined
     next.push({
       id: `compress-${crypto.randomUUID()}`,
       kind: 'tool',
       toolName: 'compress',
-      toolTitle: '压缩上下文',
+      toolTitle: formatCompactActivity(prevContent, 'done'),
       toolDetail: `${removedCount} 条 → ${beforeTokens}→${afterTokens} tokens`,
       status: 'done'
       ,startedAt: timestamp

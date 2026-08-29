@@ -227,5 +227,86 @@ describe('process phases privacy', () => {
       }
     ])
     expect(failedPatch[0]?.title).toBe('Failed to apply patch')
+    const compacting = deriveChronologicalSteps([
+      {
+        id: 'cp1',
+        kind: 'tool',
+        toolName: 'compress',
+        toolTitle: 'Automatically compacting context',
+        status: 'active',
+        startedAt: 25
+      }
+    ])
+    expect(compacting[0]?.title).toBe('Automatically compacting context')
+    const compacted = deriveChronologicalSteps([
+      {
+        id: 'cp2',
+        kind: 'tool',
+        toolName: 'compress',
+        toolTitle: 'Automatically compacting context',
+        status: 'done',
+        startedAt: 26,
+        endedAt: 27
+      }
+    ])
+    expect(compacted[0]?.title).toBe('Context automatically compacted')
+    const asking = deriveChronologicalSteps([
+      {
+        id: 'ask1',
+        kind: 'tool',
+        toolName: 'request_user_input',
+        toolTitle: '询问用户',
+        toolArgs: {
+          questions: [
+            {
+              id: 'scope',
+              header: 'Scope',
+              question: 'What should we change?',
+              options: [
+                { label: 'Minimal', description: 'Smallest fix.' },
+                { label: 'Rewrite', description: 'Replace the module.' }
+              ]
+            }
+          ]
+        },
+        status: 'active',
+        startedAt: 28
+      }
+    ])
+    expect(asking[0]?.title).toBe('Scope')
+    const askingMany = deriveChronologicalSteps([
+      {
+        id: 'ask2',
+        kind: 'tool',
+        toolName: 'request_user_input',
+        toolTitle: '询问用户',
+        toolArgs: {
+          questions: [
+            {
+              id: 'a',
+              header: 'One',
+              question: 'First?',
+              options: [
+                { label: 'A', description: 'a' },
+                { label: 'B', description: 'b' }
+              ]
+            },
+            {
+              id: 'b',
+              header: 'Two',
+              question: 'Second?',
+              options: [
+                { label: 'C', description: 'c' },
+                { label: 'D', description: 'd' }
+              ]
+            }
+          ]
+        },
+        status: 'done',
+        startedAt: 29,
+        endedAt: 30
+      }
+    ])
+    expect(askingMany[0]?.title).toBe('2 questions requested')
   })
 })

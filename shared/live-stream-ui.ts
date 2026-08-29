@@ -5,12 +5,15 @@
  * `shouldPublishTurnMetaReset`：commit 不清 store 秒表，等 loading 关再整帧清空。
  * @see shared/ARCH.md
  */
+import { COMPACT_LIVE_STATUS } from './compact-activity'
 import type { AssistantMeta, TurnSegment } from './types'
 import {
   extractFinalContent,
   findLastSegment,
   thinkingPreviewFromSegments
 } from './turn-segments'
+
+export { COMPACT_LIVE_STATUS }
 
 /** 对话柱直播行当前可画内容（不含回合开关） */
 export interface LiveStreamUiSnapshot {
@@ -31,9 +34,6 @@ export interface LiveStreamUiSnapshot {
 export function shouldPublishTurnMetaReset(phase: 'commit' | 'clear'): boolean {
   return phase !== 'commit'
 }
-
-/** 官方桌面 compact 在对话里出现的压缩进度（对标 contextCompaction） */
-export const COMPACT_LIVE_STATUS = '正在压缩上下文…'
 
 /** `/compact` 开轮：一条进行中状态，写入直播 store */
 export function liveCompactStatusSegment(at: number): TurnSegment {

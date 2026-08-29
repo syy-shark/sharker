@@ -1,13 +1,14 @@
 /**
  * 上下文达 85% 阈值时自动压缩历史。
+ * 开轮直播状态用官方 Automatically compacting context。
  * 详见 shared/ARCH.md
  */
+import { AUTO_COMPACT_LIVE_STATUS } from './compact-activity'
 import type { AppSettings, ChatMessage } from './types'
 import { resolveContextLimit } from './context-limit'
 import { estimateContextUsage } from './token-estimate'
 
-/** 开轮自动压缩时直播状态（对标 Codex Automatically compacting context） */
-export const AUTO_COMPACT_LIVE_STATUS = '正在自动压缩上下文…'
+export { AUTO_COMPACT_LIVE_STATUS }
 
 /**
  * 可见对话柱要不要换成压缩后的历史。

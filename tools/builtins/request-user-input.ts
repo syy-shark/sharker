@@ -7,7 +7,7 @@ import type { ToolHandler } from '../types'
 
 export const requestUserInputTool: ToolHandler = {
   name: 'request_user_input',
-  title: '询问用户',
+  title: 'Question requested',
   async execute() {
     throw new Error('request_user_input must be answered in the client')
   }

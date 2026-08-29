@@ -2,7 +2,7 @@
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
  * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state（对标 Codex #22860）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
- * 开轮自动压缩不重写可见对话柱，只在直播行标「正在自动压缩上下文…」。
+ * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

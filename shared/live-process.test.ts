@@ -72,7 +72,7 @@ describe('live process seed', () => {
         ]
       }
     })
-    expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('等待选择'))).toBe(true)
+    expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '') === 'Scope')).toBe(true)
   })
 
 

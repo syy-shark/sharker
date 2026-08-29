@@ -233,13 +233,13 @@ describe('live stream ui snapshot', () => {
         turnStartedAt: 11
       })
     )
-    expect(compactSnap.liveSegments[0]?.content).toBe('正在压缩上下文…')
+    expect(compactSnap.liveSegments[0]?.content).toBe('Compacting context')
     expect(nextLiveProcessView(null, compactSnap).processForFlow[0]?.kind).toBe('status')
     const autoCompact = liveStreamPatchFromSegments(
       [{ id: 'auto', kind: 'status', content: AUTO_COMPACT_LIVE_STATUS, status: 'active', startedAt: 3 }],
       { streaming: '', activeTool: null, turnStartedAt: 3 }
     )
-    expect(autoCompact.liveSegments?.[0]?.content).toBe('正在自动压缩上下文…')
+    expect(autoCompact.liveSegments?.[0]?.content).toBe('Automatically compacting context')
     expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, autoCompact)).processForFlow[0]?.kind).toBe(
       'status'
     )

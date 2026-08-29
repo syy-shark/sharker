@@ -59,8 +59,9 @@ describe('request_user_input contract', () => {
       }
     })
     expect(serializeUserInputResponse(response)).toContain('"GraphQL"')
-    expect(summarizeUserInputRequest(parsed.questions)).toBe('2 个问题')
+    expect(summarizeUserInputRequest(parsed.questions)).toBe('2 questions requested')
     expect(summarizeUserInputRequest(parsed.questions.slice(0, 1))).toBe('API style')
+    expect(summarizeUserInputRequest([])).toBe('Question requested')
 
     const empty = parseRequestUserInput({ questions: [] })
     expect(empty.ok).toBe(false)

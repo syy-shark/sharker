@@ -57,7 +57,7 @@ const TOOL_TITLES: Record<string, string> = {
   mcp_call_tool: 'MCP 调用',
   open_url: '打开网页',
   present_inline_demo: '内联演示',
-  request_user_input: '询问用户',
+  request_user_input: 'Question requested',
   agent_spawn: '启动子 Agent',
   agent_send_message: '子 Agent 消息',
   agent_get_result: '子 Agent 结果',
@@ -148,7 +148,7 @@ export function buildProcessSteps(options: {
       steps.push({
         id: `compress-${i}`,
         kind: 'compress',
-        title: '压缩上下文',
+        title: 'Context automatically compacted',
         detail: a.label.includes('·') ? a.label.split('·')[1]?.trim() : undefined,
         status: 'done'
       })

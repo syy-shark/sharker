@@ -45,7 +45,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **复制为 Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供复制工作目录 / 会话 ID / 对话深链 |
 | `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义） |
-| `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示「正在压缩上下文…」（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
+| `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示 Compacting context（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
 | `/title` | `/rename` 别名 |
 | `/agent` | `/agents` 别名 |
@@ -203,7 +203,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `web_search` | DuckDuckGo Instant Answer；直播「Searching the web」/「Searched the web for …」（对标 Codex #9960 / #24693），过程区 title+url 来源花片（#32898）。不发明 find_in_page / web.run / 官方 search API |
 | `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
 | `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；工具一开始就占演示槽（未可绘先 96px 骨架叠在同一 iframe 上，可绘只换 srcDoc）；正文 ```demo 围栏未写完 `dem` / `viz` 就占同一 `demo-stream` 槽（不先当散文再跳；不认 ```diff / ```html / ```vim），开闭都挂 `InlineDemo`；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
-| `request_user_input` | 结构化提问（对标 Codex 桌面 Ask User / #41350）：1–3 题、每题 2–3 个互斥选项，客户端补 Other；输出 `{ answers: { [id]: { answers } } }`。Default 与计划模式都可用。输入框禁用并提示先回答。不发明选项备注（#37365）或分页问卷（#9926）。Stop 解开等待 |
+| `request_user_input` | 结构化提问（对标 Codex 桌面 Ask User / #41350）：1–3 题、每题 2–3 个互斥选项，客户端补 Other；输出 `{ answers: { [id]: { answers } } }`。过程行 Question requested / N questions requested / 第一题 header。Default 与计划模式都可用。输入框禁用并提示先回答。不发明选项备注（#37365）、分页问卷（#9926）或 TUI Questions n/n 历史格。Stop 解开等待 |
 | `update_plan` | 官方任务清单（对标 Codex `update_plan` / PlanUpdate）：`plan[].step` + `pending` / `in_progress` / `completed`，可选 `explanation`。工具结果固定 `Plan updated`，过程区画清单。不是计划模式，不发明 `/plan-model` 或底栏 Step N/5 徽章 |
 | MCP 工具调用 | 动态 `mcp_{server}__{tool}` 与 `mcp_call_tool`：直播头 Calling / Called `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。过程区不倾倒 JSON。不发明 Apps / node_repl / @Browser，也不把进行中标成已完成（#22300） |
 
@@ -279,7 +279,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 文本 XML 工具解析 | 弱模型输出的 `<tool_call>` / `<function=name>` 自动转 tool_calls |
 | 工作区快照 | 干活前注入 README、package.json、顶层目录 |
 | 网络模式 | open / local_only / disabled |
-| 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示「正在自动压缩上下文…」（对标 Codex Automatically compacting context），摘要完成再挂压缩步骤。自动压缩只缩模型上下文，不换可见对话柱（对标 Codex #33285 / #26583）；`/compact` 才收可见历史 |
+| 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示 Automatically compacting context（对标 Codex 桌面），摘要完成后过程行 Context automatically compacted。自动压缩只缩模型上下文，不换可见对话柱（对标 Codex #33285 / #26583）；`/compact` 才收可见历史 |
 | 短暂中断重连 | 首包前 429/502/503/504 与网络抖动最多重连 5 次，直播行显示「正在重新连接… n/5」（对标 Codex #37337 Turns reconnect）；已吐出正文 / 思考 / 工具参数后不重开，以免重复 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |

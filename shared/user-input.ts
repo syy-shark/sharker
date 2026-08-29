@@ -1,6 +1,7 @@
 /**
  * Codex 桌面 `request_user_input`（Ask User）契约：解析问题、补 Other、序列化答案。
- * 不发明选项备注（#37365）或分页问卷（#9926）。
+ * 直播过程标题用官方 Question requested / N questions requested / 第一题 header。
+ * 不发明选项备注（#37365）、分页问卷（#9926）或 TUI-only Questions n/n 历史格。
  * @see shared/ARCH.md
  */
 import type {
@@ -25,6 +26,12 @@ export const USER_INPUT_MAX_OPTIONS = 3
 
 /** 官方 header ≤12 字符 */
 export const USER_INPUT_HEADER_MAX = 12
+
+/** 官方通知摘要 grapheme 上限（TUI `user_input_request_summary`） */
+export const USER_INPUT_SUMMARY_MAX = 30
+
+/** 桌面通知：单题无摘要时的标题 */
+export const USER_INPUT_QUESTION_REQUESTED = 'Question requested'
 
 const OTHER_LABELS = new Set(['other', 'other:', 'none of the above', '其他', '其它'])
 
@@ -172,10 +179,28 @@ export function serializeUserInputResponse(response: UserInputResponse): string 
   return JSON.stringify(response)
 }
 
-/** 直播过程摘要：第一题 header 或题数 */
+function clipGraphemes(raw: string, max: number): string {
+  const text = raw.replace(/\s+/g, ' ').trim()
+  if (!text) return ''
+  const chars = [...text]
+  return chars.length > max ? chars.slice(0, max).join('') : text
+}
+
+/**
+ * 官方桌面/TUI 通知标题：单题用 header 或 question，多题 `N questions requested`。
+ * 不发明 TUI-only `Questions n/n answered` 历史格。
+ */
 export function summarizeUserInputRequest(questions: UserInputQuestion[]): string {
-  if (questions.length === 1) return questions[0]!.header
-  return `${questions.length} 个问题`
+  if (questions.length === 1) {
+    const question = questions[0]!
+    const summary = clipGraphemes(
+      question.header.trim() || question.question.trim(),
+      USER_INPUT_SUMMARY_MAX
+    )
+    return summary || USER_INPUT_QUESTION_REQUESTED
+  }
+  if (questions.length < 1) return USER_INPUT_QUESTION_REQUESTED
+  return `${questions.length} questions requested`
 }
 
 /**

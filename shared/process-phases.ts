@@ -3,6 +3,10 @@
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
+import {
+  formatCompactActivity,
+  isCompactActivityToolName
+} from './compact-activity'
 import { formatEditActivity, isEditActivityToolName } from './edit-activity'
 import { formatExecActivity, summarizeExecCommand } from './exec-activity'
 import {
@@ -13,6 +17,11 @@ import {
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
+import {
+  parseRequestUserInput,
+  REQUEST_USER_INPUT_TOOL,
+  summarizeUserInputRequest
+} from './user-input'
 
 function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
   for (let i = items.length - 1; i >= 0; i--) {
@@ -191,6 +200,14 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
         formatEditActivity(tool, segment.toolArgs, segment.toolDetail, segment.status, fileCount) ??
         base
       )
+    }
+    if (isCompactActivityToolName(tool)) {
+      return formatCompactActivity(segment.toolTitle || segment.content, segment.status)
+    }
+    if (tool === REQUEST_USER_INPUT_TOOL) {
+      const parsed = parseRequestUserInput(segment.toolArgs ?? {})
+      if (parsed.ok) return summarizeUserInputRequest(parsed.questions)
+      return summarizeUserInputRequest([])
     }
     if (tool === 'update_plan') {
       return formatUpdatePlanActivity(segment.toolArgs, segment.status)
@@ -377,6 +394,16 @@ function buildStepsFromSource(
             : 'done'
 
     const title = stepTitle(segment, phase)
+    if (
+      segment.kind === 'status' &&
+      segment.toolName === REQUEST_USER_INPUT_TOOL &&
+      steps.length > 0
+    ) {
+      const last = steps[steps.length - 1]!
+      if (last.segment.toolName === REQUEST_USER_INPUT_TOOL && last.title === title) {
+        continue
+      }
+    }
     let detail =
       segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
         ? cleanInlineText(

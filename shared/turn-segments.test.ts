@@ -74,13 +74,15 @@ describe('turn segment event state machine', () => {
         ]
       }
     })
-    expect(segments.some((s) => (s.content ?? '').includes('等待选择 · API style'))).toBe(true)
+    expect(segments.some((s) => (s.content ?? '') === 'API style' && s.status === 'active')).toBe(
+      true
+    )
     segments = applyStreamChunk(segments, {
       type: 'user_input_resolved',
       toolName: 'request_user_input',
       timestamp: 14
     })
-    expect(segments.some((s) => s.content === '已回答，继续')).toBe(true)
+    expect(segments.some((s) => s.content === 'API style' && s.status === 'done')).toBe(true)
     segments = applyStreamChunk(segments, {
       type: 'tool_done', toolName: 'write_file', toolCallId: 'write-1',
       toolStatus: 'error', error: '磁盘只读', timestamp: 20
@@ -124,10 +126,10 @@ describe('turn segment event state machine', () => {
     let compacting = applyStreamChunk([], { type: 'turn_start', timestamp: 1 })
     compacting = applyStreamChunk(compacting, {
       type: 'status',
-      content: '正在自动压缩上下文…',
+      content: 'Automatically compacting context',
       timestamp: 2
     })
-    expect(compacting[0]?.content).toBe('正在自动压缩上下文…')
+    expect(compacting[0]?.content).toBe('Automatically compacting context')
     expect(compacting[0]?.status).toBe('active')
     let reconnecting = applyStreamChunk([], { type: 'turn_start', timestamp: 1 })
     reconnecting = applyStreamChunk(reconnecting, {
@@ -149,7 +151,14 @@ describe('turn segment event state machine', () => {
       }
     })
     expect(compacting[0]?.status).toBe('done')
-    expect(compacting.some((s) => s.toolName === 'compress' && s.status === 'done')).toBe(true)
+    expect(
+      compacting.some(
+        (s) =>
+          s.toolName === 'compress' &&
+          s.status === 'done' &&
+          s.toolTitle === 'Context automatically compacted'
+      )
+    ).toBe(true)
   })
 
   it('does not mutate previous segment objects when appending tokens', () => {
