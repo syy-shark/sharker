@@ -30,6 +30,15 @@ export interface LiveProcessView {
   answerStreaming: boolean
 }
 
+/** 时间线切片：不含 thinkText，思考 token 不抬 TurnFlow */
+export interface LiveProcessTimeline {
+  processForFlow: TurnSegment[]
+  contentStreaming: boolean
+  generatingDemo: boolean
+  answerStreaming: boolean
+  hasThought: boolean
+}
+
 /** 直播回答槽：闭合块与增长尾分开，已画正文不跟 token 重挂 */
 export interface LiveAnswerView {
   parts: AnswerPart[]
@@ -208,6 +217,26 @@ function sameProcessView(prev: LiveProcessView, next: LiveProcessView): boolean 
   )
 }
 
+function sameProcessTimeline(prev: LiveProcessTimeline, next: LiveProcessTimeline): boolean {
+  return (
+    prev.processForFlow === next.processForFlow &&
+    prev.contentStreaming === next.contentStreaming &&
+    prev.generatingDemo === next.generatingDemo &&
+    prev.answerStreaming === next.answerStreaming &&
+    prev.hasThought === next.hasThought
+  )
+}
+
+function timelineFromProcessView(view: LiveProcessView): LiveProcessTimeline {
+  return {
+    processForFlow: view.processForFlow,
+    contentStreaming: view.contentStreaming,
+    generatingDemo: view.generatingDemo,
+    answerStreaming: view.answerStreaming,
+    hasThought: Boolean(view.thinkText.trim())
+  }
+}
+
 /** 过程切片：正文增长且工具引用没变时退回 prev，不重跑 buildAnswerParts */
 export function nextLiveProcessView(
   prev: LiveProcessView | null,
@@ -277,6 +306,23 @@ export function nextLiveProcessView(
     answerTailPlain: liveAnswerTailIsPlain(segments)
   }
   return view
+}
+
+/** 同一帧快照只派生一次过程视图 */
+export function liveProcessViewFromSnap(snap: LiveStreamUiSnapshot): LiveProcessView {
+  return nextLiveProcessView(processHold?.view ?? null, snap)
+}
+
+/**
+ * 时间线切片：思考原文加长时退回 prev，不抬 TurnFlow。
+ * 对标 Codex #22860：默认折叠的 Thinking 不跟 token 重挂步骤。
+ */
+export function nextLiveProcessTimeline(
+  prev: LiveProcessTimeline | null,
+  snap: LiveStreamUiSnapshot
+): LiveProcessTimeline {
+  const next = timelineFromProcessView(liveProcessViewFromSnap(snap))
+  return prev && sameProcessTimeline(prev, next) ? prev : next
 }
 
 /** 末段是增长中的回答正文时可以只换 tail，不必切出前缀数组 */

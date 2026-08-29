@@ -1,6 +1,6 @@
 /**
  * 直播助手行：过程与回答分开订 store 切片。
- * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts，过程时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
+ * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'
@@ -15,8 +15,9 @@ import { FilesChangedCard } from './FilesChangedCard'
 import {
   liveAnswerViewFromSnap,
   nextLiveAnswerActions,
-  nextLiveProcessView,
-  type LiveAnswerView
+  nextLiveProcessTimeline,
+  type LiveAnswerView,
+  type LiveProcessTimeline
 } from '../../shared/live-stream-slices'
 import { getLiveStreamUi, useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { InlineApproval } from './InlineApproval'
@@ -45,7 +46,9 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   messageId: string
   onNeedFullMessage?: (messageId: string) => void
 }) {
-  const view = useLiveStreamUiSelect((snap, prev) => nextLiveProcessView(prev ?? null, snap))
+  const view = useLiveStreamUiSelect((snap, prev: LiveProcessTimeline | undefined) =>
+    nextLiveProcessTimeline(prev ?? null, snap)
+  )
   return (
     <div className="assistant-process-below assistant-process-below--live-top">
       <div className="turn-flow-live-panel">
@@ -54,7 +57,8 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
           isStreaming
           liveStartedAt={liveStartedAt}
           approvalWaiting={approvalWaiting}
-          thinkText={view.thinkText}
+          liveThought
+          hasThought={view.hasThought}
           contentStreaming={view.contentStreaming}
           generatingDemo={view.generatingDemo}
           answerStreaming={view.answerStreaming}

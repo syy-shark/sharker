@@ -12,6 +12,8 @@
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { liveProcessViewFromSnap } from '../../shared/live-stream-slices'
+import { useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { ChevronDown } from 'lucide-react'
 import { LiveDuration } from './LiveDuration'
@@ -77,6 +79,10 @@ interface Props {
   answerStreaming?: boolean
   /** 完整 thinking 原文（可来自未过滤的 live segments） */
   thinkText?: string
+  /** 直播：思考旁白另订 store，不把 thinkText 传进时间线 */
+  liveThought?: boolean
+  /** 直播：已有思考原文（布尔，思考 token 不变） */
+  hasThought?: boolean
   /** 正文或内联演示已开始上屏：收起思考，避免和真内容抢位置 */
   contentStreaming?: boolean
   /** 正在生成内联演示（工具已启动，即使尚未可绘） */
@@ -322,7 +328,7 @@ export function ThoughtDisclosure({
   loading?: boolean
 }) {
   const bodyRef = useRef<HTMLDivElement>(null)
-  const body = liveThoughtBody(text)
+  const body = open ? liveThoughtBody(text) : ''
   useLayoutEffect(() => {
     if (!open || !streaming) return
     const el = bodyRef.current
@@ -373,6 +379,33 @@ export function ThoughtDisclosure({
     </div>
   )
 }
+
+/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线 */
+const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
+  asLiveHead,
+  elapsed
+}: {
+  asLiveHead: boolean
+  elapsed?: ReactNode
+}) {
+  const text = useLiveStreamUiSelect((snap) => liveProcessViewFromSnap(snap).thinkText)
+  const [open, setOpen] = useState(false)
+  const userRef = useRef(false)
+  const expanded = userRef.current ? open : false
+  return (
+    <ThoughtDisclosure
+      text={text}
+      open={expanded}
+      onToggle={() => {
+        userRef.current = true
+        setOpen((current) => !current)
+      }}
+      label={formatThoughtLabel(asLiveHead)}
+      elapsed={asLiveHead ? elapsed : undefined}
+      streaming={asLiveHead}
+    />
+  )
+})
 
 function toolOutputSummaryLabel(clipped: boolean, deferred: boolean): string {
   if (deferred) return '查看输出'
@@ -664,6 +697,8 @@ export const TurnFlow = memo(function TurnFlow({
   approvalWaiting = false,
   answerStreaming = false,
   thinkText,
+  liveThought = false,
+  hasThought = false,
   contentStreaming = false,
   generatingDemo = false,
   onOpenSubAgent,
@@ -773,9 +808,9 @@ export const TurnFlow = memo(function TurnFlow({
       (chronological.length === 0 || onlyMeta)
   )
 
-  const rawThinkText = thinkText ?? liveThinkingText(segments)
-  const thoughtBody = liveThoughtBody(rawThinkText)
-  const hasThought = Boolean(thoughtBody)
+  const rawThinkText = thinkText ?? (liveThought ? '' : liveThinkingText(segments))
+  const thoughtBody = liveThought ? '' : liveThoughtBody(rawThinkText)
+  const hasThoughtBody = liveThought ? hasThought : Boolean(thoughtBody)
   const thoughtBusy = Boolean(
     isStreaming &&
       !approvalWaiting &&
@@ -886,7 +921,7 @@ export const TurnFlow = memo(function TurnFlow({
       s.status === 'error' ||
       Boolean(s.source?.segment.approval)
   )
-  const thoughtAsLiveHead = Boolean(isStreaming && thoughtBusy && hasThought)
+  const thoughtAsLiveHead = Boolean(isStreaming && thoughtBusy && hasThoughtBody)
   const pinnedSteps = listSteps.filter(
     (step) => step.status === 'error' || Boolean(step.source?.segment.approval)
   )
@@ -916,7 +951,7 @@ export const TurnFlow = memo(function TurnFlow({
       !showWorkedChip &&
       (!contentStreaming || listSteps.length > 0 || approvalWaiting)
   )
-  const showThought = Boolean(hasThought && isStreaming)
+  const showThought = Boolean(hasThoughtBody && isStreaming)
 
   return (
     <div
@@ -933,17 +968,21 @@ export const TurnFlow = memo(function TurnFlow({
       aria-busy={isStreaming || undefined}
     >
       {showThought ? (
-        <ThoughtDisclosure
-          text={rawThinkText}
-          open={thoughtExpanded}
-          onToggle={() => {
-            userThoughtRef.current = true
-            setThoughtOpen(!thoughtExpanded)
-          }}
-          label={formatThoughtLabel(thoughtAsLiveHead)}
-          elapsed={thoughtAsLiveHead ? liveClock : undefined}
-          streaming={thoughtAsLiveHead}
-        />
+        liveThought ? (
+          <LiveThoughtFromStore asLiveHead={thoughtAsLiveHead} elapsed={liveClock} />
+        ) : (
+          <ThoughtDisclosure
+            text={rawThinkText}
+            open={thoughtExpanded}
+            onToggle={() => {
+              userThoughtRef.current = true
+              setThoughtOpen(!thoughtExpanded)
+            }}
+            label={formatThoughtLabel(thoughtAsLiveHead)}
+            elapsed={thoughtAsLiveHead ? liveClock : undefined}
+            streaming={thoughtAsLiveHead}
+          />
+        )
       ) : null}
       {showLiveHead ? (
         <div className="turn-flow-live-head">

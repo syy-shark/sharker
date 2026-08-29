@@ -23,6 +23,7 @@ import {
   nextLiveThinkText,
   nextLiveAnswerActions,
   nextLiveAnswerView,
+  nextLiveProcessTimeline,
   nextLiveProcessView,
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
@@ -156,6 +157,11 @@ describe('live stream ui snapshot', () => {
     expect(thinkingGrown.processForFlow).toBe(thinkingFirst.processForFlow)
     expect(thinkingGrown.thinkText).toBe('Hmm more')
     expect(thinkingGrown).not.toBe(thinkingFirst)
+    const thinkSnap1 = { ...EMPTY_LIVE_STREAM_UI, liveSegments: [think('Hmm')] }
+    const thinkSnap2 = { ...EMPTY_LIVE_STREAM_UI, liveSegments: [think('Hmm more')] }
+    const timelineFirst = nextLiveProcessTimeline(null, thinkSnap1)
+    expect(nextLiveProcessTimeline(timelineFirst, thinkSnap2)).toBe(timelineFirst)
+    expect(timelineFirst.hasThought).toBe(true)
     expect(
       shouldSkipLiveProcessIdentity({
         prev: thinkingFirst,
