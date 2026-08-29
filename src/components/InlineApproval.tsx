@@ -88,7 +88,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
           <AlertTriangle size={17} strokeWidth={1.9} />
         </span>
         <div className="inline-approval__title-wrap">
-          <span className="inline-approval__eyebrow">需要确认</span>
+          <span className="inline-approval__eyebrow">Awaiting approval</span>
           <h3 id={titleId}>{request.title}</h3>
         </div>
       </div>

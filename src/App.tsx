@@ -7251,7 +7251,7 @@ export default function App() {
           {
             id: `debug-status-wait-${now}`,
             kind: 'status',
-            content: '等待确认 · 高危操作',
+            content: 'Awaiting approval · 高危操作',
             status: 'active',
             startedAt: now
           }
@@ -7516,7 +7516,7 @@ export default function App() {
             {
               id: `debug-status-wait-${now}`,
               kind: 'status',
-              content: '等待确认 · 高危操作',
+              content: 'Awaiting approval · 高危操作',
               status: 'active',
               startedAt: now
             }

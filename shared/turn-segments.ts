@@ -5,6 +5,7 @@
  */
 import { formatCompactActivity } from './compact-activity'
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
+import { formatAwaitingApprovalLabel, isAwaitingApprovalText } from './live-display'
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
 import { REQUEST_USER_INPUT_TOOL, summarizeUserInputRequest } from './user-input'
@@ -646,19 +647,22 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         segment.toolName === chunk.approval?.toolName
     )
     if (activeIndex >= 0) writeSegmentAt(next, activeIndex).approval = chunk.approval
-    // 显式状态步：直播区即使工具标题被折叠，也能看到“等待确认”
+    // 显式状态步：直播区即使工具标题被折叠，也能看到 Awaiting approval
     const lastIndex = next.length - 1
     const last = next[lastIndex]
+    const approvalLabel = formatAwaitingApprovalLabel(
+      chunk.approval.title || chunk.approval.toolName
+    )
     if (last?.kind === 'status' && last.status === 'active') {
       const written = writeSegmentAt(next, lastIndex)
-      written.content = `等待确认 · ${chunk.approval.title || chunk.approval.toolName}`
+      written.content = approvalLabel
       written.toolName = chunk.approval.toolName
       written.toolTitle = toolTitle(chunk.approval.toolName)
     } else {
       next.push({
         id: `status-approval-${timestamp}`,
         kind: 'status',
-        content: `等待确认 · ${chunk.approval.title || chunk.approval.toolName}`,
+        content: approvalLabel,
         toolName: chunk.approval.toolName,
         toolTitle: toolTitle(chunk.approval.toolName),
         status: 'active',
@@ -680,7 +684,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       if (
         s.kind === 'status' &&
         s.status === 'active' &&
-        (s.content ?? '').includes('等待确认')
+        isAwaitingApprovalText(s.content ?? '')
       ) {
         const written = writeSegmentAt(next, i)
         written.status = 'done'

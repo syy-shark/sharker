@@ -50,7 +50,7 @@ describe('live process seed', () => {
         args: { command: 'rm -rf /tmp/x' }
       }
     })
-    expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('等待确认'))).toBe(true)
+    expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('Awaiting approval'))).toBe(true)
     const model = deriveProcessPhases(segments, { isStreaming: true })
     expect(model.groups.some((g) => g.state === 'active')).toBe(true)
     segments = applyStreamChunk(segments, {

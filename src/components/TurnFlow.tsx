@@ -25,6 +25,7 @@ import {
   formatElapsedClock,
   formatThoughtLabel,
   formatWorkedForLabel,
+  AWAITING_APPROVAL_LABEL,
   THINKING_LABEL,
   liveThoughtBody,
   liveThinkingText,
@@ -227,10 +228,9 @@ function visibleSteps(steps: ProcessPhaseStep[], isStreaming: boolean): ProcessP
 }
 
 function toDisplayStep(step: ProcessPhaseStep): DisplayStep {
-  const waitingApproval = Boolean(step.segment.approval) && step.status === 'active'
   return {
     id: step.id,
-    title: waitingApproval ? `等待确认 · ${step.title}` : step.title,
+    title: step.title,
     detail: step.detail,
     status: step.status,
     kind: step.kind,
@@ -241,7 +241,7 @@ function toDisplayStep(step: ProcessPhaseStep): DisplayStep {
 /**
  * 最终展示用步骤列表。
  * 直播头取最后一项实质步骤，不把「规划下一步 / 生成回答中」顶上来闪头
- * （对标 Codex flashing thinking summaries）。无步骤的审批仍合成等待确认。
+ * （对标 Codex flashing thinking summaries）。无步骤的审批仍合成 Awaiting approval。
  */
 function buildDisplaySteps(options: {
   steps: ProcessPhaseStep[]
@@ -264,8 +264,7 @@ function buildDisplaySteps(options: {
   if (shouldPromoteSyntheticLiveHead('approval') && approvalWaiting && display.length === 0) {
     display.push({
       id: 'synthetic-approval',
-      title: '等待确认',
-      detail: '高危操作需要你确认后才能继续',
+      title: AWAITING_APPROVAL_LABEL,
       status: 'active',
       kind: 'synthetic'
     })
@@ -800,7 +799,7 @@ export const TurnFlow = memo(function TurnFlow({
     steps: displaySteps,
     approvalWaiting,
     fallbackLabel: approvalWaiting
-      ? '等待确认'
+      ? AWAITING_APPROVAL_LABEL
       : generatingAnswer
         ? '生成回答中'
         : generatingDemo
@@ -816,7 +815,7 @@ export const TurnFlow = memo(function TurnFlow({
   let liveDetail: string | undefined
   if (isStreaming) {
     if (approvalWaiting) {
-      liveDetail = liveHead.detail || '需要确认后继续'
+      liveDetail = liveHead.detail
     } else if (headStep?.kind === 'tool' && headStep.detail?.trim()) {
       liveDetail = headStep.detail
     } else if (headStep?.kind === 'narration' && headStep.detail?.trim()) {

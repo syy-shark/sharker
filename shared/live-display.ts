@@ -209,10 +209,9 @@ export function buildLiveHead(options: {
 }): LiveHead {
   const step = selectLiveHeadStep(options.steps)
   if (options.approvalWaiting) {
-    const title = step?.title?.startsWith('等待确认') ? step.title : '等待确认'
     return {
-      label: title,
-      detail: '高危操作需要你确认后才能继续',
+      label: AWAITING_APPROVAL_LABEL,
+      detail: undefined,
       step
     }
   }
@@ -249,7 +248,7 @@ export function shouldSynthesizePlanning(options: {
  * 合成步骤要不要顶掉直播头。
  * 规划 / 生成回答只用来关掉思考占位，不把头闪成「规划下一步」（对标 Codex
  * changelog「flashing thinking summaries」与 #8204 工具间隙不闪 Working）。
- * 审批没有真实步骤时仍要露出「等待确认」。
+ * 审批没有真实步骤时仍要露出 Awaiting approval。
  */
 export function shouldPromoteSyntheticLiveHead(
   kind: 'planning' | 'answer' | 'approval'
@@ -340,6 +339,18 @@ export const THOUGHT_LABEL = 'Thought'
 
 export function formatThoughtLabel(streaming: boolean): string {
   return streaming ? THINKING_LABEL : THOUGHT_LABEL
+}
+
+/** 官方审批直播头：Awaiting approval（仍认旧「等待确认」） */
+export const AWAITING_APPROVAL_LABEL = 'Awaiting approval'
+
+export function isAwaitingApprovalText(text: string): boolean {
+  return /等待确认|Awaiting approval/i.test(String(text || ''))
+}
+
+export function formatAwaitingApprovalLabel(suffix?: string): string {
+  const extra = String(suffix || '').trim()
+  return extra ? `${AWAITING_APPROVAL_LABEL} · ${extra}` : AWAITING_APPROVAL_LABEL
 }
 
 /** 对标 Codex “You stopped after 47m 28s” / “You stopped after 0s”，保留分秒 */

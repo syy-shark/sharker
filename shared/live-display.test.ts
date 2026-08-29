@@ -5,6 +5,7 @@ import {
   formatElapsedClock,
   formatStoppedAfterClock,
   formatStoppedAfterLabel,
+  AWAITING_APPROVAL_LABEL,
   formatThoughtLabel,
   formatWorkedForLabel,
   parseStoppedAfterSeconds,
@@ -80,6 +81,12 @@ describe('live display head', () => {
     })
     expect(head.label).toBe('正在准备列出目录')
     expect(head.detail).toBe('src')
+    expect(
+      buildLiveHead({
+        steps: [{ id: 'a', title: '等待确认 · 高危操作', status: 'active' }],
+        approvalWaiting: true
+      }).label
+    ).toBe(AWAITING_APPROVAL_LABEL)
   })
 
   it('does not synthesize planning while preparing next tool', () => {
