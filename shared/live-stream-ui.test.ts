@@ -390,6 +390,32 @@ describe('live stream ui snapshot', () => {
       toolDetail: 'src/b.ts'
     }
     expect(isLiveToolAppendChange([hello, ran], [hello, ran, nextCmd])).toBe(true)
+    const nextGrep: TurnSegment = {
+      id: 'run-3',
+      kind: 'tool',
+      toolName: 'grep',
+      status: 'active',
+      toolDetail: 'foo'
+    }
+    expect(isLiveToolAppendChange([hello, ran], [hello, ran, nextCmd, nextGrep])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, nextCmd, nextGrep])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, ran],
+        segments: [hello, ran, nextCmd, nextGrep]
+      })
+    ).toBe(true)
+    const processReadyForParallel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const processAfterParallel = nextLiveProcessView(processReadyForParallel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextCmd, nextGrep]
+    })
+    expect(processAfterParallel.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
+    expect(processAfterParallel.processForFlow.some((segment) => segment === nextGrep)).toBe(true)
     expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextCmd])).toBe('tool')
     expect(

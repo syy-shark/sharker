@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文/无新写盘的工具时新工具只追加末步并封回答尾（同一 16ms 里 complete_call + add_call 也走这条）、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start 也走这条，不发明 Exploring 分组格）、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -158,21 +158,23 @@ export function findLiveClosedAnswerText(
   return null
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开工具：只追加过程步（对标 Codex exec_cell complete_call + add_call） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具：只追加过程步（对标 Codex exec_cell complete_call + add_call；只读并行一次 yield 多个 tool_start，不发明 Exploring 分组格） */
 export function isLiveToolAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
-  if (!prev || next.length !== prev.length + 1) return false
-  const added = next[next.length - 1]
-  if (
-    !added ||
-    added.kind !== 'tool' ||
-    added.status !== 'active' ||
-    !added.toolName ||
-    added.toolName === 'present_inline_demo'
-  ) {
-    return false
+  if (!prev || next.length <= prev.length) return false
+  for (let i = prev.length; i < next.length; i++) {
+    const added = next[i]
+    if (
+      !added ||
+      added.kind !== 'tool' ||
+      added.status !== 'active' ||
+      !added.toolName ||
+      added.toolName === 'present_inline_demo'
+    ) {
+      return false
+    }
   }
   for (let i = 0; i < prev.length; i++) {
     const before = prev[i]
@@ -905,9 +907,9 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     isLiveToolAppendChange(processHold.segments, segments)
   ) {
-    const added = segments[segments.length - 1]!
+    const added = segments.slice(processHold.segments.length)
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
-    const view = { ...prev, processForFlow: [...remapped, added] }
+    const view = { ...prev, processForFlow: [...remapped, ...added] }
     processHold = {
       view,
       identity: liveProcessIdentity(segments),

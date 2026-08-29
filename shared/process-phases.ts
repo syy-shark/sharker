@@ -583,7 +583,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开工具或 status：只追加一步；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell complete_call + add_call / Reconnecting... n/5 / Awaiting approval / request_user_input） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具或一条 status：只追加这些步；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -600,7 +600,7 @@ export function appendProcessPhaseStepOnToolStart(
   ) {
     return null
   }
-  const grew = Boolean(prevSegments && segments.length === prevSegments.length + 1)
+  const grew = Boolean(prevSegments && segments.length > prevSegments.length)
   const remapped = prevSteps.map((step) => {
     const index = prevSegments!.indexOf(step.segment)
     if (index < 0) return step
@@ -623,11 +623,14 @@ export function appendProcessPhaseStepOnToolStart(
     }
     return prevSteps
   }
-  const added = segments[segments.length - 1]
-  if (!added) return remapped
-  const built = buildStepsFromSource([added], isStreaming)[0]
-  if (!built) return remapped
-  return [...remapped, built]
+  const extras = segments.slice(prevSegments!.length)
+  const built: ProcessPhaseStep[] = []
+  for (const extra of extras) {
+    const step = buildStepsFromSource([extra], isStreaming)[0]
+    if (step) built.push(step)
+  }
+  if (!built.length) return remapped
+  return [...remapped, ...built]
 }
 
 /** 前缀没变或只收束思考/status、末尾新开思考/散文/演示，或演示 HTML 增长：时间线不追加该步（旁白 / 回答 / 演示槽另订） */

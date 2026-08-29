@@ -149,6 +149,26 @@ describe('process phases privacy', () => {
     expect(appended).toHaveLength(2)
     expect(appended![0]).toBe(doneRetargeted![0])
     expect(appended![1].segment).toBe(cmdNext)
+    const cmdGrep: TurnSegment = {
+      id: 'grep1',
+      kind: 'tool',
+      toolName: 'grep',
+      toolTitle: '搜索',
+      toolDetail: 'foo',
+      status: 'active',
+      startedAt: 9.5
+    }
+    const parallelAppended = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, cmdNext, cmdGrep],
+      true
+    )
+    expect(parallelAppended).not.toBeNull()
+    expect(parallelAppended).toHaveLength(3)
+    expect(parallelAppended![0]).toBe(doneRetargeted![0])
+    expect(parallelAppended![1].segment).toBe(cmdNext)
+    expect(parallelAppended![2].segment).toBe(cmdGrep)
     const settleAndAppend = appendProcessPhaseStepOnToolStart(
       cmdSteps,
       [cmdRunning],
