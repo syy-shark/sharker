@@ -2,6 +2,7 @@
  * 直播 token / 回合元信息快照：引用没变则复用同一对象，供外部 store 订阅。
  * 工具心跳只换 meta / 秒表，不抬 ChatView（对标 Codex #22860）。
  * `liveStreamPatchFromSegments` 给 DEV seed / 开轮准备中 / 收束与中止一次写齐片段与秒表。
+ * `shouldPublishTurnMetaReset`：commit 不清 store 秒表，等 loading 关再整帧清空。
  * @see shared/ARCH.md
  */
 import type { AssistantMeta, TurnSegment } from './types'
@@ -21,6 +22,14 @@ export interface LiveStreamUiSnapshot {
   liveTurnMeta: AssistantMeta | null
   turnStartedAt: number | null
   turnHadThinking: boolean
+}
+
+/**
+ * 收束 commit 时先留着直播行的秒表 / 元信息；
+ * `loading` 关闭后的 `resetLiveStreamUi` 再整帧清空（对标 Codex #37849）。
+ */
+export function shouldPublishTurnMetaReset(phase: 'commit' | 'clear'): boolean {
+  return phase !== 'commit'
 }
 
 /** 空闲快照：收束 / 切走对话后写回 */

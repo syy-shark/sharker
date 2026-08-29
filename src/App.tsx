@@ -74,7 +74,7 @@ import {
   stepThinkingLevel
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
-import { liveStreamPatchFromSegments } from '../shared/live-stream-ui'
+import { liveStreamPatchFromSegments, shouldPublishTurnMetaReset } from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
@@ -1245,11 +1245,12 @@ export default function App() {
     publishLiveStreamUi({ liveTurnMeta: reused })
   }, [])
 
-  /** 清空本轮助手元信息 */
-  const resetTurnMeta = useCallback(() => {
+  /** 清空本轮助手元信息。commit 只清 ref，避免直播行秒表先塌再换历史行。 */
+  const resetTurnMeta = useCallback((phase: 'commit' | 'clear' = 'clear') => {
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     turnChangedPathsRef.current = []
     liveTurnMetaRef.current = null
+    if (!shouldPublishTurnMetaReset(phase)) return
     publishLiveStreamUi({ liveTurnMeta: null, turnStartedAt: null })
   }, [])
 
@@ -1617,7 +1618,7 @@ export default function App() {
         // segments 先保留 finalized，等 done 收尾再清
         setStreaming('')
         setTurnThinking('')
-        resetTurnMeta()
+        resetTurnMeta('commit')
       } else if (targetId) {
         const buf = sessionBuffersRef.current.get(targetId)
         if (buf) {

@@ -4,7 +4,8 @@ import {
   EMPTY_LIVE_STREAM_UI,
   liveStreamPatchFromSegments,
   nextLiveStreamUi,
-  sameLiveStreamUi
+  sameLiveStreamUi,
+  shouldPublishTurnMetaReset
 } from './live-stream-ui'
 import {
   nextLiveAnswerActions,
@@ -211,5 +212,7 @@ describe('live stream ui snapshot', () => {
     expect(doneSnap.turnStartedAt).toBe(42)
     expect(nextLiveAnswerView(null, doneSnap).copyable).toBe('Hello world')
     expect(nextLiveProcessView(null, doneSnap).processForFlow[0]).toBe(doneSegs[0])
+    expect(shouldPublishTurnMetaReset('commit')).toBe(false)
+    expect(shouldPublishTurnMetaReset('clear')).toBe(true)
   })
 })
