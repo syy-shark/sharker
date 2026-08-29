@@ -12,6 +12,7 @@ interface Props {
   onChangePrimary: (workspaceId: string) => void
   onAddExtra: (workspaceId: string) => void
   onRemoveExtra: (workspaceId: string, folder: string) => void
+  onPromoteExtra: (workspaceId: string, folder: string) => void
 }
 
 /** 主文件夹 + 附加文件夹。Git / AGENTS.md / Skill 仍走主路径。 */
@@ -20,7 +21,8 @@ export function ProjectFoldersDialog({
   onClose,
   onChangePrimary,
   onAddExtra,
-  onRemoveExtra
+  onRemoveExtra,
+  onPromoteExtra
 }: Props) {
   useEffect(() => {
     if (!workspace) return
@@ -47,7 +49,7 @@ export function ProjectFoldersDialog({
       >
         <div className="project-folders-head">
           <h2 id="project-folders-title">编辑项目</h2>
-          <p>新对话、Git、AGENTS.md 与 Skill 用主文件夹。附加文件夹可供搜索与读写。</p>
+          <p>新对话、Git、AGENTS.md 与 Skill 用主文件夹。附加文件夹可供搜索与读写，也可设为主文件夹。</p>
         </div>
         <div className="project-folders-block">
           <span className="project-folders-label">主文件夹</span>
@@ -69,6 +71,11 @@ export function ProjectFoldersDialog({
               {(workspace.extraPaths ?? []).map((folder) => (
                 <li key={folder} className="project-folders-row">
                   <code title={folder}>{folder}</code>
+                  {workspace.isHome ? null : (
+                    <button type="button" onClick={() => onPromoteExtra(workspace.id, folder)}>
+                      设为主文件夹
+                    </button>
+                  )}
                   <button type="button" onClick={() => onRemoveExtra(workspace.id, folder)}>
                     移除
                   </button>

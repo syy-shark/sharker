@@ -46,6 +46,6 @@
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降）；直播未可绘先 96px 骨架叠在同一 iframe 上，可绘只换 srcDoc 不卸壳；首帧用声明高度 / 块数估高并缓存实测，避免 48px 猛涨把直播贴底顶跳 |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |
-| `ProjectFoldersDialog.tsx` / `.css` | 编辑项目：主文件夹 + 附加文件夹（对标 Codex Edit project）；Git / AGENTS.md / Skill 仍走主路径 |
+| `ProjectFoldersDialog.tsx` / `.css` | 编辑项目：主文件夹 + 附加文件夹（对标 Codex Edit project）；附加夹可「设为主文件夹」，旧主路径留下；Git / AGENTS.md / Skill 仍走主路径 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
 | `ARCH.md` | 本层架构说明 |

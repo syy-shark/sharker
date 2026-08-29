@@ -42,3 +42,28 @@ export function workspaceAccessRoots(primary: string, extras: unknown): string[]
   const extra = normalizeExtraFolderPaths(main, extras)
   return main ? [main, ...extra] : extra
 }
+
+/**
+ * 把已附加的文件夹升为主文件夹，旧主路径落到附加列表（对标 Codex Make primary）。
+ * 目标不在附加列表、或不是可用绝对路径时原样返回。
+ */
+export function promoteExtraFolderToPrimary(
+  primary: string,
+  extras: unknown,
+  folder: string
+): { path: string; extraPaths: string[] } {
+  const current = normalizeFolderPath(primary)
+  const target = normalizeFolderPath(folder)
+  const extra = normalizeExtraFolderPaths(current, extras)
+  if (!isUsableFolderPath(target)) return { path: current, extraPaths: extra }
+  if (target.toLowerCase() === current.toLowerCase()) {
+    return { path: current, extraPaths: extra }
+  }
+  if (!extra.some((path) => path.toLowerCase() === target.toLowerCase())) {
+    return { path: current, extraPaths: extra }
+  }
+  return {
+    path: target,
+    extraPaths: normalizeExtraFolderPaths(target, [current, ...extra])
+  }
+}

@@ -59,7 +59,7 @@ import {
   pickActiveWorkspaceId,
   withActiveWorkspace
 } from '../shared/workspace'
-import { normalizeExtraFolderPaths } from '../shared/workspace-folders'
+import { normalizeExtraFolderPaths, promoteExtraFolderToPrimary } from '../shared/workspace-folders'
 import { knownModelsForProvider } from '../shared/provider-catalog'
 import {
   defaultThinkingLevel,
@@ -3679,6 +3679,13 @@ export default function App() {
     })
   }
 
+  const handlePromoteProjectExtraFolder = async (id: string, folder: string) => {
+    const item = settingsRef.current.workspaces.find((w) => w.id === id)
+    if (!item) return
+    const next = promoteExtraFolderToPrimary(item.path, item.extraPaths, folder)
+    await patchWorkspaceItem(id, { path: next.path, extraPaths: next.extraPaths })
+  }
+
   /** 聊天 ↔ 设置页导航 */
   const handleNavigate = async (targetPage: AppPage, tab?: SettingsTab) => {
     if (page === 'settings' && targetPage !== 'settings') {
@@ -6710,6 +6717,7 @@ export default function App() {
           onChangePrimary={(id) => void handleChangeProjectPrimary(id)}
           onAddExtra={(id) => void handleAddProjectExtraFolder(id)}
           onRemoveExtra={(id, folder) => void handleRemoveProjectExtraFolder(id, folder)}
+          onPromoteExtra={(id, folder) => void handlePromoteProjectExtraFolder(id, folder)}
         />
         <FeedbackDialog
           open={feedbackOpen}

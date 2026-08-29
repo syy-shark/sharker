@@ -59,6 +59,7 @@
 .project-folders-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 0 0 6px;
 }
