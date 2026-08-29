@@ -5,6 +5,7 @@
  * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
+import { chatMathSource, readChatMath } from './chat-math'
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
 
 /** 已闭合、可用稳定 key 渲染的 Markdown 块 */
@@ -341,6 +342,7 @@ export type CheapInlineNode =
   | { type: 'image'; alt: string; href: string; title?: string; raw?: string; label?: string }
   | { type: 'file'; text: string; path: string; line?: number; column?: number }
   | { type: 'fn'; id: string; raw?: string }
+  | { type: 'math'; tex: string; display: boolean; fence: '$$' | 'square' | 'paren' }
   | { type: 'br' }
 
 /** 直播列表项：可挂一层或多层嵌套列表；松散项额外段落对标 remark `li>p` */
@@ -827,6 +829,7 @@ function flattenCheapInlineText(nodes: CheapInlineNode[]): string {
       }
       if (node.type === 'image') return node.alt
       if (node.type === 'file') return node.text
+      if (node.type === 'math') return node.tex
       if ('text' in node) return node.text
       return ''
     })
@@ -943,6 +946,13 @@ export function parseCheapInlineMarkdown(
     buf = ''
   }
   while (i < src.length) {
+    const math = readChatMath(src, i)
+    if (math) {
+      flush()
+      nodes.push({ type: 'math', tex: math.tex, display: math.display, fence: math.fence })
+      i = math.end
+      continue
+    }
     if (src[i] === '\\' && i + 1 < src.length && /[\\`*_{}[\]()#+\-.!<>~|]/.test(src[i + 1]!)) {
       buf += src[i + 1]
       i += 2
@@ -1510,6 +1520,9 @@ function cheapInlineSource(node: CheapInlineNode): string {
   }
   if (node.type === 'file') {
     return node.text
+  }
+  if (node.type === 'math') {
+    return chatMathSource(node.tex, node.fence)
   }
   return node.text
 }

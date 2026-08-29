@@ -226,6 +226,25 @@ describe('splitStreamingMarkdown', () => {
       { type: 'text', text: '半截 ' },
       { type: 'code', text: 'code', raw: '`code' }
     ])
+    expect(parseCheapInlineMarkdown('If \\(n^2\\) then $$E=mc^2$$ and \\[a+b\\].')).toEqual([
+      { type: 'text', text: 'If ' },
+      { type: 'math', tex: 'n^2', display: false, fence: 'paren' },
+      { type: 'text', text: ' then ' },
+      { type: 'math', tex: 'E=mc^2', display: true, fence: '$$' },
+      { type: 'text', text: ' and ' },
+      { type: 'math', tex: 'a+b', display: true, fence: 'square' },
+      { type: 'text', text: '.' }
+    ])
+    expect(parseCheapInlineMarkdown('costs $100 and $x$ stay')).toEqual([
+      { type: 'text', text: 'costs $100 and $x$ stay' }
+    ])
+    expect(parseCheapInlineMarkdown('半截 \\(n')).toEqual([{ type: 'text', text: '半截 (n' }])
+    expect(parseCheapInlineMarkdown('keep `n^2` then \\(x\\)')).toEqual([
+      { type: 'text', text: 'keep ' },
+      { type: 'code', text: 'n^2' },
+      { type: 'text', text: ' then ' },
+      { type: 'math', tex: 'x', display: false, fence: 'paren' }
+    ])
     expect(parseCheapInlineMarkdown('半截 ***粗斜')).toEqual([
       { type: 'text', text: '半截 ' },
       { type: 'em', text: '粗斜', mark: '***', inner: 'strong', raw: '***粗斜' }
