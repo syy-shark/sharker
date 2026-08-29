@@ -4,6 +4,14 @@ import {
   resolveRestoredScrollTop,
   shouldDeferScrollRestore
 } from './transcript-scroll'
+import {
+  effectiveTranscriptWindowStart,
+  revealOlderWindowStart,
+  restoreTranscriptWindowStart,
+  shouldRevealOlderTranscript,
+  stickTranscriptWindowStart,
+  windowStartToIncludeIndex
+} from './transcript-window'
 
 describe('transcript scroll restore', () => {
   it('remembers mid-thread position per conversation and sticks when that was the last view', () => {
@@ -58,5 +66,45 @@ describe('transcript scroll restore', () => {
     )
     expect(clamped.scrollTop).toBe(100)
     expect(clamped.userLocked).toBe(true)
+
+    const withWindow = captureTranscriptScroll(
+      { scrollTop: 420, scrollHeight: 2400, clientHeight: 800 },
+      false,
+      true,
+      30
+    )
+    expect(withWindow.transcriptWindowStart).toBe(30)
+    expect(restoreTranscriptWindowStart(withWindow)).toBe(30)
+    expect(
+      restoreTranscriptWindowStart({
+        stickToBottom: true,
+        userLocked: false,
+        transcriptWindowStart: 30
+      })
+    ).toBeNull()
+    expect(restoreTranscriptWindowStart(null)).toBeNull()
+
+    expect(stickTranscriptWindowStart(12)).toBe(0)
+    expect(stickTranscriptWindowStart(80)).toBe(40)
+    expect(effectiveTranscriptWindowStart(80, null)).toBe(40)
+    expect(effectiveTranscriptWindowStart(80, 10)).toBe(10)
+    expect(effectiveTranscriptWindowStart(80, 99)).toBe(40)
+    expect(revealOlderWindowStart(40)).toBe(10)
+    expect(revealOlderWindowStart(10)).toBe(0)
+    expect(windowStartToIncludeIndex(40, 7)).toBe(7)
+    expect(windowStartToIncludeIndex(40, 55)).toBe(40)
+    expect(windowStartToIncludeIndex(40, -1)).toBe(40)
+    expect(
+      shouldRevealOlderTranscript({ scrollTop: 12, locked: true, canReveal: true })
+    ).toBe(true)
+    expect(
+      shouldRevealOlderTranscript({ scrollTop: 12, locked: false, canReveal: true })
+    ).toBe(false)
+    expect(
+      shouldRevealOlderTranscript({ scrollTop: 12, locked: true, canReveal: false })
+    ).toBe(false)
+    expect(
+      shouldRevealOlderTranscript({ scrollTop: 200, locked: true, canReveal: true })
+    ).toBe(false)
   })
 })
