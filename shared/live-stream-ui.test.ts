@@ -249,7 +249,7 @@ describe('live stream ui snapshot', () => {
       [{ id: 're', kind: 'status', content: streamReconnectLiveStatus(2), status: 'active', startedAt: 4 }],
       { streaming: '', activeTool: null, turnStartedAt: 4 }
     )
-    expect(reconnectPatch.liveSegments?.[0]?.content).toBe('正在重新连接… 2/5')
+    expect(reconnectPatch.liveSegments?.[0]?.content).toBe('Reconnecting... 2/5')
     const appSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'), 'utf8')
     expect(appSrc).toContain('shouldRewriteVisibleTranscript')
     expect(appSrc.includes('setLiveSegments')).toBe(false)

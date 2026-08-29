@@ -6,15 +6,22 @@ import {
   retryTransientStreamChat,
   streamChunkStartsVisibleOutput,
   streamReconnectDelayMs,
+  isReconnectLiveStatus,
+  resolveReconnectLiveStatus,
   streamReconnectLiveStatus
 } from './stream-reconnect'
 
 describe('stream reconnect policy', () => {
   it('retries transient outages before visible output and keeps Stop / auth / streamed tokens honest', async () => {
     expect(STREAM_RECONNECT_MAX).toBe(5)
-    expect(streamReconnectLiveStatus(1)).toBe('正在重新连接… 1/5')
-    expect(streamReconnectLiveStatus(5)).toBe('正在重新连接… 5/5')
-    expect(streamReconnectLiveStatus(9)).toBe('正在重新连接… 5/5')
+    expect(streamReconnectLiveStatus(1)).toBe('Reconnecting... 1/5')
+    expect(streamReconnectLiveStatus(5)).toBe('Reconnecting... 5/5')
+    expect(streamReconnectLiveStatus(9)).toBe('Reconnecting... 5/5')
+    expect(isReconnectLiveStatus('Reconnecting... 2/5')).toBe(true)
+    expect(isReconnectLiveStatus('正在重新连接… 3/5')).toBe(true)
+    expect(isReconnectLiveStatus('Working')).toBe(false)
+    expect(resolveReconnectLiveStatus('正在重新连接… 3/5')).toBe('Reconnecting... 3/5')
+    expect(resolveReconnectLiveStatus('Reconnecting... 4/5')).toBe('Reconnecting... 4/5')
     expect(streamReconnectDelayMs(1)).toBe(400)
     expect(streamReconnectDelayMs(4)).toBe(3200)
     expect(isTransientStreamError(new Error('API 429: rate limit'))).toBe(true)
@@ -51,7 +58,7 @@ describe('stream reconnect policy', () => {
     })) {
       out.push(chunk)
     }
-    expect(out.map((c) => c.content)).toEqual(['正在重新连接… 1/5', '正在重新连接… 2/5', 'ok', undefined])
+    expect(out.map((c) => c.content)).toEqual(['Reconnecting... 1/5', 'Reconnecting... 2/5', 'ok', undefined])
     expect(sleeps).toEqual([400, 800])
 
     async function* alreadyStreaming(): AsyncGenerator<{ type: string; content?: string }> {

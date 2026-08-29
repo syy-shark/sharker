@@ -15,6 +15,10 @@ import {
   isExploreActivityToolName
 } from './explore-activity'
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
+import {
+  isReconnectLiveStatus,
+  resolveReconnectLiveStatus
+} from './stream-reconnect'
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
@@ -254,6 +258,7 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
       return phaseActiveLabel(phase)
     }
     // 规划/准备类状态压缩成稳定短标题，方便直播头同步
+    if (cleaned && isReconnectLiveStatus(cleaned)) return resolveReconnectLiveStatus(cleaned)
     if (cleaned && /规划下一步|决定下一动作|规划中/.test(cleaned)) return '规划下一步'
     if (cleaned && /正在准备读取/.test(cleaned)) return '正在准备读取文件'
     if (cleaned && /正在准备运行|正在准备命令/.test(cleaned)) return '正在准备运行命令'

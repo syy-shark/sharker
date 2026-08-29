@@ -327,5 +327,25 @@ describe('process phases privacy', () => {
     ])
     expect(viewing[0]?.title).toBe('Viewed Image')
     expect(viewing[0]?.detail).toBe('shot.png')
+    const reconnecting = deriveChronologicalSteps([
+      {
+        id: 're1',
+        kind: 'status',
+        content: '正在重新连接… 2/5',
+        status: 'active',
+        startedAt: 33
+      }
+    ])
+    expect(reconnecting[0]?.title).toBe('Reconnecting... 2/5')
+    const reconnectOfficial = deriveChronologicalSteps([
+      {
+        id: 're2',
+        kind: 'status',
+        content: 'Reconnecting... 4/5',
+        status: 'active',
+        startedAt: 34
+      }
+    ])
+    expect(reconnectOfficial[0]?.title).toBe('Reconnecting... 4/5')
   })
 })

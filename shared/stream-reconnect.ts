@@ -3,7 +3,7 @@
  * 已吐出正文 / 思考 / 工具参数后不再重开，避免直播行重复。
  */
 
-/** 官方桌面 Reconnecting 1/5 … 5/5 */
+/** 官方桌面 Reconnecting... 1/5 … 5/5（ASCII `...`，对标 #19821 / #18647 / #30695） */
 export const STREAM_RECONNECT_MAX = 5
 
 export function streamReconnectLiveStatus(
@@ -11,7 +11,23 @@ export function streamReconnectLiveStatus(
   max = STREAM_RECONNECT_MAX
 ): string {
   const n = Math.max(1, Math.min(Math.floor(attempt), max))
-  return `正在重新连接… ${n}/${max}`
+  return `Reconnecting... ${n}/${max}`
+}
+
+/** 官方直播头与旧「正在重新连接… n/5」都认 */
+export function isReconnectLiveStatus(text: string): boolean {
+  return /正在重新连接|Reconnecting\.\.\./i.test(String(text || ''))
+}
+
+/** 旧中文重连行回放到官方 Reconnecting... n/5 */
+export function resolveReconnectLiveStatus(
+  text: string,
+  fallbackMax = STREAM_RECONNECT_MAX
+): string {
+  const match = String(text || '').match(/(\d+)\s*\/\s*(\d+)/)
+  const n = match ? Number(match[1]) : 1
+  const max = match ? Number(match[2]) : fallbackMax
+  return streamReconnectLiveStatus(n, Number.isFinite(max) && max > 0 ? max : fallbackMax)
 }
 
 /** 第 1 次重连等 400ms，之后倍增，封顶 3.2s */
