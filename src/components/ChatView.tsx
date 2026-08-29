@@ -68,7 +68,14 @@ import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
-import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
+import {
+  findHitNeedsHistory,
+  findInThread,
+  mergeThreadSearchHits,
+  resolveFindHitIndex,
+  seedFindQuery,
+  type ThreadSearchHit
+} from '../../shared/thread-search'
 import {
   isReviewFindFocus,
   shouldHandleReviewFindShortcut
@@ -343,10 +350,16 @@ interface Props {
   hasOlderHistory?: boolean
   /** 上滑到顶且内存窗已到头时取更早一页 */
   onLoadOlderHistory?: () => void | Promise<void>
-  /** 查找 / 跳到对话顶需要全量时再拉 */
+  /** 跳到对话顶需要全量时再拉 */
   onNeedFullHistory?: () => void | Promise<void>
   /** 点开瘦身后的命令输出 / 思考时取一条完整消息 */
   onNeedFullMessage?: (messageId: string) => void
+  /** 已加载尾页的盘上起点 seq，给查找命中对齐 */
+  historyStartSeq?: number
+  /** 分页线程查找：只扫用户/助手正文，不回放整段（对标 Codex #33907） */
+  onSearchThread?: (query: string) => void | Promise<ThreadSearchHit[]>
+  /** 查找跳到未加载的更早命中时揭开 [seq, historyStart) */
+  onRevealFindHit?: (fromSeq: number) => void | Promise<void>
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -423,7 +436,10 @@ export function ChatView({
   hasOlderHistory = false,
   onLoadOlderHistory,
   onNeedFullHistory,
-  onNeedFullMessage
+  onNeedFullMessage,
+  historyStartSeq = 0,
+  onSearchThread,
+  onRevealFindHit
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -432,6 +448,8 @@ export function ChatView({
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
+  const [diskFindHits, setDiskFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
+  const findAnchorRef = useRef<Pick<ThreadSearchHit, 'messageId' | 'occurrence'> | null>(null)
   const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
   const [pinnedStart, setPinnedStart] = useState<number | null>(() =>
     restoreTranscriptWindowStart(scrollSnapshot)
@@ -440,6 +458,8 @@ export function ChatView({
   if (sessionKey !== pinnedSession) {
     setPinnedSession(sessionKey)
     setPinnedStart(restoreTranscriptWindowStart(scrollSnapshot))
+    setDiskFindHits(EMPTY_FIND_HITS)
+    findAnchorRef.current = null
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [copyPickIndex, setCopyPickIndex] = useState(0)
@@ -689,12 +709,11 @@ export function ChatView({
       setFindHit(0)
     }
     setFindOpen(true)
-    void onNeedFullHistory?.()
     requestAnimationFrame(() => {
       findInputRef.current?.focus()
       if (seeded) findInputRef.current?.select()
     })
-  }, [onNeedFullHistory])
+  }, [])
 
   useEffect(() => {
     if (composerIntent === 'find') {
@@ -709,22 +728,75 @@ export function ChatView({
 
   const liveRowId = liveRowMessageId(liveAssistantId)
 
-  const findHits = useMemo(() => {
+  const memoryFindHits = useMemo(() => {
     if (!findQuery.trim()) return EMPTY_FIND_HITS
-    const rows = streaming.trim()
-      ? [...messages, { id: liveRowId, content: streaming }]
-      : messages
+    const start = historyStartSeq
+    const rows = messages.map((m, i) => ({
+      id: m.id,
+      content: m.content,
+      seq: start + i
+    }))
+    if (streaming.trim()) {
+      rows.push({ id: liveRowId, content: streaming, seq: start + messages.length })
+    }
     return findInThread(rows, findQuery)
-  }, [liveRowId, messages, findQuery, streaming])
+  }, [historyStartSeq, liveRowId, messages, findQuery, streaming])
+
+  const findHits = useMemo(
+    () => mergeThreadSearchHits(memoryFindHits, diskFindHits),
+    [memoryFindHits, diskFindHits]
+  )
 
   useEffect(() => {
-    if (findHit >= findHits.length) setFindHit(0)
-  }, [findHit, findHits.length])
+    setFindHit(0)
+    findAnchorRef.current = null
+  }, [findQuery])
+
+  useEffect(() => {
+    const next = resolveFindHitIndex(findHits, findAnchorRef.current, findHit)
+    if (next !== findHit) setFindHit(next)
+  }, [findHits])
+
+  useEffect(() => {
+    const cur = findHits[findHit]
+    findAnchorRef.current = cur
+      ? { messageId: cur.messageId, occurrence: cur.occurrence }
+      : null
+  }, [findHit, findHits])
+
+  useEffect(() => {
+    if (!findOpen) {
+      setDiskFindHits(EMPTY_FIND_HITS)
+      return
+    }
+    const q = findQuery.trim()
+    if (!q || !onSearchThread) {
+      setDiskFindHits(EMPTY_FIND_HITS)
+      return
+    }
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void Promise.resolve(onSearchThread(q)).then((hits) => {
+        if (!cancelled) setDiskFindHits(hits ?? EMPTY_FIND_HITS)
+      })
+    }, 80)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [findOpen, findQuery, onSearchThread, sessionKey])
 
   const stepFindHit = useCallback((direction: 1 | -1) => {
     if (!findHits.length) return
-    setFindHit((i) => (i + direction + findHits.length) % findHits.length)
-  }, [findHits.length])
+    setFindHit((i) => {
+      const next = (i + direction + findHits.length) % findHits.length
+      const hit = findHits[next]
+      findAnchorRef.current = hit
+        ? { messageId: hit.messageId, occurrence: hit.occurrence }
+        : null
+      return next
+    })
+  }, [findHits])
 
   /** 官方 Find next / previous：⌘G / ⌘⇧G / F3，查找未开时先打开再跳 */
   useEffect(() => {
@@ -749,14 +821,13 @@ export function ChatView({
       const back = e.shiftKey
       if (!findOpen) {
         setFindOpen(true)
-        void onNeedFullHistory?.()
         requestAnimationFrame(() => findInputRef.current?.focus())
       }
       stepFindHit(back ? -1 : 1)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [findOpen, onNeedFullHistory, stepFindHit])
+  }, [findOpen, stepFindHit])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -858,6 +929,19 @@ export function ChatView({
   }, [readScrollMetrics])
 
   const findCurrent = findHits[findHit]
+  const loadedFindIds = useMemo(() => {
+    const ids = new Set(messages.map((m) => m.id))
+    ids.add(liveRowId)
+    return ids
+  }, [liveRowId, messages])
+
+  useEffect(() => {
+    if (!findOpen || !findCurrent || !onRevealFindHit) return
+    if (!findHitNeedsHistory(findCurrent, loadedFindIds)) return
+    if (findCurrent.seq == null) return
+    void onRevealFindHit(findCurrent.seq)
+  }, [findOpen, findCurrent, loadedFindIds, onRevealFindHit])
+
   const findHitIndex =
     findOpen && findCurrent && findCurrent.messageId !== liveRowId
       ? messages.findIndex((m) => m.id === findCurrent.messageId)
@@ -1414,12 +1498,7 @@ export function ChatView({
                   }
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    if (!findHits.length) return
-                    setFindHit((i) =>
-                      e.shiftKey
-                        ? (i - 1 + findHits.length) % findHits.length
-                        : (i + 1) % findHits.length
-                    )
+                    stepFindHit(e.shiftKey ? -1 : 1)
                   }
                 }}
               />
@@ -1434,7 +1513,7 @@ export function ChatView({
                 type="button"
                 className="chat-find__nav"
                 disabled={findHits.length === 0}
-                onClick={() => setFindHit((i) => (i - 1 + findHits.length) % findHits.length)}
+                onClick={() => stepFindHit(-1)}
                 aria-label="上一条"
               >
                 ↑
@@ -1443,7 +1522,7 @@ export function ChatView({
                 type="button"
                 className="chat-find__nav"
                 disabled={findHits.length === 0}
-                onClick={() => setFindHit((i) => (i + 1) % findHits.length)}
+                onClick={() => stepFindHit(1)}
                 aria-label="下一条"
               >
                 ↓

@@ -8,6 +8,8 @@ export {
   loadConversation,
   loadOlderConversationMessages,
   loadConversationMessage,
+  searchConversationOccurrences,
+  loadConversationMessageRange,
   saveConversation,
   deleteConversation,
   setConversationArchived,

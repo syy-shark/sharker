@@ -1,5 +1,6 @@
 /**
  * 线程内查找：在用户/助手消息正文里定位查询。
+ * 分页线程盘上检索与内存/直播命中合并（对标 Codex #33907）。
  * @see shared/ARCH.md
  */
 
@@ -11,6 +12,13 @@ export interface ThreadSearchHit {
   occurrence: number
   start: number
   end: number
+  /** 盘上 seq，给分页线程跳到未加载的更早命中 */
+  seq?: number
+}
+
+/** ILIKE 模式转义，避免用户输入 `%` / `_` 当通配 */
+export function escapeLikePattern(raw: string): string {
+  return String(raw ?? '').replace(/[\\%_]/g, (ch) => `\\${ch}`)
 }
 
 /** 大小写不敏感、不重叠的全部出现 */
@@ -64,7 +72,7 @@ export function locateFlatRange(
 
 /** 在消息列表里找 query（大小写不敏感；一句话多处各算一次，对标 Codex Find next） */
 export function findInThread(
-  messages: Array<{ id: string; content: string }>,
+  messages: Array<{ id: string; content: string; seq?: number }>,
   query: string
 ): ThreadSearchHit[] {
   const q = query.trim()
@@ -77,11 +85,53 @@ export function findInThread(
         index,
         occurrence,
         start: occ.start,
-        end: occ.end
+        end: occ.end,
+        seq: m.seq
       })
     })
   })
   return hits
+}
+
+/**
+ * 内存命中优先（含直播行），盘上只补尚未加载的更早消息
+ * （对标 Codex #33907 thread/searchOccurrences，不回放整段线程）。
+ */
+export function mergeThreadSearchHits(
+  memory: readonly ThreadSearchHit[],
+  disk: readonly ThreadSearchHit[]
+): ThreadSearchHit[] {
+  const loaded = new Set(memory.map((h) => h.messageId))
+  const extra = disk
+    .filter((h) => !loaded.has(h.messageId))
+    .slice()
+    .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0) || a.start - b.start)
+  return extra.concat(memory)
+}
+
+/** 当前命中还在未加载的更早页里，需要先揭页再滚 */
+export function findHitNeedsHistory(
+  hit: Pick<ThreadSearchHit, 'messageId'> | undefined,
+  loadedIds: Iterable<string>
+): boolean {
+  if (!hit) return false
+  const ids = loadedIds instanceof Set ? loadedIds : new Set(loadedIds)
+  return !ids.has(hit.messageId)
+}
+
+/** 命中列表变长/变短后保住同一处（messageId + occurrence） */
+export function resolveFindHitIndex(
+  hits: readonly ThreadSearchHit[],
+  current: Pick<ThreadSearchHit, 'messageId' | 'occurrence'> | null | undefined,
+  fallback = 0
+): number {
+  if (!hits.length) return 0
+  if (!current) return Math.min(Math.max(0, fallback), hits.length - 1)
+  const idx = hits.findIndex(
+    (h) => h.messageId === current.messageId && h.occurrence === current.occurrence
+  )
+  if (idx >= 0) return idx
+  return Math.min(Math.max(0, fallback), hits.length - 1)
 }
 
 /** ⌘F 用当前划选预填查找（对标 Codex Find starts with current text selection） */

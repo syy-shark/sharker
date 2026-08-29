@@ -52,6 +52,10 @@ export const IPC = {
   LOAD_OLDER_CONVERSATION: 'conversations:load-older',
   /** 点开瘦身后的命令输出 / 思考，取一条完整消息 */
   LOAD_CONVERSATION_MESSAGE: 'conversations:load-message',
+  /** 分页线程查找（对标 Codex thread/searchOccurrences） */
+  SEARCH_CONVERSATION: 'conversations:search',
+  /** 查找跳到未加载命中时取 [fromSeq, beforeSeq) */
+  LOAD_CONVERSATION_RANGE: 'conversations:load-range',
   SAVE_CONVERSATION: 'conversations:save',
   DELETE_CONVERSATION: 'conversations:delete',
   ARCHIVE_CONVERSATION: 'conversations:archive',

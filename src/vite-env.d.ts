@@ -71,6 +71,17 @@ export interface SharkerApi {
     conversationId: string,
     messageId: string
   ) => Promise<import('../shared/types').ChatMessage | null>
+  searchConversation: (
+    workspaceId: string,
+    conversationId: string,
+    query: string
+  ) => Promise<import('../shared/thread-search').ThreadSearchHit[]>
+  loadConversationRange: (
+    workspaceId: string,
+    conversationId: string,
+    fromSeq: number,
+    beforeSeq: number
+  ) => Promise<import('../shared/types').ChatMessage[]>
   saveConversation: (workspaceId: string, conversation: Conversation) => Promise<Conversation>
   createConversation: (
     workspaceId: string,

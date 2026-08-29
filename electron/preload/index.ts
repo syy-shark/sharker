@@ -81,6 +81,21 @@ contextBridge.exposeInMainWorld('sharker', {
     messageId: string
   ) =>
     ipcRenderer.invoke(IPC.LOAD_CONVERSATION_MESSAGE, workspaceId, conversationId, messageId),
+  searchConversation: (workspaceId: string, conversationId: string, query: string) =>
+    ipcRenderer.invoke(IPC.SEARCH_CONVERSATION, workspaceId, conversationId, query),
+  loadConversationRange: (
+    workspaceId: string,
+    conversationId: string,
+    fromSeq: number,
+    beforeSeq: number
+  ) =>
+    ipcRenderer.invoke(
+      IPC.LOAD_CONVERSATION_RANGE,
+      workspaceId,
+      conversationId,
+      fromSeq,
+      beforeSeq
+    ),
   saveConversation: (workspaceId: string, conversation: Conversation) =>
     ipcRenderer.invoke(IPC.SAVE_CONVERSATION, workspaceId, conversation),
   createConversation: (workspaceId: string, options?: { activate?: boolean }) =>

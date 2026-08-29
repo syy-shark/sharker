@@ -70,6 +70,8 @@ import {
   loadConversation,
   loadOlderConversationMessages,
   loadConversationMessage,
+  searchConversationOccurrences,
+  loadConversationMessageRange,
   saveConversation,
   setActiveConversation,
   patchConversationMeta,
@@ -1001,6 +1003,28 @@ function registerIpc(): void {
     ) => {
       const p = workspacePathById(workspaceId)
       return loadConversationMessage(p, workspaceId, conversationId, messageId)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.SEARCH_CONVERSATION,
+    async (_e, workspaceId: string, conversationId: string, query: string) => {
+      const p = workspacePathById(workspaceId)
+      return searchConversationOccurrences(p, workspaceId, conversationId, query)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.LOAD_CONVERSATION_RANGE,
+    async (
+      _e,
+      workspaceId: string,
+      conversationId: string,
+      fromSeq: number,
+      beforeSeq: number
+    ) => {
+      const p = workspacePathById(workspaceId)
+      return loadConversationMessageRange(p, workspaceId, conversationId, fromSeq, beforeSeq)
     }
   )
 

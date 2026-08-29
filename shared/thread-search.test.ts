@@ -7,7 +7,16 @@ import {
   splitFindHighlights,
   wrapFindIndex
 } from './review-diff-search'
-import { findAllOccurrences, findInThread, locateFlatRange, seedFindQuery } from './thread-search'
+import {
+  escapeLikePattern,
+  findAllOccurrences,
+  findHitNeedsHistory,
+  findInThread,
+  locateFlatRange,
+  mergeThreadSearchHits,
+  resolveFindHitIndex,
+  seedFindQuery
+} from './thread-search'
 
 describe('thread search', () => {
   it('finds messages case-insensitively', () => {
@@ -64,6 +73,19 @@ describe('thread search', () => {
     expect(shouldHandleReviewFindShortcut({ focusInsideReview: false })).toBe(false)
     expect(sameReviewFindMatch(reviewHits[0], reviewHits[0])).toBe(true)
     expect(sameReviewFindMatch(reviewHits[0], reviewHits[1])).toBe(false)
+    expect(escapeLikePattern('a%b_c\\d')).toBe('a\\%b\\_c\\\\d')
+    const memory = findInThread(
+      [{ id: 'tail', content: 'review tail', seq: 40 }],
+      'review'
+    )
+    const disk = [
+      ...findInThread([{ id: 'old', content: 'review old', seq: 2 }], 'review'),
+      ...findInThread([{ id: 'tail', content: 'review tail', seq: 40 }], 'review')
+    ]
+    expect(mergeThreadSearchHits(memory, disk).map((h) => h.messageId)).toEqual(['old', 'tail'])
+    expect(findHitNeedsHistory(disk[0], ['tail'])).toBe(true)
+    expect(findHitNeedsHistory(memory[0], ['tail'])).toBe(false)
+    expect(resolveFindHitIndex(mergeThreadSearchHits(memory, disk), memory[0], 0)).toBe(1)
   })
 
   it('returns nothing for empty query', () => {

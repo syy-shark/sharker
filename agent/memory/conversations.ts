@@ -17,6 +17,7 @@ import {
 } from '../../shared/conversation'
 import type { ChatMessage } from '../../shared/types'
 import { messageHasDeferredHydration, slimMessagesForUi } from '../../shared/transcript-hydrate'
+import { escapeLikePattern, findInThread, type ThreadSearchHit } from '../../shared/thread-search'
 import { getMemoryDb } from './db'
 import { ensureProject } from './projects'
 
@@ -332,6 +333,77 @@ export async function loadConversationMessage(
   )
   const found = row.rows[0]
   return found ? rowToMessage(found) : null
+}
+
+/**
+ * 在用户/助手正文里字面查找，不回放整段线程、不取 meta
+ * （对标 Codex #33907 thread/searchOccurrences）。
+ */
+export async function searchConversationOccurrences(
+  workspacePath: string,
+  workspaceId: string,
+  conversationId: string,
+  query: string
+): Promise<ThreadSearchHit[]> {
+  const q = String(query ?? '').trim()
+  if (!q) return []
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const owned = await db.query<{ id: string }>(
+    'SELECT id FROM sessions WHERE id = $1 AND workspace_id = $2',
+    [conversationId, workspaceId]
+  )
+  if (!owned.rows[0]) return []
+  const pattern = `%${escapeLikePattern(q)}%`
+  const res = await db.query<{ id: string; content: string; seq: number }>(
+    `SELECT id, content, seq
+     FROM session_messages
+     WHERE session_id = $1
+       AND role IN ('user', 'assistant')
+       AND content <> ''
+       AND content ILIKE $2 ESCAPE '\\'
+     ORDER BY seq ASC`,
+    [conversationId, pattern]
+  )
+  return findInThread(
+    res.rows.map((r) => ({ id: r.id, content: r.content, seq: Number(r.seq) })),
+    q
+  )
+}
+
+/** 取 [fromSeq, beforeSeq) 一段并按启动窗预算瘦身，给查找跳到未加载命中 */
+export async function loadConversationMessageRange(
+  workspacePath: string,
+  workspaceId: string,
+  id: string,
+  fromSeq: number,
+  beforeSeq: number
+): Promise<ChatMessage[]> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const owned = await db.query<{ id: string }>(
+    'SELECT id FROM sessions WHERE id = $1 AND workspace_id = $2',
+    [id, workspaceId]
+  )
+  if (!owned.rows[0]) return []
+  const from = Math.max(0, Math.floor(fromSeq))
+  const before = Math.floor(beforeSeq)
+  if (from >= before) return []
+  const res = await db.query<{
+    id: string
+    role: string
+    content: string
+    tool_call_id: string | null
+    tool_name: string | null
+    meta: unknown
+  }>(
+    `SELECT id, role, content, tool_call_id, tool_name, meta
+     FROM session_messages
+     WHERE session_id = $1 AND seq >= $2 AND seq < $3
+     ORDER BY seq ASC`,
+    [id, from, before]
+  )
+  return slimMessagesForUi(res.rows.map(rowToMessage))
 }
 
 /** 保存对话。`fromSeq` / `historyStartSeq` > 0 时只改该 seq 起的消息，不删更早页。 */

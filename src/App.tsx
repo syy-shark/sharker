@@ -791,6 +791,46 @@ export default function App() {
     await ensureConversationHistory(workspaceId, convId)
   }, [ensureConversationHistory])
 
+  const handleSearchThread = useCallback(async (query: string) => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    if (!workspaceId || !convId || !window.sharker.searchConversation) return []
+    return window.sharker.searchConversation(workspaceId, convId, query)
+  }, [])
+
+  const handleRevealFindHit = useCallback(async (fromSeq: number) => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    const before = historyStartSeqRef.current
+    if (
+      !workspaceId ||
+      !convId ||
+      fromSeq >= before ||
+      !window.sharker.loadConversationRange
+    ) {
+      return
+    }
+    const gen = historyLoadGenRef.current
+    const older = await window.sharker.loadConversationRange(
+      workspaceId,
+      convId,
+      fromSeq,
+      before
+    )
+    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) {
+      return
+    }
+    if (!older.length) {
+      historyStartSeqRef.current = fromSeq
+      setHistoryStartSeq(fromSeq)
+      return
+    }
+    applyConversationMessages(
+      prependHistoryPage(messagesRef.current, older),
+      fromSeq
+    )
+  }, [applyConversationMessages])
+
   const handleNeedFullMessage = useCallback(async (messageId: string) => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
@@ -6731,9 +6771,12 @@ export default function App() {
               onScrollSnapshot={rememberTranscriptScroll}
               keyboardShortcuts={settings.keyboardShortcuts}
               hasOlderHistory={historyStartSeq > 0}
+              historyStartSeq={historyStartSeq}
               onLoadOlderHistory={handleLoadOlderHistory}
               onNeedFullHistory={handleNeedFullHistory}
               onNeedFullMessage={handleNeedFullMessage}
+              onSearchThread={handleSearchThread}
+              onRevealFindHit={handleRevealFindHit}
             />
             </div>
           ) : page === 'automations' ? (

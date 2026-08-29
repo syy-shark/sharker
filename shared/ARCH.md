@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 揭开命中前的一段） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
@@ -105,8 +105,8 @@
 | `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 detail |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
-| `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮 |
-| `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断；审查 diff 查找命中 / 空查询 / 高亮切片 |
+| `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；分页线程盘上命中与内存/直播命中合并（对标 Codex #33907，不回放整段）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮；`escapeLikePattern` 给 ILIKE |
+| `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断；审查 diff 查找命中 / 空查询 / 高亮切片；盘上命中与内存合并、ILIKE 转义 |
 | `review-diff-search.ts` | 审查 diff 跨文件查找：`findInReviewDiffs` 按 `FileDiff.lines` 偏移命中；审查聚焦时 ⌘F / ⌘G 走审查而不是线程（对标 Codex review search / Cmd+F starts with selection）；`splitFindHighlights` 给行内高亮 |
 | `terminal-tabs.ts` | 集成终端按线程分标签：标题、上限 8、关最后一张不准、最近 6 条线程缓存；pending 窗格可收成对话 id |
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
