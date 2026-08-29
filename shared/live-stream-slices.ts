@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文加长不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
+ * 直播行过程 / 回答切片：token 只换回答；正文或思考加长不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -63,18 +63,59 @@ function isLiveAnswerText(segment: TurnSegment): boolean {
   return segment.kind === 'text' && (segment.role === 'final' || segment.status === 'active')
 }
 
+function isLiveThinking(segment: TurnSegment): boolean {
+  return segment.kind === 'thinking'
+}
+
+/** 前缀引用没变时只续思考尾，不 `filter` 全段 */
+export function nextLiveThinkText(
+  prev: string,
+  prevSegments: readonly TurnSegment[] | null,
+  segments: readonly TurnSegment[]
+): string {
+  if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
+  const last = segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prevSegments[i] !== segments[i]) return liveThinkingText(segments)
+  }
+  const prevTail = prevSegments[last]
+  const nextTail = segments[last]
+  if (!prevTail || !nextTail) return liveThinkingText(segments)
+  if (prevTail === nextTail) return prev
+  if (isLiveAnswerText(prevTail) && isLiveAnswerText(nextTail) && prevTail.id === nextTail.id) {
+    return prev
+  }
+  if (isLiveThinking(prevTail) && isLiveThinking(nextTail) && prevTail.id === nextTail.id) {
+    const prevContent = prevTail.content ?? ''
+    const nextContent = nextTail.content ?? ''
+    if (nextContent === prevContent) return prev
+    if (nextContent.startsWith(prevContent) && (prev === prevContent || prev.endsWith(prevContent))) {
+      return prev + nextContent.slice(prevContent.length)
+    }
+  }
+  return liveThinkingText(segments)
+}
+
+function withUpdatedThinkText(prev: LiveProcessView, thinkText: string): LiveProcessView {
+  return thinkText === prev.thinkText ? prev : { ...prev, thinkText }
+}
+
 function liveAnswerTailIsPlain(segments: readonly TurnSegment[]): boolean {
   const tail = segments[segments.length - 1]
   return Boolean(tail && isLiveAnswerText(tail) && !hasStreamingDemoFence(tail.content ?? ''))
 }
 
 /**
- * 过程区指纹：增长中的回答正文只记 id，不拼全文。
- * 工具 / 思考 / 演示围栏变了才变，避免每枚 token 重跑 buildAnswerParts。
+ * 过程区指纹：增长中的回答正文 / 思考只记 id，不拼全文。
+ * 工具 / 演示围栏变了才变，避免每枚 token 重跑 buildAnswerParts。
  */
 export function liveProcessIdentity(segments: readonly TurnSegment[]): string {
   let out = ''
   for (const segment of segments) {
+    if (isLiveThinking(segment)) {
+      out += `th:${segment.id}:${segment.status};`
+      continue
+    }
     if (isLiveAnswerText(segment) && !hasStreamingDemoFence(segment.content ?? '')) {
       out += `a:${segment.id};`
       continue
@@ -98,8 +139,8 @@ export function shouldReuseLiveProcessView(input: {
 }
 
 /**
- * 前缀引用没变、末段仍是同一段增长正文：不必拼过程指纹。
- * 对标 Codex #22860：回答 token 不扫整条工具时间线。
+ * 前缀引用没变、末段仍是同一段增长正文或思考：不必拼过程指纹。
+ * 对标 Codex #22860：回答 / 思考 token 不扫整条工具时间线。
  */
 export function shouldSkipLiveProcessIdentity(input: {
   prev: LiveProcessView | null
@@ -108,10 +149,7 @@ export function shouldSkipLiveProcessIdentity(input: {
   prevAnswerTailPlain?: boolean
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
-  if (!input.prev.contentStreaming || !input.prev.answerStreaming || input.prev.generatingDemo) {
-    return false
-  }
-  if (input.prevAnswerTailPlain === false) return false
+  if (input.prev.generatingDemo) return false
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -121,6 +159,16 @@ export function shouldSkipLiveProcessIdentity(input: {
   const nextTail = input.segments[last]
   if (!prevTail || !nextTail) return false
   if (prevTail === nextTail) return true
+  if (
+    isLiveThinking(prevTail) &&
+    isLiveThinking(nextTail) &&
+    prevTail.id === nextTail.id &&
+    prevTail.status === nextTail.status
+  ) {
+    return true
+  }
+  if (!input.prev.contentStreaming || !input.prev.answerStreaming) return false
+  if (input.prevAnswerTailPlain === false) return false
   const nextHasFence =
     input.prevAnswerTailPlain === true
       ? hasStreamingDemoFenceGrowth(prevTail.content ?? '', nextTail.content ?? '')
@@ -177,24 +225,32 @@ export function nextLiveProcessView(
       prevAnswerTailPlain: processHold.answerTailPlain
     })
   ) {
+    const view = withUpdatedThinkText(
+      prev,
+      nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    )
     processHold = {
-      view: prev,
+      view,
       identity: processHold.identity,
       segments,
-      answerTailPlain: true
+      answerTailPlain: liveAnswerTailIsPlain(segments)
     }
-    return prev
+    return view
   }
   const identity = liveProcessIdentity(segments)
   const prevIdentity = processHold?.view === prev ? processHold.identity : ''
   if (prev && shouldReuseLiveProcessView({ prev, identity, prevIdentity })) {
+    const view = withUpdatedThinkText(
+      prev,
+      nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    )
     processHold = {
-      view: prev,
+      view,
       identity,
       segments,
       answerTailPlain: liveAnswerTailIsPlain(segments)
     }
-    return prev
+    return view
   }
   const answerParts = buildAnswerParts(segments, { isStreaming: true })
   const flow = processForAnswer(segments, answerParts)

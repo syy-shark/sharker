@@ -20,6 +20,7 @@ import {
   liveAnswerGrowState,
   liveAnswerViewFromSnap,
   liveProcessIdentity,
+  nextLiveThinkText,
   nextLiveAnswerActions,
   nextLiveAnswerView,
   nextLiveProcessView,
@@ -138,6 +139,32 @@ describe('live stream ui snapshot', () => {
         ]
       })
     ).toBe(false)
+    const think = (content: string): TurnSegment => ({
+      id: 'th1',
+      kind: 'thinking',
+      status: 'active',
+      content
+    })
+    const thinkingFirst = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [think('Hmm')]
+    })
+    const thinkingGrown = nextLiveProcessView(thinkingFirst, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [think('Hmm more')]
+    })
+    expect(thinkingGrown.processForFlow).toBe(thinkingFirst.processForFlow)
+    expect(thinkingGrown.thinkText).toBe('Hmm more')
+    expect(thinkingGrown).not.toBe(thinkingFirst)
+    expect(
+      shouldSkipLiveProcessIdentity({
+        prev: thinkingFirst,
+        prevSegments: [think('Hmm')],
+        segments: [think('Hmm more')]
+      })
+    ).toBe(true)
+    expect(liveProcessIdentity([think('Hmm')])).toBe(liveProcessIdentity([think('Hmm more')]))
+    expect(nextLiveThinkText('Hmm', [think('Hmm')], [think('Hmm more')])).toBe('Hmm more')
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
