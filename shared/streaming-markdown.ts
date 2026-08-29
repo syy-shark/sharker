@@ -2,6 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
+ * 单块增长列表 / 表格只重解析最后一项或最后一行（对标 Codex #39061 / #34045）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2701,8 +2702,222 @@ function reuseCheapProseBlock(prev: CheapProseBlock, next: CheapProseBlock): Che
   return null
 }
 
+/** 增长尾里的表数据行（含无两侧 `|`），分隔行不当数据 */
+function isLiveTableDataLine(line: string): boolean {
+  if (isGfmTableSep(line) || isPendingGfmTableSepLine(line)) return false
+  return isGfmTableRow(line) || looksLikeGfmTableCells(line)
+}
+
+/** 末行还可能改块类型时不要只续行内（Setext / 待写列表标记 / 表分隔） */
+function lastLineNeedsFullProseParse(line: string): boolean {
+  if (isPendingListMarkerLine(line)) return true
+  if (isPendingSetextUnderline(line) || SETEXT_RE.test(line) || parseHrLine(line)) return true
+  if (isGfmTableSep(line) || isPendingGfmTableSepLine(line) || looksLikeGfmTableCells(line)) return true
+  if (parseFenceLine(line) || parseHeadingLine(line)) return true
+  return false
+}
+
+/** 顶层列表最后一项在原文中的起点；嵌套项不算 */
+function lastTopLevelListItemStart(text: string): number | null {
+  const lines = text.split('\n')
+  const first = parseListLine(lines[0] ?? '')
+  if (!first) return null
+  const topIndent = first.indent
+  let start = 0
+  let offset = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    const parsed = parseListLine(line)
+    if (parsed && parsed.indent === topIndent && parsed.ordered === first.ordered) {
+      start = offset
+    } else if (parsed && parsed.indent < topIndent) {
+      return null
+    }
+    offset += line.length + (i < lines.length - 1 ? 1 : 0)
+  }
+  return start
+}
+
+/** 只续最后一项的行内（无换行、无项内块），已画项保持同一引用 */
+function growLastListItemInline(
+  item: CheapListItem,
+  suffix: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapListItem | null {
+  if (item.nested?.items.length) {
+    const nestedItems = item.nested.items
+    const lastNested = nestedItems[nestedItems.length - 1]
+    if (!lastNested) return null
+    const grownNested = growLastListItemInline(lastNested, suffix, defs)
+    if (!grownNested) return null
+    if (grownNested === lastNested) return item
+    return {
+      nodes: item.nodes,
+      extra: item.extra,
+      suffix: item.suffix,
+      blocks: item.blocks,
+      contentIndent: item.contentIndent,
+      nested: {
+        ordered: item.nested.ordered,
+        indent: item.nested.indent,
+        items: [...nestedItems.slice(0, -1), grownNested],
+        start: item.nested.start,
+        loose: item.nested.loose
+      }
+    }
+  }
+  if (item.extra?.length || item.blocks?.length || item.suffix?.length) return null
+  const prevSrc = cheapInlineSourceAll(item.nodes)
+  const nodes = continueCheapInlineMarkdown(prevSrc, item.nodes, prevSrc + suffix, defs)
+  return nodes === item.nodes ? item : { ...item, nodes }
+}
+
+function continueLastListBlock(
+  prev: Extract<CheapProseBlock, { type: 'list' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!suffix.includes('\n') && !suffix.includes(']:')) {
+    const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+    if (!lastLineNeedsFullProseParse(lastLine) && prev.items.length) {
+      const lastItem = prev.items[prev.items.length - 1]!
+      const grown = growLastListItemInline(lastItem, suffix, defs)
+      if (grown) {
+        if (grown === lastItem) return [prev]
+        return [
+          {
+            type: 'list',
+            ordered: prev.ordered,
+            items: [...prev.items.slice(0, -1), grown],
+            loose: prev.loose,
+            start: prev.start
+          }
+        ]
+      }
+    }
+  }
+  const start = lastTopLevelListItemStart(prevNorm)
+  if (start == null) return null
+  const parsedPrev = parseCheapProseBlocks(prevNorm.slice(start), defs)
+  const parsedNext = parseCheapProseBlocks(nextText.slice(start), defs)
+  if (parsedPrev.length !== 1 || parsedNext.length !== 1) return null
+  const prevWindow = parsedPrev[0]
+  const nextWindow = parsedNext[0]
+  if (prevWindow?.type !== 'list' || nextWindow?.type !== 'list') return null
+  if (prevWindow.items.length !== 1 || nextWindow.ordered !== prev.ordered) return null
+  if (prevWindow.ordered !== prev.ordered) return null
+  const keep = prev.items.slice(0, -1)
+  const tail = reuseListItems(prev.items.slice(-1), nextWindow.items)
+  const items = [...keep, ...tail]
+  const loose = prev.loose || nextWindow.loose || items.some((item) => Boolean(item.extra?.length))
+  const same =
+    items.length === prev.items.length &&
+    items.every((item, index) => item === prev.items[index]) &&
+    prev.loose === loose &&
+    prev.start === nextWindow.start
+  return same
+    ? [prev]
+    : [{ type: 'list', ordered: prev.ordered, items, loose: loose || undefined, start: prev.start }]
+}
+
+function growLastTableCellsInline(
+  prev: Extract<CheapProseBlock, { type: 'table' }>,
+  suffix: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  if (!suffix || suffix.includes('|') || suffix.includes('\n') || suffix.includes(']:')) return null
+  const growCells = (cells: CheapInlineNode[][]): CheapInlineNode[][] | null => {
+    if (!cells.length) return null
+    const last = cells[cells.length - 1]!
+    const prevSrc = cheapInlineSourceAll(last)
+    const next = continueCheapInlineMarkdown(prevSrc, last, prevSrc + suffix, defs)
+    return next === last ? cells : [...cells.slice(0, -1), next]
+  }
+  if (prev.rows.length) {
+    const lastRow = prev.rows[prev.rows.length - 1]!
+    const grown = growCells(lastRow)
+    if (!grown) return null
+    if (grown === lastRow) return [prev]
+    return [{ type: 'table', header: prev.header, rows: [...prev.rows.slice(0, -1), grown], align: prev.align }]
+  }
+  const grownHeader = growCells(prev.header)
+  if (!grownHeader) return null
+  if (grownHeader === prev.header) return [prev]
+  return [{ type: 'table', header: grownHeader, rows: prev.rows, align: prev.align }]
+}
+
+function continueLastTableBlock(
+  prev: Extract<CheapProseBlock, { type: 'table' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+  if (isLiveTableDataLine(lastLine) || (!prev.rows.length && looksLikeGfmTableCells(lastLine) && !isGfmTableSep(lastLine))) {
+    const inline = growLastTableCellsInline(prev, nextText.slice(prevNorm.length), defs)
+    if (inline) return inline
+  }
+  if (!prev.rows.length) return null
+  const prevLines = prevNorm.split('\n')
+  const sepIdx = prevLines.findIndex(isGfmTableSep)
+  if (sepIdx <= 0) return null
+  let lastRowIdx = -1
+  for (let i = prevLines.length - 1; i > sepIdx; i--) {
+    if (isLiveTableDataLine(prevLines[i]!)) {
+      lastRowIdx = i
+      break
+    }
+  }
+  if (lastRowIdx < 0) return null
+  const nextLines = nextText.split('\n')
+  if (nextLines.length <= lastRowIdx) return null
+  if (nextLines.findIndex(isGfmTableSep) !== sepIdx) return null
+  const windowText = [...nextLines.slice(0, sepIdx + 1), ...nextLines.slice(lastRowIdx)].join('\n')
+  const parsed = parseCheapProseBlocks(windowText, defs)
+  if (parsed.length !== 1 || parsed[0]?.type !== 'table') return null
+  const nextTable = parsed[0]
+  if (nextTable.header.length !== prev.header.length || nextTable.rows.length < 1) return null
+  const header = reuseInlineLists(prev.header, nextTable.header)
+  const lastPrevRow = prev.rows[prev.rows.length - 1]!
+  const grownRows = nextTable.rows.map((row, index) =>
+    index === 0 ? reuseInlineLists(lastPrevRow, row) : row
+  )
+  const rows = [...prev.rows.slice(0, -1), ...grownRows]
+  const headerSame = header.length === prev.header.length && header.every((cell, index) => cell === prev.header[index])
+  const rowsSame =
+    rows.length === prev.rows.length &&
+    rows.every(
+      (row, index) =>
+        row.length === prev.rows[index]?.length && row.every((cell, col) => cell === prev.rows[index]?.[col])
+    )
+  const align = nextTable.align ?? prev.align
+  return headerSame && rowsSame ? [prev] : [{ type: 'table', header, rows, align }]
+}
+
+/**
+ * 单块增长列表 / 表格：只重解析最后一项或最后一行（对标 Codex #39061 / #34045）。
+ * 定义行、块类型变化或前缀对不上时退回全量解析。
+ */
+function tryContinueLastCheapProseBlock(
+  prevNorm: string,
+  prevBlocks: CheapProseBlock[],
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  if (prevBlocks.length !== 1 || !nextText.startsWith(prevNorm)) return null
+  const suffix = nextText.slice(prevNorm.length)
+  if (suffix.includes(']:')) return null
+  const last = prevBlocks[0]!
+  if (last.type === 'list') return continueLastListBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'table') return continueLastTableBlock(last, prevNorm, nextText, defs)
+  return null
+}
+
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
+ * 单块列表 / 表格先走最后一项或最后一行窗口，不整列/整表重扫（对标 Codex #39061）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(
@@ -2715,6 +2930,8 @@ export function continueCheapProseBlocks(
   const prevNorm = normalizeStreamingText(prevText)
   if (!nextText) return []
   if (nextText === prevNorm && prevBlocks.length) return prevBlocks
+  const incremental = tryContinueLastCheapProseBlock(prevNorm, prevBlocks, nextText, defs)
+  if (incremental) return incremental
   const parsed = parseCheapProseBlocks(nextText, defs)
   if (!prevBlocks.length) return parsed
   const out: CheapProseBlock[] = []

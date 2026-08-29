@@ -1016,6 +1016,41 @@ describe('splitStreamingMarkdown', () => {
     expect(closedGrown[0]).toBe(multi[0])
     expect(closedGrown[1]).toBe(multi[1])
     expect(nextCheapProseClosed(null, grown).length).toBe(0)
+    const manyItems = Array.from({ length: 12 }, (_, i) => `- item-${i}`).join('\n')
+    const manyFirst = parseCheapProseBlocks(manyItems)
+    const manyGrown = continueCheapProseBlocks(manyItems, manyFirst, `${manyItems} longer`)
+    const manyFull = parseCheapProseBlocks(`${manyItems} longer`)
+    if (manyFirst[0]?.type === 'list' && manyGrown[0]?.type === 'list' && manyFull[0]?.type === 'list') {
+      expect(manyGrown[0].items.slice(0, 11).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
+      expect(manyGrown[0].items[11]).not.toBe(manyFirst[0].items[11])
+      expect(manyGrown[0].items[11]?.nodes).toEqual(manyFull[0].items[11]?.nodes)
+    }
+    const manyNew = continueCheapProseBlocks(manyItems, manyFirst, `${manyItems}\n- item-12`)
+    if (manyFirst[0]?.type === 'list' && manyNew[0]?.type === 'list') {
+      expect(manyNew[0].items.slice(0, 12).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
+      expect(manyNew[0].items).toHaveLength(13)
+    }
+    const pendingSetext = parseCheapProseBlocks('- Title\n  ==')
+    const setextLive = continueCheapProseBlocks('- Title\n  ==', pendingSetext, '- Title\n  ===')
+    if (setextLive[0]?.type === 'list') {
+      expect(setextLive[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'heading', level: 1 })
+    }
+    const manyRows =
+      '| A | B |\n| --- | --- |\n' + Array.from({ length: 8 }, (_, i) => `| ${i} | x |`).join('\n')
+    const manyTable = parseCheapProseBlocks(manyRows)
+    const manyTableGrown = continueCheapProseBlocks(manyRows, manyTable, `${manyRows}y`)
+    const manyTableNew = continueCheapProseBlocks(manyRows, manyTable, `${manyRows}\n| 8 | y |`)
+    if (manyTable[0]?.type === 'table' && manyTableGrown[0]?.type === 'table') {
+      expect(manyTableGrown[0].header[0]).toBe(manyTable[0].header[0])
+      expect(manyTableGrown[0].rows.slice(0, 7).every((row, i) => row[0] === manyTable[0].rows[i]?.[0])).toBe(
+        true
+      )
+      expect(manyTableGrown[0].rows[7]?.[1]).not.toBe(manyTable[0].rows[7]?.[1])
+    }
+    if (manyTable[0]?.type === 'table' && manyTableNew[0]?.type === 'table') {
+      expect(manyTableNew[0].rows.slice(0, 8).every((row, i) => row[0] === manyTable[0].rows[i]?.[0])).toBe(true)
+      expect(manyTableNew[0].rows).toHaveLength(9)
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {

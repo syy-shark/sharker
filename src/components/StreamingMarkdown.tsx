@@ -2,6 +2,7 @@
  * 流式 Markdown：围栏顶层 `live-fence-N`；已收散文按块成闭合 `LiveProseTail`。
  * 增长尾固定 `prose-run-0`，空行收段不换尾 key；围栏闭合也不搬进散文尾。
  * 已画廉价块 / 列表项 / 表行 / 行内按对象身份 memo；defs 与渲染槽没变则复用（对标 Codex #22860）。
+ * 增长尾里单块列表 / 表格只重解析最后一项或最后一行（对标 Codex #39061 / #34045）。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
