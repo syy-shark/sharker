@@ -97,6 +97,7 @@ import {
   processElapsedSeconds,
   stoppedAfterFootnote,
   THOUGHT_LABEL,
+  TURN_START_LIVE_STATUS,
   WORKING_LABEL
 } from '../shared/live-display'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
@@ -3212,7 +3213,7 @@ export default function App() {
           {
             id: `status-local-start-${seedAt}`,
             kind: 'status',
-            content: '连接模型并准备任务…',
+            content: TURN_START_LIVE_STATUS,
             status: 'active',
             startedAt: seedAt
           }
@@ -3294,7 +3295,7 @@ export default function App() {
         {
           id: `status-local-start-${seedAt}`,
           kind: 'status',
-          content: '连接模型并准备任务…',
+          content: TURN_START_LIVE_STATUS,
           status: 'active',
           startedAt: seedAt
         }
@@ -4064,7 +4065,7 @@ export default function App() {
         {
           id: `status-retry-start-${seedAt}`,
           kind: 'status',
-          content: '连接模型并准备任务…',
+          content: TURN_START_LIVE_STATUS,
           status: 'active',
           startedAt: seedAt
         }
@@ -7429,7 +7430,7 @@ export default function App() {
             {
               id: `debug-status-prep-${now}`,
               kind: 'status',
-              content: '连接模型并准备任务…',
+              content: TURN_START_LIVE_STATUS,
               status: 'active',
               startedAt: now
             }
@@ -7632,7 +7633,7 @@ export default function App() {
           {
             id: `live-prep-${t0}`,
             kind: 'status',
-            content: '连接模型并准备任务…',
+            content: TURN_START_LIVE_STATUS,
             status: 'active',
             startedAt: t0
           }
@@ -7645,7 +7646,7 @@ export default function App() {
             {
               id: `live-prep-${t0}`,
               kind: 'status',
-              content: '连接模型并准备任务…',
+              content: TURN_START_LIVE_STATUS,
               status: 'done',
               startedAt: t0,
               endedAt: t0 + 200

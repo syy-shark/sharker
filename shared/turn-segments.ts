@@ -5,7 +5,11 @@
  */
 import { formatCompactActivity } from './compact-activity'
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
-import { formatAwaitingApprovalLabel, isAwaitingApprovalText } from './live-display'
+import {
+  formatAwaitingApprovalLabel,
+  isAwaitingApprovalText,
+  TURN_START_LIVE_STATUS
+} from './live-display'
 import { toolTitle } from './process-steps'
 import { formatToolActivity } from './turn-meta'
 import { REQUEST_USER_INPUT_TOOL, summarizeUserInputRequest } from './user-input'
@@ -278,7 +282,11 @@ function applyThinkChunk(segments: TurnSegment[], content: string, timestamp: nu
   const next = segments.slice()
   for (let i = 0; i < next.length; i++) {
     const s = next[i]
-    if (s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('准备')) {
+    if (
+      s.kind === 'status' &&
+      s.status === 'active' &&
+      ((s.content ?? '').includes('准备') || s.content === TURN_START_LIVE_STATUS)
+    ) {
       next[i] = { ...s, status: 'done', endedAt: timestamp }
     }
   }
@@ -353,7 +361,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       next.push({
         id: `status-turn-start-${timestamp}`,
         kind: 'status',
-        content: '连接模型并准备任务…',
+        content: TURN_START_LIVE_STATUS,
         status: 'active',
         startedAt: timestamp
       })

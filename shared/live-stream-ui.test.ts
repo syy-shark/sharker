@@ -15,6 +15,7 @@ import {
 import { AUTO_COMPACT_LIVE_STATUS, shouldRewriteVisibleTranscript } from './context-compress'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
+import { TURN_START_LIVE_STATUS } from './live-display'
 import {
   nextLiveAnswerActions,
   nextLiveAnswerView,
@@ -155,7 +156,7 @@ describe('live stream ui snapshot', () => {
       {
         id: 'prep',
         kind: 'status',
-        content: '连接模型并准备任务…',
+        content: TURN_START_LIVE_STATUS,
         status: 'active',
         startedAt: 1
       },
@@ -189,7 +190,7 @@ describe('live stream ui snapshot', () => {
         {
           id: 'status-local-start',
           kind: 'status',
-          content: '连接模型并准备任务…',
+          content: TURN_START_LIVE_STATUS,
           status: 'active',
           startedAt: 7
         }
@@ -198,7 +199,7 @@ describe('live stream ui snapshot', () => {
     )
     const preparingSnap = nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, preparing)
     expect(preparingSnap.liveSegments).toHaveLength(1)
-    expect(preparingSnap.liveSegments[0]?.content).toBe('连接模型并准备任务…')
+    expect(preparingSnap.liveSegments[0]?.content).toBe(TURN_START_LIVE_STATUS)
     expect(preparingSnap.turnStartedAt).toBe(7)
     expect(nextLiveProcessView(null, preparingSnap).processForFlow[0]?.kind).toBe('status')
     const doneSegs: TurnSegment[] = [

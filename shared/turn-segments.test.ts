@@ -11,6 +11,7 @@ import {
   reuseAnswerParts
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
+import { TURN_START_LIVE_STATUS } from './live-display'
 import {
   canOfferDiffPreviewCollapse,
   estimateDiffBodyHeight,
@@ -119,7 +120,11 @@ describe('turn segment event state machine', () => {
     let segments: TurnSegment[] = []
     segments = applyStreamChunk(segments, { type: 'turn_start', timestamp: 1 })
     expect(segments).toHaveLength(1)
-    expect(segments[0]).toMatchObject({ kind: 'status', status: 'active' })
+    expect(segments[0]).toMatchObject({
+      kind: 'status',
+      status: 'active',
+      content: TURN_START_LIVE_STATUS
+    })
     segments = applyStreamChunk(segments, { type: 'think', content: '分析', timestamp: 2 })
     expect(segments[0].status).toBe('done')
     expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)

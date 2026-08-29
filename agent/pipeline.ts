@@ -17,6 +17,7 @@ import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { leftoverSteerDisposition } from '../shared/pending-steer'
+import { TURN_START_LIVE_STATUS } from '../shared/live-display'
 import { appendInAppBrowserAmbient } from '../shared/in-app-browser-ambient'
 import { applyScheduledTurnSettings } from '../shared/automation'
 import {
@@ -166,7 +167,7 @@ export function processUserInput(
 function queryServe(send: (chunk: StreamChunk) => void, conversationId?: string): void {
   send({ type: 'turn_start', conversationId })
   // 立即给前端一个可见状态，避免「只有 loading 没有步骤」的空窗
-  send({ type: 'status', content: '连接模型并准备任务…', conversationId })
+  send({ type: 'status', content: TURN_START_LIVE_STATUS, conversationId })
 }
 
 /** 组装上下文并驱动 queryLoop */

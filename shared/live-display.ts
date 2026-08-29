@@ -219,7 +219,7 @@ export function buildLiveHead(options: {
   }
   const raw = step?.title?.trim() || ''
   return {
-    label: resolvePrepareLiveTitle(raw) || raw || options.fallbackLabel || '处理中',
+    label: resolvePrepareLiveTitle(raw) || raw || options.fallbackLabel || THINKING_LABEL,
     detail: step?.detail,
     step
   }
@@ -341,6 +341,8 @@ export function formatWorkedForLabel(streaming: boolean): string {
 /** 官方直播思考折叠：进行中 Thinking，完成后 Thought（秒表仍走预留宽时钟） */
 export const THINKING_LABEL = 'Thinking'
 export const THOUGHT_LABEL = 'Thought'
+/** 开轮尚未出 token / 工具：官方直播空档头 Thinking（仍认旧「连接模型并准备任务」） */
+export const TURN_START_LIVE_STATUS = THINKING_LABEL
 
 export function formatThoughtLabel(streaming: boolean): string {
   return streaming ? THINKING_LABEL : THOUGHT_LABEL
@@ -364,7 +366,8 @@ export function formatStreamingFallbackLabel(options: {
  */
 export function resolvePrepareLiveTitle(text: string): string | null {
   const cleaned = String(text || '').trim()
-  if (!cleaned || !/正在准备|正在生成|正在整理/.test(cleaned)) return null
+  if (!cleaned || !/正在准备|正在生成|正在整理|连接模型|准备任务/.test(cleaned)) return null
+  if (/连接模型|准备任务/.test(cleaned)) return THINKING_LABEL
   if (/正在准备读取/.test(cleaned)) {
     const rest = cleaned.replace(/.*正在准备读取\s*/, '').trim()
     const leaf = rest && rest !== '文件' ? exploreNameFromPath(rest) : undefined

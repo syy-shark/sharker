@@ -86,6 +86,7 @@ describe('live display head', () => {
     expect(resolvePrepareLiveTitle('正在准备列出目录')).toBe('List')
     expect(resolvePrepareLiveTitle('正在准备读取 package.json')).toBe('Read package.json')
     expect(resolvePrepareLiveTitle('正在准备运行命令')).toBe('Running')
+    expect(resolvePrepareLiveTitle('连接模型并准备任务…')).toBe('Thinking')
     expect(resolvePrepareLiveTitle('Working')).toBe(null)
     expect(
       buildLiveHead({

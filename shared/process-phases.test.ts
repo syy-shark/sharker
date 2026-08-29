@@ -374,5 +374,25 @@ describe('process phases privacy', () => {
       }
     ])
     expect(reconnectOfficial[0]?.title).toBe('Reconnecting... 4/5')
+    const connecting = deriveChronologicalSteps([
+      {
+        id: 'cn1',
+        kind: 'status',
+        content: '连接模型并准备任务…',
+        status: 'active',
+        startedAt: 35
+      }
+    ])
+    expect(connecting[0]?.title).toBe('Thinking')
+    const connectingOfficial = deriveChronologicalSteps([
+      {
+        id: 'cn2',
+        kind: 'status',
+        content: 'Thinking',
+        status: 'active',
+        startedAt: 36
+      }
+    ])
+    expect(connectingOfficial[0]?.title).toBe('Thinking')
   })
 })
