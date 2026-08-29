@@ -68,6 +68,7 @@ import {
   jumpToBottomAffordance,
   liveProgressGrew,
   liveProgressKey,
+  shouldWatchLiveJumpProgress,
   liveStickNeedsFollow,
   liveStickScrollTop,
   clampLockedScrollTop,
@@ -742,7 +743,7 @@ function LiveFindHighlight({
   return null
 }
 
-/** 回到底部 / 新消息：自己订 store，不抬对话柱历史行 */
+/** 回到底部 / 新消息：自己订 store。已是 New message 后不跟 token（对标 Codex #38220 / #22860）。 */
 const JumpToBottomChip = memo(function JumpToBottomChip({
   visible,
   stickToBottom,
@@ -757,7 +758,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
   stickToBottomRef: { current: boolean }
 }) {
   const [unseen, setUnseen] = useState(false)
-  const watchLive = visible || unseen
+  const watchLive = shouldWatchLiveJumpProgress({ visible, unseen })
   const progress = useLiveStreamUiSelectWhen(watchLive, (snap) =>
     liveProgressKey({
       streamingChars: snap.streaming.length,

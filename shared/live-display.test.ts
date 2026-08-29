@@ -47,6 +47,7 @@ import {
   jumpToBottomAffordance,
   liveProgressGrew,
   liveProgressKey,
+  shouldWatchLiveJumpProgress,
   liveStickNeedsFollow,
   liveStickScrollTop,
   shouldClearUnseenLive,
@@ -382,6 +383,9 @@ describe('near-live message rows', () => {
     )
     expect(liveProgressGrew('', '1:1:0')).toBe(false)
     expect(liveProgressGrew('1:1:0', '1:2:0')).toBe(true)
+    expect(shouldWatchLiveJumpProgress({ visible: true, unseen: false })).toBe(true)
+    expect(shouldWatchLiveJumpProgress({ visible: true, unseen: true })).toBe(false)
+    expect(shouldWatchLiveJumpProgress({ visible: false, unseen: true })).toBe(false)
     expect(
       shouldMarkUnseenLive({ userLocked: true, stickToBottom: false, liveGrew: true })
     ).toBe(true)

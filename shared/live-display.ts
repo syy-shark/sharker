@@ -781,6 +781,17 @@ export function liveProgressGrew(prev: string, next: string): boolean {
 }
 
 /**
+ * 已是 New message 或已贴底时不必订直播指纹。
+ * 读历史只等第一次长高；之后芯片文案不变，跟 token 会抬 composer-stage（对标 Codex #38220 / #22860）。
+ */
+export function shouldWatchLiveJumpProgress(options: {
+  visible: boolean
+  unseen: boolean
+}): boolean {
+  return options.visible && !options.unseen
+}
+
+/**
  * 读历史时直播又长高：只标未读，不改 scrollTop（对标 Codex #38220 new message）。
  */
 export function shouldMarkUnseenLive(options: {
