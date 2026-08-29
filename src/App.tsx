@@ -1570,7 +1570,6 @@ export default function App() {
           liveSegments: segments,
           activeTool: activeToolSeg?.toolName ?? null
         })
-      }
       } else {
         const finalPreview = extractFinalContent(segments, { isStreaming: true })
         const thinkPreview = thinkingPreviewFromSegments(segments)
