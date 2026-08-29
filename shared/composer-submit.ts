@@ -1,5 +1,5 @@
 /**
- * Composer 提交键：对标 Codex 桌面端 Follow-up（默认排队）与 CLI Tab 排队。
+ * Composer 提交键：对标 Codex 桌面端 Follow-up behavior（默认 Queue）与 CLI Tab Queue。
  * 空输入 ↑ 优先恢复刚提交的草稿（取消运行 / 取消 worktree 创建后即使还没进对话）。
  * @see shared/ARCH.md
  */
@@ -9,6 +9,32 @@ export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 
 /** 忙时后续：排队等到下一回合，或加入当前回合（对标 Codex Follow-up → Steer，不中止） */
 export type FollowUpBehavior = 'queue' | 'steer'
+
+/** Official desktop Settings → General → Follow-up behavior (#17285 / #33416). */
+export const FOLLOW_UP_BEHAVIOR_LABEL = 'Follow-up behavior'
+/** Official desktop composer action while a turn is running. */
+export const STEER_LABEL = 'Steer'
+/** Official desktop queued follow-up chip / settings option. */
+export const QUEUE_LABEL = 'Queue'
+/** Official desktop send button when the turn is idle. */
+export const SEND_LABEL = 'Send'
+
+export function formatQueueChipLabel(index: number): string {
+  return `${QUEUE_LABEL} ${index + 1}`
+}
+
+/** Busy composer placeholder: official Queue / Steer names, not TUI section headers. */
+export function formatBusyFollowUpPlaceholder(options: {
+  followUpBehavior?: FollowUpBehavior
+  interruptLabel?: string | null
+}): string {
+  const follow = parseFollowUpBehavior(options.followUpBehavior)
+  const tail = options.interruptLabel ? ` · ${options.interruptLabel} 停止…` : '…'
+  if (follow === 'steer') {
+    return `Enter ${STEER_LABEL} · ⌘⇧Enter ${QUEUE_LABEL} · Tab ${QUEUE_LABEL}${tail}`
+  }
+  return `Enter ${QUEUE_LABEL} · ⌘⇧Enter ${STEER_LABEL} · Tab ${QUEUE_LABEL}${tail}`
+}
 
 /**
  * Enter 发送（对标 Codex `chatgpt.composerEnterBehavior`）。
@@ -126,7 +152,7 @@ export function resolveComposerSubmit(options: {
 /**
  * 提交后是否贴底并离开 historyHead。
  * 官方 #13698：真正写入对话的发送跳到底（by design）。
- * 排队 / 注入不进 transcript，读历史时保持位置（官方 #38220）。
+ * Queue / Steer 不进 transcript，读历史时保持位置（官方 #38220）。
  */
 export function shouldStickAfterComposerSubmit(mode: ComposerSubmitMode): boolean {
   return mode === 'send'
@@ -134,7 +160,7 @@ export function shouldStickAfterComposerSubmit(mode: ComposerSubmitMode): boolea
 
 /**
  * 忙时排队：斜杠 / bang 先当跟进文本，等当前回合结束再解析。
- * 注入（jump）仍把原文交给当前回合（对标 Codex Steer）。
+ * Steer（jump）仍把原文交给当前回合。
  */
 export function shouldQueueComposerSlash(mode: ComposerSubmitMode): boolean {
   return mode === 'queue'

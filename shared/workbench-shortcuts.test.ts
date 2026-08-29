@@ -174,6 +174,14 @@ describe('workbench shortcuts', () => {
     expect(WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘.' && row.title.includes('批注'))).toBe(
       true
     )
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === 'Enter' && row.title.includes('Queue') && row.title.includes('Steer')
+      )
+    ).toBe(true)
+    expect(WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === 'Tab' && row.title.includes('Queue'))).toBe(
+      true
+    )
   })
 
   it('cycles conversation ids', () => {

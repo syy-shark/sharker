@@ -1,10 +1,16 @@
 /**
- * 输入框上方的排队条：注入预览 / 排队后续（对标 Codex pending steer + queued follow-ups）。
+ * 输入框上方的排队条：Steer 预览 / Queue 后续（对标 Codex pending steer + queued follow-ups）。
  * 不接收直播 token，只跟队列 props 更新。
  * @see src/components/ARCH.md
  */
 import { memo, useState } from 'react'
 import type { QueuedPrompt } from '../types/chat'
+import {
+  formatQueueChipLabel,
+  QUEUE_LABEL,
+  SEND_LABEL,
+  STEER_LABEL
+} from '../../shared/composer-submit'
 import { clampPendingInputPreview, pendingPreviewNeedsClamp } from '../../shared/pending-preview'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import './ComposerQueue.css'
@@ -17,7 +23,7 @@ interface Props {
   onMove: (id: string, direction: -1 | 1) => void
   onSend: (id: string) => void
   onCancel: (id: string) => void
-  /** 直播中排队芯片主操作是注入（对标 Codex Steer），不得中止当前回合 */
+  /** 直播中排队芯片主操作是 Steer，不得中止当前回合 */
   busy?: boolean
 }
 
@@ -57,13 +63,13 @@ function QueueRow({
   return (
     <div className="composer-queue-item glass-tile" role="listitem">
       <span className={`composer-queue-badge${kind === 'steer' ? ' composer-queue-badge--steer' : ''}`}>
-        {kind === 'steer' ? '注入' : `排队 ${index + 1}`}
+        {kind === 'steer' ? STEER_LABEL : formatQueueChipLabel(index)}
       </span>
       {editing ? (
         <textarea
           className="composer-queue-edit"
           value={draft}
-          aria-label={kind === 'steer' ? '编辑注入消息' : '编辑排队消息'}
+          aria-label={kind === 'steer' ? `Edit ${STEER_LABEL} message` : `Edit ${QUEUE_LABEL} message`}
           onChange={(e) => onDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -124,7 +130,7 @@ function QueueRow({
               type="button"
               className="composer-queue-btn composer-queue-btn--primary"
               onClick={onSend}
-              aria-label={sendLabel === '注入' ? '注入当前回合' : '立即发送'}
+              aria-label={sendLabel === STEER_LABEL ? 'Steer into the current turn' : 'Send now'}
             >
               {sendLabel}
             </button>
@@ -138,7 +144,7 @@ function QueueRow({
   )
 }
 
-/** 注入在上、排队在下：挂在输入框上方，不进对话滚动区 */
+/** Steer 在上、Queue 在下：挂在输入框上方，不进对话滚动区 */
 export const ComposerQueue = memo(function ComposerQueue({
   steers = [],
   items,
@@ -160,7 +166,7 @@ export const ComposerQueue = memo(function ComposerQueue({
   }
 
   return (
-    <div className="composer-queue" role="list" aria-label="注入与排队中的后续消息">
+    <div className="composer-queue" role="list" aria-label="Steer and queued follow-up messages">
       {steers.map((item, index) => {
         const editing = editingId === item.id
         return (
@@ -186,7 +192,7 @@ export const ComposerQueue = memo(function ComposerQueue({
             onMove={() => undefined}
             onSend={() => undefined}
             onCancel={() => onCancel(item.id)}
-            sendLabel="发送"
+            sendLabel={SEND_LABEL}
           />
         )
       })}
@@ -215,7 +221,7 @@ export const ComposerQueue = memo(function ComposerQueue({
             onMove={(direction) => onMove(item.id, direction)}
             onSend={() => onSend(item.id)}
             onCancel={() => onCancel(item.id)}
-            sendLabel={busy ? '注入' : '发送'}
+            sendLabel={busy ? STEER_LABEL : SEND_LABEL}
           />
         )
       })}

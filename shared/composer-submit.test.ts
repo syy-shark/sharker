@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   collectUserPrompts,
   filterPromptHistory,
+  FOLLOW_UP_BEHAVIOR_LABEL,
+  formatBusyFollowUpPlaceholder,
+  formatQueueChipLabel,
   isDoubleEscape,
   lastUserMessageId,
   lastUserPrompt,
+  QUEUE_LABEL,
   rememberSubmittedComposerPrompt,
   resetRememberedSubmittedComposerPrompt,
   isFollowUpInvertChord,
@@ -14,9 +18,11 @@ import {
   resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
+  SEND_LABEL,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
-  shouldStickAfterComposerSubmit
+  shouldStickAfterComposerSubmit,
+  STEER_LABEL
 } from './composer-submit'
 
 describe('composer submit', () => {
@@ -51,6 +57,18 @@ describe('composer submit', () => {
     expect(shouldQueueComposerSlash('queue')).toBe(true)
     expect(shouldQueueComposerSlash('send')).toBe(false)
     expect(shouldQueueComposerSlash('jump')).toBe(false)
+    expect(FOLLOW_UP_BEHAVIOR_LABEL).toBe('Follow-up behavior')
+    expect(STEER_LABEL).toBe('Steer')
+    expect(QUEUE_LABEL).toBe('Queue')
+    expect(SEND_LABEL).toBe('Send')
+    expect(formatQueueChipLabel(0)).toBe('Queue 1')
+    expect(formatQueueChipLabel(2)).toBe('Queue 3')
+    expect(formatBusyFollowUpPlaceholder({ followUpBehavior: 'steer' })).toBe(
+      'Enter Steer · ⌘⇧Enter Queue · Tab Queue…'
+    )
+    expect(formatBusyFollowUpPlaceholder({ followUpBehavior: 'queue', interruptLabel: 'Esc' })).toBe(
+      'Enter Queue · ⌘⇧Enter Steer · Tab Queue · Esc 停止…'
+    )
   })
 
   it('inverts follow-up with Cmd+Shift+Enter while a turn is running', () => {

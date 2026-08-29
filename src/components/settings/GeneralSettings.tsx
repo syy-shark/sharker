@@ -7,6 +7,9 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import {
+  FOLLOW_UP_BEHAVIOR_LABEL,
+  QUEUE_LABEL,
+  STEER_LABEL,
   parseComposerEnterBehavior,
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
@@ -61,7 +64,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="后续行为">
+      <SettingsSection title={FOLLOW_UP_BEHAVIOR_LABEL}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={draft.followUpBehavior === 'steer' ? 'steer' : 'queue'}
@@ -71,15 +74,15 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
             options={[
               {
                 value: 'queue',
-                title: '排队',
-                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为加入当前回合。',
-                icon: <span aria-hidden>排</span>
+                title: QUEUE_LABEL,
+                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为 Steer。',
+                icon: <span aria-hidden>Q</span>
               },
               {
                 value: 'steer',
-                title: '注入',
-                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为排队。',
-                icon: <span aria-hidden>注</span>
+                title: STEER_LABEL,
+                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为 Queue。',
+                icon: <span aria-hidden>S</span>
               }
             ]}
           />
@@ -143,7 +146,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               {
                 value: 'inline',
                 title: '当前对话',
-                description: '官方默认：能在当前对话跑 /review 就在当前对话。直播中排队或注入，不中止。',
+                description: '官方默认：能在当前对话跑 /review 就在当前对话。直播中 Queue 或 Steer，不中止。',
                 icon: <span aria-hidden>内</span>
               },
               {

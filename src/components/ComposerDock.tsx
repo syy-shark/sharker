@@ -89,6 +89,8 @@ import {
   isPlanModeToggleKey,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
+  formatBusyFollowUpPlaceholder,
+  STEER_LABEL,
   type ComposerEnterBehavior,
   type FollowUpBehavior
 } from '../../shared/composer-submit'
@@ -2052,9 +2054,7 @@ export const ComposerDock = memo(
               : dictating
                 ? '正在听写… Ctrl⇧D 结束'
                 : loading
-                  ? followUpBehavior === 'steer'
-                    ? `Enter 注入 · ⌘⇧Enter 排队 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
-                    : `Enter 排队 · ⌘⇧Enter 注入 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
+                  ? formatBusyFollowUpPlaceholder({ followUpBehavior, interruptLabel })
                   : composerEnterBehavior === 'cmdAlways' ||
                       (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
                     ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
@@ -2398,10 +2398,10 @@ export const ComposerDock = memo(
                 type="button"
                 className="composer-jump"
                 onClick={() => submit('jump')}
-                title="注入：加入当前回合，不中止直播（Enter）"
-                aria-label="注入当前回合"
+                title="Steer: add to the current turn without stopping the live stream (Enter)"
+                aria-label="Steer into the current turn"
               >
-                注入
+                {STEER_LABEL}
               </button>
             ) : null}
             <span className="composer-send-slot" data-mode={loading ? 'stop' : 'send'}>

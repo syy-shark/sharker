@@ -26,6 +26,7 @@ import {
   updateHeldBusyFollowUpText,
   updatePendingSteerText
 } from './pending-steer'
+import { SEND_LABEL, STEER_LABEL } from './composer-submit'
 
 describe('pending steer mailbox', () => {
   it('queues per conversation and drains only after the first sample', () => {
@@ -82,6 +83,8 @@ describe('pending steer mailbox', () => {
     expect(appendFinishLeftoverSteers(msgs, [{ id: 's-a', text: '改用测试' }])).toBe(msgs)
     expect(queuedChipPrimaryAction(true)).toBe('steer')
     expect(queuedChipPrimaryAction(false)).toBe('send')
+    expect(queuedChipPrimaryAction(true) === 'steer' ? STEER_LABEL : SEND_LABEL).toBe('Steer')
+    expect(queuedChipPrimaryAction(false) === 'steer' ? STEER_LABEL : SEND_LABEL).toBe('Send')
     expect(resolveBusyFollowUp({ intent: 'queue' })).toBe('queue')
     expect(resolveBusyFollowUp({ intent: 'steer', accepted: { ok: true, id: 's1' } })).toBe(
       'pending'

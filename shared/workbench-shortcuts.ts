@@ -338,10 +338,10 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Ctrl⇧D', title: '听写' },
   { keys: 'Ctrl⇧V', title: '语音对话' },
   { keys: '↑', title: '空输入时恢复上一条' },
-  { keys: 'Enter', title: '发送；忙时按设置排队或注入' },
+  { keys: 'Enter', title: '发送；忙时按设置 Queue 或 Steer' },
   { keys: 'Esc', title: '停止当前回合（可改绑；IME 选词不触发）' },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
-  { keys: 'Tab', title: '忙时排队下一条' },
+  { keys: 'Tab', title: '忙时 Queue 下一条' },
   { keys: 'Shift+Tab', title: '输入框内切换计划模式' },
   { keys: 'Shift+Enter', title: '换行' }
 ]

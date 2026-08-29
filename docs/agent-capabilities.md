@@ -109,11 +109,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 排队与插队
 
-- 设置 → 通用 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画注入预览，再画排队后续。
-- **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队。忙时输入 `/review`、`/status` 或 `!command` 先出现在输入框上方队列，当前回合结束后再解析（对标 Codex Tab queue slash；注入仍把原文交给当前回合）
+- 设置 → 通用 → **Follow-up behavior**（对标 Codex Settings → General → Follow-up behavior）：默认 **Queue**，忙时 Enter 等到当前回合结束；也可改成 **Steer**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画 Steer 预览，再画 Queue 后续。芯片短标签是 `Steer` / `Queue n`，不把 TUI「Messages to be submitted after next tool call」画进芯片。
+- **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终 Queue。忙时输入 `/review`、`/status` 或 `!command` 先出现在输入框上方队列，当前回合结束后再解析（对标 Codex Tab queue slash；Steer 仍把原文交给当前回合）
 - 设置 → 通用 → **Enter 发送**（对标 Codex Settings → General / `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
 - 设置 → **建议提示**（对标 Codex Settings → Suggested prompts）：空对话先给出进行中 / 未读 / 最近更新的对话，再审查 / 设定目标；可关
-- 设置 → 通用 → **代码审查**：`/review` 默认当前对话（官方 Settings → General → Code review Inline）；Detached 才新开审查线程。审查模型默认跟随当前会话，也可指定已配置 Provider（对标 Codex `review_model`，不改输入框模型）。直播中排队或注入，不中止当前回合
+- 设置 → 通用 → **代码审查**：`/review` 默认当前对话（官方 Settings → General → Code review Inline）；Detached 才新开审查线程。审查模型默认跟随当前会话，也可指定已配置 Provider（对标 Codex `review_model`，不改输入框模型）。直播中 Queue 或 Steer，不中止当前回合
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）
 - 设置 → 权限 → Git **始终 force-with-lease 推送**（默认关）：审查面板 `git push --force-with-lease`，从不 `--force`（对标 Codex Always force push）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
@@ -144,9 +144,9 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 切换对话或工作区时恢复未发送的输入与附件（对标 Codex restore unsent prompts when switching tasks）；发送或 slash 后清掉该会话草稿
 - Composer 可从 Finder / 资源管理器粘贴或拖入源码与文本文件，按原名收成附件并折进本轮（对标 Codex non-image file pasting）；Word 双层剪贴板仍优先正文；超长粘贴仍收成 `Pasted text.txt` 可回插；zip / 办公二进制不收，请用 `@` 引用工作区文件
 - 用户气泡、输入框与排队条保留换行，并把长 URL 折在对话柱内（对标 Codex #37709 / #38380 / #38704）；历史 CRLF 先归一再画，避免空白行或横向撑开把直播贴底顶跳
-- 排队消息出现在输入框上方，可编辑、重排、删除；预览最多 3 行 / 240 字，整条队列限高（对标 Codex #39864 pending input wrapping / #40788，长排队不把直播视口挤进输入框）。空闲可立即发送，直播中点「注入」推进当前回合（对标 Codex queued chip Steer），失败留在队列、不中止直播（不进对话滚动区，避免直播贴底跳动）。忙时排队 / 注入不贴底、不离开正在读的 `historyHead`（对标 Codex #38220）；只有空闲发送新用户气泡才跳到底（对标 Codex #13698 by design）。读历史时直播继续长高，输入区上方的回到底部改成「新消息」并在 composer-stage 流里占位（不 absolute 盖直播尾），点了才跟，不抢阅读位置（对标 Codex #38220 new message affordance / #40788）
-- 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
-- Composer 「注入」按钮 / ⌘⇧Enter 把本条加入当前回合（不中止直播）；注入失败改排队，只有没有进行中回合才新开（对标 Codex Steer，不 abort）。首轮对话 id 还没落库时，忙时注入 / 排队先出现在输入框上方芯片，等会话就绪再冲进当前回合或队列，不中止也不丢跟进。回合正常结束仍未排空时收成用户气泡并立刻续跑（对标 Codex leftover pending input at task finish）；中止 / 失败或本地 `!` 命令从未采样则还回排队（对标 Codex #18290 / 中止还原 composer）
+- 排队消息出现在输入框上方，可编辑、重排、删除；预览最多 3 行 / 240 字，整条队列限高（对标 Codex #39864 pending input wrapping / #40788，长排队不把直播视口挤进输入框）。空闲可立即 Send，直播中点 **Steer** 推进当前回合（对标 Codex queued chip Steer），失败留在队列、不中止直播（不进对话滚动区，避免直播贴底跳动）。忙时 Queue / Steer 不贴底、不离开正在读的 `historyHead`（对标 Codex #38220）；只有空闲发送新用户气泡才跳到底（对标 Codex #13698 by design）。读历史时直播继续长高，输入区上方的回到底部改成「新消息」并在 composer-stage 流里占位（不 absolute 盖直播尾），点了才跟，不抢阅读位置（对标 Codex #38220 new message affordance / #40788）
+- 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue；#26502 官方桌面尚未交付 Hold 文案）
+- Composer **Steer** 按钮 / ⌘⇧Enter 把本条加入当前回合（不中止直播）；Steer 失败改 Queue，只有没有进行中回合才新开（对标 Codex Steer，不 abort）。首轮对话 id 还没落库时，忙时 Steer / Queue 先出现在输入框上方芯片，等会话就绪再冲进当前回合或队列，不中止也不丢跟进。回合正常结束仍未排空时收成用户气泡并立刻续跑（对标 Codex leftover pending input at task finish）；中止 / 失败或本地 `!` 命令从未采样则还回 Queue（对标 Codex #18290 / 中止还原 composer）
 
 ---
 
