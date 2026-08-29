@@ -919,6 +919,12 @@ describe('splitStreamingMarkdown', () => {
     if (afterFence[0]?.type === 'list') {
       expect(afterFence[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
     }
+    const afterTable = parseCheapProseBlocks('- note\n  | A | B |\n  | --- | --- |\n  | 1 | 2 |\n  after')
+    expect(afterTable.map((b) => b.type)).toEqual(['list'])
+    if (afterTable[0]?.type === 'list') {
+      expect(afterTable[0].items[0]?.blocks?.[0]?.type).toBe('table')
+      expect(afterTable[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
     const looseFence = parseCheapProseBlocks('- a\n\n  ```\n  x\n  ```')
     expect(looseFence.map((b) => b.type)).toEqual(['list'])
     if (looseFence[0]?.type === 'list') {
@@ -1463,6 +1469,57 @@ describe('splitStreamingMarkdown', () => {
         type: 'p',
         nodes: [{ type: 'text', text: 'after more' }]
       })
+    }
+    const headingSuffix = '- note\n  # title'
+    const headingSuffixFirst = parseCheapProseBlocks(headingSuffix)
+    const headingSuffixGrown = continueCheapProseBlocks(
+      headingSuffix,
+      headingSuffixFirst,
+      `${headingSuffix}\n  after`
+    )
+    if (headingSuffixFirst[0]?.type === 'list' && headingSuffixGrown[0]?.type === 'list') {
+      expect(headingSuffixGrown[0].items[0]?.nodes).toBe(headingSuffixFirst[0].items[0]?.nodes)
+      expect(headingSuffixGrown[0].items[0]?.blocks?.[0]).toBe(headingSuffixFirst[0].items[0]?.blocks?.[0])
+      expect(headingSuffixGrown[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const hrSuffix = '- item\n  ***'
+    const hrSuffixFirst = parseCheapProseBlocks(hrSuffix)
+    const hrSuffixGrown = continueCheapProseBlocks(hrSuffix, hrSuffixFirst, `${hrSuffix}\n  after`)
+    if (hrSuffixFirst[0]?.type === 'list' && hrSuffixGrown[0]?.type === 'list') {
+      expect(hrSuffixGrown[0].items[0]?.nodes).toBe(hrSuffixFirst[0].items[0]?.nodes)
+      expect(hrSuffixGrown[0].items[0]?.blocks?.[0]).toBe(hrSuffixFirst[0].items[0]?.blocks?.[0])
+      expect(hrSuffixGrown[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const closedTable = '- note\n  | A | B |\n  | --- | --- |\n  | 1 | 2 |'
+    const closedTableFirst = parseCheapProseBlocks(closedTable)
+    const closedTableSuffix = continueCheapProseBlocks(
+      closedTable,
+      closedTableFirst,
+      `${closedTable}\n  after`
+    )
+    if (closedTableFirst[0]?.type === 'list' && closedTableSuffix[0]?.type === 'list') {
+      expect(closedTableSuffix[0].items[0]?.nodes).toBe(closedTableFirst[0].items[0]?.nodes)
+      expect(closedTableSuffix[0].items[0]?.blocks?.[0]).toBe(closedTableFirst[0].items[0]?.blocks?.[0])
+      expect(closedTableSuffix[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const nestedHeadingSuffix = '- a\n  - b\n    # title'
+    const nestedHeadingFirst = parseCheapProseBlocks(nestedHeadingSuffix)
+    const nestedHeadingGrown = continueCheapProseBlocks(
+      nestedHeadingSuffix,
+      nestedHeadingFirst,
+      `${nestedHeadingSuffix}\n    after`
+    )
+    if (nestedHeadingFirst[0]?.type === 'list' && nestedHeadingGrown[0]?.type === 'list') {
+      expect(nestedHeadingGrown[0].items[0]?.nodes).toBe(nestedHeadingFirst[0].items[0]?.nodes)
+      expect(nestedHeadingGrown[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedHeadingFirst[0].items[0]?.nested?.items[0]?.nodes
+      )
+      expect(nestedHeadingGrown[0].items[0]?.nested?.items[0]?.blocks?.[0]).toBe(
+        nestedHeadingFirst[0].items[0]?.nested?.items[0]?.blocks?.[0]
+      )
+      expect(nestedHeadingGrown[0].items[0]?.nested?.items[0]?.suffix).toEqual([
+        { type: 'text', text: 'after' }
+      ])
     }
   })
 
