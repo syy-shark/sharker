@@ -1756,6 +1756,29 @@ describe('splitStreamingMarkdown', () => {
     expect(tableThenSetextGrown[0]).toBe(tableThenSetext[0])
     expect(tableThenSetextGrown[1]).toBe(tableThenSetext[1])
     expect(tableThenSetextGrown.map((block) => block.type)).toEqual(['table', 'heading', 'p'])
+    const twoQuotesSrc = '> a\n\n见 foo\n\n> b'
+    const twoQuotes = parseCheapProseBlocks(twoQuotesSrc)
+    const twoQuotesGrown = continueCheapProseBlocks(twoQuotesSrc, twoQuotes, `${twoQuotesSrc}\n> c`)
+    expect(twoQuotesGrown[0]).toBe(twoQuotes[0])
+    expect(twoQuotesGrown[1]).toBe(twoQuotes[1])
+    expect(twoQuotesGrown.map((block) => block.type)).toEqual(['quote', 'p', 'quote'])
+    const twoListsSrc = '- a\n\n1. b'
+    const twoLists = parseCheapProseBlocks(twoListsSrc)
+    const twoListsGrown = continueCheapProseBlocks(twoListsSrc, twoLists, `${twoListsSrc}\n2. c`)
+    expect(twoListsGrown[0]).toBe(twoLists[0])
+    if (twoLists[1]?.type === 'list' && twoListsGrown[1]?.type === 'list') {
+      expect(twoListsGrown[1].items[0]).toBe(twoLists[1].items[0])
+      expect(twoListsGrown[1].items).toHaveLength(2)
+    }
+    const twoTablesSrc = '| A |\n| --- |\n| 1 |\n\n| B |\n| --- |\n| 2 |'
+    const twoTables = parseCheapProseBlocks(twoTablesSrc)
+    const twoTablesGrown = continueCheapProseBlocks(twoTablesSrc, twoTables, `${twoTablesSrc}\n| 3 |`)
+    expect(twoTablesGrown[0]).toBe(twoTables[0])
+    if (twoTables[1]?.type === 'table' && twoTablesGrown[1]?.type === 'table') {
+      expect(twoTablesGrown[1].header).toBe(twoTables[1].header)
+      expect(twoTablesGrown[1].rows[0]).toBe(twoTables[1].rows[0])
+      expect(twoTablesGrown[1].rows).toHaveLength(2)
+    }
     const paraOnly = parseCheapProseBlocks('见 foo')
     const paraThenList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n- 一项')
     expect(paraThenList[0]).toBe(paraOnly[0])
