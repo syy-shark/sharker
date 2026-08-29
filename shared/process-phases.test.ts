@@ -890,6 +890,47 @@ describe('process phases privacy', () => {
     expect(afterReconnectAskThink!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
     expect(afterReconnectAskThink!.some((step) => step.segment === askReady)).toBe(true)
     expect(afterReconnectAskThink!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterReconnectAskToken = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, reconnectAskStatus, askReady, askStatusDoneForHang, firstReply],
+      true
+    )
+    expect(afterReconnectAskToken).not.toBeNull()
+    expect(afterReconnectAskToken!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterReconnectAskToken!.some((step) => step.segment === firstReply)).toBe(false)
+    const afterReconnectAskThinkSettled = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [
+        helloAskHangDone,
+        reconnectAskStatus,
+        askReady,
+        askStatusDoneForHang,
+        { ...nextThink, status: 'done' },
+        cmdNextSettled
+      ],
+      true
+    )
+    expect(afterReconnectAskThinkSettled).not.toBeNull()
+    expect(afterReconnectAskThinkSettled!.at(-1)?.segment).toBe(cmdNextSettled)
+    expect(afterReconnectAskThinkSettled!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const afterWriteAskThinkTokenSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [
+        cmdDoneDiff,
+        askReady,
+        askStatusDoneForHang,
+        { ...nextThink, status: 'done' },
+        firstReplyEarly,
+        cmdNextSettled
+      ],
+      true
+    )
+    expect(afterWriteAskThinkTokenSettled).not.toBeNull()
+    expect(afterWriteAskThinkTokenSettled!.at(-1)?.segment).toBe(cmdNextSettled)
+    expect(afterWriteAskThinkTokenSettled!.some((step) => step.segment === firstReplyEarly)).toBe(false)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',

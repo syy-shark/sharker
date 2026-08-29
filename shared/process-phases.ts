@@ -84,6 +84,16 @@ import {
   isLiveWriteStatStatusAskNeededThinkSettledToolAppendChange,
   isLiveAskNeededThinkAnswerSettledToolAppendChange,
   isLiveStatusAskNeededThinkAppendChange,
+  isLiveStatusAskNeededAnswerAppendChange,
+  isLiveStatusAskNeededThinkAnswerAppendChange,
+  isLiveStatusAskNeededAnswerDemoAppendChange,
+  isLiveStatusAskNeededThinkAnswerDemoAppendChange,
+  isLiveStatusAskNeededThinkSettledToolAppendChange,
+  isLiveStatusAskNeededAnswerSettledToolAppendChange,
+  isLiveWriteStatAskNeededThinkAnswerSettledToolAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange,
+  isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveCancelChange,
@@ -834,6 +844,16 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatStatusAskNeededThinkSettledToolAppendChange(prevSegments, segments) &&
     !isLiveAskNeededThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
     !isLiveStatusAskNeededThinkAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
     !isLiveStatusSettleChange(prevSegments, segments)
   ) {
     return null

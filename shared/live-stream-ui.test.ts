@@ -172,6 +172,16 @@ import {
   isLiveWriteStatStatusAskNeededThinkSettledToolAppendChange,
   isLiveAskNeededThinkAnswerSettledToolAppendChange,
   isLiveStatusAskNeededThinkAppendChange,
+  isLiveStatusAskNeededAnswerAppendChange,
+  isLiveStatusAskNeededThinkAnswerAppendChange,
+  isLiveStatusAskNeededAnswerDemoAppendChange,
+  isLiveStatusAskNeededThinkAnswerDemoAppendChange,
+  isLiveStatusAskNeededThinkSettledToolAppendChange,
+  isLiveStatusAskNeededAnswerSettledToolAppendChange,
+  isLiveWriteStatAskNeededThinkAnswerSettledToolAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange,
+  isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange,
   isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
@@ -2841,6 +2851,174 @@ describe('live stream ui snapshot', () => {
     expect(isLiveStatusAskNeededThinkAppendChange([hello], askReconnectThink)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello], askReconnectThink)).toBe('think')
     expect(nextLiveThinkText('Hmm', [hello], askReconnectThink)).toBe('HmmNext')
+    let askReconnectToken = applyStreamChunk([hello], {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 68.2
+    })
+    askReconnectToken = applyStreamChunk(askReconnectToken, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 68.3
+    })
+    askReconnectToken = applyStreamChunk(askReconnectToken, { ...askNeeded, timestamp: 68.4 })
+    askReconnectToken = applyStreamChunk(askReconnectToken, { type: 'token', content: 'Hi', timestamp: 68.5 })
+    expect(isLiveStatusAskNeededAnswerAppendChange([hello], askReconnectToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectToken)).toBe('text')
+    let askReconnectThinkToken = applyStreamChunk(askReconnectThink, {
+      type: 'token',
+      content: 'Hi',
+      timestamp: 68.6
+    })
+    expect(isLiveStatusAskNeededThinkAnswerAppendChange([hello], askReconnectThinkToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectThinkToken)).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello], askReconnectThinkToken)).toBe('HmmNext')
+    let askReconnectDemo = applyStreamChunk([hello], {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 68.7
+    })
+    askReconnectDemo = applyStreamChunk(askReconnectDemo, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 68.8
+    })
+    askReconnectDemo = applyStreamChunk(askReconnectDemo, { ...askNeeded, timestamp: 68.9 })
+    askReconnectDemo = applyStreamChunk(askReconnectDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 69.1
+    })
+    askReconnectDemo = applyStreamChunk(askReconnectDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 69.2
+    })
+    expect(isLiveStatusAskNeededAnswerDemoAppendChange([hello], askReconnectDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectDemo)).toBe('tool')
+    let askReconnectThinkDemo = applyStreamChunk(askReconnectThink, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 69.3
+    })
+    askReconnectThinkDemo = applyStreamChunk(askReconnectThinkDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 69.4
+    })
+    expect(isLiveStatusAskNeededThinkAnswerDemoAppendChange([hello], askReconnectThinkDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectThinkDemo)).toBe('tool')
+    let askReconnectThinkSettled = applyStreamChunk(askReconnectThink, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-reconnect-think-settle-1',
+      timestamp: 69.5
+    })
+    askReconnectThinkSettled = applyStreamChunk(askReconnectThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-reconnect-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 69.6
+    })
+    expect(isLiveStatusAskNeededThinkSettledToolAppendChange([hello], askReconnectThinkSettled)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectThinkSettled)).toBe('tool')
+    let askReconnectTokenSettled = applyStreamChunk(askReconnectToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-reconnect-token-settle-1',
+      timestamp: 69.7
+    })
+    askReconnectTokenSettled = applyStreamChunk(askReconnectTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-reconnect-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 69.8
+    })
+    expect(isLiveStatusAskNeededAnswerSettledToolAppendChange([hello], askReconnectTokenSettled)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectTokenSettled)).toBe('text')
+    let askWriteThinkTokenSettled = applyStreamChunk(askWriteThinkToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-think-token-settle-1',
+      timestamp: 70.1
+    })
+    askWriteThinkTokenSettled = applyStreamChunk(askWriteThinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 70.2
+    })
+    expect(
+      isLiveWriteStatAskNeededThinkAnswerSettledToolAppendChange(
+        [hello, running],
+        askWriteThinkTokenSettled
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteThinkTokenSettled)).toBe('text')
+    let askWritePlanThinkDemo = applyStreamChunk(askWritePlanThink, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 70.3
+    })
+    askWritePlanThinkDemo = applyStreamChunk(askWritePlanThinkDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 70.4
+    })
+    expect(
+      isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange([hello, running], askWritePlanThinkDemo)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanThinkDemo)).toBe('tool')
+    let askWritePlanTokenSettled = applyStreamChunk(askWritePlanToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-plan-token-settle-1',
+      timestamp: 70.5
+    })
+    askWritePlanTokenSettled = applyStreamChunk(askWritePlanTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-plan-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 70.6
+    })
+    expect(
+      isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange(
+        [hello, running],
+        askWritePlanTokenSettled
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanTokenSettled)).toBe('text')
+    let askWritePlanThinkTokenSettled = applyStreamChunk(askWritePlanThinkToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-plan-think-token-settle-1',
+      timestamp: 70.7
+    })
+    askWritePlanThinkTokenSettled = applyStreamChunk(askWritePlanThinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-write-plan-think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 70.8
+    })
+    expect(
+      isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange(
+        [hello, running],
+        askWritePlanThinkTokenSettled
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanThinkTokenSettled)).toBe('text')
     const processReadyForAskHang = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello]
@@ -2914,6 +3092,28 @@ describe('live stream ui snapshot', () => {
       liveSegments: askHangDemo
     })
     expect(answerAfterAskHangDemo.parts.some((part) => part.type === 'demo')).toBe(true)
+    const processAfterAskReconnectToken = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askReconnectToken
+    })
+    expect(processAfterAskReconnectToken.contentStreaming).toBe(true)
+    expect(
+      processAfterAskReconnectToken.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
+      )
+    ).toBe(true)
+    expect(processAfterAskReconnectToken.processForFlow.some((segment) => segment.kind === 'text')).toBe(
+      false
+    )
+    const answerAfterAskReconnectToken = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askReconnectToken
+    })
+    expect(
+      answerAfterAskReconnectToken.parts.some(
+        (part) => part.type === 'text' && part.content.includes('Hi')
+      )
+    ).toBe(true)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
