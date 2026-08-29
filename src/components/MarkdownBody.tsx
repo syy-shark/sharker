@@ -1,5 +1,5 @@
 /**
- * 聊天 Markdown 渲染：http(s) 外开；本地文件引用打开右侧预览。
+ * 聊天 Markdown 渲染：http(s) 默认进内置浏览器，⌘/Ctrl+点进系统浏览器；本地文件引用打开右侧预览。
  * 保住 GFM 任务列表 class；元素子节点不套 span。
  * 支持 ```demo 对话原生内联演示（无浏览器外壳）。
  * @see src/ARCH.md
@@ -18,6 +18,8 @@ import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang, parseDemoMeta } from './InlineDemo'
 import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLang } from '../../shared/mermaid-fence'
+import { resolveChatLinkOpen } from '../../shared/chat-link'
+import { dispatchOpenBrowserUrl } from '../lib/browser-history-store'
 
 /** 是否应在系统浏览器中打开 */
 function shouldOpenExternally(href: string): boolean {
@@ -111,9 +113,12 @@ const markdownComponents: Components = {
           {...rest}
           target="_blank"
           rel="noopener noreferrer"
+          title={href.startsWith('mailto:') ? undefined : '⌘/Ctrl+点击在系统浏览器打开'}
           onClick={(e) => {
             e.preventDefault()
-            void window.sharker.openExternal(href)
+            const target = resolveChatLinkOpen(href, e)
+            if (target === 'in-app') dispatchOpenBrowserUrl(href)
+            else if (target === 'system') void window.sharker?.openExternal?.(href)
           }}
         >
           {children}

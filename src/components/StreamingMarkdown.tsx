@@ -10,6 +10,8 @@ import { LiveFenceTail } from './CodeArtifactBlock'
 import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLangPrefix } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
+import { resolveChatLinkOpen } from '../../shared/chat-link'
+import { dispatchOpenBrowserUrl } from '../lib/browser-history-store'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import {
@@ -64,15 +66,14 @@ const CheapInlineView = memo(function CheapInlineView({ node }: { node: CheapInl
         title={node.title}
         target="_blank"
         rel="noopener noreferrer"
+        title={
+          node.href.startsWith('mailto:') ? undefined : '⌘/Ctrl+点击在系统浏览器打开'
+        }
         onClick={(event) => {
           event.preventDefault()
-          if (
-            node.href.startsWith('http://') ||
-            node.href.startsWith('https://') ||
-            node.href.startsWith('mailto:')
-          ) {
-            void window.sharker.openExternal?.(node.href)
-          }
+          const target = resolveChatLinkOpen(node.href, event)
+          if (target === 'in-app') dispatchOpenBrowserUrl(node.href)
+          else if (target === 'system') void window.sharker?.openExternal?.(node.href)
         }}
       >
         {node.children ? renderCheapInline(node.children) : node.text}

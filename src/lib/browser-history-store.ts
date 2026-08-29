@@ -33,7 +33,7 @@ export function saveBrowserHistory(entries: readonly BrowserHistoryEntry[]): Bro
   return next
 }
 
-/** 打开内置浏览器到指定 URL（设置页「重新打开」） */
+/** 打开内置浏览器到指定 URL（设置页重新打开、对话点链） */
 export const OPEN_BROWSER_URL_EVENT = 'sharker:open-browser-url'
 
 export function dispatchOpenBrowserUrl(url: string): void {
