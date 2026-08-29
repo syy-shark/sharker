@@ -498,3 +498,48 @@ export function nextRowIntrinsicHeights(
   }
   return changed ? next : prev
 }
+
+/** 直播进度指纹：只比有没有变，不把全文塞进 state */
+export function liveProgressKey(options: {
+  streamingChars: number
+  liveSegmentCount: number
+  thinkingChars?: number
+}): string {
+  return `${options.liveSegmentCount}:${options.streamingChars}:${options.thinkingChars ?? 0}`
+}
+
+/** 已有上一帧、这一帧又变了，才算「直播长高」 */
+export function liveProgressGrew(prev: string, next: string): boolean {
+  return Boolean(prev) && Boolean(next) && prev !== next
+}
+
+/**
+ * 读历史时直播又长高：只标未读，不改 scrollTop（对标 Codex #38220 new message）。
+ */
+export function shouldMarkUnseenLive(options: {
+  userLocked: boolean
+  stickToBottom: boolean
+  liveGrew: boolean
+}): boolean {
+  return options.userLocked && !options.stickToBottom && options.liveGrew
+}
+
+/** 重新贴底后清掉「新消息」 */
+export function shouldClearUnseenLive(options: {
+  stickToBottom: boolean
+  userLocked: boolean
+}): boolean {
+  return options.stickToBottom && !options.userLocked
+}
+
+/** 「回到底部」在有未读直播时改成「新消息」，仍不抢镜头 */
+export function jumpToBottomAffordance(hasUnseenLive: boolean): {
+  label: string
+  ariaLabel: string
+  emphasize: boolean
+} {
+  if (hasUnseenLive) {
+    return { label: '新消息', ariaLabel: '有新消息，回到底部', emphasize: true }
+  }
+  return { label: '回到底部', ariaLabel: '回到底部', emphasize: false }
+}

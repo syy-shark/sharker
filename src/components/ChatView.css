@@ -1564,6 +1564,12 @@ html.theme-dark .composer-worktree-banner {
   animation: list-item-in var(--motion-duration-normal) var(--motion-ease-soft) both;
 }
 
+.chat-scroll-bottom.is-unseen {
+  color: var(--text);
+  border-color: var(--accent-ring);
+  background: color-mix(in srgb, var(--accent-ring) 16%, var(--glass-fill-raised));
+}
+
 .chat-scroll-bottom:hover {
   background: var(--glass-fill-popover);
   color: var(--text);
@@ -1576,6 +1582,10 @@ html.theme-dark .composer-worktree-banner {
 html.theme-dark .chat-scroll-bottom {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+html.theme-dark .chat-scroll-bottom.is-unseen {
+  background: color-mix(in srgb, var(--accent-ring) 22%, var(--metal-fill, var(--glass-fill-raised)));
 }
 
 .chat-side-ask-bar {

@@ -24,8 +24,13 @@ import {
   shouldFoldTurnWork,
   shouldPromoteSyntheticLiveHead,
   shouldSynthesizePlanning,
+  jumpToBottomAffordance,
+  liveProgressGrew,
+  liveProgressKey,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  shouldClearUnseenLive,
+  shouldMarkUnseenLive,
   shouldFollowArtifactTail,
   shouldMountMessageActions,
   shouldReserveMessageActions,
@@ -267,6 +272,25 @@ describe('near-live message rows', () => {
     expect(shouldLockStickOnTranscriptKey({ key: ' ', shiftKey: true })).toBe(true)
     expect(shouldLockStickOnTranscriptKey({ key: ' ' })).toBe(false)
     expect(shouldLockStickOnTranscriptKey({ key: 'ArrowDown' })).toBe(false)
+    expect(liveProgressKey({ streamingChars: 12, liveSegmentCount: 3, thinkingChars: 4 })).toBe(
+      '3:12:4'
+    )
+    expect(liveProgressGrew('', '1:1:0')).toBe(false)
+    expect(liveProgressGrew('1:1:0', '1:2:0')).toBe(true)
+    expect(
+      shouldMarkUnseenLive({ userLocked: true, stickToBottom: false, liveGrew: true })
+    ).toBe(true)
+    expect(
+      shouldMarkUnseenLive({ userLocked: false, stickToBottom: true, liveGrew: true })
+    ).toBe(false)
+    expect(shouldClearUnseenLive({ stickToBottom: true, userLocked: false })).toBe(true)
+    expect(shouldClearUnseenLive({ stickToBottom: false, userLocked: true })).toBe(false)
+    expect(jumpToBottomAffordance(true)).toEqual({
+      label: '新消息',
+      ariaLabel: '有新消息，回到底部',
+      emphasize: true
+    })
+    expect(jumpToBottomAffordance(false).label).toBe('回到底部')
   })
 })
 

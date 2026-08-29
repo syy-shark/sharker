@@ -41,8 +41,13 @@ import {
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
+  jumpToBottomAffordance,
+  liveProgressGrew,
+  liveProgressKey,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  shouldClearUnseenLive,
+  shouldMarkUnseenLive,
   shouldFocusTranscriptScroller,
   shouldLockStickOnTranscriptKey,
   transcriptNavIntent,
@@ -470,6 +475,9 @@ export function ChatView({
   const [stickToBottom, setStickToBottom] = useState(true)
   /** 内容溢出且用户不在底部时才显示「回到底部」 */
   const [canJumpToBottom, setCanJumpToBottom] = useState(false)
+  /** 读历史时直播又长高：按钮改「新消息」，不抢镜头（对标 Codex #38220） */
+  const [unseenLive, setUnseenLive] = useState(false)
+  const lastLiveKeyRef = useRef('')
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
@@ -485,6 +493,8 @@ export function ChatView({
     setPinnedStart(restoreTranscriptWindowStart(scrollSnapshot))
     setDiskFindHits(EMPTY_FIND_HITS)
     findAnchorRef.current = null
+    setUnseenLive(false)
+    lastLiveKeyRef.current = ''
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [copyPickIndex, setCopyPickIndex] = useState(0)
@@ -985,6 +995,7 @@ export function ChatView({
       stickToBottomRef.current = true
       setStickToBottom(true)
       setCanJumpToBottom(false)
+      setUnseenLive(false)
       return
     }
     if (userScrollLockRef.current) {
@@ -1000,6 +1011,7 @@ export function ChatView({
         stickToBottomRef.current = true
         setStickToBottom(true)
         setCanJumpToBottom(false)
+        setUnseenLive(false)
         setPinnedStart(null)
         return
       }
@@ -1019,6 +1031,7 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
+    setUnseenLive(false)
     setPinnedStart(null)
   }, [readScrollMetrics])
 
@@ -1232,6 +1245,7 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
+    setUnseenLive(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     onLeaveHistoryHeadRef.current?.()
@@ -1246,6 +1260,7 @@ export function ChatView({
     userScrollLockRef.current = false
     stickToBottomRef.current = true
     setStickToBottom(true)
+    setUnseenLive(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     onLeaveHistoryHeadRef.current?.()
@@ -1617,6 +1632,35 @@ export function ChatView({
     thinking: turnThinking,
     approvalWaiting: Boolean(approval)
   })
+  const jumpBottom = jumpToBottomAffordance(unseenLive)
+
+  useEffect(() => {
+    const next = liveProgressKey({
+      streamingChars: streaming.length,
+      liveSegmentCount: liveSegments.length,
+      thinkingChars: turnThinking.length
+    })
+    const prev = lastLiveKeyRef.current
+    lastLiveKeyRef.current = next
+    if (
+      shouldClearUnseenLive({
+        stickToBottom: stickToBottomRef.current,
+        userLocked: userScrollLockRef.current
+      })
+    ) {
+      setUnseenLive(false)
+      return
+    }
+    if (
+      shouldMarkUnseenLive({
+        userLocked: userScrollLockRef.current,
+        stickToBottom: stickToBottomRef.current,
+        liveGrew: liveProgressGrew(prev, next)
+      })
+    ) {
+      setUnseenLive(true)
+    }
+  }, [streaming, liveSegments.length, turnThinking])
   const historicalRows = useMemo(
     () =>
       historicalMessagesDuringLive(windowedMessages, liveAssistantId, loading, liveBody).map((m, index, rows) => {
@@ -1882,11 +1926,11 @@ export function ChatView({
             <div className="chat-scroll-bottom-wrap">
               <button
                 type="button"
-                className="chat-scroll-bottom"
+                className={`chat-scroll-bottom${jumpBottom.emphasize ? ' is-unseen' : ''}`}
                 onClick={resumeStickToBottom}
-                aria-label="回到底部"
+                aria-label={jumpBottom.ariaLabel}
               >
-                回到底部
+                {jumpBottom.label}
               </button>
             </div>
           ) : null}
