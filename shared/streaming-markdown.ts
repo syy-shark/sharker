@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线后再起的后续块、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码后再起的后续块、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -3447,11 +3447,12 @@ function fencedPreBody(text: string): string | null {
   return body.join('\n')
 }
 
-/** 缩进代码 / 项内围栏尾只改正文，不重扫块结构（对标 Codex #39061 / #34045） */
+/** 缩进代码 / 项内围栏尾只改正文；闭合后再起的后续块接到后面（对标 Codex #39061 / #34045） */
 function continueLastPreBlock(
   prev: Extract<CheapProseBlock, { type: 'pre' }>,
   prevNorm: string,
-  nextText: string
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
   if (nextText.slice(prevNorm.length).includes(']:')) return null
   const first = prevNorm.split('\n')[0] ?? ''
@@ -3462,20 +3463,45 @@ function continueLastPreBlock(
       nextBody === prev.text ? prev : { type: 'pre', text: nextBody, lang: prev.lang }
     const after = textAfterFenceCloser(nextText)
     if (after) {
-      const siblings = parseCheapProseBlocks(after)
+      const siblings = parseCheapProseBlocks(after, defs)
       if (after.trim() !== '' && !siblings.length) return null
       return siblings.length ? [pre, ...siblings] : [pre]
     }
     return [pre]
   }
   const nextLines = nextText.split('\n')
-  if (nextLines.some((line) => line.trim() !== '' && !isIndentCodeLine(line))) return null
+  let end = 0
+  for (let i = 0; i < nextLines.length; i++) {
+    const line = nextLines[i]!
+    if (isIndentCodeLine(line)) {
+      end = i + 1
+      continue
+    }
+    if (line === '' && i === nextLines.length - 1 && nextText.endsWith('\n')) {
+      end = i + 1
+      continue
+    }
+    break
+  }
+  if (end === 0) return null
   const stripIndent = (text: string) =>
     text.split('\n').map((line) => line.replace(/^(?:    |\t)/, '')).join('\n')
-  const nextBody = stripIndent(nextText)
-  if (nextBody === prev.text) return [prev]
-  if (!nextBody.startsWith(prev.text)) return null
-  return [{ type: 'pre', text: nextBody }]
+  if (end === nextLines.length) {
+    const nextBody = stripIndent(nextText)
+    if (nextBody === prev.text) return [prev]
+    if (!nextBody.startsWith(prev.text)) return null
+    return [{ type: 'pre', text: nextBody }]
+  }
+  const prefix = nextLines.slice(0, end).join('\n')
+  if (!nextText.startsWith(`${prefix}\n`)) return null
+  const nextBody = stripIndent(prefix)
+  if (nextBody !== prev.text && !nextBody.startsWith(prev.text)) return null
+  const pre: CheapProseBlock = nextBody === prev.text ? prev : { type: 'pre', text: nextBody }
+  const after = nextText.slice(prefix.length + 1)
+  if (!after) return [pre]
+  const siblings = parseCheapProseBlocks(after, defs)
+  if (after.trim() !== '' && !siblings.length) return null
+  return siblings.length ? [pre, ...siblings] : [pre]
 }
 
 function continueLastBlockOfType(
@@ -3490,7 +3516,7 @@ function continueLastBlockOfType(
   if (last.type === 'quote') return continueLastQuoteBlock(last, prevNorm, nextText, defs)
   if (last.type === 'heading') return continueLastHeadingBlock(last, prevNorm, nextText, defs)
   if (last.type === 'hr') return continueLastHrBlock(last, prevNorm, nextText, defs)
-  if (last.type === 'pre') return continueLastPreBlock(last, prevNorm, nextText)
+  if (last.type === 'pre') return continueLastPreBlock(last, prevNorm, nextText, defs)
   if (last.type === 'footnotes') return continueLastFootnotesBlock(last, prevNorm, nextText, defs)
   return null
 }
@@ -3570,8 +3596,8 @@ function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]):
 }
 
 /**
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
- * 段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线闭合后再起的后续段、闭合并栏后再起的后续段、引用内换行后新列表项、脚注缩进续行、闭合段落 / 表 / 列表 / 分隔线后再起的后续块也走增长段。多块尾跳过已收前缀（单行标题 / HR，或最后一段原文起点，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注 / 围栏）。定义行或前缀对不上时退回全量解析。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
+ * 段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合并栏后再起的后续段、引用内换行后新列表项、脚注缩进续行、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码后再起的后续块也走增长段。多块尾跳过已收前缀（单行标题 / HR，或最后一段原文起点，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注 / 围栏）。定义行或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
@@ -3597,7 +3623,7 @@ function tryContinueLastCheapProseBlock(
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
- * 最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线后再起的后续块、缩进代码 / 脚注续行 / 引用内换行后的子块、围栏 / 表 / 列表 / 引用 / 段落后的增长段）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
+ * 最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码后再起的后续块、缩进代码 / 脚注续行 / 引用内换行后的子块、围栏 / 表 / 列表 / 引用 / 段落后的增长段）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(

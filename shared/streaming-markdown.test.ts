@@ -1225,6 +1225,31 @@ describe('splitStreamingMarkdown', () => {
     )
     expect(indentThenHeading.map((b) => b.type)).toEqual(['pre', 'heading'])
     expect(indentThenHeading[0]).toBe(indentPre[0])
+    const indentThenAfter = continueCheapProseBlocks(
+      '    const x = 1',
+      indentPre,
+      '    const x = 1\nafter'
+    )
+    expect(indentThenAfter[0]).toBe(indentPre[0])
+    expect(indentThenAfter.map((b) => b.type)).toEqual(['pre', 'p'])
+    const indentThenList = continueCheapProseBlocks(
+      '    const x = 1',
+      indentPre,
+      '    const x = 1\n- item'
+    )
+    expect(indentThenList[0]).toBe(indentPre[0])
+    expect(indentThenList.map((b) => b.type)).toEqual(['pre', 'list'])
+    const quoteIndentSrc = '>     const x = 1'
+    const quoteIndent = parseCheapProseBlocks(quoteIndentSrc)
+    const quoteIndentGrown = continueCheapProseBlocks(
+      quoteIndentSrc,
+      quoteIndent,
+      `${quoteIndentSrc}\n> after`
+    )
+    if (quoteIndent[0]?.type === 'quote' && quoteIndentGrown[0]?.type === 'quote') {
+      expect(quoteIndentGrown[0].blocks[0]).toBe(quoteIndent[0].blocks[0])
+      expect(quoteIndentGrown[0].blocks.map((block) => block.type)).toEqual(['pre', 'p'])
+    }
     const itemIndent = parseCheapProseBlocks('- n\n\n      const x = 1')
     const itemIndentThenHeading = continueCheapProseBlocks(
       '- n\n\n      const x = 1',
