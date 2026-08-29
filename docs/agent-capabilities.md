@@ -122,7 +122,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / 默认 Git / AGENTS.md / Skill；附加文件夹可供右侧文件树浏览、`@` 搜索、文件引用跳转与沙箱读写，并可 **设为主文件夹**（旧主路径留在附加列表，对标 Codex Make primary）；其中不同 Git 仓库会出现在审查选择器（同仓子目录不另开一项）
 - 设置 → 外观 → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
 - 设置 → 通知（对标 Codex Settings → Notifications）：回合完成 **从不 / 后台 / 始终**、**批准通知**、**系统通知权限**。`sharker://settings/notifications` 打开该页
-- 设置 → 外观 → **Reduce Motion**（对标 Codex #16857）：关掉直播思考扫光，减轻 GPU；进度圈仍转（对标 #22787）。不跟系统辅助功能绑定
+- 设置 → 外观 → **Reduce Motion**（对标 Codex #16857）：关掉直播思考扫光，减轻 GPU；进度圈仍转（对标 #22787）。不跟系统辅助功能绑定。窗口在后台或直播行滚出视口时同样停扫光（对标 #16857 屏外指示器仍占 GPU / #40531），回到前台或滚回视口再开
 - 设置 → 外观 → **新弹出对话置顶**（对标 Codex Always on top）
 - 设置 → 通用 → **运行时防止休眠**（对标 Codex Prevent sleep while running）
 - 设置 → 个性化 → **Enable memories**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设 **Use memories** / **Generate memories**（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选 Use / Generate / Disabled / Inherit，不改全局）

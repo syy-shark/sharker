@@ -84,6 +84,8 @@
 | `panel-width.ts` | 右侧面板宽度按窗口比例记忆（对标 Codex percentage-based file tree resizing）；旧像素值仍能读 |
 | `panel-width.test.ts` | 夹取、比例还原、兼容旧像素 |
 | `reduce-motion.ts` | 官方 Reduce Motion：解析设置、设置项名（对标 Codex #16857 / #22787） |
+| `live-shimmer-pause.ts` | 直播扫光：`document.hidden` 挂 `html.live-hidden`，屏外容器挂 `live-shimmer-paused`（对标 Codex #16857 / #40531）；不关进度圈 |
+| `live-shimmer-pause.test.ts` | 后台类开关与屏外暂停类 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `code-font.ts` | 代码字体白名单与 `--mono` 栈（对标 Codex Code font） |
 | `code-font.test.ts` | 未知值回退 system、别名与栈含 monospace |

@@ -323,3 +323,41 @@ html.reduce-motion .live-text-shimmer {
   -webkit-background-clip: unset;
   background-clip: unset;
 }
+
+/* 后台或屏外停扫光（对标 Codex #16857 / #40531）；进度圈仍转 */
+html.live-hidden .live-orb,
+html.live-hidden .live-orb::after,
+html.live-hidden .live-dot,
+html.live-hidden .live-shimmer,
+html.live-hidden .live-text-shimmer,
+html.live-hidden .streaming-placeholder.live-shimmer,
+html.live-hidden .streaming-placeholder,
+.live-shimmer-paused,
+.live-shimmer-paused .live-orb,
+.live-shimmer-paused .live-orb::after,
+.live-shimmer-paused .live-dot,
+.live-shimmer-paused .live-shimmer,
+.live-shimmer-paused .live-text-shimmer,
+.live-shimmer-paused .streaming-placeholder,
+.live-shimmer-paused.live-text-shimmer,
+.live-shimmer-paused.live-shimmer,
+.live-shimmer-paused.live-orb,
+.live-shimmer-paused.live-dot {
+  animation: none !important;
+  opacity: 1;
+}
+
+html.live-hidden .live-text-shimmer,
+.live-shimmer-paused .live-text-shimmer,
+.live-shimmer-paused.live-text-shimmer {
+  background: none;
+  color: var(--text-secondary);
+  -webkit-text-fill-color: unset;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+}
+
+html.live-hidden .ui-spin,
+.live-shimmer-paused .ui-spin {
+  animation: ui-spin 0.7s linear infinite !important;
+}

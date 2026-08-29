@@ -13,7 +13,7 @@
 | [components/](./components/ARCH.md) | 聊天、侧栏、轨道、右侧面板、设置子组件等 |
 | [pages/](./pages/ARCH.md) | 设置页、自动化页、Skills 页等整页壳 |
 | [styles/](./styles/ARCH.md) | 全局 token、玻璃材质、动效 |
-| [hooks/](./hooks/ARCH.md) | 弹层动画、滑动指示器、直播 token / 回合元信息外部 store |
+| [hooks/](./hooks/ARCH.md) | 弹层动画、滑动指示器、直播 token / 回合元信息外部 store、屏外扫光暂停 |
 | [lib/](./lib/ARCH.md) | 纯前端小工具（相对时间等） |
 | [constants/](./constants/ARCH.md) | 布局尺寸与断点常量 |
 | [types/](./types/ARCH.md) | 仅 UI 侧类型（导航、排队 prompt） |

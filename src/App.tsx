@@ -204,6 +204,7 @@ import { formatThreadSnapshot } from '../shared/thread-snapshot'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import { applyAppearanceDom } from './components/settings/AppearanceSettings'
+import { bindLiveShimmerVisibility } from '../shared/live-shimmer-pause'
 import type { QueuedPrompt, PromptSubmitMode } from './types/chat'
 import type { AppPage, SettingsTab } from './types/navigation'
 import type { ApprovalDecision } from '../shared/approval-session'
@@ -417,6 +418,8 @@ export default function App() {
     document.documentElement.classList.toggle('window-rounded', customChrome)
     return () => document.documentElement.classList.remove('window-rounded')
   }, [])
+
+  useEffect(() => bindLiveShimmerVisibility(document), [])
 
   /** 全局状态与 ref 镜像，供 IPC 回调与节流刷新读取 */
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)

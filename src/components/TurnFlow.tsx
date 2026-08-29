@@ -12,6 +12,7 @@
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { ChevronDown } from 'lucide-react'
 import { LiveDuration } from './LiveDuration'
 import type { TurnSegment } from '../../shared/types'
@@ -681,6 +682,7 @@ export const TurnFlow = memo(function TurnFlow({
   const userThoughtRef = useRef(false)
   const [workedOpen, setWorkedOpen] = useState(false)
   const userWorkedRef = useRef(false)
+  const livePauseRef = useOffscreenLiveShimmer<HTMLDivElement>(isStreaming)
   const wasContentStreamingRef = useRef(contentStreaming)
   useEffect(() => {
     return () => {
@@ -918,6 +920,7 @@ export const TurnFlow = memo(function TurnFlow({
 
   return (
     <div
+      ref={livePauseRef}
       className={`turn-flow turn-flow--live${isStreaming ? ' turn-flow--streaming' : ''}${
         contentStreaming ? ' turn-flow--answer-out' : ''
       }`}

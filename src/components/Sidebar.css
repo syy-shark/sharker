@@ -927,7 +927,10 @@ html.theme-dark .sidebar-live-dot {
   }
 }
 
-html.reduce-motion .sidebar-live-dot {
+html.reduce-motion .sidebar-live-dot,
+html.live-hidden .sidebar-live-dot,
+.live-shimmer-paused .sidebar-live-dot,
+.live-shimmer-paused.sidebar-live-dot {
   animation: none !important;
   opacity: 0.9;
 }
