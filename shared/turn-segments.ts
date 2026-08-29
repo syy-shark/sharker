@@ -1013,6 +1013,21 @@ export function hasStreamingDemoFence(text: string): boolean {
   return isDemoFenceLangPrefix(demoLangFromInfo((open[3] ?? '').trim()))
 }
 
+/**
+ * 上一帧正文已确认没有 ```demo 时，只扫末行与新增后缀。
+ * 直播只追加；对标 Codex #22860，避免每枚 token 全量扫长回答。
+ */
+export function hasStreamingDemoFenceGrowth(prevText: string, nextText: string): boolean {
+  const prev = String(prevText || '')
+  const next = String(nextText || '')
+  if (!next) return false
+  if (prev && next.startsWith(prev)) {
+    const lastNl = prev.lastIndexOf('\n')
+    return hasStreamingDemoFence(next.slice(lastNl === -1 ? 0 : lastNl))
+  }
+  return hasStreamingDemoFence(next)
+}
+
 function demoLangFromInfo(info: string): string {
   return (info.trim().split(/[\s{]/)[0] ?? '').toLowerCase()
 }

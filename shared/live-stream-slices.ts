@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文加长不扫过程指纹、不重跑过程 / 回答 buildAnswerParts。
+ * 直播行过程 / 回答切片：token 只换回答；正文加长不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -14,6 +14,7 @@ import {
   buildAnswerParts,
   extractFinalContent,
   hasStreamingDemoFence,
+  hasStreamingDemoFenceGrowth,
   processSegments,
   reuseAnswerParts,
   type AnswerPart
@@ -46,15 +47,25 @@ export interface LiveAnswerActions {
 }
 
 let answerCache: { snap: LiveStreamUiSnapshot; view: LiveAnswerView } | null = null
-let answerGrowHold: { view: LiveAnswerView; prefix: readonly TurnSegment[] } | null = null
+let answerGrowHold: {
+  view: LiveAnswerView
+  prefix: readonly TurnSegment[]
+  tailPlain: boolean
+} | null = null
 let processHold: {
   view: LiveProcessView
   identity: string
   segments: readonly TurnSegment[]
+  answerTailPlain: boolean
 } | null = null
 
 function isLiveAnswerText(segment: TurnSegment): boolean {
   return segment.kind === 'text' && (segment.role === 'final' || segment.status === 'active')
+}
+
+function liveAnswerTailIsPlain(segments: readonly TurnSegment[]): boolean {
+  const tail = segments[segments.length - 1]
+  return Boolean(tail && isLiveAnswerText(tail) && !hasStreamingDemoFence(tail.content ?? ''))
 }
 
 /**
@@ -94,11 +105,13 @@ export function shouldSkipLiveProcessIdentity(input: {
   prev: LiveProcessView | null
   prevSegments: readonly TurnSegment[] | null
   segments: readonly TurnSegment[]
+  prevAnswerTailPlain?: boolean
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
   if (!input.prev.contentStreaming || !input.prev.answerStreaming || input.prev.generatingDemo) {
     return false
   }
+  if (input.prevAnswerTailPlain === false) return false
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -108,11 +121,15 @@ export function shouldSkipLiveProcessIdentity(input: {
   const nextTail = input.segments[last]
   if (!prevTail || !nextTail) return false
   if (prevTail === nextTail) return true
+  const nextHasFence =
+    input.prevAnswerTailPlain === true
+      ? hasStreamingDemoFenceGrowth(prevTail.content ?? '', nextTail.content ?? '')
+      : hasStreamingDemoFence(nextTail.content ?? '')
   return (
     isLiveAnswerText(prevTail) &&
     isLiveAnswerText(nextTail) &&
     prevTail.id === nextTail.id &&
-    !hasStreamingDemoFence(nextTail.content ?? '')
+    !nextHasFence
   )
 }
 
@@ -156,16 +173,27 @@ export function nextLiveProcessView(
     shouldSkipLiveProcessIdentity({
       prev,
       prevSegments: processHold.segments,
-      segments
+      segments,
+      prevAnswerTailPlain: processHold.answerTailPlain
     })
   ) {
-    processHold = { view: prev, identity: processHold.identity, segments }
+    processHold = {
+      view: prev,
+      identity: processHold.identity,
+      segments,
+      answerTailPlain: true
+    }
     return prev
   }
   const identity = liveProcessIdentity(segments)
   const prevIdentity = processHold?.view === prev ? processHold.identity : ''
   if (prev && shouldReuseLiveProcessView({ prev, identity, prevIdentity })) {
-    processHold = { view: prev, identity, segments }
+    processHold = {
+      view: prev,
+      identity,
+      segments,
+      answerTailPlain: liveAnswerTailIsPlain(segments)
+    }
     return prev
   }
   const answerParts = buildAnswerParts(segments, { isStreaming: true })
@@ -186,12 +214,20 @@ export function nextLiveProcessView(
     answerStreaming: Boolean(finalRaw.trim() || hasLiveProse)
   }
   const view = prev && sameProcessView(prev, next) ? prev : next
-  processHold = { view, identity, segments }
+  processHold = {
+    view,
+    identity,
+    segments,
+    answerTailPlain: liveAnswerTailIsPlain(segments)
+  }
   return view
 }
 
 /** 末段是增长中的回答正文时，前面的片段是可复用前缀 */
-export function liveAnswerGrowState(segments: readonly TurnSegment[]): {
+export function liveAnswerGrowState(
+  segments: readonly TurnSegment[],
+  prevTail?: { content: string; plain: boolean }
+): {
   prefix: readonly TurnSegment[]
   tail: TurnSegment | null
 } {
@@ -199,7 +235,11 @@ export function liveAnswerGrowState(segments: readonly TurnSegment[]): {
   if (!tail || tail.kind !== 'text' || !tail.content?.trim()) {
     return { prefix: segments, tail: null }
   }
-  if (hasStreamingDemoFence(tail.content)) return { prefix: segments, tail: null }
+  const hasFence =
+    prevTail?.plain === true
+      ? hasStreamingDemoFenceGrowth(prevTail.content, tail.content)
+      : hasStreamingDemoFence(tail.content)
+  if (hasFence) return { prefix: segments, tail: null }
   return { prefix: segments.slice(0, -1), tail }
 }
 
@@ -215,7 +255,7 @@ export function shouldGrowLiveAnswerTail(input: {
 }): boolean {
   if (!input.prev?.tail || input.prev.tail.type !== 'text' || !input.tail) return false
   if (input.tail.kind !== 'text' || input.tail.id !== input.prev.tail.id) return false
-  if (hasStreamingDemoFence(input.tail.content ?? '')) return false
+  if (hasStreamingDemoFenceGrowth(input.prev.tail.content, input.tail.content ?? '')) return false
   if (!input.prevPrefix || input.prevPrefix.length !== input.prefix.length) return false
   return input.prevPrefix.every((segment, index) => segment === input.prefix[index])
 }
@@ -250,11 +290,17 @@ export function nextLiveAnswerView(
   snap: LiveStreamUiSnapshot
 ): LiveAnswerView {
   const segments = snap.liveSegments
-  const grow = liveAnswerGrowState(segments)
+  const prevTextTail = prev?.tail?.type === 'text' ? prev.tail : null
+  const grow = liveAnswerGrowState(
+    segments,
+    prevTextTail && answerGrowHold?.view === prev
+      ? { content: prevTextTail.content, plain: answerGrowHold.tailPlain }
+      : undefined
+  )
   const prevPrefix = answerGrowHold?.view === prev ? answerGrowHold.prefix : null
   if (prev && shouldGrowLiveAnswerTail({ prev, prevPrefix, prefix: grow.prefix, tail: grow.tail })) {
     const view = growLiveAnswerView(prev, grow.tail!)
-    answerGrowHold = { view, prefix: grow.prefix }
+    answerGrowHold = { view, prefix: grow.prefix, tailPlain: true }
     return view
   }
   const parts = reuseAnswerParts(
@@ -283,7 +329,11 @@ export function nextLiveAnswerView(
     prev.hasCopyable === next.hasCopyable
       ? prev
       : next
-  answerGrowHold = { view, prefix: grow.tail ? grow.prefix : segments }
+  answerGrowHold = {
+    view,
+    prefix: grow.tail ? grow.prefix : segments,
+    tailPlain: Boolean(grow.tail)
+  }
   return view
 }
 

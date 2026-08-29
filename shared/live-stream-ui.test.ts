@@ -120,7 +120,8 @@ describe('live stream ui snapshot', () => {
       shouldSkipLiveProcessIdentity({
         prev: first,
         prevSegments: [tool, text('Hello')],
-        segments: grownProcess
+        segments: grownProcess,
+        prevAnswerTailPlain: true
       })
     ).toBe(true)
     expect(
