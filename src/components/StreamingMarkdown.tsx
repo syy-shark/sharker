@@ -1,7 +1,7 @@
 /**
  * 流式 Markdown：围栏顶层 `live-fence-N`；围栏之间的散文共用一个 `LiveProseTail`。
  * 空行收段不换 key，避免 LiveProseTail 重挂跳贴底；围栏闭合也不搬进散文尾。
- * 已画廉价块 / 列表项 / 表行按对象身份 memo；defs 与渲染槽没变则复用（对标 Codex #22860）。
+ * 已画廉价块 / 列表项 / 表行 / 行内按对象身份 memo；defs 与渲染槽没变则复用（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -50,71 +50,66 @@ function cheapMarkBody(node: Extract<CheapInlineNode, { type: 'strong' | 'em' | 
   return node.text
 }
 
+/** 已画行内按对象身份 memo，增长段不重绘已闭合 code / 链接 / 图（对标 Codex #22860） */
+const CheapInlineView = memo(function CheapInlineView({ node }: { node: CheapInlineNode }) {
+  if (node.type === 'code') return <code>{node.text}</code>
+  if (node.type === 'strong') return <strong>{cheapMarkBody(node)}</strong>
+  if (node.type === 'del') return <del>{cheapMarkBody(node)}</del>
+  if (node.type === 'em') return <em>{cheapMarkBody(node)}</em>
+  if (node.type === 'link') {
+    return (
+      <a
+        href={node.href}
+        title={node.title}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(event) => {
+          event.preventDefault()
+          if (
+            node.href.startsWith('http://') ||
+            node.href.startsWith('https://') ||
+            node.href.startsWith('mailto:')
+          ) {
+            void window.sharker.openExternal?.(node.href)
+          }
+        }}
+      >
+        {node.children ? renderCheapInline(node.children) : node.text}
+      </a>
+    )
+  }
+  if (node.type === 'file') {
+    return (
+      <FileCiteLink path={node.path} line={node.line} column={node.column}>
+        {node.text}
+      </FileCiteLink>
+    )
+  }
+  if (node.type === 'image') {
+    return <ChatImage src={node.href} alt={node.alt} title={node.title} />
+  }
+  if (node.type === 'fn') {
+    return (
+      <sup>
+        <a
+          href={`#user-content-fn-${node.id}`}
+          id={`user-content-fnref-${node.id}`}
+          data-footnote-ref
+          aria-describedby="footnote-label"
+        >
+          {node.id}
+        </a>
+      </sup>
+    )
+  }
+  if (node.type === 'br') return <br />
+  return <span>{node.text}</span>
+})
+
 /** 廉价行内节点 → 元素（含可点文件引用） */
 function renderCheapInline(nodes: CheapInlineNode[]): ReactNode[] {
   const keys = cheapInlineNodeKeys(nodes)
-  return nodes.map((node, index) => {
-    const key = keys[index]!
-    if (node.type === 'code') return <code key={key}>{node.text}</code>
-    if (node.type === 'strong') {
-      return <strong key={key}>{cheapMarkBody(node)}</strong>
-    }
-    if (node.type === 'del') {
-      return <del key={key}>{cheapMarkBody(node)}</del>
-    }
-    if (node.type === 'em') {
-      return <em key={key}>{cheapMarkBody(node)}</em>
-    }
-    if (node.type === 'link') {
-      return (
-        <a
-          key={key}
-          href={node.href}
-          title={node.title}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => {
-            event.preventDefault()
-            if (
-              node.href.startsWith('http://') ||
-              node.href.startsWith('https://') ||
-              node.href.startsWith('mailto:')
-            ) {
-              void window.sharker.openExternal?.(node.href)
-            }
-          }}
-        >
-          {node.children ? renderCheapInline(node.children) : node.text}
-        </a>
-      )
-    }
-    if (node.type === 'file') {
-      return (
-        <FileCiteLink key={key} path={node.path} line={node.line} column={node.column}>
-          {node.text}
-        </FileCiteLink>
-      )
-    }
-    if (node.type === 'image') {
-      return <ChatImage key={key} src={node.href} alt={node.alt} title={node.title} />
-    }
-    if (node.type === 'fn') {
-      return (
-        <sup key={key}>
-          <a
-            href={`#user-content-fn-${node.id}`}
-            id={`user-content-fnref-${node.id}`}
-            data-footnote-ref
-            aria-describedby="footnote-label"
-          >
-            {node.id}
-          </a>
-        </sup>
-      )
-    }
-    if (node.type === 'br') return <br key={key} />
-    return <span key={key}>{node.text}</span>
-  })
+  return nodes.map((node, index) => <CheapInlineView key={keys[index]} node={node} />)
 }
 
 function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
