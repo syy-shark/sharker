@@ -379,6 +379,21 @@ export function formatElapsedClock(seconds: number): string {
   return rem ? `${hours}h ${rem}m` : `${hours}h`
 }
 
+export function elapsedClockSeconds(startedAt: number, now: number): number {
+  return Math.max(0, Math.round((now - startedAt) / 1000))
+}
+
+/**
+ * 下一回文案会变的等待：秒档 1s，分/小时档对齐下一分钟。
+ * 避免 500ms tick 在 `4m` / `1h 9m` 期间空刷直播头（对标 Codex #22860）。
+ */
+export function nextElapsedClockDelayMs(seconds: number): number {
+  const sec = Math.max(0, Math.round(seconds))
+  if (sec < 60) return 1000
+  const intoMinute = sec % 60
+  return (60 - intoMinute) * 1000
+}
+
 /** 官方直播折叠头：进行中 Working，完成后 Worked for（秒表仍走预留宽时钟） */
 export const WORKING_LABEL = 'Working'
 export const WORKED_FOR_LABEL = 'Worked for'

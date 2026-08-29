@@ -4,6 +4,7 @@ import {
   clampLockedScrollTop,
   ELAPSED_CLOCK_RESERVE_CH,
   formatElapsedClock,
+  nextElapsedClockDelayMs,
   formatStoppedAfterClock,
   formatStoppedAfterLabel,
   AWAITING_APPROVAL_LABEL,
@@ -412,6 +413,13 @@ describe('elapsed clock', () => {
     expect(formatElapsedClock(36000)).toBe('10h')
     expect(formatElapsedClock(4140).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
     expect(formatElapsedClock(3599).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
+    expect(nextElapsedClockDelayMs(0)).toBe(1000)
+    expect(nextElapsedClockDelayMs(23)).toBe(1000)
+    expect(nextElapsedClockDelayMs(59)).toBe(1000)
+    expect(nextElapsedClockDelayMs(60)).toBe(60000)
+    expect(nextElapsedClockDelayMs(90)).toBe(30000)
+    expect(nextElapsedClockDelayMs(3599)).toBe(1000)
+    expect(nextElapsedClockDelayMs(3600)).toBe(60000)
     expect(formatStoppedAfterClock(0)).toBe('0s')
     expect(formatStoppedAfterClock(2848)).toBe('47m 28s')
     expect(formatWorkedForLabel(true)).toBe('Working')
