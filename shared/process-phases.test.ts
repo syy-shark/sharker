@@ -509,6 +509,25 @@ describe('process phases privacy', () => {
     expect(writeAndStatus![0].segment).toBe(cmdDoneDiff)
     expect(writeAndStatus![0].status).toBe('done')
     expect(writeAndStatus!.at(-1)?.segment).toBe(reconnectStatus)
+    const writeAndStatusThink = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, nextThink],
+      true
+    )
+    expect(writeAndStatusThink).not.toBeNull()
+    expect(writeAndStatusThink).toHaveLength(2)
+    expect(writeAndStatusThink![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndStatusThink!.at(-1)?.segment).toBe(reconnectStatus)
+    const writeAndThinkAnswer = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, nextThink, firstReply],
+      true
+    )
+    expect(writeAndThinkAnswer).not.toBeNull()
+    expect(writeAndThinkAnswer).toHaveLength(1)
+    expect(writeAndThinkAnswer![0].segment).toBe(cmdDoneDiff)
     const writeAndThink = remapProcessPhaseStepsOnThinkAppend(
       cmdSteps,
       [cmdRunning],
