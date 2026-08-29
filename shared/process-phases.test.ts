@@ -1181,6 +1181,31 @@ describe('process phases privacy', () => {
     expect(afterWriteAllowStatusThinkErrorCompress).not.toBeNull()
     expect(afterWriteAllowStatusThinkErrorCompress!.at(-1)?.segment).toBe(approvalCompressDone)
     expect(afterWriteAllowStatusThinkErrorCompress!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterWriteAllowThinkDemoCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [
+        cmdDoneDiff,
+        runningCmdAfterAllowCancelled,
+        awaitingDone,
+        nextThink,
+        reconnectDemoFenceCancelled,
+        reconnectDemoCancelled
+      ],
+      true
+    )
+    expect(afterWriteAllowThinkDemoCancel).not.toBeNull()
+    expect(afterWriteAllowThinkDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(
+      false
+    )
+    const afterWriteAllowStatusThinkNext = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectApprovalStatus, runningCmdAfterAllow, awaitingDone, nextThink, cmdNext],
+      true
+    )
+    expect(afterWriteAllowStatusThinkNext).not.toBeNull()
+    expect(afterWriteAllowStatusThinkNext!.at(-1)?.segment).toBe(cmdNext)
     const afterDeniedDemoCancel = appendProcessPhaseStepOnToolStart(
       afterApproval!,
       [cmdAwaiting, awaitingStatus],
