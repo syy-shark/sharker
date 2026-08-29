@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 单块增长列表 / 表格 / 段落 / 引用只重解析增长段（对标 Codex #39061 / #34045）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题只重解析最后一块；`# 标题` 后的段落不整尾重扫（对标 Codex #39061 / #34045）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2935,9 +2935,61 @@ function continueLastQuoteBlock(
   ]
 }
 
+/** 无换行续 ATX 标题：已画行内保持同一引用（对标 Codex #34045） */
+function continueLastHeadingBlock(
+  prev: Extract<CheapProseBlock, { type: 'heading' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!suffix || suffix.includes('\n') || suffix.includes(']:') || suffix.includes('#') || prevNorm.endsWith('\n')) {
+    return null
+  }
+  const prevH = parseHeadingLine(prevNorm)
+  const nextH = parseHeadingLine(nextText)
+  if (!prevH || !nextH || prevH.level !== nextH.level || prevH.level !== prev.level) return null
+  const nodes = continueCheapInlineMarkdown(prevH.text, prev.nodes, nextH.text, defs)
+  return nodes === prev.nodes ? [prev] : [{ type: 'heading', level: prev.level, nodes }]
+}
+
+function continueLastBlockOfType(
+  last: CheapProseBlock,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  if (last.type === 'list') return continueLastListBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'table') return continueLastTableBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'p') return continueLastParagraphBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'quote') return continueLastQuoteBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'heading') return continueLastHeadingBlock(last, prevNorm, nextText, defs)
+  return null
+}
+
 /**
- * 单块增长列表 / 表格 / 段落 / 引用：只重解析增长段（对标 Codex #39061 / #34045）。
- * 定义行、块类型变化或前缀对不上时退回全量解析。
+ * 前面已收的单行标题 / 分隔线：量出最后一块起点，避免 `# 标题\\n段落` 每 token 整尾重扫。
+ */
+function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]): number | null {
+  if (!closed.length) return 0
+  let offset = 0
+  for (const block of closed) {
+    const rest = text.slice(offset)
+    if (!rest) return null
+    const nl = rest.indexOf('\n')
+    const line = nl < 0 ? rest : rest.slice(0, nl)
+    const ok =
+      (block.type === 'heading' && Boolean(parseHeadingLine(line))) ||
+      (block.type === 'hr' && parseHrLine(line))
+    if (!ok || nl < 0) return null
+    offset += nl + 1
+  }
+  return offset
+}
+
+/**
+ * 增长列表 / 表格 / 段落 / 引用 / 标题：只重解析最后一块（对标 Codex #39061 / #34045）。
+ * 多块尾先跳过已收的单行标题 / HR。定义行、块类型变化或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
@@ -2945,20 +2997,28 @@ function tryContinueLastCheapProseBlock(
   nextText: string,
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
-  if (prevBlocks.length !== 1 || !nextText.startsWith(prevNorm)) return null
+  if (!prevBlocks.length || !nextText.startsWith(prevNorm)) return null
   const suffix = nextText.slice(prevNorm.length)
   if (suffix.includes(']:')) return null
-  const last = prevBlocks[0]!
-  if (last.type === 'list') return continueLastListBlock(last, prevNorm, nextText, defs)
-  if (last.type === 'table') return continueLastTableBlock(last, prevNorm, nextText, defs)
-  if (last.type === 'p') return continueLastParagraphBlock(last, prevNorm, nextText, defs)
-  if (last.type === 'quote') return continueLastQuoteBlock(last, prevNorm, nextText, defs)
-  return null
+  if (prevBlocks.length === 1) {
+    return continueLastBlockOfType(prevBlocks[0]!, prevNorm, nextText, defs)
+  }
+  const closed = prevBlocks.slice(0, -1)
+  const start = consumeClosedSingleLinePrefix(prevNorm, closed)
+  if (start == null || start <= 0) return null
+  const grown = continueLastBlockOfType(
+    prevBlocks[prevBlocks.length - 1]!,
+    prevNorm.slice(start),
+    nextText.slice(start),
+    defs
+  )
+  if (!grown || grown.length !== 1) return null
+  return [...closed, ...grown]
 }
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
- * 单块列表 / 表格 / 段落 / 引用先走增长段，不整块重扫（对标 Codex #39061 / #34045）。
+ * 最后一块列表 / 表格 / 段落 / 引用 / 标题先走增长段；前面的单行标题 / HR 保持同一引用（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(

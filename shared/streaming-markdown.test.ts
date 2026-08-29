@@ -1067,6 +1067,26 @@ describe('splitStreamingMarkdown', () => {
         expect(grownInner.nodes).toEqual([{ type: 'text', text: '注意点' }])
       }
     }
+    const headingOnly = parseCheapProseBlocks('## 标题')
+    const headingGrown = continueCheapProseBlocks('## 标题', headingOnly, '## 标题更长')
+    if (headingOnly[0]?.type === 'heading' && headingGrown[0]?.type === 'heading') {
+      expect(headingGrown[0].level).toBe(2)
+      expect(headingGrown[0].nodes).toEqual([{ type: 'text', text: '标题更长' }])
+    }
+    const headingPara = parseCheapProseBlocks('# 标题\n见 `foo` 与 ')
+    const headingParaGrown = continueCheapProseBlocks('# 标题\n见 `foo` 与 ', headingPara, '# 标题\n见 `foo` 与 bar')
+    expect(headingParaGrown[0]).toBe(headingPara[0])
+    if (headingPara[1]?.type === 'p' && headingParaGrown[1]?.type === 'p') {
+      expect(headingParaGrown[1].nodes[0]).toBe(headingPara[1].nodes[0])
+      expect(headingParaGrown[1].nodes[1]).toBe(headingPara[1].nodes[1])
+    }
+    const headingList = parseCheapProseBlocks('# 标题\n- 一项')
+    const headingListGrown = continueCheapProseBlocks('# 标题\n- 一项', headingList, '# 标题\n- 一项更长')
+    expect(headingListGrown[0]).toBe(headingList[0])
+    if (headingList[1]?.type === 'list' && headingListGrown[1]?.type === 'list') {
+      expect(headingListGrown[1].items[0]).not.toBe(headingList[1].items[0])
+      expect(headingListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
