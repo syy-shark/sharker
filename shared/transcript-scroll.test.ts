@@ -23,8 +23,10 @@ import {
   headRangeForFindHit,
   headRangeForJumpTop,
   mergeConversationHistory,
+  historyStartSeqAfterOlderPage,
   nextHeadRange,
   nextHistoryStartSeq,
+  olderPageRangeForTail,
   prependHistoryPage,
   prevHeadRange,
   revealNewerWindowStart,
@@ -212,6 +214,10 @@ describe('transcript scroll restore', () => {
     expect(shiftPinnedStartAfterPrepend(null, 30)).toBeNull()
     expect(nextHistoryStartSeq(160, 30)).toBe(130)
     expect(nextHistoryStartSeq(10, 30)).toBe(0)
+    expect(historyStartSeqAfterOlderPage(160, 0)).toBe(160)
+    expect(historyStartSeqAfterOlderPage(160, 30)).toBe(130)
+    expect(olderPageRangeForTail(1960)).toEqual({ fromSeq: 1930, toSeq: 1960 })
+    expect(olderPageRangeForTail(0)).toBeNull()
 
     const hugeOutput = 'x'.repeat(DEFER_TOOL_OUTPUT_CHARS + 80)
     const hugeThink = '想'.repeat(DEFER_THINKING_CHARS + 20)

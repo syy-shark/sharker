@@ -137,7 +137,7 @@
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition |
 | `transcript-scroll.ts` | 对话柱滚动快照：贴底跟到底、读历史钉 scrollTop、内容未画高先按距底占位（对标 Codex 26.406 按会话记住位置；窗口内、不落盘）；快照可带 `transcriptWindowStart` |
 | `transcript-scroll.test.ts` | 贴底 / 中段 / 内容变高 / 未画完推迟恢复；长线程尾窗起点与上滑揭示；启动窗瘦身与点开补水 |
-| `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；DOM 有挂载上限；⌘↑ / 查找命中只算 `historyHead` 有界页（`headRangeForJumpTop` / `headRangeForFindHit` / `nextHeadRange`），不把瘦身全文灌进尾页 `messages`、不把 `historyStartSeq` 置 0；直播中不取头页（`shouldFetchSlimHistoryOnJumpTop`），收束后再取（对标 Codex older history fetched as needed / 官方分页，不一次铺开、无「加载更早」按钮）；盘页合并 / 钉窗下标后移 / 到顶再 `load-older` |
+| `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；DOM 有挂载上限；⌘↑ / 查找命中 / 尾页上滑只算 `historyHead` 有界页（`headRangeForJumpTop` / `headRangeForFindHit` / `olderPageRangeForTail` / `nextHeadRange`），不把瘦身全文或更早页 prepend 进尾页 `messages`、空页也不把 `historyStartSeq` 置 0；直播中不取跳顶头页（`shouldFetchSlimHistoryOnJumpTop`），收束后再取（对标 Codex older history fetched as needed / 官方分页，不一次铺开、无「加载更早」按钮）；盘页合并 / 钉窗下标后移 |
 | `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；`shouldReloadUnslimmedHistory` 判断模型/压缩/分叉要不要回库取原文（UI 尾页或瘦身占位不能当模型历史）；落盘必须跳过占位消息以免写成空壳 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；直播行预留助手 id / 收束 upsert；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |

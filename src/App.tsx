@@ -78,8 +78,7 @@ import {
   headRangeForJumpTop,
   mergeConversationHistory,
   nextHeadRange,
-  nextHistoryStartSeq,
-  prependHistoryPage,
+  olderPageRangeForTail,
   prevHeadRange,
   slideHeadAfterAppend,
   slideHeadAfterPrepend
@@ -819,29 +818,32 @@ export default function App() {
     [loadUnslimmedHistoryMessages]
   )
 
+  /** 上滑：更早页只进 historyHead，不 prepend 尾页、不改 historyStartSeq（空页更不能置 0） */
   const handleLoadOlderHistory = useCallback(async () => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
-    const before = historyStartSeqRef.current
-    if (!workspaceId || !convId || before <= 0 || !window.sharker.loadOlderConversation) return
+    const range = olderPageRangeForTail(historyStartSeqRef.current)
+    if (!workspaceId || !convId || !range) return
     const gen = historyLoadGenRef.current
-    const older = await window.sharker.loadOlderConversation(
-      workspaceId,
-      convId,
-      before,
-      TRANSCRIPT_PAGE
-    )
+    const page = window.sharker.loadConversationRange
+      ? await window.sharker.loadConversationRange(
+          workspaceId,
+          convId,
+          range.fromSeq,
+          range.toSeq
+        )
+      : window.sharker.loadOlderConversation
+        ? await window.sharker.loadOlderConversation(
+            workspaceId,
+            convId,
+            historyStartSeqRef.current,
+            TRANSCRIPT_PAGE
+          )
+        : []
     if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
-    if (!older.length) {
-      historyStartSeqRef.current = 0
-      setHistoryStartSeq(0)
-      return
-    }
-    applyConversationMessages(
-      prependHistoryPage(messagesRef.current, older),
-      nextHistoryStartSeq(before, older.length)
-    )
-  }, [applyConversationMessages])
+    if (!page.length) return
+    applyHistoryHead(page, range.fromSeq)
+  }, [applyHistoryHead])
 
   /** ⌘↑：只取最旧一页进 historyHead，不把瘦身全文灌进 messages / 不改 historyStartSeq */
   const handleNeedFullHistory = useCallback(async () => {

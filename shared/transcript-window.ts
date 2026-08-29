@@ -299,3 +299,21 @@ export function shiftPinnedStartAfterPrepend(
 export function nextHistoryStartSeq(startSeq: number, prepended: number): number {
   return Math.max(0, Math.floor(startSeq) - Math.max(0, prepended))
 }
+
+/**
+ * 上滑取更早页：空页 / 失败不得把 `historyStartSeq` 置 0，否则落盘会删中间页。
+ * 成功时才前移起点（仅当调用方仍把该页 prepend 进尾页；头页浏览不该改尾页 seq）。
+ */
+export function historyStartSeqAfterOlderPage(currentStart: number, loadedCount: number): number {
+  const start = Math.max(0, Math.floor(currentStart))
+  if (loadedCount <= 0) return start
+  return nextHistoryStartSeq(start, loadedCount)
+}
+
+/** 从尾页上滑：只算头页区间，不改 `historyStartSeq` */
+export function olderPageRangeForTail(
+  tailStartSeq: number,
+  page: number = TRANSCRIPT_PAGE
+): { fromSeq: number; toSeq: number } | null {
+  return prevHeadRange(tailStartSeq, page)
+}

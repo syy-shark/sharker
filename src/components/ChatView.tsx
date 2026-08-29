@@ -613,6 +613,8 @@ export function ChatView({
   const messagesLengthRef = useRef(0)
   const revealPreserveHeightRef = useRef<number | null>(null)
   const pendingJumpTopRef = useRef(false)
+  /** 从尾页上滑进头页：滚到头页底（与尾页相接），不要跳到头页顶 */
+  const pendingHeadJunctionRef = useRef(false)
   const pendingFullHistoryAfterLiveRef = useRef(false)
   const loadingRef = useRef(loading)
   loadingRef.current = loading
@@ -668,7 +670,10 @@ export function ChatView({
       session: sessionKey,
       head: viewingHead
     }
-    if (viewingHead) setPinnedStart(0)
+    if (viewingHead) {
+      setPinnedStart(0)
+      if (!pendingJumpTopRef.current && !findOpen) pendingHeadJunctionRef.current = true
+    }
   } else if (
     transcriptMessages[0]?.id &&
     transcriptMessages[0].id !== prevHeadRef.current.id &&
@@ -1080,12 +1085,24 @@ export function ChatView({
     if (!el) return
     if (pendingJumpTopRef.current) {
       pendingJumpTopRef.current = false
+      pendingHeadJunctionRef.current = false
       revealPreserveHeightRef.current = null
       trimTopIdsRef.current = []
       programmaticScrollRef.current = true
       el.scrollTop = 0
       programmaticScrollRef.current = false
       lastScrollTopRef.current = 0
+      rememberTranscriptSnapshot()
+      return
+    }
+    if (pendingHeadJunctionRef.current) {
+      pendingHeadJunctionRef.current = false
+      revealPreserveHeightRef.current = null
+      trimTopIdsRef.current = []
+      programmaticScrollRef.current = true
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+      programmaticScrollRef.current = false
+      lastScrollTopRef.current = el.scrollTop
       rememberTranscriptSnapshot()
       return
     }
