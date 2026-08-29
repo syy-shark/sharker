@@ -48,6 +48,18 @@ export function reviewFileRevealPath(filePath: string, repoRoot: string): string
   return `${root}/${file.replace(/^\/+/, '')}`
 }
 
+export type ThreadCopyAction = 'copy-cwd' | 'copy-session' | 'copy-deeplink' | 'copy-markdown'
+
+/** 顶栏 Copy 子菜单（对标 Codex threadHeader Copy：cwd / session / deeplink / Markdown） */
+export function threadCopyMenuItems(): Array<{ action: ThreadCopyAction; title: string }> {
+  return [
+    { action: 'copy-cwd', title: '复制工作目录' },
+    { action: 'copy-session', title: '复制会话 ID' },
+    { action: 'copy-deeplink', title: '复制对话深链' },
+    { action: 'copy-markdown', title: '复制为 Markdown' }
+  ]
+}
+
 export type ThreadMenuAction = 'reveal' | 'copy-markdown' | 'rename' | 'pin' | 'archive'
 
 /** 侧栏线程右键（对标 Codex thread menus / Copy as Markdown） */

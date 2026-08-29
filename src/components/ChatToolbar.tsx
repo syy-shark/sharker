@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / 隔离 worktree / Local environment Actions / PR / 右侧面板；中间空白拖窗
+ * - 右：Hand off / 隔离 worktree / Local environment Actions / PR / Copy 子菜单 / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -21,10 +21,15 @@ import {
   Play,
   FlaskConical,
   Bug,
-  ChevronDown
+  ChevronDown,
+  MoreHorizontal
 } from 'lucide-react'
 import type { LocalEnvironmentAction } from '../../shared/local-environment'
-import { revealInFolderLabel } from '../../shared/reveal-in-folder'
+import {
+  revealInFolderLabel,
+  threadCopyMenuItems,
+  type ThreadCopyAction
+} from '../../shared/reveal-in-folder'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
 
@@ -39,6 +44,8 @@ interface Props {
   onPopOut?: () => void
   /** 分享只读快照（对标 Codex Share / `/share`） */
   onShare?: () => void
+  /** 顶栏 Copy 子菜单（对标 Codex threadHeader Copy） */
+  onCopyMenuAction?: (action: ThreadCopyAction) => void
   /** 分叉当前对话（对标 Codex 顶栏 Fork / `/fork`） */
   onFork?: () => void
   popout?: boolean
@@ -87,6 +94,7 @@ export const ChatToolbar = memo(function ChatToolbar({
   onNewConversation,
   onPopOut,
   onShare,
+  onCopyMenuAction,
   onFork,
   popout = false,
   alwaysOnTop = false,
@@ -105,21 +113,28 @@ export const ChatToolbar = memo(function ChatToolbar({
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
   const [actionsOpen, setActionsOpen] = useState(false)
+  const [copyOpen, setCopyOpen] = useState(false)
   const actionsRef = useRef<HTMLDivElement>(null)
+  const copyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setHost(getChromeHost())
   }, [])
 
   useEffect(() => {
-    if (!actionsOpen) return
+    if (!actionsOpen && !copyOpen) return
     const onDoc = (event: MouseEvent) => {
       const node = event.target
       if (node instanceof Node && actionsRef.current?.contains(node)) return
+      if (node instanceof Node && copyRef.current?.contains(node)) return
       setActionsOpen(false)
+      setCopyOpen(false)
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setActionsOpen(false)
+      if (event.key === 'Escape') {
+        setActionsOpen(false)
+        setCopyOpen(false)
+      }
     }
     document.addEventListener('mousedown', onDoc)
     window.addEventListener('keydown', onKey)
@@ -127,7 +142,7 @@ export const ChatToolbar = memo(function ChatToolbar({
       document.removeEventListener('mousedown', onDoc)
       window.removeEventListener('keydown', onKey)
     }
-  }, [actionsOpen])
+  }, [actionsOpen, copyOpen])
 
   const primaryAction = environmentActions[0] ?? null
   const runAction = (action: LocalEnvironmentAction) => {
@@ -352,6 +367,47 @@ export const ChatToolbar = memo(function ChatToolbar({
             >
               <Share2 size={18} strokeWidth={1.75} aria-hidden />
             </button>
+          ) : null}
+          {onCopyMenuAction && !popout ? (
+            <div className="chat-toolbar-actions" ref={copyRef}>
+              <button
+                type="button"
+                className="chat-toolbar-icon-btn"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setActionsOpen(false)
+                  setCopyOpen((open) => !open)
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title="对话操作"
+                aria-label="对话操作"
+                aria-expanded={copyOpen}
+                aria-haspopup="menu"
+              >
+                <MoreHorizontal size={18} strokeWidth={1.75} aria-hidden />
+              </button>
+              {copyOpen ? (
+                <div className="chat-toolbar-actions-menu glass-popover" role="menu" aria-label="复制">
+                  {threadCopyMenuItems().map((item) => (
+                    <button
+                      key={item.action}
+                      type="button"
+                      role="menuitem"
+                      className="chat-toolbar-actions-item"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setCopyOpen(false)
+                        onCopyMenuAction(item.action)
+                      }}
+                    >
+                      <span>{item.title}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {onPopOut && !popout ? (
             <button

@@ -108,6 +108,7 @@ import {
 } from '../shared/transcript-window'
 import { mergeHydratedMessage, shouldReloadUnslimmedHistory } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
+import type { ThreadCopyAction } from '../shared/reveal-in-folder'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
@@ -5362,6 +5363,38 @@ export default function App() {
     [appendLocalNote, copyPlainText, historyForModelTurn, popoutRoute?.workspaceId]
   )
 
+  const handleCopyMenuAction = useCallback(
+    (action: ThreadCopyAction) => {
+      if (action === 'copy-markdown') {
+        void copyConversationMarkdown()
+        return
+      }
+      const cmd =
+        action === 'copy-cwd'
+          ? {
+              name: 'cwd',
+              description: '复制工作目录',
+              action: 'copy_cwd',
+              category: 'workspace' as const
+            }
+          : action === 'copy-session'
+            ? {
+                name: 'session',
+                description: '复制会话 ID',
+                action: 'copy_session_id',
+                category: 'session' as const
+              }
+            : {
+                name: 'deeplink',
+                description: '复制对话深链',
+                action: 'copy_deep_link',
+                category: 'session' as const
+              }
+      void handleSlashActionRef.current({ ...cmd, scope: 'ui' }, '')
+    },
+    [copyConversationMarkdown]
+  )
+
   /** `/fork` 或气泡「从此条分叉」：拷贝到 lastMessageId（含），对标 Codex lastTurnId */
   const handleForkConversation = useCallback(
     async (dest: ForkDestination, lastMessageId?: string) => {
@@ -8177,6 +8210,7 @@ export default function App() {
               environmentActions={environmentActions}
               onRunEnvironmentAction={handleRunEnvironmentAction}
               onShare={openShareThread}
+              onCopyMenuAction={handleCopyMenuAction}
               onFork={activeConversationId ? handleForkCurrentThread : undefined}
               onPopOut={handlePopOut}
               onToggleSidebar={toggleSidebar}

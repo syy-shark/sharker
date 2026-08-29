@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   revealInFolderLabel,
   reviewFileRevealPath,
+  threadCopyMenuItems,
   threadMenuItems,
   threadRevealFolderPath
 } from './reveal-in-folder'
@@ -42,6 +43,13 @@ describe('reveal in folder', () => {
     ])
     expect(threadMenuItems({ platform: 'darwin' })[1]?.title).toBe('复制为 Markdown')
     expect(threadMenuItems({ pinned: true, platform: 'win32' })[3]?.title).toBe('取消置顶')
+    expect(threadCopyMenuItems().map((item) => item.action)).toEqual([
+      'copy-cwd',
+      'copy-session',
+      'copy-deeplink',
+      'copy-markdown'
+    ])
+    expect(threadCopyMenuItems()[3]?.title).toBe('复制为 Markdown')
     expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('在文件管理器中显示')
   })
 })
