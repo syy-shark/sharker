@@ -6,6 +6,12 @@
 import { memo, useEffect, useState } from 'react'
 import { Check, Pause, Pencil, Play, X } from 'lucide-react'
 import {
+  CLEAR_LABEL,
+  EDIT_LABEL,
+  PAUSE_LABEL,
+  RESUME_LABEL
+} from '../../shared/reveal-in-folder'
+import {
   formatGoalProgressLabel,
   type GoalCommand,
   type ThreadGoal
@@ -20,7 +26,7 @@ interface Props {
   editTick?: number
 }
 
-/** 暂停 / 继续 / 编辑 / 清除；编辑态不跟直播走 */
+/** Pause / Resume / Edit / Clear；编辑态不跟直播走 */
 export const GoalProgressRow = memo(function GoalProgressRow({
   goal,
   onCommand,
@@ -106,8 +112,8 @@ export const GoalProgressRow = memo(function GoalProgressRow({
               type="button"
               className="goal-progress-row-btn"
               onClick={() => onCommand({ type: goal.status === 'paused' ? 'resume' : 'pause' })}
-              aria-label={goal.status === 'paused' ? '继续目标' : '暂停目标'}
-              title={goal.status === 'paused' ? '继续' : '暂停'}
+              aria-label={goal.status === 'paused' ? RESUME_LABEL : PAUSE_LABEL}
+              title={goal.status === 'paused' ? RESUME_LABEL : PAUSE_LABEL}
             >
               {goal.status === 'paused' ? (
                 <Play size={14} strokeWidth={2} aria-hidden />
@@ -119,8 +125,8 @@ export const GoalProgressRow = memo(function GoalProgressRow({
               type="button"
               className="goal-progress-row-btn"
               onClick={() => setEditing(true)}
-              aria-label="编辑目标"
-              title="编辑"
+              aria-label={EDIT_LABEL}
+              title={EDIT_LABEL}
             >
               <Pencil size={14} strokeWidth={2} aria-hidden />
             </button>
@@ -130,8 +136,8 @@ export const GoalProgressRow = memo(function GoalProgressRow({
           type="button"
           className="goal-progress-row-btn goal-progress-row-btn--clear"
           onClick={() => onCommand({ type: 'clear' })}
-          aria-label="清除目标"
-          title="清除"
+          aria-label={CLEAR_LABEL}
+          title={CLEAR_LABEL}
         >
           <X size={14} strokeWidth={2} aria-hidden />
         </button>

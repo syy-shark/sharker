@@ -156,6 +156,13 @@ export const BROWSER_SETTINGS_LABEL = 'Browser'
 export const MCP_SERVERS_LABEL = 'MCP servers'
 /** 官方顶栏 Share（对标 Codex #40832） */
 export const SHARE_LABEL = 'Share'
+/** 官方顶栏 / 气泡 Fork（对标 Codex conversation fork / `/fork`） */
+export const FORK_LABEL = 'Fork'
+/** 官方 Goal 进度行按钮（对标 learn.chatgpt.com/docs/long-running-work） */
+export const PAUSE_LABEL = 'Pause'
+export const RESUME_LABEL = 'Resume'
+export const EDIT_LABEL = 'Edit'
+export const CLEAR_LABEL = 'Clear'
 /** 官方顶栏弹出对话（对标 Codex #15162 Open in Popup Window） */
 export const OPEN_IN_POPUP_WINDOW_LABEL = 'Open in Popup Window'
 /** 官方 Settings 小节与弹出窗开关（对标 learn.chatgpt.com/docs/reference/settings） */

@@ -37,7 +37,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/side` `/btw` `[问题]` | Open side chat 并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史 / 直播已出现正文、文件预览、集成终端或内置浏览器批注可 **Add to chat** 进 composer Selection 芯片（发送收成 `# Selected text:`），或 **Ask in side chat** 把摘录交给旁路（对标 Codex Add to chat / #37560、`/side [question]` 与 Ask in side chat / Annotation mode） |
 | `/status` | 显示对话 ID、模型、权限、Fast、可写根（项目附加文件夹）、线程模式、分支、上下文占用（`used / limit（%）`）与本机今日用量；长线程从库取未瘦身全文再估，不按 UI 尾页（对标 Codex /status chat ID / context usage / writable roots，避免打开历史线程像 0%；不发明供应商额度）。Settings → General可打开输入框旁用量环（对标 Codex Show context window usage，官方默认关；悬停数字与 `/status` 相同，直播增量不重走整段历史） |
 | `/diff` | 打开右侧变更审查看本地 diff |
-| `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
+| `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行按钮 **Pause** / **Resume** / **Edit** / **Clear**（对标 Codex desktop goal progress row），并显示设定后耗时 |
 | `/permissions` | 切换沙箱 / 完整权限；无参显示当前值。输入框下方同一控件（对标 Codex permissions control beneath the composer），不发明 Ask / Auto / 命名 profile |
 | `/fast` | 开关 Fast：有思考档位时降到 off/none/minimal/low。输入框旁同一芯片（对标 Codex `/fast` + composer 控件），不发明供应商 service tier |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |

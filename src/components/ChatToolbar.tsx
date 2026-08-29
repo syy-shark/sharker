@@ -28,6 +28,7 @@ import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
   ALWAYS_ON_TOP_LABEL,
   COPY_LABEL,
+  FORK_LABEL,
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   SHARE_LABEL,
@@ -351,8 +352,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onFork()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="分叉到新对话"
-              aria-label="分叉到新对话"
+              title={FORK_LABEL}
+              aria-label={FORK_LABEL}
             >
               <GitFork size={18} strokeWidth={1.75} aria-hidden />
             </button>

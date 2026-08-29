@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import { Check, Copy, GitFork, Pencil, RotateCcw } from 'lucide-react'
-import { COPY_LABEL } from '../../shared/reveal-in-folder'
+import { COPY_LABEL, FORK_LABEL } from '../../shared/reveal-in-folder'
 import './MessageActions.css'
 
 /** MessageActions Props：消息正文与 ID */
@@ -68,8 +68,8 @@ export function MessageActions({
         <button
           type="button"
           className="message-actions-btn"
-          title="Fork"
-          aria-label="Fork from this message"
+          title={FORK_LABEL}
+          aria-label={FORK_LABEL}
           onClick={onFork}
         >
           <GitFork size={16} aria-hidden />

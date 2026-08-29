@@ -9,6 +9,11 @@ import {
   OPEN_COMMAND_MENU_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SHARE_LABEL,
+  FORK_LABEL,
+  PAUSE_LABEL,
+  RESUME_LABEL,
+  EDIT_LABEL,
+  CLEAR_LABEL,
   ALWAYS_ON_TOP_LABEL,
   KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -119,5 +124,10 @@ describe('reveal in folder', () => {
     expect(ARCHIVE_CHATS_ACTION_LABEL).toBe('Archive chats')
     expect(ADD_FOLDER_LABEL).toBe('Add folder')
     expect(MAKE_PRIMARY_LABEL).toBe('Make primary')
+    expect(FORK_LABEL).toBe('Fork')
+    expect(PAUSE_LABEL).toBe('Pause')
+    expect(RESUME_LABEL).toBe('Resume')
+    expect(EDIT_LABEL).toBe('Edit')
+    expect(CLEAR_LABEL).toBe('Clear')
   })
 })
