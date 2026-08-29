@@ -70,6 +70,32 @@ export const COPY_AS_MARKDOWN_LABEL = 'Copy as Markdown'
 export const COPY_CONVERSATION_PATH_LABEL = 'Copy conversation path'
 export const COPY_BROWSER_URL_LABEL = 'Copy browser URL'
 
+/** 官方侧栏线程右键短名（对标 Codex #33217 / #34139） */
+export const RENAME_LABEL = 'Rename'
+export const PIN_LABEL = 'Pin'
+export const UNPIN_LABEL = 'Unpin'
+export const ARCHIVE_LABEL = 'Archive'
+/** 官方侧栏置顶分组（对标 Codex #25084 / #34139） */
+export const PINNED_LABEL = 'Pinned'
+/** 官方设置 Archived chats（对标 Codex #13018） */
+export const ARCHIVED_CHATS_LABEL = 'Archived chats'
+
+/** 官方快捷键 / 命令面板（对标 learn.chatgpt.com Commands） */
+export const NEW_CHAT_LABEL = 'New chat'
+export const NEW_STANDALONE_CHAT_LABEL = 'New standalone chat'
+export const RENAME_CHAT_LABEL = 'Rename chat'
+export const PIN_OR_UNPIN_CHAT_LABEL = 'Pin or unpin chat'
+export const ARCHIVE_CHAT_LABEL = 'Archive chat'
+export const MARK_CHAT_AS_UNREAD_LABEL = 'Mark chat as unread'
+export const OPEN_SIDE_CHAT_LABEL = 'Open side chat'
+export const SEARCH_CHATS_LABEL = 'Search chats'
+export const FIND_IN_CHAT_LABEL = 'Find in chat'
+export const FIND_NEXT_MATCH_LABEL = 'Find next match'
+export const FIND_PREVIOUS_MATCH_LABEL = 'Find previous match'
+export const CLEAR_ALL_UNREAD_INDICATORS_LABEL = 'Clear all unread indicators'
+export const NEXT_CHAT_NEEDING_ATTENTION_LABEL = 'Next chat needing attention'
+export const SEARCH_FILES_LABEL = 'Search files'
+
 /** 顶栏 Copy 子菜单（对标 Codex threadHeader Copy：cwd / session / deeplink / Markdown） */
 export function threadCopyMenuItems(): Array<{ action: ThreadCopyAction; title: string }> {
   return [
@@ -90,8 +116,8 @@ export function threadMenuItems(input: {
   return [
     { action: 'reveal', title: revealInFolderLabel(input.platform) },
     { action: 'copy-markdown', title: COPY_AS_MARKDOWN_LABEL },
-    { action: 'rename', title: '重命名' },
-    { action: 'pin', title: input.pinned ? '取消置顶' : '置顶' },
-    { action: 'archive', title: '归档' }
+    { action: 'rename', title: RENAME_LABEL },
+    { action: 'pin', title: input.pinned ? UNPIN_LABEL : PIN_LABEL },
+    { action: 'archive', title: ARCHIVE_LABEL }
   ]
 }

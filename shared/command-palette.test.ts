@@ -39,6 +39,16 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-conversation-path')?.title).toBe(
       'Copy conversation path'
     )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'new')?.title).toBe('New chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'side')?.title).toBe('Open side chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'archive')?.title).toBe('Archive chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'rename')?.title).toBe('Rename chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'pin')?.title).toBe('Pin or unpin chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'unread')?.title).toBe('Mark chat as unread')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'find')?.title).toBe('Find in chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'search-chats')?.title).toBe('Search chats')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.title).toBe('New standalone chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'search-files')?.title).toBe('Search files')
     expect(ids).toContain('local')
     expect(ids).toContain('worktree')
     expect(ids).toContain('side')
@@ -115,6 +125,11 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('Copy working directory').some((c) => c.id === 'copy-cwd')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('New chat').some((c) => c.id === 'new')).toBe(true)
+    expect(filterPaletteCommands('Find in chat').some((c) => c.id === 'find')).toBe(true)
+    expect(filterPaletteCommands('Archive chat').some((c) => c.action === 'archive_thread')).toBe(
       true
     )
     expect(filterPaletteCommands('zzz-none')).toEqual([])

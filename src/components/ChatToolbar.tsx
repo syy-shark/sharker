@@ -27,6 +27,7 @@ import {
 import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
   COPY_LABEL,
+  NEW_CHAT_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
   type ThreadCopyAction
@@ -188,8 +189,8 @@ export const ChatToolbar = memo(function ChatToolbar({
           onNewConversation?.()
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        title="新对话 ⌘N"
-        aria-label="开启新对话"
+        title={`${NEW_CHAT_LABEL} ⌘N`}
+        aria-label={NEW_CHAT_LABEL}
       >
         <SquarePen size={18} strokeWidth={1.75} aria-hidden />
       </button>

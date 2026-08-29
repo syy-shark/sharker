@@ -3,11 +3,23 @@
  * @see shared/ARCH.md
  */
 import {
+  ARCHIVE_CHAT_LABEL,
+  CLEAR_ALL_UNREAD_INDICATORS_LABEL,
   COPY_AS_MARKDOWN_LABEL,
   COPY_CHAT_DEEP_LINK_LABEL,
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
-  COPY_WORKING_DIRECTORY_LABEL
+  COPY_WORKING_DIRECTORY_LABEL,
+  FIND_IN_CHAT_LABEL,
+  MARK_CHAT_AS_UNREAD_LABEL,
+  NEW_CHAT_LABEL,
+  NEW_STANDALONE_CHAT_LABEL,
+  NEXT_CHAT_NEEDING_ATTENTION_LABEL,
+  OPEN_SIDE_CHAT_LABEL,
+  PIN_OR_UNPIN_CHAT_LABEL,
+  RENAME_CHAT_LABEL,
+  SEARCH_CHATS_LABEL,
+  SEARCH_FILES_LABEL
 } from './reveal-in-folder'
 
 /** 命令面板条目 */
@@ -24,7 +36,7 @@ export interface PaletteCommand {
 export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'new',
-    title: '新对话',
+    title: NEW_CHAT_LABEL,
     shortcut: '⌘N',
     keywords: 'new chat conversation 新对话',
     action: 'new_conversation'
@@ -74,13 +86,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'side',
-    title: '旁路新线程',
+    title: OPEN_SIDE_CHAT_LABEL,
     keywords: 'side btw popout 旁路 侧边',
     action: 'side_conversation'
   },
   {
     id: 'archive',
-    title: '归档当前对话',
+    title: ARCHIVE_CHAT_LABEL,
     keywords: 'archive 归档',
     action: 'archive_thread'
   },
@@ -328,14 +340,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'find',
-    title: '在对话中查找',
+    title: FIND_IN_CHAT_LABEL,
     shortcut: '⌘F',
     keywords: 'find search thread 查找 搜索',
     action: 'find_in_thread'
   },
   {
     id: 'search-chats',
-    title: '搜索对话',
+    title: SEARCH_CHATS_LABEL,
     shortcut: undefined,
     keywords: 'search chats history 搜索 对话 历史',
     action: 'show_history'
@@ -444,21 +456,21 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'clear-unread',
-    title: '清除未读徽标',
+    title: CLEAR_ALL_UNREAD_INDICATORS_LABEL,
     shortcut: '⇧Esc',
     keywords: 'unread badge clear 未读 徽标',
     action: 'clear_unread'
   },
   {
     id: 'archive-shortcut',
-    title: '归档当前对话',
+    title: ARCHIVE_CHAT_LABEL,
     shortcut: '⌘⇧A',
     keywords: 'archive 归档',
     action: 'archive_thread'
   },
   {
     id: 'search-files',
-    title: '搜索工作区文件',
+    title: SEARCH_FILES_LABEL,
     shortcut: '⌘P',
     keywords: 'search files mention @ 文件 搜索',
     action: 'mention_file'
@@ -472,7 +484,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'next-attention',
-    title: '下一条进行中对话',
+    title: NEXT_CHAT_NEEDING_ATTENTION_LABEL,
     shortcut: '⌘⌥A',
     keywords: 'attention live next 进行中 关注',
     action: 'next_attention'
@@ -485,28 +497,28 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'rename',
-    title: '重命名当前对话',
+    title: RENAME_CHAT_LABEL,
     shortcut: '⌘⌥R',
     keywords: 'rename title 重命名 标题',
     action: 'rename_conversation'
   },
   {
     id: 'pin',
-    title: '置顶 / 取消置顶',
+    title: PIN_OR_UNPIN_CHAT_LABEL,
     shortcut: '⌘⌥P',
     keywords: 'pin unpin 置顶',
     action: 'pin_conversation'
   },
   {
     id: 'unread',
-    title: '标为未读',
+    title: MARK_CHAT_AS_UNREAD_LABEL,
     shortcut: '⌘⇧U',
     keywords: 'unread mark 未读',
     action: 'mark_unread'
   },
   {
     id: 'standalone',
-    title: '独立新对话',
+    title: NEW_STANDALONE_CHAT_LABEL,
     shortcut: '⌘⌥O / ⌘⌥N',
     keywords: 'standalone new window quick chat 独立 新对话',
     action: 'standalone_conversation'

@@ -126,6 +126,7 @@ import {
 } from '../../shared/review-diff-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
+import { FIND_IN_CHAT_LABEL } from '../../shared/reveal-in-folder'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -2238,8 +2239,8 @@ export const ChatView = memo(function ChatView({
             ref={findInputRef}
             className="chat-find__input"
             value={findQuery}
-            placeholder="在对话中查找"
-            aria-label="在对话中查找"
+            placeholder={FIND_IN_CHAT_LABEL}
+            aria-label={FIND_IN_CHAT_LABEL}
             onChange={(e) => {
               setFindQuery(e.target.value)
               setFindHit(0)

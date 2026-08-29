@@ -7023,7 +7023,7 @@ export default function App() {
         void handleSlashActionRef.current(
           {
             name: 'side',
-            description: '旁路新线程',
+            description: 'Open side chat',
             scope: 'ui',
             action: 'side_conversation',
             category: 'session'
@@ -8187,7 +8187,7 @@ export default function App() {
     void handleSlashActionRef.current(
       {
         name: 'side',
-        description: '旁路新线程',
+        description: 'Open side chat',
         scope: 'ui',
         action: 'side_conversation',
         category: 'session'

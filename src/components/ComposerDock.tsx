@@ -122,6 +122,7 @@ import {
 } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
+import { SEARCH_CHATS_LABEL } from '../../shared/reveal-in-folder'
 import { GoalProgressRow } from './GoalProgressRow'
 import { ContextUsageDonut } from './ContextUsageDonut'
 import './ChatView.css'
@@ -1617,7 +1618,7 @@ export const ComposerDock = memo(
             <div
               className={`slash-menu history-picker ${historyExiting ? 'popover-exit' : 'popover-enter'}`.trim()}
               role="listbox"
-              aria-label="搜索对话"
+              aria-label={SEARCH_CHATS_LABEL}
               aria-activedescendant={
                 historyHits[historyActiveIndex]
                   ? `history-option-${historyHits[historyActiveIndex].id}`
@@ -1629,7 +1630,7 @@ export const ComposerDock = memo(
                 className="history-picker-search"
                 value={historyQuery}
                 placeholder="搜索标题、正文或分支…"
-                aria-label="搜索对话"
+                aria-label={SEARCH_CHATS_LABEL}
                 onChange={(e) => {
                   setHistoryQuery(e.target.value)
                   setHistoryActiveIndex(0)

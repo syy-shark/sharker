@@ -39,9 +39,16 @@ import {
   type SidebarChatFilter
 } from '../../shared/conversation'
 import {
+  ARCHIVE_LABEL,
+  ARCHIVED_CHATS_LABEL,
+  NEW_CHAT_LABEL,
+  PIN_LABEL,
+  PINNED_LABEL,
+  RENAME_LABEL,
   revealInFolderLabel,
   threadMenuItems,
-  threadRevealFolderPath
+  threadRevealFolderPath,
+  UNPIN_LABEL
 } from '../../shared/reveal-in-folder'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
@@ -132,7 +139,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'personalization', label: '个性化', icon: Smile },
   { id: 'suggested', label: '建议提示', icon: Lightbulb },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
-  { id: 'archived', label: '已归档', icon: Archive },
+  { id: 'archived', label: ARCHIVED_CHATS_LABEL, icon: Archive },
   { id: 'usage', label: '用量', icon: ChartNoAxesColumn }
 ]
 
@@ -584,7 +591,7 @@ export const Sidebar = memo(function Sidebar({
             ref={renameInputRef}
             className="sidebar-rename-input"
             value={renameDraft}
-            aria-label="重命名对话"
+            aria-label={RENAME_LABEL}
             onChange={(e) => setRenameDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -646,8 +653,8 @@ export const Sidebar = memo(function Sidebar({
           <button
             type="button"
             className="sidebar-row-archive sidebar-row-pin"
-            title={c.pinned ? '取消置顶' : '置顶'}
-            aria-label={c.pinned ? `取消置顶 ${convTitle(c)}` : `置顶 ${convTitle(c)}`}
+            title={c.pinned ? UNPIN_LABEL : PIN_LABEL}
+            aria-label={c.pinned ? `${UNPIN_LABEL} ${convTitle(c)}` : `${PIN_LABEL} ${convTitle(c)}`}
             onMouseDown={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -664,8 +671,8 @@ export const Sidebar = memo(function Sidebar({
         <button
           type="button"
           className="sidebar-row-archive"
-          title="归档"
-          aria-label={`归档 ${convTitle(c)}`}
+          title={ARCHIVE_LABEL}
+          aria-label={`${ARCHIVE_LABEL} ${convTitle(c)}`}
           onMouseDown={(e) => {
             // 避免 mousedown 被父级抢走焦点
             e.preventDefault()
@@ -883,7 +890,7 @@ export const Sidebar = memo(function Sidebar({
         <nav className="sidebar-primary" aria-label="主导航">
           <button type="button" className="sidebar-nav-item" onClick={handleNewChat}>
             <SquarePen size={18} className="sidebar-nav-ico" aria-hidden />
-            <span>新对话</span>
+            <span>{NEW_CHAT_LABEL}</span>
           </button>
           <button
             type="button"
@@ -927,7 +934,7 @@ export const Sidebar = memo(function Sidebar({
         <div className="sidebar-scroll">
           {pinnedWorkspaces.length > 0 ? (
             <section className="sidebar-section">
-              <h3 className="sidebar-section-label">置顶</h3>
+              <h3 className="sidebar-section-label">{PINNED_LABEL}</h3>
               {pinnedWorkspaces.map((ws) => renderProject(ws, 'pin-'))}
             </section>
           ) : null}
@@ -961,8 +968,8 @@ export const Sidebar = memo(function Sidebar({
           ) : null}
 
           {groupedChats && pinnedConvs.length > 0 ? (
-            <section className="sidebar-section" aria-label="置顶">
-              <h3 className="sidebar-section-label">置顶</h3>
+            <section className="sidebar-section" aria-label={PINNED_LABEL}>
+              <h3 className="sidebar-section-label">{PINNED_LABEL}</h3>
               {pinnedConvs.map((c) => renderConvRow(c))}
             </section>
           ) : null}

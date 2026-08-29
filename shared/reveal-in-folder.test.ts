@@ -42,7 +42,14 @@ describe('reveal in folder', () => {
       'archive'
     ])
     expect(threadMenuItems({ platform: 'darwin' })[1]?.title).toBe('Copy as Markdown')
-    expect(threadMenuItems({ pinned: true, platform: 'win32' })[3]?.title).toBe('取消置顶')
+    expect(threadMenuItems({ platform: 'darwin' }).map((item) => item.title)).toEqual([
+      'Open in Finder',
+      'Copy as Markdown',
+      'Rename',
+      'Pin',
+      'Archive'
+    ])
+    expect(threadMenuItems({ pinned: true, platform: 'win32' })[3]?.title).toBe('Unpin')
     expect(threadCopyMenuItems().map((item) => item.action)).toEqual([
       'copy-cwd',
       'copy-session',

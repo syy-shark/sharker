@@ -97,7 +97,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'new',
-    description: '新建对话',
+    description: 'New chat',
     scope: 'ui',
     action: 'new_conversation',
     category: 'session'
@@ -155,7 +155,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'side',
-    description: '旁路新线程（不离开当前对话，弹出独立窗；可带问题立刻发送）',
+    description: 'Open side chat',
     scope: 'ui',
     action: 'side_conversation',
     argsHint: '[问题]',
@@ -163,7 +163,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'btw',
-    description: '旁路新线程（/side 别名；可带问题立刻发送）',
+    description: 'Open side chat',
     scope: 'ui',
     action: 'side_conversation',
     argsHint: '[问题]',
@@ -178,14 +178,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'archive',
-    description: '归档当前对话（保留记录，清托管 worktree）',
+    description: 'Archive chat',
     scope: 'ui',
     action: 'archive_thread',
     category: 'session'
   },
   {
     name: 'rename',
-    description: '重命名当前对话',
+    description: 'Rename chat',
     scope: 'ui',
     action: 'rename_conversation',
     argsHint: '[标题]',
@@ -193,14 +193,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'pin',
-    description: '置顶 / 取消置顶当前对话',
+    description: 'Pin or unpin chat',
     scope: 'ui',
     action: 'pin_conversation',
     category: 'session'
   },
   {
     name: 'unread',
-    description: '将当前对话标为未读',
+    description: 'Mark chat as unread',
     scope: 'ui',
     action: 'mark_unread',
     category: 'session'

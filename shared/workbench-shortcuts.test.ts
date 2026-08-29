@@ -203,6 +203,31 @@ describe('workbench shortcuts', () => {
         (row) => row.keys === '⌘⌥⇧C' && row.title === 'Copy conversation path'
       )
     ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘N / ⌘⇧O' && row.title === 'New chat')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⌥R' && row.title === 'Rename chat')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘⌥P' && row.title === 'Pin or unpin chat'
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⇧A' && row.title === 'Archive chat')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘F' && row.title === 'Find in chat')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) =>
+          row.keys === '⌘G / ⌘⇧G' &&
+          row.title.includes('Find next match') &&
+          row.title.includes('Find previous match')
+      )
+    ).toBe(true)
   })
 
   it('cycles conversation ids', () => {
