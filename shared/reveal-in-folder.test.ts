@@ -30,6 +30,7 @@ describe('reveal in folder', () => {
     expect(reviewFileRevealPath('src/a.ts', '/proj')).toBe('/proj/src/a.ts')
     expect(reviewFileRevealPath('/abs/b.ts', '/proj')).toBe('/abs/b.ts')
     expect(reviewFileRevealPath('C:\\repo\\a.ts', '/proj')).toBe('C:/repo/a.ts')
+    expect(reviewFileRevealPath('C:\\\\repo\\\\a.ts', '/proj')).toBe('C:/repo/a.ts')
     expect(reviewFileRevealPath('lib/b.ts', 'C:\\extra\\')).toBe('C:/extra/lib/b.ts')
     expect(reviewFileRevealPath('', '/proj')).toBe('')
     expect(threadMenuItems({ platform: 'darwin' }).map((item) => item.action)).toEqual([

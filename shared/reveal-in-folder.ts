@@ -36,9 +36,11 @@ export function reviewFileRevealPath(filePath: string, repoRoot: string): string
   const file = String(filePath || '')
     .trim()
     .replace(/\\/g, '/')
+    .replace(/\/{2,}/g, '/')
   const root = String(repoRoot || '')
     .trim()
     .replace(/\\/g, '/')
+    .replace(/\/{2,}/g, '/')
     .replace(/\/+$/, '')
   if (!file) return ''
   if (file.startsWith('/') || /^[A-Za-z]:\//.test(file)) return file
