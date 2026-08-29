@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、引用内换行后的列表项、脚注缩进续行与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、围栏闭合后的项后缀、引用内换行后的列表项、脚注缩进续行与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2794,10 +2794,15 @@ function lastItemInnerBlockStart(
   indent: number
 ): number | null {
   const fromBody =
-    last.type === 'pre' && last.lang
+    last.type === 'pre'
       ? firstMatchingLineStart(
           itemPrev,
-          (line) => Boolean(parseFenceLine(line) || parseFenceLineAt(line, indent))
+          (line) =>
+            Boolean(
+              parseFenceLine(line) ||
+                parseFenceLineAt(line, indent) ||
+                (!last.lang && isIndentCodeLine(line))
+            )
         )
       : lastBlockSourceStart(itemPrev, last)
   if (fromBody != null && fromBody > 0) return fromBody
@@ -2808,13 +2813,33 @@ function lastItemInnerBlockStart(
   const openerAt = firstLine.length - parsed.text.length
   const content = parsed.text
   const matches =
-    (last.type === 'pre' && last.lang && Boolean(parseFenceLine(content))) ||
+    (last.type === 'pre' && Boolean(parseFenceLine(content))) ||
     (last.type === 'pre' && !last.lang && isIndentCodeLine(content)) ||
     (last.type === 'heading' && Boolean(parseHeadingLine(content))) ||
     (last.type === 'quote' && parseQuoteLine(content) !== null) ||
     (last.type === 'table' && (isGfmTableRow(content) || looksLikeGfmTableCells(content))) ||
     (last.type === 'hr' && parseHrLine(content))
   return matches ? openerAt : fromBody
+}
+
+/** 已闭合项内围栏后面的后缀原文；另起块时退回全量解析 */
+function suffixAfterClosedFence(prevNorm: string, nextText: string): string | null {
+  const prevLines = prevNorm.split('\n')
+  const nextLines = nextText.split('\n')
+  const open = parseFenceLine(prevLines[0] ?? '') ?? parseFenceLine(nextLines[0] ?? '')
+  if (!open) return null
+  const closerAt = (lines: string[]) => {
+    for (let i = 1; i < lines.length; i++) {
+      if (isFenceClose(lines[i]!, open.marker)) return i
+    }
+    return -1
+  }
+  if (closerAt(prevLines) < 0) return null
+  const closer = closerAt(nextLines)
+  if (closer < 0) return null
+  const after = nextLines.slice(closer + 1)
+  if (after.some((line) => lineOpensNewCheapBlock(line))) return null
+  return after.join('\n')
 }
 
 /** 只续最后一项的最后一块（含嵌套项内引用 / 围栏），已画外层项与嵌套项标题保持同一引用 */
@@ -2877,12 +2902,24 @@ function growLastListItemInnerBlocks(
   if (start == null) return null
   const stripItemIndent = (text: string) =>
     indent ? text.split('\n').map((line) => dedentLine(line, indent)).join('\n') : text
-  const grown = continueLastBlockOfType(
-    last,
-    stripItemIndent(itemPrev.slice(start)),
-    stripItemIndent(itemNext.slice(start)),
-    defs
-  )
+  const prevWindow = stripItemIndent(itemPrev.slice(start))
+  const nextWindow = stripItemIndent(itemNext.slice(start))
+  const grown = continueLastBlockOfType(last, prevWindow, nextWindow, defs)
+  const suffixText = last.type === 'pre' ? suffixAfterClosedFence(prevWindow, nextWindow) : null
+  if (suffixText != null) {
+    if (suffixText.includes(']:')) return null
+    const nextBlocks =
+      grown && grown.length === 1 && grown[0] !== last
+        ? [...item.blocks.slice(0, -1), grown[0]!]
+        : item.blocks
+    if (!suffixText) {
+      return nextBlocks === item.blocks ? item : { ...item, blocks: nextBlocks }
+    }
+    const prevSrc = cheapInlineSourceAll(item.suffix ?? [])
+    const nodes = continueCheapInlineMarkdown(prevSrc, item.suffix ?? [], suffixText, defs)
+    if (nodes === item.suffix && nextBlocks === item.blocks) return item
+    return { ...item, blocks: nextBlocks, suffix: nodes }
+  }
   if (!grown || grown.length !== 1) return null
   if (grown[0] === last) return item
   return { ...item, blocks: [...item.blocks.slice(0, -1), grown[0]!] }
@@ -3241,7 +3278,8 @@ function continueLastPreBlock(
   nextText: string
 ): CheapProseBlock[] | null {
   if (nextText.slice(prevNorm.length).includes(']:')) return null
-  if (prev.lang) {
+  const first = prevNorm.split('\n')[0] ?? ''
+  if (prev.lang || parseFenceLine(first)) {
     const nextBody = fencedPreBody(nextText)
     if (nextBody == null || !nextBody.startsWith(prev.text)) return null
     return nextBody === prev.text ? [prev] : [{ type: 'pre', text: nextBody, lang: prev.lang }]
@@ -3300,9 +3338,8 @@ function lastBlockSourceStart(text: string, last: CheapProseBlock): number | nul
     return firstMatchingLineStart(text, (line) => isGfmTableRow(line) && !isGfmTableSep(line))
   }
   if (last.type === 'pre') {
-    if (last.lang) {
-      return firstMatchingLineStart(text, (line) => Boolean(parseFenceLine(line)))
-    }
+    const fenceAt = firstMatchingLineStart(text, (line) => Boolean(parseFenceLine(line)))
+    if (fenceAt != null) return fenceAt
     return firstMatchingLineStart(text, (line) => isIndentCodeLine(line))
   }
   if (last.type === 'footnotes') {
@@ -3333,7 +3370,7 @@ function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]):
 
 /**
  * 增长列表 / 表格 / 段落 / 引用 / 标题 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
- * 段落软换行后续写、嵌套项内引用 / 围栏、引用内换行后新列表项、脚注缩进续行也走增长段。多块尾跳过已收前缀（单行标题 / HR，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注）。定义行或前缀对不上时退回全量解析。
+ * 段落软换行后续写、嵌套项内引用 / 围栏、围栏闭合后的项后缀、引用内换行后新列表项、脚注缩进续行也走增长段。多块尾跳过已收前缀（单行标题 / HR，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注）。定义行或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
@@ -3359,7 +3396,7 @@ function tryContinueLastCheapProseBlock(
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
- * 最后一块（含段落软换行、嵌套项内引用 / 围栏、缩进代码 / 脚注续行 / 引用内换行后的子块）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
+ * 最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏闭合后的项后缀、缩进代码 / 脚注续行 / 引用内换行后的子块）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(

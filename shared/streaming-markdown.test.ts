@@ -1368,6 +1368,80 @@ describe('splitStreamingMarkdown', () => {
         expect(grownList.items).toHaveLength(13)
       }
     }
+    const closedFence = '- a\n  ```\n  x\n  ```'
+    const closedFenceFirst = parseCheapProseBlocks(closedFence)
+    const closedFenceSuffix = continueCheapProseBlocks(
+      closedFence,
+      closedFenceFirst,
+      `${closedFence}\n  after`
+    )
+    if (closedFenceFirst[0]?.type === 'list' && closedFenceSuffix[0]?.type === 'list') {
+      expect(closedFenceSuffix[0].items[0]?.nodes).toBe(closedFenceFirst[0].items[0]?.nodes)
+      expect(closedFenceSuffix[0].items[0]?.blocks?.[0]).toBe(closedFenceFirst[0].items[0]?.blocks?.[0])
+      expect(closedFenceSuffix[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const closedFenceNl = continueCheapProseBlocks(closedFence, closedFenceFirst, `${closedFence}\n`)
+    const closedFenceAfterNl = continueCheapProseBlocks(
+      `${closedFence}\n`,
+      closedFenceNl,
+      `${closedFence}\n  after`
+    )
+    if (closedFenceFirst[0]?.type === 'list' && closedFenceAfterNl[0]?.type === 'list') {
+      expect(closedFenceAfterNl[0].items[0]?.nodes).toBe(closedFenceFirst[0].items[0]?.nodes)
+      expect(closedFenceAfterNl[0].items[0]?.blocks?.[0]).toBe(closedFenceFirst[0].items[0]?.blocks?.[0])
+      expect(closedFenceAfterNl[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const closedFenceMore = continueCheapProseBlocks(
+      `${closedFence}\n  after`,
+      closedFenceSuffix,
+      `${closedFence}\n  after more`
+    )
+    if (closedFenceSuffix[0]?.type === 'list' && closedFenceMore[0]?.type === 'list') {
+      expect(closedFenceMore[0].items[0]?.nodes).toBe(closedFenceSuffix[0].items[0]?.nodes)
+      expect(closedFenceMore[0].items[0]?.blocks?.[0]).toBe(closedFenceSuffix[0].items[0]?.blocks?.[0])
+      expect(closedFenceMore[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after more' }])
+    }
+    const closedFenceJs = '1. item\n   ```js\n   x\n   ```'
+    const closedFenceJsFirst = parseCheapProseBlocks(closedFenceJs)
+    const closedFenceJsSuffix = continueCheapProseBlocks(
+      closedFenceJs,
+      closedFenceJsFirst,
+      `${closedFenceJs}\n   after`
+    )
+    if (closedFenceJsFirst[0]?.type === 'list' && closedFenceJsSuffix[0]?.type === 'list') {
+      expect(closedFenceJsSuffix[0].items[0]?.nodes).toBe(closedFenceJsFirst[0].items[0]?.nodes)
+      expect(closedFenceJsSuffix[0].items[0]?.blocks?.[0]).toBe(closedFenceJsFirst[0].items[0]?.blocks?.[0])
+      expect(closedFenceJsSuffix[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const nestedClosedFence = '- a\n  - b\n    ```\n    x\n    ```'
+    const nestedClosedFirst = parseCheapProseBlocks(nestedClosedFence)
+    const nestedClosedSuffix = continueCheapProseBlocks(
+      nestedClosedFence,
+      nestedClosedFirst,
+      `${nestedClosedFence}\n    after`
+    )
+    if (nestedClosedFirst[0]?.type === 'list' && nestedClosedSuffix[0]?.type === 'list') {
+      expect(nestedClosedSuffix[0].items[0]?.nodes).toBe(nestedClosedFirst[0].items[0]?.nodes)
+      expect(nestedClosedSuffix[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedClosedFirst[0].items[0]?.nested?.items[0]?.nodes
+      )
+      expect(nestedClosedSuffix[0].items[0]?.nested?.items[0]?.blocks?.[0]).toBe(
+        nestedClosedFirst[0].items[0]?.nested?.items[0]?.blocks?.[0]
+      )
+      expect(nestedClosedSuffix[0].items[0]?.nested?.items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const tableInListText = '- note\n  | A | B |\n  | --- | --- |\n  | 1 | 2'
+    const tableInList = parseCheapProseBlocks(tableInListText)
+    const tableInListGrown = continueCheapProseBlocks(tableInListText, tableInList, `${tableInListText}0`)
+    if (tableInList[0]?.type === 'list' && tableInListGrown[0]?.type === 'list') {
+      expect(tableInListGrown[0].items[0]?.nodes).toBe(tableInList[0].items[0]?.nodes)
+      const prevTable = tableInList[0].items[0]?.blocks?.[0]
+      const nextTable = tableInListGrown[0].items[0]?.blocks?.[0]
+      if (prevTable?.type === 'table' && nextTable?.type === 'table') {
+        expect(nextTable.header[0]).toBe(prevTable.header[0])
+        expect(nextTable.rows[0]?.[1]).toEqual([{ type: 'text', text: '20' }])
+      }
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
