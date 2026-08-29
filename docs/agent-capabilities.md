@@ -27,8 +27,9 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
-| `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；设置 → 权限 → Git **审查交付** 可改独立线程；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
+| `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；设置 → 通用 → **代码审查** 可改独立线程；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
 | `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
+| `/memories` | 空命令先选本对话使用 / 写入 / 关闭 / 跟随全局（对标 Codex chat-level memories；不改设置 → 个性化的全局默认）；`on|off|use|inherit` 可直接改本对话 |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
@@ -103,11 +104,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 排队与插队
 
-- 设置 → 外观 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画注入预览，再画排队后续。
+- 设置 → 通用 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画注入预览，再画排队后续。
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队。忙时输入 `/review`、`/status` 或 `!command` 先出现在输入框上方队列，当前回合结束后再解析（对标 Codex Tab queue slash；注入仍把原文交给当前回合）
-- 设置 → 外观 → **Enter 发送**（对标 Codex `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
+- 设置 → 通用 → **Enter 发送**（对标 Codex Settings → General / `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
 - 可打开 **建议提示**（空对话先给出进行中 / 未读 / 最近更新的对话，再审查 / 设定目标，对标 Codex Settings → Suggested prompts）
-- 设置 → 权限 → Git **审查交付**：`/review` 默认当前对话（官方 Inline）；Detached 才新开审查线程。直播中排队或注入，不中止当前回合
+- 设置 → 通用 → **代码审查**：`/review` 默认当前对话（官方 Settings → General → Code review Inline）；Detached 才新开审查线程。直播中排队或注入，不中止当前回合
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）
 - 设置 → 权限 → Git **始终 force-with-lease 推送**（默认关）：审查面板 `git push --force-with-lease`，从不 `--force`（对标 Codex Always force push）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
@@ -115,10 +116,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 权限 → Worktree **根目录**（对标 Codex Worktree root）：托管与永久 worktree 建在此绝对路径下，空则 `~/.sharker/worktrees`；`sharker://settings/worktrees` 打开该页。改了不搬旧目录
 - 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / 默认 Git / AGENTS.md / Skill；附加文件夹可供右侧文件树浏览、`@` 搜索、文件引用跳转与沙箱读写，并可 **设为主文件夹**（旧主路径留在附加列表，对标 Codex Make primary）；其中不同 Git 仓库会出现在审查选择器（同仓子目录不另开一项）
 - 设置 → 外观 → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
-- 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**运行时防止休眠**、**新弹出对话置顶**（对标 Codex Notifications / Prevent sleep / Always on top）
-- 设置 → 外观 → **记忆** 注入/写入（`/memories` 仍打印本机记忆清单）
+- 设置 → 外观 → **通知**（从不 / 后台 / 始终）、**批准通知**、**系统通知权限**、**新弹出对话置顶**（对标 Codex Notifications / Always on top）
+- 设置 → 通用 → **运行时防止休眠**（对标 Codex Prevent sleep while running）
+- 设置 → 个性化 → **记忆** 注入/写入默认（对标 Codex Settings → Personalization Enable memories）；`/memories` 只改当前对话（空命令先选使用 / 写入 / 关闭 / 跟随全局，不改全局）
 - 设置 → 个性化 → **人格** 与 **自定义说明**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
-- `sharker://settings/personalization` 打开该页
+- `sharker://settings/general` 打开通用；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
 - 对话附件与正文渲染图可悬停 **复制** 或 **保存**（对标 Codex Save or copy rendered images）；只认本机附件、http(s) 与 `data:image`，不读任意 `file://`；工作区相对路径图（如 `![x](docs/foo.png)`）经文件预览同一条读盘通道成图，可点开右侧预览；直播从文件头读固有尺寸首帧占位，未测到前 48px 高水位，成图后高度只升不降，避免 8rem / 小图塌贴底
 - 写盘一开始对话里就出现 **已改 N 个文件**（对标 Codex 回合内 N files edited），点开审查；数字与直播 +/- 统计预留等宽，侧栏进行中/未读占同一槽，文件树写盘重拉不再播进入动画（对标 Codex animated diff stat alignment / sidebar jitter）；收束不再整块冒出跳贴底

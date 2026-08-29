@@ -18,6 +18,7 @@ export type DeeplinkAction =
       tab:
         | 'permissions'
         | 'models'
+        | 'general'
         | 'appearance'
         | 'personalization'
         | 'shortcuts'
@@ -88,15 +89,16 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   if (key === 'shortcuts' || key === 'keyboard' || key === 'keymap') {
     return { type: 'settings', tab: 'shortcuts' }
   }
-  if (key === 'personalization' || key === 'personality' || key === 'agents.md') {
+  if (key === 'personalization' || key === 'personality' || key === 'agents.md' || key === 'memories') {
     return { type: 'settings', tab: 'personalization' }
+  }
+  if (key === 'general' || key === 'review') {
+    return { type: 'settings', tab: 'general' }
   }
   if (
     key === 'appearance' ||
     key === 'theme' ||
     key === 'notifications' ||
-    key === 'general' ||
-    key === 'memories' ||
     key === 'code-font' ||
     key === 'codefont'
   ) {
@@ -106,7 +108,6 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
     key === 'permissions' ||
     key === 'browser-use' ||
     key === 'git' ||
-    key === 'review' ||
     key === 'worktree' ||
     key === 'worktrees' ||
     key.startsWith('computer-use')

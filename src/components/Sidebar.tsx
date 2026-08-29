@@ -19,6 +19,7 @@ import {
   Pin,
   Smile,
   Settings,
+  Settings2,
   Shield,
   Sparkles,
   SquarePen
@@ -111,6 +112,7 @@ const SIDEBAR_LAYOUT_MS = 280
 const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'permissions', label: '权限', icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
+  { id: 'general', label: '通用', icon: Settings2 },
   { id: 'appearance', label: '外观', icon: Palette },
   { id: 'personalization', label: '个性化', icon: Smile },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },

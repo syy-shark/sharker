@@ -9,6 +9,7 @@ export type AppPage = 'chat' | 'settings' | 'automations' | 'skills'
 export type SettingsTab =
   | 'permissions'
   | 'models'
+  | 'general'
   | 'appearance'
   | 'personalization'
   | 'shortcuts'

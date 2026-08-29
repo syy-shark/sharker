@@ -52,7 +52,11 @@ describe('deeplink', () => {
     })
     expect(parseDeeplink('sharker://settings/review')).toEqual({
       type: 'settings',
-      tab: 'permissions'
+      tab: 'general'
+    })
+    expect(parseDeeplink('sharker://settings/general')).toEqual({
+      type: 'settings',
+      tab: 'general'
     })
     expect(parseDeeplink('sharker://settings/worktrees')).toEqual({
       type: 'settings',
@@ -70,13 +74,9 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'appearance'
     })
-    expect(parseDeeplink('sharker://settings/general')).toEqual({
-      type: 'settings',
-      tab: 'appearance'
-    })
     expect(parseDeeplink('sharker://settings/memories')).toEqual({
       type: 'settings',
-      tab: 'appearance'
+      tab: 'personalization'
     })
     expect(parseDeeplink('sharker://settings/code-font')).toEqual({
       type: 'settings',

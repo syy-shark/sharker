@@ -97,8 +97,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'memories',
-    title: '记忆状态',
-    keywords: 'memories memory 记忆',
+    title: '本对话记忆',
+    keywords: 'memories memory 记忆 注入 写入',
     action: 'show_memories'
   },
   {
@@ -119,6 +119,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: '外观设置',
     keywords: 'theme appearance 外观 主题',
     action: 'open_appearance'
+  },
+  {
+    id: 'general',
+    title: '通用设置',
+    keywords: 'general follow-up enter review sleep 通用 后续 排队 注入 审查',
+    action: 'open_general'
   },
   {
     id: 'personalization',

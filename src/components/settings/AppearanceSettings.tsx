@@ -6,10 +6,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import {
-  parseComposerEnterBehavior,
-  type ComposerEnterBehavior
-} from '../../../shared/composer-submit'
 import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
 import {
   clampUiFontScale,
@@ -253,73 +249,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title="输入">
-        <SettingsCard>
-          <SettingsChoiceGroup
-            value={draft.followUpBehavior === 'steer' ? 'steer' : 'queue'}
-            onChange={(followUpBehavior: 'queue' | 'steer') => {
-              scheduleSave({ ...draftRef.current, followUpBehavior })
-            }}
-            options={[
-              {
-                value: 'queue',
-                title: '排队',
-                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为加入当前回合。',
-                icon: <span aria-hidden>排</span>
-              },
-              {
-                value: 'steer',
-                title: '注入',
-                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为排队。',
-                icon: <span aria-hidden>注</span>
-              }
-            ]}
-          />
-          <SettingsChoiceGroup
-            value={parseComposerEnterBehavior(draft.composerEnterBehavior, draft.requireModEnter)}
-            onChange={(composerEnterBehavior: ComposerEnterBehavior) => {
-              scheduleSave({
-                ...draftRef.current,
-                composerEnterBehavior,
-                requireModEnter: composerEnterBehavior === 'cmdAlways'
-              })
-            }}
-            options={[
-              {
-                value: 'enter',
-                title: '回车发送',
-                description: 'Enter 始终发送。Shift+Enter 换行。',
-                icon: <span aria-hidden>回</span>
-              },
-              {
-                value: 'cmdIfMultiline',
-                title: '多行需 ⌘Enter',
-                description: '单行 Enter 发送；草稿有换行后要 ⌘/Ctrl+Enter。',
-                icon: <span aria-hidden>多</span>
-              },
-              {
-                value: 'cmdAlways',
-                title: '始终 ⌘Enter',
-                description: 'Enter 换行，⌘/Ctrl+Enter 发送。',
-                icon: <span aria-hidden>⌘</span>
-              }
-            ]}
-          />
-          <SettingsRow
-            title="建议提示"
-            description="对标 Codex Suggested prompts：空对话显示审查、目标或继续最近对话。"
-            last
-          >
-            <SettingsToggle
-              checked={draft.suggestedPrompts !== false}
-              onChange={(suggestedPrompts) => {
-                scheduleSave({ ...draftRef.current, suggestedPrompts })
-              }}
-              label="建议提示"
-            />
-          </SettingsRow>
-        </SettingsCard>
-      </SettingsSection>
       <SettingsSection title="通知">
         <SettingsCard>
           <SettingsChoiceGroup
@@ -380,18 +309,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
       <SettingsSection title="窗口">
         <SettingsCard>
           <SettingsRow
-            title="运行时防止休眠"
-            description="对标 Codex Prevent sleep while running：有回合在跑时阻止系统休眠。"
-          >
-            <SettingsToggle
-              checked={draft.preventSleepWhileRunning === true}
-              onChange={(preventSleepWhileRunning) => {
-                scheduleSave({ ...draftRef.current, preventSleepWhileRunning })
-              }}
-              label="运行时防止休眠"
-            />
-          </SettingsRow>
-          <SettingsRow
             title="新弹出对话置顶"
             description="对标 Codex Always on top：新弹出的对话窗默认浮在其它应用之上。"
             last
@@ -402,35 +319,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
                 scheduleSave({ ...draftRef.current, popoutAlwaysOnTop })
               }}
               label="新弹出对话置顶"
-            />
-          </SettingsRow>
-        </SettingsCard>
-      </SettingsSection>
-      <SettingsSection title="记忆">
-        <SettingsCard>
-          <SettingsRow
-            title="注入记忆"
-            description="把检索到的长期记忆写入本轮 system。人格与个人说明在设置 → 个性化。"
-          >
-            <SettingsToggle
-              checked={draft.memoryInjection !== false}
-              onChange={(memoryInjection) => {
-                scheduleSave({ ...draftRef.current, memoryInjection })
-              }}
-              label="注入记忆"
-            />
-          </SettingsRow>
-          <SettingsRow
-            title="写入记忆"
-            description="回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
-            last
-          >
-            <SettingsToggle
-              checked={draft.memoryGeneration !== false}
-              onChange={(memoryGeneration) => {
-                scheduleSave({ ...draftRef.current, memoryGeneration })
-              }}
-              label="写入记忆"
             />
           </SettingsRow>
         </SettingsCard>

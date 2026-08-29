@@ -41,6 +41,7 @@ describe('command palette', () => {
     expect(ids).toContain('delete')
     expect(ids).toContain('theme')
     expect(ids).toContain('personalization')
+    expect(ids).toContain('general')
     expect(ids).toContain('debug-config')
     expect(ids).toContain('fast')
     expect(ids).toContain('reasoning')

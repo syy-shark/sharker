@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 外观 / 个性化 / 键盘快捷键 / 已归档 / 用量
+ * 设置页壳：权限 / 模型 / 通用 / 外观 / 个性化 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -9,6 +9,7 @@ import type { SettingsTab } from '../types/navigation'
 import { ModelsSettings } from '../components/settings/ModelsSettings'
 import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
+import { GeneralSettings } from '../components/settings/GeneralSettings'
 import { PersonalizationSettings } from '../components/settings/PersonalizationSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
@@ -18,19 +19,23 @@ import './SettingsPage.css'
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   permissions: {
     title: '权限',
-    desc: '控制 AI 可访问的文件与系统范围、托管 worktree 保留数、/review 交付与 Git 文案模板；高危操作仍会单独确认。'
+    desc: '控制 AI 可访问的文件与系统范围、托管 worktree 保留数与 Git 文案模板；高危操作仍会单独确认。/review 交付在通用。'
   },
   models: {
     title: '模型',
     desc: '配置 OpenAI 兼容 API，并选择对话时使用的模型。'
   },
+  general: {
+    title: '通用',
+    desc: '后续排队或注入、Enter 发送、建议提示、/review 交付与运行防休眠。对标 Codex Settings → General。'
+  },
   appearance: {
     title: '外观',
-    desc: '浅色苹果玻璃与深色金属；后续排队/注入；记忆与通知在此。人格与个人说明在个性化。'
+    desc: '浅色苹果玻璃与深色金属；通知与弹出窗置顶在此。人格、记忆与个人说明在个性化。'
   },
   personalization: {
     title: '个性化',
-    desc: '默认人格与个人 AGENTS.md。对标 Codex Settings → Personalization。'
+    desc: '默认人格、记忆开关与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
   },
   shortcuts: {
     title: '键盘快捷键',
@@ -73,6 +78,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           )}
           {tab === 'models' && (
             <ModelsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'general' && (
+            <GeneralSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />

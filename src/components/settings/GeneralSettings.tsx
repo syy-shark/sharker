@@ -1,0 +1,170 @@
+/**
+ * 通用：后续行为、Enter 发送、建议提示、审查交付、运行防休眠。
+ * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review）。
+ * @see src/components/settings/ARCH.md
+ */
+import { useCallback, useEffect, useRef } from 'react'
+import type { AppSettings } from '../../../shared/types'
+import {
+  parseComposerEnterBehavior,
+  type ComposerEnterBehavior
+} from '../../../shared/composer-submit'
+import { parseReviewDelivery, type ReviewDelivery } from '../../../shared/review-prompt'
+import {
+  SettingsCard,
+  SettingsChoiceGroup,
+  SettingsRow,
+  SettingsSection,
+  SettingsToggle
+} from './SettingsPrimitives'
+
+interface Props {
+  draft: AppSettings
+  setDraft: React.Dispatch<React.SetStateAction<AppSettings>>
+  onSave: (next: AppSettings) => Promise<void>
+}
+
+/** 设置 → 通用 */
+export function GeneralSettings({ draft, setDraft, onSave }: Props) {
+  const draftRef = useRef(draft)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+    }
+  }, [])
+
+  const scheduleSave = useCallback(
+    (next: AppSettings) => {
+      setDraft(next)
+      draftRef.current = next
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => {
+        void onSave(next)
+      }, 180)
+    },
+    [onSave, setDraft]
+  )
+
+  return (
+    <>
+      <SettingsSection title="后续行为">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={draft.followUpBehavior === 'steer' ? 'steer' : 'queue'}
+            onChange={(followUpBehavior: 'queue' | 'steer') => {
+              scheduleSave({ ...draftRef.current, followUpBehavior })
+            }}
+            options={[
+              {
+                value: 'queue',
+                title: '排队',
+                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为加入当前回合。',
+                icon: <span aria-hidden>排</span>
+              },
+              {
+                value: 'steer',
+                title: '注入',
+                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为排队。',
+                icon: <span aria-hidden>注</span>
+              }
+            ]}
+          />
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="输入">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parseComposerEnterBehavior(draft.composerEnterBehavior, draft.requireModEnter)}
+            onChange={(composerEnterBehavior: ComposerEnterBehavior) => {
+              scheduleSave({
+                ...draftRef.current,
+                composerEnterBehavior,
+                requireModEnter: composerEnterBehavior === 'cmdAlways'
+              })
+            }}
+            options={[
+              {
+                value: 'enter',
+                title: '回车发送',
+                description: 'Enter 始终发送。Shift+Enter 换行。',
+                icon: <span aria-hidden>回</span>
+              },
+              {
+                value: 'cmdIfMultiline',
+                title: '多行需 ⌘Enter',
+                description: '单行 Enter 发送；草稿有换行后要 ⌘/Ctrl+Enter。',
+                icon: <span aria-hidden>多</span>
+              },
+              {
+                value: 'cmdAlways',
+                title: '始终 ⌘Enter',
+                description: 'Enter 换行，⌘/Ctrl+Enter 发送。',
+                icon: <span aria-hidden>⌘</span>
+              }
+            ]}
+          />
+          <SettingsRow
+            title="建议提示"
+            description="对标 Codex Suggested prompts：空对话显示审查、目标或继续最近对话。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.suggestedPrompts !== false}
+              onChange={(suggestedPrompts) => {
+                scheduleSave({ ...draftRef.current, suggestedPrompts })
+              }}
+              label="建议提示"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="代码审查">
+        <SettingsCard>
+          <SettingsChoiceGroup
+            value={parseReviewDelivery(draft.reviewDelivery)}
+            onChange={(reviewDelivery: ReviewDelivery) => {
+              scheduleSave({ ...draftRef.current, reviewDelivery })
+            }}
+            options={[
+              {
+                value: 'inline',
+                title: '当前对话',
+                description: '官方默认：能在当前对话跑 /review 就在当前对话。直播中排队或注入，不中止。',
+                icon: <span aria-hidden>内</span>
+              },
+              {
+                value: 'detached',
+                title: '独立线程',
+                description: '对标 Codex Detached：/review 新开审查对话。here / detached 可单次覆盖。',
+                icon: <span aria-hidden>独</span>
+              }
+            ]}
+          />
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="窗口">
+        <SettingsCard>
+          <SettingsRow
+            title="运行时防止休眠"
+            description="对标 Codex Prevent sleep while running：有回合在跑时阻止系统休眠。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.preventSleepWhileRunning === true}
+              onChange={(preventSleepWhileRunning) => {
+                scheduleSave({ ...draftRef.current, preventSleepWhileRunning })
+              }}
+              label="运行时防止休眠"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+    </>
+  )
+}
