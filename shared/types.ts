@@ -178,7 +178,7 @@ export interface AppSettings {
 /** 聊天消息角色 */
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-/** 用户消息附件种类：图片或超长粘贴文本 */
+/** 用户消息附件种类：图片、超长粘贴文本，或官方 composer 拖入/粘贴的源码文件 */
 export type ChatAttachmentKind = 'image' | 'text'
 
 /** 用户消息附件（粘贴/拖拽会先复制到 Sharker 稳定目录） */

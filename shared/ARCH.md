@@ -165,8 +165,8 @@
 | `thread-snapshot.test.ts` | 收录用户/回答/diff/直播可见段，丢掉 shell 输出，脱敏 Key |
 | `suggested-prompts.ts` | 空对话建议：先恢复进行中 / 未读 / 最近更新的对话，再审查 / 目标（对标 Codex Settings → Suggested prompts；不对创建时间排队） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
-| `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；CRLF 归一；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
-| `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
+| `composer-paste.ts` | 粘贴决策：Finder/Explorer 文件条目先收附件（对标 Codex non-image file pasting）；其余 text/plain（及 HTML 剥标签）优先于 Office 图片层；CRLF 归一；超长收成 `Pasted text.txt`；只有官方粘贴名才折进空输入 / 空参斜杠 |
+| `composer-paste.test.ts` | Word 双层剪贴板走文本、路径列表收文件、源码附件不折进 `/goal` |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
 | `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |

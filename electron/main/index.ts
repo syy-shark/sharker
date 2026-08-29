@@ -20,6 +20,7 @@ import fs from 'fs'
 import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
 import { canExportChatImage, suggestedImageFilename, type ChatImageExportInput } from '../../shared/chat-image'
+import { classifyPastedAttachment } from '../../shared/composer-paste'
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
@@ -222,20 +223,13 @@ const approvalRegistry = new ConversationApprovalRegistry()
 let cachedAppIcon: Electron.NativeImage | undefined
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
-const ATTACHMENT_MIME_TO_EXT: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'text/plain': 'txt'
-}
 
 function sanitizeAttachmentName(name: string): string {
-  return (name || 'image')
+  return (name || 'attachment')
     .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 80) || 'image'
+    .slice(0, 80) || 'attachment'
 }
 
 /**
@@ -330,7 +324,6 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } {
   const m = dataUrl.match(/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.+)$/)
   if (!m) throw new Error('附件数据格式无效')
   const mimeType = m[1].toLowerCase()
-  if (!ATTACHMENT_MIME_TO_EXT[mimeType]) throw new Error(`不支持的附件类型: ${mimeType}`)
   const buffer = Buffer.from(m[2], 'base64')
   if (buffer.length > MAX_ATTACHMENT_BYTES) {
     throw new Error(`附件过大（>${Math.round(MAX_ATTACHMENT_BYTES / 1024 / 1024)}MB）`)
@@ -347,22 +340,26 @@ async function saveChatAttachment(input: {
   if (input.mimeType && input.mimeType.toLowerCase() !== parsed.mimeType) {
     throw new Error('附件 MIME 类型不一致')
   }
+  const classified = classifyPastedAttachment(input.name, parsed.mimeType)
+  if (classified.kind === 'reject') throw new Error(classified.reason)
   const id = crypto.randomUUID()
-  const ext = ATTACHMENT_MIME_TO_EXT[parsed.mimeType]
   const safeName = sanitizeAttachmentName(input.name)
+  const ext = classified.ext
+  const base = safeName.toLowerCase().endsWith(`.${ext}`)
+    ? safeName.slice(0, -(ext.length + 1))
+    : safeName
   const dir = path.join(app.getPath('userData'), 'attachments')
   await fs.promises.mkdir(dir, { recursive: true })
-  const filePath = path.join(dir, `${Date.now()}-${id}-${safeName}.${ext}`)
+  const filePath = path.join(dir, `${Date.now()}-${id}-${base}.${ext}`)
   await fs.promises.writeFile(filePath, parsed.buffer)
-  const kind = parsed.mimeType.startsWith('image/') ? 'image' : 'text'
   return {
     id,
     name: safeName,
-    mimeType: parsed.mimeType,
+    mimeType: classified.mimeType,
     path: filePath,
     size: parsed.buffer.length,
-    kind,
-    text: kind === 'text' ? parsed.buffer.toString('utf8') : undefined
+    kind: classified.kind,
+    text: classified.kind === 'text' ? parsed.buffer.toString('utf8') : undefined
   }
 }
 

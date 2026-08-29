@@ -82,7 +82,10 @@ import {
   type FollowUpBehavior
 } from '../../shared/composer-submit'
 import {
+  classifyPastedAttachment,
+  composerEmptyAttachmentPrompt,
   decideClipboardPaste,
+  hasAttachableNonImageFiles,
   materializeComposerInput,
   pastedTextAttachmentName,
   utf8ToBase64
@@ -1061,24 +1064,44 @@ export const ComposerDock = memo(
       if (!loading) requestAnimationFrame(() => textareaRef.current?.focus())
     }, [loading])
 
-    const addImageFiles = async (files: File[]) => {
-      const imageFiles = files.filter((f) => f.type.startsWith('image/'))
-      if (!imageFiles.length) return
+    const addPastedFiles = async (files: File[]) => {
+      if (!files.length) return
       setAttachmentError('')
-      try {
-        const saved = await Promise.all(
-          imageFiles.map(async (file) =>
-            window.sharker.saveAttachment({
-              name: file.name || 'clipboard-image.png',
-              mimeType: file.type || 'image/png',
-              dataUrl: await readFileAsDataUrl(file)
-            })
+      const errors: string[] = []
+      const saved: ChatAttachment[] = []
+      for (const file of files) {
+        const classified = classifyPastedAttachment(file.name || '', file.type || '')
+        if (classified.kind === 'reject') {
+          errors.push(`${file.name || '未命名文件'}：${classified.reason}`)
+          continue
+        }
+        try {
+          if (classified.kind === 'image') {
+            saved.push(
+              await window.sharker.saveAttachment({
+                name: file.name || `clipboard-image.${classified.ext}`,
+                mimeType: classified.mimeType,
+                dataUrl: await readFileAsDataUrl(file)
+              })
+            )
+            continue
+          }
+          const body = await file.text()
+          const name = file.name || `attachment.${classified.ext}`
+          const next = await window.sharker.saveAttachment({
+            name,
+            mimeType: classified.mimeType,
+            dataUrl: `data:${classified.mimeType};base64,${utf8ToBase64(body)}`
+          })
+          saved.push({ ...next, kind: 'text', text: body, name })
+        } catch (e) {
+          errors.push(
+            `${file.name || '未命名文件'}：${e instanceof Error ? e.message : String(e)}`
           )
-        )
-        setPendingAttachments((prev) => [...prev, ...saved])
-      } catch (e) {
-        setAttachmentError(e instanceof Error ? e.message : String(e))
+        }
       }
+      if (saved.length) setPendingAttachments((prev) => [...prev, ...saved])
+      if (errors.length) setAttachmentError(errors.join(' '))
     }
 
     const addPastedText = async (text: string) => {
@@ -1156,7 +1179,7 @@ export const ComposerDock = memo(
         })
         return
       }
-      const sent = t || (attachments.some((a) => a.kind === 'image') ? '请看这张图片。' : '')
+      const sent = t || composerEmptyAttachmentPrompt(attachments)
       rememberSubmittedComposerPrompt(sent)
       clearComposerDraft(draftKey)
       setInput('')
@@ -1779,6 +1802,7 @@ export const ComposerDock = memo(
             const decision = decideClipboardPaste({
               getData: (type) => e.clipboardData.getData(type),
               hasImageFiles: files.some((f) => f.type.startsWith('image/')),
+              hasNonImageFiles: hasAttachableNonImageFiles(files),
               forcePlainText: e.shiftKey
             })
             if (decision.action === 'insert_text') return
@@ -1787,20 +1811,27 @@ export const ComposerDock = memo(
               void addPastedText(decision.text)
               return
             }
-            if (decision.action === 'attach_images') {
+            if (decision.action === 'attach_files' || decision.action === 'attach_images') {
               e.preventDefault()
-              void addImageFiles(files)
+              void addPastedFiles(files)
             }
           }}
           onDrop={(e) => {
             const files = Array.from(e.dataTransfer.files)
-            if (files.some((f) => f.type.startsWith('image/'))) {
+            if (
+              files.some((f) => f.type.startsWith('image/')) ||
+              hasAttachableNonImageFiles(files)
+            ) {
               e.preventDefault()
-              void addImageFiles(files)
+              void addPastedFiles(files)
             }
           }}
           onDragOver={(e) => {
-            if (Array.from(e.dataTransfer.items).some((i) => i.type.startsWith('image/'))) {
+            const items = Array.from(e.dataTransfer.items)
+            if (
+              items.some((i) => i.kind === 'file') ||
+              items.some((i) => i.type.startsWith('image/'))
+            ) {
               e.preventDefault()
             }
           }}
@@ -1864,7 +1895,7 @@ export const ComposerDock = memo(
                 <button
                   type="button"
                   className="composer-attachment-name"
-                  title={a.kind === 'text' ? '预览粘贴文本' : a.name}
+                  title={a.kind === 'text' ? '预览附件' : a.name}
                   onClick={() =>
                     a.kind === 'text'
                       ? setPastePreviewId((cur) => (cur === a.id ? null : a.id))
