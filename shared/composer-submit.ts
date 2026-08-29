@@ -20,6 +20,24 @@ export const QUEUE_LABEL = 'Queue'
 export const SEND_LABEL = 'Send'
 /** Official desktop abort control while a turn is running (`You stopped after`). */
 export const STOP_LABEL = 'Stop'
+/** Official `chatgpt.composerEnterBehavior` / Settings → General copy. */
+export const ENTER_ALWAYS_SENDS_LABEL = 'Enter always sends'
+export const REQUIRE_CMD_ENTER_FOR_MULTILINE_PROMPTS_LABEL =
+  'Require Cmd+Enter for multiline prompts'
+export const CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL = 'Cmd/Ctrl+Enter sends multiline prompts'
+export const MODIFIER_ALWAYS_REQUIRED_LABEL = 'The modifier is always required'
+
+/**
+ * Enter 发送（对标 Codex `chatgpt.composerEnterBehavior`）。
+ * `enter`：Enter always sends；`cmdIfMultiline`：Require Cmd+Enter for multiline prompts；`cmdAlways`：The modifier is always required。
+ */
+export type ComposerEnterBehavior = 'enter' | 'cmdIfMultiline' | 'cmdAlways'
+
+export function composerEnterBehaviorLabel(behavior: ComposerEnterBehavior): string {
+  if (behavior === 'cmdAlways') return MODIFIER_ALWAYS_REQUIRED_LABEL
+  if (behavior === 'cmdIfMultiline') return REQUIRE_CMD_ENTER_FOR_MULTILINE_PROMPTS_LABEL
+  return ENTER_ALWAYS_SENDS_LABEL
+}
 
 export function formatQueueChipLabel(index: number): string {
   return `${QUEUE_LABEL} ${index + 1}`
@@ -37,12 +55,6 @@ export function formatBusyFollowUpPlaceholder(options: {
   }
   return `Enter ${QUEUE_LABEL} · ⌘⇧Enter ${STEER_LABEL} · Tab ${QUEUE_LABEL}${tail}`
 }
-
-/**
- * Enter 发送（对标 Codex `chatgpt.composerEnterBehavior`）。
- * `enter`：Enter 始终发送；`cmdIfMultiline`：草稿已有换行才要 ⌘/Ctrl+Enter；`cmdAlways`：始终要修饰键。
- */
-export type ComposerEnterBehavior = 'enter' | 'cmdIfMultiline' | 'cmdAlways'
 
 /** 设置里未写时按桌面端默认排队 */
 export function parseFollowUpBehavior(raw: unknown): FollowUpBehavior {

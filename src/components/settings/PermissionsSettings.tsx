@@ -33,7 +33,7 @@ interface Props {
   onSave: (next: AppSettings) => Promise<void>
 }
 
-/** 沙箱/完全权限模式选择面板 */
+/** Ask for approval / Full access 选择面板（对标 Codex Settings → General → Permissions） */
 export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
   const draftRef = useRef(draft)
   const gitPromptTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

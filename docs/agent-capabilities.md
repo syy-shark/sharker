@@ -111,7 +111,7 @@ Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（�
 
 - Settings → General → **Follow-up behavior**（对标 Codex Settings → General → Follow-up behavior）：默认 **Queue**，忙时 Enter 等到当前回合结束；也可改成 **Steer**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画 Steer 预览，再画 Queue 后续。芯片短标签是 `Steer` / `Queue n`，不把 TUI「Messages to be submitted after next tool call」画进芯片。
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终 Queue。忙时输入 `/review`、`/status` 或 `!command` 先出现在输入框上方队列，当前回合结束后再解析（对标 Codex Tab queue slash；Steer 仍把原文交给当前回合）
-- Settings → General → **Enter 发送**（对标 Codex Settings → General / `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
+- Settings → General → **Enter always sends** / **Require Cmd+Enter for multiline prompts** / **The modifier is always required**（对标 Codex Settings → General / `chatgpt.composerEnterBehavior`）；旧「用 ⌘Enter 发送」读成始终修饰键
 - Settings → **Suggested prompts**：空对话先给出进行中 / 未读 / 最近更新的对话，再审查 / 设定目标；可关
 - Settings → General → **代码审查**：`/review` 默认当前对话（官方 Settings → General → Code review Inline）；Detached 才新开审查线程。审查模型默认跟随当前会话，也可指定已配置 Provider（对标 Codex `review_model`，不改输入框模型）。直播中 Queue 或 Steer，不中止当前回合
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）

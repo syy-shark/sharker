@@ -10,6 +10,8 @@ import {
   FOLLOW_UP_BEHAVIOR_LABEL,
   QUEUE_LABEL,
   STEER_LABEL,
+  CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
+  composerEnterBehaviorLabel,
   parseComposerEnterBehavior,
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
@@ -107,20 +109,20 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
             options={[
               {
                 value: 'enter',
-                title: '回车发送',
-                description: 'Enter 始终发送。Shift+Enter 换行。',
-                icon: <span aria-hidden>回</span>
+                title: composerEnterBehaviorLabel('enter'),
+                description: composerEnterBehaviorLabel('enter'),
+                icon: <span aria-hidden>↵</span>
               },
               {
                 value: 'cmdIfMultiline',
-                title: '多行需 ⌘Enter',
-                description: '单行 Enter 发送；草稿有换行后要 ⌘/Ctrl+Enter。',
+                title: composerEnterBehaviorLabel('cmdIfMultiline'),
+                description: CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
                 icon: <span aria-hidden>多</span>
               },
               {
                 value: 'cmdAlways',
-                title: '始终 ⌘Enter',
-                description: 'Enter 换行，⌘/Ctrl+Enter 发送。',
+                title: composerEnterBehaviorLabel('cmdAlways'),
+                description: composerEnterBehaviorLabel('cmdAlways'),
                 icon: <span aria-hidden>⌘</span>
               }
             ]}

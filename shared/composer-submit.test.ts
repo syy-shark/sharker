@@ -20,6 +20,11 @@ import {
   restorePreviousComposerPrompt,
   SEND_LABEL,
   STOP_LABEL,
+  ENTER_ALWAYS_SENDS_LABEL,
+  REQUIRE_CMD_ENTER_FOR_MULTILINE_PROMPTS_LABEL,
+  CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
+  MODIFIER_ALWAYS_REQUIRED_LABEL,
+  composerEnterBehaviorLabel,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
   shouldStickAfterComposerSubmit,
@@ -63,6 +68,17 @@ describe('composer submit', () => {
     expect(QUEUE_LABEL).toBe('Queue')
     expect(SEND_LABEL).toBe('Send')
     expect(STOP_LABEL).toBe('Stop')
+    expect(ENTER_ALWAYS_SENDS_LABEL).toBe('Enter always sends')
+    expect(REQUIRE_CMD_ENTER_FOR_MULTILINE_PROMPTS_LABEL).toBe(
+      'Require Cmd+Enter for multiline prompts'
+    )
+    expect(CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL).toBe('Cmd/Ctrl+Enter sends multiline prompts')
+    expect(MODIFIER_ALWAYS_REQUIRED_LABEL).toBe('The modifier is always required')
+    expect(composerEnterBehaviorLabel('enter')).toBe('Enter always sends')
+    expect(composerEnterBehaviorLabel('cmdIfMultiline')).toBe(
+      'Require Cmd+Enter for multiline prompts'
+    )
+    expect(composerEnterBehaviorLabel('cmdAlways')).toBe('The modifier is always required')
     expect(formatQueueChipLabel(0)).toBe('Queue 1')
     expect(formatQueueChipLabel(2)).toBe('Queue 3')
     expect(formatBusyFollowUpPlaceholder({ followUpBehavior: 'steer' })).toBe(
