@@ -28,6 +28,7 @@ import {
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
+  isLiveToolAppendChange,
   isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
@@ -336,6 +337,31 @@ describe('live stream ui snapshot', () => {
     expect(processWhileRan).not.toBe(processWhileTool)
     expect(processWhileRan.processForFlow.some((segment) => segment === ran)).toBe(true)
     expect(processWhileRan.processForFlow.some((segment) => segment === running)).toBe(false)
+    const nextCmd: TurnSegment = {
+      id: 'run-2',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'active',
+      toolDetail: 'src/b.ts'
+    }
+    expect(isLiveToolAppendChange([hello, ran], [hello, ran, nextCmd])).toBe(true)
+    expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, nextCmd])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, ran],
+        segments: [hello, ran, nextCmd]
+      })
+    ).toBe(true)
+    expect(shouldSkipLiveStreamPublish([hello, ran], [hello, ran, nextCmd])).toBe(false)
+    const processWhileNext = nextLiveProcessView(processWhileRan, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextCmd]
+    })
+    expect(processWhileNext).not.toBe(processWhileRan)
+    expect(processWhileNext.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
+    expect(processWhileNext.processForFlow.some((segment) => segment === ran)).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
@@ -548,6 +574,7 @@ describe('live stream ui snapshot', () => {
     expect(appSrc).toContain('shouldSkipLiveStreamDerivation')
     expect(appSrc).toContain("skip === 'tool'")
     expect(appSrc).toContain('shouldSkipLiveStreamPublish')
+    expect(appSrc).toContain('activeTool: activeToolSeg?.toolName ?? null')
     expect(appSrc).toContain('segmentsRef.current !== prevLiveSegments')
     expect(appSrc).toContain('shouldDeferLastTurnUi')
     expect(appSrc.includes('refreshOpenPreviewRef')).toBe(false)

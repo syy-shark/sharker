@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换时间线末步引用；工具收束无新写盘也只换末步；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用；工具收束无新写盘也只换末步；前缀引用没变时新工具只追加末步；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -111,6 +111,25 @@ export function isLiveToolSettleChange(prev: TurnSegment, next: TurnSegment): bo
   )
 }
 
+/** 前缀引用没变、末尾新开工具：只追加过程步（对标 Codex exec_cell add_call） */
+export function isLiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  for (let i = 0; i < prev.length; i++) {
+    if (prev[i] !== next[i]) return false
+  }
+  const added = next[next.length - 1]
+  return Boolean(
+    added &&
+      added.kind === 'tool' &&
+      added.status === 'active' &&
+      added.toolName &&
+      added.toolName !== 'present_inline_demo'
+  )
+}
+
 /** 同一工具只把详情换成命令末行：过程切片保持原数组，不抬 TurnFlow */
 export function isLiveLastLineOnlyToolChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (!isLiveToolMetaOnlyChange(prev, next)) return false
@@ -136,7 +155,9 @@ export function shouldSkipLiveStreamDerivation(
   prevSegments: readonly TurnSegment[] | null | undefined,
   segments: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
-  if (!prevSegments || prevSegments.length !== segments.length) return null
+  if (!prevSegments) return null
+  if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (prevSegments.length !== segments.length) return null
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
     if (prevSegments[i] !== segments[i]) return null
@@ -386,6 +407,21 @@ export function nextLiveProcessView(
   if (
     prev &&
     processHold?.view === prev &&
+    isLiveToolAppendChange(processHold.segments, segments)
+  ) {
+    const added = segments[segments.length - 1]!
+    const view = { ...prev, processForFlow: [...prev.processForFlow, added] }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
     shouldRetargetLiveProcessOnToolMeta({
       prev,
       prevSegments: processHold.segments,
@@ -498,6 +534,7 @@ export function shouldSkipLiveAnswerIdentity(input: {
   segments: readonly TurnSegment[]
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
+  if (isLiveToolAppendChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1
   for (let i = 0; i < last; i++) {

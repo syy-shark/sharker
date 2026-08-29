@@ -1562,9 +1562,15 @@ export default function App() {
           streaming: tail?.content ?? ''
         })
       } else if (skip === 'tool') {
+        const activeToolSeg = findLastSegment(
+          segments,
+          (s) => s.kind === 'tool' && s.status === 'active'
+        )
         publishLiveStreamUi({
-          liveSegments: segments
+          liveSegments: segments,
+          activeTool: activeToolSeg?.toolName ?? null
         })
+      }
       } else {
         const finalPreview = extractFinalContent(segments, { isStreaming: true })
         const thinkPreview = thinkingPreviewFromSegments(segments)

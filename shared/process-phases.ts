@@ -20,7 +20,7 @@ import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
 } from './stream-reconnect'
-import { isLiveToolSettleChange } from './live-stream-slices'
+import { isLiveToolAppendChange, isLiveToolSettleChange } from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
@@ -566,6 +566,21 @@ export function reuseProcessPhaseSteps(
   }
   if (next.length > prev.length) out.push(...next.slice(prev.length))
   return out
+}
+
+/** 前缀引用没变、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
+export function appendProcessPhaseStepOnToolStart(
+  prevSteps: ProcessPhaseStep[],
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[],
+  isStreaming: boolean
+): ProcessPhaseStep[] | null {
+  if (!isLiveToolAppendChange(prevSegments, segments)) return null
+  const added = segments[segments.length - 1]
+  if (!added) return prevSteps
+  const built = buildStepsFromSource([added], isStreaming)[0]
+  if (!built) return prevSteps
+  return [...prevSteps, built]
 }
 
 /** 同一工具只改短路径详情或收束：只换该步；命令末行退回原数组（对标 Codex #22860 / #19260） */

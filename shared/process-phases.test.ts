@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  appendProcessPhaseStepOnToolStart,
   deriveChronologicalSteps,
   retargetProcessPhaseStepsOnToolMeta,
   reuseProcessPhaseSteps
@@ -106,6 +107,25 @@ describe('process phases privacy', () => {
     expect(doneRetargeted![0].status).toBe('done')
     expect(doneRetargeted![0].segment).toBe(cmdDone)
     expect(doneRetargeted![0].id).toBe(cmdSteps[0].id)
+    const cmdNext: TurnSegment = {
+      id: 'read1',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolTitle: '读取文件',
+      toolDetail: 'src/b.ts',
+      status: 'active',
+      startedAt: 9
+    }
+    const appended = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, cmdNext],
+      true
+    )
+    expect(appended).not.toBeNull()
+    expect(appended).toHaveLength(2)
+    expect(appended![0]).toBe(doneRetargeted![0])
+    expect(appended![1].segment).toBe(cmdNext)
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',
