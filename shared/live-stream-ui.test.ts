@@ -277,5 +277,12 @@ describe('live stream ui snapshot', () => {
     )
     expect(chatSrc).toContain('shouldObserveRowIntrinsicHeight')
     expect(chatSrc).toContain('mutation.addedNodes')
+    const fenceSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeArtifactBlock.tsx'),
+      'utf8'
+    )
+    expect(fenceSrc).toContain('growRef')
+    expect(fenceSrc).toContain('code-artifact-grow')
+    expect(fenceSrc).not.toContain('[followTail, children]')
   })
 })

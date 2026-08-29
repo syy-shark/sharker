@@ -2,7 +2,8 @@
  * 紧凑编辑器式代码产物：固定头部、复制操作、行号与稳定滚动区域。
  * 头栏相对对话柱 sticky，块还在视口里就能复制（对标 Codex #20593，不发明换行开关）。
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
- * 直播跟尾时内层滚到最新行（外壳 max-height 后新行不再顶对话柱）。
+ * 直播跟尾只盯滚动壳与一层增高节点，不因 children 每枚 token 重挂
+ * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
  * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；未闭合直播围栏保持纯文本。
  */
@@ -49,6 +50,7 @@ export function CodeArtifactShell({
   const [copied, setCopied] = useState(false)
   const copiedTimer = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const growRef = useRef<HTMLDivElement>(null)
   const userLockedRef = useRef(false)
   const followTailRef = useRef(followTail)
   const programmaticScrollRef = useRef(false)
@@ -97,7 +99,8 @@ export function CodeArtifactShell({
     el.addEventListener('wheel', onWheel, { passive: true })
     const ro = new ResizeObserver(follow)
     ro.observe(el)
-    for (const child of el.children) ro.observe(child)
+    const grow = growRef.current
+    if (grow) ro.observe(grow)
     follow()
     return () => {
       el.removeEventListener('scroll', onScroll)
@@ -122,7 +125,7 @@ export function CodeArtifactShell({
     el.scrollTop = liveStickScrollTop(el.scrollHeight, el.clientHeight)
     lastSizeRef.current = { scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }
     programmaticScrollRef.current = false
-  }, [followTail, children])
+  }, [followTail])
 
   const handleCopy = async () => {
     if (!copyText) return
@@ -163,7 +166,9 @@ export function CodeArtifactShell({
         </div>
       ) : null}
       <div ref={scrollRef} className={`code-artifact-scroll ${bodyClassName}`.trim()}>
-        {children}
+        <div ref={growRef} className="code-artifact-grow">
+          {children}
+        </div>
       </div>
       {footer ? <div className="code-artifact-footer">{footer}</div> : null}
     </div>
