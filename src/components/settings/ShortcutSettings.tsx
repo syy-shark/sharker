@@ -1,5 +1,5 @@
 /**
- * 设置 → 键盘快捷键：搜索、改绑、重置（对标 Codex Keyboard Shortcuts）。
+ * 设置 → Keyboard Shortcuts：Search by command name / Keystroke search、改绑、重置（对标 Codex Settings）。
  * @see src/components/settings/ARCH.md
  */
 import { useMemo, useState } from 'react'
@@ -13,7 +13,12 @@ import {
   normalizeKeymap,
   type KeymapOverrides
 } from '../../../shared/keymap'
-import { KEYBOARD_SHORTCUTS_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  KEYBOARD_SHORTCUTS_LABEL,
+  KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER,
+  KEYSTROKE_SEARCH_LABEL,
+  KEYSTROKE_SEARCH_PLACEHOLDER
+} from '../../../shared/reveal-in-folder'
 import { SettingsCard, SettingsSection } from './SettingsPrimitives'
 import './ShortcutSettings.css'
 
@@ -96,8 +101,8 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
           <input
             className={`shortcut-search${keyMode ? ' is-key-mode' : ''}`}
             value={keyMode ? (keyFilter ? formatShortcutChord(keyFilter) : '') : query}
-            placeholder={keyMode ? '按下快捷键以筛选…' : '搜索命令或按键…'}
-            aria-label={keyMode ? '按快捷键筛选' : '搜索快捷键'}
+            placeholder={keyMode ? KEYSTROKE_SEARCH_PLACEHOLDER : KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER}
+            aria-label={keyMode ? KEYSTROKE_SEARCH_LABEL : KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER}
             readOnly={keyMode}
             onChange={(e) => {
               if (!keyMode) setQuery(e.target.value)
@@ -133,7 +138,7 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
               })
             }}
           >
-            按键
+            {KEYSTROKE_SEARCH_LABEL}
           </button>
           <button type="button" className="shortcut-reset-all" onClick={resetAll}>
             全部重置

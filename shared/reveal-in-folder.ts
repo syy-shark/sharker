@@ -193,6 +193,12 @@ export const RELOAD_BROWSER_PAGE_WITHOUT_CACHE_LABEL = 'Reload browser page with
 export const TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL = 'Toggle browser browse or comment mode'
 /** 官方 Settings 页名（对标 developers.openai.com/codex/app/settings） */
 export const KEYBOARD_SHORTCUTS_LABEL = 'Keyboard Shortcuts'
+/** Official Settings → Keyboard Shortcuts (learn.chatgpt.com/docs/reference/settings). */
+export const KEYBOARD_SHORTCUTS_INTRO =
+  'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults.'
+export const KEYSTROKE_SEARCH_LABEL = 'Keystroke search'
+export const KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER = 'Search by command name'
+export const KEYSTROKE_SEARCH_PLACEHOLDER = 'Press a key combination'
 export const GENERAL_SETTINGS_LABEL = 'General'
 export const APPEARANCE_SETTINGS_LABEL = 'Appearance'
 export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'

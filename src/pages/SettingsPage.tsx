@@ -24,6 +24,7 @@ import {
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
   PROFILE_SETTINGS_LABEL,
+  KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
@@ -71,7 +72,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   shortcuts: {
     title: KEYBOARD_SHORTCUTS_LABEL,
-    desc: '搜索命令、改绑或重置。对标 Codex Settings → Keyboard Shortcuts。'
+    desc: KEYBOARD_SHORTCUTS_INTRO
   },
   archived: {
     title: ARCHIVED_CHATS_LABEL,

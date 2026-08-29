@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本，只信估高、range/body 底边与 postMessage。
+ * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本与终端窗 CSS，只信估高、range/body 底边与 postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -119,7 +119,7 @@ function buildSrcDoc(
    * - 默认深色炭黑窗（浅色聊天里也用，命令色才好看）
    * - 浅色主题另有 .sharker-term--glass 水滴玻璃变体
    */
-  const hostCss = `
+  const hostThemeCss = `
 :root {
   color-scheme: ${isDark ? 'dark' : 'light'};
   --text: ${theme.text};
@@ -218,7 +218,10 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   border-radius: var(--radius-sm);
   overflow-wrap: anywhere;
 }
-
+`
+  /** 闭合后才灌终端窗 / 历史看板 CSS；直播 srcDoc 只留主题与解锁裁切 */
+  const hostTermCss = shouldWalkInlineDemoTree({ streaming })
+    ? `
 /* —— macOS 终端窗：三色灯 + 居中标题 —— */
 .sharker-term {
   --term-titlebar-h: 36px;
@@ -402,6 +405,8 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   display: none !important;
 }
 `
+    : ''
+  const hostCss = `${hostThemeCss}${hostTermCss}`
 
   // 闭合后才灌终端套壳；直播 srcDoc 只报高度（对标 Codex #22860 / #39120）
   const injectedScript = shouldWalkInlineDemoTree({ streaming })

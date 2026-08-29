@@ -6,7 +6,11 @@ import {
   APPEARANCE_SETTINGS_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
+  KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
+  KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER,
+  KEYSTROKE_SEARCH_LABEL,
+  KEYSTROKE_SEARCH_PLACEHOLDER,
   MCP_SERVERS_LABEL,
   OPEN_MCP_STATUS_LABEL,
   SHOW_CONTEXT_WINDOW_USAGE_LABEL,
@@ -160,6 +164,12 @@ describe('reveal in folder', () => {
     expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')
     expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
+    expect(KEYBOARD_SHORTCUTS_INTRO).toBe(
+      'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults.'
+    )
+    expect(KEYSTROKE_SEARCH_LABEL).toBe('Keystroke search')
+    expect(KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER).toBe('Search by command name')
+    expect(KEYSTROKE_SEARCH_PLACEHOLDER).toBe('Press a key combination')
     expect(GENERAL_SETTINGS_LABEL).toBe('General')
     expect(APPEARANCE_SETTINGS_LABEL).toBe('Appearance')
     expect(NOTIFICATIONS_SETTINGS_LABEL).toBe('Notifications')
