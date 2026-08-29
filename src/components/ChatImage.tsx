@@ -1,7 +1,7 @@
 /**
  * 对话渲染图：悬停复制 / 保存；工作区相对路径经 readFileDataUrl 成图。
  * 右键页内菜单：复制/保存；工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778）。
- * 不订直播 token。
+ * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
  * @see src/components/ARCH.md
  */
 import {
@@ -14,10 +14,11 @@ import {
   type ReactNode
 } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Copy, Download } from 'lucide-react'
+import { Check, Copy, Download, X } from 'lucide-react'
 import {
   canExportChatImage,
   chatImageAspectStyle,
+  chatImageLightboxFit,
   chatImageMenuItems,
   chatImageSlotMinHeight,
   liveChatImageMinHeight,
@@ -89,6 +90,15 @@ export function ChatImageWorkspaceProvider({
   )
 }
 
+function readLightboxViewport(): { width: number; height: number } {
+  if (typeof window === 'undefined') return { width: 0, height: 0 }
+  return {
+    width: window.innerWidth,
+    height: window.visualViewport?.height ?? window.innerHeight
+  }
+}
+
+/** 对话渲染图：直播槽占位；点开灯箱不抬 ChatView */
 export function ChatImage({
   src,
   alt,
@@ -115,6 +125,9 @@ export function ChatImage({
   const [copied, setCopied] = useState(false)
   const [, setSizeTick] = useState(0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [lightbox, setLightbox] = useState(false)
+  const [viewport, setViewport] = useState(readLightboxViewport)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
@@ -171,6 +184,7 @@ export function ChatImage({
     alt
   }
   const canExport = canExportChatImage(input)
+  const canLightbox = Boolean(displaySrc)
 
   const copy = async () => {
     if (!canExport || !window.sharker?.copyChatImage) return
@@ -188,8 +202,23 @@ export function ChatImage({
   const menuItems = chatImageMenuItems({
     workspace: workspaceSrc,
     canExport,
+    canLightbox,
     platform: typeof window !== 'undefined' ? window.sharker?.platform : undefined
   })
+
+  const openWorkspace = () => {
+    if (!workspaceSrc) return
+    dispatchOpenWorkspaceFile({ path: src })
+  }
+
+  const openLightbox = () => {
+    if (!displaySrc) return
+    setMenu(null)
+    setViewport(readLightboxViewport())
+    setLightbox(true)
+  }
+
+  const closeLightbox = () => setLightbox(false)
 
   useEffect(() => {
     if (!menu) return
@@ -209,19 +238,36 @@ export function ChatImage({
     }
   }, [menu])
 
+  useEffect(() => {
+    if (!lightbox) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeLightbox()
+    }
+    const onResize = () => setViewport(readLightboxViewport())
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('resize', onResize)
+    window.visualViewport?.addEventListener('resize', onResize)
+    dialogRef.current?.focus()
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('resize', onResize)
+      window.visualViewport?.removeEventListener('resize', onResize)
+    }
+  }, [lightbox])
+
   if (!remote && !workspaceSrc) return null
   if (workspaceSrc && (!absPath || failed)) return null
 
-  const openWorkspace = () => {
-    if (!workspaceSrc) return
-    dispatchOpenWorkspaceFile({ path: src })
-  }
+  const fit = chatImageLightboxFit(known, viewport)
 
   return (
     <span
       className={`chat-image${pending ? ' chat-image--pending' : ''}${
         workspaceSrc ? ' chat-image--workspace' : ''
-      }`}
+      }${canLightbox ? ' chat-image--openable' : ''}`}
       style={reserved ? { minHeight: reserved } : undefined}
       onContextMenu={(event) => {
         if (menuItems.length === 0) return
@@ -246,7 +292,12 @@ export function ChatImage({
           width={known?.width}
           height={known?.height}
           style={aspect}
-          onClick={workspaceSrc ? openWorkspace : undefined}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey) return
+            event.preventDefault()
+            event.stopPropagation()
+            openLightbox()
+          }}
           onLoad={(event) => {
             const img = event.currentTarget
             const size = writeCachedChatImageSize(src, {
@@ -300,7 +351,8 @@ export function ChatImage({
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
-                    if (item.action === 'open') openWorkspace()
+                    if (item.action === 'lightbox') openLightbox()
+                    else if (item.action === 'open') openWorkspace()
                     else if (item.action === 'reveal' && workspaceSrc) {
                       dispatchRevealWorkspaceFile(src)
                     } else if (item.action === 'copy-path' && workspaceSrc) {
@@ -313,6 +365,84 @@ export function ChatImage({
                   {item.title}
                 </button>
               ))}
+            </div>,
+            document.body
+          )
+        : null}
+      {lightbox && displaySrc && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="chat-image-lightbox" role="presentation">
+              <button
+                type="button"
+                className="chat-image-lightbox-backdrop"
+                aria-label="关闭图片预览"
+                onClick={closeLightbox}
+              />
+              <div
+                ref={dialogRef}
+                className="chat-image-lightbox-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-label={alt?.trim() || '图片预览'}
+                tabIndex={-1}
+              >
+                <img
+                  src={displaySrc}
+                  alt={alt ?? ''}
+                  width={fit.width || known?.width}
+                  height={fit.height || known?.height}
+                  style={
+                    fit.width
+                      ? { width: fit.width, height: fit.height }
+                      : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }
+                  }
+                />
+              </div>
+              <div className="chat-image-lightbox-toolbar glass-popover" role="toolbar" aria-label="图片预览操作">
+                {canExport ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`message-actions-btn${copied ? ' message-actions-btn--copied' : ''}`}
+                      title={copied ? '已复制' : '复制图片'}
+                      aria-label={copied ? '已复制' : '复制图片'}
+                      onClick={() => void copy()}
+                    >
+                      {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                    </button>
+                    <button
+                      type="button"
+                      className="message-actions-btn"
+                      title="保存图片"
+                      aria-label="保存图片"
+                      onClick={() => void save()}
+                    >
+                      <Download size={16} aria-hidden />
+                    </button>
+                  </>
+                ) : null}
+                {workspaceSrc ? (
+                  <button
+                    type="button"
+                    className="chat-image-lightbox-text"
+                    onClick={() => {
+                      openWorkspace()
+                      closeLightbox()
+                    }}
+                  >
+                    打开预览
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="message-actions-btn"
+                  title="关闭"
+                  aria-label="关闭图片预览"
+                  onClick={closeLightbox}
+                >
+                  <X size={16} aria-hidden />
+                </button>
+              </div>
             </div>,
             document.body
           )

@@ -2,6 +2,7 @@
  * 对话渲染图：导出文件名与来源判定（对标 Codex Save or copy rendered images）。
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
  * 右键：复制/保存图片；工作区图再加打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单）。
+ * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
  * @see shared/ARCH.md
  */
 
@@ -101,15 +102,25 @@ export function canExportChatImage(input: ChatImageExportInput): boolean {
   return isRemoteChatImageSrc(input.src)
 }
 
-export type ChatImageMenuAction = 'open' | 'reveal' | 'copy-path' | 'copy-image' | 'save'
+export type ChatImageMenuAction =
+  | 'lightbox'
+  | 'open'
+  | 'reveal'
+  | 'copy-path'
+  | 'copy-image'
+  | 'save'
 
 /** 图片右键：页内复制/保存，避免官方原生 Save Image As 崩进程（#40778） */
 export function chatImageMenuItems(options: {
   workspace?: boolean
   canExport?: boolean
+  canLightbox?: boolean
   platform?: RevealFolderPlatform
 }): Array<{ action: ChatImageMenuAction; title: string }> {
   const items: Array<{ action: ChatImageMenuAction; title: string }> = []
+  if (options.canLightbox) {
+    items.push({ action: 'lightbox', title: '查看大图' })
+  }
   if (options.workspace) {
     items.push(
       { action: 'open', title: '打开预览' },
@@ -301,6 +312,39 @@ export function liveChatImageMinHeight(
   pending: boolean
 ): number {
   return Math.max(Math.max(0, floorPx), chatImageSlotMinHeight(known, pending))
+}
+
+/** 灯箱四周留白（px），避开窗口红绿灯 / 关闭钮（对标 Codex #25196 / #26851） */
+export const CHAT_IMAGE_LIGHTBOX_PAD_PX = 48
+
+export type ChatImageLightboxFit = {
+  width: number
+  height: number
+  scale: number
+}
+
+/**
+ * 灯箱默认 fit-to-window：按视口 CSS 像素 contain，且不超过固有尺寸。
+ * 不乘 `--ui-font-scale`，避免官方 #26851 / #31112 那种放大后裁切。
+ */
+export function chatImageLightboxFit(
+  image: ChatImageSize | null | undefined,
+  viewport: { width: number; height: number },
+  padPx = CHAT_IMAGE_LIGHTBOX_PAD_PX
+): ChatImageLightboxFit {
+  const availW = Math.max(0, Math.floor(viewport.width) - padPx * 2)
+  const availH = Math.max(0, Math.floor(viewport.height) - padPx * 2)
+  const iw = image?.width ?? 0
+  const ih = image?.height ?? 0
+  if (iw <= 0 || ih <= 0 || availW <= 0 || availH <= 0) {
+    return { width: 0, height: 0, scale: 0 }
+  }
+  const scale = Math.min(1, availW / iw, availH / ih)
+  return {
+    width: Math.max(1, Math.round(iw * scale)),
+    height: Math.max(1, Math.round(ih * scale)),
+    scale
+  }
 }
 
 export function chatImageAspectStyle(

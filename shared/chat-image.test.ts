@@ -5,6 +5,7 @@ import {
   chatImageAspectStyle,
   chatImageSlotMinHeight,
   liveChatImageMinHeight,
+  chatImageLightboxFit,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
@@ -89,13 +90,38 @@ describe('chat-image', () => {
       'save'
     ])
     expect(
-      chatImageMenuItems({ workspace: true, canExport: true, platform: 'darwin' }).map(
-        (item) => item.action
-      )
-    ).toEqual(['open', 'reveal', 'copy-path', 'copy-image', 'save'])
+      chatImageMenuItems({
+        workspace: true,
+        canExport: true,
+        canLightbox: true,
+        platform: 'darwin'
+      }).map((item) => item.action)
+    ).toEqual(['lightbox', 'open', 'reveal', 'copy-path', 'copy-image', 'save'])
     expect(chatImageMenuItems({ workspace: true, platform: 'darwin' })[1]?.title).toBe(
       '在访达中显示'
     )
+    expect(
+      chatImageMenuItems({ workspace: true, platform: 'darwin', canLightbox: true })[2]?.title
+    ).toBe('在访达中显示')
+    expect(chatImageMenuItems({ canLightbox: true })[0]).toEqual({
+      action: 'lightbox',
+      title: '查看大图'
+    })
     expect(chatImageMenuItems({})).toEqual([])
+    const viewport = { width: 1200, height: 800 }
+    const landscape = chatImageLightboxFit({ width: 4000, height: 2000 }, viewport)
+    expect(landscape.width).toBeLessThanOrEqual(1200 - 96)
+    expect(landscape.height).toBeLessThanOrEqual(800 - 96)
+    expect(landscape.width / landscape.height).toBeCloseTo(2, 2)
+    expect(landscape.scale).toBeLessThan(1)
+    const portrait = chatImageLightboxFit({ width: 2000, height: 4000 }, viewport)
+    expect(portrait.width).toBeLessThanOrEqual(1200 - 96)
+    expect(portrait.height).toBeLessThanOrEqual(800 - 96)
+    expect(portrait.scale).toBeLessThan(1)
+    const small = chatImageLightboxFit({ width: 200, height: 100 }, viewport)
+    expect(small).toEqual({ width: 200, height: 100, scale: 1 })
+    expect(chatImageLightboxFit({ width: 4000, height: 2000 }, viewport)).toEqual(landscape)
+    expect(chatImageLightboxFit({ width: 0, height: 10 }, viewport).scale).toBe(0)
+    expect(chatImageLightboxFit({ width: 100, height: 80 }, { width: 0, height: 600 }).scale).toBe(0)
   })
 })
