@@ -1,6 +1,6 @@
 /**
  * 直播 token / 回合元信息外部 store：16ms flush 与工具心跳只通知订阅者，不抬 ChatView。
- * `useLiveStreamUiSelectWhen` 给查找只订 `streaming`，思考 / 过程不重跑命中（对标 Codex #22860 / #33907）。
+ * `useLiveStreamUiSelectWhen` 给查找只订 `streaming`，并给历史列在预留行入列后才订直播体布尔（对标 Codex #22860 / #33907）。
  * 对标 Codex #22860：已画历史列不应跟每枚 token / 工具心跳重绘。
  * @see src/hooks/ARCH.md
  */

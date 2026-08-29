@@ -4,7 +4,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列只在预留行真进 messages 后才因直播体显隐重建（对标 Codex #22860）。
+ * 历史列只在预留行真进 messages 后才订直播体布尔（对标 Codex #22860）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -571,22 +571,6 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
 })
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
-/**
- * 直播体是否已出现：只在布尔翻转时抬 ChatView，不跟每枚 token。
- */
-function LiveBodyFlag({
-  approvalWaiting,
-  onChange
-}: {
-  approvalWaiting: boolean
-  onChange: (hasBody: boolean) => void
-}) {
-  const hasBody = useLiveStreamUiSelect((snap) => liveHasAssistantBody(snap, approvalWaiting))
-  useEffect(() => {
-    onChange(hasBody)
-  }, [hasBody, onChange])
-  return null
-}
 
 /**
  * 查找开着才订阅直播正文，且只订 `streaming`。关闭或思考 / 过程增长时不跟 token。
@@ -854,8 +838,6 @@ export const ChatView = memo(function ChatView({
   const [stickToBottom, setStickToBottom] = useState(true)
   /** 内容溢出且用户不在底部时才显示「回到底部」 */
   const [canJumpToBottom, setCanJumpToBottom] = useState(false)
-  /** 直播体是否已出现：只在布尔翻转时重绘历史列 */
-  const [liveBody, setLiveBody] = useState(false)
   const [liveMemoryFindHits, setLiveMemoryFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
@@ -872,7 +854,6 @@ export const ChatView = memo(function ChatView({
     setPinnedStart(restoreTranscriptWindowStart(scrollSnapshot))
     setDiskFindHits(EMPTY_FIND_HITS)
     findAnchorRef.current = null
-    setLiveBody(false)
     setLiveMemoryFindHits(EMPTY_FIND_HITS)
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
@@ -1223,9 +1204,6 @@ export const ChatView = memo(function ChatView({
 
   const handleLiveFindHits = useCallback((hits: ThreadSearchHit[]) => {
     setLiveMemoryFindHits((prev) => (sameThreadSearchHits(prev, hits) ? prev : hits))
-  }, [])
-  const handleLiveBody = useCallback((next: boolean) => {
-    setLiveBody((prev) => (prev === next ? prev : next))
   }, [])
 
   const memoryFindHits = useMemo(
@@ -2016,13 +1994,17 @@ export const ChatView = memo(function ChatView({
     setEditUserMessageId(null)
   }, [])
 
+  const reservedInHistory = Boolean(
+    liveAssistantId && windowedMessages.some((m) => m.id === liveAssistantId)
+  )
+  const liveBody = useLiveStreamUiSelectWhen(loading && reservedInHistory, (snap) =>
+    liveHasAssistantBody(snap, Boolean(approval))
+  )
   const hideReservedLive = shouldHideReservedDuringLive({
     isLive: loading,
     hasLiveBody: liveBody,
     reservedId: liveAssistantId,
-    hasReservedInHistory: Boolean(
-      liveAssistantId && windowedMessages.some((m) => m.id === liveAssistantId)
-    )
+    hasReservedInHistory: reservedInHistory
   })
   const historicalRows = useMemo(
     () =>
@@ -2126,7 +2108,6 @@ export const ChatView = memo(function ChatView({
       data-transcript-head={viewingHead ? '1' : undefined}
       data-transcript-head-start={viewingHead ? historyHeadStartSeq : undefined}
     >
-      {loading ? <LiveBodyFlag approvalWaiting={Boolean(approval)} onChange={handleLiveBody} /> : null}
       <LiveFindSync
         enabled={Boolean(findOpen && findQuery.trim())}
         query={findQuery}
