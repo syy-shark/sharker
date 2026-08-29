@@ -74,6 +74,7 @@ import {
   stepThinkingLevel
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
+import { liveStreamPatchFromSegments } from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
@@ -3706,7 +3707,16 @@ export default function App() {
       setLiveSegments(cloneSegments(segmentsRef.current))
       setLoading(true)
       turnStartedAtRef.current = seedAt
-      publishLiveStreamUi({ turnStartedAt: seedAt })
+      publishLiveStreamUi(
+        liveStreamPatchFromSegments(segmentsRef.current, {
+          streaming: '',
+          activeTool: null,
+          turnStartedAt: seedAt,
+          liveTurnMeta: liveAssistantMeta([], []),
+          turnHadThinking: false
+        })
+      )
+      liveTurnMetaRef.current = liveAssistantMeta([], [])
       const history = current.slice(0, index)
       setMessages(history)
       messagesRef.current = history
@@ -6654,10 +6664,10 @@ export default function App() {
         ]
         segmentsRef.current = segs
         setLiveSegments(cloneSegments(segs))
-        if (!turnStartedAtRef.current) {
-          turnStartedAtRef.current = now
-          publishLiveStreamUi({ turnStartedAt: now })
-        }
+        if (!turnStartedAtRef.current) turnStartedAtRef.current = now
+        publishLiveStreamUi(
+          liveStreamPatchFromSegments(segs, { turnStartedAt: turnStartedAtRef.current || now })
+        )
         return req
       },
       clearApproval: () => {
@@ -6742,7 +6752,8 @@ export default function App() {
         turnThinkingRef.current = ''
         setActiveTool(null)
         turnStartedAtRef.current = 0
-        publishLiveStreamUi({ turnStartedAt: null })
+        liveTurnMetaRef.current = null
+        resetLiveStreamUi()
         return assistant
       },
       injectAborted: (message) => {
@@ -6816,7 +6827,8 @@ export default function App() {
         turnThinkingRef.current = ''
         setActiveTool(null)
         turnStartedAtRef.current = 0
-        publishLiveStreamUi({ turnStartedAt: null })
+        liveTurnMetaRef.current = null
+        resetLiveStreamUi()
         return assistant
       },
       seedLiveProcess: (mode = 'preparing') => {
@@ -6961,15 +6973,19 @@ export default function App() {
         }
         // 强制刷新计时起点，避免沿用上一条回合的 elapsed 造成“卡住感”
         turnStartedAtRef.current = now - 3000
-        publishLiveStreamUi({ turnStartedAt: now - 3000 })
-        setActiveTool(
-          mode === 'tool'
-            ? 'read_file'
-            : mode === 'chain'
-              ? 'list_dir'
-              : mode === 'planning'
-                ? null
-                : null
+        const nextTool =
+          mode === 'tool' ? 'read_file' : mode === 'chain' ? 'list_dir' : null
+        setActiveTool(nextTool)
+        const seededMeta = liveAssistantMeta([], [])
+        liveTurnMetaRef.current = seededMeta
+        publishLiveStreamUi(
+          liveStreamPatchFromSegments(segs, {
+            streaming: streamingRef.current,
+            activeTool: nextTool,
+            turnStartedAt: now - 3000,
+            liveTurnMeta: seededMeta,
+            turnHadThinking: false
+          })
         )
         // 立刻写入当前会话 buffer，切到其它会话时侧栏 live 点与恢复才可靠
         if (activeConversationIdRef.current) {
@@ -6991,7 +7007,8 @@ export default function App() {
         setApproval(null)
         approvalRef.current = null
         turnStartedAtRef.current = 0
-        publishLiveStreamUi({ turnStartedAt: null })
+        liveTurnMetaRef.current = null
+        resetLiveStreamUi()
       },
       playLiveSequence: async () => {
         const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -7028,17 +7045,15 @@ export default function App() {
           streamingRef.current = streaming
           setStreaming(streaming)
           setActiveTool(opts?.activeTool ?? null)
-          publishLiveStreamUi({
-            streaming,
-            liveSegments: segs,
-            turnThinking: thinkingPreviewFromSegments(segs),
-            activeTool: opts?.activeTool ?? null
-          })
           const now = Date.now()
-          if (!turnStartedAtRef.current) {
-            turnStartedAtRef.current = now - 1200
-            publishLiveStreamUi({ turnStartedAt: now - 1200 })
-          }
+          if (!turnStartedAtRef.current) turnStartedAtRef.current = now - 1200
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segs, {
+              streaming,
+              activeTool: opts?.activeTool ?? null,
+              turnStartedAt: turnStartedAtRef.current
+            })
+          )
         }
 
         const t0 = Date.now()
@@ -7203,7 +7218,8 @@ export default function App() {
         setApproval(null)
         approvalRef.current = null
         turnStartedAtRef.current = 0
-        publishLiveStreamUi({ turnStartedAt: null })
+        liveTurnMetaRef.current = null
+        resetLiveStreamUi()
         const cid = activeConversationIdRef.current
         if (cid) {
           const buf = sessionBuffersRef.current.get(cid)

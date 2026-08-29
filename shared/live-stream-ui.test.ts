@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   EMPTY_LIVE_STREAM_UI,
+  liveStreamPatchFromSegments,
   nextLiveStreamUi,
   sameLiveStreamUi
 } from './live-stream-ui'
@@ -141,5 +142,38 @@ describe('live stream ui snapshot', () => {
     const answerOnMeta = nextLiveAnswerView(a2, answerSnap)
     expect(answerOnMeta).toBe(a2)
     expect(nextLiveAnswerActions(act2, answerSnap)).toBe(act2)
+    const seedSegs: TurnSegment[] = [
+      {
+        id: 'prep',
+        kind: 'status',
+        content: '连接模型并准备任务…',
+        status: 'active',
+        startedAt: 1
+      },
+      {
+        id: 'read',
+        kind: 'tool',
+        toolName: 'read_file',
+        status: 'active',
+        content: ''
+      }
+    ]
+    const seedPatch = liveStreamPatchFromSegments(seedSegs, { turnStartedAt: 99 })
+    const seeded = nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, seedPatch)
+    expect(seeded.liveSegments).toBe(seedSegs)
+    expect(seeded.activeTool).toBe('read_file')
+    expect(seeded.turnStartedAt).toBe(99)
+    expect(seeded.streaming).toBe('')
+    const answerSeed = liveStreamPatchFromSegments(
+      [
+        ...seedSegs,
+        { id: 'txt', kind: 'text', role: 'final', status: 'active', content: '正在整理结果…' }
+      ],
+      { turnStartedAt: 99 }
+    )
+    expect(answerSeed.streaming).toBe('正在整理结果…')
+    expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, seedPatch)).processForFlow).toHaveLength(
+      2
+    )
   })
 })

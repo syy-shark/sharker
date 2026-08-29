@@ -1,9 +1,15 @@
 /**
  * 直播 token / 回合元信息快照：引用没变则复用同一对象，供外部 store 订阅。
  * 工具心跳只换 meta / 秒表，不抬 ChatView（对标 Codex #22860）。
+ * `liveStreamPatchFromSegments` 给 DEV seed / 验收一次写齐片段与秒表。
  * @see shared/ARCH.md
  */
 import type { AssistantMeta, TurnSegment } from './types'
+import {
+  extractFinalContent,
+  findLastSegment,
+  thinkingPreviewFromSegments
+} from './turn-segments'
 
 /** 对话柱直播行当前可画内容（不含回合开关） */
 export interface LiveStreamUiSnapshot {
@@ -60,4 +66,37 @@ export function nextLiveStreamUi(
       patch.turnHadThinking !== undefined ? patch.turnHadThinking : prev.turnHadThinking
   }
   return sameLiveStreamUi(prev, next) ? prev : next
+}
+
+/**
+ * DEV / 验收：从片段拼一帧直播补丁，避免只写秒表、过程行进不了 store。
+ * `streaming` / `activeTool` 未传时从片段推导。
+ */
+export function liveStreamPatchFromSegments(
+  segments: TurnSegment[],
+  extras?: Partial<
+    Pick<
+      LiveStreamUiSnapshot,
+      'streaming' | 'activeTool' | 'turnStartedAt' | 'liveTurnMeta' | 'turnHadThinking'
+    >
+  >
+): Partial<LiveStreamUiSnapshot> {
+  const streaming =
+    extras?.streaming !== undefined
+      ? extras.streaming
+      : extractFinalContent(segments, { isStreaming: true })
+  const activeTool =
+    extras?.activeTool !== undefined
+      ? extras.activeTool
+      : (findLastSegment(segments, (s) => s.kind === 'tool' && s.status === 'active')?.toolName ??
+        null)
+  return {
+    streaming,
+    liveSegments: segments,
+    turnThinking: thinkingPreviewFromSegments(segments),
+    activeTool,
+    ...(extras?.turnStartedAt !== undefined ? { turnStartedAt: extras.turnStartedAt } : {}),
+    ...(extras?.liveTurnMeta !== undefined ? { liveTurnMeta: extras.liveTurnMeta } : {}),
+    ...(extras?.turnHadThinking !== undefined ? { turnHadThinking: extras.turnHadThinking } : {})
+  }
 }
