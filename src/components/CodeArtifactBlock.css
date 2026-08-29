@@ -1,6 +1,7 @@
 .code-artifact-shell {
   margin: 10px 0;
-  overflow: hidden;
+  /* 可见溢出才能让头栏相对对话柱 sticky（overflow:hidden 会把 sticky 锁在壳内） */
+  overflow: visible;
   animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
   border: 0.5px solid var(--glass-edge);
   border-radius: var(--radius);
@@ -15,12 +16,16 @@
 }
 
 .code-artifact-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   min-height: 34px;
   align-items: center;
   gap: 10px;
   padding: 0 8px 0 12px;
   border-bottom: 0.5px solid var(--glass-edge-soft);
+  border-radius: var(--radius) var(--radius) 0 0;
   background: var(--glass-fill-nested);
 }
 
@@ -84,6 +89,11 @@
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.code-artifact-shell:has(.code-artifact-footer) .code-artifact-scroll {
+  border-radius: 0;
 }
 
 .code-artifact-code {
@@ -136,6 +146,7 @@
   align-items: center;
   justify-content: center;
   border-top: 0.5px solid var(--glass-edge-soft);
+  border-radius: 0 0 var(--radius) var(--radius);
   background: var(--glass-fill-nested);
 }
 

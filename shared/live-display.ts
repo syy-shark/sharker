@@ -492,6 +492,21 @@ export function shouldFollowArtifactTail(options: {
 }
 
 /**
+ * 围栏复制条相对对话柱贴顶：块还在视口里就保持可见，离开时跟着走。
+ * 对标 Codex #20593（官方加换行钮后复制条不再 sticky；Sharker 不发明换行开关，默认已换行）。
+ */
+export function codeArtifactHeadStickyTop(
+  shell: { top: number; bottom: number },
+  viewport: { top: number; bottom: number },
+  headHeight: number
+): number | null {
+  if (headHeight <= 0) return null
+  if (shell.bottom <= viewport.top || shell.top >= viewport.bottom) return null
+  const stuck = Math.max(shell.top, viewport.top)
+  return Math.min(stuck, shell.bottom - headHeight)
+}
+
+/**
  * 直播围栏行：已完成行退回同一字符串引用，只换增长行。
  * 对标 Codex #39061 / #22860（长围栏不跟每枚 token 重拆全文）。
  */

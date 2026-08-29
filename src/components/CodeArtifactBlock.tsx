@@ -1,5 +1,6 @@
 /**
  * 紧凑编辑器式代码产物：固定头部、复制操作、行号与稳定滚动区域。
+ * 头栏相对对话柱 sticky，块还在视口里就能复制（对标 Codex #20593，不发明换行开关）。
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
  * 直播跟尾时内层滚到最新行（外壳 max-height 后新行不再顶对话柱）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
@@ -29,7 +30,7 @@ interface CodeArtifactShellProps {
   followTail?: boolean
 }
 
-/** 普通代码和 diff 共用的编辑器外壳。 */
+/** 普通代码和 diff 共用的编辑器外壳；头栏相对对话柱 sticky。 */
 export function CodeArtifactShell({
   label,
   detail,

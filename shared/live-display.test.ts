@@ -38,6 +38,7 @@ import {
   shouldClearUnseenLive,
   shouldMarkUnseenLive,
   shouldFollowArtifactTail,
+  codeArtifactHeadStickyTop,
   continueLiveFenceLines,
   nextClosedFenceLines,
   shouldMountMessageActions,
@@ -240,6 +241,12 @@ describe('near-live message rows', () => {
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: false })).toBe(true)
     expect(shouldFollowArtifactTail({ followTail: true, userLocked: true })).toBe(false)
     expect(shouldFollowArtifactTail({ followTail: false, userLocked: false })).toBe(false)
+    const fenceShell = { top: 0, bottom: 400 }
+    expect(codeArtifactHeadStickyTop(fenceShell, { top: 0, bottom: 800 }, 34)).toBe(0)
+    expect(codeArtifactHeadStickyTop(fenceShell, { top: 120, bottom: 920 }, 34)).toBe(120)
+    expect(codeArtifactHeadStickyTop(fenceShell, { top: 380, bottom: 1180 }, 34)).toBe(366)
+    expect(codeArtifactHeadStickyTop(fenceShell, { top: 500, bottom: 1300 }, 34)).toBeNull()
+    expect(codeArtifactHeadStickyTop(fenceShell, { top: 0, bottom: 800 }, 0)).toBeNull()
     const fenceFirst = continueLiveFenceLines(null, 'const a = 1\nconst b =')
     const fenceGrown = continueLiveFenceLines(fenceFirst, 'const a = 1\nconst b = 2')
     expect(fenceGrown[0]).toBe(fenceFirst[0])
