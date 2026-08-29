@@ -6,8 +6,8 @@
 import { memo } from 'react'
 import type { ApprovalRequest, AssistantMeta } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
-import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { shouldMountMessageActions } from '../../shared/live-display'
+import { FilesChangedCard } from './FilesChangedCard'
 import {
   liveAnswerViewFromSnap,
   nextLiveAnswerActions,
@@ -146,7 +146,6 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   onNeedFullMessage?: (messageId: string) => void
 }) {
   const changedFiles = meta?.changedFiles ?? []
-  const changedLabel = formatChangedFilesLabel(changedFiles.length)
   return (
     <article className="assistant-message">
       <LiveStoreProcess
@@ -166,27 +165,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
         />
       ) : null}
       {changedFiles.length > 0 ? (
-        <div className="assistant-changed-row">
-          {onOpenChangedFiles ? (
-            <button
-              type="button"
-              className="assistant-meta-chip assistant-meta-chip--live"
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                onOpenChangedFiles(changedFiles)
-              }}
-            >
-              <span>已改</span>
-              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
-            </button>
-          ) : (
-            <span className="assistant-meta-chip assistant-meta-chip--static" title={changedLabel}>
-              <span>已改</span>
-              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
-            </span>
-          )}
-        </div>
+        <FilesChangedCard files={changedFiles} live onOpenReview={onOpenChangedFiles} />
       ) : null}
       <LiveStoreActions messageId={messageId} />
     </article>

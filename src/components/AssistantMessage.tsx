@@ -27,8 +27,8 @@ import {
   stripStoppedAfterFootnote,
   turnProcessBounds
 } from '../../shared/live-display'
-import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
+import { FilesChangedCard } from './FilesChangedCard'
 import { ProcessTimeline } from './ProcessTimeline'
 import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { messageHasDeferredThinking } from '../../shared/transcript-hydrate'
@@ -131,7 +131,6 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   const browsedFiles = meta?.browsedFiles ?? []
   const changedFiles = meta?.changedFiles ?? []
-  const changedLabel = formatChangedFilesLabel(changedFiles.length)
   const hadThinking = meta?.hadThinking ?? hadThinkingLive
   // Keep the UI at a high-level status; raw provider reasoning remains internal.
   const thinkingText = hadThinking
@@ -570,27 +569,11 @@ export const AssistantMessage = memo(function AssistantMessage({
       ) : null}
 
       {changedFiles.length > 0 ? (
-        <div className="assistant-changed-row">
-          {onOpenChangedFiles ? (
-            <button
-              type="button"
-              className={`assistant-meta-chip${isStreaming ? ' assistant-meta-chip--live' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onOpenChangedFiles(changedFiles)
-              }}
-            >
-              <span>已改</span>
-              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
-            </button>
-          ) : (
-            <span className="assistant-meta-chip assistant-meta-chip--static" title={changedLabel}>
-              <span>已改</span>
-              <span className="assistant-meta-chip-value">{changedFiles.length} 个文件</span>
-            </span>
-          )}
-        </div>
+        <FilesChangedCard
+          files={changedFiles}
+          live={Boolean(isStreaming)}
+          onOpenReview={onOpenChangedFiles}
+        />
       ) : null}
 
       {browsedFiles.length > 0 ? (

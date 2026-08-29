@@ -136,7 +136,7 @@ import {
   UI_FONT_SCALE_DEFAULT
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
-import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
+import { OPEN_WORKSPACE_FILE_EVENT, REVEAL_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
 import {
   composeReviewScopeArgs,
   formatReviewPrompt,
@@ -3403,22 +3403,25 @@ export default function App() {
   } | null>(null)
 
   useEffect(() => {
+    const conversationAbs = (filePath: string) => {
+      const runtime = runtimeForConversation(
+        activeConversationIdRef.current,
+        activeConversationIdRef.current,
+        threadRuntimeRef.current
+      )
+      const cwd = resolveConversationPath({
+        worktreePath: runtime.worktreePath || threadWorktreePathRef.current,
+        workspacePath: getActiveWorkspacePath(settingsRef.current)
+      })
+      const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
+      return resolveCitationPath(filePath, cwd, extra)
+    }
     const onCite = (event: Event) => {
       const detail = (event as CustomEvent<{ path?: string; line?: number; column?: number }>).detail
       if (!detail?.path || popoutRoute) return
       const opener = parseFileOpener(settingsRef.current.fileOpener)
       if (opener !== 'none') {
-        const runtime = runtimeForConversation(
-          activeConversationIdRef.current,
-          activeConversationIdRef.current,
-          threadRuntimeRef.current
-        )
-        const cwd = resolveConversationPath({
-          worktreePath: runtime.worktreePath || threadWorktreePathRef.current,
-          workspacePath: getActiveWorkspacePath(settingsRef.current)
-        })
-        const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
-        const abs = resolveCitationPath(detail.path, cwd, extra)
+        const abs = conversationAbs(detail.path)
         const uri = fileOpenerUri(opener, abs, detail.line, detail.column)
         if (uri) void window.sharker.openExternal?.(uri)
         return
@@ -3428,8 +3431,18 @@ export default function App() {
       setRightPanelOpen(true)
       setPage('chat')
     }
+    const onReveal = (event: Event) => {
+      const path = (event as CustomEvent<{ path?: string }>).detail?.path
+      if (!path || popoutRoute) return
+      const abs = conversationAbs(path)
+      if (abs && window.sharker.showItemInFolder) void window.sharker.showItemInFolder(abs)
+    }
     window.addEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
-    return () => window.removeEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
+    window.addEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
+    return () => {
+      window.removeEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
+      window.removeEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
+    }
   }, [popoutRoute])
 
   const handleOpenSubAgent = useCallback((id: string | null) => {
