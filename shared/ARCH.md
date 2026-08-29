@@ -118,7 +118,7 @@
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
@@ -156,8 +156,8 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、`/goal` 吃粘贴附件 |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/code-font→外观、general/review→通用、personalization/personality/memories→个性化、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
-| `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications 进外观、general/review 进通用、personalization/memories 进个性化、git/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、personalization/personality/memories→个性化、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
+| `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications/notify 进通知、general/review 进通用、personalization/memories 进个性化、git/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id / 收束空窗单测 |

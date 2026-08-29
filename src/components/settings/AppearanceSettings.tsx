@@ -1,12 +1,11 @@
 /**
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
- * 人格与个人说明在 `PersonalizationSettings`。
+ * 人格与个人说明在 `PersonalizationSettings`；回合通知在 `NotificationSettings`。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
 import {
   clampUiFontScale,
   formatUiFontScale,
@@ -18,7 +17,6 @@ import {
 import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
 import {
   SettingsCard,
-  SettingsChoiceGroup,
   SettingsRow,
   SettingsSection,
   SettingsToggle
@@ -246,63 +244,6 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               options={CODE_FONT_OPTIONS.map((item) => ({ value: item.id, label: item.label }))}
               onChange={(value) => onCodeFont(parseCodeFont(value))}
             />
-          </SettingsRow>
-        </SettingsCard>
-      </SettingsSection>
-      <SettingsSection title="通知">
-        <SettingsCard>
-          <SettingsChoiceGroup
-            value={parseTurnNotifyMode(draft.turnNotifyMode)}
-            onChange={(turnNotifyMode: TurnNotifyMode) => {
-              scheduleSave({ ...draftRef.current, turnNotifyMode })
-            }}
-            options={[
-              {
-                value: 'never',
-                title: '从不',
-                description: '回合完成不弹系统通知。',
-                icon: <span aria-hidden>静</span>
-              },
-              {
-                value: 'background',
-                title: '后台',
-                description: '正在看且窗口在前台时不打扰。',
-                icon: <span aria-hidden>后</span>
-              },
-              {
-                value: 'always',
-                title: '始终',
-                description: '每次回合完成都通知。',
-                icon: <span aria-hidden>通</span>
-              }
-            ]}
-          />
-          <SettingsRow
-            title="批准通知"
-            description="对标 Codex permission notifications：后台或失焦时高危操作需要批准会弹系统通知。"
-          >
-            <SettingsToggle
-              checked={draft.approvalNotify !== false}
-              onChange={(approvalNotify) => {
-                scheduleSave({ ...draftRef.current, approvalNotify })
-              }}
-              label="批准通知"
-            />
-          </SettingsRow>
-          <SettingsRow
-            title="系统通知权限"
-            description="对标 Codex：向 macOS 申请通知权限。会发一条测试通知。"
-            last
-          >
-            <button
-              type="button"
-              className="appearance-font-btn appearance-permission-btn"
-              onClick={() => {
-                void window.sharker.requestNotifyPermission?.()
-              }}
-            >
-              请求权限
-            </button>
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>

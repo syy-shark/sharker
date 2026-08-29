@@ -72,7 +72,11 @@ describe('deeplink', () => {
     })
     expect(parseDeeplink('sharker://settings/notifications')).toEqual({
       type: 'settings',
-      tab: 'appearance'
+      tab: 'notifications'
+    })
+    expect(parseDeeplink('sharker://settings/notify')).toEqual({
+      type: 'settings',
+      tab: 'notifications'
     })
     expect(parseDeeplink('sharker://settings/memories')).toEqual({
       type: 'settings',

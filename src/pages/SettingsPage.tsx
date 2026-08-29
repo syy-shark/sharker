@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 通用 / 外观 / 个性化 / 键盘快捷键 / 已归档 / 用量
+ * 设置页壳：权限 / 模型 / 通用 / 外观 / 通知 / 个性化 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -11,6 +11,7 @@ import { PermissionsSettings } from '../components/settings/PermissionsSettings'
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { GeneralSettings } from '../components/settings/GeneralSettings'
 import { PersonalizationSettings } from '../components/settings/PersonalizationSettings'
+import { NotificationSettings } from '../components/settings/NotificationSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
@@ -31,7 +32,11 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   appearance: {
     title: '外观',
-    desc: '浅色苹果玻璃与深色金属；通知与弹出窗置顶在此。人格、记忆与个人说明在个性化。'
+    desc: '浅色苹果玻璃与深色金属；界面与代码字体、弹出窗置顶。通知在通知页。'
+  },
+  notifications: {
+    title: '通知',
+    desc: '回合完成何时弹系统通知，以及是否申请通知权限。对标 Codex Settings → Notifications。'
   },
   personalization: {
     title: '个性化',
@@ -84,6 +89,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           )}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'notifications' && (
+            <NotificationSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'personalization' && (
             <PersonalizationSettings draft={draft} setDraft={setDraft} onSave={onSave} />

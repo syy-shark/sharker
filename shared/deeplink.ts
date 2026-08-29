@@ -20,6 +20,7 @@ export type DeeplinkAction =
         | 'models'
         | 'general'
         | 'appearance'
+        | 'notifications'
         | 'personalization'
         | 'shortcuts'
         | 'archived'
@@ -95,10 +96,12 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   if (key === 'general' || key === 'review') {
     return { type: 'settings', tab: 'general' }
   }
+  if (key === 'notifications' || key === 'notify') {
+    return { type: 'settings', tab: 'notifications' }
+  }
   if (
     key === 'appearance' ||
     key === 'theme' ||
-    key === 'notifications' ||
     key === 'code-font' ||
     key === 'codefont'
   ) {

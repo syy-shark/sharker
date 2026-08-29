@@ -9,6 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
   Bell,
+  BellRing,
   ChartNoAxesColumn,
   Folder,
   Inbox,
@@ -114,6 +115,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'general', label: '通用', icon: Settings2 },
   { id: 'appearance', label: '外观', icon: Palette },
+  { id: 'notifications', label: '通知', icon: BellRing },
   { id: 'personalization', label: '个性化', icon: Smile },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
   { id: 'archived', label: '已归档', icon: Archive },

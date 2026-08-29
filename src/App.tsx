@@ -5704,6 +5704,9 @@ export default function App() {
         case 'open_general':
           void handleNavigate('settings', 'general')
           break
+        case 'open_notifications':
+          void handleNavigate('settings', 'notifications')
+          break
         case 'open_usage':
           void handleNavigate('settings', 'usage')
           break

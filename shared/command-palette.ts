@@ -133,6 +133,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'open_personalization'
   },
   {
+    id: 'notifications',
+    title: '通知设置',
+    keywords: 'notifications notify 通知 回合 批准',
+    action: 'open_notifications'
+  },
+  {
     id: 'debug-config',
     title: '调试配置',
     keywords: 'debug config 配置 诊断',

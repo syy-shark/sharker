@@ -11,6 +11,7 @@ export type SettingsTab =
   | 'models'
   | 'general'
   | 'appearance'
+  | 'notifications'
   | 'personalization'
   | 'shortcuts'
   | 'archived'
