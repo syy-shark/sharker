@@ -54,6 +54,7 @@ import {
 } from '../../shared/transcript-scroll'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
+import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
@@ -321,6 +322,7 @@ interface Props {
   /** 本会话上次离开时的滚动（对标 Codex 26.406 按对话记住位置） */
   scrollSnapshot?: TranscriptScrollSnapshot | null
   onScrollSnapshot?: (conversationId: string, snap: TranscriptScrollSnapshot) => void
+  keyboardShortcuts?: KeymapOverrides
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -392,7 +394,8 @@ export function ChatView({
   onCopyPick,
   onCopyPickerClose,
   scrollSnapshot = null,
-  onScrollSnapshot
+  onScrollSnapshot,
+  keyboardShortcuts
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -1415,6 +1418,7 @@ export function ChatView({
             onApprovalHotkey={onApproval}
             planMode={planMode}
             onPlanModeChange={onPlanModeChange}
+            keyboardShortcuts={keyboardShortcuts}
           />
         </div>
       </div>

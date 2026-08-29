@@ -55,7 +55,8 @@ const ACTION_SET = new Set<string>([
   'thinking_lower',
   'thinking_higher',
   'undo_app',
-  'redo_app'
+  'redo_app',
+  'interrupt_turn'
 ])
 
 function normalizeKeyName(key: string, code?: string): string {
@@ -96,7 +97,10 @@ export function encodeShortcutChord(event: {
   if (event.altKey) parts.push('alt')
   if (event.shiftKey) parts.push('shift')
   parts.push(key)
-  if (parts.length === 1 && key !== 'escape') return null
+  // 裸字母不进和弦；Esc / F1–F24 可单独成键（对标 Codex TUI `interrupt_turn = "f12"`）
+  if (parts.length === 1 && key !== 'escape' && !/^f(?:[1-9]|1[0-9]|2[0-4])$/.test(key)) {
+    return null
+  }
   return parts.join('+')
 }
 
@@ -174,4 +178,51 @@ export function matchWorkbenchShortcut(
     return null
   }
   return fallback
+}
+
+/** IME 选词 / 候选（对标 Codex Desktop #24568：选词 Esc 不中止直播） */
+export function isImeKeyEvent(event: {
+  isComposing?: boolean
+  key?: string
+  keyCode?: number
+}): boolean {
+  return Boolean(event.isComposing) || event.key === 'Process' || event.keyCode === 229
+}
+
+/**
+ * 是否该中止当前回合。默认裸 Esc；设置里可改绑或空串解绑。
+ * 对标 Codex Desktop Keyboard Shortcuts / TUI interrupt_turn。
+ */
+export function shouldInterruptTurn(
+  event: {
+    key: string
+    code?: string
+    metaKey: boolean
+    ctrlKey: boolean
+    altKey: boolean
+    shiftKey: boolean
+    isComposing?: boolean
+    keyCode?: number
+  },
+  overrides?: KeymapOverrides | null
+): boolean {
+  if (isImeKeyEvent(event)) return false
+  const encoded = encodeShortcutChord(event)
+  if (!encoded) return false
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'interrupt_turn')) {
+    const chord = overrides.interrupt_turn
+    if (!chord) return false
+    return chordsMatch(chord, encoded)
+  }
+  return encoded === 'escape'
+}
+
+/** 设置页 / 输入框提示：当前中止回合按键；解绑返回 null */
+export function interruptTurnChordLabel(overrides?: KeymapOverrides | null): string | null {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'interrupt_turn')) {
+    const chord = overrides.interrupt_turn
+    if (!chord) return null
+    return formatShortcutChord(chord)
+  }
+  return 'Esc'
 }

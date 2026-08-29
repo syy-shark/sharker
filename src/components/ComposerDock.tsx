@@ -14,6 +14,11 @@ import {
 } from 'react'
 import { ArrowUp, FileText, Folder, Mic } from 'lucide-react'
 import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from '../../shared/types'
+import {
+  interruptTurnChordLabel,
+  shouldInterruptTurn,
+  type KeymapOverrides
+} from '../../shared/keymap'
 import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
@@ -193,6 +198,8 @@ export interface ComposerDockProps {
   /** 计划模式芯片（对标 Codex /plan）；不跟直播 token 变 */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
+  /** 停止当前回合和弦（默认 Esc，设置可改绑；IME 不触发） */
+  keyboardShortcuts?: KeymapOverrides
 }
 
 export const ComposerDock = memo(
@@ -239,10 +246,12 @@ export const ComposerDock = memo(
       approvalResponding = false,
       onApprovalHotkey,
       planMode = false,
-      onPlanModeChange
+      onPlanModeChange,
+      keyboardShortcuts
     },
     ref
   ) {
+    const interruptLabel = interruptTurnChordLabel(keyboardShortcuts)
     const [input, setInput] = useState(
       () => loadComposerDraft(composerDraftKey(sessionKey, activeWorkspaceId)).text
     )
@@ -1652,7 +1661,23 @@ export const ComposerDock = memo(
               void onApprovalHotkey(approvalChoice)
               return
             }
-            if (e.key === 'Escape' && loading && !menuOpen) {
+            if (
+              loading &&
+              !menuOpen &&
+              shouldInterruptTurn(
+                {
+                  key: e.key,
+                  code: e.code,
+                  metaKey: e.metaKey,
+                  ctrlKey: e.ctrlKey,
+                  altKey: e.altKey,
+                  shiftKey: e.shiftKey,
+                  isComposing: composing,
+                  keyCode: (e.nativeEvent as KeyboardEvent).keyCode
+                },
+                keyboardShortcuts
+              )
+            ) {
               e.preventDefault()
               onAbort()
               return
@@ -1748,8 +1773,8 @@ export const ComposerDock = memo(
               ? '正在听写… Ctrl⇧D 结束'
               : loading
                 ? followUpBehavior === 'steer'
-                  ? 'Enter 注入 · ⌘⇧Enter 排队 · Tab 排队 · Esc 停止…'
-                  : 'Enter 排队 · ⌘⇧Enter 注入 · Tab 排队 · Esc 停止…'
+                  ? `Enter 注入 · ⌘⇧Enter 排队 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
+                  : `Enter 排队 · ⌘⇧Enter 注入 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
                 : composerEnterBehavior === 'cmdAlways' ||
                     (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
                   ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'

@@ -50,6 +50,7 @@ export type WorkbenchShortcutAction =
   | 'thinking_higher'
   | 'undo_app'
   | 'redo_app'
+  | 'interrupt_turn'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -307,6 +308,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Ctrl⇧V', title: '语音对话' },
   { keys: '↑', title: '空输入时恢复上一条' },
   { keys: 'Enter', title: '发送；忙时按设置排队或注入' },
+  { keys: 'Esc', title: '停止当前回合（可改绑；IME 选词不触发）' },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
   { keys: 'Tab', title: '忙时排队下一条' },
   { keys: 'Shift+Tab', title: '输入框内切换计划模式' },
@@ -395,6 +397,12 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'pin_conversation', title: '置顶 / 取消置顶', defaultKeys: '⌘⌥P', defaultChord: 'mod+alt+p' },
   { action: 'mark_unread', title: '标为未读', defaultKeys: '⌘⇧U', defaultChord: 'mod+shift+u' },
   { action: 'clear_unread', title: '清除未读徽标', defaultKeys: '⇧Esc', defaultChord: 'shift+escape' },
+  {
+    action: 'interrupt_turn',
+    title: '停止当前回合',
+    defaultKeys: 'Esc',
+    defaultChord: 'escape'
+  },
   { action: 'search_chats', title: '搜索对话', defaultKeys: '未指定', defaultChord: '' },
   { action: 'search_files', title: '引用工作区文件', defaultKeys: '⌘P', defaultChord: 'mod+p' },
   { action: 'next_attention', title: '下一条进行中对话', defaultKeys: '⌘⌥A', defaultChord: 'mod+alt+a' },

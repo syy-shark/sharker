@@ -4,7 +4,9 @@ import {
   encodeShortcutChord,
   formatShortcutChord,
   matchWorkbenchShortcut,
-  normalizeKeymap
+  normalizeKeymap,
+  interruptTurnChordLabel,
+  shouldInterruptTurn
 } from './keymap'
 
 function ev(partial: {
@@ -36,6 +38,10 @@ describe('keymap', () => {
     expect(formatShortcutChord('mod+ctrl+shift+tab')).toBe('Ctrl⇧Tab')
     expect(chordsMatch('mod+shift+a', 'shift+mod+A')).toBe(true)
     expect(encodeShortcutChord(ev({ key: 'Meta', metaKey: true }))).toBeNull()
+    expect(encodeShortcutChord(ev({ key: 'F12' }))).toBe('f12')
+    expect(encodeShortcutChord(ev({ key: 'a' }))).toBeNull()
+    expect(formatShortcutChord('f12')).toBe('F12')
+    expect(formatShortcutChord('escape')).toBe('Esc')
   })
 
   it('lets a custom binding win and unbinds the default', () => {
@@ -46,6 +52,19 @@ describe('keymap', () => {
     expect(
       matchWorkbenchShortcut(ev({ key: 'a', metaKey: true, shiftKey: true }), overrides)
     ).toBeNull()
+    expect(shouldInterruptTurn(ev({ key: 'Escape' }))).toBe(true)
+    expect(shouldInterruptTurn(ev({ key: 'Escape', isComposing: true }))).toBe(false)
+    expect(shouldInterruptTurn(ev({ key: 'Escape' }), { interrupt_turn: '' })).toBe(false)
+    expect(
+      shouldInterruptTurn(ev({ key: 'F12' }), normalizeKeymap({ interrupt_turn: 'f12' }))
+    ).toBe(true)
+    expect(
+      shouldInterruptTurn(ev({ key: 'Escape' }), normalizeKeymap({ interrupt_turn: 'f12' }))
+    ).toBe(false)
+    expect(shouldInterruptTurn({ ...ev({ key: 'Escape' }), keyCode: 229 })).toBe(false)
+    expect(interruptTurnChordLabel()).toBe('Esc')
+    expect(interruptTurnChordLabel({ interrupt_turn: 'f12' })).toBe('F12')
+    expect(interruptTurnChordLabel({ interrupt_turn: '' })).toBeNull()
   })
 
   it('ignores unknown actions', () => {

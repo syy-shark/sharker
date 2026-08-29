@@ -102,6 +102,7 @@ describe('workbench shortcuts', () => {
       matchWorkbenchShortcut(ev({ key: '[', code: 'BracketLeft', metaKey: true, shiftKey: true }))
     ).toBe('prev_thread')
     expect(matchWorkbenchShortcut(ev({ key: 'Escape', shiftKey: true }))).toBe('clear_unread')
+    expect(matchWorkbenchShortcut(ev({ key: 'Escape' }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'a', metaKey: true, shiftKey: true }))).toBe(
       'archive_thread'
     )

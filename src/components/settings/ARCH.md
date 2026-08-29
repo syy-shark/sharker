@@ -16,7 +16,7 @@
 | `SettingsPrimitives.tsx` / `.css` | Section / Card / Row / Toggle / 选择组等 |
 | `SettingsSelect.tsx` / `.css` | 自定义下拉；portal 菜单 + usePopoverAnimation 180ms enter/exit 后卸载；Esc/外侧关闭 |
 | `AppearanceSettings.tsx` / `.css` | 外观：浅色玻璃 / 深色金属；界面字号（`uiFontScale` / `--ui-font-scale`）；代码字号（`codeFontScale` / `--code-font-scale`，对标 Codex Code font size）；代码字体（`codeFont` / `--mono`，对标 Codex Code font）；后续排队/注入与 Enter 发送三档（`composerEnterBehavior`，对标 Codex）；建议提示；回合通知档 / 批准通知 / 系统通知权限 / 运行防休眠 / 新弹出置顶；记忆注入/写入（对标 Personalization）；人格（务实 / 友好 / 关闭）；自定义说明写入 `~/.sharker/AGENTS.md` |
-| `ShortcutSettings.tsx` / `.css` | 键盘快捷键：搜索、按键筛选、改绑、重置（`keyboardShortcuts`） |
+| `ShortcutSettings.tsx` / `.css` | 键盘快捷键：搜索、按键筛选、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | 权限模式、网络隔离、Git Review delivery / 文案 / force-with-lease / 分支前缀、命令输出展示量、Worktree 根目录与托管保留数 |
 | `ArchivedSettings.tsx` / `.css` | 已归档对话：回档或彻底删除 |

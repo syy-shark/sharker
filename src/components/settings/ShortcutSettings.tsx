@@ -163,6 +163,11 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
                         setRecording(null)
                         return
                       }
+                      if (e.key === 'Backspace' || e.key === 'Delete') {
+                        persist({ ...overrides, [row.action]: '' })
+                        setRecording(null)
+                        return
+                      }
                       const chord = encodeShortcutChord({
                         key: e.key,
                         code: e.code,
@@ -177,6 +182,18 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
                   >
                     {listening ? '按下快捷键…' : bound ? (custom ? formatShortcutChord(bound) : bound) : '未分配'}
                   </button>
+                  {bound ? (
+                    <button
+                      type="button"
+                      className="shortcut-reset"
+                      onClick={() => {
+                        persist({ ...overrides, [row.action]: '' })
+                        setRecording(null)
+                      }}
+                    >
+                      解除
+                    </button>
+                  ) : null}
                   {custom ? (
                     <button type="button" className="shortcut-reset" onClick={() => resetOne(row.action)}>
                       重置

@@ -82,7 +82,7 @@ import {
   isEmbeddedTerminalTarget,
   isTerminalClearChord
 } from '../shared/workbench-shortcuts'
-import { matchWorkbenchShortcut } from '../shared/keymap'
+import { matchWorkbenchShortcut, shouldInterruptTurn } from '../shared/keymap'
 import { mouseNavDirection, navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
 import {
   clampUiFontScale,
@@ -5046,22 +5046,30 @@ export default function App() {
         return
       }
       if (
-        !e.isComposing &&
-        e.key === 'Escape' &&
-        !e.metaKey &&
-        !e.ctrlKey &&
-        !e.altKey &&
-        !e.shiftKey
+        shouldInterruptTurn(
+          {
+            key: e.key,
+            code: e.code,
+            metaKey: e.metaKey,
+            ctrlKey: e.ctrlKey,
+            altKey: e.altKey,
+            shiftKey: e.shiftKey,
+            isComposing: e.isComposing,
+            keyCode: e.keyCode
+          },
+          settingsRef.current.keyboardShortcuts
+        )
       ) {
         const t = e.target
-        if (
+        const inField =
           t instanceof HTMLElement &&
-          t.closest(
-            'input, textarea, [contenteditable=true], .slash-menu, .history-picker, .command-palette, .chat-find'
+          Boolean(
+            t.closest(
+              'input, textarea, [contenteditable=true], .slash-menu, .history-picker, .command-palette, .chat-find'
+            )
           )
-        ) {
-          return
-        }
+        const remapped = Boolean(settingsRef.current.keyboardShortcuts?.interrupt_turn)
+        if (inField && !remapped) return
         if (sendInFlightRef.current || loading) {
           e.preventDefault()
           void handleAbort()
@@ -5081,6 +5089,8 @@ export default function App() {
         settingsRef.current.keyboardShortcuts
       )
       if (!action) return
+      // 中止回合只在直播中生效，空闲时不吞掉改绑键（对标 Codex interrupt_turn）
+      if (action === 'interrupt_turn') return
       if (action === 'undo_app' || action === 'redo_app') {
         if (isNativeUndoTarget(e.target)) return
         e.preventDefault()
@@ -6615,6 +6625,7 @@ export default function App() {
                   : null
               }
               onScrollSnapshot={rememberTranscriptScroll}
+              keyboardShortcuts={settings.keyboardShortcuts}
             />
             </div>
           ) : page === 'automations' ? (
