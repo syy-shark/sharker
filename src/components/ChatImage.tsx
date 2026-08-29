@@ -126,7 +126,7 @@ export function ChatImage({
   const [, setSizeTick] = useState(0)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const [lightbox, setLightbox] = useState(false)
-  const [viewport, setViewport] = useState(readLightboxViewport)
+  const [viewport, setViewport] = useState(() => readLightboxViewport())
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
