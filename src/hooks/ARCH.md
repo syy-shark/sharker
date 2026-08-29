@@ -14,5 +14,5 @@
 |------|------|
 | `usePopoverAnimation.ts` | 弹层进出；默认 180ms 后卸载 | 弹层进出：关闭时保留 DOM 播退出动画 |
 | `useSlidingIndicator.ts` | 侧栏/列表滑动高亮指示器定位 |
-| `useLiveStreamUi.ts` | 直播 token 外部 store + `useSyncExternalStore` / `useLiveStreamUiSelect` / `useLiveStreamUiSelectWhen`；16ms flush 只通知订阅切片的直播过程/回答 / `LiveBodyFlag` 布尔 / 查找（只订 `streaming`） / 「新消息」芯片（对标 Codex #22860 / #33907） |
+| `useLiveStreamUi.ts` | 直播 token 外部 store + `useSyncExternalStore` / `useLiveStreamUiSelect` / `useLiveStreamUiSelectWhen`；16ms flush 只通知订阅切片的直播过程/回答 / `LiveBodyFlag` 布尔 / 查找（只订 `streaming`，命中没变不抬柱） / 「新消息」芯片（只订进度指纹）（对标 Codex #22860 / #33907） |
 | `ARCH.md` | 本层架构说明 |
