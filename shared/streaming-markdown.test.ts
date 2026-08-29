@@ -1723,6 +1723,21 @@ describe('splitStreamingMarkdown', () => {
     const topListThenAfter = continueCheapProseBlocks('- x', topListOnly, '- x\n\nafter')
     expect(topListThenAfter[0]).toBe(topListOnly[0])
     expect(topListThenAfter.map((block) => block.type)).toEqual(['list', 'p'])
+    const hrOnly = parseCheapProseBlocks('***')
+    const hrThenPara = continueCheapProseBlocks('***', hrOnly, '***\nafter')
+    expect(hrThenPara[0]).toBe(hrOnly[0])
+    expect(hrThenPara.map((block) => block.type)).toEqual(['hr', 'p'])
+    const starHr = parseCheapProseBlocks('* * *')
+    const starHrGrown = continueCheapProseBlocks('* * *', starHr, '* * *\n# t')
+    expect(starHrGrown[0]).toBe(starHr[0])
+    expect(starHrGrown.map((block) => block.type)).toEqual(['hr', 'heading'])
+    const quoteHrSrc = '> ***'
+    const quoteHr = parseCheapProseBlocks(quoteHrSrc)
+    const quoteHrGrown = continueCheapProseBlocks(quoteHrSrc, quoteHr, `${quoteHrSrc}\n> after`)
+    if (quoteHr[0]?.type === 'quote' && quoteHrGrown[0]?.type === 'quote') {
+      expect(quoteHrGrown[0].blocks[0]).toBe(quoteHr[0].blocks[0])
+      expect(quoteHrGrown[0].blocks.map((block) => block.type)).toEqual(['hr', 'p'])
+    }
     const quoteFenceMore = continueCheapProseBlocks(
       `${quoteFence}\n> after`,
       quoteFenceAfter,
