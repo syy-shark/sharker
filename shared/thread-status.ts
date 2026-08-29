@@ -20,6 +20,15 @@ export interface ThreadStatusInfo {
   /** 本机今日用量（对标 Codex /status rate limits；没有供应商配额时用本机记录） */
   usageTodayTokens?: number
   usageTodayTurns?: number
+  /** 输入框 Fast 芯片 / `/fast`（对标 Codex session Fast） */
+  fast?: boolean
+  /** 项目附加文件夹（对标 Codex /status writable roots） */
+  extraRoots?: string[]
+}
+
+export function formatWritableRoots(roots?: string[]): string | undefined {
+  const cleaned = (roots ?? []).map((r) => r.trim()).filter(Boolean)
+  return cleaned.length ? cleaned.join('、') : undefined
 }
 
 function line(label: string, value: string | undefined): string {
@@ -47,6 +56,8 @@ export function formatThreadStatus(info: ThreadStatusInfo): string {
     line('对话 ID', info.conversationId),
     line('模型', info.modelLabel),
     line('权限', info.permissionMode),
+    info.fast == null ? '' : line('Fast', info.fast ? '开' : '关'),
+    line('可写根', formatWritableRoots(info.extraRoots)),
     line('网络', info.networkMode),
     line('线程', mode),
     line('工作区', info.workspacePath),

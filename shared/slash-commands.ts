@@ -64,7 +64,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'status',
-    description: '显示对话 ID、模型、权限、上下文与本机用量',
+    description: '显示对话 ID、模型、权限、Fast、可写根、上下文与本机用量',
     scope: 'ui',
     action: 'show_status',
     category: 'session'

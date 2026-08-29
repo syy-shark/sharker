@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatContextUsage, formatThreadStatus } from './thread-status'
+import { formatContextUsage, formatThreadStatus, formatWritableRoots } from './thread-status'
 
 describe('thread status', () => {
   it('lists local thread fields and hides worktree path', () => {
@@ -16,7 +16,9 @@ describe('thread status', () => {
       contextUsed: 1200,
       contextLimit: 128000,
       usageTodayTokens: 4200,
-      usageTodayTurns: 3
+      usageTodayTurns: 3,
+      fast: true,
+      extraRoots: ['/notes', ' /docs ']
     })
     expect(text).toContain('本地工作区')
     expect(text).toContain('DeepSeek / deepseek-chat')
@@ -27,6 +29,10 @@ describe('thread status', () => {
     expect(text).toContain('conv-live')
     expect(text).toMatch(/今日 4[,.]?200 tokens · 3 回合/)
     expect(text).not.toContain('/hidden')
+    expect(text).toContain('**Fast**：开')
+    expect(text).toContain('/notes、/docs')
+    expect(formatWritableRoots([' /a ', ''])).toBe('/a')
+    expect(formatWritableRoots([])).toBeUndefined()
   })
 
   it('shows the isolated worktree path', () => {

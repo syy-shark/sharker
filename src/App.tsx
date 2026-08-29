@@ -5565,6 +5565,8 @@ export default function App() {
               : messagesRef.current
           const usage = estimateContextUsage(statusHistory, streamingRef.current, '')
           const { limit } = resolveContextLimit(model, provider?.contextWindow)
+          const thinkingLevel =
+            provider?.thinkingLevel || (provider ? defaultThinkingLevel(provider) : '')
           let usageTodayTokens = 0
           let usageTodayTurns = 0
           if (window.sharker.getTokenUsage) {
@@ -5593,7 +5595,9 @@ export default function App() {
               contextUsed: usage.total,
               contextLimit: limit,
               usageTodayTokens,
-              usageTodayTurns
+              usageTodayTurns,
+              fast: isFastThinkingLevel(thinkingLevel),
+              extraRoots: getActiveWorkspace(settingsNow)?.extraPaths
             })
           }
           setMessages((msgs) => {
