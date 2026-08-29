@@ -3,7 +3,7 @@
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
  * Reduce Motion 写 `html.reduce-motion`，关掉直播思考扫光（对标 Codex #16857）。
  * Keep a chat near your work / Always on top 写新弹出窗默认置顶。
- * 人格与个人说明在 `PersonalizationSettings`；回合通知在 `NotificationSettings`。
+ * Choose a personality 与个人说明在 `PersonalizationSettings`；回合通知在 `NotificationSettings`。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'

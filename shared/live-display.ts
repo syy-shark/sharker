@@ -185,10 +185,28 @@ export function shouldMeasureInlineDemoInParent(options: {
 
 /**
  * iframe 内全树 getBoundingClientRect / getComputedStyle。
- * 直播中只用量 range + body 底边，避免 srcDoc 每 40–120ms 扫整棵（对标 Codex #22860 / #39120）。
+ * 直播中只用量 range + body 底边，避免 srcDoc 每 40–200ms 扫整棵（对标 Codex #22860 / #39120）。
  */
 export function shouldWalkInlineDemoTree(options: { streaming?: boolean }): boolean {
   return !options.streaming
+}
+
+/** 直播 srcDoc 首帧立刻画；大段增长 80ms，其余 200ms，避免每 token 重挂整页脚本 */
+export const LIVE_INLINE_DEMO_FIRST_PAINT_MS = 40
+export const LIVE_INLINE_DEMO_GROW_PAINT_MS = 80
+export const LIVE_INLINE_DEMO_IDLE_PAINT_MS = 200
+export const LIVE_INLINE_DEMO_GROW_CHARS = 180
+
+/** 直播 iframe 刷新间隔：首帧快、之后节流（对标 Codex #22860 / #39120） */
+export function liveInlineDemoPaintDelay(options: {
+  lastPaintLen: number
+  htmlLen: number
+}): number {
+  if (options.lastPaintLen <= 0) return LIVE_INLINE_DEMO_FIRST_PAINT_MS
+  if (options.htmlLen - options.lastPaintLen >= LIVE_INLINE_DEMO_GROW_CHARS) {
+    return LIVE_INLINE_DEMO_GROW_PAINT_MS
+  }
+  return LIVE_INLINE_DEMO_IDLE_PAINT_MS
 }
 
 /** 直播首帧：缓存实测高，否则用估高，流式至少 96 */

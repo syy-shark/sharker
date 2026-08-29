@@ -1,12 +1,13 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN，只信估高、range/body 底边与 postMessage。
+ * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本，只信估高、range/body 底边与 postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   isInlineDemoPaintable,
+  liveInlineDemoPaintDelay,
   seedInlineDemoHeight,
   shouldMeasureInlineDemoInParent,
   shouldWalkInlineDemoTree,
@@ -52,6 +53,55 @@ function readHostTheme(): ThemeVars {
     mono: pick('--mono', 'ui-monospace, SFMono-Regular, Menlo, monospace'),
     isDark: isDark ? '1' : '0'
   }
+}
+
+/** 直播 srcDoc 只报高度，不灌终端套壳 / KaTeX / ResizeObserver（对标 Codex #22860 / #39120） */
+function buildLiveHeightScript(demoId: string): string {
+  return `
+<script>
+(function () {
+  var id = ${JSON.stringify(demoId)};
+  function measure() {
+    var body = document.body;
+    var html = document.documentElement;
+    if (!body) return 48;
+    var y = window.pageYOffset || (html && html.scrollTop) || body.scrollTop || 0;
+    var maxBottom = 0;
+    function consider(r) {
+      if (!r || !isFinite(r.bottom)) return;
+      var bottom = r.bottom + y;
+      if (bottom > maxBottom) maxBottom = bottom;
+    }
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(body);
+      consider(range.getBoundingClientRect());
+    } catch (e) {}
+    consider(body.getBoundingClientRect());
+    if (html) consider(html.getBoundingClientRect());
+    var kids = body.children;
+    for (var k = 0; k < kids.length; k++) {
+      var c = kids[k];
+      if (/^(SCRIPT|STYLE|LINK|META)$/i.test(c.tagName)) continue;
+      maxBottom = Math.max(maxBottom, (c.offsetTop || 0) + (c.offsetHeight || 0));
+      maxBottom = Math.max(maxBottom, c.scrollHeight || 0);
+    }
+    return Math.max(Math.ceil(maxBottom + 10), 48);
+  }
+  function report() {
+    try {
+      parent.postMessage({ type: 'sharker-inline-demo-height', id: id, height: measure() }, '*');
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', report);
+  } else {
+    report();
+  }
+  window.addEventListener('load', report);
+})();
+<\/script>
+`
 }
 
 /** 把演示 HTML 打成透明 srcDoc：注入主题、解开根裁切、按内容底边 postMessage 高度。 */
@@ -353,8 +403,9 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
 }
 `
 
-  // 注入脚本：只给「演示里的假终端块」套 macOS 窗壳，绝不包住整个内联可视化
-  const enhanceScript = `
+  // 闭合后才灌终端套壳；直播 srcDoc 只报高度（对标 Codex #22860 / #39120）
+  const injectedScript = shouldWalkInlineDemoTree({ streaming })
+    ? `
 <script>
 (function () {
   var id = ${JSON.stringify(demoId)};
@@ -1177,7 +1228,8 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   });
 })();
 <\/script>
-`
+  `
+    : buildLiveHeightScript(demoId)
 
   const trimmed = html.trim()
   const isFullDoc = /<!DOCTYPE|<\s*html[\s>]/i.test(trimmed)
@@ -1200,16 +1252,16 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
     if (/<head[^>]*>/i.test(trimmed)) {
       let out = trimmed.replace(/<head([^>]*)>/i, `<head$1>${headInject}`)
       if (/<\/body>/i.test(out)) {
-        out = out.replace(/<\/body>/i, `${enhanceScript}</body>`)
+        out = out.replace(/<\/body>/i, `${injectedScript}</body>`)
       } else {
-        out += enhanceScript
+        out += injectedScript
       }
       return out
     }
-    return `<!DOCTYPE html><html><head>${headInject}</head><body>${trimmed}${enhanceScript}</body></html>`
+    return `<!DOCTYPE html><html><head>${headInject}</head><body>${trimmed}${injectedScript}</body></html>`
   }
 
-  return `<!DOCTYPE html><html><head>${headInject}</head><body>${trimmed}${enhanceScript}</body></html>`
+  return `<!DOCTYPE html><html><head>${headInject}</head><body>${trimmed}${injectedScript}</body></html>`
 }
 
 /**
@@ -1251,9 +1303,10 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       lastPaintLen.current = html.length
       return
     }
-    // 字符增长够多或首帧立刻画；中间 120ms 节流
-    const grew = html.length - lastPaintLen.current >= 180
-    const delay = lastPaintLen.current === 0 || grew ? 40 : 120
+    const delay = liveInlineDemoPaintDelay({
+      lastPaintLen: lastPaintLen.current,
+      htmlLen: html.length
+    })
     const t = window.setTimeout(() => {
       setPaintHtml(html)
       lastPaintLen.current = html.length

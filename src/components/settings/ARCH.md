@@ -20,7 +20,7 @@
 | `GeneralSettings.tsx` | 通用：Follow-up behavior（Queue / Steer）、Enter always sends / Require Cmd+Enter for multiline prompts / The modifier is always required（对标 `chatgpt.composerEnterBehavior`）、`file_opener` 默认打开位置、Show context window usage 用量环（官方默认关）、/review 交付与审查模型（对标 Codex `review_model`）、Prevent sleep while running |
 | `BrowserSettings.tsx` / `.css` | 设置 → 浏览器：历史搜索 / 重新打开 / 删除，按时间清除历史，Cookie / 缓存，以及下载位置与每次询问保存（对标 Codex Settings → Browser）。不发明 @Browser / 导入系统配置 |
 | `SuggestedPromptSettings.tsx` | Suggested prompts 开关（对标 Codex Settings → Suggested prompts） |
-| `PersonalizationSettings.tsx` / `.css` | 个性化：Enable memories（官方默认关）+ Use memories / Generate memories、Pragmatic / Friendly / None、Custom instructions 写入个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization；单对话 `/memories` 覆盖） |
+| `PersonalizationSettings.tsx` / `.css` | 个性化：Enable memories（官方默认关）+ Use memories / Generate memories、Choose a personality（Pragmatic / Friendly / None）、Custom instructions 写入个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；单对话 `/memories` 覆盖） |
 | `ShortcutSettings.tsx` / `.css` | Keyboard Shortcuts：搜索、按键筛选、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合；动作标题用官方 Commands 文案） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量、Worktree 根目录与托管保留数 |

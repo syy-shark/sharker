@@ -1,11 +1,12 @@
 /**
- * 个性化：启用记忆（官方默认关）、人格与个人 AGENTS.md（对标 Codex Settings → Personalization）。
+ * 个性化：启用记忆（官方默认关）、Choose a personality 与个人 AGENTS.md（对标 Codex Settings → Personalization）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import type { AgentPersonality } from '../../../shared/personality'
 import {
+  CHOOSE_A_PERSONALITY_LABEL,
   CUSTOM_INSTRUCTIONS_LABEL,
   PERSONALITY_OPTIONS,
   parsePersonality
@@ -116,7 +117,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title="人格">
+      <SettingsSection title={CHOOSE_A_PERSONALITY_LABEL}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={parsePersonality(draft.personality)}

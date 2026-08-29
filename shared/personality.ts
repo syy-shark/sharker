@@ -11,6 +11,8 @@ export type AgentPersonality = 'pragmatic' | 'friendly' | 'none'
 export const PRAGMATIC_LABEL = 'Pragmatic'
 export const FRIENDLY_LABEL = 'Friendly'
 export const NONE_PERSONALITY_LABEL = 'None'
+/** Official Settings → Personalization heading (learn.chatgpt.com/docs/personalize). */
+export const CHOOSE_A_PERSONALITY_LABEL = 'Choose a personality'
 /** Official Settings → Personalization heading (learn.chatgpt.com/docs/reference/settings). */
 export const CUSTOM_INSTRUCTIONS_LABEL = 'Custom instructions'
 

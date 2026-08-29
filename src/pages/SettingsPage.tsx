@@ -63,7 +63,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   personalization: {
     title: PERSONALIZATION_SETTINGS_LABEL,
-    desc: 'Enable memories（官方默认关）、Use memories / Generate memories、人格与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
+    desc: 'Enable memories（官方默认关）、Use memories / Generate memories、Choose a personality 与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
   },
   suggested: {
     title: SUGGESTED_PROMPTS_SETTINGS_LABEL,

@@ -93,7 +93,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 人格
 
-Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（对标 Codex Settings → Personalization：Pragmatic / Friendly / None；旧 `empathetic` 读成 Friendly）。只改回复语气，不改工具与权限。默认 Pragmatic。 None 关闭人格指令。
+Settings → Personalization → **Choose a personality**，或 `/personality [pragmatic|friendly|none]`（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize：Pragmatic / Friendly / None；旧 `empathetic` 读成 Friendly）。只改回复语气，不改工具与权限。默认 Pragmatic。 None 关闭人格指令。
 
 ### 自动化审查队列
 
@@ -127,7 +127,7 @@ Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（�
 - 审批打开时 **Enter** Approve request（Allow once）、**Esc** Decline request（Deny）（对标 Codex Commands；不把 `/approve` 重试改成这两条）
 - Settings → General → **Prevent sleep while running**（对标 Codex Prevent sleep while running）
 - Settings → Personalization → **Enable memories**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设 **Use memories** / **Generate memories**（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选 Use / Generate / Disabled / Inherit，不改全局）
-- Settings → Personalization → **人格** 与 **Custom instructions**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
+- Settings → Personalization → **Choose a personality** 与 **Custom instructions**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - `sharker://settings/general` 打开通用；`sharker://settings/browser` / `sharker://settings/history` 打开浏览器历史（对标 Codex Settings → Browser）；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化
 - Settings → **MCP servers**：列表、开关、添加 STDIO 或 Streamable HTTP、Restart；写入 `~/.sharker/mcp.json` 或工作区 `.sharker/mcp.json`。`sharker://settings/mcp` 打开该页。不接 OAuth Authenticate / CIMD / DCR。对话里 `/mcp` 查看已连接的 Server；未配置时打开 Settings → MCP servers（对标 Codex Open MCP status）
 - Settings → Browser：搜索 / 重新打开 / 删除内置浏览历史；按时间清除历史，并可清 Cookie 与缓存；下载默认进系统 Downloads，可改目录、恢复默认，或打开每次询问保存位置。地址栏输入匹配本机历史。只用独立 `persist:sharker-browser` 配置，不混系统 Chrome，不发明 @Browser 搜历史、导入系统配置或下载列表
