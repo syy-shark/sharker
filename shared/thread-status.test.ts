@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatThreadStatus } from './thread-status'
+import { formatContextUsage, formatThreadStatus } from './thread-status'
 
 describe('thread status', () => {
   it('lists local thread fields and hides worktree path', () => {
@@ -21,7 +21,9 @@ describe('thread status', () => {
     expect(text).toContain('本地工作区')
     expect(text).toContain('DeepSeek / deepseek-chat')
     expect(text).toContain('修好滚动')
-    expect(text).toContain('1200 / 128000')
+    expect(text).toContain('1200 / 128000（1%）')
+    expect(formatContextUsage(1200, 128000)).toBe('1200 / 128000（1%）')
+    expect(formatContextUsage(0, 0)).toBe('0')
     expect(text).toContain('conv-live')
     expect(text).toMatch(/今日 4[,.]?200 tokens · 3 回合/)
     expect(text).not.toContain('/hidden')

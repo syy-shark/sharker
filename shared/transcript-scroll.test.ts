@@ -286,6 +286,7 @@ describe('transcript scroll restore', () => {
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 40, messages: [kept] })).toBe(true)
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [kept] })).toBe(false)
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [slimed] })).toBe(true)
+    expect(shouldReloadUnslimmedHistory({ historyStartSeq: 40, messages: [] })).toBe(true)
     expect(
       scrollTopToCenterChild(
         { top: 0, scrollTop: 800, scrollHeight: 4000, clientHeight: 800 },

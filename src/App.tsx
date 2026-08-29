@@ -5514,7 +5514,18 @@ export default function App() {
               /* optional */
             }
           }
-          const usage = estimateContextUsage(messagesRef.current, streamingRef.current, '')
+          const workspaceId = popoutRoute?.workspaceId || settingsNow.activeWorkspaceId
+          const convId = activeConversationIdRef.current
+          const statusHistory =
+            workspaceId && convId
+              ? await historyForModelTurn(
+                  workspaceId,
+                  convId,
+                  messagesRef.current,
+                  historyStartSeqRef.current
+                )
+              : messagesRef.current
+          const usage = estimateContextUsage(statusHistory, streamingRef.current, '')
           const { limit } = resolveContextLimit(model, provider?.contextWindow)
           let usageTodayTokens = 0
           let usageTodayTurns = 0
@@ -5643,7 +5654,18 @@ export default function App() {
               /* optional */
             }
           }
-          const usage = estimateContextUsage(messagesRef.current, streamingRef.current, '')
+          const workspaceId = popoutRoute?.workspaceId || settingsNow.activeWorkspaceId
+          const convId = activeConversationIdRef.current
+          const feedbackHistory =
+            workspaceId && convId
+              ? await historyForModelTurn(
+                  workspaceId,
+                  convId,
+                  messagesRef.current,
+                  historyStartSeqRef.current
+                )
+              : messagesRef.current
+          const usage = estimateContextUsage(feedbackHistory, streamingRef.current, '')
           const { limit } = resolveContextLimit(model, provider?.contextWindow)
           const mcpCount = window.sharker.listMcpStatus
             ? (await window.sharker.listMcpStatus(getActiveWorkspacePath(settingsNow) || '')).length
@@ -6059,6 +6081,7 @@ export default function App() {
       persistActiveConversation,
       persistSettings,
       openShareThread,
+      popoutRoute?.workspaceId,
       threadMode,
       threadWorktreePath
     ]

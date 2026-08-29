@@ -1,5 +1,5 @@
 /**
- * `/status` 会话状态文案（对标 Codex 桌面端 /status）。
+ * `/status` 会话状态文案（对标 Codex 桌面端 /status：thread ID、上下文用量百分比、本机用量）。
  * @see shared/ARCH.md
  */
 
@@ -27,12 +27,19 @@ function line(label: string, value: string | undefined): string {
   return `- **${label}**：${v || '—'}`
 }
 
+/** 对标 Codex /status 上下文用量（数字 + 窗口百分比） */
+export function formatContextUsage(used: number, limit: number): string {
+  if (!(limit > 0)) return String(used)
+  const pct = Math.min(100, Math.max(0, Math.round((used / limit) * 100)))
+  return `${used} / ${limit}（${pct}%）`
+}
+
 /** 拼一段 Markdown 状态（本地助手回复，不走模型） */
 export function formatThreadStatus(info: ThreadStatusInfo): string {
   const mode = info.threadMode === 'worktree' ? '隔离 worktree' : '本地工作区'
   const ctx =
     info.contextUsed != null && info.contextLimit
-      ? `${info.contextUsed} / ${info.contextLimit}`
+      ? formatContextUsage(info.contextUsed, info.contextLimit)
       : undefined
   return [
     '**会话状态**',

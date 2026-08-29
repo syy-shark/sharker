@@ -132,8 +132,8 @@
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；status 心跳 / 写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
 | `thread-goal.test.ts` | 设定 / 编辑 / 暂停 / 芯片文案 / 首轮是否发起 |
-| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文 / 本机今日用量） |
-| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量 |
+| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / 上下文用量含窗口百分比 / 本机今日用量） |
+| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量、上下文 `used / limit（%）` |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
@@ -144,7 +144,7 @@
 | `transcript-scroll.ts` | 对话柱滚动快照：贴底跟到底、读历史钉 scrollTop、内容未画高先按距底占位（对标 Codex 26.406 按会话记住位置；窗口内、不落盘）；快照可带 `transcriptWindowStart`；`scrollTopToCenterChild` 给查找/回编只改对话柱（不 `scrollIntoView`） |
 | `transcript-scroll.test.ts` | 贴底 / 中段 / 内容变高 / 未画完推迟恢复；长线程尾窗起点与上滑揭示；启动窗瘦身与点开补水；查找居中 scrollTop |
 | `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；DOM 有挂载上限；⌘↑ / 查找命中 / 尾页上滑只算 `historyHead` 有界页（`headRangeForJumpTop` / `headRangeForFindHit` / `olderPageRangeForTail` / `nextHeadRange`），不把瘦身全文或更早页 prepend 进尾页 `messages`、空页也不把 `historyStartSeq` 置 0；直播中不取跳顶头页（`shouldFetchSlimHistoryOnJumpTop`），收束后再取（对标 Codex older history fetched as needed / 官方分页，不一次铺开、无「加载更早」按钮）；盘页合并 / 钉窗下标后移 |
-| `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；`shouldReloadUnslimmedHistory` 判断模型/压缩/分叉要不要回库取原文（UI 尾页或瘦身占位不能当模型历史）；落盘必须跳过占位消息以免写成空壳 |
+| `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；`shouldReloadUnslimmedHistory` 判断模型/压缩/分叉/`/status`/`/feedback` 要不要回库取原文（UI 尾页或瘦身占位不能当模型历史或用量）；落盘必须跳过占位消息以免写成空壳 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；排队项可带定时任务的 `providerId` / `thinkingLevel`；直播行预留助手 id / 收束 upsert；`shouldHideReservedDuringLive` 仅在历史列真有预留行时才藏（首枚 token 不重建历史 JSX，对标 Codex #22860）；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
