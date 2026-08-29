@@ -1,5 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
+ * 直播中父页不挂全树量高 ResizeObserver，只信估高与 iframe postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
