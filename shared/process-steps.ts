@@ -53,7 +53,7 @@ const TOOL_TITLES: Record<string, string> = {
   shell_read_output: '读 Shell 输出',
   shell_kill: '终止 Shell',
   web_fetch: '抓取网页',
-  web_search: '网页搜索',
+  web_search: 'Searched',
   mcp_list_tools: 'MCP 工具列表',
   mcp_call_tool: 'MCP 调用',
   open_url: '打开网页',
