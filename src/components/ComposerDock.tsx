@@ -184,7 +184,7 @@ export interface ComposerDockProps {
   queueHeld?: boolean
   onQueueHeldChange?: (held: boolean) => void
   speechHint?: string
-  onSubmitted?: () => void
+  onSubmitted?: (mode: PromptSubmitMode) => void
   /** 深链 `prompt=`：只在 nonce 变化时写入，不跟直播 token 重绘 */
   composerSeed?: ComposerSeed | null
   /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
@@ -1128,7 +1128,7 @@ export const ComposerDock = memo(
       setPendingAttachments([])
       setPastePreviewId(null)
       setAttachmentError('')
-      onSubmitted?.()
+      onSubmitted?.(mode)
       onSend(sent, mode, attachments)
       requestAnimationFrame(() => {
         syncTextareaHeight()
@@ -1145,8 +1145,9 @@ export const ComposerDock = memo(
       inputRef.current = ''
       setPendingAttachments([])
       setAttachmentError('')
-      onSubmitted?.()
-      onSend(t, loadingRef.current ? 'queue' : 'send')
+      const voiceMode = loadingRef.current ? 'queue' : 'send'
+      onSubmitted?.(voiceMode)
+      onSend(t, voiceMode)
       requestAnimationFrame(() => {
         syncTextareaHeight()
         textareaRef.current?.focus()

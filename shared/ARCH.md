@@ -142,8 +142,8 @@
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；直播行预留助手 id / 收束 upsert；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉 |
-| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编 |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置） |
+| `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编、只有 send 贴底 |
 | `suggested-prompts.ts` | 空对话建议：先恢复进行中 / 未读 / 最近更新的对话，再审查 / 目标（对标 Codex Settings → Suggested prompts；不对创建时间排队） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；CRLF 归一；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |

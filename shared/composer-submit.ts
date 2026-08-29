@@ -123,6 +123,15 @@ export function resolveComposerSubmit(options: {
   return follow === 'steer' ? 'jump' : 'queue'
 }
 
+/**
+ * 提交后是否贴底并离开 historyHead。
+ * 官方 #13698：真正写入对话的发送跳到底（by design）。
+ * 排队 / 注入不进 transcript，读历史时保持位置（官方 #38220）。
+ */
+export function shouldStickAfterComposerSubmit(mode: ComposerSubmitMode): boolean {
+  return mode === 'send'
+}
+
 /** 输入框 Shift+Tab：切换计划模式（对标 Codex Best practices：`/plan` 或 Shift+Tab） */
 export function isPlanModeToggleKey(options: {
   key: string

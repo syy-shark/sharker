@@ -14,7 +14,8 @@ import {
   resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
-  shouldEditLastUserOnEscape
+  shouldEditLastUserOnEscape,
+  shouldStickAfterComposerSubmit
 } from './composer-submit'
 
 describe('composer submit', () => {
@@ -43,6 +44,9 @@ describe('composer submit', () => {
     )
     expect(parseFollowUpBehavior(undefined)).toBe('queue')
     expect(parseFollowUpBehavior('steer')).toBe('steer')
+    expect(shouldStickAfterComposerSubmit('send')).toBe(true)
+    expect(shouldStickAfterComposerSubmit('queue')).toBe(false)
+    expect(shouldStickAfterComposerSubmit('jump')).toBe(false)
   })
 
   it('inverts follow-up with Cmd+Shift+Enter while a turn is running', () => {

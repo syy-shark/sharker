@@ -27,7 +27,11 @@ import {
 } from './ComposerDock'
 import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
-import { lastUserMessageId, type ComposerEnterBehavior } from '../../shared/composer-submit'
+import {
+  lastUserMessageId,
+  shouldStickAfterComposerSubmit,
+  type ComposerEnterBehavior
+} from '../../shared/composer-submit'
 import {
   hasLiveAssistantBody,
   historicalMessagesDuringLive,
@@ -1222,7 +1226,11 @@ export function ChatView({
     scrollToBottom(loading ? 'auto' : 'smooth')
   }, [loading, scrollToBottom])
 
-  const handleComposerSubmitted = useCallback(() => {
+  const handleComposerSubmitted = useCallback((mode: PromptSubmitMode) => {
+    // Official #13698: sending a follow-up that adds transcript content
+    // jumps to bottom by design. Queue / Steer add no transcript row —
+    // keep reading position (official #38220).
+    if (!shouldStickAfterComposerSubmit(mode)) return
     userScrollLockRef.current = false
     stickToBottomRef.current = true
     setStickToBottom(true)
