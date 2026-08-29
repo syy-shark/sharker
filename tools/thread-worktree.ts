@@ -1,12 +1,21 @@
 /**
  * 为会话准备隔离 Git worktree（对标 Codex 桌面端 Worktree 线程）。
- * 创建时按 `.worktreeinclude` 拷贝被忽略的本地文件。
+ * 创建时按 `.worktreeinclude` 拷贝被忽略的本地文件，并跑仓库 `[setup] script`。
+ * 不发明顶栏 Actions / ⌘⇧D。
  * @see tools/ARCH.md
  */
 import { copyFile, lstat, mkdir, readFile, readdir, stat, utimes, writeFile } from 'fs/promises'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import os from 'os'
 import path from 'path'
 import { runGit } from './shared/git-runner'
+import {
+  localEnvironmentTomlPath,
+  parseLocalEnvironmentSetupScript
+} from '../shared/local-environment'
+
+const execFileAsync = promisify(execFile)
 import { IGNORE_DIRS } from './shared/ignore-dirs'
 import {
   matchAnyWorktreeInclude,
@@ -22,8 +31,37 @@ import {
 import { clampWorktreeRoot } from '../shared/worktree-root'
 
 export type PrepareWorktreeResult =
-  | { ok: true; path: string; branch: string }
+  | { ok: true; path: string; branch: string; setupRan?: boolean; setupError?: string }
   | { ok: false; error: string }
+
+const SETUP_TIMEOUT_MS = 10 * 60 * 1000
+
+/** 新建 worktree 后跑官方 `[setup] script`（对标 Codex Local environments setup scripts） */
+export async function runLocalEnvironmentSetup(
+  sourceRoot: string,
+  dest: string
+): Promise<{ ran: boolean; error?: string }> {
+  let toml = ''
+  try {
+    toml = await readFile(localEnvironmentTomlPath(sourceRoot), 'utf8')
+  } catch {
+    return { ran: false }
+  }
+  const script = parseLocalEnvironmentSetupScript(toml)
+  if (!script) return { ran: false }
+  try {
+    const shell = process.platform === 'win32' ? 'cmd.exe' : 'bash'
+    const args = process.platform === 'win32' ? ['/c', script] : ['-lc', script]
+    await execFileAsync(shell, args, {
+      cwd: dest,
+      timeout: SETUP_TIMEOUT_MS,
+      maxBuffer: 4 * 1024 * 1024
+    })
+    return { ran: true }
+  } catch (e) {
+    return { ran: true, error: e instanceof Error ? e.message : String(e) }
+  }
+}
 
 function shortId(conversationId: string): string {
   return conversationId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'thread'
@@ -291,7 +329,10 @@ export async function prepareThreadWorktree(options: {
   )
   await mkdir(path.dirname(dest), { recursive: true })
 
-  const finish = async (branch: string): Promise<PrepareWorktreeResult> => {
+  const finish = async (
+    branch: string,
+    setup?: { ran: boolean; error?: string }
+  ): Promise<PrepareWorktreeResult> => {
     try {
       await utimes(dest, new Date(), new Date())
     } catch {
@@ -309,7 +350,13 @@ export async function prepareThreadWorktree(options: {
     } catch (e) {
       console.warn('[worktree] prune skipped', e)
     }
-    return { ok: true, path: dest, branch }
+    return {
+      ok: true,
+      path: dest,
+      branch,
+      setupRan: setup?.ran,
+      setupError: setup?.error
+    }
   }
 
   try {
@@ -340,7 +387,9 @@ export async function prepareThreadWorktree(options: {
     } catch (e) {
       console.warn('[worktree] copy include files failed', e)
     }
-    return finish(await currentBranchName(dest))
+    const setup = await runLocalEnvironmentSetup(cwd, dest)
+    if (setup.error) console.warn('[worktree] setup script failed', setup.error)
+    return finish(await currentBranchName(dest), setup)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return { ok: false, error: msg || '创建 worktree 失败' }
@@ -393,7 +442,9 @@ export async function createPermanentWorktree(options: {
   } catch (e) {
     console.warn('[worktree] copy include files failed', e)
   }
-  return { ok: true, path: dest, branch }
+  const setup = await runLocalEnvironmentSetup(cwd, dest)
+  if (setup.error) console.warn('[worktree] setup script failed', setup.error)
+  return { ok: true, path: dest, branch, setupRan: setup.ran, setupError: setup.error }
 }
 
 /** 归档对话时删掉该会话的托管 worktree（先快照） */

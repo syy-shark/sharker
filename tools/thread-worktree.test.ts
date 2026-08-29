@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { execFile } from 'child_process'
@@ -43,7 +43,14 @@ describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
     await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
     await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
     await writeFile(path.join(repo, 'README.md'), 'hello\n')
-    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await mkdir(path.join(repo, '.codex', 'environments'), { recursive: true })
+    await writeFile(
+      path.join(repo, '.codex', 'environments', 'environment.toml'),
+      '[setup]\nscript = "printf ran >> setup-ran.txt"\n'
+    )
+    await execFileAsync('git', ['add', 'README.md', '.codex/environments/environment.toml'], {
+      cwd: repo
+    })
     await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
 
     const home = await mkdtemp(path.join(os.tmpdir(), 'sharker-home-'))
@@ -57,6 +64,9 @@ describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
     if (!first.ok) return
     temps.push(first.path)
     expect(first.path).toContain('worktrees')
+    expect(first.setupRan).toBe(true)
+    expect(first.setupError).toBeUndefined()
+    expect(await readUtf(path.join(first.path, 'setup-ran.txt'), 'utf8')).toBe('ran')
 
     const second = await prepareThreadWorktree({
       workspacePath: repo,
@@ -64,7 +74,11 @@ describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
       home
     })
     expect(second.ok).toBe(true)
-    if (second.ok) expect(second.path).toBe(first.path)
+    if (second.ok) {
+      expect(second.path).toBe(first.path)
+      expect(second.setupRan).toBeUndefined()
+    }
+    expect(await readUtf(path.join(first.path, 'setup-ran.txt'), 'utf8')).toBe('ran')
   })
 
   it('creates the worktree under a custom absolute root', async () => {

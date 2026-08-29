@@ -309,12 +309,18 @@ export interface SharkerApi {
     cwd: string,
     conversationId: string,
     opts?: { baseRef?: string; keep?: number }
-  ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
+    ) => Promise<
+      | { ok: true; path: string; branch: string; setupRan?: boolean; setupError?: string }
+      | { ok: false; error: string }
+    >
   createPermanentWorktree: (
     cwd: string,
     name: string,
     opts?: { baseRef?: string }
-  ) => Promise<{ ok: true; path: string; branch: string } | { ok: false; error: string }>
+  ) => Promise<
+    | { ok: true; path: string; branch: string; setupRan?: boolean; setupError?: string }
+    | { ok: false; error: string }
+  >
   removeManagedWorktree: (
     cwd: string,
     conversationId: string

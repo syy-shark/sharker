@@ -2893,6 +2893,11 @@ export default function App() {
           return
         }
         worktreePath = prepared.path
+        if (prepared.setupError) {
+          note(`隔离 worktree 已建好，但仓库安装脚本失败：${prepared.setupError}`)
+        } else if (prepared.setupRan) {
+          note('已运行仓库安装脚本（对标 Codex setup scripts）。')
+        }
       }
       if (localCwd && worktreePath && window.sharker.handoffThread) {
         const result = await window.sharker.handoffThread({
