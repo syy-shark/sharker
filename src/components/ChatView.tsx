@@ -45,7 +45,6 @@ import {
   type ComposerEnterBehavior
 } from '../../shared/composer-submit'
 import {
-  hasLiveAssistantBody,
   historicalMessagesDuringLive,
   liveRowMessageId,
   shouldRenderLiveAssistantRow
@@ -95,7 +94,7 @@ import {
   windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
-import { useLiveStreamUi, useLiveStreamUiSelect, useLiveStreamUiWhen } from '../hooks/useLiveStreamUi'
+import { useLiveStreamUiSelect, useLiveStreamUiWhen } from '../hooks/useLiveStreamUi'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -583,13 +582,7 @@ function LiveBodyFlag({
   approvalWaiting: boolean
   onChange: (hasBody: boolean) => void
 }) {
-  const live = useLiveStreamUi()
-  const hasBody = hasLiveAssistantBody({
-    streaming: live.streaming,
-    liveSegmentCount: live.liveSegments.length,
-    thinking: live.turnThinking,
-    approvalWaiting
-  })
+  const hasBody = useLiveStreamUiSelect((snap) => liveHasAssistantBody(snap, approvalWaiting))
   useEffect(() => {
     onChange(hasBody)
   }, [hasBody, onChange])

@@ -457,6 +457,11 @@
   word-break: break-word;
 }
 
+/* 已闭合散文 run 隔离布局，增长尾不带动已画段重排（对标 Codex #22860） */
+.live-prose-closed {
+  contain: layout style;
+}
+
 /* 直播廉价尾与收束后 Markdown 共用边距，避免段落/表/列表提交时跳一截 */
 .streaming-markdown > p,
 .streaming-markdown > ul,

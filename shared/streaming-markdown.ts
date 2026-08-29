@@ -290,6 +290,32 @@ export function streamingRenderSlots(split: StreamingMarkdownSplit): StreamingRe
   return slots
 }
 
+function sameStreamingRenderSlot(prev: StreamingRenderSlot, next: StreamingRenderSlot): boolean {
+  if (prev.kind !== next.kind || prev.key !== next.key || prev.closed !== next.closed) return false
+  if (prev.kind === 'prose' && next.kind === 'prose') return prev.text === next.text
+  return prev.kind === 'fence' && next.kind === 'fence' && prev.lang === next.lang && prev.body === next.body
+}
+
+/**
+ * 直播槽增量：已闭合围栏 / 散文 run 退回同一对象，只换增长尾。
+ * 对标 Codex #22860（已画正文不跟每枚 token 换槽）。
+ */
+export function continueStreamingRenderSlots(
+  prev: StreamingRenderSlot[] | null | undefined,
+  split: StreamingMarkdownSplit
+): StreamingRenderSlot[] {
+  const next = streamingRenderSlots(split)
+  if (!prev?.length) return next
+  let allSame = prev.length === next.length
+  const out = next.map((slot, index) => {
+    const old = prev[index]
+    if (old && sameStreamingRenderSlot(old, slot)) return old
+    allSame = false
+    return slot
+  })
+  return allSame ? prev : out
+}
+
 /** 直播散文：未闭合围栏之前的原文；散文模式给全文，避免每收一段就换 remark 树 */
 export function streamingProseText(text: string, split: StreamingMarkdownSplit): string {
   const src = normalizeStreamingText(text)
@@ -725,6 +751,36 @@ export function linkDefinitionBlob(text: string): string {
   const lines = src.split('\n')
   const { skip } = scanLinkDefinitions(lines)
   return lines.filter((_, index) => skip.has(index)).join('\n')
+}
+
+/** 引用定义快照：blob 没变就退回同一 Map，已闭合 LiveProseTail 不跟 token 换 defs */
+export type LinkDefinitionState = {
+  blob: string
+  defs: Map<string, CheapLinkDef>
+}
+
+export function nextLinkDefinitions(
+  prev: LinkDefinitionState | null | undefined,
+  text: string
+): LinkDefinitionState {
+  const blob = linkDefinitionBlob(text)
+  if (prev && prev.blob === blob) return prev
+  return { blob, defs: collectLinkDefinitions(text) }
+}
+
+/**
+ * 增长散文里已闭合块：对象没变就退回 prev，给 memo 子树当稳定 props。
+ * 单块增长（一段 / 一表 / 一列表）时 closed 为空，尾块自己画。
+ */
+export function nextCheapProseClosed(
+  prev: CheapProseBlock[] | null | undefined,
+  blocks: CheapProseBlock[]
+): CheapProseBlock[] {
+  const next = blocks.length > 1 ? blocks.slice(0, -1) : []
+  if (prev && prev.length === next.length && next.every((block, index) => block === prev[index])) {
+    return prev
+  }
+  return next
 }
 
 /** remark 无 rehype-raw：完整 HTML 注释不进画面，避免直播闪一下再消失 */

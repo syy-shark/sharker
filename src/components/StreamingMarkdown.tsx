@@ -1,6 +1,7 @@
 /**
  * 流式 Markdown：围栏顶层 `live-fence-N`；围栏之间的散文共用一个 `LiveProseTail`。
  * 空行收段不换 key，避免 LiveProseTail 重挂跳贴底；围栏闭合也不搬进散文尾。
+ * 已画廉价块 / 列表项 / 表行按对象身份 memo；defs 与渲染槽没变则复用（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -11,20 +12,20 @@ import { ChatImage } from './ChatImage'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import {
-  collectLinkDefinitions,
   cheapInlineNodeKeys,
   cheapProseBlockKeys,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
-  linkDefinitionBlob,
+  continueStreamingRenderSlots,
   matchLiveTaskMarker,
+  nextLinkDefinitions,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
-  streamingRenderSlots,
   type CheapInlineNode,
   type CheapLinkDef,
   type CheapListItem,
-  type CheapProseBlock
+  type CheapProseBlock,
+  type LinkDefinitionState
 } from '../../shared/streaming-markdown'
 
 /** GFM 任务项：直播时就画 checkbox；未写完的 `[x` / `[ ]` 先占位，收束后不从普通 li 跳成任务列表 */
@@ -120,6 +121,46 @@ function listItemParagraphs(item: CheapListItem): CheapInlineNode[][] {
   return [...(item.nodes.length ? [item.nodes] : []), ...(item.extra ?? [])]
 }
 
+/** 已画列表项按对象身份 memo，增长项不重绘已画 li（对标 Codex #22860） */
+const CheapListItemView = memo(function CheapListItemView({ item }: { item: CheapListItem }) {
+  const task = parseCheapTaskItem(item.nodes)
+  const nested = item.nested
+    ? renderCheapList(
+        item.nested.ordered,
+        item.nested.items,
+        undefined,
+        item.nested.loose,
+        item.nested.start
+      )
+    : null
+  const paragraphs = listItemParagraphs({
+    ...item,
+    nodes: task ? task.nodes : item.nodes
+  })
+  const body =
+    paragraphs.length === 0
+      ? null
+      : paragraphs.map((nodes, pi) => (
+          <p key={pi}>
+            {pi === 0 && task ? (
+              <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
+            ) : null}
+            {renderCheapInline(nodes)}
+          </p>
+        ))
+  const tail = item.suffix?.length ? <p>{renderCheapInline(item.suffix)}</p> : null
+  const inner = (
+    <>
+      {body}
+      {item.blocks?.length ? renderCheapBlocks(item.blocks) : null}
+      {tail}
+      {nested}
+    </>
+  )
+  if (!task) return <li>{inner}</li>
+  return <li className="task-list-item live-prose-task">{inner}</li>
+})
+
 /** 廉价列表（含嵌套），任务项用 GFM class；项内始终 `li>p`，变松时不重挂已画行内 */}
 function renderCheapList(
   ordered: boolean,
@@ -133,52 +174,9 @@ function renderCheapList(
   const startAt = ordered && start && start !== 1 ? start : undefined
   return (
     <Tag key={key} className={hasTask ? 'contains-task-list' : undefined} start={startAt}>
-      {items.map((item, i) => {
-        const task = parseCheapTaskItem(item.nodes)
-        const nested = item.nested
-          ? renderCheapList(
-              item.nested.ordered,
-              item.nested.items,
-              undefined,
-              item.nested.loose,
-              item.nested.start
-            )
-          : null
-        const paragraphs = listItemParagraphs({
-          ...item,
-          nodes: task ? task.nodes : item.nodes
-        })
-        const body =
-          paragraphs.length === 0
-            ? null
-            : paragraphs.map((nodes, pi) => (
-                <p key={pi}>
-                  {pi === 0 && task ? (
-                    <input type="checkbox" disabled checked={task.checked} tabIndex={-1} />
-                  ) : null}
-                  {renderCheapInline(nodes)}
-                </p>
-              ))
-        const tail = item.suffix?.length ? (
-          <p>{renderCheapInline(item.suffix)}</p>
-        ) : null
-        const inner = (
-          <>
-            {body}
-            {item.blocks?.length ? renderCheapBlocks(item.blocks) : null}
-            {tail}
-            {nested}
-          </>
-        )
-        if (!task) {
-          return <li key={i}>{inner}</li>
-        }
-        return (
-          <li key={i} className="task-list-item live-prose-task">
-            {inner}
-          </li>
-        )
-      })}
+      {items.map((item, i) => (
+        <CheapListItemView key={i} item={item} />
+      ))}
     </Tag>
   )
 }
@@ -187,10 +185,45 @@ function cellAlign(align: 'left' | 'right' | 'center' | null | undefined) {
   return align ? { textAlign: align } : undefined
 }
 
+/** 已画表行按 cells 引用 memo，新行不重绘表头 / 旧行 */
+const CheapTableRowView = memo(function CheapTableRowView({
+  cells,
+  align,
+  header
+}: {
+  cells: CheapInlineNode[][]
+  align?: Array<'left' | 'right' | 'center' | null> | null
+  header?: boolean
+}) {
+  const Cell = header ? 'th' : 'td'
+  return (
+    <tr>
+      {cells.map((cell, i) => (
+        <Cell key={i} style={cellAlign(align?.[i])}>
+          {renderCheapInline(cell)}
+        </Cell>
+      ))}
+    </tr>
+  )
+})
+
 function renderCheapBlocks(blocks: CheapProseBlock[]): ReactNode[] {
   const keys = cheapProseBlockKeys(blocks)
-  return blocks.map((block, index) => renderCheapBlock(block, keys[index]!))
+  return blocks.map((block, index) => (
+    <CheapBlockView key={keys[index]} block={block} blockKey={keys[index]!} />
+  ))
 }
+
+/** 已画块按对象身份 memo，增长尾不重绘已闭合段落 / 标题 / 列表 */
+const CheapBlockView = memo(function CheapBlockView({
+  block,
+  blockKey
+}: {
+  block: CheapProseBlock
+  blockKey: string
+}) {
+  return renderCheapBlock(block, blockKey)
+})
 
 /** 廉价块用与收束后 MarkdownBody 接近的标签，减少贴底跳动 */
 function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
@@ -208,23 +241,11 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
     return (
       <table key={key}>
         <thead>
-          <tr>
-            {block.header.map((cell, i) => (
-              <th key={i} style={cellAlign(block.align?.[i])}>
-                {renderCheapInline(cell)}
-              </th>
-            ))}
-          </tr>
+          <CheapTableRowView cells={block.header} align={block.align} header />
         </thead>
         <tbody>
           {block.rows.map((row, r) => (
-            <tr key={r}>
-              {row.map((cell, c) => (
-                <td key={c} style={cellAlign(block.align?.[c])}>
-                  {renderCheapInline(cell)}
-                </td>
-              ))}
-            </tr>
+            <CheapTableRowView key={r} cells={row} align={block.align} />
           ))}
         </tbody>
       </table>
@@ -276,7 +297,7 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
   return <p key={key}>{renderCheapInline(block.nodes)}</p>
 }
 
-/** 增长中的散文尾：廉价块 + 行内，不跑 remark */
+/** 增长中的散文尾：廉价块 + 行内，不跑 remark；已画块走 CheapBlockView 身份 memo */
 const LiveProseTail = memo(function LiveProseTail({
   text,
   defs,
@@ -316,22 +337,37 @@ function renderLiveFenceSlot(
 
 /** 直播正文：围栏顶层槽 + 连续散文 run，空行收段不换 LiveProseTail */
 export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
-  const prevRef = useRef({ text: '', split: splitStreamingMarkdown('') })
+  const prevRef = useRef({
+    text: '',
+    split: splitStreamingMarkdown(''),
+    slots: continueStreamingRenderSlots(null, splitStreamingMarkdown('')),
+    defs: null as LinkDefinitionState | null
+  })
   const split = useMemo(() => {
     const next = continueStreamingMarkdown(prevRef.current.split, prevRef.current.text, text)
-    prevRef.current = { text, split: next }
+    prevRef.current.text = text
+    prevRef.current.split = next
     return next
   }, [text])
-  const slots = useMemo(() => streamingRenderSlots(split), [split])
-  const defsBlob = useMemo(() => linkDefinitionBlob(text), [text])
-  const defs = useMemo(() => collectLinkDefinitions(text), [defsBlob])
+  const slots = useMemo(() => {
+    const next = continueStreamingRenderSlots(prevRef.current.slots, split)
+    prevRef.current.slots = next
+    return next
+  }, [split])
+  const defsState = useMemo(() => {
+    const next = nextLinkDefinitions(prevRef.current.defs, text)
+    prevRef.current.defs = next
+    return next
+  }, [text])
   return (
     <div className="streaming-markdown">
       {slots.map((slot) => {
         if (slot.kind === 'fence') {
           return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
         }
-        return <LiveProseTail key={slot.key} text={slot.text} defs={defs} closed={slot.closed} />
+        return (
+          <LiveProseTail key={slot.key} text={slot.text} defs={defsState.defs} closed={slot.closed} />
+        )
       })}
     </div>
   )

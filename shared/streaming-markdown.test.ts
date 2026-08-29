@@ -7,12 +7,15 @@ import {
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
+  continueStreamingRenderSlots,
   finalizeStreamingMarkdownSplit,
   extractClosedFenceParts,
   extractOpenFenceBody,
   isOnlyLinkDefinitions,
   linkDefinitionBlob,
   markdownBlockWithDefs,
+  nextCheapProseClosed,
+  nextLinkDefinitions,
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
   splitStreamingMarkdown,
@@ -528,6 +531,12 @@ describe('splitStreamingMarkdown', () => {
     expect(isOnlyLinkDefinitions('[d]: https://a.test/x\n')).toBe(true)
     expect(linkDefinitionBlob('普通段落 **粗** 与 `code`')).toBe('')
     expect(collectLinkDefinitions('普通段落没有引用定义').size).toBe(0)
+    const defState = nextLinkDefinitions(null, '[d]: https://a.test/x\n\n见 [d]')
+    expect(defState.defs.get('d')).toEqual({ href: 'https://a.test/x' })
+    expect(nextLinkDefinitions(defState, '[d]: https://a.test/x\n\n见 [d] 更长')).toBe(defState)
+    expect(nextLinkDefinitions(defState, '[d]: https://a.test/x\n\n见 [d] 更长').defs).toBe(defState.defs)
+    const emptyDefs = nextLinkDefinitions(null, '普通段落')
+    expect(nextLinkDefinitions(emptyDefs, '普通段落增长')).toBe(emptyDefs)
     expect(isOnlyLinkDefinitions('普通段落')).toBe(false)
     expect(parseCheapProseBlocks('<!-- comment -->').map((b) => b.type)).toEqual([])
     expect(parseCheapProseBlocks('foo <!-- x --> bar')).toEqual([
@@ -991,6 +1000,17 @@ describe('splitStreamingMarkdown', () => {
     expect(pipelessGrownKeys[1]).toBe(pipelessFirstKeys[1])
     expect(pipelessGrownKeys[2]).toBe(pipelessFirstKeys[2])
     expect(pipelessGrownKeys[0]).not.toBe(pipelessFirstKeys[0])
+    const multi = parseCheapProseBlocks('# 标题\n\n第一段\n\n第二')
+    expect(multi.map((b) => b.type)).toEqual(['heading', 'p', 'p'])
+    const multiGrown = continueCheapProseBlocks('# 标题\n\n第一段\n\n第二', multi, '# 标题\n\n第一段\n\n第二段更长')
+    expect(multiGrown[0]).toBe(multi[0])
+    expect(multiGrown[1]).toBe(multi[1])
+    const closedFirst = nextCheapProseClosed(null, multi)
+    const closedGrown = nextCheapProseClosed(closedFirst, multiGrown)
+    expect(closedGrown).toBe(closedFirst)
+    expect(closedGrown[0]).toBe(multi[0])
+    expect(closedGrown[1]).toBe(multi[1])
+    expect(nextCheapProseClosed(null, grown).length).toBe(0)
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
@@ -1054,6 +1074,26 @@ describe('splitStreamingMarkdown', () => {
     expect(grown.closedEnd).toBe(first.closedEnd)
     expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
     expect(streamingRenderSlots(grown).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    const firstSlots = streamingRenderSlots(first)
+    const grownSlots = continueStreamingRenderSlots(firstSlots, grown)
+    expect(grownSlots).not.toBe(firstSlots)
+    expect(grownSlots[0]).not.toBe(firstSlots[0])
+    const fenceMid = splitStreamingMarkdown('Intro\n\n```js\n1')
+    const fenceDone = continueStreamingMarkdown(
+      fenceMid,
+      'Intro\n\n```js\n1',
+      'Intro\n\n```js\n1\n```\n\nB'
+    )
+    const midSlots = streamingRenderSlots(fenceMid)
+    const doneSlots = continueStreamingRenderSlots(midSlots, fenceDone)
+    expect(doneSlots[0]).toBe(midSlots[0])
+    expect(doneSlots.map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
+      'prose:prose-run-0',
+      'fence:live-fence-0',
+      'prose:prose-run-1'
+    ])
+    const sameDone = continueStreamingRenderSlots(doneSlots, fenceDone)
+    expect(sameDone).toBe(doneSlots)
 
     const committed = continueStreamingMarkdown(
       grown,
