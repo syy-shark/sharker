@@ -245,7 +245,6 @@ describe('near-live message rows', () => {
       false
     )
     expect(LIVE_TAIL_SAFE_PX).toBe(12)
-    )
     expect(
       liveStickNeedsFollow(
         { scrollHeight: 800, clientHeight: 400 },
