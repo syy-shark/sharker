@@ -3069,6 +3069,15 @@ export default function App() {
       setLiveSegments(cloneSegments(segmentsRef.current))
       setStreaming('')
       setTurnThinking('')
+      publishLiveStreamUi(
+        liveStreamPatchFromSegments(segmentsRef.current, {
+          streaming: '',
+          activeTool: null,
+          turnStartedAt: turnStartedAtRef.current || seedAt,
+          liveTurnMeta: liveTurnMetaRef.current,
+          turnHadThinking: false
+        })
+      )
 
       try {
         if (!window.sharker?.sendMessage) {
@@ -3138,6 +3147,13 @@ export default function App() {
             ...segmentsRef.current
           ]
           setLiveSegments(cloneSegments(segmentsRef.current))
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segmentsRef.current, {
+              streaming: streamingRef.current,
+              turnStartedAt: turnStartedAtRef.current || warnAt,
+              liveTurnMeta: liveTurnMetaRef.current
+            })
+          )
         }
         const history = await modelHistoryP
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
@@ -4812,6 +4828,11 @@ export default function App() {
           setLiveSegments(cloneSegments(segs))
           setLoading(true)
           ensureLiveAssistantId()
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segs, {
+              turnStartedAt: turnStartedAtRef.current || now
+            })
+          )
         } else {
           const now = Date.now()
           const segs: TurnSegment[] = [
@@ -4827,6 +4848,11 @@ export default function App() {
           setLiveSegments(cloneSegments(segs))
           setLoading(true)
           ensureLiveAssistantId()
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segs, {
+              turnStartedAt: turnStartedAtRef.current || now
+            })
+          )
         }
         return
       }

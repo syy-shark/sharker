@@ -175,5 +175,22 @@ describe('live stream ui snapshot', () => {
     expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, seedPatch)).processForFlow).toHaveLength(
       2
     )
+    const preparing = liveStreamPatchFromSegments(
+      [
+        {
+          id: 'status-local-start',
+          kind: 'status',
+          content: '连接模型并准备任务…',
+          status: 'active',
+          startedAt: 7
+        }
+      ],
+      { streaming: '', activeTool: null, turnStartedAt: 7 }
+    )
+    const preparingSnap = nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, preparing)
+    expect(preparingSnap.liveSegments).toHaveLength(1)
+    expect(preparingSnap.liveSegments[0]?.content).toBe('连接模型并准备任务…')
+    expect(preparingSnap.turnStartedAt).toBe(7)
+    expect(nextLiveProcessView(null, preparingSnap).processForFlow[0]?.kind).toBe('status')
   })
 })
