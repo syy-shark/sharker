@@ -1196,6 +1196,27 @@ describe('splitStreamingMarkdown', () => {
     if (indentPre[0]?.type === 'pre' && indentGrown[0]?.type === 'pre') {
       expect(indentGrown[0].text).toBe('const x = 12')
     }
+    const indentThenHeading = continueCheapProseBlocks(
+      '    const x = 1',
+      indentPre,
+      '    const x = 1\n# title'
+    )
+    expect(indentThenHeading.map((b) => b.type)).toEqual(['pre', 'heading'])
+    expect(indentThenHeading[0]).toBe(indentPre[0])
+    const itemIndent = parseCheapProseBlocks('- n\n\n      const x = 1')
+    const itemIndentThenHeading = continueCheapProseBlocks(
+      '- n\n\n      const x = 1',
+      itemIndent,
+      '- n\n\n      const x = 1\n  # title'
+    )
+    if (itemIndent[0]?.type === 'list' && itemIndentThenHeading[0]?.type === 'list') {
+      expect(itemIndentThenHeading[0].items[0]?.nodes).toBe(itemIndent[0].items[0]?.nodes)
+      expect(itemIndentThenHeading[0].items[0]?.blocks?.map((block) => block.type)).toEqual([
+        'pre',
+        'heading'
+      ])
+      expect(itemIndentThenHeading[0].items[0]?.blocks?.[0]).toBe(itemIndent[0].items[0]?.blocks?.[0])
+    }
     const quoteHeading = parseCheapProseBlocks('> # 标题')
     const quoteHeadingGrown = continueCheapProseBlocks('> # 标题', quoteHeading, '> # 标题更长')
     if (quoteHeadingGrown[0]?.type === 'quote' && quoteHeadingGrown[0].blocks[0]?.type === 'heading') {
