@@ -20,15 +20,20 @@ import { McpSettings } from '../components/settings/McpSettings'
 import { BrowserSettings } from '../components/settings/BrowserSettings'
 import {
   APPEARANCE_SETTINGS_LABEL,
+  ARCHIVED_CHATS_INTRO,
   ARCHIVED_CHATS_LABEL,
   BROWSER_SETTINGS_LABEL,
+  GENERAL_SETTINGS_INTRO,
   GENERAL_SETTINGS_LABEL,
   PROFILE_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
+  NOTIFICATIONS_SETTINGS_INTRO,
   NOTIFICATIONS_SETTINGS_LABEL,
+  PERSONALIZATION_SETTINGS_INTRO,
   PERSONALIZATION_SETTINGS_LABEL,
+  SUGGESTED_PROMPTS_INTRO,
   SUGGESTED_PROMPTS_SETTINGS_LABEL
 } from '../../shared/reveal-in-folder'
 import './SettingsPage.css'
@@ -48,7 +53,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   general: {
     title: GENERAL_SETTINGS_LABEL,
-    desc: 'Follow-up behavior（Queue / Steer）、Enter 发送、文件引用打开位置、上下文用量环、/review 交付与审查模型、运行防休眠。对标 Codex Settings → General。建议提示在单独一页。'
+    desc: GENERAL_SETTINGS_INTRO
   },
   browser: {
     title: BROWSER_SETTINGS_LABEL,
@@ -60,15 +65,15 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   notifications: {
     title: NOTIFICATIONS_SETTINGS_LABEL,
-    desc: '回合完成何时弹系统通知，以及是否申请通知权限。对标 Codex Settings → Notifications。'
+    desc: NOTIFICATIONS_SETTINGS_INTRO
   },
   personalization: {
     title: PERSONALIZATION_SETTINGS_LABEL,
-    desc: 'Enable memories（官方默认关）、Use memories / Generate memories、Choose a personality 与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
+    desc: PERSONALIZATION_SETTINGS_INTRO
   },
   suggested: {
     title: SUGGESTED_PROMPTS_SETTINGS_LABEL,
-    desc: '空对话显示要继续的任务、审查或目标。对标 Codex Settings → Suggested prompts。'
+    desc: SUGGESTED_PROMPTS_INTRO
   },
   shortcuts: {
     title: KEYBOARD_SHORTCUTS_LABEL,
@@ -76,7 +81,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   archived: {
     title: ARCHIVED_CHATS_LABEL,
-    desc: '已归档的对话。可回档到侧栏列表，或彻底删除。'
+    desc: ARCHIVED_CHATS_INTRO
   },
   usage: {
     title: PROFILE_SETTINGS_LABEL,

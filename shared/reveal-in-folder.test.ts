@@ -6,8 +6,13 @@ import {
   APPEARANCE_SETTINGS_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
+  ARCHIVED_CHATS_INTRO,
+  GENERAL_SETTINGS_INTRO,
   KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
+  NOTIFICATIONS_SETTINGS_INTRO,
+  PERSONALIZATION_SETTINGS_INTRO,
+  SUGGESTED_PROMPTS_INTRO,
   KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER,
   KEYSTROKE_SEARCH_LABEL,
   KEYSTROKE_SEARCH_PLACEHOLDER,
@@ -171,10 +176,16 @@ describe('reveal in folder', () => {
     expect(KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER).toBe('Search by command name')
     expect(KEYSTROKE_SEARCH_PLACEHOLDER).toBe('Press a key combination')
     expect(GENERAL_SETTINGS_LABEL).toBe('General')
+    expect(GENERAL_SETTINGS_INTRO).toMatch(/Require Cmd\+Enter for multiline prompts/)
+    expect(GENERAL_SETTINGS_INTRO).toMatch(/Follow-up behavior/)
     expect(APPEARANCE_SETTINGS_LABEL).toBe('Appearance')
     expect(NOTIFICATIONS_SETTINGS_LABEL).toBe('Notifications')
+    expect(NOTIFICATIONS_SETTINGS_INTRO).toMatch(/turn completion notifications/)
     expect(PERSONALIZATION_SETTINGS_LABEL).toBe('Personalization')
+    expect(PERSONALIZATION_SETTINGS_INTRO).toMatch(/Friendly, Pragmatic, or None/)
     expect(SUGGESTED_PROMPTS_SETTINGS_LABEL).toBe('Suggested prompts')
+    expect(SUGGESTED_PROMPTS_INTRO).toMatch(/context-aware suggestions/)
+    expect(ARCHIVED_CHATS_INTRO).toMatch(/Use Unarchive to restore a chat/)
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
     expect(OPEN_MCP_STATUS_LABEL).toBe('Open MCP status')

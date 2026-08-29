@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
+import { NOTIFICATIONS_SETTINGS_LABEL } from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -49,7 +50,7 @@ export function NotificationSettings({ draft, setDraft, onSave }: Props) {
   )
 
   return (
-    <SettingsSection title="通知">
+    <SettingsSection title={NOTIFICATIONS_SETTINGS_LABEL}>
       <SettingsCard>
         <SettingsChoiceGroup
           value={parseTurnNotifyMode(draft.turnNotifyMode)}

@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本与终端窗 CSS，只信估高、range/body 底边与 postMessage。
+ * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切，信估高、range/body 底边与 postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -119,7 +119,8 @@ function buildSrcDoc(
    * - 默认深色炭黑窗（浅色聊天里也用，命令色才好看）
    * - 浅色主题另有 .sharker-term--glass 水滴玻璃变体
    */
-  const hostThemeCss = `
+  const hostThemeCss = shouldWalkInlineDemoTree({ streaming })
+    ? `
 :root {
   color-scheme: ${isDark ? 'dark' : 'light'};
   --text: ${theme.text};
@@ -217,6 +218,39 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   border: 0.5px solid var(--border-soft);
   border-radius: var(--radius-sm);
   overflow-wrap: anywhere;
+}
+`
+    : `
+:root {
+  color-scheme: ${isDark ? 'dark' : 'light'};
+  --text: ${theme.text};
+  --text-secondary: ${theme.textSecondary};
+  --text-muted: ${theme.textMuted};
+  --accent: ${theme.accent};
+  --font: ${theme.font};
+  --mono: ${theme.mono};
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  height: max-content !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: transparent !important;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+}
+body > *:not(canvas):not(svg):not(script):not(style):not(link) {
+  height: max-content !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
 }
 `
   /** 闭合后才灌终端窗 / 历史看板 CSS；直播 srcDoc 只留主题与解锁裁切 */

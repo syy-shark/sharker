@@ -191,7 +191,22 @@ export const BROWSER_FORWARD_LABEL = 'Browser forward'
 export const RELOAD_BROWSER_PAGE_LABEL = 'Reload browser page'
 export const RELOAD_BROWSER_PAGE_WITHOUT_CACHE_LABEL = 'Reload browser page without cache'
 export const TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL = 'Toggle browser browse or comment mode'
-/** 官方 Settings 页名（对标 developers.openai.com/codex/app/settings） */
+/** 官方 Settings 页名与说明（对标 learn.chatgpt.com/docs/reference/settings） */
+/** Official Settings → General. */
+export const GENERAL_SETTINGS_INTRO =
+  'Require Cmd+Enter for multiline prompts, or turn on Prevent sleep while running so local chats can continue while you step away. Under Follow-up behavior, choose whether a message sent while ChatGPT works should steer the current run or wait for the next run.'
+/** Official Settings → Notifications. */
+export const NOTIFICATIONS_SETTINGS_INTRO =
+  'Choose when turn completion notifications appear, and whether the app should prompt for notification permissions.'
+/** Official Settings → Suggested prompts. */
+export const SUGGESTED_PROMPTS_INTRO =
+  'Use context-aware suggestions to surface follow-ups and tasks you may want to resume when you start or return to ChatGPT.'
+/** Official Settings → Archived chats. */
+export const ARCHIVED_CHATS_INTRO =
+  'The Archived chats section lists archived chats with dates and project context. Use Unarchive to restore a chat.'
+/** Official Settings → Personalization. */
+export const PERSONALIZATION_SETTINGS_INTRO =
+  'Choose Friendly, Pragmatic, or None as your default personality. Use None to disable personality instructions. You can update this at any time.'
 export const KEYBOARD_SHORTCUTS_LABEL = 'Keyboard Shortcuts'
 /** Official Settings → Keyboard Shortcuts (learn.chatgpt.com/docs/reference/settings). */
 export const KEYBOARD_SHORTCUTS_INTRO =
