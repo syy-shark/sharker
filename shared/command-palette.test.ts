@@ -23,6 +23,9 @@ describe('command palette', () => {
     expect(ids).toContain('goal')
     expect(ids).toContain('diff')
     expect(ids).toContain('open-worktree')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-worktree')?.title).toBe(
+      '在文件管理器中显示项目'
+    )
     expect(ids).toContain('create-branch')
     expect(ids).toContain('mcp')
     expect(ids).toContain('mcp-servers')
@@ -99,6 +102,7 @@ describe('command palette', () => {
     expect(filterPaletteCommands('归档项目').some((c) => c.action === 'archive_project_chats')).toBe(
       true
     )
+    expect(filterPaletteCommands('访达').some((c) => c.action === 'open_worktree')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

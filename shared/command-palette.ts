@@ -188,8 +188,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'open-worktree',
-    title: '打开隔离 worktree',
-    keywords: 'open worktree folder 打开 隔离',
+    title: '在文件管理器中显示项目',
+    keywords: 'open worktree folder finder explorer 访达 资源管理器 打开 隔离',
     action: 'open_worktree'
   },
   {

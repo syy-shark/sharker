@@ -80,6 +80,8 @@ export const IPC = {
   GIT_PR_REVIEW: 'git:pr-review',
   OPEN_EXTERNAL: 'shell:open-external',
   OPEN_PATH: 'shell:open-path',
+  /** 在访达 / 资源管理器 / 文件管理器中显示（对标 Codex Open in Finder） */
+  SHOW_ITEM_IN_FOLDER: 'shell:show-item-in-folder',
   GET_COMPUTER_USE_STATUS: 'computer-use:status',
   GET_BROWSER_USE_STATUS: 'browser-use:status',
   INSTALL_BROWSER_USE_MANIFEST: 'browser-use:install-manifest',

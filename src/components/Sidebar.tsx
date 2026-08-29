@@ -37,6 +37,12 @@ import {
   splitPinnedConversations,
   type SidebarChatFilter
 } from '../../shared/conversation'
+import {
+  revealInFolderLabel,
+  threadMenuItems,
+  threadRevealFolderPath
+} from '../../shared/reveal-in-folder'
+import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { AppPage, SettingsTab } from '../types/navigation'
@@ -135,6 +141,16 @@ function readSidebarWidth(): number {
 
 function convTitle(c: ConversationSummary): string {
   return (c.customTitle || c.title || '新对话').trim() || '新对话'
+}
+
+function conversationFolderPath(c: ConversationSummary, workspaces: WorkspaceItem[]): string {
+  const runtime = loadThreadRuntime(c.id)
+  const ws = workspaces.find((item) => item.id === c.workspaceId)
+  return threadRevealFolderPath({
+    mode: runtime.mode,
+    worktreePath: runtime.worktreePath,
+    workspacePath: ws?.path
+  })
 }
 
 /** ChatGPT 风格左侧边栏 */
@@ -286,6 +302,24 @@ export const Sidebar = memo(function Sidebar({
       document.removeEventListener('keydown', onKey)
     }
   }, [projectMenuId, closeProjectMenu])
+
+  useEffect(() => {
+    if (!threadMenu) return
+    const onDoc = (e: MouseEvent) => {
+      const node = e.target
+      if (node instanceof Element && node.closest('[data-thread-menu]')) return
+      setThreadMenu(null)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setThreadMenu(null)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [threadMenu])
   /** 固定展开，或收起态下的悬停 peek */
   const panelVisible = !collapsed || peeking
 
@@ -364,6 +398,14 @@ export const Sidebar = memo(function Sidebar({
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
   const renameCancelRef = useRef(false)
+  const [threadMenu, setThreadMenu] = useState<{
+    conversationId: string
+    workspaceId: string
+    folderPath: string
+    pinned: boolean
+    x: number
+    y: number
+  } | null>(null)
 
   useEffect(() => {
     if (!renameRequestId) return
@@ -514,6 +556,23 @@ export const Sidebar = memo(function Sidebar({
         data-live={live ? 'true' : undefined}
         data-unread={c.unread ? 'true' : undefined}
         data-pinned={c.pinned ? 'true' : undefined}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          const next = clampReviewMenuPosition(
+            event.clientX,
+            event.clientY,
+            { width: 168, height: 148 },
+            { width: window.innerWidth, height: window.innerHeight }
+          )
+          setThreadMenu({
+            conversationId: c.id,
+            workspaceId: c.workspaceId,
+            folderPath: conversationFolderPath(c, workspaces),
+            pinned: Boolean(c.pinned),
+            x: next.x,
+            y: next.y
+          })
+        }}
       >
         {renaming ? (
           <input
@@ -676,6 +735,21 @@ export const Sidebar = memo(function Sidebar({
                 className={`sidebar-project-menu ${menuClosing ? 'popover-exit' : 'popover-enter'}`}
                 role="menu"
               >
+                {ws.path ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeProjectMenu()
+                      if (window.sharker?.showItemInFolder) {
+                        void window.sharker.showItemInFolder(ws.path)
+                      }
+                    }}
+                  >
+                    {revealInFolderLabel(window.sharker?.platform)}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   role="menuitem"
@@ -1019,6 +1093,51 @@ export const Sidebar = memo(function Sidebar({
             localStorage.setItem(SIDEBAR_WIDTH_KEY, String(SIDEBAR_DEFAULT_WIDTH))
           }}
         />
+      ) : null}
+      {threadMenu ? (
+        <div
+          className="sidebar-thread-menu glass-popover popover-enter"
+          role="menu"
+          data-thread-menu
+          style={{ top: threadMenu.y, left: threadMenu.x }}
+        >
+          {threadMenuItems({
+            pinned: threadMenu.pinned,
+            platform: window.sharker?.platform
+          }).map((item) => (
+            <button
+              key={item.action}
+              type="button"
+              role="menuitem"
+              className="sidebar-thread-menu-item"
+              onClick={(e) => {
+                e.stopPropagation()
+                const menu = threadMenu
+                setThreadMenu(null)
+                if (item.action === 'reveal') {
+                  if (menu.folderPath && window.sharker?.showItemInFolder) {
+                    void window.sharker.showItemInFolder(menu.folderPath)
+                  }
+                  return
+                }
+                if (item.action === 'rename') {
+                  const hit = conversations.find((c) => c.id === menu.conversationId)
+                  renameCancelRef.current = false
+                  setRenamingId(menu.conversationId)
+                  setRenameDraft(hit ? convTitle(hit) : '')
+                  return
+                }
+                if (item.action === 'pin') {
+                  onTogglePinConversation?.(menu.workspaceId, menu.conversationId)
+                  return
+                }
+                onArchiveConversation(menu.workspaceId, menu.conversationId)
+              }}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
       ) : null}
     </aside>
   )

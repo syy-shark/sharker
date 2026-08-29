@@ -1291,6 +1291,18 @@ function registerIpc(): void {
     return err === ''
   })
 
+  ipcMain.handle(IPC.SHOW_ITEM_IN_FOLDER, async (_e, targetPath: string) => {
+    if (!targetPath || typeof targetPath !== 'string') return false
+    const resolved = path.resolve(targetPath)
+    try {
+      await fs.promises.access(resolved)
+    } catch {
+      return false
+    }
+    shell.showItemInFolder(resolved)
+    return true
+  })
+
   ipcMain.handle(IPC.GET_COMPUTER_USE_STATUS, async (_e, workspace: string) => {
     return gatherComputerUseStatus(workspace)
   })

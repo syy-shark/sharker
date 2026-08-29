@@ -38,6 +38,7 @@ import {
 } from '../../../shared/review-diff-search'
 import { maxDiffGotoLine, parseGoToLineInput } from '../../../shared/file-preview'
 import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
+import { reviewFileRevealPath } from '../../../shared/reveal-in-folder'
 import {
   clampReviewMenuPosition,
   resolveReviewFileClick,
@@ -195,6 +196,7 @@ export const ChangesPanel = memo(function ChangesPanel({
   const [fileMenu, setFileMenu] = useState<{
     fileKey: string
     openPath: string
+    revealPath: string
     expanded: boolean
     x: number
     y: number
@@ -1425,12 +1427,13 @@ export const ChangesPanel = memo(function ChangesPanel({
                       const next = clampReviewMenuPosition(
                         event.clientX,
                         event.clientY,
-                        { width: 168, height: 76 },
+                        { width: 188, height: 108 },
                         { width: window.innerWidth, height: window.innerHeight }
                       )
                       setFileMenu({
                         fileKey: key,
                         openPath,
+                        revealPath: reviewFileRevealPath(f.path, gitRoot),
                         expanded,
                         x: next.x,
                         y: next.y
@@ -1583,7 +1586,7 @@ export const ChangesPanel = memo(function ChangesPanel({
           role="menu"
           style={{ top: fileMenu.y, left: fileMenu.x }}
         >
-          {reviewFileMenuItems(fileMenu.expanded).map((item) => (
+          {reviewFileMenuItems(fileMenu.expanded, window.sharker?.platform).map((item) => (
             <button
               key={item.action}
               type="button"
@@ -1592,6 +1595,10 @@ export const ChangesPanel = memo(function ChangesPanel({
               onClick={() => {
                 if (item.action === 'open') {
                   dispatchOpenWorkspaceFile({ path: fileMenu.openPath })
+                } else if (item.action === 'reveal') {
+                  if (fileMenu.revealPath && window.sharker?.showItemInFolder) {
+                    void window.sharker.showItemInFolder(fileMenu.revealPath)
+                  }
                 } else {
                   lastReviewKeyRef.current = fileMenu.fileKey
                   setExpandedKeys((prev) => toggleReviewDiffKey(prev, fileMenu.fileKey))

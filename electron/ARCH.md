@@ -48,6 +48,7 @@
 | `git:pr-review` | 把本地行内评论发到当前 PR |
 | `window:open-thread` | 弹出独立线程窗；`chat:stream` / `chat:approval` 广播到所有窗 |
 | `window:set-always-on-top` / `get-always-on-top` | 弹出窗 Always on top |
+| `shell:open-path` / `shell:show-item-in-folder` | 打开路径；在访达 / 资源管理器 / 文件管理器中显示（对标 Codex Open in Finder） |
 | `chat:send` 期间 `powerSaveBlocker` | 设置打开时阻止系统休眠 |
 | `agents:list` / `stop` / `steer` | 子 Agent 活动；`agents:update` 广播直播快照 |
 | `git:create-branch` | 隔离 worktree 在 HEAD 上创建命名分支 |

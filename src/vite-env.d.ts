@@ -171,6 +171,7 @@ export interface SharkerApi {
   windowClose: () => Promise<void>
   openExternal: (url: string) => Promise<boolean>
   openPath: (targetPath: string) => Promise<boolean>
+  showItemInFolder: (targetPath: string) => Promise<boolean>
   getComputerUseStatus: (workspace: string) => Promise<ComputerUseStatus>
   getBrowserUseStatus: (workspace: string) => Promise<BrowserUseStatus>
   installBrowserUseManifest: () => Promise<{ ok: boolean; message: string }>

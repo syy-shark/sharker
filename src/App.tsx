@@ -3491,11 +3491,14 @@ export default function App() {
     setPage('chat')
   }, [popoutRoute])
 
-  const handleOpenWorktree = useCallback(() => {
-    const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
-    if (!dest || !window.sharker.openPath) return
-    void window.sharker.openPath(dest)
-  }, [threadWorktreePath])
+  const handleRevealThreadFolder = useCallback(() => {
+    const dest =
+      threadMode === 'worktree'
+        ? threadWorktreePath || threadRuntimeRef.current.worktreePath || ''
+        : getActiveWorkspacePath(settingsRef.current)
+    if (!dest || !window.sharker.showItemInFolder) return
+    void window.sharker.showItemInFolder(dest)
+  }, [threadMode, threadWorktreePath])
 
   const handleCreateBranchHere = useCallback(async () => {
     const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
@@ -5744,7 +5747,7 @@ export default function App() {
           break
         }
         case 'open_worktree':
-          handleOpenWorktree()
+          handleRevealThreadFolder()
           break
         case 'create_branch_here':
           void handleCreateBranchHere()
@@ -6220,7 +6223,7 @@ export default function App() {
       handleNavigate,
       handleNativeOrAppUndo,
       handleMarkUnread,
-      handleOpenWorktree,
+      handleRevealThreadFolder,
       handlePromptSubmit,
       handleRenameConversation,
       handleStandaloneConversation,
@@ -8082,7 +8085,8 @@ export default function App() {
               prLabel={prChipLabel}
               onOpenPullRequest={handleOpenPullRequest}
               worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
-              onOpenWorktree={handleOpenWorktree}
+              threadFolderPath={fileSearchRoot || undefined}
+              onRevealThreadFolder={handleRevealThreadFolder}
               onCreateBranchHere={handleCreateBranchHereUi}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}

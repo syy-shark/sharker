@@ -24,6 +24,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import type { LocalEnvironmentAction } from '../../shared/local-environment'
+import { revealInFolderLabel } from '../../shared/reveal-in-folder'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
 
@@ -50,6 +51,9 @@ interface Props {
   /** 隔离 worktree：打开目录 / 在此创建分支（对标 Codex header） */
   worktreePath?: string | null
   onOpenWorktree?: () => void
+  /** 当前线程项目目录（对标 Codex Open in Finder from thread menus） */
+  threadFolderPath?: string | null
+  onRevealThreadFolder?: () => void
   onCreateBranchHere?: () => void
   /** 顶栏 Hand off（对标 Codex：header 在 Local / Worktree 之间交接） */
   threadMode?: ThreadMode
@@ -91,6 +95,8 @@ export const ChatToolbar = memo(function ChatToolbar({
   onOpenPullRequest,
   worktreePath = null,
   onOpenWorktree,
+  threadFolderPath = null,
+  onRevealThreadFolder,
   onCreateBranchHere,
   threadMode = 'local',
   onThreadModeChange,
@@ -267,18 +273,18 @@ export const ChatToolbar = memo(function ChatToolbar({
               {threadMode === 'worktree' ? '交接到本地' : '交接到隔离'}
             </button>
           ) : null}
-          {worktreePath && onOpenWorktree && !popout ? (
+          {(threadFolderPath || worktreePath) && (onRevealThreadFolder || onOpenWorktree) && !popout ? (
             <button
               type="button"
               className="chat-toolbar-icon-btn"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                onOpenWorktree()
+                ;(onRevealThreadFolder || onOpenWorktree)?.()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="打开隔离 worktree"
-              aria-label="打开隔离 worktree"
+              title={revealInFolderLabel(window.sharker?.platform)}
+              aria-label={revealInFolderLabel(window.sharker?.platform)}
             >
               <FolderOpen size={18} strokeWidth={1.75} aria-hidden />
             </button>

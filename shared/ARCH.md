@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / `reviewProviderId`（对标 Codex `review_model`）/ Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener`（对标 Codex `file_opener`）/ `showContextWindowUsage`（对标 Codex Show context window usage，官方默认关）、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务 / `shell:show-item-in-folder` 在访达中显示） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `showContextWindowUsage` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
@@ -128,11 +128,13 @@
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
 | `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline） |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、审查面板订直播切片 |
-| `review-file-click.ts` | 审查文件名打开预览、行背景展开/收起、⌘单击行跳预览；右键菜单「打开预览 / 展开 diff」（对标 Codex review file tree open menu） |
-| `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
+| `review-file-click.ts` | 审查文件名走 `file_opener`、行背景展开/收起、⌘单击行跳预览；右键「打开预览 / 在访达中显示 / 展开 diff」（对标 Codex review Open in Finder / file tree open menu） |
+| `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项含揭示与菜单位置夹取 |
+| `reveal-in-folder.ts` | 官方 Open in Finder / Explorer / File Manager：平台文案、线程项目目录、审查文件绝对路径、侧栏线程菜单项。不接自定义 Open with |
+| `reveal-in-folder.test.ts` | 平台文案、本地/隔离目录、相对审查路径接到仓根、线程菜单顺序 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、打开 worktree、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |

@@ -1,22 +1,26 @@
 /**
  * 审查面板文件名 / 行背景点击（对标 Codex Review pane）。
- * 文件名打开右侧预览（本机没有「默认编辑器」钩子）；行背景展开或收起 diff。
- * ⌘/Ctrl+单击 diff 行跳到该行预览。右键菜单打开预览或展开 diff。
+ * 文件名走 `file_opener`（none 为应用内预览）；行背景展开或收起 diff。
+ * ⌘/Ctrl+单击 diff 行跳到该行。右键含打开预览、在访达中显示、展开 diff。
  * @see shared/ARCH.md
  */
+
+import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 export type ReviewFileClickTarget = 'name' | 'background'
 
 export type ReviewFileClickIntent = 'open' | 'toggle'
 
-export type ReviewFileMenuAction = 'open' | 'toggle'
+export type ReviewFileMenuAction = 'open' | 'reveal' | 'toggle'
 
-/** 审查文件树右键菜单（对标 Codex review file tree open menu） */
+/** 审查文件树右键菜单（对标 Codex review Open in Finder / open menu） */
 export function reviewFileMenuItems(
-  expanded: boolean
+  expanded: boolean,
+  platform: RevealFolderPlatform = 'linux'
 ): Array<{ action: ReviewFileMenuAction; title: string }> {
   return [
     { action: 'open', title: '打开预览' },
+    { action: 'reveal', title: revealInFolderLabel(platform) },
     { action: 'toggle', title: expanded ? '收起 diff' : '展开 diff' }
   ]
 }

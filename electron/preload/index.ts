@@ -201,6 +201,7 @@ contextBridge.exposeInMainWorld('sharker', {
   windowClose: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_CLOSE),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
   openPath: (targetPath: string) => ipcRenderer.invoke(IPC.OPEN_PATH, targetPath),
+  showItemInFolder: (targetPath: string) => ipcRenderer.invoke(IPC.SHOW_ITEM_IN_FOLDER, targetPath),
   getComputerUseStatus: (workspace: string) =>
     ipcRenderer.invoke(IPC.GET_COMPUTER_USE_STATUS, workspace),
   getBrowserUseStatus: (workspace: string) =>
