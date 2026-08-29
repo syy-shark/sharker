@@ -1110,6 +1110,59 @@ describe('live stream ui snapshot', () => {
         liveSegments: [cmdAwaiting, awaitingStatus]
       })
     ).toBe(answerReadyForApproval)
+    expect(isLiveToolAppendChange([hello, ran], [hello, ran, cmdAwaiting, awaitingStatus])).toBe(true)
+    expect(isLiveApprovalNeededChange([hello, ran], [hello, ran, cmdAwaiting, awaitingStatus])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, cmdAwaiting, awaitingStatus])).toBe(
+      'tool'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, ran],
+        segments: [hello, ran, cmdAwaiting, awaitingStatus]
+      })
+    ).toBe(true)
+    const processReadyForToolApproval = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const processAfterToolApproval = nextLiveProcessView(processReadyForToolApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, cmdAwaiting, awaitingStatus]
+    })
+    expect(processAfterToolApproval.processForFlow.some((segment) => segment === cmdAwaiting)).toBe(true)
+    expect(processAfterToolApproval.processForFlow.some((segment) => segment === awaitingStatus)).toBe(
+      true
+    )
+    expect(isLiveToolAppendChange([hello, running], [hello, ran, cmdAwaiting, awaitingStatus])).toBe(true)
+    expect(isLiveToolWriteStatAppendChange([hello, running], [hello, ranDiff, cmdAwaiting, awaitingStatus])).toBe(
+      true
+    )
+    expect(isLiveToolAppendChange([hello, running], [hello, ranDiff, cmdAwaiting, awaitingStatus])).toBe(
+      false
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, cmdAwaiting, awaitingStatus]
+      })
+    ).toBe(false)
+    const processReadyForWriteStatApproval = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterWriteStatApproval = nextLiveProcessView(processReadyForWriteStatApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, cmdAwaiting, awaitingStatus]
+    })
+    expect(processAfterWriteStatApproval.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteStatApproval.processForFlow.some((segment) => segment === cmdAwaiting)).toBe(
+      true
+    )
+    expect(processAfterWriteStatApproval.processForFlow.some((segment) => segment === awaitingStatus)).toBe(
+      true
+    )
     const awaitingDone: TurnSegment = {
       ...awaitingStatus,
       status: 'done',
@@ -1172,6 +1225,19 @@ describe('live stream ui snapshot', () => {
         liveSegments: [askReady, askStatus]
       })
     ).toBe(answerReadyForAsk)
+    expect(isLiveToolAppendChange([hello, ran], [hello, ran, askReady, askStatus])).toBe(true)
+    expect(isLiveUserInputNeededChange([hello, ran], [hello, ran, askReady, askStatus])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, askReady, askStatus])).toBe('tool')
+    const processReadyForToolAsk = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const processAfterToolAsk = nextLiveProcessView(processReadyForToolAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, askReady, askStatus]
+    })
+    expect(processAfterToolAsk.processForFlow.some((segment) => segment === askReady)).toBe(true)
+    expect(processAfterToolAsk.processForFlow.some((segment) => segment === askStatus)).toBe(true)
     const askStatusDone: TurnSegment = { ...askStatus, status: 'done' }
     expect(isLiveStatusSettleChange([askReady, askStatus], [askReady, askStatusDone])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([askReady, askStatus], [askReady, askStatusDone])).toBe(

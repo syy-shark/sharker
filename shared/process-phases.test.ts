@@ -312,6 +312,39 @@ describe('process phases privacy', () => {
     expect(afterApproval![0].segment).toBe(cmdAwaiting)
     expect(afterApproval!.at(-1)?.segment).toBe(awaitingStatus)
     expect(afterApproval!.at(-1)?.title).toMatch(/Awaiting approval/)
+    const appendApproval = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, cmdAwaiting, awaitingStatus],
+      true
+    )
+    expect(appendApproval).not.toBeNull()
+    expect(appendApproval).toHaveLength(3)
+    expect(appendApproval![0]).toBe(doneRetargeted![0])
+    expect(appendApproval![1].segment).toBe(cmdAwaiting)
+    expect(appendApproval![2].segment).toBe(awaitingStatus)
+    const settleAndApproval = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, cmdAwaiting, awaitingStatus],
+      true
+    )
+    expect(settleAndApproval).not.toBeNull()
+    expect(settleAndApproval).toHaveLength(3)
+    expect(settleAndApproval![0].segment).toBe(cmdDone)
+    expect(settleAndApproval![1].segment).toBe(cmdAwaiting)
+    expect(settleAndApproval![2].segment).toBe(awaitingStatus)
+    const writeAndApproval = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, cmdAwaiting, awaitingStatus],
+      true
+    )
+    expect(writeAndApproval).not.toBeNull()
+    expect(writeAndApproval).toHaveLength(3)
+    expect(writeAndApproval![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndApproval![1].segment).toBe(cmdAwaiting)
+    expect(writeAndApproval![2].segment).toBe(awaitingStatus)
     const awaitingDone: TurnSegment = {
       ...awaitingStatus,
       status: 'done',
@@ -356,6 +389,17 @@ describe('process phases privacy', () => {
     expect(afterAsk).toHaveLength(2)
     expect(afterAsk![0].segment).toBe(askReady)
     expect(afterAsk!.at(-1)?.segment).toBe(askStatus)
+    const appendAsk = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, askReady, askStatus],
+      true
+    )
+    expect(appendAsk).not.toBeNull()
+    expect(appendAsk).toHaveLength(3)
+    expect(appendAsk![0]).toBe(doneRetargeted![0])
+    expect(appendAsk![1].segment).toBe(askReady)
+    expect(appendAsk![2].segment).toBe(askStatus)
     const askStatusDone: TurnSegment = { ...askStatus, status: 'done', endedAt: 20 }
     const afterAskDone = appendProcessPhaseStepOnToolStart(
       afterAsk!,

@@ -594,7 +594,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具、status 或 compress 也走 remap + 追加；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具（可带一条 Awaiting / Question requested 行）、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具、status 或 compress 也走 remap + 追加；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,

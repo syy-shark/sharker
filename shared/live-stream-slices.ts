@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加、回答仍重拆；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答仍重拆以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加、回答仍重拆；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答仍重拆以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -164,16 +164,25 @@ export function findLiveClosedAnswerText(
   return null
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具：只追加过程步（对标 Codex exec_cell complete_call + add_call；只读并行一次 yield 多个 tool_start，不发明 Exploring 分组格） */
-export function isLiveToolAppendChange(
-  prev: readonly TurnSegment[] | null | undefined,
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：只追加这些步（对标 Codex exec_cell complete_call + add_call / Awaiting approval；只读并行一次 yield 多个 tool_start，不发明 Exploring 分组格） */
+function isLiveAddedToolsWithOptionalStatus(
+  prevLen: number,
   next: readonly TurnSegment[]
 ): boolean {
-  if (!prev || next.length <= prev.length) return false
-  for (let i = prev.length; i < next.length; i++) {
+  if (next.length <= prevLen) return false
+  let tools = 0
+  for (let i = prevLen; i < next.length; i++) {
     const added = next[i]
+    if (!added) return false
     if (
-      !added ||
+      added.kind === 'status' &&
+      added.status === 'active' &&
+      i === next.length - 1 &&
+      tools >= 1
+    ) {
+      return true
+    }
+    if (
       added.kind !== 'tool' ||
       added.status !== 'active' ||
       !added.toolName ||
@@ -181,7 +190,16 @@ export function isLiveToolAppendChange(
     ) {
       return false
     }
+    tools += 1
   }
+  return tools >= 1
+}
+
+export function isLiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || !isLiveAddedToolsWithOptionalStatus(prev.length, next)) return false
   for (let i = 0; i < prev.length; i++) {
     const before = prev[i]
     const after = next[i]
@@ -671,25 +689,12 @@ function hasLiveWriteStatPrefix(
   return writeStats === 1
 }
 
-/** 一条写盘 +/- 收束，同时末尾新开一或多个工具：过程 remap + 追加，回答仍重拆（对标 Codex ~0.5s / add_call，不复制 #38695） */
+/** 一条写盘 +/- 收束，同时末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：过程 remap + 追加，回答仍重拆（对标 Codex ~0.5s / add_call / Awaiting approval，不复制 #38695） */
 export function isLiveToolWriteStatAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
-  if (!hasLiveWriteStatPrefix(prev, next)) return false
-  for (let i = prev!.length; i < next.length; i++) {
-    const added = next[i]
-    if (
-      !added ||
-      added.kind !== 'tool' ||
-      added.status !== 'active' ||
-      !added.toolName ||
-      added.toolName === 'present_inline_demo'
-    ) {
-      return false
-    }
-  }
-  return true
+  return hasLiveWriteStatPrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
 }
 
 /** 写盘收束同时新开 status：过程 remap + 追加，回答仍重拆（对标 规划下一步 / Reconnecting... n/5） */
