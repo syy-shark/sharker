@@ -1,5 +1,5 @@
 /**
- * `/mcp` 状态文案（对标 Codex 桌面端列出已配置 MCP）。
+ * `/mcp` 状态文案与是否打开设置（对标 Codex 桌面 Open MCP status）。
  * @see shared/ARCH.md
  */
 
@@ -12,6 +12,18 @@ export interface McpStatusServer {
   enabled?: boolean
   tools?: string[]
   error?: string
+}
+
+/**
+ * 官方桌面 `/mcp` = Open MCP status。
+ * 空配置且非 verbose 时打开设置 → MCP 服务器；已有 Server 或 verbose 只在对话里列状态。
+ */
+export function shouldOpenMcpSettings(
+  servers: readonly McpStatusServer[],
+  args = ''
+): boolean {
+  if (/^\s*verbose\b/i.test(args)) return false
+  return servers.length === 0
 }
 
 /** 拼 MCP 状态 Markdown */

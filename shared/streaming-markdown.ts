@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 单块增长列表 / 表格只重解析最后一项或最后一行（对标 Codex #39061 / #34045）。
+ * 单块增长列表 / 表格 / 段落 / 引用只重解析增长段（对标 Codex #39061 / #34045）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2896,8 +2896,47 @@ function continueLastTableBlock(
   return headerSame && rowsSame ? [prev] : [{ type: 'table', header, rows, align }]
 }
 
+/** 无换行续段落：已画行内保持同一引用（对标 Codex #22860 / #34045） */
+function continueLastParagraphBlock(
+  prev: Extract<CheapProseBlock, { type: 'p' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!suffix || suffix.includes('\n') || suffix.includes(']:') || prevNorm.endsWith('\n')) return null
+  const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+  if (lastLineNeedsFullProseParse(lastLine)) return null
+  const nodes = continueCheapInlineMarkdown(prevNorm, prev.nodes, nextText, defs)
+  return nodes === prev.nodes ? [prev] : [{ type: 'p', nodes }]
+}
+
+/** 引用里最后一段无换行增长：前面的引用块保持同一引用 */
+function continueLastQuoteBlock(
+  prev: Extract<CheapProseBlock, { type: 'quote' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!suffix || suffix.includes('\n') || suffix.includes(']:') || prevNorm.endsWith('\n')) return null
+  const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+  if (lastLineNeedsFullProseParse(lastLine.replace(/^ {0,3}> ?/, ''))) return null
+  const last = prev.blocks[prev.blocks.length - 1]
+  if (!last || last.type !== 'p') return null
+  const prevSrc = cheapInlineSourceAll(last.nodes)
+  const nodes = continueCheapInlineMarkdown(prevSrc, last.nodes, prevSrc + suffix, defs)
+  if (nodes === last.nodes) return [prev]
+  return [
+    {
+      type: 'quote',
+      blocks: [...prev.blocks.slice(0, -1), { type: 'p', nodes }]
+    }
+  ]
+}
+
 /**
- * 单块增长列表 / 表格：只重解析最后一项或最后一行（对标 Codex #39061 / #34045）。
+ * 单块增长列表 / 表格 / 段落 / 引用：只重解析增长段（对标 Codex #39061 / #34045）。
  * 定义行、块类型变化或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
@@ -2912,12 +2951,14 @@ function tryContinueLastCheapProseBlock(
   const last = prevBlocks[0]!
   if (last.type === 'list') return continueLastListBlock(last, prevNorm, nextText, defs)
   if (last.type === 'table') return continueLastTableBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'p') return continueLastParagraphBlock(last, prevNorm, nextText, defs)
+  if (last.type === 'quote') return continueLastQuoteBlock(last, prevNorm, nextText, defs)
   return null
 }
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
- * 单块列表 / 表格先走最后一项或最后一行窗口，不整列/整表重扫（对标 Codex #39061）。
+ * 单块列表 / 表格 / 段落 / 引用先走增长段，不整块重扫（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(

@@ -1051,6 +1051,22 @@ describe('splitStreamingMarkdown', () => {
       expect(manyTableNew[0].rows.slice(0, 8).every((row, i) => row[0] === manyTable[0].rows[i]?.[0])).toBe(true)
       expect(manyTableNew[0].rows).toHaveLength(9)
     }
+    const marked = parseCheapProseBlocks('见 `foo` 与 ')
+    const markedGrown = continueCheapProseBlocks('见 `foo` 与 ', marked, '见 `foo` 与 bar')
+    if (marked[0]?.type === 'p' && markedGrown[0]?.type === 'p') {
+      expect(markedGrown[0].nodes[0]).toBe(marked[0].nodes[0])
+      expect(markedGrown[0].nodes[1]).toBe(marked[0].nodes[1])
+      expect(markedGrown[0].nodes.map((n) => n.type)).toEqual(['text', 'code', 'text'])
+    }
+    const quote = parseCheapProseBlocks('> 注意')
+    const quoteGrown = continueCheapProseBlocks('> 注意', quote, '> 注意点')
+    if (quote[0]?.type === 'quote' && quoteGrown[0]?.type === 'quote') {
+      const inner = quote[0].blocks[0]
+      const grownInner = quoteGrown[0].blocks[0]
+      if (inner?.type === 'p' && grownInner?.type === 'p') {
+        expect(grownInner.nodes).toEqual([{ type: 'text', text: '注意点' }])
+      }
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {

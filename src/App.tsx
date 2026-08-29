@@ -174,7 +174,7 @@ import {
   type ThreadGoal
 } from '../shared/thread-goal'
 import { formatThreadStatus } from '../shared/thread-status'
-import { formatMcpStatus } from '../shared/mcp-status'
+import { formatMcpStatus, shouldOpenMcpSettings } from '../shared/mcp-status'
 import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts, pickResumeSuggestions } from '../shared/suggested-prompts'
@@ -5509,6 +5509,9 @@ export default function App() {
           const servers: McpStatusServer[] = window.sharker.listMcpStatus
             ? await window.sharker.listMcpStatus(cwd, verbose)
             : []
+          if (shouldOpenMcpSettings(servers, args)) {
+            void handleNavigate('settings', 'mcp')
+          }
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,

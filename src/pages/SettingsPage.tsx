@@ -30,7 +30,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   mcp: {
     title: 'MCP 服务器',
-    desc: '添加 STDIO 或 Streamable HTTP Server，开关后 Restart。对标 Codex Settings → MCP servers。OAuth 登录未接。对话里用 /mcp 查看已连接的 Server。'
+    desc: '添加 STDIO 或 Streamable HTTP Server，开关后 Restart。对标 Codex Settings → MCP servers。OAuth 登录未接。对话里 /mcp 打开 MCP 状态；未配置时打开本页。'
   },
   general: {
     title: '通用',
