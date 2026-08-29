@@ -29,6 +29,7 @@ import {
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
+  isLiveToolWriteStatAppendChange,
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
@@ -416,6 +417,26 @@ describe('live stream ui snapshot', () => {
     })
     expect(processAfterParallel.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(processAfterParallel.processForFlow.some((segment) => segment === nextGrep)).toBe(true)
+    expect(isLiveToolWriteStatAppendChange([hello, running], [hello, ranDiff, nextCmd])).toBe(true)
+    expect(isLiveToolAppendChange([hello, running], [hello, ranDiff, nextCmd])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, nextCmd])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, nextCmd]
+      })
+    ).toBe(false)
+    const processReadyForWriteAppend = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterWriteAppend = nextLiveProcessView(processReadyForWriteAppend, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, nextCmd]
+    })
+    expect(processAfterWriteAppend.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteAppend.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextCmd])).toBe('tool')
     expect(

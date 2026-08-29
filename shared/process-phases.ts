@@ -34,6 +34,7 @@ import {
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange,
+  isLiveToolWriteStatAppendChange,
   isLiveToolWriteStatChange
 } from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
@@ -583,7 +584,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具或一条 status：只追加这些步；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具或一条 status：只追加这些步；写盘收束同时新开工具也走追加；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -592,6 +593,7 @@ export function appendProcessPhaseStepOnToolStart(
 ): ProcessPhaseStep[] | null {
   if (
     !isLiveToolAppendChange(prevSegments, segments) &&
+    !isLiveToolWriteStatAppendChange(prevSegments, segments) &&
     !isLiveStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalNeededChange(prevSegments, segments) &&
     !isLiveApprovalResolvedChange(prevSegments, segments) &&
