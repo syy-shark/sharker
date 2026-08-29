@@ -74,6 +74,42 @@ export function parseReviewFindings(markdown: string): ReviewLineComment[] {
   return findings
 }
 
+const EMPTY_REVIEW_FINDINGS: ReviewLineComment[] = []
+
+/**
+ * 直播正文里只认已闭合的 `review-findings` 围栏。
+ * 半截围栏不挂；标题格式等收束后再解析，避免增长中的段落闪评论。
+ * 对标 Codex：`/review` comments show up directly inline in the review pane。
+ */
+export function parseLiveReviewFindings(streaming: string): ReviewLineComment[] {
+  const text = String(streaming || '')
+  if (!text.includes('```review-findings') && !text.includes('```REVIEW-FINDINGS')) {
+    return EMPTY_REVIEW_FINDINGS
+  }
+  const fence = /```review-findings\s*([\s\S]*?)```/i.exec(text)
+  if (!fence) return EMPTY_REVIEW_FINDINGS
+  return parseReviewFindings(fence[0])
+}
+
+/** 行内发现没变则复用上一帧，避免直播 token 重挂审查列表 */
+export function sameReviewFindings(
+  left: readonly ReviewLineComment[],
+  right: readonly ReviewLineComment[]
+): boolean {
+  if (left === right) return true
+  if (left.length !== right.length) return false
+  return left.every((row, index) => {
+    const other = right[index]
+    return (
+      Boolean(other) &&
+      row.path === other.path &&
+      row.line === other.line &&
+      row.side === other.side &&
+      row.text === other.text
+    )
+  })
+}
+
 /** 把评论收成跟进草稿（对标 Codex：评论留在 diff，用户再发消息，不自动开一轮） */
 export function formatReviewCommentsPrompt(comments: ReviewLineComment[]): string {
   const body = comments

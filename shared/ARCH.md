@@ -118,8 +118,8 @@
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
 | `terminal-snapshot.ts` | 集成终端快照：去 ANSI、环形缓冲、`read_thread_terminal` 文案 |
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
-| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏 |
-| `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析 |
+| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏（对标 Codex review findings appear inline） |
+| `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、审查面板订直播切片 |
 | `review-file-click.ts` | 审查文件名打开预览、行背景展开/收起、⌘单击行跳预览；右键菜单「打开预览 / 展开 diff」（对标 Codex review file tree open menu） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |

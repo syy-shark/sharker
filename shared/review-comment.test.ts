@@ -1,5 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { formatReviewCommentsPrompt, parseReviewFindings } from './review-comment'
+import {
+  formatReviewCommentsPrompt,
+  parseLiveReviewFindings,
+  parseReviewFindings,
+  sameReviewFindings
+} from './review-comment'
 
 describe('review comments', () => {
   it('formats line-anchored comments for the agent', () => {
@@ -38,5 +46,19 @@ describe('review comments', () => {
     expect(fromHeading[0]?.path).toBe('src/b.ts')
     expect(fromHeading[0]?.line).toBe(9)
     expect(fromHeading[0]?.text).toContain('不要吞错')
+    expect(parseLiveReviewFindings('概述\n```review-findings\n[{"path":"src/a.ts","line":4,"text":"缺少测试"}]')).toEqual(
+      []
+    )
+    expect(
+      parseLiveReviewFindings(
+        '概述\n```review-findings\n[{"path":"src/a.ts","line":4,"text":"缺少测试"}]\n```\n还在写'
+      )
+    ).toEqual(fromFence)
+    expect(parseLiveReviewFindings('### src/b.ts:9\n不要吞错\n')).toEqual([])
+    expect(sameReviewFindings(fromFence, fromFence)).toBe(true)
+    expect(sameReviewFindings(fromFence, [])).toBe(false)
+    const panelSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'), 'utf8')
+    expect(panelSrc).toContain('parseLiveReviewFindings')
+    expect(panelSrc).toContain('useLiveStreamUiSelect')
   })
 })
