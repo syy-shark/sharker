@@ -29,6 +29,7 @@ import {
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
+  findLiveToolInPlaceChange,
   isLiveToolWriteStatAppendChange,
   isLiveWriteStatStatusAppendChange,
   isLiveWriteStatStatusThinkAppendChange,
@@ -57,6 +58,7 @@ import {
   isLiveThinkOrStatusClose,
   isLiveTextClose,
   isLiveToolSettleChange,
+  isLiveMultiToolSettleChange,
   shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
   shouldSkipLiveAnswerIdentity,
@@ -570,6 +572,35 @@ describe('live stream ui snapshot', () => {
     expect(processWhileEarlier.processForFlow.some((segment) => segment === ran)).toBe(true)
     expect(processWhileEarlier.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(processWhileEarlier.processForFlow.some((segment) => segment === running)).toBe(false)
+    const nextCmdDone: TurnSegment = { ...nextCmd, status: 'done', resultSummary: 'ok' }
+    expect(isLiveToolSettleChange(nextCmd, nextCmdDone)).toBe(true)
+    expect(findLiveToolInPlaceChange([hello, running, nextCmd], [hello, ran, nextCmdDone])).toBeNull()
+    expect(isLiveMultiToolSettleChange([hello, running, nextCmd], [hello, ran, nextCmdDone])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running, nextCmd], [hello, ran, nextCmdDone])).toBe(
+      'tool'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running, nextCmd],
+        segments: [hello, ran, nextCmdDone]
+      })
+    ).toBe(true)
+    expect(
+      shouldRetargetLiveProcessOnToolMeta({
+        prev: processWhileTwo,
+        prevSegments: [hello, running, nextCmd],
+        segments: [hello, ran, nextCmdDone]
+      })
+    ).toBe(true)
+    const processWhileBothSettled = nextLiveProcessView(processWhileTwo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextCmdDone]
+    })
+    expect(processWhileBothSettled.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processWhileBothSettled.processForFlow.some((segment) => segment === nextCmdDone)).toBe(true)
+    expect(processWhileBothSettled.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(processWhileBothSettled.processForFlow.some((segment) => segment === nextCmd)).toBe(false)
     const thinking: TurnSegment = {
       id: 'th-1',
       kind: 'thinking',
@@ -909,6 +940,12 @@ describe('live stream ui snapshot', () => {
       status: 'active',
       content: 'Reconnecting... 1/5'
     }
+    expect(isLiveStatusAppendChange([hello, running, nextCmd], [hello, ran, nextCmdDone, reconnectStatus])).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running, nextCmd], [hello, ran, nextCmdDone, reconnectStatus])).toBe(
+      'status'
+    )
     expect(isLiveStatusAppendChange([ran], [ran, reconnectStatus])).toBe(true)
     expect(isLiveStatusAppendChange([running], [ran, reconnectStatus])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([running], [ran, reconnectStatus])).toBe('status')

@@ -23,6 +23,7 @@ import {
 import {
   findLiveDemoHtmlChange,
   findLiveToolRetargetChange,
+  isLiveMultiToolSettleChange,
   findLiveDemoFenceChange,
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
@@ -709,6 +710,28 @@ export function retargetProcessPhaseStepsOnToolMeta(
   isStreaming: boolean
 ): ProcessPhaseStep[] | null {
   if (!prevSteps.length) return null
+  if (isLiveMultiToolSettleChange(prevSegments, segments)) {
+    const remapped = prevSteps.map((step) => {
+      const index = prevSegments!.indexOf(step.segment)
+      if (index < 0) return step
+      const nextSeg = segments[index]
+      if (!nextSeg || nextSeg === step.segment) return step
+      const rebuilt = buildStepsFromSource([nextSeg], isStreaming)[0]
+      if (!rebuilt) return step
+      if (
+        rebuilt.title === step.title &&
+        rebuilt.detail === step.detail &&
+        rebuilt.status === step.status
+      ) {
+        return { ...step, segment: nextSeg }
+      }
+      return { ...rebuilt, id: step.id, phase: step.phase }
+    })
+    for (let i = 0; i < remapped.length; i++) {
+      if (remapped[i] !== prevSteps[i]) return remapped
+    }
+    return prevSteps
+  }
   const change = findLiveToolRetargetChange(prevSegments, segments)
   if (!change) return null
   const index = prevSteps.findIndex((step) => step.segment === change.from)
