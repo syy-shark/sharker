@@ -20,6 +20,7 @@ import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
 } from './stream-reconnect'
+import { isLiveToolSettleChange } from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
@@ -567,7 +568,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 同一工具只改短路径详情：只换该步；命令末行退回原数组（对标 Codex #22860 / #19260） */
+/** 同一工具只改短路径详情或收束：只换该步；命令末行退回原数组（对标 Codex #22860 / #19260） */
 export function retargetProcessPhaseStepsOnToolMeta(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -583,8 +584,13 @@ export function retargetProcessPhaseStepsOnToolMeta(
   const nextTail = segments[last]
   if (!prevTail || !nextTail) return null
   if (prevTail.kind !== 'tool' || nextTail.kind !== 'tool') return null
-  if (prevTail.id !== nextTail.id || prevTail.status !== nextTail.status) return null
-  if (prevTail.toolName !== nextTail.toolName) return null
+  if (prevTail.id !== nextTail.id || prevTail.toolName !== nextTail.toolName) return null
+  if (
+    prevTail.status !== nextTail.status &&
+    !isLiveToolSettleChange(prevTail, nextTail)
+  ) {
+    return null
+  }
   if (
     prevTail.toolArgs !== nextTail.toolArgs ||
     prevTail.fileDiff !== nextTail.fileDiff ||

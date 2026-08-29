@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换时间线末步引用；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用；工具收束无新写盘也只换末步；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -97,6 +97,20 @@ function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean
   )
 }
 
+/** 同一工具收束且没新写盘：就地换末步，不重拆回答（对标 Codex exec_cell complete_call） */
+export function isLiveToolSettleChange(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'tool' || next.kind !== 'tool') return false
+  if (prev.id !== next.id || prev.toolName !== next.toolName) return false
+  if (prev.status !== 'active') return false
+  if (next.status !== 'done' && next.status !== 'error' && next.status !== 'cancelled') return false
+  return (
+    prev.toolArgs === next.toolArgs &&
+    prev.fileDiff === next.fileDiff &&
+    prev.fileDiffs === next.fileDiffs &&
+    prev.editPreview === next.editPreview
+  )
+}
+
 /** 同一工具只把详情换成命令末行：过程切片保持原数组，不抬 TurnFlow */
 export function isLiveLastLineOnlyToolChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (!isLiveToolMetaOnlyChange(prev, next)) return false
@@ -131,7 +145,9 @@ export function shouldSkipLiveStreamDerivation(
   const nextTail = segments[last]
   if (!prevTail || !nextTail) return null
   if (prevTail.id !== nextTail.id || prevTail.kind !== nextTail.kind) return null
-  if (prevTail !== nextTail && prevTail.status !== nextTail.status) return null
+  if (prevTail !== nextTail && prevTail.status !== nextTail.status) {
+    return isLiveToolSettleChange(prevTail, nextTail) ? 'tool' : null
+  }
   if (isLiveThinking(nextTail)) return 'think'
   if (isLiveStatus(nextTail)) return 'status'
   if (isLiveToolMetaOnlyChange(prevTail, nextTail)) return 'tool'
@@ -274,7 +290,7 @@ export function shouldRetargetLiveProcessOnToolMeta(input: {
   const prevTail = input.prevSegments[last]
   const nextTail = input.segments[last]
   if (!prevTail || !nextTail) return false
-  return isLiveToolMetaOnlyChange(prevTail, nextTail)
+  return isLiveToolMetaOnlyChange(prevTail, nextTail) || isLiveToolSettleChange(prevTail, nextTail)
 }
 
 function retargetProcessFlow(
@@ -495,7 +511,9 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (nextTail.kind === 'thinking' || nextTail.kind === 'status') {
     return prevTail.status === nextTail.status
   }
-  if (nextTail.kind === 'tool') return isLiveToolMetaOnlyChange(prevTail, nextTail)
+  if (nextTail.kind === 'tool') {
+    return isLiveToolMetaOnlyChange(prevTail, nextTail) || isLiveToolSettleChange(prevTail, nextTail)
+  }
   return false
 }
 

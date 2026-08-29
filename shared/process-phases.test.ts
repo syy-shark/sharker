@@ -94,6 +94,18 @@ describe('process phases privacy', () => {
     expect(
       retargetProcessPhaseStepsOnToolMeta(cmdSteps, [cmdRunning], [cmdPreview], true)
     ).toBeNull()
+    const cmdDone: TurnSegment = { ...cmdRunning, status: 'done' }
+    const doneRetargeted = retargetProcessPhaseStepsOnToolMeta(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone],
+      true
+    )
+    expect(doneRetargeted).not.toBeNull()
+    expect(doneRetargeted).not.toBe(cmdSteps)
+    expect(doneRetargeted![0].status).toBe('done')
+    expect(doneRetargeted![0].segment).toBe(cmdDone)
+    expect(doneRetargeted![0].id).toBe(cmdSteps[0].id)
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',

@@ -28,6 +28,7 @@ import {
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
+  isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
   shouldSkipLiveAnswerIdentity,
@@ -304,6 +305,37 @@ describe('live stream ui snapshot', () => {
     const nextKept = processWhilePath.processForFlow.filter((segment) => segment !== runningPath)
     expect(nextKept.length).toBe(prevKept.length)
     prevKept.forEach((segment, index) => expect(segment).toBe(nextKept[index]))
+    const ran: TurnSegment = { ...running, status: 'done', resultSummary: 'exit 0' }
+    const ranDiff: TurnSegment = {
+      ...ran,
+      fileDiff: { path: 'a.ts', lines: [], stats: { added: 1, removed: 0 } }
+    }
+    expect(isLiveToolSettleChange(running, ran)).toBe(true)
+    expect(isLiveToolSettleChange(running, ranDiff)).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran])).toBe('tool')
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff])).toBe(null)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran]
+      })
+    ).toBe(true)
+    expect(shouldSkipLiveStreamPublish([hello, running], [hello, ran])).toBe(false)
+    expect(
+      shouldRetargetLiveProcessOnToolMeta({
+        prev: processWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran]
+      })
+    ).toBe(true)
+    const processWhileRan = nextLiveProcessView(processWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    expect(processWhileRan).not.toBe(processWhileTool)
+    expect(processWhileRan.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processWhileRan.processForFlow.some((segment) => segment === running)).toBe(false)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
