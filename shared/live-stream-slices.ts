@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；前缀没变或只收束思考/status 时新工具只追加末步、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -119,7 +119,33 @@ export function isLiveThinkOrStatusClose(prev: TurnSegment, next: TurnSegment): 
   return (prev.content ?? '') === (next.content ?? '')
 }
 
-/** 前缀没变或只收束思考/status、末尾新开工具：只追加过程步（对标 Codex exec_cell add_call） */
+/** 散文只把 active 标成 done，正文没变（tool_start 收束，对标 Codex flush then add_call） */
+export function isLiveTextClose(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.id !== next.id || prev.kind !== 'text' || next.kind !== 'text') return false
+  if (prev.status !== 'active' || next.status !== 'done') return false
+  return (prev.content ?? '') === (next.content ?? '')
+}
+
+function isLivePrefixClose(prev: TurnSegment, next: TurnSegment): boolean {
+  return isLiveThinkOrStatusClose(prev, next) || isLiveTextClose(prev, next)
+}
+
+/** 前缀里被 tool_start 收成 done 的散文；用来就地封回答尾 */
+export function findLiveClosedAnswerText(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): TurnSegment | null {
+  if (!prev) return null
+  const n = Math.min(prev.length, next.length)
+  for (let i = 0; i < n; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (before && after && isLiveTextClose(before, after)) return after
+  }
+  return null
+}
+
+/** 前缀没变或只收束思考/status/散文、末尾新开工具：只追加过程步（对标 Codex exec_cell add_call） */
 export function isLiveToolAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -140,7 +166,7 @@ export function isLiveToolAppendChange(
     const after = next[i]
     if (!before || !after) return false
     if (before === after) continue
-    if (!isLiveThinkOrStatusClose(before, after)) return false
+    if (!isLivePrefixClose(before, after)) return false
   }
   return true
 }
@@ -674,7 +700,9 @@ export function shouldSkipLiveAnswerIdentity(input: {
   segments: readonly TurnSegment[]
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
-  if (isLiveToolAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveToolAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
   if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
@@ -745,6 +773,26 @@ function appendLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnsw
   return growLiveAnswerView(prev, tail)
 }
 
+/** tool_start 收束散文：把增长尾封进 closed，不重跑 buildAnswerParts */
+function sealLiveAnswerTail(prev: LiveAnswerView, closedSeg: TurnSegment): LiveAnswerView {
+  if (!prev.tail || prev.tail.id !== closedSeg.id) return prev
+  const content = closedSeg.content ?? prev.tail.content
+  const sealed =
+    prev.tail.type === 'text' && prev.tail.content === content
+      ? prev.tail
+      : { type: 'text' as const, id: closedSeg.id, content }
+  const closed = [...prev.closed, sealed]
+  const copyable = copyableFromAnswerParts(closed)
+  return {
+    parts: closed,
+    closed,
+    tail: null,
+    show: closed.length > 0,
+    copyable,
+    hasCopyable: Boolean(copyable)
+  }
+}
+
 /** 回答切片：正文只加长时续尾；否则闭合块走 reuseAnswerParts */
 export function nextLiveAnswerView(
   prev: LiveAnswerView | null,
@@ -762,6 +810,14 @@ export function nextLiveAnswerView(
   if (prev && shouldSkipLiveAnswerIdentity({ prev, prevSegments, segments })) {
     answerGrowHold = { view: prev, segments, tailPlain: Boolean(grow.tail) }
     return prev
+  }
+  if (prev && isLiveToolAppendChange(prevSegments, segments)) {
+    const sealed = findLiveClosedAnswerText(prevSegments, segments)
+    if (sealed) {
+      const view = sealLiveAnswerTail(prev, sealed)
+      answerGrowHold = { view, segments, tailPlain: false }
+      return view
+    }
   }
   if (prev && isLiveAnswerAppendChange(prevSegments, segments)) {
     const added = segments[segments.length - 1]!

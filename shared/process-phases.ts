@@ -573,7 +573,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
+/** 前缀没变或只收束思考/status/散文、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,

@@ -147,6 +147,23 @@ describe('process phases privacy', () => {
     expect(remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, firstReply])).toBe(
       appended
     )
+    const liveText: TurnSegment = {
+      id: 'ans1',
+      kind: 'text',
+      status: 'active',
+      content: 'Hi',
+      startedAt: 12
+    }
+    const liveTextDone: TurnSegment = { ...liveText, status: 'done' }
+    const fromAnswer = deriveChronologicalSteps([liveText], { isStreaming: true })
+    const afterAnswerTool = appendProcessPhaseStepOnToolStart(
+      fromAnswer,
+      [liveText],
+      [liveTextDone, cmdNext],
+      true
+    )
+    expect(afterAnswerTool).not.toBeNull()
+    expect(afterAnswerTool!.at(-1)?.segment).toBe(cmdNext)
     const twoActive = deriveChronologicalSteps([cmdRunning, cmdNext], { isStreaming: true })
     const earlierSettled = retargetProcessPhaseStepsOnToolMeta(
       twoActive,

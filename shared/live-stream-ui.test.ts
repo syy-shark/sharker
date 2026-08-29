@@ -32,6 +32,7 @@ import {
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
   isLiveThinkOrStatusClose,
+  isLiveTextClose,
   isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
@@ -349,6 +350,38 @@ describe('live stream ui snapshot', () => {
     }
     expect(isLiveToolAppendChange([hello, ran], [hello, ran, nextCmd])).toBe(true)
     expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(false)
+    const helloDone: TurnSegment = { ...hello, status: 'done' }
+    expect(isLiveTextClose(hello, helloDone)).toBe(true)
+    expect(isLiveToolAppendChange([hello, ran], [helloDone, ran, nextCmd])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [helloDone, ran, nextCmd])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, ran],
+        segments: [helloDone, ran, nextCmd]
+      })
+    ).toBe(false)
+    const answerAfterHello = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const answerAfterClose = nextLiveAnswerView(answerAfterHello, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [helloDone, ran, nextCmd]
+    })
+    expect(answerAfterClose.tail).toBeNull()
+    expect(answerAfterClose.closed.some((part) => part.id === hello.id && part.content === 'Hello')).toBe(
+      true
+    )
+    const processAfterHello = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const processAfterClose = nextLiveProcessView(processAfterHello, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [helloDone, ran, nextCmd]
+    })
+    expect(processAfterClose.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, nextCmd])).toBe('tool')
     expect(
       shouldSkipLiveAnswerIdentity({
