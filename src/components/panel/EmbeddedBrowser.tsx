@@ -27,6 +27,7 @@ import {
   browserHistoryLabel,
   inAppBrowserPopupUrl,
   recordBrowserHistoryVisit,
+  resolveInAppBrowserOmnibox,
   shouldRecordBrowserHistory,
   suggestBrowserOmnibox,
   type BrowserHistoryEntry
@@ -57,18 +58,6 @@ function displayUrlForBar(raw: string): string {
   if (!raw || raw.startsWith('data:text/html')) return ''
   if (raw === 'about:blank') return ''
   return raw
-}
-
-function resolveNavigateTarget(raw: string, startUrl: string): string {
-  const next = raw.trim()
-  if (!next) return startUrl
-  if (/^https?:\/\//i.test(next)) return next
-  if (next.startsWith('about:')) return next
-  /** 像 Chrome：有点号且无空格 → 网址；否则 Google 搜索 */
-  if (next.includes('.') && !/\s/.test(next)) {
-    return `https://${next}`
-  }
-  return `https://www.google.com/search?q=${encodeURIComponent(next)}`
 }
 
 /** webview 浏览器面板 */
@@ -350,7 +339,7 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
 
   const navigate = () => {
     const home = browserStartPageDataUrl(startTheme)
-    goTo(resolveNavigateTarget(input, home))
+    goTo(resolveInAppBrowserOmnibox(input, home))
   }
 
   const suggestions = suggestOpen ? suggestBrowserOmnibox(history, input, url) : []

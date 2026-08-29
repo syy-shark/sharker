@@ -16,7 +16,8 @@ import {
   shouldRecordBrowserHistory,
   inAppBrowserPopupUrl,
   suggestBrowserHistory,
-  suggestBrowserOmnibox
+  suggestBrowserOmnibox,
+  resolveInAppBrowserOmnibox
 } from './browser-history'
 
 describe('browser history', () => {
@@ -92,12 +93,25 @@ describe('browser history', () => {
     expect(inAppBrowserPopupUrl('file:///tmp/a.html')).toBe('file:///tmp/a.html')
     expect(inAppBrowserPopupUrl('javascript:alert(1)')).toBe('')
     expect(inAppBrowserPopupUrl('about:blank')).toBe('')
+    expect(resolveInAppBrowserOmnibox('file:///tmp/a.html', 'data:text/html,start')).toBe(
+      'file:///tmp/a.html'
+    )
+    expect(resolveInAppBrowserOmnibox('https://ex.com', 'data:text/html,start')).toBe(
+      'https://ex.com'
+    )
+    expect(resolveInAppBrowserOmnibox('javascript:alert(1)', 'data:text/html,start')).toBe(
+      'data:text/html,start'
+    )
+    expect(resolveInAppBrowserOmnibox('index.html', 'data:text/html,start')).toBe(
+      'https://index.html'
+    )
     const browserSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedBrowser.tsx'),
       'utf8'
     )
     expect(browserSrc).toContain("addEventListener('new-window'")
     expect(browserSrc).toContain('inAppBrowserPopupUrl')
+    expect(browserSrc).toContain('resolveInAppBrowserOmnibox')
     expect(browserSrc).toContain("action: 'deny'")
   })
 })

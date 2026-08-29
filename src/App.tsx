@@ -177,6 +177,7 @@ import {
 } from '../shared/automation'
 import { parseReviewFindings } from '../shared/review-comment'
 import { formatCitationClipboardPath, resolveCitationPath } from '../shared/file-citation'
+import { resolveWorkspaceHtmlFileUrl, shouldOpenHtmlInAppBrowser } from '../shared/file-preview'
 import { fileOpenerUri, parseFileOpener } from '../shared/file-opener'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
@@ -3433,6 +3434,27 @@ export default function App() {
     const onCite = (event: Event) => {
       const detail = (event as CustomEvent<{ path?: string; line?: number; column?: number }>).detail
       if (!detail?.path || popoutRoute) return
+      if (shouldOpenHtmlInAppBrowser(detail.path, detail.line)) {
+        const runtime = runtimeForConversation(
+          activeConversationIdRef.current,
+          activeConversationIdRef.current,
+          threadRuntimeRef.current
+        )
+        const cwd = resolveConversationPath({
+          worktreePath: runtime.worktreePath || threadWorktreePathRef.current,
+          workspacePath: getActiveWorkspacePath(settingsRef.current)
+        })
+        const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
+        const htmlUrl = resolveWorkspaceHtmlFileUrl(detail.path, cwd, extra)
+        if (htmlUrl) {
+          setBrowserOpenUrl(htmlUrl)
+          setBrowserOpenNonce((n) => n + 1)
+          setRightPanelTab('browser')
+          setRightPanelOpen(true)
+          setPage('chat')
+          return
+        }
+      }
       const opener = parseFileOpener(settingsRef.current.fileOpener)
       if (opener !== 'none') {
         const abs = conversationAbs(detail.path)

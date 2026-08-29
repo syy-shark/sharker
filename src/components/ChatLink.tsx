@@ -1,5 +1,5 @@
 /**
- * 对话 http(s) 链接：点进内置浏览器，⌘/Ctrl+点进系统浏览器，右键选打开目标或复制。
+ * 对话 http(s) / file:// HTML 链接：点进内置浏览器，⌘/Ctrl+点进系统浏览器，右键选打开目标或复制。
  * 对标 Codex clicking a URL / #41122。不订直播 token，不发明默认打开设置。
  * @see src/components/ARCH.md
  */

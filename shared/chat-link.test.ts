@@ -15,7 +15,9 @@ describe('chat link open', () => {
     expect(isInAppBrowserChatHref('https://localhost:3000/pricing')).toBe(true)
     expect(isInAppBrowserChatHref('http://127.0.0.1:5173/')).toBe(true)
     expect(isInAppBrowserChatHref('mailto:hi@ex.com')).toBe(false)
-    expect(isInAppBrowserChatHref('file:///tmp/a.html')).toBe(false)
+    expect(isInAppBrowserChatHref('file:///tmp/a.html')).toBe(true)
+    expect(isInAppBrowserChatHref('file:///tmp/a.html#ok')).toBe(true)
+    expect(isInAppBrowserChatHref('file:///tmp/a.ts')).toBe(false)
     expect(isInAppBrowserChatHref('javascript:alert(1)')).toBe(false)
     expect(chatLinkOpensInSystemBrowser({ metaKey: true })).toBe(true)
     expect(chatLinkOpensInSystemBrowser({ ctrlKey: true })).toBe(true)
@@ -26,6 +28,9 @@ describe('chat link open', () => {
     expect(resolveChatLinkOpen('mailto:hi@ex.com')).toBe('system')
     expect(resolveChatLinkOpen('mailto:hi@ex.com', { metaKey: true })).toBe('system')
     expect(resolveChatLinkOpen('/src/foo.ts')).toBe('ignore')
+    expect(resolveChatLinkOpen('file:///tmp/a.html')).toBe('in-app')
+    expect(resolveChatLinkOpen('file:///tmp/a.html', { metaKey: true })).toBe('system')
+    expect(resolveChatLinkOpen('file:///tmp/a.ts')).toBe('ignore')
     expect(resolveChatLinkOpen('javascript:alert(1)')).toBe('ignore')
     const md = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/MarkdownBody.tsx'),
@@ -59,5 +64,19 @@ describe('chat link open', () => {
     expect(termSrc).toContain('registerLinkProvider')
     expect(termSrc).toContain('findHttpLinksInText')
     expect(termSrc).toContain('linkHandler')
+    const appSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'),
+      'utf8'
+    )
+    const treeSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/FileTree.tsx'),
+      'utf8'
+    )
+    expect(appSrc).toContain('shouldOpenHtmlInAppBrowser')
+    expect(appSrc).toContain('resolveWorkspaceHtmlFileUrl')
+    expect(treeSrc).toContain('dispatchOpenBrowserUrl')
+    expect(treeSrc).toContain('resolveWorkspaceHtmlFileUrl')
+    expect(live).toContain('isHtmlPreviewPath')
+    expect(live).toContain('parseFileCitation')
   })
 })

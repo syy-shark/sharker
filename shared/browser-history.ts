@@ -116,6 +116,21 @@ export function suggestBrowserHistory(
   return searchBrowserHistory(entries, query).slice(0, Math.max(1, limit))
 }
 
+/**
+ * 地址栏回车：http(s) / file:// HTML 预览原样走；其余像 Chrome。
+ * 对标 Codex file-backed previews / #36552。不把 `index.html` 当成本机文件。
+ */
+export function resolveInAppBrowserOmnibox(raw: string, startUrl: string): string {
+  const next = String(raw || '').trim()
+  if (!next) return startUrl
+  if (/^https?:\/\//i.test(next)) return next
+  if (/^(javascript|data|blob|vbscript):/i.test(next)) return startUrl
+  if (/^file:/i.test(next)) return shouldRecordBrowserHistory(next) ? next : startUrl
+  if (next.startsWith('about:')) return next
+  if (next.includes('.') && !/\s/.test(next)) return `https://${next}`
+  return `https://www.google.com/search?q=${encodeURIComponent(next)}`
+}
+
 /** 地址栏：还没改字时给最近访问，输入后按标题/网址滤 */
 export function suggestBrowserOmnibox(
   entries: readonly BrowserHistoryEntry[],

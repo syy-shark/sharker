@@ -4,11 +4,16 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  isHtmlPreviewPath,
+  isPathInsideRoot,
+  resolveWorkspaceHtmlFileUrl,
   shouldAnimateFileTreeInsert,
+  shouldOpenHtmlInAppBrowser,
   shouldRereadOpenPreviewOnReload,
   maxDiffGotoLine,
   parseGoToLineInput,
-  previewPathTouchedByWrites
+  previewPathTouchedByWrites,
+  toBrowserFileUrl
 } from './file-preview'
 
 describe('file preview kinds', () => {
@@ -19,8 +24,36 @@ describe('file preview kinds', () => {
     expect(filePreviewKind('sheet.xlsx')).toBe('unsupported')
     expect(filePreviewKind('notes.docx')).toBe('unsupported')
     expect(filePreviewKind('src/app.ts')).toBe('text')
+    expect(filePreviewKind('docs/index.html')).toBe('text')
     expect(filePreviewKind('data.csv')).toBe('text')
     expect(filePreviewKind('README')).toBe('text')
+    expect(isHtmlPreviewPath('docs/index.html')).toBe(true)
+    expect(isHtmlPreviewPath('docs/index.html#gallery')).toBe(true)
+    expect(isHtmlPreviewPath('page.HTM')).toBe(true)
+    expect(isHtmlPreviewPath('src/app.ts')).toBe(false)
+    expect(shouldOpenHtmlInAppBrowser('docs/index.html')).toBe(true)
+    expect(shouldOpenHtmlInAppBrowser('docs/index.html', 12)).toBe(false)
+    expect(shouldOpenHtmlInAppBrowser('src/app.ts')).toBe(false)
+    expect(toBrowserFileUrl('/tmp/proj/docs/a.html')).toBe('file:///tmp/proj/docs/a.html')
+    expect(toBrowserFileUrl('/tmp/foo bar.html')).toBe('file:///tmp/foo%20bar.html')
+    expect(isPathInsideRoot('/tmp/proj/docs/a.html', '/tmp/proj')).toBe(true)
+    expect(isPathInsideRoot('/tmp/outside.html', '/tmp/proj')).toBe(false)
+    expect(resolveWorkspaceHtmlFileUrl('docs/a.html', '/tmp/proj')).toBe(
+      'file:///tmp/proj/docs/a.html'
+    )
+    expect(resolveWorkspaceHtmlFileUrl('docs/a.html#ok', '/tmp/proj')).toBe(
+      'file:///tmp/proj/docs/a.html#ok'
+    )
+    expect(resolveWorkspaceHtmlFileUrl('file:///tmp/proj/docs/a.html', '/tmp/proj')).toBe(
+      'file:///tmp/proj/docs/a.html'
+    )
+    expect(resolveWorkspaceHtmlFileUrl('../outside.html', '/tmp/proj')).toBe('')
+    expect(resolveWorkspaceHtmlFileUrl('file:///etc/passwd.html', '/tmp/proj')).toBe('')
+    expect(resolveWorkspaceHtmlFileUrl('docs/a.ts', '/tmp/proj')).toBe('')
+    expect(resolveWorkspaceHtmlFileUrl('https://ex.com/a.html', '/tmp/proj')).toBe('')
+    expect(resolveWorkspaceHtmlFileUrl('extra/page.html', '/tmp/proj', ['/tmp/extra'])).toBe(
+      'file:///tmp/extra/page.html'
+    )
     expect(dataUrlMimeForPath('a.webp')).toBe('image/webp')
     expect(dataUrlMimeForPath('a.pdf')).toBe('application/pdf')
     expect(filePreviewUnsupportedMessage('a.xlsx')).toMatch(/表格/)

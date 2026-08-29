@@ -1,5 +1,5 @@
 /**
- * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
+ * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
@@ -9,12 +9,15 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  resolveWorkspaceHtmlFileUrl,
   shouldAnimateFileTreeInsert,
+  shouldOpenHtmlInAppBrowser,
   shouldRereadOpenPreviewOnReload,
   parseGoToLineInput,
   type FilePreviewKind,
   type FileTreeReloadReason
 } from '../../../shared/file-preview'
+import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -183,6 +186,13 @@ export const FileTree = memo(function FileTree({
   ) => {
     setFileError('')
     const abs = resolveCitationPath(path, workspacePath, extraRoots)
+    if (shouldOpenHtmlInAppBrowser(abs, line)) {
+      const htmlUrl = resolveWorkspaceHtmlFileUrl(abs, workspacePath, extraRoots)
+      if (htmlUrl) {
+        dispatchOpenBrowserUrl(htmlUrl)
+        return
+      }
+    }
     const kind = filePreviewKind(abs)
     if (kind === 'unsupported') {
       if (opts?.keepIfClosed) return

@@ -1,5 +1,5 @@
 /**
- * 聊天 Markdown 渲染：http(s) 默认进内置浏览器，⌘/Ctrl+点进系统浏览器，右键选打开目标；本地文件引用打开右侧预览。
+ * 聊天 Markdown 渲染：http(s) 与 file:// HTML 默认进内置浏览器；本地代码引用打开右侧预览。
  * 保住 GFM 任务列表 class；元素子节点不套 span。
  * 支持 ```demo 对话原生内联演示（无浏览器外壳）。
  * @see src/ARCH.md

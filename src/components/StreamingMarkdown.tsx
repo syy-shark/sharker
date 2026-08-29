@@ -11,6 +11,8 @@ import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLangPrefix } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
 import { isInAppBrowserChatHref, resolveChatLinkOpen } from '../../shared/chat-link'
+import { parseFileCitation } from '../../shared/file-citation'
+import { isHtmlPreviewPath } from '../../shared/file-preview'
 import { ChatLink } from './ChatLink'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
@@ -65,6 +67,14 @@ const CheapInlineView = memo(function CheapInlineView({ node }: { node: CheapInl
         <ChatLink href={node.href} title={node.title}>
           {node.children ? renderCheapInline(node.children) : node.text}
         </ChatLink>
+      )
+    }
+    const htmlFile = parseFileCitation(node.href)
+    if (htmlFile && isHtmlPreviewPath(htmlFile.path)) {
+      return (
+        <FileCiteLink path={htmlFile.path} line={htmlFile.line} column={htmlFile.column}>
+          {node.children ? renderCheapInline(node.children) : node.text}
+        </FileCiteLink>
       )
     }
     return (

@@ -108,8 +108,8 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树；`shouldRereadOpenPreviewOnReload` 让写盘 revision / 回前台在文件树内重读已打开预览（不抬 App，对标 Codex 打开文档跟着改）；`shouldAnimateFileTreeInsert` 定居后不再播进入动画（对标 Codex sidebar jitter） |
-| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、写盘路径是否碰到预览、写盘重拉树不清预览、写盘/回前台才重读已打开预览 |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；工作区 HTML 无行号改走内置浏览器 `file://`（对标 Codex file-backed previews / #32773，带行号仍走源码预览）；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树；`shouldRereadOpenPreviewOnReload` 让写盘 revision / 回前台在文件树内重读已打开预览（不抬 App，对标 Codex 打开文档跟着改）；`shouldAnimateFileTreeInsert` 定居后不再播进入动画（对标 Codex sidebar jitter） |
+| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、工作区 HTML → `file://`（拒工作区外与 `..`）、写盘路径是否碰到预览、写盘重拉树不清预览、写盘/回前台才重读已打开预览 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `git-branch-list.ts` | Composer 隔离起点：解析本地 + 远程跟踪分支并搜索（对标 Codex local branch search）；远程只保留 `origin/…` 完整 ref（对标 #22635） |
@@ -210,12 +210,12 @@
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注（对标 Codex Annotation mode / Toggle browser browse or comment mode）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
-| `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除；`_blank` / window.open 只回同一视口可开的 http(s)/file（对标 Codex Settings → Browser / 单页内置浏览器 #26863）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史或多标签 |
+| `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除；地址栏回车认 `file://` HTML 预览（对标 Codex file-backed previews / #36552）；`_blank` / window.open 只回同一视口可开的 http(s)/file（对标 Codex Settings → Browser / 单页内置浏览器 #26863）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史或多标签 |
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `browser-downloads.ts` | 内置浏览器下载目录与文件名：默认系统 Downloads、自选目录、每次询问、重名 `(N)`（对标 Codex Settings → Browser downloads）。不发明下载列表 / @Browser |
 | `browser-downloads.test.ts` | 穿越路径拒绝、默认目录、重名、App 三处落盘与主进程 will-download |
-| `chat-link.ts` | 对话 / 终端 http(s) 打开目标：默认内置浏览器，⌘/Ctrl+点系统浏览器；右键内置 / 系统 / 复制；终端行内扫描 URL；mailto 走系统（对标 Codex clicking a URL / #41122 / #38387）。不发明 Shift+点或默认打开设置 |
-| `chat-link.test.ts` | http(s)/mailto/危险协议；修饰键；菜单项；Markdown 与直播正文挂 `ChatLink` |
+| `chat-link.ts` | 对话 / 终端 http(s) 与 `file://` HTML 打开目标：默认内置浏览器，⌘/Ctrl+点系统浏览器；右键内置 / 系统 / 复制；终端行内扫描 URL；mailto 走系统（对标 Codex clicking a URL / #41122 / #38387 / #32773）。不发明 Shift+点或默认打开设置 |
+| `chat-link.test.ts` | http(s)/mailto/`file://` HTML/危险协议；修饰键；菜单项；Markdown 与直播正文挂 `ChatLink`；App / 文件树走工作区 HTML |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |
