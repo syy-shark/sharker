@@ -6,6 +6,7 @@ import {
   formatStoppedAfterClock,
   formatStoppedAfterLabel,
   AWAITING_APPROVAL_LABEL,
+  formatStreamingFallbackLabel,
   formatThoughtLabel,
   formatWorkedForLabel,
   parseStoppedAfterSeconds,
@@ -349,6 +350,9 @@ describe('elapsed clock', () => {
     expect(formatWorkedForLabel(false)).toBe('Worked for')
     expect(formatThoughtLabel(true)).toBe('Thinking')
     expect(formatThoughtLabel(false)).toBe('Thought')
+    expect(formatStreamingFallbackLabel({})).toBe('Thinking')
+    expect(formatStreamingFallbackLabel({ hasStartedWork: true })).toBe('Working')
+    expect(formatStreamingFallbackLabel({ approvalWaiting: true })).toBe(AWAITING_APPROVAL_LABEL)
     expect(formatStoppedAfterLabel(0)).toBe('You stopped after 0s')
     expect(stoppedAfterFootnote(2848)).toContain('You stopped after 47m 28s')
     expect(parseStoppedAfterSeconds('hello\n\n_(已停止 · 47m 28s)_')).toBe(2848)

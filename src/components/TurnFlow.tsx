@@ -26,6 +26,7 @@ import {
   formatThoughtLabel,
   formatWorkedForLabel,
   AWAITING_APPROVAL_LABEL,
+  formatStreamingFallbackLabel,
   THINKING_LABEL,
   liveThoughtBody,
   liveThinkingText,
@@ -740,7 +741,7 @@ export const TurnFlow = memo(function TurnFlow({
     isStreaming && !hasActiveWork && allProcessDone && answerStreaming
   )
 
-  // 工具/实质步骤完成后、尚未开始正文：显示「规划下一步」保持存活感
+  // 工具/实质步骤完成后、尚未开始正文：官方空档头 Working，不闪「规划下一步」
   const lastVisibleTitle = (steps.at(-1)?.title || '').trim()
   const planningNext = Boolean(
     isStreaming &&
@@ -798,15 +799,10 @@ export const TurnFlow = memo(function TurnFlow({
   const liveHead = buildLiveHead({
     steps: displaySteps,
     approvalWaiting,
-    fallbackLabel: approvalWaiting
-      ? AWAITING_APPROVAL_LABEL
-      : generatingAnswer
-        ? '生成回答中'
-        : generatingDemo
-          ? '生成演示'
-          : planningNext
-            ? '规划下一步'
-            : THINKING_LABEL
+    fallbackLabel: formatStreamingFallbackLabel({
+      approvalWaiting,
+      hasStartedWork: generatingAnswer || generatingDemo || planningNext
+    })
   })
   const headStep = liveHead.step
 

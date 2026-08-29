@@ -93,7 +93,12 @@ import {
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
-import { processElapsedSeconds, stoppedAfterFootnote } from '../shared/live-display'
+import {
+  processElapsedSeconds,
+  stoppedAfterFootnote,
+  THOUGHT_LABEL,
+  WORKING_LABEL
+} from '../shared/live-display'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
   TRANSCRIPT_MAX_MOUNTED,
@@ -4085,7 +4090,7 @@ export default function App() {
     [dispatchTurn, loading, persistActiveConversation]
   )
 
-  /** 用户点击 Build：进入 build 阶段并按计划派发 */
+  /** 用户点 Yes, implement this plan：进入 build 阶段并按计划派发 */
   const handleBuildPlan = useCallback(async () => {
     if (!pendingPlan) return
     const doc = pendingPlan.document
@@ -7595,7 +7600,7 @@ export default function App() {
             active?.toolTitle ||
             active?.content ||
             active?.toolName ||
-            (streamingRef.current ? '生成回答中' : '处理中')
+            (streamingRef.current ? WORKING_LABEL : THOUGHT_LABEL)
           )
         }
         const paint = (

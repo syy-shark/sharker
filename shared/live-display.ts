@@ -341,6 +341,18 @@ export function formatThoughtLabel(streaming: boolean): string {
   return streaming ? THINKING_LABEL : THOUGHT_LABEL
 }
 
+/**
+ * 官方直播空档头：无工具时 Thinking，已开工或正在出回答时 Working。
+ * 不发明「规划下一步 / 生成回答中」以免闪头（对标 Codex flashing thinking summaries）。
+ */
+export function formatStreamingFallbackLabel(options: {
+  approvalWaiting?: boolean
+  hasStartedWork?: boolean
+}): string {
+  if (options.approvalWaiting) return AWAITING_APPROVAL_LABEL
+  return options.hasStartedWork ? WORKING_LABEL : THINKING_LABEL
+}
+
 /** 官方审批直播头：Awaiting approval（仍认旧「等待确认」） */
 export const AWAITING_APPROVAL_LABEL = 'Awaiting approval'
 
