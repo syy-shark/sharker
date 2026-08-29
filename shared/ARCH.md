@@ -57,7 +57,7 @@
 | `mermaid-fence.test.ts` | 认 mermaid / mmd / 直播 `mer` 前缀，拒绝 js / diff / `md`；SVG 缓存按主题隔离并 LRU 淘汰；viewBox / px 尺寸、忽略百分宽高；估高 / 高度缓存 / 成图槽取高 |
 | `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；右键菜单复制/保存，工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单，不发明拖出）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位，`liveChatImageMinHeight` 成图后只升不降（不再用 8rem / 小图塌贴底） |
 | `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高、右键菜单项 |
-| `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀、百分号解码、复制路径、右键菜单 |
+| `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀、百分号解码、空格目录路径、复制路径、右键菜单 |
 | `file-opener.test.ts` | 官方枚举、Windows 盘符段、`none` 不产出 URI、行号/列号 |
 | `git-change-diff.ts` | 工作区新旧文本 → 审查用 FileDiff |
 | `git-change-diff.test.ts` | 新增 / 删除 / 修改三种 git 变更 diff |
