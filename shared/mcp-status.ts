@@ -32,7 +32,7 @@ export function formatMcpStatus(servers: McpStatusServer[], verbose = false): st
     return [
       '**MCP**',
       '',
-      '未配置 Server。打开 **设置 → MCP 服务器** 添加 STDIO 或 Streamable HTTP（`sharker://settings/mcp`），或把 `servers` 写入 `~/.sharker/mcp.json`。',
+      '未配置 Server。打开 **Settings → MCP servers** 添加 STDIO 或 Streamable HTTP（`sharker://settings/mcp`），或把 `servers` 写入 `~/.sharker/mcp.json`。',
       '',
       '```json',
       '{ "servers": [{ "name": "example", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-everything"] }] }',

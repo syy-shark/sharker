@@ -6,7 +6,7 @@ describe('mcp status', () => {
     const text = formatMcpStatus([])
     expect(text).toContain('未配置')
     expect(text).toContain('mcp.json')
-    expect(text).toContain('设置 → MCP 服务器')
+    expect(text).toContain('Settings → MCP servers')
     expect(text).toContain('sharker://settings/mcp')
     expect(shouldOpenMcpSettings([])).toBe(true)
     expect(shouldOpenMcpSettings([], 'verbose')).toBe(false)

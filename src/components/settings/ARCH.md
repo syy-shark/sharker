@@ -19,14 +19,14 @@
 | `NotificationSettings.tsx` / `.css` | 通知：回合完成档 / 批准通知 / 系统通知权限（对标 Codex Settings → Notifications） |
 | `GeneralSettings.tsx` | 通用：Follow-up behavior（Queue / Steer）、Enter 发送、`file_opener` 默认打开位置、Show context window usage 用量环（官方默认关）、/review 交付与审查模型（对标 Codex `review_model`）、运行防休眠 |
 | `BrowserSettings.tsx` / `.css` | 设置 → 浏览器：历史搜索 / 重新打开 / 删除，按时间清除历史，Cookie / 缓存，以及下载位置与每次询问保存（对标 Codex Settings → Browser）。不发明 @Browser / 导入系统配置 |
-| `SuggestedPromptSettings.tsx` | 建议提示开关（对标 Codex Settings → Suggested prompts） |
+| `SuggestedPromptSettings.tsx` | Suggested prompts 开关（对标 Codex Settings → Suggested prompts） |
 | `PersonalizationSettings.tsx` / `.css` | 个性化：Enable memories（官方默认关）+ Use memories / Generate memories、人格、个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization；单对话 `/memories` 覆盖） |
 | `ShortcutSettings.tsx` / `.css` | Keyboard Shortcuts：搜索、按键筛选、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合；动作标题用官方 Commands 文案） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | 权限模式、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量、Worktree 根目录与托管保留数 |
 | `ArchivedSettings.tsx` / `.css` | Archived chats：回档或彻底删除（含项目菜单一并归档的对话） |
 | `UsageSettings.tsx` / `.css` | 用量：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Profile，不假装最长任务或供应商额度） |
-| `McpSettings.tsx` / `.css` | MCP 服务器：列表、开关、添加 STDIO / Streamable HTTP、Restart（对标 Codex Settings → MCP servers；不假装 OAuth） |
+| `McpSettings.tsx` / `.css` | MCP servers：列表、开关、添加 STDIO / Streamable HTTP、Restart（对标 Codex Settings → MCP servers；不假装 OAuth） |
 | `ComputerUseSettings.tsx` | Computer Use 开关与就绪（设置入口暂隐藏） |
 | `BrowserUseSettings.tsx` | Browser Use 开关与就绪（设置入口暂隐藏） |
 | `FeatureStatusPanel.tsx` / `.css` | 功能检查列表（共用）；项进入 list-item-in |

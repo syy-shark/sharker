@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
+import { SUGGESTED_PROMPTS_SETTINGS_LABEL } from '../../../shared/reveal-in-folder'
 import { SettingsCard, SettingsRow, SettingsSection, SettingsToggle } from './SettingsPrimitives'
 
 interface Props {
@@ -41,7 +42,7 @@ export function SuggestedPromptSettings({ draft, setDraft, onSave }: Props) {
   )
 
   return (
-    <SettingsSection title="建议提示">
+    <SettingsSection title={SUGGESTED_PROMPTS_SETTINGS_LABEL}>
       <SettingsCard>
         <SettingsRow
           title="上下文建议"
@@ -53,7 +54,7 @@ export function SuggestedPromptSettings({ draft, setDraft, onSave }: Props) {
             onChange={(suggestedPrompts) => {
               scheduleSave({ ...draftRef.current, suggestedPrompts })
             }}
-            label="建议提示"
+            label={SUGGESTED_PROMPTS_SETTINGS_LABEL}
           />
         </SettingsRow>
       </SettingsCard>

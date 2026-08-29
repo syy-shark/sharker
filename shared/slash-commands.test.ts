@@ -98,7 +98,7 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'goal')?.action).toBe('set_goal')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.action).toBe('show_mcp')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toContain('MCP 状态')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toContain('MCP 服务器')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toContain('MCP servers')
     expect(SLASH_COMMANDS.find((c) => c.name === 'feedback')?.action).toBe('show_feedback')
     expect(SLASH_COMMANDS.find((c) => c.name === 'share')?.action).toBe('share_thread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'local')?.action).toBe('set_thread_local')

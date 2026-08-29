@@ -39,12 +39,20 @@ import {
   type SidebarChatFilter
 } from '../../shared/conversation'
 import {
+  APPEARANCE_SETTINGS_LABEL,
   ARCHIVE_LABEL,
   ARCHIVED_CHATS_LABEL,
+  BROWSER_SETTINGS_LABEL,
+  GENERAL_SETTINGS_LABEL,
+  KEYBOARD_SHORTCUTS_LABEL,
+  MCP_SERVERS_LABEL,
   NEW_CHAT_LABEL,
+  NOTIFICATIONS_SETTINGS_LABEL,
+  PERSONALIZATION_SETTINGS_LABEL,
   PIN_LABEL,
   PINNED_LABEL,
   RENAME_LABEL,
+  SUGGESTED_PROMPTS_SETTINGS_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
   revealInFolderLabel,
   threadMenuItems,
@@ -132,14 +140,14 @@ const SIDEBAR_LAYOUT_MS = 280
 const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'permissions', label: '权限', icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
-  { id: 'mcp', label: 'MCP', icon: Plug },
-  { id: 'general', label: '通用', icon: Settings2 },
-  { id: 'browser', label: '浏览器', icon: Globe },
-  { id: 'appearance', label: '外观', icon: Palette },
-  { id: 'notifications', label: '通知', icon: BellRing },
-  { id: 'personalization', label: '个性化', icon: Smile },
-  { id: 'suggested', label: '建议提示', icon: Lightbulb },
-  { id: 'shortcuts', label: '快捷键', icon: Keyboard },
+  { id: 'mcp', label: MCP_SERVERS_LABEL, icon: Plug },
+  { id: 'general', label: GENERAL_SETTINGS_LABEL, icon: Settings2 },
+  { id: 'browser', label: BROWSER_SETTINGS_LABEL, icon: Globe },
+  { id: 'appearance', label: APPEARANCE_SETTINGS_LABEL, icon: Palette },
+  { id: 'notifications', label: NOTIFICATIONS_SETTINGS_LABEL, icon: BellRing },
+  { id: 'personalization', label: PERSONALIZATION_SETTINGS_LABEL, icon: Smile },
+  { id: 'suggested', label: SUGGESTED_PROMPTS_SETTINGS_LABEL, icon: Lightbulb },
+  { id: 'shortcuts', label: KEYBOARD_SHORTCUTS_LABEL, icon: Keyboard },
   { id: 'archived', label: ARCHIVED_CHATS_LABEL, icon: Archive },
   { id: 'usage', label: '用量', icon: ChartNoAxesColumn }
 ]

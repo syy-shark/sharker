@@ -49,6 +49,14 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-chats')?.title).toBe('Search chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.title).toBe('New standalone chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-files')?.title).toBe('Search files')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'general')?.title).toBe('General')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'theme')?.title).toBe('Appearance')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'notifications')?.title).toBe('Notifications')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'personalization')?.title).toBe('Personalization')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'suggested-prompts')?.title).toBe(
+      'Suggested prompts'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'mcp-servers')?.title).toBe('MCP servers')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'settings')?.title).toBe('Open settings')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'sidebar')?.title).toBe('Toggle sidebar')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'files')?.title).toBe('Toggle file tree')
@@ -126,6 +134,9 @@ describe('command palette', () => {
     )
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
     expect(filterPaletteCommands('MCP 服务器').some((c) => c.action === 'open_mcp')).toBe(true)
+    expect(filterPaletteCommands('MCP servers').some((c) => c.action === 'open_mcp')).toBe(true)
+    expect(filterPaletteCommands('General').some((c) => c.id === 'general')).toBe(true)
+    expect(filterPaletteCommands('Appearance').some((c) => c.id === 'theme')).toBe(true)
     expect(filterPaletteCommands('个性化').some((c) => c.action === 'open_personalization')).toBe(
       true
     )

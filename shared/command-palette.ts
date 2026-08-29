@@ -36,6 +36,12 @@ import {
   SEARCH_CHATS_LABEL,
   SEARCH_FILES_LABEL,
   START_DICTATION_LABEL,
+  APPEARANCE_SETTINGS_LABEL,
+  GENERAL_SETTINGS_LABEL,
+  MCP_SERVERS_LABEL,
+  NOTIFICATIONS_SETTINGS_LABEL,
+  PERSONALIZATION_SETTINGS_LABEL,
+  SUGGESTED_PROMPTS_SETTINGS_LABEL,
   START_VOICE_CHAT_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
@@ -159,31 +165,31 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'theme',
-    title: '外观设置',
+    title: APPEARANCE_SETTINGS_LABEL,
     keywords: 'theme appearance 外观 主题',
     action: 'open_appearance'
   },
   {
     id: 'general',
-    title: '通用设置',
+    title: GENERAL_SETTINGS_LABEL,
     keywords: 'general follow-up enter review sleep 通用 后续 排队 注入 审查',
     action: 'open_general'
   },
   {
     id: 'personalization',
-    title: '个性化',
+    title: PERSONALIZATION_SETTINGS_LABEL,
     keywords: 'personalization personality agents.md 个性化 人格 自定义说明',
     action: 'open_personalization'
   },
   {
     id: 'notifications',
-    title: '通知设置',
+    title: NOTIFICATIONS_SETTINGS_LABEL,
     keywords: 'notifications notify 通知 回合 批准',
     action: 'open_notifications'
   },
   {
     id: 'suggested-prompts',
-    title: '建议提示',
+    title: SUGGESTED_PROMPTS_SETTINGS_LABEL,
     keywords: 'suggested prompts resume 建议 提示 空对话',
     action: 'open_suggested_prompts'
   },
@@ -262,8 +268,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'mcp-servers',
-    title: 'MCP 服务器',
-    keywords: 'mcp servers stdio http streamable 工具 设置',
+    title: MCP_SERVERS_LABEL,
+    keywords: 'mcp servers stdio http streamable 工具 设置 MCP 服务器',
     action: 'open_mcp'
   },
   {

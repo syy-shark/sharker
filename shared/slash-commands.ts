@@ -253,7 +253,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'mcp',
-    description: '打开 MCP 状态（设置 → MCP 服务器）',
+    description: '打开 MCP 状态（Settings → MCP servers）',
     scope: 'ui',
     action: 'show_mcp',
     argsHint: '[verbose]',

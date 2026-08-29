@@ -28,6 +28,7 @@ import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
   COPY_LABEL,
   NEW_CHAT_LABEL,
+  SHARE_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
   type ThreadCopyAction
@@ -364,8 +365,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onShare()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="分享只读快照"
-              aria-label="分享只读快照"
+              title={SHARE_LABEL}
+              aria-label={SHARE_LABEL}
             >
               <Share2 size={18} strokeWidth={1.75} aria-hidden />
             </button>

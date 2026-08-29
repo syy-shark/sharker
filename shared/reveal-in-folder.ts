@@ -137,8 +137,17 @@ export const BROWSER_FORWARD_LABEL = 'Browser forward'
 export const RELOAD_BROWSER_PAGE_LABEL = 'Reload browser page'
 export const RELOAD_BROWSER_PAGE_WITHOUT_CACHE_LABEL = 'Reload browser page without cache'
 export const TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL = 'Toggle browser browse or comment mode'
-/** 官方 Settings 页名（对标 Settings → Keyboard Shortcuts） */
+/** 官方 Settings 页名（对标 developers.openai.com/codex/app/settings） */
 export const KEYBOARD_SHORTCUTS_LABEL = 'Keyboard Shortcuts'
+export const GENERAL_SETTINGS_LABEL = 'General'
+export const APPEARANCE_SETTINGS_LABEL = 'Appearance'
+export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'
+export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
+export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
+export const BROWSER_SETTINGS_LABEL = 'Browser'
+export const MCP_SERVERS_LABEL = 'MCP servers'
+/** 官方顶栏 Share（对标 Codex #40832） */
+export const SHARE_LABEL = 'Share'
 
 /** 顶栏 Copy 子菜单（对标 Codex threadHeader Copy：cwd / session / deeplink / Markdown） */
 export function threadCopyMenuItems(): Array<{ action: ThreadCopyAction; title: string }> {

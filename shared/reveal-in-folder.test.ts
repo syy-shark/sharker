@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPEARANCE_SETTINGS_LABEL,
+  BROWSER_SETTINGS_LABEL,
+  GENERAL_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
+  MCP_SERVERS_LABEL,
+  NOTIFICATIONS_SETTINGS_LABEL,
   OPEN_COMMAND_MENU_LABEL,
+  PERSONALIZATION_SETTINGS_LABEL,
+  SHARE_LABEL,
+  SUGGESTED_PROMPTS_SETTINGS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_SETTINGS_LABEL,
   revealInFolderLabel,
@@ -85,5 +93,13 @@ describe('reveal in folder', () => {
     expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')
     expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
+    expect(GENERAL_SETTINGS_LABEL).toBe('General')
+    expect(APPEARANCE_SETTINGS_LABEL).toBe('Appearance')
+    expect(NOTIFICATIONS_SETTINGS_LABEL).toBe('Notifications')
+    expect(PERSONALIZATION_SETTINGS_LABEL).toBe('Personalization')
+    expect(SUGGESTED_PROMPTS_SETTINGS_LABEL).toBe('Suggested prompts')
+    expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
+    expect(MCP_SERVERS_LABEL).toBe('MCP servers')
+    expect(SHARE_LABEL).toBe('Share')
   })
 })
