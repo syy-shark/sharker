@@ -46,6 +46,13 @@ import {
   type ComposerEnterBehavior
 } from '../../shared/composer-submit'
 import {
+  formatSelectedTextSubmit,
+  parseSelectedTextSubmit,
+  selectedTextChipLabel,
+  selectedTextTitle,
+  userFacingSelectedTextRequest
+} from '../../shared/selected-text-preview'
+import {
   historicalMessagesDuringLive,
   liveRowMessageId,
   shouldHideReservedDuringLive,
@@ -204,11 +211,22 @@ const UserMessageRow = memo(function UserMessageRow({
   onFork?: () => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(content)
+  const [previewId, setPreviewId] = useState<string | null>(null)
+  const visible = userFacingSelectedTextRequest(content)
+  const annotations = parseSelectedTextSubmit(content)
+  const [draft, setDraft] = useState(visible)
   const editInputRef = useRef<HTMLTextAreaElement>(null)
+  const commitEdit = (next: string) => {
+    const ask = next.trim()
+    if (!ask && !annotations?.selections.length) return
+    onEdit?.(
+      annotations ? formatSelectedTextSubmit(annotations.selections, ask) : ask
+    )
+    setEditing(false)
+  }
   useEffect(() => {
     if (!editRequested) return
-    setDraft(content)
+    setDraft(visible)
     setEditing(true)
     onEditRequestHandled?.()
     requestAnimationFrame(() => {
@@ -217,7 +235,7 @@ const UserMessageRow = memo(function UserMessageRow({
       el.focus()
       el.setSelectionRange(el.value.length, el.value.length)
     })
-  }, [content, editRequested, onEditRequestHandled])
+  }, [visible, editRequested, onEditRequestHandled])
   return (
     <div
       id={`msg-${id}`}
@@ -239,13 +257,12 @@ const UserMessageRow = memo(function UserMessageRow({
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     e.preventDefault()
-                    setDraft(content)
+                    setDraft(visible)
                     setEditing(false)
                   }
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && draft.trim()) {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (draft.trim() || annotations)) {
                     e.preventDefault()
-                    onEdit?.(draft)
-                    setEditing(false)
+                    commitEdit(draft)
                   }
                 }}
               />
@@ -253,11 +270,10 @@ const UserMessageRow = memo(function UserMessageRow({
                 <button
                   type="button"
                   className="message-user-edit-btn message-user-edit-btn--primary"
-                  disabled={!draft.trim()}
+                  disabled={!draft.trim() && !annotations?.selections.length}
                   onClick={() => {
-                    if (!draft.trim()) return
-                    onEdit?.(draft)
-                    setEditing(false)
+                    if (!draft.trim() && !annotations?.selections.length) return
+                    commitEdit(draft)
                   }}
                 >
                   发送
@@ -266,7 +282,7 @@ const UserMessageRow = memo(function UserMessageRow({
                   type="button"
                   className="message-user-edit-btn"
                   onClick={() => {
-                    setDraft(content)
+                    setDraft(visible)
                     setEditing(false)
                   }}
                 >
@@ -275,7 +291,39 @@ const UserMessageRow = memo(function UserMessageRow({
               </div>
             </div>
           ) : (
-            <p>{normalizeStreamingText(content)}</p>
+            <>
+              {annotations ? (
+                <div className="message-user-annotations">
+                  {annotations.selections.map((sel, index) => (
+                    <button
+                      key={sel.id}
+                      type="button"
+                      className={`message-user-annotation${
+                        previewId === sel.id ? ' message-user-annotation--open' : ''
+                      }`}
+                      title={`${selectedTextTitle(index)} · 预览划选`}
+                      onClick={() =>
+                        setPreviewId((cur) => (cur === sel.id ? null : sel.id))
+                      }
+                    >
+                      {selectedTextChipLabel(sel.text) || selectedTextTitle(index)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {previewId
+                ? (() => {
+                    const preview = annotations?.selections.find((item) => item.id === previewId)
+                    return preview ? (
+                      <pre className="message-user-annotation-preview" tabIndex={0}>
+                        {preview.text}
+                        {preview.comment ? `\n\n备注：${preview.comment}` : ''}
+                      </pre>
+                    ) : null
+                  })()
+                : null}
+              {visible ? <p>{normalizeStreamingText(visible)}</p> : null}
+            </>
           )}
         </div>
         {editing ? null : (
@@ -286,7 +334,7 @@ const UserMessageRow = memo(function UserMessageRow({
             onEdit={
               onEdit
                 ? () => {
-                    setDraft(content)
+                    setDraft(visible)
                     setEditing(true)
                   }
                 : undefined

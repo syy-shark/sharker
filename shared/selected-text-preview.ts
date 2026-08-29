@@ -1,6 +1,8 @@
 /**
  * Composer 划选预览（对标 Codex selected-text previews / composerSelectedTextAttachments）。
  * 划选进芯片，不灌进输入框；发送时收成官方 `# Selected text:` 块。
+ * 对话柱只画请求 + annotation 芯片，长划选不撑开贴底（对标 Codex #20294 transcript strip / #22670）。
+ * 芯片可加备注（对标 Codex response annotation comments / #33763），不发明 #22677 划选跟帖气泡。
  * @see shared/ARCH.md
  */
 
@@ -10,6 +12,7 @@ export type SelectedTextPreview = {
   id: string
   text: string
   source: SideChatSource
+  comment?: string
 }
 
 let selectedTextSeq = 0
@@ -28,41 +31,101 @@ export function selectedTextChipLabel(text: string, max = 48): string {
   return `${flat.slice(0, Math.max(1, max - 1))}…`
 }
 
+function normalizeSelectionComment(raw?: string): string {
+  return String(raw ?? '').replace(/\s+/g, ' ').trim()
+}
+
 /** 从划选做预览；空串返回 null */
 export function createSelectedTextPreview(
   selection: string,
   source: SideChatSource = 'transcript',
-  id?: string
+  id?: string,
+  comment?: string
 ): SelectedTextPreview | null {
   const text = normalizeTranscriptSelection(selection)
   if (!text) return null
   selectedTextSeq += 1
+  const note = normalizeSelectionComment(comment)
   return {
     id: id || `sel-${selectedTextSeq}`,
     text,
-    source
+    source,
+    ...(note ? { comment: note } : {})
   }
+}
+
+function selectionSubmitBlock(selection: SelectedTextPreview, index: number): string {
+  const body = String(selection.text || '').trim()
+  const note = normalizeSelectionComment(selection.comment)
+  const head = `## ${selectedTextTitle(index)}\n${body}`
+  return note ? `${head}\n\nComment: ${note}` : head
 }
 
 /**
  * 发送正文：官方桌面 #22670
- * `# Selected text:` + `## Selection N` + 可选 `## My request for Codex:`
+ * `# Selected text:` + `## Selection N` + 可选 `Comment:` + 可选 `## My request for Codex:`
  */
 export function formatSelectedTextSubmit(
   selections: readonly SelectedTextPreview[],
   request = ''
 ): string {
   const blocks: string[] = []
-  for (let i = 0; i < selections.length; i += 1) {
-    const body = String(selections[i]?.text || '').trim()
+  for (const selection of selections) {
+    const body = String(selection.text || '').trim()
     if (!body) continue
-    blocks.push(`## ${selectedTextTitle(blocks.length)}\n${body}`)
+    blocks.push(selectionSubmitBlock(selection, blocks.length))
   }
   const ask = String(request || '').trim()
   if (!blocks.length) return ask
   const head = `# Selected text:\n\n${blocks.join('\n\n')}`
   if (!ask) return head
   return `${head}\n\n## My request for Codex:\n${ask}`
+}
+
+const SELECTED_TEXT_HEAD = '# Selected text:'
+const REQUEST_TITLE = 'My request for Codex:'
+const SELECTION_TITLE_RE = /^Selection \d+$/
+const COMMENT_TAIL_RE = /\n\nComment: (.+)$/
+
+/** 从官方 submit 块拆回划选与请求；不是该格式则 null */
+export function parseSelectedTextSubmit(markdown: string): {
+  selections: SelectedTextPreview[]
+  request: string
+} | null {
+  const src = String(markdown ?? '').replace(/\r\n/g, '\n').trim()
+  if (!src.startsWith(SELECTED_TEXT_HEAD)) return null
+  const rest = src.slice(SELECTED_TEXT_HEAD.length).replace(/^\n+/, '')
+  if (!rest.includes('## Selection ')) return null
+  const chunks = rest.split(/^## /m).filter(Boolean)
+  const selections: SelectedTextPreview[] = []
+  let request = ''
+  for (const chunk of chunks) {
+    const nl = chunk.indexOf('\n')
+    const title = (nl === -1 ? chunk : chunk.slice(0, nl)).trim()
+    const body = (nl === -1 ? '' : chunk.slice(nl + 1)).replace(/\s+$/, '')
+    if (title === REQUEST_TITLE) {
+      request = body.trim()
+      continue
+    }
+    if (!SELECTION_TITLE_RE.test(title)) return null
+    const commentHit = COMMENT_TAIL_RE.exec(body)
+    const text = (commentHit ? body.slice(0, commentHit.index) : body).trim()
+    const preview = createSelectedTextPreview(
+      text,
+      'transcript',
+      `sel-hist-${selections.length}`,
+      commentHit?.[1]
+    )
+    if (preview) selections.push(preview)
+  }
+  if (!selections.length) return null
+  return { selections, request }
+}
+
+/** 对话柱只露请求，长划选留给 annotation 芯片（对标 Codex #20294） */
+export function userFacingSelectedTextRequest(markdown: string): string {
+  const parsed = parseSelectedTextSubmit(markdown)
+  return parsed ? parsed.request : String(markdown ?? '')
 }
 
 /** 草稿里只留有正文的划选 */
@@ -77,7 +140,8 @@ export function normalizeSelectedTextDraft(
     const preview = createSelectedTextPreview(
       String(rec.text || ''),
       rec.source === 'terminal' || rec.source === 'file' ? rec.source : 'transcript',
-      typeof rec.id === 'string' && rec.id.trim() ? rec.id : undefined
+      typeof rec.id === 'string' && rec.id.trim() ? rec.id : undefined,
+      typeof rec.comment === 'string' ? rec.comment : undefined
     )
     if (preview) out.push(preview)
   }

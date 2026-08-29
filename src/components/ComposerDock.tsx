@@ -2134,9 +2134,26 @@ export const ComposerDock = memo(
               ? (() => {
                   const preview = selectedTexts.find((item) => item.id === selectedPreviewId)
                   return preview?.text ? (
-                    <pre className="composer-paste-preview" tabIndex={0}>
-                      {preview.text}
-                    </pre>
+                    <>
+                      <pre className="composer-paste-preview" tabIndex={0}>
+                        {preview.text}
+                      </pre>
+                      <input
+                        type="text"
+                        className="composer-selection-comment"
+                        value={preview.comment ?? ''}
+                        placeholder="给这段划选加备注（可选）"
+                        aria-label="划选备注"
+                        onChange={(event) => {
+                          const comment = event.target.value
+                          setSelectedTexts((prev) =>
+                            prev.map((item) =>
+                              item.id === preview.id ? { ...item, comment } : item
+                            )
+                          )
+                        }}
+                      />
+                    </>
                   ) : null
                 })()
               : null}

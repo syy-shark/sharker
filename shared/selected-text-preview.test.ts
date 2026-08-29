@@ -3,8 +3,10 @@ import {
   createSelectedTextPreview,
   formatSelectedTextSubmit,
   normalizeSelectedTextDraft,
+  parseSelectedTextSubmit,
   selectedTextChipLabel,
-  selectedTextTitle
+  selectedTextTitle,
+  userFacingSelectedTextRequest
 } from './selected-text-preview'
 
 describe('selected-text-preview', () => {
@@ -60,5 +62,38 @@ describe('selected-text-preview', () => {
       expect.objectContaining({ text: 'keep', source: 'terminal' })
     ])
     expect(normalizeSelectedTextDraft('nope')).toEqual([])
+    expect(
+      formatSelectedTextSubmit(
+        [{ id: 'c', text: 'browser annotations', source: 'transcript', comment: 'not browser annotations' }],
+        'check this'
+      )
+    ).toBe(
+      [
+        '# Selected text:',
+        '',
+        '## Selection 1',
+        'browser annotations',
+        '',
+        'Comment: not browser annotations',
+        '',
+        '## My request for Codex:',
+        'check this'
+      ].join('\n')
+    )
+    const submitted = formatSelectedTextSubmit(
+      [{ id: 'c', text: 'browser annotations', source: 'transcript', comment: 'not browser annotations' }],
+      'check this'
+    )
+    const parsed = parseSelectedTextSubmit(submitted)
+    expect(parsed?.request).toBe('check this')
+    expect(parsed?.selections.map((item) => ({ text: item.text, comment: item.comment }))).toEqual([
+      { text: 'browser annotations', comment: 'not browser annotations' }
+    ])
+    expect(userFacingSelectedTextRequest(submitted)).toBe('check this')
+    expect(userFacingSelectedTextRequest('plain ask')).toBe('plain ask')
+    expect(parseSelectedTextSubmit('plain ask')).toBeNull()
+    expect(normalizeSelectedTextDraft([{ text: 'keep', source: 'file', comment: '  note  ' }])).toEqual([
+      expect.objectContaining({ text: 'keep', source: 'file', comment: 'note' })
+    ])
   })
 })
