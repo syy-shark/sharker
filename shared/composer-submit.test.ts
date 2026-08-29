@@ -19,6 +19,7 @@ import {
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   SEND_LABEL,
+  STOP_LABEL,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
   shouldStickAfterComposerSubmit,
@@ -61,13 +62,14 @@ describe('composer submit', () => {
     expect(STEER_LABEL).toBe('Steer')
     expect(QUEUE_LABEL).toBe('Queue')
     expect(SEND_LABEL).toBe('Send')
+    expect(STOP_LABEL).toBe('Stop')
     expect(formatQueueChipLabel(0)).toBe('Queue 1')
     expect(formatQueueChipLabel(2)).toBe('Queue 3')
     expect(formatBusyFollowUpPlaceholder({ followUpBehavior: 'steer' })).toBe(
       'Enter Steer · ⌘⇧Enter Queue · Tab Queue…'
     )
     expect(formatBusyFollowUpPlaceholder({ followUpBehavior: 'queue', interruptLabel: 'Esc' })).toBe(
-      'Enter Queue · ⌘⇧Enter Steer · Tab Queue · Esc 停止…'
+      'Enter Queue · ⌘⇧Enter Steer · Tab Queue · Esc Stop…'
     )
   })
 

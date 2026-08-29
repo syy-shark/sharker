@@ -90,7 +90,9 @@ import {
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
   formatBusyFollowUpPlaceholder,
+  SEND_LABEL,
   STEER_LABEL,
+  STOP_LABEL,
   type ComposerEnterBehavior,
   type FollowUpBehavior
 } from '../../shared/composer-submit'
@@ -2417,8 +2419,8 @@ export const ComposerDock = memo(
                 type="button"
                 className={`composer-send composer-send--stop ${loading ? 'composer-send--visible' : ''}`}
                 onClick={onAbort}
-                title="停止"
-                aria-label="停止"
+                title={STOP_LABEL}
+                aria-label={STOP_LABEL}
                 aria-hidden={!loading}
                 tabIndex={loading ? 0 : -1}
               >
@@ -2429,8 +2431,8 @@ export const ComposerDock = memo(
                 className={`composer-send composer-send--submit ${canSend ? 'composer-send--active' : ''} ${!loading ? 'composer-send--visible' : ''}`}
                 onClick={() => submit('send')}
                 disabled={!canSend || loading || userInputOpen}
-                title="发送 (Enter)"
-                aria-label="发送"
+                title={SEND_LABEL}
+                aria-label={SEND_LABEL}
                 aria-hidden={loading}
                 tabIndex={loading ? -1 : 0}
               >

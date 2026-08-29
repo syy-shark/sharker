@@ -18,6 +18,8 @@ export const STEER_LABEL = 'Steer'
 export const QUEUE_LABEL = 'Queue'
 /** Official desktop send button when the turn is idle. */
 export const SEND_LABEL = 'Send'
+/** Official desktop abort control while a turn is running (`You stopped after`). */
+export const STOP_LABEL = 'Stop'
 
 export function formatQueueChipLabel(index: number): string {
   return `${QUEUE_LABEL} ${index + 1}`
@@ -29,7 +31,7 @@ export function formatBusyFollowUpPlaceholder(options: {
   interruptLabel?: string | null
 }): string {
   const follow = parseFollowUpBehavior(options.followUpBehavior)
-  const tail = options.interruptLabel ? ` · ${options.interruptLabel} 停止…` : '…'
+  const tail = options.interruptLabel ? ` · ${options.interruptLabel} ${STOP_LABEL}…` : '…'
   if (follow === 'steer') {
     return `Enter ${STEER_LABEL} · ⌘⇧Enter ${QUEUE_LABEL} · Tab ${QUEUE_LABEL}${tail}`
   }
