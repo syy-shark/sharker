@@ -1217,6 +1217,57 @@ describe('splitStreamingMarkdown', () => {
       ])
       expect(itemIndentThenHeading[0].items[0]?.blocks?.[0]).toBe(itemIndent[0].items[0]?.blocks?.[0])
     }
+    const closedFenceOnly = '```\nx\n```'
+    const closedFenceOnlyFirst = parseCheapProseBlocks(closedFenceOnly)
+    const closedFenceThenPara = continueCheapProseBlocks(
+      closedFenceOnly,
+      closedFenceOnlyFirst,
+      `${closedFenceOnly}\nafter`
+    )
+    expect(closedFenceThenPara[0]).toBe(closedFenceOnlyFirst[0])
+    expect(closedFenceThenPara.map((block) => block.type)).toEqual(['pre', 'p'])
+    expect(closedFenceThenPara[1]).toMatchObject({
+      type: 'p',
+      nodes: [{ type: 'text', text: 'after' }]
+    })
+    const closedFenceThenHeading = continueCheapProseBlocks(
+      closedFenceOnly,
+      closedFenceOnlyFirst,
+      `${closedFenceOnly}\n# t`
+    )
+    expect(closedFenceThenHeading[0]).toBe(closedFenceOnlyFirst[0])
+    expect(closedFenceThenHeading.map((block) => block.type)).toEqual(['pre', 'heading'])
+    const closedFenceThenList = continueCheapProseBlocks(
+      closedFenceOnly,
+      closedFenceOnlyFirst,
+      `${closedFenceOnly}\n- x`
+    )
+    expect(closedFenceThenList[0]).toBe(closedFenceOnlyFirst[0])
+    expect(closedFenceThenList.map((block) => block.type)).toEqual(['pre', 'list'])
+    const openFence = '```\nx'
+    const openFenceFirst = parseCheapProseBlocks(openFence)
+    const openFenceClosePara = continueCheapProseBlocks(openFence, openFenceFirst, '```\nx\n```\nafter')
+    expect(openFenceClosePara[0]).toBe(openFenceFirst[0])
+    expect(openFenceClosePara.map((block) => block.type)).toEqual(['pre', 'p'])
+    const headingFence = '# t\n```\nx\n```'
+    const headingFenceFirst = parseCheapProseBlocks(headingFence)
+    const headingFenceThenPara = continueCheapProseBlocks(
+      headingFence,
+      headingFenceFirst,
+      `${headingFence}\nafter`
+    )
+    expect(headingFenceThenPara[0]).toBe(headingFenceFirst[0])
+    expect(headingFenceThenPara[1]).toBe(headingFenceFirst[1])
+    expect(headingFenceThenPara.map((block) => block.type)).toEqual(['heading', 'pre', 'p'])
+    const taggedFence = '```js\nx\n```'
+    const taggedFenceFirst = parseCheapProseBlocks(taggedFence)
+    const taggedFenceThenPara = continueCheapProseBlocks(
+      taggedFence,
+      taggedFenceFirst,
+      `${taggedFence}\nafter`
+    )
+    expect(taggedFenceThenPara[0]).toBe(taggedFenceFirst[0])
+    expect(taggedFenceThenPara.map((block) => block.type)).toEqual(['pre', 'p'])
     const fenceThenPara = '```\nx\n```\n见 `foo` 与 '
     const fenceThenParaFirst = parseCheapProseBlocks(fenceThenPara)
     const fenceThenParaGrown = continueCheapProseBlocks(

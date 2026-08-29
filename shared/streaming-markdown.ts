@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、引用内围栏闭合后的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏闭合后的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2839,22 +2839,26 @@ function suffixAfterClosedTable(prevNorm: string, nextText: string): string | nu
   return after
 }
 
+/** 围栏闭合行后面的原文；未闭合则没有后续块 */
+function textAfterFenceCloser(text: string): string | null {
+  const lines = text.split('\n')
+  const open = parseFenceLine(lines[0] ?? '')
+  if (!open) return null
+  for (let i = 1; i < lines.length; i++) {
+    if (isFenceClose(lines[i]!, open.marker)) return lines.slice(i + 1).join('\n')
+  }
+  return null
+}
+
 /** 已闭合项内围栏后面的原文（含另起的表 / 标题 / 引用） */
 function textAfterClosedFence(prevNorm: string, nextText: string): string | null {
   const prevLines = prevNorm.split('\n')
-  const nextLines = nextText.split('\n')
-  const open = parseFenceLine(prevLines[0] ?? '') ?? parseFenceLine(nextLines[0] ?? '')
+  const open = parseFenceLine(prevLines[0] ?? '') ?? parseFenceLine(nextText.split('\n')[0] ?? '')
   if (!open) return null
-  const closerAt = (lines: string[]) => {
-    for (let i = 1; i < lines.length; i++) {
-      if (isFenceClose(lines[i]!, open.marker)) return i
-    }
-    return -1
+  for (let i = 1; i < prevLines.length; i++) {
+    if (isFenceClose(prevLines[i]!, open.marker)) return textAfterFenceCloser(nextText)
   }
-  if (closerAt(prevLines) < 0) return null
-  const closer = closerAt(nextLines)
-  if (closer < 0) return null
-  return nextLines.slice(closer + 1).join('\n')
+  return null
 }
 
 /** 闭合块后的续行：先当 suffix，遇到新块再另起项内块 */
@@ -3328,7 +3332,15 @@ function continueLastPreBlock(
   if (prev.lang || parseFenceLine(first)) {
     const nextBody = fencedPreBody(nextText)
     if (nextBody == null || !nextBody.startsWith(prev.text)) return null
-    return nextBody === prev.text ? [prev] : [{ type: 'pre', text: nextBody, lang: prev.lang }]
+    const pre: CheapProseBlock =
+      nextBody === prev.text ? prev : { type: 'pre', text: nextBody, lang: prev.lang }
+    const after = textAfterFenceCloser(nextText)
+    if (after) {
+      const siblings = parseCheapProseBlocks(after)
+      if (after.trim() !== '' && !siblings.length) return null
+      return siblings.length ? [pre, ...siblings] : [pre]
+    }
+    return [pre]
   }
   const nextLines = nextText.split('\n')
   if (nextLines.some((line) => line.trim() !== '' && !isIndentCodeLine(line))) return null
@@ -3432,7 +3444,7 @@ function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]):
 
 /**
  * 增长列表 / 表格 / 段落 / 引用 / 标题 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
- * 段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏闭合后的后续段、引用内换行后新列表项、脚注缩进续行也走增长段。多块尾跳过已收前缀（单行标题 / HR，或最后一段原文起点，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注 / 围栏）。定义行或前缀对不上时退回全量解析。
+ * 段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏闭合后的后续段、闭合并栏后再起的后续段、引用内换行后新列表项、脚注缩进续行也走增长段。多块尾跳过已收前缀（单行标题 / HR，或最后一段原文起点，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注 / 围栏）。定义行或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
@@ -3452,7 +3464,7 @@ function tryContinueLastCheapProseBlock(
   if (start == null || start <= 0) start = lastBlockSourceStart(prevNorm, last)
   if (start == null || start <= 0) return null
   const grown = continueLastBlockOfType(last, prevNorm.slice(start), nextText.slice(start), defs)
-  if (!grown || grown.length !== 1) return null
+  if (!grown?.length) return null
   return [...closed, ...grown]
 }
 
