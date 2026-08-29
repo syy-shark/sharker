@@ -5,6 +5,7 @@
  */
 import { memo, useState } from 'react'
 import type { QueuedPrompt } from '../types/chat'
+import { clampPendingInputPreview, pendingPreviewNeedsClamp } from '../../shared/pending-preview'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import './ComposerQueue.css'
 
@@ -77,7 +78,12 @@ function QueueRow({
           autoFocus
         />
       ) : (
-        <p className="composer-queue-text">{normalizeStreamingText(item.text)}</p>
+        <p
+          className="composer-queue-text"
+          title={pendingPreviewNeedsClamp(item.text) ? item.text : undefined}
+        >
+          {clampPendingInputPreview(normalizeStreamingText(item.text))}
+        </p>
       )}
       <div className="composer-queue-actions">
         {editing ? (
