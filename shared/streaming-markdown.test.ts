@@ -1779,6 +1779,18 @@ describe('splitStreamingMarkdown', () => {
       expect(twoTablesGrown[1].rows[0]).toBe(twoTables[1].rows[0])
       expect(twoTablesGrown[1].rows).toHaveLength(2)
     }
+    const twoIndentSrc = '    const a = 1\n\n# t\n\n    const b = 2'
+    const twoIndent = parseCheapProseBlocks(twoIndentSrc)
+    const twoIndentGrown = continueCheapProseBlocks(twoIndentSrc, twoIndent, `${twoIndentSrc}0`)
+    expect(twoIndentGrown[0]).toBe(twoIndent[0])
+    expect(twoIndentGrown[1]).toBe(twoIndent[1])
+    expect(twoIndentGrown.map((block) => block.type)).toEqual(['pre', 'heading', 'pre'])
+    const twoFenceSrc = '```\na\n```\n\n# t\n\n```\nb\n```'
+    const twoFence = parseCheapProseBlocks(twoFenceSrc)
+    const twoFenceGrown = continueCheapProseBlocks(twoFenceSrc, twoFence, `${twoFenceSrc}\nc`)
+    expect(twoFenceGrown[0]).toBe(twoFence[0])
+    expect(twoFenceGrown[1]).toBe(twoFence[1])
+    expect(twoFenceGrown.map((block) => block.type)).toEqual(['pre', 'heading', 'pre', 'p'])
     const paraOnly = parseCheapProseBlocks('见 foo')
     const paraThenList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n- 一项')
     expect(paraThenList[0]).toBe(paraOnly[0])
