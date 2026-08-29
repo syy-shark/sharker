@@ -38,6 +38,8 @@ import {
   isNearLiveMessageRow,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  shouldFocusTranscriptScroller,
+  shouldLockStickOnTranscriptKey,
   transcriptNavIntent,
   TRANSCRIPT_NAV_BLOCK,
   nextRowIntrinsicHeights,
@@ -917,18 +919,19 @@ export function ChatView({
       if (y != null) touchStartYRef.current = y
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'PageUp') lockUserScroll()
+      if (document.activeElement !== el) return
+      if (shouldLockStickOnTranscriptKey(event)) lockUserScroll()
     }
 
     el.addEventListener('wheel', onWheel, { passive: true, capture: true })
     el.addEventListener('touchstart', onTouchStart, { passive: true })
     el.addEventListener('touchmove', onTouchMove, { passive: true })
-    window.addEventListener('keydown', onKeyDown, true)
+    el.addEventListener('keydown', onKeyDown)
     return () => {
       el.removeEventListener('wheel', onWheel, true)
       el.removeEventListener('touchstart', onTouchStart)
       el.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('keydown', onKeyDown, true)
+      el.removeEventListener('keydown', onKeyDown)
     }
   }, [lockUserScroll])
 
@@ -1175,7 +1178,20 @@ export function ChatView({
     >
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
-        <div className="messages-scroll" ref={messagesRef} onMouseUp={syncSideAsk}>
+        <div
+          className="messages-scroll"
+          ref={messagesRef}
+          tabIndex={0}
+          role="region"
+          aria-label="对话"
+          onMouseUp={syncSideAsk}
+          onClick={(e) => {
+            if (!shouldFocusTranscriptScroller(e.target instanceof HTMLElement ? e.target : null)) {
+              return
+            }
+            messagesRef.current?.focus({ preventScroll: true })
+          }}
+        >
           {findOpen ? (
             <div className="chat-find glass-tile" role="search">
               <input

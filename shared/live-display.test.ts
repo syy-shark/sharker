@@ -29,6 +29,8 @@ import {
   shouldFollowArtifactTail,
   shouldMountMessageActions,
   shouldReserveMessageActions,
+  shouldFocusTranscriptScroller,
+  shouldLockStickOnTranscriptKey,
   transcriptNavIntent,
   turnProcessBounds,
   processElapsedSeconds
@@ -256,6 +258,15 @@ describe('near-live message rows', () => {
     expect(transcriptNavIntent({ key: 'Home', metaKey: true })).toBeNull()
     expect(transcriptNavIntent({ key: 'End', shiftKey: true })).toBeNull()
     expect(transcriptNavIntent({ key: 'ArrowUp' })).toBeNull()
+    expect(shouldFocusTranscriptScroller({ closest: () => null })).toBe(true)
+    expect(shouldFocusTranscriptScroller({ closest: (sel) => (sel.includes('button') ? {} : null) })).toBe(
+      false
+    )
+    expect(shouldLockStickOnTranscriptKey({ key: 'PageUp' })).toBe(true)
+    expect(shouldLockStickOnTranscriptKey({ key: 'ArrowUp' })).toBe(true)
+    expect(shouldLockStickOnTranscriptKey({ key: ' ', shiftKey: true })).toBe(true)
+    expect(shouldLockStickOnTranscriptKey({ key: ' ' })).toBe(false)
+    expect(shouldLockStickOnTranscriptKey({ key: 'ArrowDown' })).toBe(false)
   })
 })
 

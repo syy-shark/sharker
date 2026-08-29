@@ -431,6 +431,26 @@ export type TranscriptNavIntent = 'top' | 'bottom'
 export const TRANSCRIPT_NAV_BLOCK =
   'textarea, input, select, [contenteditable="true"], .composer-box, .embedded-browser, .embedded-terminal, .file-tree-viewer, .code-diff-block, .chat-find, .command-palette'
 
+/** 点这些不把焦点交给对话柱（对标 Codex 桌面 #39851：点正文后方向键滚动） */
+export const TRANSCRIPT_SCROLL_FOCUS_BLOCK =
+  'a, button, input, textarea, select, [contenteditable="true"], [role="textbox"], .chat-find'
+
+/** 点对话柱空白/正文时把焦点交给滚动层，交互控件自己拿焦点 */
+export function shouldFocusTranscriptScroller(target: {
+  closest?: (selector: string) => unknown
+} | null): boolean {
+  if (!target || typeof target.closest !== 'function') return true
+  return !target.closest(TRANSCRIPT_SCROLL_FOCUS_BLOCK)
+}
+
+/** 对话柱聚焦时向上键要锁贴底，避免直播增高把镜头拽回去 */
+export function shouldLockStickOnTranscriptKey(event: {
+  key: string
+  shiftKey?: boolean
+}): boolean {
+  return event.key === 'PageUp' || event.key === 'ArrowUp' || (event.key === ' ' && Boolean(event.shiftKey))
+}
+
 /**
  * 长对话跳顶/底：⌘↑⌘↓ 以及官方桌面用户期望的 Home / End（对标 Codex #39181）。
  * 输入框内不抢光标；End 回到贴底以便继续跟直播。

@@ -44,6 +44,11 @@
   scrollbar-gutter: stable;
 }
 
+.messages-scroll:focus,
+.messages-scroll:focus-visible {
+  outline: none;
+}
+
 .chat-find {
   position: sticky;
   top: 0;
