@@ -1,7 +1,7 @@
 /**
  * 对话写盘卡：官方 Edited basename / Edited N files（对标 Codex render_changes_block）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
- * 头栏与文件行可画 +N −M；正文加长不重跑合计（对标 Codex Edited N files / #22860）。
+ * 头栏与文件行可画 +N −M；正文加长不扫 +/- 指纹、不重跑合计（对标 Codex Edited N files / #22860）。
  * 右键打开 / Open in Finder / Copy path。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
@@ -106,7 +106,40 @@ export function filesChangedStatsFromSegments(
   return { added, removed, byPath }
 }
 
-let filesChangedHold: { view: FilesChangedStatsView; identity: string } | null = null
+let filesChangedHold: {
+  view: FilesChangedStatsView
+  identity: string
+  segments: readonly FilesChangedStatSegment[] | null | undefined
+} | null = null
+
+function segmentHasFilesChangedStats(segment: FilesChangedStatSegment | undefined): boolean {
+  if (!segment) return false
+  if (segment.fileDiff) return true
+  if (segment.fileDiffs && segment.fileDiffs.length > 0) return true
+  return Boolean(segment.editPreview && segment.editPreview.length > 0)
+}
+
+/**
+ * 前缀引用没变、末段没有写盘 +/-：不必拼指纹。
+ * 对标 Codex #22860：回答 token 不扫已改文件卡。
+ */
+export function shouldSkipFilesChangedIdentity(input: {
+  prevSegments: readonly FilesChangedStatSegment[] | null | undefined
+  segments: readonly FilesChangedStatSegment[] | null | undefined
+}): boolean {
+  const prev = input.prevSegments
+  const next = input.segments
+  if (!prev || !next || prev.length !== next.length) return false
+  const last = next.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prev[i] !== next[i]) return false
+  }
+  const prevTail = prev[last]
+  const nextTail = next[last]
+  if (!prevTail || !nextTail) return false
+  if (prevTail === nextTail) return true
+  return !segmentHasFilesChangedStats(prevTail) && !segmentHasFilesChangedStats(nextTail)
+}
 
 /** 只盯写盘 +/-；正文加长不进指纹，避免每枚 token 重合计 */
 export function liveFilesChangedIdentity(
@@ -142,6 +175,24 @@ export function nextFilesChangedStats(
   prev: FilesChangedStatsView | null,
   segments: readonly FilesChangedStatSegment[] | null | undefined
 ): FilesChangedStatsView {
+  if (prev && filesChangedHold?.view === prev && filesChangedHold.segments === segments) {
+    return prev
+  }
+  if (
+    prev &&
+    filesChangedHold?.view === prev &&
+    shouldSkipFilesChangedIdentity({
+      prevSegments: filesChangedHold.segments,
+      segments
+    })
+  ) {
+    filesChangedHold = {
+      view: prev,
+      identity: filesChangedHold.identity,
+      segments
+    }
+    return prev
+  }
   const identity = liveFilesChangedIdentity(segments)
   if (
     prev &&
@@ -152,6 +203,7 @@ export function nextFilesChangedStats(
       prevIdentity: filesChangedHold.identity
     })
   ) {
+    filesChangedHold = { view: prev, identity, segments }
     return prev
   }
   const next = filesChangedStatsFromSegments(segments)
@@ -162,7 +214,7 @@ export function nextFilesChangedStats(
     sameFilesChangedByPath(prev.byPath, next.byPath)
       ? prev
       : next
-  filesChangedHold = { view, identity }
+  filesChangedHold = { view, identity, segments }
   return view
 }
 

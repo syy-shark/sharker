@@ -12,7 +12,8 @@ import {
   formatFilesChangedLineStats,
   liveFilesChangedIdentity,
   nextFilesChangedStats,
-  shouldReuseFilesChangedStats
+  shouldReuseFilesChangedStats,
+  shouldSkipFilesChangedIdentity
 } from './files-changed-card'
 
 describe('files changed card', () => {
@@ -86,5 +87,25 @@ describe('files changed card', () => {
       })
     ).toBe(true)
     expect(nextFilesChangedStats(first, [...fileSegs, {}])).toBe(first)
+    const prefix = fileSegs[0]!
+    const answerTail = {}
+    const grownTail = {}
+    expect(
+      shouldSkipFilesChangedIdentity({
+        prevSegments: [prefix, answerTail],
+        segments: [prefix, grownTail]
+      })
+    ).toBe(true)
+    expect(nextFilesChangedStats(first, [prefix, answerTail])).toBe(first)
+    expect(nextFilesChangedStats(first, [prefix, grownTail])).toBe(first)
+    expect(
+      shouldSkipFilesChangedIdentity({
+        prevSegments: [prefix, answerTail],
+        segments: [
+          prefix,
+          { fileDiff: { path: 'src/b.ts', stats: { added: 1, removed: 0 } } }
+        ]
+      })
+    ).toBe(false)
   })
 })
