@@ -48,7 +48,9 @@ import {
   isLiveWriteStatThinkAnswerAppendChange,
   isLiveStatusThinkAppendChange,
   isLiveStatusAnswerAppendChange,
+  isLiveStatusThinkAnswerAppendChange,
   isLiveThinkAnswerAppendChange,
+  isLiveWriteStatStatusThinkAnswerAppendChange,
   isLiveWriteStatCompressAppendChange,
   isLiveWriteStatErrorAppendChange,
   isLiveWriteStatDemoAppendChange,
@@ -616,6 +618,8 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatStatusAnswerAppendChange(prevSegments, segments) &&
     !isLiveStatusThinkAppendChange(prevSegments, segments) &&
     !isLiveStatusAnswerAppendChange(prevSegments, segments) &&
+    !isLiveStatusThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments) &&
     !isLiveWriteStatCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&

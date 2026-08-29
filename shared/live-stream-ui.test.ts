@@ -16,6 +16,7 @@ import { AUTO_COMPACT_LIVE_STATUS, shouldRewriteVisibleTranscript } from './cont
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import { TURN_START_LIVE_STATUS } from './live-display'
+import { applyStreamChunk } from './turn-segments'
 import {
   liveAnswerGrowState,
   liveAnswerViewFromSnap,
@@ -38,7 +39,9 @@ import {
   isLiveWriteStatThinkAnswerAppendChange,
   isLiveStatusThinkAppendChange,
   isLiveStatusAnswerAppendChange,
+  isLiveStatusThinkAnswerAppendChange,
   isLiveThinkAnswerAppendChange,
+  isLiveWriteStatStatusThinkAnswerAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1084,6 +1087,85 @@ describe('live stream ui snapshot', () => {
         [hello, ran, reconnectStatusDone, nextThink, firstReply]
       )
     ).toBe('text')
+    const nextThinkDone: TurnSegment = { ...nextThink, status: 'done' }
+    expect(
+      isLiveThinkAnswerAppendChange([hello, running], [hello, ran, nextThinkDone, firstReply])
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextThinkDone, firstReply])).toBe(
+      'text'
+    )
+    expect(
+      isLiveStatusThinkAnswerAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatus, nextThinkDone, firstReply]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running],
+        [hello, ran, reconnectStatus, nextThinkDone, firstReply]
+      )
+    ).toBe('text')
+    expect(
+      nextLiveThinkText('Hmm', [hello, running], [hello, ran, reconnectStatus, nextThinkDone, firstReply])
+    ).toBe('HmmNext')
+    expect(
+      isLiveWriteStatStatusThinkAnswerAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatus, nextThinkDone, firstReply]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running],
+        [hello, ranDiff, reconnectStatus, nextThinkDone, firstReply]
+      )
+    ).toBe('text')
+    let streamed = [hello, running]
+    streamed = applyStreamChunk(streamed, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'exit 0',
+      timestamp: 10
+    })
+    streamed = applyStreamChunk(streamed, {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      timestamp: 11
+    })
+    const afterPlanStatus = streamed
+    streamed = applyStreamChunk(streamed, { type: 'think', content: 'Next', timestamp: 12 })
+    streamed = applyStreamChunk(streamed, { type: 'token', content: 'Hi', timestamp: 13 })
+    expect(isLiveStatusThinkAnswerAppendChange([hello, running], streamed)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], streamed)).toBe('text')
+    let fromPlan = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 12 })
+    fromPlan = applyStreamChunk(fromPlan, { type: 'token', content: 'Hi', timestamp: 13 })
+    expect(isLiveThinkAnswerAppendChange(afterPlanStatus, fromPlan)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, fromPlan)).toBe('text')
+    const processReadyForTriple = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterTriple = nextLiveProcessView(processReadyForTriple, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: streamed
+    })
+    expect(processAfterTriple.processForFlow.some((segment) => segment.kind === 'status')).toBe(true)
+    expect(processAfterTriple.thinkText).toBe(processReadyForTriple.thinkText + 'Next')
+    expect(processAfterTriple.answerStreaming).toBe(true)
+    const answerReadyForTriple = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloTriplePart = answerReadyForTriple.parts.find((part) => part.type === 'text')
+    const answerAfterTriple = nextLiveAnswerView(answerReadyForTriple, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: streamed
+    })
+    expect(
+      answerAfterTriple.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloTriplePart)
+    expect(answerAfterTriple.tail?.content).toBe('Hi')
     const processReadyForWritePair = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
