@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clampReviewMenuPosition,
   resolveReviewFileClick,
+  reviewFileClickTargetFromElement,
   reviewFileMenuItems,
   shouldOpenReviewLine
 } from './review-file-click'
@@ -10,6 +11,7 @@ describe('review file click', () => {
   it('opens the file from the name and toggles the diff from the row', () => {
     expect(resolveReviewFileClick('name')).toBe('open')
     expect(resolveReviewFileClick('background')).toBe('toggle')
+    expect(reviewFileClickTargetFromElement(null)).toBe('background')
     expect(reviewFileMenuItems(false, 'darwin').map((item) => item.action)).toEqual([
       'open',
       'reveal',

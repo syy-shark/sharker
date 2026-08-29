@@ -15,7 +15,13 @@ export type FilesChangedFileMenuAction = 'open' | 'reveal'
 export function filesChangedHeaderTargetFromElement(
   el: EventTarget | null
 ): FilesChangedHeaderTarget {
-  if (el instanceof Element && el.closest('[data-files-changed-toggle]')) return 'toggle'
+  if (
+    typeof Element !== 'undefined' &&
+    el instanceof Element &&
+    el.closest('[data-files-changed-toggle]')
+  ) {
+    return 'toggle'
+  }
   return 'review'
 }
 

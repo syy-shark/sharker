@@ -49,7 +49,9 @@ export function resolveReviewFileClick(target: ReviewFileClickTarget): ReviewFil
 
 /** 从点击目标判断是文件名还是行背景 */
 export function reviewFileClickTargetFromElement(el: EventTarget | null): ReviewFileClickTarget {
-  if (el instanceof Element && el.closest('[data-review-file-name]')) return 'name'
+  if (typeof Element !== 'undefined' && el instanceof Element && el.closest('[data-review-file-name]')) {
+    return 'name'
+  }
   return 'background'
 }
 
