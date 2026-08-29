@@ -13,6 +13,7 @@ export type SettingsTab =
   | 'appearance'
   | 'notifications'
   | 'personalization'
+  | 'suggested'
   | 'shortcuts'
   | 'archived'
   | 'usage'

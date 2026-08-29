@@ -34,6 +34,7 @@ import {
   shouldFollowArtifactTail,
   shouldMountMessageActions,
   shouldReserveMessageActions,
+  LIVE_TAIL_SAFE_PX,
   shouldFocusTranscriptScroller,
   shouldLockStickOnTranscriptKey,
   transcriptNavIntent,
@@ -242,6 +243,8 @@ describe('near-live message rows', () => {
     )
     expect(shouldReserveMessageActions({ isStreaming: false, hasCopyableContent: false })).toBe(
       false
+    )
+    expect(LIVE_TAIL_SAFE_PX).toBe(12)
     )
     expect(
       liveStickNeedsFollow(

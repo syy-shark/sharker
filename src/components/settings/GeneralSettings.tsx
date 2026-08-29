@@ -1,6 +1,7 @@
 /**
- * 通用：后续行为、Enter 发送、建议提示、审查交付、运行防休眠。
+ * 通用：后续行为、Enter 发送、审查交付、运行防休眠。
  * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review）。
+ * 建议提示在 SuggestedPromptSettings（官方 Settings → Suggested prompts）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef } from 'react'
@@ -109,19 +110,6 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
-          <SettingsRow
-            title="建议提示"
-            description="对标 Codex Suggested prompts：空对话显示审查、目标或继续最近对话。"
-            last
-          >
-            <SettingsToggle
-              checked={draft.suggestedPrompts !== false}
-              onChange={(suggestedPrompts) => {
-                scheduleSave({ ...draftRef.current, suggestedPrompts })
-              }}
-              label="建议提示"
-            />
-          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
       <SettingsSection title="代码审查">

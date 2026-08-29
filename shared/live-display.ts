@@ -405,6 +405,12 @@ export function shouldReserveMessageActions(options: {
   return Boolean(options.isStreaming) && !options.hasCopyableContent
 }
 
+/**
+ * 对话柱尾与输入区之间的安全距：给操作条和 composer 阴影留空，
+ * 避免最后一行复制/分叉被输入框顶边盖住（对标 Codex #41155 / #40788）。
+ */
+export const LIVE_TAIL_SAFE_PX = 12
+
 /** 内容高度或滚动视口变了才需要重写 scrollTop */
 export function liveStickNeedsFollow(
   prev: { scrollHeight: number; clientHeight: number },

@@ -16,6 +16,7 @@ import {
   ListFilter,
   MoreHorizontal,
   Keyboard,
+  Lightbulb,
   Palette,
   Pin,
   Smile,
@@ -117,6 +118,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'appearance', label: '外观', icon: Palette },
   { id: 'notifications', label: '通知', icon: BellRing },
   { id: 'personalization', label: '个性化', icon: Smile },
+  { id: 'suggested', label: '建议提示', icon: Lightbulb },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
   { id: 'archived', label: '已归档', icon: Archive },
   { id: 'usage', label: '用量', icon: ChartNoAxesColumn }

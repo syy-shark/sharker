@@ -82,6 +82,18 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'personalization'
     })
+    expect(parseDeeplink('sharker://settings/suggested-prompts')).toEqual({
+      type: 'settings',
+      tab: 'suggested'
+    })
+    expect(parseDeeplink('sharker://settings/suggested')).toEqual({
+      type: 'settings',
+      tab: 'suggested'
+    })
+    expect(parseDeeplink('sharker://settings/prompts')).toEqual({
+      type: 'settings',
+      tab: 'suggested'
+    })
     expect(parseDeeplink('sharker://settings/code-font')).toEqual({
       type: 'settings',
       tab: 'appearance'

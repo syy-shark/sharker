@@ -22,6 +22,7 @@ export type DeeplinkAction =
         | 'appearance'
         | 'notifications'
         | 'personalization'
+        | 'suggested'
         | 'shortcuts'
         | 'archived'
         | 'usage'
@@ -92,6 +93,9 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   }
   if (key === 'personalization' || key === 'personality' || key === 'agents.md' || key === 'memories') {
     return { type: 'settings', tab: 'personalization' }
+  }
+  if (key === 'suggested' || key === 'suggested-prompts' || key === 'prompts') {
+    return { type: 'settings', tab: 'suggested' }
   }
   if (key === 'general' || key === 'review') {
     return { type: 'settings', tab: 'general' }

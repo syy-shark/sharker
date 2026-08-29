@@ -1,7 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
- * ⌘F 查找条与「新消息」芯片都在滚动层外占位，不盖正文（对标 Codex #40788 / #38220）。
+ * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -57,7 +57,8 @@ import {
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
   shouldForceStickScroll,
-  shouldFollowApprovalIntoView
+  shouldFollowApprovalIntoView,
+  LIVE_TAIL_SAFE_PX
 } from '../../shared/live-display'
 import {
   captureTranscriptScroll,
@@ -1898,7 +1899,12 @@ export function ChatView({
               </div>
             )}
 
-            <div ref={bottomRef} className="messages-end" aria-hidden />
+            <div
+              ref={bottomRef}
+              className="messages-end"
+              style={{ height: LIVE_TAIL_SAFE_PX }}
+              aria-hidden
+            />
           </div>
         </div>
       )}

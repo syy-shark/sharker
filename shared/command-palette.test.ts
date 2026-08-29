@@ -43,6 +43,7 @@ describe('command palette', () => {
     expect(ids).toContain('personalization')
     expect(ids).toContain('general')
     expect(ids).toContain('notifications')
+    expect(ids).toContain('suggested-prompts')
     expect(ids).toContain('debug-config')
     expect(ids).toContain('fast')
     expect(ids).toContain('reasoning')
@@ -83,6 +84,9 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('通知').some((c) => c.action === 'open_notifications')).toBe(true)
+    expect(filterPaletteCommands('建议').some((c) => c.action === 'open_suggested_prompts')).toBe(
+      true
+    )
     expect(filterPaletteCommands('归档项目').some((c) => c.action === 'archive_project_chats')).toBe(
       true
     )

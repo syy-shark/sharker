@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 通用 / 外观 / 通知 / 个性化 / 键盘快捷键 / 已归档 / 用量
+ * 设置页壳：权限 / 模型 / 通用 / 外观 / 通知 / 个性化 / 建议提示 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -12,6 +12,7 @@ import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { GeneralSettings } from '../components/settings/GeneralSettings'
 import { PersonalizationSettings } from '../components/settings/PersonalizationSettings'
 import { NotificationSettings } from '../components/settings/NotificationSettings'
+import { SuggestedPromptSettings } from '../components/settings/SuggestedPromptSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
@@ -28,7 +29,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   general: {
     title: '通用',
-    desc: '后续排队或注入、Enter 发送、建议提示、/review 交付与运行防休眠。对标 Codex Settings → General。'
+    desc: '后续排队或注入、Enter 发送、/review 交付与运行防休眠。对标 Codex Settings → General。建议提示在单独一页。'
   },
   appearance: {
     title: '外观',
@@ -41,6 +42,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   personalization: {
     title: '个性化',
     desc: '默认人格、记忆开关与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
+  },
+  suggested: {
+    title: '建议提示',
+    desc: '空对话显示要继续的任务、审查或目标。对标 Codex Settings → Suggested prompts。'
   },
   shortcuts: {
     title: '键盘快捷键',
@@ -95,6 +100,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           )}
           {tab === 'personalization' && (
             <PersonalizationSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'suggested' && (
+            <SuggestedPromptSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'shortcuts' && (
             <ShortcutSettings draft={draft} setDraft={setDraft} onSave={onSave} />

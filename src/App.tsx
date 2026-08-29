@@ -5707,6 +5707,9 @@ export default function App() {
         case 'open_notifications':
           void handleNavigate('settings', 'notifications')
           break
+        case 'open_suggested_prompts':
+          void handleNavigate('settings', 'suggested')
+          break
         case 'open_usage':
           void handleNavigate('settings', 'usage')
           break

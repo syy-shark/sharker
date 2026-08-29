@@ -139,6 +139,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'open_notifications'
   },
   {
+    id: 'suggested-prompts',
+    title: '建议提示',
+    keywords: 'suggested prompts resume 建议 提示 空对话',
+    action: 'open_suggested_prompts'
+  },
+  {
     id: 'debug-config',
     title: '调试配置',
     keywords: 'debug config 配置 诊断',
