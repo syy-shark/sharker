@@ -91,6 +91,12 @@ import {
   utf8ToBase64
 } from '../../shared/composer-paste'
 import {
+  filterGitBranchRefs,
+  gitBranchPickerLabel,
+  gitBranchPickerRows,
+  type GitBranchRef
+} from '../../shared/git-branch-list'
+import {
   appendDictationTranscript,
   isDictationShortcut,
   isVoiceChatShortcut,
@@ -323,7 +329,12 @@ export const ComposerDock = memo(
     const [dictateInterim, setDictateInterim] = useState('')
     const [dictateError, setDictateError] = useState('')
     const [voiceChat, setVoiceChat] = useState(false)
-    const [worktreeBranches, setWorktreeBranches] = useState<string[]>([])
+    const [worktreeBranches, setWorktreeBranches] = useState<GitBranchRef[]>([])
+    const [worktreeBranchOpen, setWorktreeBranchOpen] = useState(false)
+    const [worktreeBranchQuery, setWorktreeBranchQuery] = useState('')
+    const [worktreeBranchIndex, setWorktreeBranchIndex] = useState(0)
+    const worktreeBranchIndexRef = useRef(0)
+    const worktreeBranchSearchRef = useRef<HTMLInputElement>(null)
     const voiceChatRef = useRef(false)
     const inputRef = useRef(input)
     const attachmentsRef = useRef<ChatAttachment[]>(pendingAttachments)
@@ -350,7 +361,13 @@ export const ComposerDock = memo(
       () => filterWorkspaces(sortWorkspaces(workspaces ?? []), projectQuery),
       [workspaces, projectQuery]
     )
+    const worktreeBranchRows = useMemo(
+      () => gitBranchPickerRows(filterGitBranchRefs(worktreeBranches, worktreeBranchQuery)),
+      [worktreeBranches, worktreeBranchQuery]
+    )
     const showProjectPicker = projectPickerOpen && !showHistoryPicker
+    const showWorktreeBranchPicker =
+      worktreeBranchOpen && threadMode === 'worktree' && !showHistoryPicker && !showProjectPicker
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus()
@@ -374,6 +391,7 @@ export const ComposerDock = memo(
         historyMountedRef.current = true
         setHistoryQuery('')
         setProjectPickerOpen(false)
+        setWorktreeBranchOpen(false)
         requestAnimationFrame(() => historySearchRef.current?.focus())
         return
       }
@@ -490,6 +508,55 @@ export const ComposerDock = memo(
       window.addEventListener('keydown', onKey)
       return () => window.removeEventListener('keydown', onKey)
     }, [showProjectPicker, projectHits, onSelectWorkspace])
+
+    useEffect(() => {
+      worktreeBranchIndexRef.current = worktreeBranchIndex
+    }, [worktreeBranchIndex])
+
+    useEffect(() => {
+      if (!showWorktreeBranchPicker) return
+      setWorktreeBranchIndex(0)
+      worktreeBranchIndexRef.current = 0
+      requestAnimationFrame(() => worktreeBranchSearchRef.current?.focus())
+      const total = worktreeBranchRows.length
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setWorktreeBranchOpen(false)
+          requestAnimationFrame(() => textareaRef.current?.focus())
+          return
+        }
+        if (!total) return
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setWorktreeBranchIndex((i) => {
+            const n = (i + 1) % total
+            worktreeBranchIndexRef.current = n
+            return n
+          })
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setWorktreeBranchIndex((i) => {
+            const n = (i - 1 + total) % total
+            worktreeBranchIndexRef.current = n
+            return n
+          })
+          return
+        }
+        if (e.key === 'Enter') {
+          const item = worktreeBranchRows[worktreeBranchIndexRef.current]
+          if (!item) return
+          e.preventDefault()
+          onWorktreeBaseRefChange?.(item.ref)
+          setWorktreeBranchOpen(false)
+          requestAnimationFrame(() => textareaRef.current?.focus())
+        }
+      }
+      window.addEventListener('keydown', onKey)
+      return () => window.removeEventListener('keydown', onKey)
+    }, [showWorktreeBranchPicker, worktreeBranchRows, onWorktreeBaseRefChange])
 
     const canSend = Boolean(input.trim() || pendingAttachments.length > 0)
     const activeWorkspace =
@@ -693,6 +760,7 @@ export const ComposerDock = memo(
         return
       }
       if (composerIntent === 'project') {
+        setWorktreeBranchOpen(false)
         setProjectPickerOpen(true)
         setProjectQuery('')
         setProjectActiveIndex(0)
@@ -1019,7 +1087,15 @@ export const ComposerDock = memo(
       void window.sharker
         .listGitBranches(fileSearchRoot)
         .then((result) => {
-          if (!cancelled) setWorktreeBranches(result.isRepo ? result.branches : [])
+          if (!cancelled) {
+            setWorktreeBranches(
+              result.isRepo
+                ? result.items?.length
+                  ? result.items
+                  : result.branches.map((ref) => ({ ref, short: ref, source: 'local' as const }))
+                : []
+            )
+          }
         })
         .catch(() => {
           if (!cancelled) setWorktreeBranches([])
@@ -1028,6 +1104,10 @@ export const ComposerDock = memo(
         cancelled = true
       }
     }, [threadMode, fileSearchRoot])
+
+    useEffect(() => {
+      if (threadMode !== 'worktree') setWorktreeBranchOpen(false)
+    }, [threadMode])
 
     useEffect(() => {
       if (wasLoadingRef.current && !loading && voiceChatRef.current) {
@@ -1399,6 +1479,70 @@ export const ComposerDock = memo(
                   ))
                 ) : (
                   <li className="slash-menu-empty">没有匹配的项目</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+        {showWorktreeBranchPicker ? (
+          <div className="composer-popover-slot">
+            <div
+              className="slash-menu history-picker popover-enter"
+              role="listbox"
+              aria-label="隔离 worktree 起点分支"
+              aria-activedescendant={
+                worktreeBranchRows[worktreeBranchIndex]
+                  ? `worktree-branch-${worktreeBranchRows[worktreeBranchIndex].ref || 'HEAD'}`
+                  : undefined
+              }
+            >
+              <input
+                ref={worktreeBranchSearchRef}
+                className="history-picker-search"
+                value={worktreeBranchQuery}
+                placeholder="搜索本地或远程分支…"
+                aria-label="搜索起点分支"
+                onChange={(e) => {
+                  setWorktreeBranchQuery(e.target.value)
+                  setWorktreeBranchIndex(0)
+                  worktreeBranchIndexRef.current = 0
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') e.preventDefault()
+                }}
+              />
+              <ul className="slash-menu-list">
+                {worktreeBranchRows.length ? (
+                  worktreeBranchRows.map((row, index) => (
+                    <li key={row.ref || 'HEAD'} role="presentation">
+                      <button
+                        type="button"
+                        id={`worktree-branch-${row.ref || 'HEAD'}`}
+                        role="option"
+                        aria-selected={index === worktreeBranchIndex}
+                        className={`slash-menu-item${index === worktreeBranchIndex ? ' slash-menu-item--active' : ''}`}
+                        onMouseEnter={() => {
+                          setWorktreeBranchIndex(index)
+                          worktreeBranchIndexRef.current = index
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          onWorktreeBaseRefChange?.(row.ref)
+                          setWorktreeBranchOpen(false)
+                          requestAnimationFrame(() => textareaRef.current?.focus())
+                        }}
+                      >
+                        <span className="history-picker-hit">
+                          <span className="slash-menu-name">{row.label}</span>
+                          {row.source === 'remote' ? (
+                            <span className="history-picker-hint">远程</span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li className="slash-menu-empty">没有匹配的分支</li>
                 )}
               </ul>
             </div>
@@ -2005,22 +2149,27 @@ export const ComposerDock = memo(
               </div>
             ) : null}
             {onThreadModeChange && threadMode === 'worktree' ? (
-              <label className="composer-worktree-base">
+              <div className="composer-worktree-base">
                 <span className="composer-worktree-base-label">起点</span>
-                <select
-                  className="composer-worktree-base-select"
-                  value={worktreeBaseRef}
+                <button
+                  type="button"
+                  className={`composer-worktree-base-select${showWorktreeBranchPicker ? ' is-open' : ''}`}
                   aria-label="隔离 worktree 起点分支"
-                  onChange={(e) => onWorktreeBaseRefChange?.(e.target.value)}
+                  aria-expanded={showWorktreeBranchPicker}
+                  aria-haspopup="listbox"
+                  title="搜索本地或远程分支（对标 Codex local branch search）"
+                  onClick={() => {
+                    setProjectPickerOpen(false)
+                    onCloseHistoryPicker?.()
+                    setWorktreeBranchQuery('')
+                    setWorktreeBranchIndex(0)
+                    worktreeBranchIndexRef.current = 0
+                    setWorktreeBranchOpen((open) => !open)
+                  }}
                 >
-                  <option value="">HEAD</option>
-                  {worktreeBranches.map((branch) => (
-                    <option key={branch} value={branch}>
-                      {branch}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {gitBranchPickerLabel(worktreeBaseRef, worktreeBranches)}
+                </button>
+              </div>
             ) : null}
             {dictating && dictateInterim ? (
               <span className="composer-dictate-interim">{dictateInterim}</span>

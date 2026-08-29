@@ -112,6 +112,8 @@
 | `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、写盘路径是否碰到预览、写盘重拉树不清预览、写盘/回前台才重读已打开预览 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
+| `git-branch-list.ts` | Composer 隔离起点：解析本地 + 远程跟踪分支并搜索（对标 Codex local branch search）；远程只保留 `origin/…` 完整 ref（对标 #22635） |
+| `composer-branch-list.test.ts` | 本地短名、远程只读完整 ref、按短名搜索 |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
 | `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不挂「查看输出」/ 退出码 / 结果摘要 / 秒表心跳 detail、也不自动展开 verbose（对标 Codex command output behind expand / #19260） |
 | `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 detail |

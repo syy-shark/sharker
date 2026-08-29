@@ -200,7 +200,11 @@ export interface SharkerApi {
   ) => Promise<{ isRepo: boolean; branch: string; dirty: boolean; remoteUrl?: string }>
   listGitBranches: (
     cwd: string
-  ) => Promise<{ isRepo: boolean; branches: string[] }>
+  ) => Promise<{
+    isRepo: boolean
+    branches: string[]
+    items?: Array<{ ref: string; short: string; source: 'local' | 'remote' }>
+  }>
   gitCheckout: (cwd: string, branch: string) => Promise<string>
   initGitRepository: (
     cwd: string

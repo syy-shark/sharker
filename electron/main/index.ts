@@ -21,6 +21,7 @@ import path from 'path'
 import appIconBundled from '../../resources/icon.png?asset'
 import { canExportChatImage, suggestedImageFilename, type ChatImageExportInput } from '../../shared/chat-image'
 import { classifyPastedAttachment } from '../../shared/composer-paste'
+import { parseGitRefNames } from '../../shared/git-branch-list'
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
@@ -1395,14 +1396,16 @@ function registerIpc(): void {
 
   ipcMain.handle(IPC.GIT_LIST_BRANCHES, async (_e, cwd: string) => {
     try {
-      const out = await runGit(cwd, ['branch', '--format=%(refname:short)'])
-      const branches = out
-        .split('\n')
-        .map((b) => b.trim())
-        .filter(Boolean)
-      return { isRepo: true, branches }
+      const out = await runGit(cwd, [
+        'for-each-ref',
+        '--format=%(refname)',
+        'refs/heads',
+        'refs/remotes'
+      ])
+      const items = parseGitRefNames(out)
+      return { isRepo: true, branches: items.map((item) => item.ref), items }
     } catch {
-      return { isRepo: false, branches: [] }
+      return { isRepo: false, branches: [], items: [] }
     }
   })
 

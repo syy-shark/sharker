@@ -1283,14 +1283,21 @@ html.theme-dark .composer-worktree-banner {
 }
 
 .composer-worktree-base-select {
-  max-width: 140px;
+  max-width: 160px;
   height: 22px;
-  padding: 0 6px;
+  padding: 0 8px;
+  overflow: hidden;
   border: 0.5px solid var(--glass-edge-soft);
   border-radius: 999px;
   background: var(--glass-fill-nested);
   color: var(--text-secondary);
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-worktree-base-select.is-open {
+  border-color: var(--accent-ring);
 }
 
 .composer-worktree-base-select:focus-visible {
