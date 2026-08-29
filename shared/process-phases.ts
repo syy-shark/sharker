@@ -51,6 +51,12 @@ import {
   isLiveStatusThinkAnswerAppendChange,
   isLiveThinkAnswerAppendChange,
   isLiveWriteStatStatusThinkAnswerAppendChange,
+  isLiveThinkDemoFenceAppendChange,
+  isLiveStatusDemoFenceAppendChange,
+  isLiveStatusThinkDemoFenceAppendChange,
+  isLiveWriteStatThinkDemoFenceAppendChange,
+  isLiveWriteStatStatusDemoFenceAppendChange,
+  isLiveWriteStatStatusThinkDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
   isLiveWriteStatErrorAppendChange,
   isLiveWriteStatDemoAppendChange,
@@ -620,6 +626,10 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveStatusAnswerAppendChange(prevSegments, segments) &&
     !isLiveStatusThinkAnswerAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveStatusDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments) &&
     !isLiveWriteStatCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&
@@ -682,6 +692,8 @@ export function remapProcessPhaseStepsOnThinkAppend(
     !isLiveDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveThinkDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) &&
     !findLiveDemoHtmlChange(prevSegments, segments) &&
     !isLiveDemoFenceAppendChange(prevSegments, segments) &&
     !findLiveDemoFenceChange(prevSegments, segments) &&

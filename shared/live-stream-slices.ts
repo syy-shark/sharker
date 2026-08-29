@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 / 思考+```demo / status+```demo / status+思考+```demo 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token / ```demo 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -822,6 +822,15 @@ function isLiveAddedActiveStatus(segment: TurnSegment | undefined): boolean {
   return Boolean(segment && segment.kind === 'status' && segment.status === 'active')
 }
 
+/** 无思考时首枚 token 会先把规划下一步标 done 再开散文 / ```demo */
+function isLiveAddedStatusPair(segment: TurnSegment | undefined): boolean {
+  return Boolean(
+    segment &&
+      segment.kind === 'status' &&
+      (segment.status === 'active' || segment.status === 'done')
+  )
+}
+
 function isLiveAddedActiveThink(segment: TurnSegment | undefined): boolean {
   return Boolean(segment && segment.kind === 'thinking' && segment.status === 'active')
 }
@@ -838,6 +847,11 @@ function isLiveAddedThinkPair(segment: TurnSegment | undefined): boolean {
 function isLiveAddedActiveAnswer(segment: TurnSegment | undefined): boolean {
   if (!segment || !isLiveAnswerText(segment) || segment.status === 'done') return false
   return !hasStreamingDemoFence(segment.content ?? '')
+}
+
+function isLiveAddedDemoFence(segment: TurnSegment | undefined): boolean {
+  if (!segment || !isLiveAnswerText(segment) || segment.status === 'done') return false
+  return hasStreamingDemoFence(segment.content ?? '')
 }
 
 function hasLivePrefixClose(
@@ -900,6 +914,48 @@ export function isLiveStatusThinkAnswerAppendChange(
   )
 }
 
+/** 无新写盘收束同时新开思考 + ```demo：过程 remap，旁白续尾，回答开演示槽 */
+export function isLiveThinkDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    !hasLivePrefixClose(prev, next, isLiveThinkAnswerPrefixClose) ||
+    next.length !== prev!.length + 2
+  ) {
+    return false
+  }
+  return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDemoFence(next[prev!.length + 1])
+}
+
+/** 无新写盘收束同时新开 status + ```demo：过程 remap 并追加 status，回答开演示槽 */
+export function isLiveStatusDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLivePrefixClose(prev, next, isLivePrefixClose) || next.length !== prev!.length + 2) {
+    return false
+  }
+  return (
+    isLiveAddedStatusPair(next[prev!.length]) && isLiveAddedDemoFence(next[prev!.length + 1])
+  )
+}
+
+/** 无新写盘收束同时新开 status + 思考 + ```demo：过程 remap 并追加 status，旁白续尾，回答开演示槽 */
+export function isLiveStatusThinkDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLivePrefixClose(prev, next, isLivePrefixClose) || next.length !== prev!.length + 3) {
+    return false
+  }
+  return (
+    isLiveAddedActiveStatus(next[prev!.length]) &&
+    isLiveAddedThinkPair(next[prev!.length + 1]) &&
+    isLiveAddedDemoFence(next[prev!.length + 2])
+  )
+}
+
 /** 无新写盘收束同时新开 status + 散文：过程 remap 并追加 status，回答开尾 */
 export function isLiveStatusAnswerAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -909,7 +965,7 @@ export function isLiveStatusAnswerAppendChange(
     return false
   }
   return (
-    isLiveAddedActiveStatus(next[prev!.length]) && isLiveAddedActiveAnswer(next[prev!.length + 1])
+    isLiveAddedStatusPair(next[prev!.length]) && isLiveAddedActiveAnswer(next[prev!.length + 1])
   )
 }
 
@@ -948,6 +1004,39 @@ export function isLiveWriteStatStatusThinkAnswerAppendChange(
   )
 }
 
+/** 写盘收束同时新开思考 + ```demo：过程 remap，旁白续尾，回答开演示槽并只换 diff 槽 */
+export function isLiveWriteStatThinkDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 2) return false
+  return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDemoFence(next[prev!.length + 1])
+}
+
+/** 写盘收束同时新开 status + ```demo：过程 remap 并追加 status，回答开演示槽并只换 diff 槽 */
+export function isLiveWriteStatStatusDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 2) return false
+  return (
+    isLiveAddedStatusPair(next[prev!.length]) && isLiveAddedDemoFence(next[prev!.length + 1])
+  )
+}
+
+/** 写盘收束同时新开 status + 思考 + ```demo：过程 remap 并追加 status，旁白续尾，回答开演示槽并只换 diff 槽 */
+export function isLiveWriteStatStatusThinkDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 3) return false
+  return (
+    isLiveAddedActiveStatus(next[prev!.length]) &&
+    isLiveAddedThinkPair(next[prev!.length + 1]) &&
+    isLiveAddedDemoFence(next[prev!.length + 2])
+  )
+}
+
 /** 写盘收束同时新开 status + 散文：过程 remap 并追加 status，回答开尾并只换 diff 槽 */
 export function isLiveWriteStatStatusAnswerAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -955,7 +1044,7 @@ export function isLiveWriteStatStatusAnswerAppendChange(
 ): boolean {
   if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 2) return false
   return (
-    isLiveAddedActiveStatus(next[prev!.length]) && isLiveAddedActiveAnswer(next[prev!.length + 1])
+    isLiveAddedStatusPair(next[prev!.length]) && isLiveAddedActiveAnswer(next[prev!.length + 1])
   )
 }
 
@@ -1003,6 +1092,12 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveStatusAnswerAppendChange(prevSegments, segments)) return 'text'
   if (isLiveStatusThinkAnswerAppendChange(prevSegments, segments)) return 'text'
   if (isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveThinkDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveStatusDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatStatusDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments)) return 'text'
   if (isLiveWriteStatAnswerAppendChange(prevSegments, segments)) return 'text'
   if (isLiveWriteStatDemoFenceAppendChange(prevSegments, segments)) return 'text'
   if (isLiveWriteStatCompressAppendChange(prevSegments, segments)) return 'tool'
@@ -1073,14 +1168,18 @@ export function nextLiveThinkText(
   if (
     prevSegments &&
     (isLiveWriteStatThinkAnswerAppendChange(prevSegments, segments) ||
-      isLiveThinkAnswerAppendChange(prevSegments, segments))
+      isLiveThinkAnswerAppendChange(prevSegments, segments) ||
+      isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveThinkDemoFenceAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length]?.content ?? '')
   }
   if (
     prevSegments &&
     (isLiveStatusThinkAnswerAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
   }
@@ -1395,13 +1494,22 @@ export function nextLiveProcessView(
     (isLiveWriteStatStatusThinkAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusAnswerAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusThinkAnswerAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkDemoFenceAppendChange(processHold.segments, segments) ||
       isLiveStatusThinkAppendChange(processHold.segments, segments) ||
       isLiveStatusAnswerAppendChange(processHold.segments, segments) ||
-      isLiveStatusThinkAnswerAppendChange(processHold.segments, segments))
+      isLiveStatusThinkAnswerAppendChange(processHold.segments, segments) ||
+      isLiveStatusDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkDemoFenceAppendChange(processHold.segments, segments))
   ) {
     const status = segments[processHold.segments.length]!
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
     const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const demoFence =
+      isLiveWriteStatStatusDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveStatusDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkDemoFenceAppendChange(processHold.segments, segments)
     const answer =
       isLiveWriteStatStatusAnswerAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusThinkAnswerAppendChange(processHold.segments, segments) ||
@@ -1410,18 +1518,23 @@ export function nextLiveProcessView(
         ? segments[segments.length - 1]
         : null
     const hasProse = Boolean(answer && (answer.content ?? '').trim())
+    const flags = demoFence
+      ? liveDemoFenceProcessFlags(prev, segments[segments.length - 1]!)
+      : {
+          contentStreaming: prev.contentStreaming || hasProse,
+          answerStreaming: prev.answerStreaming || hasProse
+        }
     const view = {
       ...prev,
       processForFlow: [...remapped, status],
       thinkText,
-      contentStreaming: prev.contentStreaming || hasProse,
-      answerStreaming: prev.answerStreaming || hasProse
+      ...flags
     }
     processHold = {
       view,
       identity: liveProcessIdentity(segments),
       segments,
-      answerTailPlain: hasProse || processHold.answerTailPlain
+      answerTailPlain: demoFence ? false : hasProse || processHold.answerTailPlain
     }
     return view
   }
@@ -1554,7 +1667,9 @@ export function nextLiveProcessView(
     const fenceText =
       findLiveDemoFenceChange(processHold.segments, segments)?.to ??
       (isLiveDemoFenceAppendChange(processHold.segments, segments) ||
-      isLiveWriteStatDemoFenceAppendChange(processHold.segments, segments)
+      isLiveWriteStatDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveThinkDemoFenceAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatThinkDemoFenceAppendChange(processHold.segments, segments)
         ? segments[segments.length - 1]
         : null)
     if (fenceText) {
@@ -2043,7 +2158,12 @@ export function nextLiveAnswerView(
         answerGrowHold = { view, segments, tailPlain: true }
         return view
       }
-      if (isLiveWriteStatDemoFenceAppendChange(prevSegments, segments)) {
+      if (
+        isLiveWriteStatDemoFenceAppendChange(prevSegments, segments) ||
+        isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) ||
+        isLiveWriteStatStatusDemoFenceAppendChange(prevSegments, segments) ||
+        isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments)
+      ) {
         const view = applyLiveDemoFenceView(patched, segments[segments.length - 1]!)
         answerGrowHold = { view, segments, tailPlain: false }
         return view
@@ -2090,7 +2210,13 @@ export function nextLiveAnswerView(
     answerGrowHold = { view, segments, tailPlain: true }
     return view
   }
-  if (prev && isLiveDemoFenceAppendChange(prevSegments, segments)) {
+  if (
+    prev &&
+    (isLiveDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveThinkDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveStatusDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments))
+  ) {
     const added = segments[segments.length - 1]!
     const view = applyLiveDemoFenceView(prev, added)
     answerGrowHold = { view, segments, tailPlain: false }

@@ -42,6 +42,12 @@ import {
   isLiveStatusThinkAnswerAppendChange,
   isLiveThinkAnswerAppendChange,
   isLiveWriteStatStatusThinkAnswerAppendChange,
+  isLiveThinkDemoFenceAppendChange,
+  isLiveStatusDemoFenceAppendChange,
+  isLiveStatusThinkDemoFenceAppendChange,
+  isLiveWriteStatThinkDemoFenceAppendChange,
+  isLiveWriteStatStatusDemoFenceAppendChange,
+  isLiveWriteStatStatusThinkDemoFenceAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1142,6 +1148,75 @@ describe('live stream ui snapshot', () => {
     fromPlan = applyStreamChunk(fromPlan, { type: 'token', content: 'Hi', timestamp: 13 })
     expect(isLiveThinkAnswerAppendChange(afterPlanStatus, fromPlan)).toBe(true)
     expect(shouldSkipLiveStreamDerivation(afterPlanStatus, fromPlan)).toBe('text')
+    expect(
+      isLiveStatusDemoFenceAppendChange([hello, running], [hello, ran, reconnectStatus, demoStart])
+    ).toBe(true)
+    expect(
+      isLiveThinkDemoFenceAppendChange([hello, running], [hello, ran, nextThinkDone, demoStart])
+    ).toBe(true)
+    expect(
+      isLiveStatusThinkDemoFenceAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatus, nextThinkDone, demoStart]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusDemoFenceAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatus, demoStart]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatThinkDemoFenceAppendChange([hello, running], [hello, ranDiff, nextThinkDone, demoStart])
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusThinkDemoFenceAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatus, nextThinkDone, demoStart]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation([hello, running], [hello, ran, reconnectStatus, demoStart])
+    ).toBe('text')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running],
+        [hello, ran, reconnectStatus, nextThinkDone, demoStart]
+      )
+    ).toBe('text')
+    const answerStreamed = applyStreamChunk(afterPlanStatus, { type: 'token', content: 'Hi', timestamp: 14 })
+    expect(isLiveStatusAnswerAppendChange([hello, running], answerStreamed)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], answerStreamed)).toBe('text')
+    let demoStreamed = applyStreamChunk(afterPlanStatus, { type: 'token', content: '```demo\n<div>', timestamp: 14 })
+    expect(isLiveStatusDemoFenceAppendChange([hello, running], demoStreamed)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], demoStreamed)).toBe('text')
+    let demoFromPlan = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 15 })
+    demoFromPlan = applyStreamChunk(demoFromPlan, { type: 'token', content: '```demo\n<div>', timestamp: 16 })
+    expect(isLiveThinkDemoFenceAppendChange(afterPlanStatus, demoFromPlan)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, demoFromPlan)).toBe('text')
+    const processReadyForDemoFence = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterDemoFence = nextLiveProcessView(processReadyForDemoFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: demoStreamed
+    })
+    expect(processAfterDemoFence.processForFlow.some((segment) => segment.kind === 'status')).toBe(true)
+    expect(processAfterDemoFence.processForFlow.some((segment) => segment.kind === 'text')).toBe(false)
+    const answerReadyForDemoFence = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloDemoFencePart = answerReadyForDemoFence.parts.find((part) => part.type === 'text')
+    const answerAfterDemoFence = nextLiveAnswerView(answerReadyForDemoFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: demoStreamed
+    })
+    expect(
+      answerAfterDemoFence.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloDemoFencePart)
+    expect(answerAfterDemoFence.tail?.type).toBe('demo')
     const processReadyForTriple = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

@@ -658,6 +658,27 @@ describe('process phases privacy', () => {
     expect(settleAndStatusThinkAnswer![0].segment).toBe(cmdDone)
     expect(settleAndStatusThinkAnswer![1].segment).toBe(cmdNextDone)
     expect(settleAndStatusThinkAnswer!.at(-1)?.segment).toBe(reconnectStatus)
+    const settleAndStatusDemo = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatus, demoFence],
+      true
+    )
+    expect(settleAndStatusDemo).not.toBeNull()
+    expect(settleAndStatusDemo).toHaveLength(3)
+    expect(settleAndStatusDemo![0].segment).toBe(cmdDone)
+    expect(settleAndStatusDemo![1].segment).toBe(cmdNextDone)
+    expect(settleAndStatusDemo!.at(-1)?.segment).toBe(reconnectStatus)
+    const settleAndThinkDemo = remapProcessPhaseStepsOnThinkAppend(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkDone, demoFence],
+      true
+    )
+    expect(settleAndThinkDemo).not.toBeNull()
+    expect(settleAndThinkDemo).toHaveLength(2)
+    expect(settleAndThinkDemo![0].segment).toBe(cmdDone)
+    expect(settleAndThinkDemo![1].segment).toBe(cmdNextDone)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',
