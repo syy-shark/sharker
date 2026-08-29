@@ -12,6 +12,8 @@ import {
   ALWAYS_ON_TOP_LABEL,
   KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
+  APPROVE_REQUEST_LABEL,
+  DECLINE_REQUEST_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -107,5 +109,7 @@ describe('reveal in folder', () => {
     expect(OPEN_IN_POPUP_WINDOW_LABEL).toBe('Open in Popup Window')
     expect(ALWAYS_ON_TOP_LABEL).toBe('Always on top')
     expect(KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL).toBe('Keep a chat near your work')
+    expect(APPROVE_REQUEST_LABEL).toBe('Approve request')
+    expect(DECLINE_REQUEST_LABEL).toBe('Decline request')
   })
 })

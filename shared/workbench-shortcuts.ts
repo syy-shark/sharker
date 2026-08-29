@@ -3,7 +3,9 @@
  * @see shared/ARCH.md
  */
 import {
+  APPROVE_REQUEST_LABEL,
   ARCHIVE_CHAT_LABEL,
+  DECLINE_REQUEST_LABEL,
   BROWSER_BACK_LABEL,
   BROWSER_FORWARD_LABEL,
   CLEAR_ALL_UNREAD_INDICATORS_LABEL,
@@ -400,6 +402,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Ctrl⇧D', title: START_DICTATION_LABEL },
   { keys: 'Ctrl⇧V', title: START_VOICE_CHAT_LABEL },
   { keys: '↑', title: RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL },
+  { keys: 'Enter', title: APPROVE_REQUEST_LABEL },
+  { keys: 'Esc', title: DECLINE_REQUEST_LABEL },
   { keys: 'Enter', title: '发送；忙时按设置 Queue 或 Steer' },
   { keys: 'Esc', title: '停止当前回合（可改绑；IME 选词不触发）' },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },

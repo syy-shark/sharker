@@ -250,6 +250,12 @@ describe('workbench shortcuts', () => {
           row.title.includes('Find previous match')
       )
     ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === 'Enter' && row.title === 'Approve request')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === 'Esc' && row.title === 'Decline request')
+    ).toBe(true)
   })
 
   it('cycles conversation ids', () => {

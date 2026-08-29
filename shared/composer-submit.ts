@@ -87,7 +87,7 @@ export function isFollowUpInvertChord(options: {
  * Shift+Tab 不排队：输入框内切计划模式（对标 Codex Best practices）。
  * 普通 Shift+Enter 换行。
  */
-/** 审批打开时的快捷键（对标 Codex：Enter 允许一次，Esc 拒绝） */
+/** 审批打开时的快捷键（对标 Codex Approve request / Decline request：Enter Allow once，Esc Deny） */
 export type ApprovalHotkey = 'once' | 'deny'
 
 export function resolveApprovalHotkey(options: {
