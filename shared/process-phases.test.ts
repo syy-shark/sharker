@@ -758,6 +758,31 @@ describe('process phases privacy', () => {
     expect(settleAndStatusThinkDemoTool).toHaveLength(3)
     expect(settleAndStatusThinkDemoTool!.at(-1)?.segment).toBe(reconnectStatusDone)
     expect(settleAndStatusThinkDemoTool!.some((step) => step.segment === inlineDemo)).toBe(false)
+    const errorText: TurnSegment = {
+      id: 'err-1',
+      kind: 'text',
+      role: 'final',
+      status: 'done',
+      content: '**错误**: boom'
+    }
+    const settleAndStatusError = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, errorText],
+      true
+    )
+    expect(settleAndStatusError).not.toBeNull()
+    expect(settleAndStatusError).toHaveLength(3)
+    expect(settleAndStatusError!.at(-1)?.segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusError!.some((step) => step.segment === errorText)).toBe(false)
+    const settleAndThinkError = remapProcessPhaseStepsOnThinkAppend(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkDone, errorText],
+      true
+    )
+    expect(settleAndThinkError).not.toBeNull()
+    expect(settleAndThinkError).toHaveLength(2)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',

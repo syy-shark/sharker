@@ -877,14 +877,79 @@ export function isLiveWriteStatCompressAppendChange(
   return Boolean(added && added.kind === 'tool' && added.toolName === COMPRESS_TOOL)
 }
 
+function isLiveAddedError(segment: TurnSegment | undefined): boolean {
+  return Boolean(segment && isLiveErrorAnswer(segment) && segment.status === 'done')
+}
+
 /** 写盘收束同时新开错误正文：过程 remap，错误只进回答（不复制 Stop / 错误卡住） */
 export function isLiveWriteStatErrorAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
   if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 1) return false
-  const added = next[next.length - 1]
-  return Boolean(added && isLiveErrorAnswer(added) && added.status === 'done')
+  return isLiveAddedError(next[next.length - 1])
+}
+
+/** 规划下一步后同一帧错误：status 可先标 done，过程追加该行，错误只进回答 */
+export function isLiveStatusErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  return next.length === prev!.length + 2 && isLiveAddedError(next[next.length - 1])
+}
+
+/** 规划下一步已在场时 think 后错误：旁白可仍在，错误只进回答 */
+export function isLiveThinkErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) {
+    return false
+  }
+  return next.length === prev!.length + 2 && isLiveAddedError(next[next.length - 1])
+}
+
+/** 规划下一步 + think + 错误同一帧：过程追加 status，思考不进过程，错误只进回答 */
+export function isLiveStatusThinkErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return next.length === prev!.length + 3 && isLiveAddedError(next[next.length - 1])
+}
+
+/** 写盘收束同时新开 status + 错误：过程 remap 并追加 status，错误只进回答 */
+export function isLiveWriteStatStatusErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  return next.length === prev!.length + 2 && isLiveAddedError(next[next.length - 1])
+}
+
+/** 写盘收束同时新开思考 + 错误：过程 remap，旁白续尾，错误只进回答 */
+export function isLiveWriteStatThinkErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) return false
+  return next.length === prev!.length + 2 && isLiveAddedError(next[next.length - 1])
+}
+
+/** 写盘收束同时新开 status + 思考 + 错误：过程 remap 并追加 status */
+export function isLiveWriteStatStatusThinkErrorAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return next.length === prev!.length + 3 && isLiveAddedError(next[next.length - 1])
 }
 
 function isLiveAddedInlineDemo(segment: TurnSegment | undefined): boolean {
@@ -1274,6 +1339,12 @@ export function shouldSkipLiveStreamDerivation(
       : 'tool'
   }
   if (isLiveErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveStatusErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveThinkErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveStatusThinkErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatStatusErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatThinkErrorAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments)) return 'text'
   if (isLiveStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
@@ -1340,7 +1411,9 @@ export function nextLiveThinkText(
       isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) ||
       isLiveThinkDemoFenceAppendChange(prevSegments, segments) ||
       isLiveThinkDemoAppendChange(prevSegments, segments) ||
-      isLiveWriteStatThinkDemoAppendChange(prevSegments, segments))
+      isLiveWriteStatThinkDemoAppendChange(prevSegments, segments) ||
+      isLiveThinkErrorAppendChange(prevSegments, segments) ||
+      isLiveWriteStatThinkErrorAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length]?.content ?? '')
   }
@@ -1353,7 +1426,9 @@ export function nextLiveThinkText(
       isLiveStatusThinkToolAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkToolAppendChange(prevSegments, segments) ||
       isLiveStatusThinkDemoAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkErrorAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
   }
@@ -1687,7 +1762,11 @@ export function nextLiveProcessView(
       isLiveStatusDemoAppendChange(processHold.segments, segments) ||
       isLiveStatusThinkDemoAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusDemoAppendChange(processHold.segments, segments) ||
-      isLiveWriteStatStatusThinkDemoAppendChange(processHold.segments, segments))
+      isLiveWriteStatStatusThinkDemoAppendChange(processHold.segments, segments) ||
+      isLiveStatusErrorAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkErrorAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusErrorAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkErrorAppendChange(processHold.segments, segments))
   ) {
     const status = segments[processHold.segments.length]!
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
@@ -1779,7 +1858,9 @@ export function nextLiveProcessView(
     (isLiveAnswerAppendChange(processHold.segments, segments) ||
       isLiveWriteStatAnswerAppendChange(processHold.segments, segments) ||
       isLiveWriteStatThinkAnswerAppendChange(processHold.segments, segments) ||
-      isLiveThinkAnswerAppendChange(processHold.segments, segments))
+      isLiveThinkAnswerAppendChange(processHold.segments, segments) ||
+      isLiveThinkErrorAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatThinkErrorAppendChange(processHold.segments, segments))
   ) {
     const added = segments[segments.length - 1]!
     const hasProse = Boolean((added.content ?? '').trim())
@@ -2381,7 +2462,12 @@ export function nextLiveAnswerView(
         answerGrowHold = { view, segments, tailPlain: false }
         return view
       }
-      if (isLiveWriteStatErrorAppendChange(prevSegments, segments)) {
+      if (
+        isLiveWriteStatErrorAppendChange(prevSegments, segments) ||
+        isLiveWriteStatStatusErrorAppendChange(prevSegments, segments) ||
+        isLiveWriteStatThinkErrorAppendChange(prevSegments, segments) ||
+        isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments)
+      ) {
         const view = appendLiveAnswerView(patched, segments[segments.length - 1]!)
         answerGrowHold = { view, segments, tailPlain: false }
         return view
@@ -2440,6 +2526,17 @@ export function nextLiveAnswerView(
       answerGrowHold = { view, segments, tailPlain: false }
       return view
     }
+  }
+  if (
+    prev &&
+    (isLiveErrorAppendChange(prevSegments, segments) ||
+      isLiveStatusErrorAppendChange(prevSegments, segments) ||
+      isLiveThinkErrorAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkErrorAppendChange(prevSegments, segments))
+  ) {
+    const view = appendLiveAnswerView(prev, segments[segments.length - 1]!)
+    answerGrowHold = { view, segments, tailPlain: false }
+    return view
   }
   if (
     prev &&

@@ -69,6 +69,12 @@ import {
   isLiveWriteStatStatusDemoAppendChange,
   isLiveWriteStatThinkDemoAppendChange,
   isLiveWriteStatStatusThinkDemoAppendChange,
+  isLiveStatusErrorAppendChange,
+  isLiveThinkErrorAppendChange,
+  isLiveStatusThinkErrorAppendChange,
+  isLiveWriteStatStatusErrorAppendChange,
+  isLiveWriteStatThinkErrorAppendChange,
+  isLiveWriteStatStatusThinkErrorAppendChange,
   isLiveWriteStatCompressAppendChange,
   isLiveWriteStatErrorAppendChange,
   isLiveWriteStatDemoAppendChange,
@@ -652,6 +658,10 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveStatusThinkDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments) &&
+    !isLiveStatusErrorAppendChange(prevSegments, segments) &&
+    !isLiveStatusThinkErrorAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusErrorAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments) &&
     !isLiveWriteStatCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&
@@ -723,6 +733,8 @@ export function remapProcessPhaseStepsOnThinkAppend(
     !isLiveDemoFenceAppendChange(prevSegments, segments) &&
     !findLiveDemoFenceChange(prevSegments, segments) &&
     !isLiveErrorAppendChange(prevSegments, segments) &&
+    !isLiveThinkErrorAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatThinkErrorAppendChange(prevSegments, segments) &&
     !isLiveWriteStatErrorAppendChange(prevSegments, segments)
   ) {
     return null

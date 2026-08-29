@@ -60,6 +60,12 @@ import {
   isLiveWriteStatStatusDemoAppendChange,
   isLiveWriteStatThinkDemoAppendChange,
   isLiveWriteStatStatusThinkDemoAppendChange,
+  isLiveStatusErrorAppendChange,
+  isLiveThinkErrorAppendChange,
+  isLiveStatusThinkErrorAppendChange,
+  isLiveWriteStatStatusErrorAppendChange,
+  isLiveWriteStatThinkErrorAppendChange,
+  isLiveWriteStatStatusThinkErrorAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1434,6 +1440,62 @@ describe('live stream ui snapshot', () => {
       liveSegments: demoRound
     })
     expect(answerAfterPlanDemo.tail?.type).toBe('demo')
+    const errorRound = applyStreamChunk(afterPlanStatus, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 26
+    })
+    expect(isLiveStatusErrorAppendChange([hello, running], errorRound)).toBe(true)
+    expect(isLiveErrorAppendChange(afterPlanStatus, errorRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], errorRound)).toBe('text')
+    let thinkThenErr = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 27 })
+    thinkThenErr = applyStreamChunk(thinkThenErr, { type: 'error', error: 'boom', timestamp: 28 })
+    expect(isLiveThinkErrorAppendChange(afterPlanStatus, thinkThenErr)).toBe(true)
+    expect(isLiveStatusThinkErrorAppendChange([hello, running], thinkThenErr)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], thinkThenErr)).toBe('text')
+    expect(
+      nextLiveThinkText('Hmm', [hello, running], thinkThenErr)
+    ).toBe('HmmNext')
+    const errorTextDone: TurnSegment = {
+      id: 'err-plan',
+      kind: 'text',
+      role: 'final',
+      status: 'done',
+      content: '**错误**: boom'
+    }
+    expect(
+      isLiveWriteStatStatusErrorAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, errorTextDone]
+      )
+    ).toBe(true)
+    const processReadyForPlanError = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterPlanError = nextLiveProcessView(processReadyForPlanError, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: errorRound
+    })
+    expect(processAfterPlanError.processForFlow.some((segment) => segment.kind === 'status')).toBe(
+      true
+    )
+    expect(processAfterPlanError.processForFlow.some((segment) => segment.kind === 'text')).toBe(
+      false
+    )
+    const answerReadyForPlanError = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloPlanErrorPart = answerReadyForPlanError.parts.find((part) => part.type === 'text')
+    const answerAfterPlanError = nextLiveAnswerView(answerReadyForPlanError, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: errorRound
+    })
+    expect(
+      answerAfterPlanError.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanErrorPart)
+    expect(answerAfterPlanError.tail?.content).toContain('**错误**:')
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
