@@ -1692,6 +1692,37 @@ describe('splitStreamingMarkdown', () => {
     const atxThenPara = continueCheapProseBlocks('## 标题', headingOnly, '## 标题\n见 foo')
     expect(atxThenPara[0]).toBe(headingOnly[0])
     expect(atxThenPara.map((block) => block.type)).toEqual(['heading', 'p'])
+    const paraOnly = parseCheapProseBlocks('见 foo')
+    const paraThenList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n- 一项')
+    expect(paraThenList[0]).toBe(paraOnly[0])
+    expect(paraThenList.map((block) => block.type)).toEqual(['p', 'list'])
+    const paraThenHeading = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n# t')
+    expect(paraThenHeading[0]).toBe(paraOnly[0])
+    expect(paraThenHeading.map((block) => block.type)).toEqual(['p', 'heading'])
+    const firstParaOnly = parseCheapProseBlocks('第一段')
+    const paraThenBlank = continueCheapProseBlocks('第一段', firstParaOnly, '第一段\n\n第二')
+    expect(paraThenBlank[0]).toBe(firstParaOnly[0])
+    expect(paraThenBlank.map((block) => block.type)).toEqual(['p', 'p'])
+    const quoteParaSrc = '> 见 foo'
+    const quoteParaFirst = parseCheapProseBlocks(quoteParaSrc)
+    const quoteParaThenList = continueCheapProseBlocks(quoteParaSrc, quoteParaFirst, `${quoteParaSrc}\n> - 一项`)
+    if (quoteParaFirst[0]?.type === 'quote' && quoteParaThenList[0]?.type === 'quote') {
+      expect(quoteParaThenList[0].blocks[0]).toBe(quoteParaFirst[0].blocks[0])
+      expect(quoteParaThenList[0].blocks.map((block) => block.type)).toEqual(['p', 'list'])
+    }
+    const topTableOnly = '| A |\n| --- |\n| 1 |'
+    const topTableFirst = parseCheapProseBlocks(topTableOnly)
+    const topTableThenAfter = continueCheapProseBlocks(
+      topTableOnly,
+      topTableFirst,
+      `${topTableOnly}\nafter`
+    )
+    expect(topTableThenAfter[0]).toBe(topTableFirst[0])
+    expect(topTableThenAfter.map((block) => block.type)).toEqual(['table', 'p'])
+    const topListOnly = parseCheapProseBlocks('- x')
+    const topListThenAfter = continueCheapProseBlocks('- x', topListOnly, '- x\n\nafter')
+    expect(topListThenAfter[0]).toBe(topListOnly[0])
+    expect(topListThenAfter.map((block) => block.type)).toEqual(['list', 'p'])
     const quoteFenceMore = continueCheapProseBlocks(
       `${quoteFence}\n> after`,
       quoteFenceAfter,
