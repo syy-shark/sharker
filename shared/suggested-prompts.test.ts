@@ -12,7 +12,8 @@ describe('suggested prompts', () => {
           { id: 'old', title: '最早', updatedAt: 1 },
           { id: 'now', title: '当前', updatedAt: 9 },
           { id: 'new', title: '最近', updatedAt: 8 }
-        ]
+        ],
+        limit: 1
       }).map((r) => r.id)
     ).toEqual(['new'])
     expect(
