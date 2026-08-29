@@ -306,8 +306,8 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | web search 活动 | **done** | 直播 Searching the web / 完成后 Searched + query/URL detail（TUI web_search_header / #9960 / #24693）；`web_fetch` 同格（官方 open_page，#7390 不另开 WebFetch）。过程区 title+url 来源花片（#32898）。不发明 Fetched / find_in_page / 官方 search API |
 | MCP 工具调用活动 | **done** | 直播 Calling / Called `server.tool(args)`（#20677 / #23236）；不倾倒 JSON、不抄 InProgress 当完成（#22300）。不发明 Apps / node_repl |
 | 命令 Running / Ran | **done** | 直播头 `Running cmd` / `Ran cmd`（对标 Codex exec_cell）。不发明 You ran / unified-exec |
-| 探索 Read / List / Search | **done** | `read_file` / `list_dir` / `grep` / `glob_file_search` 过程行用官方 Read / List / Search + basename。不发明 Exploring 分组头或完整路径标题 |
-| 写盘 Edited / Deleted | **done** | 过程行 Added / Edited / Deleted + basename，多文件 Edited N files，失败补丁 Failed to apply patch（对标 Codex render_changes_block）。写盘卡头同步。不发明回合 Undo，write_file 不一律标 Added |
+| 探索 Read / List / Search | **done** | `read_file` / `list_dir` / `grep` / `glob_file_search` 过程行用官方 Read / List / Search + basename。无 segments 的旧 ProcessTimeline 回放也认中文旧 label。不发明 Exploring 分组头或完整路径标题 |
+| 写盘 Edited / Deleted | **done** | 过程行 Added / Edited / Deleted + basename，多文件 Edited N files，失败补丁 Failed to apply patch（对标 Codex render_changes_block）。写盘卡头同步。旧时间线回放同样 remap。不发明回合 Undo，write_file 不一律标 Added |
 | Accessibility 窗口树 | **partial** | `desktop_get_ui_tree` / `desktop_list_windows` |
 | Agent Workspace 隔离 | **partial** | networkMode MVP |
 | Voice STT/TTS | **partial** | voice_* 本地 say；无 conversation-mode STT 循环 |
