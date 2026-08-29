@@ -59,7 +59,7 @@
 | `agents-md:get-personal` / `save-personal` | 设置页读写 `~/.sharker/AGENTS.md` |
 | `harness:get-plan-mode` / `set-plan-mode` | 按会话读/写计划模式（输入框芯片，不发消息） |
 | `memory:list` | `/memories` 列出相关记忆 |
-| `workspace:prepare-worktree` / `create-permanent-worktree` / `remove-worktree` | 主进程读设置里的 `worktreeRoot` / 保留数，不信任渲染进程传入的根路径 |
+| `workspace:prepare-worktree` / `create-permanent-worktree` / `remove-worktree` | 主进程读设置里的 `worktreeRoot` / 保留数，不信任渲染进程传入的根路径；新建托管 / 永久 worktree 时跑仓库 `[setup] script` |
 | `workspace:inspect-worktree` | 隔离目录是否存在、有无快照 |
 | `terminal:kill-all` | `/stop` 关掉全部集成终端 |
 
