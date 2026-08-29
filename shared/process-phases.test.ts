@@ -361,6 +361,64 @@ describe('process phases privacy', () => {
     expect(afterResolved).toHaveLength(2)
     expect(afterResolved!.at(-1)?.segment).toBe(awaitingDone)
     expect(afterResolved!.at(-1)?.status).toBe('done')
+    const awaitingDenied: TurnSegment = {
+      ...awaitingStatus,
+      status: 'done',
+      content: '已拒绝该操作',
+      endedAt: 17
+    }
+    const cmdDenied: TurnSegment = {
+      ...cmdAwaiting,
+      status: 'error',
+      errorMessage: '用户拒绝了此操作',
+      endedAt: 17
+    }
+    const afterDenied = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied],
+      true
+    )
+    expect(afterDenied).not.toBeNull()
+    expect(afterDenied).toHaveLength(2)
+    expect(afterDenied![0].segment).toBe(cmdDenied)
+    expect(afterDenied![0].status).toBe('error')
+    expect(afterDenied!.at(-1)?.segment).toBe(awaitingDenied)
+    const planAfterDeny: TurnSegment = {
+      id: 'st-plan-deny',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…',
+      startedAt: 18
+    }
+    const afterDeniedPlan = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, planAfterDeny],
+      true
+    )
+    expect(afterDeniedPlan).not.toBeNull()
+    expect(afterDeniedPlan).toHaveLength(3)
+    expect(afterDeniedPlan![0].segment).toBe(cmdDenied)
+    expect(afterDeniedPlan!.at(-1)?.segment).toBe(planAfterDeny)
+    const nextAfterDeny: TurnSegment = {
+      id: 'read-after-deny',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolDetail: 'src/a.ts',
+      status: 'active',
+      startedAt: 18
+    }
+    const afterDeniedTool = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextAfterDeny],
+      true
+    )
+    expect(afterDeniedTool).not.toBeNull()
+    expect(afterDeniedTool).toHaveLength(3)
+    expect(afterDeniedTool![0].segment).toBe(cmdDenied)
+    expect(afterDeniedTool!.at(-1)?.segment).toBe(nextAfterDeny)
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',

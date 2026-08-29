@@ -99,6 +99,9 @@ import {
   isLiveDemoHtmlChange,
   isLiveStatusAppendChange,
   isLiveApprovalNeededChange,
+  isLiveApprovalDeniedSettleChange,
+  isLiveApprovalDeniedStatusAppendChange,
+  isLiveApprovalDeniedToolAppendChange,
   isLiveApprovalResolvedChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
@@ -2270,6 +2273,87 @@ describe('live stream ui snapshot', () => {
     })
     expect(processAfterResolved.processForFlow.some((segment) => segment === cmdApproved)).toBe(true)
     expect(processAfterResolved.processForFlow.some((segment) => segment === awaitingDone)).toBe(true)
+    const awaitingDenied: TurnSegment = {
+      ...awaitingStatus,
+      status: 'done',
+      content: '已拒绝该操作'
+    }
+    const cmdDenied: TurnSegment = {
+      ...cmdAwaiting,
+      status: 'error',
+      errorMessage: '用户拒绝了此操作'
+    }
+    expect(isLiveApprovalDeniedSettleChange([cmdAwaiting, awaitingStatus], [cmdDenied, awaitingDenied])).toBe(
+      true
+    )
+    expect(isLiveApprovalResolvedChange([cmdAwaiting, awaitingStatus], [cmdDenied, awaitingDenied])).toBe(
+      false
+    )
+    expect(
+      shouldSkipLiveStreamDerivation([cmdAwaiting, awaitingStatus], [cmdDenied, awaitingDenied])
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [cmdAwaiting, awaitingStatus],
+        segments: [cmdDenied, awaitingDenied]
+      })
+    ).toBe(true)
+    const processAfterDenied = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdDenied, awaitingDenied]
+    })
+    expect(processAfterDenied.processForFlow.some((segment) => segment === cmdDenied)).toBe(true)
+    expect(processAfterDenied.processForFlow.some((segment) => segment === awaitingDenied)).toBe(true)
+    const planAfterDeny: TurnSegment = {
+      id: 'st-plan-deny',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…'
+    }
+    expect(
+      isLiveApprovalDeniedStatusAppendChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdDenied, awaitingDenied, planAfterDeny]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdDenied, awaitingDenied, planAfterDeny]
+      )
+    ).toBe('status')
+    const processAfterDeniedPlan = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdDenied, awaitingDenied, planAfterDeny]
+    })
+    expect(processAfterDeniedPlan.processForFlow.some((segment) => segment === cmdDenied)).toBe(true)
+    expect(processAfterDeniedPlan.processForFlow.some((segment) => segment === planAfterDeny)).toBe(true)
+    const nextAfterDeny: TurnSegment = {
+      id: 'read-after-deny',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'active',
+      toolDetail: 'src/a.ts'
+    }
+    expect(
+      isLiveApprovalDeniedToolAppendChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdDenied, awaitingDenied, nextAfterDeny]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdDenied, awaitingDenied, nextAfterDeny]
+      )
+    ).toBe('tool')
+    const processAfterDeniedTool = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdDenied, awaitingDenied, nextAfterDeny]
+    })
+    expect(processAfterDeniedTool.processForFlow.some((segment) => segment === cmdDenied)).toBe(true)
+    expect(processAfterDeniedTool.processForFlow.some((segment) => segment === nextAfterDeny)).toBe(true)
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',
