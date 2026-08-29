@@ -9,6 +9,8 @@ import './MessageActions.css'
 /** MessageActions Props：消息正文与 ID */
 interface Props {
   content: string
+  /** 直播复制点按时再读，避免每枚 token 把操作条重绘一遍 */
+  getContent?: () => string
   messageId: string
   onRetry?: () => void
   onEdit?: () => void
@@ -21,6 +23,7 @@ interface Props {
 /** 消息操作区（复制 / 分叉 / 编辑 / 重试） */
 export function MessageActions({
   content,
+  getContent,
   messageId,
   onRetry,
   onEdit,
@@ -41,7 +44,7 @@ export function MessageActions({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(content)
+      await navigator.clipboard.writeText(getContent ? getContent() : content)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {

@@ -5,7 +5,11 @@ import {
   nextLiveStreamUi,
   sameLiveStreamUi
 } from './live-stream-ui'
-import { nextLiveAnswerView, nextLiveProcessView } from './live-stream-slices'
+import {
+  nextLiveAnswerActions,
+  nextLiveAnswerView,
+  nextLiveProcessView
+} from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
   it('reuses the previous object when token fields do not change', () => {
@@ -68,5 +72,44 @@ describe('live stream ui snapshot', () => {
     })
     expect(a2).not.toBe(a1)
     expect(a2.copyable).toBe('Hello world')
+    expect(a2.closed).toEqual([])
+    expect(a2.tail?.type).toBe('text')
+    const sealed: TurnSegment = {
+      id: 'd1',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'done',
+      content: ''
+    }
+    const withDiff = (body: string): TurnSegment[] => [
+      tool,
+      { id: 'intro', kind: 'text', role: 'final', status: 'done', content: 'Intro' },
+      sealed,
+      { id: 'tail', kind: 'text', role: 'final', status: 'active', content: body }
+    ]
+    const c1 = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: withDiff('Hi'),
+      streaming: 'Hi'
+    })
+    const c2 = nextLiveAnswerView(c1, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: withDiff('Hi there'),
+      streaming: 'Hi there'
+    })
+    expect(c2.closed).toBe(c1.closed)
+    expect(c2.tail).not.toBe(c1.tail)
+    const act1 = nextLiveAnswerActions(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello')],
+      streaming: 'Hello'
+    })
+    const act2 = nextLiveAnswerActions(act1, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello world')],
+      streaming: 'Hello world'
+    })
+    expect(act2).toBe(act1)
+    expect(act2.reserved).toBe(false)
   })
 })

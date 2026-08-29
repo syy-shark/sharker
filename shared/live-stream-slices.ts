@@ -28,11 +28,28 @@ export interface LiveProcessView {
   answerStreaming: boolean
 }
 
-/** 直播回答槽 */
+/** 直播回答槽：闭合块与增长尾分开，已画正文不跟 token 重挂 */
 export interface LiveAnswerView {
   parts: AnswerPart[]
+  closed: AnswerPart[]
+  tail: AnswerPart | null
   show: boolean
   copyable: string
+  hasCopyable: boolean
+}
+
+/** 操作条只订布尔，避免 copyable 每枚 token 抬按钮 */
+export interface LiveAnswerActions {
+  show: boolean
+  reserved: boolean
+}
+
+let answerCache: { snap: LiveStreamUiSnapshot; view: LiveAnswerView } | null = null
+
+function splitClosedTail(parts: AnswerPart[]): { closed: AnswerPart[]; tail: AnswerPart | null } {
+  if (!parts.length) return { closed: [], tail: null }
+  if (parts.length === 1) return { closed: [], tail: parts[0]! }
+  return { closed: parts.slice(0, -1), tail: parts[parts.length - 1]! }
 }
 
 function processForAnswer(segments: TurnSegment[], answerParts: AnswerPart[]): TurnSegment[] {
@@ -83,7 +100,7 @@ export function nextLiveProcessView(
   return next
 }
 
-/** 回答切片：闭合块走 reuseAnswerParts */
+/** 回答切片：闭合块走 reuseAnswerParts，closed 数组能复用就复用 */
 export function nextLiveAnswerView(
   prev: LiveAnswerView | null,
   snap: LiveStreamUiSnapshot
@@ -92,6 +109,9 @@ export function nextLiveAnswerView(
     prev?.parts ?? [],
     buildAnswerParts(snap.liveSegments, { isStreaming: true })
   )
+  const split = splitClosedTail(parts)
+  const closed =
+    prev && sameRefList(prev.closed, split.closed) ? prev.closed : split.closed
   const copyable = parts
     .filter((part): part is Extract<AnswerPart, { type: 'text' }> => part.type === 'text')
     .map((part) => part.content)
@@ -99,17 +119,44 @@ export function nextLiveAnswerView(
     .trim()
   const next: LiveAnswerView = {
     parts,
+    closed,
+    tail: split.tail,
     show: parts.length > 0,
-    copyable
+    copyable,
+    hasCopyable: Boolean(copyable)
   }
   if (
     prev &&
     prev.parts === next.parts &&
+    prev.closed === next.closed &&
+    prev.tail === next.tail &&
     prev.show === next.show &&
-    prev.copyable === next.copyable
+    prev.copyable === next.copyable &&
+    prev.hasCopyable === next.hasCopyable
   ) {
     return prev
   }
+  return next
+}
+
+/** 同一帧快照只派生一次回答视图（过程/闭合/尾/操作条共用） */
+export function liveAnswerViewFromSnap(snap: LiveStreamUiSnapshot): LiveAnswerView {
+  if (answerCache && answerCache.snap === snap) return answerCache.view
+  const view = nextLiveAnswerView(answerCache?.view ?? null, snap)
+  answerCache = { snap, view }
+  return view
+}
+
+export function nextLiveAnswerActions(
+  prev: LiveAnswerActions | null,
+  snap: LiveStreamUiSnapshot
+): LiveAnswerActions {
+  const view = liveAnswerViewFromSnap(snap)
+  const next: LiveAnswerActions = {
+    show: view.show,
+    reserved: view.show && !view.hasCopyable
+  }
+  if (prev && prev.show === next.show && prev.reserved === next.reserved) return prev
   return next
 }
 

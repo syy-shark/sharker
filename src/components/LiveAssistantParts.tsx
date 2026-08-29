@@ -7,12 +7,14 @@ import { memo } from 'react'
 import type { ApprovalRequest, AssistantMeta } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { formatChangedFilesLabel } from '../../shared/turn-notify'
+import { shouldMountMessageActions } from '../../shared/live-display'
 import {
-  shouldMountMessageActions,
-  shouldReserveMessageActions
-} from '../../shared/live-display'
-import { nextLiveAnswerView, nextLiveProcessView } from '../../shared/live-stream-slices'
-import { useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
+  liveAnswerViewFromSnap,
+  nextLiveAnswerActions,
+  nextLiveProcessView,
+  type LiveAnswerView
+} from '../../shared/live-stream-slices'
+import { getLiveStreamUi, useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { InlineApproval } from './InlineApproval'
 import { InlineDemo } from './InlineDemo'
 import { MessageActions } from './MessageActions'
@@ -61,45 +63,60 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   )
 })
 
-/** 直播回答：跟 token / 写盘预览 */
+function renderLiveAnswerPart(part: LiveAnswerView['parts'][number], streaming: boolean) {
+  if (part.type === 'demo') {
+    return (
+      <InlineDemo
+        key={part.id}
+        html={part.html}
+        caption={part.caption}
+        streaming={Boolean(streaming && part.streaming)}
+      />
+    )
+  }
+  if (part.type === 'diff') {
+    return <LiveFileDiff key={part.id} diff={part.diff} streaming={streaming} />
+  }
+  return <StreamingMarkdown key={part.id} text={part.content} />
+}
+
+/** 已闭合回答：只在新块封口时重绘 */
+const LiveStoreClosedAnswer = memo(function LiveStoreClosedAnswer() {
+  const closed = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).closed)
+  if (!closed.length) return null
+  return <>{closed.map((part) => renderLiveAnswerPart(part, false))}</>
+})
+
+/** 增长中的尾块：跟 token */
+const LiveStoreAnswerTail = memo(function LiveStoreAnswerTail() {
+  const tail = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).tail)
+  if (!tail) return null
+  return <>{renderLiveAnswerPart(tail, true)}</>
+})
+
+/** 回答外壳：只订 show，token 不重绘已画块的父节点 */
 const LiveStoreAnswer = memo(function LiveStoreAnswer() {
-  const view = useLiveStreamUiSelect((snap, prev) => nextLiveAnswerView(prev ?? null, snap))
-  if (!view.show) return null
+  const show = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).show)
+  if (!show) return null
   return (
     <div className="assistant-message-body message-body--assistant turn-flow-final turn-flow-final--streaming message-body--streaming-active">
-      {view.parts.map((part) => {
-        if (part.type === 'demo') {
-          return (
-            <InlineDemo
-              key={part.id}
-              html={part.html}
-              caption={part.caption}
-              streaming={Boolean(part.streaming)}
-            />
-          )
-        }
-        if (part.type === 'diff') {
-          return <LiveFileDiff key={part.id} diff={part.diff} streaming />
-        }
-        return <StreamingMarkdown key={part.id} text={part.content} />
-      })}
+      <LiveStoreClosedAnswer />
+      <LiveStoreAnswerTail />
     </div>
   )
 })
 
-/** 操作条：无正文时占位，有正文才跟 copyable */
+/** 操作条：只订布尔；复制点按时再读最新正文 */
 const LiveStoreActions = memo(function LiveStoreActions({ messageId }: { messageId: string }) {
-  const view = useLiveStreamUiSelect((snap, prev) => nextLiveAnswerView(prev ?? null, snap))
-  const showActions = shouldMountMessageActions({ showBody: view.show })
+  const chrome = useLiveStreamUiSelect((snap, prev) => nextLiveAnswerActions(prev ?? null, snap))
+  const showActions = shouldMountMessageActions({ showBody: chrome.show })
   if (!showActions) return null
   return (
     <MessageActions
-      content={view.copyable}
+      content=""
+      getContent={() => liveAnswerViewFromSnap(getLiveStreamUi()).copyable}
       messageId={messageId}
-      reserved={shouldReserveMessageActions({
-        isStreaming: true,
-        hasCopyableContent: Boolean(view.copyable)
-      })}
+      reserved={chrome.reserved}
     />
   )
 })
