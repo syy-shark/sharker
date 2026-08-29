@@ -114,6 +114,7 @@ describe('background turn notifications', () => {
   it('builds title and preview', () => {
     expect(turnNotifyTitle({ customTitle: '登录页', title: '新对话' })).toBe('登录页')
     expect(turnNotifyTitle({ title: '新对话' })).toBe('新对话')
+    expect(turnNotifyTitle({ title: 'New chat' })).toBe('New chat')
     expect(turnNotifyPreview('  已完成\n\n下一步  ')).toBe('已完成 下一步')
     expect(turnNotifyPreview('x'.repeat(200)).endsWith('…')).toBe(true)
     expect(turnNotifyPreview('')).toBe('回合已完成')

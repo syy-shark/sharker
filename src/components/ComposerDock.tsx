@@ -90,9 +90,11 @@ import {
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
   formatBusyFollowUpPlaceholder,
+  PLAN_MODE_LABEL,
   SEND_LABEL,
   STEER_LABEL,
   STOP_LABEL,
+  TOGGLE_PLAN_MODE_LABEL,
   type ComposerEnterBehavior,
   type FollowUpBehavior
 } from '../../shared/composer-submit'
@@ -253,7 +255,7 @@ export interface ComposerDockProps {
   onApprovalHotkey?: (decision: 'once' | 'deny') => void
   /** Ask User 打开时禁用输入框（对标 Codex Answer the questions to continue） */
   userInputOpen?: boolean
-  /** 计划模式芯片（对标 Codex /plan）；不跟直播 token 变 */
+  /** Plan mode 芯片（对标 Codex /plan）；不跟直播 token 变 */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
   /** 输入框下方权限控件（对标 Codex permissions control beneath the composer） */
@@ -2269,13 +2271,10 @@ export const ComposerDock = memo(
                 className={`composer-thread-chip${planMode ? ' is-active' : ''}`}
                 aria-pressed={planMode}
                 onClick={() => onPlanModeChange(!planMode)}
-                title={
-                  planMode
-                    ? '退出计划模式（Shift+Tab）'
-                    : '进入计划模式（Shift+Tab，只读调研，不改文件）'
-                }
+                title={TOGGLE_PLAN_MODE_LABEL}
+                aria-label={TOGGLE_PLAN_MODE_LABEL}
               >
-                计划
+                {PLAN_MODE_LABEL}
               </button>
             ) : null}
             {onThreadModeChange ? (

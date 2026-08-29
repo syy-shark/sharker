@@ -4,11 +4,11 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { ArchiveRestore, Trash2 } from 'lucide-react'
-import type { ConversationSummary } from '../../../shared/conversation'
+import { DEFAULT_CONVERSATION_TITLE, type ConversationSummary } from '../../../shared/conversation'
 import './ArchivedSettings.css'
 
 function titleOf(c: ConversationSummary): string {
-  return (c.customTitle || c.title || '新对话').trim() || '新对话'
+  return (c.customTitle || c.title || DEFAULT_CONVERSATION_TITLE).trim() || DEFAULT_CONVERSATION_TITLE
 }
 
 function formatTime(ts: number): string {

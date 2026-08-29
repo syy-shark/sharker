@@ -3,6 +3,8 @@ import {
   collectUserPrompts,
   filterPromptHistory,
   FOLLOW_UP_BEHAVIOR_LABEL,
+  PLAN_MODE_LABEL,
+  TOGGLE_PLAN_MODE_LABEL,
   WAIT_FOR_THE_NEXT_RUN_LABEL,
   STEER_THE_CURRENT_RUN_LABEL,
   formatBusyFollowUpPlaceholder,
@@ -65,6 +67,8 @@ describe('composer submit', () => {
     expect(shouldQueueComposerSlash('queue')).toBe(true)
     expect(shouldQueueComposerSlash('send')).toBe(false)
     expect(shouldQueueComposerSlash('jump')).toBe(false)
+    expect(PLAN_MODE_LABEL).toBe('Plan mode')
+    expect(TOGGLE_PLAN_MODE_LABEL).toBe('Toggle plan mode')
     expect(FOLLOW_UP_BEHAVIOR_LABEL).toBe('Follow-up behavior')
     expect(WAIT_FOR_THE_NEXT_RUN_LABEL).toBe('Wait for the next run')
     expect(STEER_THE_CURRENT_RUN_LABEL).toBe('Steer the current run')

@@ -79,7 +79,7 @@ export function turnNotifyTitle(input: { customTitle?: string; title?: string })
   const custom = input.customTitle?.trim()
   if (custom) return custom
   const title = input.title?.trim()
-  if (title && title !== '新对话') return title
+  if (title && title !== '新对话' && title !== 'New chat') return title
   return title || '对话完成'
 }
 

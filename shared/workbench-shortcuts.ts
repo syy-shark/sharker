@@ -62,6 +62,7 @@ import {
   TOGGLE_TERMINAL_LABEL,
   UNDO_LAST_APP_ACTION_LABEL
 } from './reveal-in-folder'
+import { TOGGLE_PLAN_MODE_LABEL } from './composer-submit'
 
 /** 快捷键对应的工作台动作 */
 export type WorkbenchShortcutAction =
@@ -408,7 +409,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Esc', title: '停止当前回合（可改绑；IME 选词不触发）' },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
   { keys: 'Tab', title: '忙时 Queue 下一条' },
-  { keys: 'Shift+Tab', title: '输入框内切换计划模式' },
+  { keys: 'Shift+Tab', title: TOGGLE_PLAN_MODE_LABEL },
   { keys: 'Shift+Enter', title: '换行' }
 ]
 

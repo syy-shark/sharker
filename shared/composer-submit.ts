@@ -10,6 +10,10 @@ export type ComposerSubmitMode = 'send' | 'queue' | 'jump'
 /** 忙时后续：排队等到下一回合，或加入当前回合（对标 Codex Follow-up → Steer，不中止） */
 export type FollowUpBehavior = 'queue' | 'steer'
 
+/** Official desktop Plan mode composer chip / slash (`/plan`, Shift+Tab). */
+export const PLAN_MODE_LABEL = 'Plan mode'
+export const TOGGLE_PLAN_MODE_LABEL = 'Toggle plan mode'
+
 /** Official desktop Settings → General → Follow-up behavior (#17285 / #33416). */
 export const FOLLOW_UP_BEHAVIOR_LABEL = 'Follow-up behavior'
 export const WAIT_FOR_THE_NEXT_RUN_LABEL = 'Wait for the next run'

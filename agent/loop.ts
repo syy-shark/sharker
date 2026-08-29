@@ -3,6 +3,7 @@
  * @see agent/ARCH.md
  */
 import type { AppSettings, ApprovalRequest, ChatMessage, UserInputRequest, UserInputResponse } from '../shared/types'
+import { DEFAULT_CONVERSATION_TITLE } from '../shared/conversation'
 import { getActiveWorkspacePath } from '../shared/workspace'
 import { gatherComputerUseStatus } from '../shared/computer-use-status'
 import { gatherBrowserUseStatus } from '../shared/browser-use-status'
@@ -194,7 +195,7 @@ export type UserInputHandler = (req: UserInputRequest) => Promise<UserInputRespo
 
 /** 根据对话前几轮内容生成简短中文标题，失败时回退到首条用户消息 */
 export async function generateTitle(settings: AppSettings, messages: ChatMessage[]): Promise<string> {
-  if (!messages.length) return '新对话'
+  if (!messages.length) return DEFAULT_CONVERSATION_TITLE
   const transcript = messages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .slice(0, 6)
@@ -210,10 +211,10 @@ Examples: "React状态管理" "数据库优化方案" "CSS布局讨论" "Git合�
     const cleaned = result.replace(/['"`*_#]/g, '').replace(/\s+/g, ' ').trim()
     if (!cleaned) throw new Error('empty title')
     if (cleaned.length <= 20) return cleaned
-    return cleaned.slice(0, 18) || '新对话'
+    return cleaned.slice(0, 18) || DEFAULT_CONVERSATION_TITLE
   } catch {
     const firstUser = messages.find((m) => m.role === 'user' && m.content.trim())
-    if (!firstUser) return '新对话'
+    if (!firstUser) return DEFAULT_CONVERSATION_TITLE
     const text = firstUser.content.replace(/\s+/g, ' ').trim()
     return text.length <= 28 ? text : `${text.slice(0, 28)}…`
   }

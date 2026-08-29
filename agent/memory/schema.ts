@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-  title TEXT NOT NULL DEFAULT '新对话',
+  title TEXT NOT NULL DEFAULT 'New chat',
   custom_title TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_at BIGINT NOT NULL,

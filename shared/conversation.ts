@@ -7,10 +7,21 @@ import type { ChatMessage } from './types'
 /** 侧栏上的「用 AI 总结」操作文案（动词，不是对话标题） */
 export const AI_SUMMARIZE_ACTION = 'AI总结'
 
-export const DEFAULT_CONVERSATION_TITLE = '新对话'
+/** 官方空线程回退标题（对标 Codex Desktop sidebar `New chat`） */
+export const DEFAULT_CONVERSATION_TITLE = 'New chat'
 
 /** 旧版误把「AI总结」当作对话标题落盘时的标记 */
 const LEGACY_TITLE_AS_NOUN = 'AI总结'
+/** 旧版默认标题，读盘时仍当占位 */
+const LEGACY_DEFAULT_CONVERSATION_TITLE = '新对话'
+
+function isPlaceholderConversationTitle(title: string): boolean {
+  return (
+    title === LEGACY_TITLE_AS_NOUN ||
+    title === DEFAULT_CONVERSATION_TITLE ||
+    title === LEGACY_DEFAULT_CONVERSATION_TITLE
+  )
+}
 
 /** 对话状态：active 主列表；archived 设置 → 已归档 */
 export type ConversationStatus = 'active' | 'archived'
@@ -104,7 +115,7 @@ export function deriveConversationTitle(messages: ChatMessage[]): string {
 export function resolveConversationTitle(conversation: Conversation): string {
   if (conversation.customTitle?.trim()) return conversation.customTitle.trim()
   const stored = conversation.title?.trim()
-  if (stored && stored !== LEGACY_TITLE_AS_NOUN && stored !== DEFAULT_CONVERSATION_TITLE) return stored
+  if (stored && !isPlaceholderConversationTitle(stored)) return stored
   return deriveConversationTitle(conversation.messages)
 }
 

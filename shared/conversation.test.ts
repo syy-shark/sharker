@@ -7,6 +7,7 @@ import {
   messagesThroughInclusive,
   parseForkDestination,
   createEmptyConversation,
+  resolveConversationTitle,
   chatSearchMatchHint,
   conversationPreview,
   filterChatList,
@@ -87,6 +88,7 @@ describe('conversation search', () => {
   it('names a forked thread', () => {
     expect(forkConversationTitle('修好滚动')).toBe('修好滚动（分叉）')
     expect(forkConversationTitle('修好滚动（分叉）')).toBe('修好滚动（分叉）')
+    expect(DEFAULT_CONVERSATION_TITLE).toBe('New chat')
     expect(forkConversationTitle('  ')).toBe(`${DEFAULT_CONVERSATION_TITLE}（分叉）`)
   })
 
@@ -101,6 +103,7 @@ describe('conversation search', () => {
 
   it('copies messages into a new conversation without sharing objects', () => {
     const created = createEmptyConversation('ws')
+    expect(created.title).toBe(DEFAULT_CONVERSATION_TITLE)
     const sourceMsg = { id: 'm1', role: 'user' as const, content: '先改滚动' }
     const later = { id: 'm2', role: 'assistant' as const, content: '已贴底' }
     const extra = { id: 'm3', role: 'user' as const, content: '再改一版' }
@@ -112,6 +115,12 @@ describe('conversation search', () => {
     expect(forked.title).toBe('修好滚动（分叉）')
     expect(forked.messages[0]).toEqual(sourceMsg)
     expect(forked.messages[0]).not.toBe(sourceMsg)
+    expect(
+      resolveConversationTitle({ ...created, title: '新对话', messages: [sourceMsg] })
+    ).toBe('先改滚动')
+    expect(
+      resolveConversationTitle({ ...created, title: 'New chat', messages: [sourceMsg] })
+    ).toBe('先改滚动')
     const throughUser = messagesThroughInclusive([sourceMsg, later, extra], 'm1')
     expect(throughUser.map((m) => m.id)).toEqual(['m1'])
     expect(throughUser[0]).not.toBe(sourceMsg)

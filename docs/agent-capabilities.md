@@ -40,11 +40,11 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行按钮 **Pause** / **Resume** / **Edit** / **Clear**（对标 Codex desktop goal progress row），并显示设定后耗时 |
 | `/permissions` | 切换 Ask for approval / Full access；无参显示当前值。输入框下方同一控件（对标 Codex permissions control beneath the composer），不发明 Approve for me / Auto / 命名 profile |
 | `/fast` | 开关 Fast：有思考档位时降到 off/none/minimal/low。输入框旁同一芯片（对标 Codex `/fast` + composer 控件），不发明供应商 service tier |
-| `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
+| `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框 **Plan mode** 芯片，快捷键 **Toggle plan mode**，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices / slash：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
 | `/mcp [verbose]` | 打开 MCP 状态（对标 Codex Open MCP status）：列出已配置 Server；空配置打开 Settings → MCP servers；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/share` | 打开只读快照（对标 Codex 桌面 Share / `/share`）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏 / 文件菜单 / 命令面板 / 对话框标题都是 **Share**。打开时拍一帧，之后不跟直播 token 变。不发明官方 Who has access / Copy link 上传。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
-| `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义） |
+| `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义）。空线程侧栏标题默认 **New chat**（旧盘「新对话」仍当占位再推导，对标 Codex Desktop sidebar） |
 | `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示 Compacting context（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
 | `/title` | `/rename` 别名 |

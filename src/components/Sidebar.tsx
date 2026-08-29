@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
 import {
+  DEFAULT_CONVERSATION_TITLE,
   filterSidebarChats,
   isActivitySidebarFilter,
   nextActivitySidebarFilter,
@@ -164,7 +165,7 @@ function readSidebarWidth(): number {
 }
 
 function convTitle(c: ConversationSummary): string {
-  return (c.customTitle || c.title || '新对话').trim() || '新对话'
+  return (c.customTitle || c.title || DEFAULT_CONVERSATION_TITLE).trim() || DEFAULT_CONVERSATION_TITLE
 }
 
 /** 侧栏进行中点滚出视口时停脉冲，减轻 GPU（对标 Codex #16857） */
@@ -735,8 +736,8 @@ export const Sidebar = memo(function Sidebar({
           <button
             type="button"
             className="sidebar-row-action"
-            title="在此项目中新对话"
-            aria-label={`在 ${ws.label} 中新对话`}
+            title={NEW_CHAT_LABEL}
+            aria-label={`${NEW_CHAT_LABEL} · ${ws.label}`}
             onClick={(e) => {
               e.stopPropagation()
               onSelectWorkspace(ws.id)
