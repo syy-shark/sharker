@@ -46,7 +46,9 @@
 }
 
 .files-changed-card__file {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
   padding: 3px 6px;
@@ -57,8 +59,26 @@
   font-size: 12px;
   line-height: 1.45;
   text-align: left;
-  overflow-wrap: anywhere;
   cursor: pointer;
+}
+
+.files-changed-card__file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-changed-card__file-kind {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .files-changed-card__file:hover,

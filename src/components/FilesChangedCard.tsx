@@ -1,18 +1,21 @@
 /**
- * 对话「已改 N 个文件」卡：标题打开审查，展开列路径，右键在访达中显示。
- * 不订直播 token，只吃本轮路径列表（对标 Codex Files changed card / #38695）。
+ * 对话「已改 N 个文件」卡：标题打开审查，展开列短标签与种类，右键打开 / 访达 / 复制路径。
+ * 不订直播 token，只吃本轮路径列表（对标 Codex Files changed / #20700 / #21426）。
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import {
+  filesChangedDisplayLabel,
   filesChangedDisplayPaths,
   filesChangedFileMenuItems,
-  filesChangedHeaderTargetFromElement
+  filesChangedHeaderTargetFromElement,
+  filesChangedKindLabel
 } from '../../shared/files-changed-card'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import {
+  dispatchCopyWorkspaceFilePath,
   dispatchOpenWorkspaceFile,
   dispatchRevealWorkspaceFile
 } from '../lib/open-workspace-file'
@@ -120,6 +123,7 @@ export const FilesChangedCard = memo(function FilesChangedCard({
                   className="files-changed-card__file"
                   data-files-changed-file
                   title={`${path} · 打开`}
+                  aria-label={path}
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
@@ -131,13 +135,20 @@ export const FilesChangedCard = memo(function FilesChangedCard({
                     const next = clampReviewMenuPosition(
                       event.clientX,
                       event.clientY,
-                      { width: 176, height: 76 },
+                      { width: 176, height: 108 },
                       { width: window.innerWidth, height: window.innerHeight }
                     )
                     setMenu({ path, x: next.x, y: next.y })
                   }}
                 >
-                  {path}
+                  <span className="files-changed-card__file-name">
+                    {filesChangedDisplayLabel(path, paths)}
+                  </span>
+                  {filesChangedKindLabel(path) ? (
+                    <span className="files-changed-card__file-kind">
+                      {filesChangedKindLabel(path)}
+                    </span>
+                  ) : null}
                 </button>
               </li>
             ))}
@@ -161,7 +172,8 @@ export const FilesChangedCard = memo(function FilesChangedCard({
                 event.preventDefault()
                 event.stopPropagation()
                 if (item.action === 'open') dispatchOpenWorkspaceFile({ path: menu.path })
-                else dispatchRevealWorkspaceFile(menu.path)
+                else if (item.action === 'reveal') dispatchRevealWorkspaceFile(menu.path)
+                else dispatchCopyWorkspaceFilePath(menu.path)
                 setMenu(null)
               }}
             >
