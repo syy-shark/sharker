@@ -13,6 +13,7 @@ import {
   liveCompactStatusSegment
 } from './live-stream-ui'
 import { AUTO_COMPACT_LIVE_STATUS } from './context-compress'
+import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import {
   nextLiveAnswerActions,
@@ -253,5 +254,10 @@ describe('live stream ui snapshot', () => {
     expect(appSrc.includes('setTurnThinking(')).toBe(false)
     expect(appSrc.includes('setActiveTool(')).toBe(false)
     expect(appSrc).toContain('publishLiveStreamUi')
+    expect(appSrc).toContain('shouldDeferLastTurnUi')
+    expect(shouldDeferLastTurnUi(true)).toBe(true)
+    expect(shouldDeferLastTurnUi(true, true)).toBe(false)
+    expect(shouldDeferLastTurnUi(false)).toBe(false)
+    expect(LAST_TURN_UI_FLUSH_MS).toBe(400)
   })
 })

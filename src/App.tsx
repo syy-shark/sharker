@@ -87,6 +87,7 @@ import {
   shouldPublishTurnMetaReset
 } from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
+import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { processElapsedSeconds, stoppedAfterFootnote } from '../shared/live-display'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
@@ -514,6 +515,8 @@ export default function App() {
   const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
   const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
+  const lastTurnUiTimerRef = useRef<number | null>(null)
+  const pendingLastTurnUiRef = useRef<string[] | null>(null)
   /** 窗口内按会话记住对话柱位置（对标 Codex 26.406；不落盘） */
   const transcriptScrollByConvRef = useRef(new Map<string, TranscriptScrollSnapshot>())
   const rememberTranscriptScroll = useCallback((id: string, snap: TranscriptScrollSnapshot) => {
@@ -873,6 +876,11 @@ export default function App() {
     liveAssistantIdRef.current = buf.liveAssistantId ?? null
     setLiveAssistantId(buf.liveAssistantId ?? null)
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
+    if (lastTurnUiTimerRef.current != null) {
+      window.clearTimeout(lastTurnUiTimerRef.current)
+      lastTurnUiTimerRef.current = null
+    }
+    pendingLastTurnUiRef.current = null
     setLastTurnPaths(buf.lastTurnPaths ?? lastTurnPathsByConvRef.current.get(activeConversationIdRef.current ?? '') ?? [])
   }, [applyConversationMessages])
 
@@ -2135,10 +2143,33 @@ export default function App() {
       )
     }
 
-    const rememberLastTurn = (convId: string | null | undefined, paths: string[]) => {
+    const rememberLastTurn = (
+      convId: string | null | undefined,
+      paths: string[],
+      immediate?: boolean
+    ) => {
       if (!convId) return
       lastTurnPathsByConvRef.current.set(convId, paths)
-      if (activeConversationIdRef.current === convId) setLastTurnPaths(paths)
+      if (activeConversationIdRef.current === convId) {
+        if (shouldDeferLastTurnUi(sendInFlightRef.current, immediate)) {
+          pendingLastTurnUiRef.current = paths
+          if (lastTurnUiTimerRef.current == null) {
+            lastTurnUiTimerRef.current = window.setTimeout(() => {
+              lastTurnUiTimerRef.current = null
+              const next = pendingLastTurnUiRef.current
+              pendingLastTurnUiRef.current = null
+              if (next) setLastTurnPaths(next)
+            }, LAST_TURN_UI_FLUSH_MS)
+          }
+        } else {
+          if (lastTurnUiTimerRef.current != null) {
+            window.clearTimeout(lastTurnUiTimerRef.current)
+            lastTurnUiTimerRef.current = null
+          }
+          pendingLastTurnUiRef.current = null
+          setLastTurnPaths(paths)
+        }
+      }
       if (!paths.length || !window.sharker.listAutomationQueue) return
       void window.sharker.listAutomationQueue().then((prev) => {
         const next = attachQueueChangedPaths(prev, convId, paths)
@@ -2663,7 +2694,7 @@ export default function App() {
             buf.streaming = ''
             buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
             buf.changedRelPaths = []
-            rememberLastTurn(completedId, buf.lastTurnPaths)
+            rememberLastTurn(completedId, buf.lastTurnPaths, true)
             sessionBuffersRef.current.set(completedId!, buf)
             void persistActiveConversation(buf.messages, completedId)
           }
@@ -2698,7 +2729,7 @@ export default function App() {
           })
         )
         sendInFlightRef.current = false
-        rememberLastTurn(completedId, [...turnChangedPathsRef.current])
+        rememberLastTurn(completedId, [...turnChangedPathsRef.current], true)
         turnChangedPathsRef.current = []
         commitAssistantReply(streamingRef.current, '', turnOutcomeRef.current, completedId)
         segmentsRef.current = []
@@ -4022,6 +4053,11 @@ export default function App() {
 
     setActiveConversationId(conversationId)
     activeConversationIdRef.current = conversationId
+    if (lastTurnUiTimerRef.current != null) {
+      window.clearTimeout(lastTurnUiTimerRef.current)
+      lastTurnUiTimerRef.current = null
+    }
+    pendingLastTurnUiRef.current = null
     setLastTurnPaths(lastTurnPathsByConvRef.current.get(conversationId) ?? [])
     applyPlanUiForConversation(conversationId)
     setPage('chat')
