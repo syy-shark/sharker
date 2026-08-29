@@ -47,7 +47,7 @@
 | `MermaidBlock.tsx` / `.css` | ```mermaid / ```mmd 开闭都挂本组件（对标 Codex transcript Mermaid）；未闭合不解析；`securityLevel:strict`；失败仍留同一 `CodeArtifactShell` 代码尾（不换 `CodeArtifactBlock`）；成图前与成图后共用外壳（只换体内代码行 → SVG）；成图前按源码估高占位，成图后 `minHeight` 只升不降，避免换成 SVG 时塌/涨把贴底顶跳；命中 SVG 缓存则首帧直接成图并按 viewBox 占位；源码改了先留上一张图再换，避免闪回源码撑开贴底 |
 | `ModelPicker.tsx` / `.css` | 输入区按接入展开全部 knownModels；触发器与菜单均用短名；点选同时切换 provider + model；弹层关闭与 history 对齐；思考档位改由旁路 `ReasoningGauge` 调节（菜单里仍可点选） |
 | `ReasoningGauge.tsx` / `.css` | 输入框旁思考档位条（对标 Codex compact composer gauge / 官方「model and reasoning control」）；点格或左右键升降；只展示当前模型官方档位；不跟直播 token 重绘 |
-| `PlanBuildBar.tsx` / `.css` | 计划就绪后的 Build 操作栏 |
+| `PlanBuildBar.tsx` / `.css` | 官方计划模式收束 Action Menu：Proposed Plan / Implement this plan? / Yes, implement this plan / No, tell Codex how to adjust（对标 Codex 桌面 #10561 / TUI，不发明 Clear context） |
 | `RightPanel.tsx` / `.css` | `memo`：不接收直播 token，App 把划选/关面板回调固定引用后 16ms flush 不重绘文件树/审查（对标 Codex sidebar jitter / review panel scroll jumps）；右侧可调宽面板（文件/审查/终端/浏览器/活动）；宽度按窗口比例写入 localStorage，缩放窗口时按比例重算（对标 Codex percentage-based file tree resizing，旧像素值仍能读）；审查传入 `gitBranchPrefix`、`/review` 对比焦点与项目附加文件夹（跨仓库审查）；文件树传入对话引用预览、项目附加文件夹与写盘 `revision`（树与打开的预览在文件树内跟着 Agent 改，不抬 App）；终端按线程挂载（开过一次后切 Tab 不卸）；终端 / 文件预览划选出「加入对话 / 旁路提问」；浏览器当前 URL 经 `onBrowserAmbientUrl` 交给开轮 `# In app browser:`（对标 Codex #39562）；浏览器批注进同一条 composer 芯片（对标 Codex Annotation mode）；全屏时隐藏下层防叠字；`right-panel--compact` 抽屉 + 遮罩 enter/exit（遮罩自带 motion token，不依赖 panel 变量） |
 | `InlineDemo.tsx` / `.css` | 对话内联演示：无外框、透明底、iframe 按内容真实底边撑高（只升不降）；直播未可绘先 96px 骨架叠在同一 iframe 上，可绘只换 srcDoc 不卸壳；首帧用声明高度 / 块数估高并缓存实测，避免 48px 猛涨把直播贴底顶跳 |
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |

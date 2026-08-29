@@ -40,7 +40,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
 | `/permissions` | 切换沙箱 / 完整权限；无参显示当前值。输入框下方同一控件（对标 Codex permissions control beneath the composer），不发明 Ask / Auto / 命名 profile |
 | `/fast` | 开关 Fast：有思考档位时降到 off/none/minimal/low。输入框旁同一芯片（对标 Codex `/fast` + composer 控件），不发明供应商 service tier |
-| `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
+| `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
 | `/mcp [verbose]` | 打开 MCP 状态（对标 Codex Open MCP status）：列出已配置 Server；空配置打开设置 → MCP 服务器；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **复制为 Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供复制工作目录 / 会话 ID / 对话深链 |
@@ -282,7 +282,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示 Automatically compacting context（对标 Codex 桌面），摘要完成后过程行 Context automatically compacted。自动压缩只缩模型上下文，不换可见对话柱（对标 Codex #33285 / #26583）；`/compact` 才收可见历史 |
 | 短暂中断重连 | 首包前 429/502/503/504 与网络抖动最多重连 5 次，直播行显示「正在重新连接… n/5」（对标 Codex #37337 Turns reconnect）；已吐出正文 / 思考 / 工具参数后不重开，以免重复 |
 | 自动验证 | 改代码后自动 test/build/lint |
-| Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |
+| Plan/Build | enter_plan_mode → Yes, implement this plan → 全工具 |
 | 续跑提醒 | 对可执行任务，若模型停在启动服务器/打开/检查等中间话术但没有工具调用，会继续 nudging 直到完成或遇到真实阻塞 |
 
 ---
@@ -292,7 +292,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Codex 功能 | Sharker 状态 | 说明 |
 |------------|--------------|------|
 | Coding 看搜改跑 | **done** | read/write/grep/terminal/git/verify |
-| Plan 模式 | **done** | enter_plan_mode + PlanBuildBar |
+| Plan 模式 | **done** | enter_plan_mode + Proposed Plan / Implement this plan? Action Menu（#10561）。不发明 Clear context |
 | `update_plan` 清单 | **done** | 过程区 checklist + 直播头当前步 / `Plan · n/m`。不发明底栏徽章 |
 | @file 引用 | **done** | `@path` 注入 |
 | 并行只读工具 | **done** | query-loop Promise.all |

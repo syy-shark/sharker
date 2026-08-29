@@ -9,8 +9,12 @@ import {
   assertUpdatePlanArgs,
   formatUpdatePlanActivity,
   formatUpdatePlanToolOutput,
+  IMPLEMENT_PLAN_NO,
+  IMPLEMENT_PLAN_PROMPT,
+  IMPLEMENT_PLAN_YES,
   parsePlanStepStatus,
-  parseUpdatePlanArgs
+  parseUpdatePlanArgs,
+  PROPOSED_PLAN_TITLE
 } from './update-plan'
 
 describe('update-plan', () => {
@@ -38,6 +42,10 @@ describe('update-plan', () => {
     ])
     expect(formatUpdatePlanActivity({ plan: parsed.plan }, 'active')).toBe('Wire tool')
     expect(formatUpdatePlanActivity({ plan: parsed.plan }, 'done')).toBe('Plan · 1/3')
+    expect(PROPOSED_PLAN_TITLE).toBe('Proposed Plan')
+    expect(IMPLEMENT_PLAN_PROMPT).toBe('Implement this plan?')
+    expect(IMPLEMENT_PLAN_YES).toBe('Yes, implement this plan')
+    expect(IMPLEMENT_PLAN_NO).toBe('No, tell Codex how to adjust')
     expect(getAllBuiltinTools().some((tool) => tool.name === 'update_plan')).toBe(true)
     expect(isToolAllowedInPlanMode('update_plan')).toBe(true)
   })

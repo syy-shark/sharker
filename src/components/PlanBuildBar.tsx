@@ -1,6 +1,13 @@
 /**
- * 计划就绪后的 Build 操作栏（Cursor 式）。
+ * 官方计划模式收束 Action Menu：Proposed Plan + Implement this plan?
+ * 桌面只有实施 / 不实施，不发明 Clear context。
  */
+import {
+  IMPLEMENT_PLAN_NO,
+  IMPLEMENT_PLAN_PROMPT,
+  IMPLEMENT_PLAN_YES,
+  PROPOSED_PLAN_TITLE
+} from '../../shared/update-plan'
 import './PlanBuildBar.css'
 
 interface Props {
@@ -9,15 +16,18 @@ interface Props {
   onDismiss: () => void
 }
 
-/** 展示计划摘要与 Build 按钮 */
+/** 展示 Proposed Plan 与官方实施 / 不实施 */
 export function PlanBuildBar({ planDocument, onBuild, onDismiss }: Props) {
   const preview = planDocument.slice(0, 400)
   return (
     <div className="plan-build-bar view-enter">
       <div className="plan-build-header">
-        <span className="plan-build-title">计划已就绪</span>
+        <div className="plan-build-heading">
+          <span className="plan-build-title">{PROPOSED_PLAN_TITLE}</span>
+          <span className="plan-build-prompt">{IMPLEMENT_PLAN_PROMPT}</span>
+        </div>
         <button type="button" className="plan-build-dismiss" onClick={onDismiss}>
-          关闭
+          {IMPLEMENT_PLAN_NO}
         </button>
       </div>
       <pre className="plan-build-preview">
@@ -25,7 +35,7 @@ export function PlanBuildBar({ planDocument, onBuild, onDismiss }: Props) {
         {planDocument.length > 400 ? '…' : ''}
       </pre>
       <button type="button" className="plan-build-btn" onClick={onBuild}>
-        Build — 按计划执行
+        {IMPLEMENT_PLAN_YES}
       </button>
     </div>
   )

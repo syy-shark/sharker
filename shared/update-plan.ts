@@ -8,6 +8,15 @@
 export const UPDATE_PLAN_TOOL = 'update_plan'
 export const UPDATE_PLAN_TOOL_OUTPUT = 'Plan updated'
 
+/**
+ * 官方计划模式收束 Action Menu（桌面 #10561 / TUI Implement this plan?）。
+ * 桌面只有实施 / 不实施两档；不发明 Clear context and implement。
+ */
+export const PROPOSED_PLAN_TITLE = 'Proposed Plan'
+export const IMPLEMENT_PLAN_PROMPT = 'Implement this plan?'
+export const IMPLEMENT_PLAN_YES = 'Yes, implement this plan'
+export const IMPLEMENT_PLAN_NO = 'No, tell Codex how to adjust'
+
 export type PlanStepStatus = 'pending' | 'in_progress' | 'completed'
 
 export type UpdatePlanStep = {

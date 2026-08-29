@@ -2,7 +2,7 @@
 
 ## 职责
 
-- 计划模式（只读规划 + Build）与 Git worktree 工作目录覆盖
+- 计划模式（只读规划 + Implement this plan）与 Git worktree 工作目录覆盖
 
 ## 同级目录
 
@@ -12,6 +12,6 @@
 
 | 文件 | 说明 |
 |------|------|
-| `plan.ts` | enter / exit 计划模式（按 `ctx.conversationId` 写入 `harness-state`） |
+| `plan.ts` | enter / exit 计划模式（按 `ctx.conversationId` 写入 `harness-state`）；过程行 Entered / Exited plan mode |
 | `worktree.ts` | enter / exit worktree，覆盖工具 cwd（按 conversationId 隔离） |
 | `ARCH.md` | 本层架构说明 |

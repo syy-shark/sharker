@@ -1,5 +1,5 @@
 /**
- * 计划模式：enter / exit（Cursor 式只读规划 + Build）。
+ * 计划模式：enter / exit（只读规划 + 官方 Implement this plan）。
  * @see tools/ARCH.md
  */
 import {
@@ -13,7 +13,7 @@ import type { ToolHandler } from '../../types'
 
 export const enterPlanModeTool: ToolHandler = {
   name: 'enter_plan_mode',
-  title: '进入计划模式',
+  title: 'Entered plan mode',
   async execute(_args, ctx) {
     const conversationId = ctx?.conversationId
     if (getHarnessPhase(conversationId) === 'plan') {
@@ -30,7 +30,7 @@ export const enterPlanModeTool: ToolHandler = {
 
 export const exitPlanModeTool: ToolHandler = {
   name: 'exit_plan_mode',
-  title: '退出计划模式',
+  title: 'Exited plan mode',
   async execute(args, ctx) {
     const document = String(args.plan_document ?? args.document ?? '')
     const filePath = args.plan_file_path ? String(args.plan_file_path) : undefined
