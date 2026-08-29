@@ -12,6 +12,7 @@ import {
   isMarkdownPreviewPath,
   isPathInsideRoot,
   nextMarkdownFileView,
+  resolveMarkdownPreviewFileHref,
   resolveMarkdownPreviewImageSrc,
   resolveWorkspaceHtmlFileUrl,
   splitMarkdownFrontmatter,
@@ -92,6 +93,27 @@ describe('file preview kinds', () => {
       resolveMarkdownPreviewImageSrc('../../outside.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
     ).toBe('')
     expect(resolveMarkdownPreviewImageSrc('file:///tmp/proj/a.png', '/tmp/proj/a.md', '/tmp/proj')).toBe('')
+    expect(
+      resolveMarkdownPreviewImageSrc('assets/my%20shot.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/docs/assets/my shot.png')
+    expect(
+      resolveMarkdownPreviewImageSrc('./assets/my shot.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/docs/assets/my shot.png')
+    expect(
+      resolveMarkdownPreviewFileHref('details.md', '/tmp/proj/docs/index.md', '/tmp/proj')
+    ).toEqual({ path: '/tmp/proj/docs/details.md' })
+    expect(
+      resolveMarkdownPreviewFileHref('./details.md#L12', '/tmp/proj/docs/index.md', '/tmp/proj')
+    ).toEqual({ path: '/tmp/proj/docs/details.md', line: 12 })
+    expect(
+      resolveMarkdownPreviewFileHref('my%20notes.md', '/tmp/proj/docs/index.md', '/tmp/proj')
+    ).toEqual({ path: '/tmp/proj/docs/my notes.md' })
+    expect(
+      resolveMarkdownPreviewFileHref('https://ex.com/a.md', '/tmp/proj/docs/index.md', '/tmp/proj')
+    ).toBeNull()
+    expect(
+      resolveMarkdownPreviewFileHref('../../outside.md', '/tmp/proj/docs/index.md', '/tmp/proj')
+    ).toBeNull()
     expect(dataUrlMimeForPath('a.webp')).toBe('image/webp')
     expect(dataUrlMimeForPath('a.pdf')).toBe('application/pdf')
     expect(filePreviewUnsupportedMessage('a.xlsx')).toMatch(/表格/)

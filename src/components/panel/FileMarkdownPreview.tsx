@@ -1,6 +1,7 @@
 /**
  * 文件树 Markdown 富预览（对标 Codex View preview）。
- * 相对图按文档目录解析；frontmatter 不当正文。不订直播 token，不发明就地编辑。
+ * 相对图与相对链接按文档目录解析；空格 / `%20` 解开；frontmatter 不当正文。
+ * 不订直播 token，不发明就地编辑。
  * @see ./ARCH.md
  */
 import { memo, type Ref } from 'react'
@@ -9,6 +10,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { parseFileCitation } from '../../../shared/file-citation'
 import {
+  resolveMarkdownPreviewFileHref,
   resolveMarkdownPreviewImageSrc,
   splitMarkdownFrontmatter
 } from '../../../shared/file-preview'
@@ -41,7 +43,10 @@ export const FileMarkdownPreview = memo(function FileMarkdownPreview({
       if (href && isInAppBrowserChatHref(href)) {
         return <ChatLink href={href}>{children}</ChatLink>
       }
-      const file = href ? parseFileCitation(href) : null
+      const file = href
+        ? resolveMarkdownPreviewFileHref(href, markdownPath, workspacePath, extras) ??
+          parseFileCitation(href)
+        : null
       if (file) {
         return (
           <FileCiteLink path={file.path} line={file.line} column={file.column}>

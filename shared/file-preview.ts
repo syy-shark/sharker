@@ -6,7 +6,11 @@
  * @see shared/ARCH.md
  */
 
-import { resolveCitationPath } from './file-citation'
+import {
+  decodeCitationFilesystemPath,
+  resolveCitationPath,
+  type FileCitation
+} from './file-citation'
 
 export type FilePreviewKind = 'text' | 'image' | 'pdf' | 'unsupported'
 
@@ -170,29 +174,15 @@ function parentDir(absPath: string): string {
   return norm.slice(0, cut)
 }
 
-/** 去掉开头 YAML frontmatter，避免 --- 画成分隔线（对标 Codex #34440 预期，不抄回归） */
-export function splitMarkdownFrontmatter(src: string): { body: string; raw: string } {
-  const text = String(src ?? '').replace(/^\uFEFF/, '')
-  const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text)
-  if (!match) return { body: text, raw: '' }
-  return { body: text.slice(match[0].length), raw: match[1] ?? '' }
-}
-
-/**
- * Markdown 预览图：先按文档目录解析相对路径，再回退工作区。
- * 对标 Codex #31389，不认 file://。
- */
-export function resolveMarkdownPreviewImageSrc(
-  src: string,
+/** 文档目录优先，越界再回退工作区（对标 Codex #21510 / GitHub relative links） */
+function resolveMarkdownPreviewLocalPath(
+  rawPath: string,
   markdownAbsPath: string,
   workspacePath: string,
-  extraRoots: readonly string[] = []
+  extraRoots: readonly string[]
 ): string {
-  const raw = String(src || '').trim()
+  const raw = decodeCitationFilesystemPath(String(rawPath || '').trim()).replace(/\\/g, '/')
   if (!raw) return ''
-  if (/^https?:\/\//i.test(raw) || /^data:image\//i.test(raw)) return raw
-  if (/^(?:javascript|vbscript|data:|mailto:|sharker:|file:)/i.test(raw)) return ''
-  if (filePreviewKind(stripPreviewHrefSuffix(raw).path) !== 'image') return ''
   const extras = [...extraRoots]
   let abs = ''
   if (raw.startsWith('/') || /^[A-Za-z]:\//.test(raw)) {
@@ -211,6 +201,70 @@ export function resolveMarkdownPreviewImageSrc(
   const roots = [workspacePath, ...extraRoots].map((root) => String(root || '').trim()).filter(Boolean)
   if (roots.length && !roots.some((root) => isPathInsideRoot(abs, root))) return ''
   return abs
+}
+
+/** 去掉开头 YAML frontmatter，避免 --- 画成分隔线（对标 Codex #34440 预期，不抄回归） */
+export function splitMarkdownFrontmatter(src: string): { body: string; raw: string } {
+  const text = String(src ?? '').replace(/^\uFEFF/, '')
+  const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text)
+  if (!match) return { body: text, raw: '' }
+  return { body: text.slice(match[0].length), raw: match[1] ?? '' }
+}
+
+/**
+ * Markdown 预览图：先按文档目录解析相对路径，再回退工作区。
+ * `%20` / 空格按本机路径解开（对标 Codex #31389 / #21707），不认 file://。
+ */
+export function resolveMarkdownPreviewImageSrc(
+  src: string,
+  markdownAbsPath: string,
+  workspacePath: string,
+  extraRoots: readonly string[] = []
+): string {
+  const raw = String(src || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw) || /^data:image\//i.test(raw)) return raw
+  if (/^(?:javascript|vbscript|data:|mailto:|sharker:|file:)/i.test(raw)) return ''
+  const decoded = decodeCitationFilesystemPath(raw)
+  if (filePreviewKind(stripPreviewHrefSuffix(decoded).path) !== 'image') return ''
+  return resolveMarkdownPreviewLocalPath(decoded, markdownAbsPath, workspacePath, extraRoots)
+}
+
+/**
+ * Markdown 预览内的相对链接按文档目录打开（对标 Codex #21510）。
+ * 允许空格与一层 `%20`（对标 Codex #16148 / #21707）。不发明页内标题跳转。
+ */
+export function resolveMarkdownPreviewFileHref(
+  href: string,
+  markdownAbsPath: string,
+  workspacePath: string,
+  extraRoots: readonly string[] = []
+): FileCitation | null {
+  const raw = decodeCitationFilesystemPath(String(href || '').trim())
+  if (!raw) return null
+  if (/^(?:https?:|mailto:|javascript:|vbscript:|data:|blob:|sharker:|file:)/i.test(raw)) return null
+  if (raw.startsWith('#')) return null
+  const { path, suffix } = stripPreviewHrefSuffix(raw)
+  if (!path || path.endsWith('/')) return null
+  let line: number | undefined
+  const hashLine = /^#L(\d+)/i.exec(suffix)
+  if (hashLine) line = Number(hashLine[1])
+  else {
+    const colon = /^(.*?):(\d+)(?::\d+)?$/.exec(path)
+    if (colon && !/^[A-Za-z]$/.test(colon[1] ?? '')) {
+      const abs = resolveMarkdownPreviewLocalPath(
+        colon[1] ?? '',
+        markdownAbsPath,
+        workspacePath,
+        extraRoots
+      )
+      if (!abs) return null
+      return { path: abs, line: Number(colon[2]) }
+    }
+  }
+  const abs = resolveMarkdownPreviewLocalPath(path, markdownAbsPath, workspacePath, extraRoots)
+  if (!abs) return null
+  return line ? { path: abs, line } : { path: abs }
 }
 
 /** 按扩展名分流预览；无扩展名当文本 */
