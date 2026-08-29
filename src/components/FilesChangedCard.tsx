@@ -1,11 +1,10 @@
 /**
- * 对话「已改 N 个文件」卡：标题打开审查，展开列短标签、种类与 +/-，右键打开 / 访达 / 复制路径。
- * 不订直播 token，只吃路径列表与已合计的 +/-（对标 Codex Files changed / #20700 / #21426）。
+ * 对话写盘卡：官方 Edited basename / Edited N files，标题打开审查，展开列短标签、种类与 +/-。
+ * 不订直播 token，只吃路径列表与已合计的 +/-（对标 Codex render_changes_block / #20700 / #21426）。
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import {
   filesChangedDisplayLabel,
   filesChangedDisplayPaths,
@@ -13,6 +12,7 @@ import {
   filesChangedHeaderTargetFromElement,
   filesChangedKindLabel,
   filesChangedStatsForPath,
+  formatFilesChangedHeader,
   formatFilesChangedLineStats,
   type FilesChangedLineStats
 } from '../../shared/files-changed-card'
@@ -104,9 +104,9 @@ export const FilesChangedCard = memo(function FilesChangedCard({
   }, [menu])
 
   if (paths.length === 0) return null
-  const label = formatChangedFilesLabel(paths.length)
+  const header = formatFilesChangedHeader(paths)
   const totalsLabel = formatFilesChangedLineStats(added, removed)
-  const chipTitle = totalsLabel ? `${label} ${totalsLabel}` : label
+  const chipTitle = totalsLabel ? `${header} ${totalsLabel}` : header
 
   return (
     <div className="files-changed-card">
@@ -126,14 +126,12 @@ export const FilesChangedCard = memo(function FilesChangedCard({
               onOpenReview(paths)
             }}
           >
-            <span>已改</span>
-            <span className="assistant-meta-chip-value">{paths.length} 个文件</span>
+            <span className="assistant-meta-chip-value">{header}</span>
             <FilesChangedStatsMarks added={added} removed={removed} reserve={live} />
           </button>
         ) : (
           <span className="assistant-meta-chip assistant-meta-chip--static" title={chipTitle}>
-            <span>已改</span>
-            <span className="assistant-meta-chip-value">{paths.length} 个文件</span>
+            <span className="assistant-meta-chip-value">{header}</span>
             <FilesChangedStatsMarks added={added} removed={removed} reserve={live} />
           </span>
         )}

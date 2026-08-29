@@ -3,6 +3,7 @@
  * 对标 Codex / ChatGPT 桌面端 turn-complete（正在看的对话且窗口在前台则不打扰）。
  * @see shared/ARCH.md
  */
+import { formatEditedFilesHeader } from './edit-activity'
 
 /** 主进程 Notification 与点击回跳载荷 */
 export interface TurnNotifyPayload {
@@ -90,11 +91,9 @@ export function turnNotifyPreview(text: string, max = 160): string {
   return `${flat.slice(0, Math.max(1, max - 1))}…`
 }
 
-/** 完成后「已改 N 个文件」芯片文案 */
+/** 完成后芯片文案：官方 Edited N files（对标 Codex render_changes_block） */
 export function formatChangedFilesLabel(count: number): string {
-  const n = Math.max(0, Math.floor(count))
-  if (n <= 0) return ''
-  return `已改 ${n} 个文件`
+  return formatEditedFilesHeader(count)
 }
 
 /** 正文后附改文件数（对标 Codex 完成通知可带变更摘要） */

@@ -3,6 +3,7 @@
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
+import { formatEditActivity, isEditActivityToolName } from './edit-activity'
 import { formatExecActivity, summarizeExecCommand } from './exec-activity'
 import {
   exploreNameFromPath,
@@ -167,14 +168,6 @@ function classifyContent(content: string | undefined, fallback: ProcessPhase): P
   return fallback
 }
 
-function shortNameFromDetail(detail: string | undefined): string | undefined {
-  const cleaned = cleanInlineText(detail, 48)
-  if (!cleaned) return undefined
-  // 只取路径末段，避免直播标题过长
-  const base = cleaned.split(/[\\/]/).filter(Boolean).at(-1) || cleaned
-  return base.length > 24 ? `${base.slice(0, 23)}…` : base
-}
-
 /** shell 命令摘要：保留 -rf 等短选项，不取路径末段误伤命令 */
 function commandSummaryFromDetail(detail: string | undefined): string | undefined {
   return summarizeExecCommand(detail)
@@ -188,16 +181,16 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
     if (isExploreActivityToolName(tool)) {
       return formatExploreActivity(tool, segment.toolArgs, segment.toolDetail) ?? base
     }
-    // 改文件类：标题带上目标，避免多个「写入文件」像卡住重复
-    if (
-      tool === 'write_file' ||
-      tool === 'search_replace' ||
-      tool === 'apply_patch' ||
-      tool === 'delete_file' ||
-      tool === 'delete_path'
-    ) {
-      const leaf = shortNameFromDetail(segment.toolDetail)
-      if (leaf && !base.includes(leaf)) return `${base} · ${leaf}`
+    if (isEditActivityToolName(tool)) {
+      const fileCount = Math.max(
+        segment.editPreview?.length ?? 0,
+        segment.fileDiffs?.length ?? 0,
+        segment.fileDiff ? 1 : 0
+      )
+      return (
+        formatEditActivity(tool, segment.toolArgs, segment.toolDetail, segment.status, fileCount) ??
+        base
+      )
     }
     if (tool === 'update_plan') {
       return formatUpdatePlanActivity(segment.toolArgs, segment.status)
@@ -424,7 +417,8 @@ function buildStepsFromSource(
     if (
       detail &&
       segment.kind === 'tool' &&
-      isExploreActivityToolName(segment.toolName || '')
+      (isExploreActivityToolName(segment.toolName || '') ||
+        isEditActivityToolName(segment.toolName || ''))
     ) {
       const leaf =
         exploreNameFromPath(segment.toolDetail) ||

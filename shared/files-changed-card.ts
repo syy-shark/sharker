@@ -1,11 +1,12 @@
 /**
- * 对话里「已改 N 个文件」卡（对标 Codex Files changed card / N files edited / artifact cards）。
+ * 对话写盘卡：官方 Edited basename / Edited N files（对标 Codex render_changes_block）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
  * 头栏与文件行可画 +N −M（对标 Codex Edited N files / TUI render_changes_block）。
  * 右键打开 / 揭示 / 复制路径。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
 
+import { formatEditedFilesHeader } from './edit-activity'
 import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 export type FilesChangedLineStats = { added: number; removed: number }
@@ -120,6 +121,15 @@ export function nextFilesChangedStats(
     return prev
   }
   return next
+}
+
+/** 卡头：单文件 Edited basename，多文件 Edited N files（对标 Codex render_changes_block） */
+export function formatFilesChangedHeader(paths: readonly string[]): string {
+  const list = filesChangedDisplayPaths(paths)
+  if (list.length === 1) {
+    return `Edited ${filesChangedDisplayLabel(list[0]!, list)}`
+  }
+  return formatEditedFilesHeader(list.length)
 }
 
 /** 与审查合计同一套 `+N −M`；两边都是 0 则空串 */

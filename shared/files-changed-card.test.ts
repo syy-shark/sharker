@@ -8,6 +8,7 @@ import {
   filesChangedKindLabel,
   filesChangedStatsForPath,
   filesChangedStatsFromSegments,
+  formatFilesChangedHeader,
   formatFilesChangedLineStats,
   nextFilesChangedStats
 } from './files-changed-card'
@@ -34,6 +35,8 @@ describe('files changed card', () => {
     expect(filesChangedKindLabel('shot.JPEG')).toBe('Image · JPG')
     expect(filesChangedKindLabel('index.html')).toBe('Document · HTML')
     expect(filesChangedKindLabel('src/a.ts')).toBe('')
+    expect(formatFilesChangedHeader(['src/a.ts'])).toBe('Edited a.ts')
+    expect(formatFilesChangedHeader(['src/a.ts', 'docs/guide.md'])).toBe('Edited 2 files')
     expect(formatFilesChangedLineStats(16, 199)).toBe('+16 −199')
     expect(formatFilesChangedLineStats(0, 0)).toBe('')
     const first = filesChangedStatsFromSegments([

@@ -132,7 +132,9 @@
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
 | `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline） |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、审查面板订直播切片 |
-| `files-changed-card.ts` | 对话「已改 N 个文件」卡：标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象（对标 Codex Files changed / Edited N files / #20700 / #21426）。不发明回合 Undo |
+| `files-changed-card.ts` | 对话写盘卡：`formatFilesChangedHeader` 用 Edited basename / Edited N files；标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象（对标 Codex render_changes_block / #20700 / #21426）。不发明回合 Undo |
+| `edit-activity.ts` | 官方写盘过程：Edited / Deleted / Added + basename，多文件 Edited N files，失败补丁 Failed to apply patch（对标 Codex render_changes_block）。write_file 不一律标 Added |
+| `edit-activity.test.ts` | Edited / Deleted / 多文件头 / 失败补丁 |
 | `files-changed-card.test.ts` | 标题 vs 展开、平台揭示文案、路径去重、basename 碰撞标签、种类标签、HTML 文档种类、片段 +/- 合计与复用 |
 | `review-file-click.ts` | 审查文件名走 `file_opener`、行背景展开/收起、⌘单击行跳预览；右键「打开预览 / 在访达中显示 / 展开 diff」（对标 Codex review Open in Finder / file tree open menu） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项含揭示与菜单位置夹取 |
@@ -143,8 +145,8 @@
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链 / 复制为 Markdown、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
-| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；探索工具用 Read / List / Search（对标 Codex exec_cell）；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；MCP 用 Calling / Called `server.tool` 且 JSON 结果不进 detail（对标 Codex #20677）；`run_terminal_cmd` 用 Running / Ran + 命令（对标 Codex exec_cell）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
-| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步；MCP Calling / Called 且 JSON 不当 detail；命令 Running / Ran；探索 Read / List / Search |
+| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；探索工具用 Read / List / Search（对标 Codex exec_cell）；写盘用 Edited / Deleted / Edited N files；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；MCP 用 Calling / Called `server.tool` 且 JSON 结果不进 detail（对标 Codex #20677）；`run_terminal_cmd` 用 Running / Ran + 命令（对标 Codex exec_cell）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
+| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步；MCP Calling / Called 且 JSON 不当 detail；命令 Running / Ran；探索 Read / List / Search；写盘 Edited / Deleted / Failed to apply patch |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think / status / 写入预览 / 收束都只换数组和改过的段（已完成工具保持引用，避免心跳打穿过程行 memo）；`cloneSegments` 只给会话缓冲隔离用；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；写入/补丁 `tool_preview` 先占同一 tool 段与 `s.id-diff-N`（`isWritePreviewTool`），参数流把已解析的 +/- 填进同一槽（对标 Codex 约 0.5s 逐文件 diff），`tool_start` / `tool_done` 合并不换 id；`context_compress` 先把进行中 status 收成 done 再挂压缩步骤；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程；`buildAnswerParts` 写入一开始用 `editPreview` 占 `s.id-diff-N`，完成后填 `fileDiff`；`reuseAnswerParts` 在预览 token / 元信息刷新时保住已闭合文字与 diff 对象；正文 ```demo 开闭都拆成 `s.id` / `s.id-demo-stream` / `s.id-post`（直播未写完 `dem` / `viz` 就占槽，不认 ```diff / ```html / ```vim），收束不把演示搬回 Markdown 重挂 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；status 心跳 / 写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
@@ -193,7 +195,7 @@
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
 | `composer-paste.ts` | 粘贴决策：Finder/Explorer 文件条目先收附件（对标 Codex non-image file pasting）；其余 text/plain（及 HTML 剥标签）优先于 Office 图片层；CRLF 归一；超长收成 `Pasted text.txt`；只有官方粘贴名才折进空输入 / 空参斜杠 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、路径列表收文件、源码附件不折进 `/goal` |
-| `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
+| `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标；芯片文案 Edited N files（对标 Codex render_changes_block） |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
 | `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、browser/history→浏览器、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications/notify 进通知、general/review 进通用、personalization/memories 进个性化、mcp/mcp-servers 进 MCP 服务器、git/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |

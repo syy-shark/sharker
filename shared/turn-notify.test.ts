@@ -119,7 +119,8 @@ describe('background turn notifications', () => {
     expect(turnNotifyPreview('')).toBe('回合已完成')
     expect(turnNotifyBody('已完成', 3)).toBe('已完成 · 改了 3 个文件')
     expect(turnNotifyBody('已完成', 0)).toBe('已完成')
-    expect(formatChangedFilesLabel(3)).toBe('已改 3 个文件')
+    expect(formatChangedFilesLabel(3)).toBe('Edited 3 files')
+    expect(formatChangedFilesLabel(1)).toBe('Edited 1 file')
     expect(formatChangedFilesLabel(0)).toBe('')
   })
 

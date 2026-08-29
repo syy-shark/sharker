@@ -189,5 +189,43 @@ describe('process phases privacy', () => {
       }
     ])
     expect(searching[0]?.title).toBe('Search LiveHead in shared')
+    const editing = deriveChronologicalSteps([
+      {
+        id: 'ed1',
+        kind: 'tool',
+        toolName: 'write_file',
+        toolTitle: '写入文件',
+        toolArgs: { path: 'src/a.ts' },
+        toolDetail: 'src/a.ts',
+        status: 'active',
+        startedAt: 20
+      }
+    ])
+    expect(editing[0]?.title).toBe('Edited a.ts')
+    const deleted = deriveChronologicalSteps([
+      {
+        id: 'del1',
+        kind: 'tool',
+        toolName: 'delete_path',
+        toolTitle: '删除路径',
+        toolArgs: { path: 'src/gone.ts' },
+        status: 'done',
+        startedAt: 21,
+        endedAt: 22
+      }
+    ])
+    expect(deleted[0]?.title).toBe('Deleted gone.ts')
+    const failedPatch = deriveChronologicalSteps([
+      {
+        id: 'pt1',
+        kind: 'tool',
+        toolName: 'apply_patch',
+        toolTitle: '应用补丁',
+        status: 'error',
+        startedAt: 23,
+        endedAt: 24
+      }
+    ])
+    expect(failedPatch[0]?.title).toBe('Failed to apply patch')
   })
 })
