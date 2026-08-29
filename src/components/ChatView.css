@@ -621,8 +621,9 @@
   margin-bottom: 0;
 }
 
+/* 只收最后一个槽的底边距；已闭合 LiveProseTail 之间仍留段距（对标 Codex #22860 分槽） */
 .streaming-markdown > :last-child,
-.live-prose-tail > :last-child {
+.streaming-markdown > .live-prose-tail:last-child > :last-child {
   margin-bottom: 0;
 }
 

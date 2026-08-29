@@ -49,10 +49,15 @@ describe('splitStreamingMarkdown', () => {
     expect(split.blocks[0]?.text).toBe('Hello world.\n')
     expect(split.tail).toBe('Next')
     expect(streamingRenderSlots(splitStreamingMarkdown('Hello')).map((slot) => slot.key)).toEqual(['prose-run-0'])
-    expect(streamingRenderSlots(split).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(split).map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
     expect(streamingRenderSlots(split)[0]).toMatchObject({
       kind: 'prose',
-      text: 'Hello world.\n\nNext',
+      text: 'Hello world.\n',
+      closed: true
+    })
+    expect(streamingRenderSlots(split)[1]).toMatchObject({
+      kind: 'prose',
+      text: 'Next',
       closed: false
     })
   })
@@ -91,13 +96,13 @@ describe('splitStreamingMarkdown', () => {
     })
     expect(extractClosedFenceParts('Intro\n')).toBeNull()
     expect(streamingRenderSlots(mid).map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
-      'prose:prose-run-0',
+      'prose:prose-md-0',
       'fence:live-fence-0'
     ])
     expect(streamingRenderSlots(done).map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
-      'prose:prose-run-0',
+      'prose:prose-md-0',
       'fence:live-fence-0',
-      'prose:prose-run-1'
+      'prose:prose-run-0'
     ])
     expect(
       streamingRenderSlots(splitStreamingMarkdown('```mermaid\ngraph TD\nA-->B')).map(
@@ -1072,12 +1077,13 @@ describe('splitStreamingMarkdown', () => {
     expect(grown.blocks).toBe(first.blocks)
     expect(grown.tail).toBe('Next sentence')
     expect(grown.closedEnd).toBe(first.closedEnd)
-    expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
-    expect(streamingRenderSlots(grown).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
+    expect(streamingRenderSlots(grown).map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
     const firstSlots = streamingRenderSlots(first)
     const grownSlots = continueStreamingRenderSlots(firstSlots, grown)
     expect(grownSlots).not.toBe(firstSlots)
-    expect(grownSlots[0]).not.toBe(firstSlots[0])
+    expect(grownSlots[0]).toBe(firstSlots[0])
+    expect(grownSlots[1]).not.toBe(firstSlots[1])
     const fenceMid = splitStreamingMarkdown('Intro\n\n```js\n1')
     const fenceDone = continueStreamingMarkdown(
       fenceMid,
@@ -1088,9 +1094,9 @@ describe('splitStreamingMarkdown', () => {
     const doneSlots = continueStreamingRenderSlots(midSlots, fenceDone)
     expect(doneSlots[0]).toBe(midSlots[0])
     expect(doneSlots.map((slot) => `${slot.kind}:${slot.key}`)).toEqual([
-      'prose:prose-run-0',
+      'prose:prose-md-0',
       'fence:live-fence-0',
-      'prose:prose-run-1'
+      'prose:prose-run-0'
     ])
     const sameDone = continueStreamingRenderSlots(doneSlots, fenceDone)
     expect(sameDone).toBe(doneSlots)
