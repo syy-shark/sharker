@@ -483,6 +483,25 @@ describe('process phases privacy', () => {
     expect(writeAndFence).not.toBeNull()
     expect(writeAndFence).toHaveLength(1)
     expect(writeAndFence![0].segment).toBe(cmdDoneDiff)
+    const writeAndError = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, errText],
+      true
+    )
+    expect(writeAndError).not.toBeNull()
+    expect(writeAndError).toHaveLength(1)
+    expect(writeAndError![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndError![0].status).toBe('done')
+    const writeAndDemo = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, inlineDemo],
+      true
+    )
+    expect(writeAndDemo).not.toBeNull()
+    expect(writeAndDemo).toHaveLength(1)
+    expect(writeAndDemo![0].segment).toBe(cmdDoneDiff)
     const liveText: TurnSegment = {
       id: 'ans1',
       kind: 'text',
@@ -782,6 +801,18 @@ describe('process phases privacy', () => {
     expect(afterCompress![0].segment).toBe(compactStatusDone)
     expect(afterCompress![0].status).toBe('done')
     expect(afterCompress!.at(-1)?.segment).toBe(compressDoneSeg)
+    const writeAndCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, compressDoneSeg],
+      true
+    )
+    expect(writeAndCompress).not.toBeNull()
+    expect(writeAndCompress).toHaveLength(2)
+    expect(writeAndCompress![0].id).toBe(cmdSteps[0].id)
+    expect(writeAndCompress![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndCompress![0].status).toBe('done')
+    expect(writeAndCompress!.at(-1)?.segment).toBe(compressDoneSeg)
     const asking = deriveChronologicalSteps([
       {
         id: 'ask1',

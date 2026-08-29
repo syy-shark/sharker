@@ -42,6 +42,9 @@ import {
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatStatusAppendChange,
   isLiveWriteStatThinkAppendChange,
+  isLiveWriteStatCompressAppendChange,
+  isLiveWriteStatErrorAppendChange,
+  isLiveWriteStatDemoAppendChange,
   isLiveToolWriteStatChange
 } from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
@@ -591,7 +594,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具或 status 也走 remap + 追加；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具、status 或 compress 也走 remap + 追加；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -602,6 +605,7 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveToolAppendChange(prevSegments, segments) &&
     !isLiveToolWriteStatAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&
     !isLiveStatusAppendChange(prevSegments, segments) &&
@@ -645,7 +649,7 @@ export function appendProcessPhaseStepOnToolStart(
   return [...remapped, ...built]
 }
 
-/** 前缀没变或只收束思考/status、末尾新开思考/散文/演示，或演示 HTML 增长，或写盘收束同时新开思考/散文/```demo：时间线 remap 写盘步、不追加该步（旁白 / 回答 / 演示槽另订） */
+/** 前缀没变或只收束思考/status、末尾新开思考/散文/演示，或演示 HTML 增长，或写盘收束同时新开思考/散文/```demo/错误/present_inline_demo：时间线 remap 写盘步、不追加该步（旁白 / 回答 / 演示槽另订） */
 export function remapProcessPhaseStepsOnThinkAppend(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -658,11 +662,13 @@ export function remapProcessPhaseStepsOnThinkAppend(
     !isLiveAnswerAppendChange(prevSegments, segments) &&
     !isLiveWriteStatAnswerAppendChange(prevSegments, segments) &&
     !isLiveDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatDemoFenceAppendChange(prevSegments, segments) &&
     !findLiveDemoHtmlChange(prevSegments, segments) &&
     !isLiveDemoFenceAppendChange(prevSegments, segments) &&
     !findLiveDemoFenceChange(prevSegments, segments) &&
-    !isLiveErrorAppendChange(prevSegments, segments)
+    !isLiveErrorAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatErrorAppendChange(prevSegments, segments)
   ) {
     return null
   }
