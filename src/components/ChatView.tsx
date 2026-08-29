@@ -959,6 +959,12 @@ export function ChatView({
   const syncScrollFlags = useCallback(() => {
     const { overflowing, distance } = readScrollMetrics()
     if (!overflowing) {
+      if (viewingHeadRef.current) {
+        stickToBottomRef.current = false
+        setStickToBottom(false)
+        setCanJumpToBottom(true)
+        return
+      }
       if (pinnedStartRef.current != null) {
         stickToBottomRef.current = false
         setStickToBottom(false)
@@ -989,7 +995,7 @@ export function ChatView({
       }
       stickToBottomRef.current = false
       setStickToBottom(false)
-      setCanJumpToBottom(distance > LEAVE_BOTTOM_PX)
+      setCanJumpToBottom(viewingHeadRef.current || distance > LEAVE_BOTTOM_PX)
       return
     }
     if (distance > LEAVE_BOTTOM_PX) {
