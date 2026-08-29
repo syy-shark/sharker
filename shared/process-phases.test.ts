@@ -137,6 +137,16 @@ describe('process phases privacy', () => {
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
     ).toBe(appended)
+    const firstReply: TurnSegment = {
+      id: 'reply-1',
+      kind: 'text',
+      status: 'active',
+      content: 'Hi',
+      startedAt: 11
+    }
+    expect(remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, firstReply])).toBe(
+      appended
+    )
     const twoActive = deriveChronologicalSteps([cmdRunning, cmdNext], { isStreaming: true })
     const earlierSettled = retargetProcessPhaseStepsOnToolMeta(
       twoActive,

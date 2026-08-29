@@ -30,6 +30,7 @@ import {
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
   isLiveThinkAppendChange,
+  isLiveAnswerAppendChange,
   isLiveThinkOrStatusClose,
   isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
@@ -445,6 +446,51 @@ describe('live stream ui snapshot', () => {
     })
     expect(processWhileNextThink.processForFlow).toBe(processWhileRanHold.processForFlow)
     expect(processWhileNextThink.thinkText).toBe(processWhileRanHold.thinkText + 'Next')
+    const firstReply: TurnSegment = {
+      id: 'reply-1',
+      kind: 'text',
+      status: 'active',
+      content: 'Hi'
+    }
+    const demoStart: TurnSegment = {
+      id: 'demo-1',
+      kind: 'text',
+      status: 'active',
+      content: '```demo\n<div>'
+    }
+    expect(isLiveAnswerAppendChange([ran], [ran, firstReply])).toBe(true)
+    expect(isLiveAnswerAppendChange([thinking], [thinkingDone, firstReply])).toBe(true)
+    expect(isLiveAnswerAppendChange([ran], [ran, demoStart])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([ran], [ran, firstReply])).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [ran],
+        segments: [ran, firstReply]
+      })
+    ).toBe(false)
+    const processToolsOnly = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const processFirstReply = nextLiveProcessView(processToolsOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, firstReply]
+    })
+    expect(processFirstReply.processForFlow).toBe(processToolsOnly.processForFlow)
+    expect(processFirstReply.contentStreaming).toBe(true)
+    expect(processFirstReply.answerStreaming).toBe(true)
+    const answerToolsOnly = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const answerFirstReply = nextLiveAnswerView(answerToolsOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, firstReply]
+    })
+    expect(answerFirstReply.tail?.content).toBe('Hi')
+    expect(answerFirstReply.show).toBe(true)
+    expect(answerFirstReply.closed).toEqual([])
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

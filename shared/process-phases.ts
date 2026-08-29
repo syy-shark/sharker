@@ -22,6 +22,7 @@ import {
 } from './stream-reconnect'
 import {
   findLiveToolInPlaceChange,
+  isLiveAnswerAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange
 } from './live-stream-slices'
@@ -603,13 +604,18 @@ export function appendProcessPhaseStepOnToolStart(
   return [...remapped, built]
 }
 
-/** 前缀没变或只收束思考/status、末尾新开思考：时间线不追加思考步（旁白另订） */
+/** 前缀没变或只收束思考/status、末尾新开思考或散文：时间线不追加该步（旁白 / 回答另订） */
 export function remapProcessPhaseStepsOnThinkAppend(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
   segments: readonly TurnSegment[]
 ): ProcessPhaseStep[] | null {
-  if (!isLiveThinkAppendChange(prevSegments, segments)) return null
+  if (
+    !isLiveThinkAppendChange(prevSegments, segments) &&
+    !isLiveAnswerAppendChange(prevSegments, segments)
+  ) {
+    return null
+  }
   const remapped = prevSteps.map((step) => {
     const index = prevSegments!.indexOf(step.segment)
     if (index < 0) return step

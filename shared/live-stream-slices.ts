@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；前缀没变或只收束思考/status 时新工具只追加末步、新思考只换旁白；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；前缀没变或只收束思考/status 时新工具只追加末步、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -163,6 +163,25 @@ export function isLiveThinkAppendChange(
   return true
 }
 
+/** 前缀没变或只收束思考/status、末尾新开散文：只开回答尾（对标 Codex 工具后首枚 token） */
+export function isLiveAnswerAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  const added = next[next.length - 1]
+  if (!added || !isLiveAnswerText(added) || added.status === 'done') return false
+  if (hasStreamingDemoFence(added.content ?? '')) return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLiveThinkOrStatusClose(before, after)) return false
+  }
+  return true
+}
+
 /** 同一列表里只有一个工具就地改详情或收束：找出该对，供非末步 complete_call */
 export function findLiveToolInPlaceChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -211,6 +230,7 @@ export function shouldSkipLiveStreamDerivation(
   if (!prevSegments) return null
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
+  if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
   const last = segments.length - 1
@@ -245,6 +265,7 @@ export function nextLiveThinkText(
   if (isLiveThinkAppendChange(prevSegments, segments)) {
     return prev + (segments[segments.length - 1]?.content ?? '')
   }
+  if (isLiveAnswerAppendChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -364,6 +385,23 @@ export function shouldRetargetLiveProcessOnToolMeta(input: {
   return findLiveToolInPlaceChange(input.prevSegments, input.segments) !== null
 }
 
+function remapProcessFlowRefs(
+  prevFlow: TurnSegment[],
+  prevSegments: readonly TurnSegment[],
+  segments: readonly TurnSegment[]
+): TurnSegment[] {
+  const remapped = prevFlow.map((segment) => {
+    const index = prevSegments.indexOf(segment)
+    if (index < 0) return segment
+    return segments[index] ?? segment
+  })
+  if (remapped.length !== prevFlow.length) return remapped
+  for (let i = 0; i < remapped.length; i++) {
+    if (remapped[i] !== prevFlow[i]) return remapped
+  }
+  return prevFlow
+}
+
 function retargetProcessFlow(
   prevFlow: TurnSegment[],
   prevTail: TurnSegment,
@@ -460,12 +498,7 @@ export function nextLiveProcessView(
     isLiveToolAppendChange(processHold.segments, segments)
   ) {
     const added = segments[segments.length - 1]!
-    const holdSegments = processHold.segments
-    const remapped = prev.processForFlow.map((segment) => {
-      const index = holdSegments.indexOf(segment)
-      if (index < 0) return segment
-      return segments[index] ?? segment
-    })
+    const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
     const view = { ...prev, processForFlow: [...remapped, added] }
     processHold = {
       view,
@@ -480,22 +513,11 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     isLiveThinkAppendChange(processHold.segments, segments)
   ) {
-    const holdSegments = processHold.segments
-    const remapped = prev.processForFlow.map((segment) => {
-      const index = holdSegments.indexOf(segment)
-      if (index < 0) return segment
-      return segments[index] ?? segment
-    })
-    let sameFlow = remapped.length === prev.processForFlow.length
-    if (sameFlow) {
-      for (let i = 0; i < remapped.length; i++) {
-        if (remapped[i] !== prev.processForFlow[i]) {
-          sameFlow = false
-          break
-        }
-      }
-    }
-    const processForFlow = sameFlow ? prev.processForFlow : remapped
+    const processForFlow = remapProcessFlowRefs(
+      prev.processForFlow,
+      processHold.segments,
+      segments
+    )
     const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
     const view =
       processForFlow === prev.processForFlow && thinkText === prev.thinkText
@@ -506,6 +528,34 @@ export function nextLiveProcessView(
       identity: liveProcessIdentity(segments),
       segments,
       answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
+    isLiveAnswerAppendChange(processHold.segments, segments)
+  ) {
+    const added = segments[segments.length - 1]!
+    const hasProse = Boolean((added.content ?? '').trim())
+    const processForFlow = remapProcessFlowRefs(
+      prev.processForFlow,
+      processHold.segments,
+      segments
+    )
+    const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const view = {
+      ...prev,
+      processForFlow,
+      thinkText,
+      contentStreaming: prev.contentStreaming || hasProse,
+      answerStreaming: prev.answerStreaming || hasProse
+    }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: true
     }
     return view
   }
@@ -687,6 +737,14 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   }
 }
 
+/** 工具后新开一段散文：先收起上一尾，再开新尾，不重跑 buildAnswerParts */
+function appendLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
+  if (prev.tail && prev.tail.id !== tail.id) {
+    return growLiveAnswerView({ ...prev, closed: [...prev.closed, prev.tail], tail: null }, tail)
+  }
+  return growLiveAnswerView(prev, tail)
+}
+
 /** 回答切片：正文只加长时续尾；否则闭合块走 reuseAnswerParts */
 export function nextLiveAnswerView(
   prev: LiveAnswerView | null,
@@ -704,6 +762,12 @@ export function nextLiveAnswerView(
   if (prev && shouldSkipLiveAnswerIdentity({ prev, prevSegments, segments })) {
     answerGrowHold = { view: prev, segments, tailPlain: Boolean(grow.tail) }
     return prev
+  }
+  if (prev && isLiveAnswerAppendChange(prevSegments, segments)) {
+    const added = segments[segments.length - 1]!
+    const view = appendLiveAnswerView(prev, added)
+    answerGrowHold = { view, segments, tailPlain: true }
+    return view
   }
   if (prev && shouldGrowLiveAnswerTail({ prev, prevSegments, segments, tail: grow.tail })) {
     const view = growLiveAnswerView(prev, grow.tail!)
