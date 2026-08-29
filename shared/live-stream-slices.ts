@@ -110,8 +110,10 @@ export function shouldSkipLiveStreamPublish(
   segments: readonly TurnSegment[]
 ): boolean {
   if (prevSegments === segments) return true
+  if (!prevSegments || prevSegments.length !== segments.length) return false
+  if (sameRefList(prevSegments, segments)) return true
   if (shouldSkipLiveStreamDerivation(prevSegments, segments) !== 'tool') return false
-  const prevTail = prevSegments![prevSegments!.length - 1]
+  const prevTail = prevSegments[prevSegments.length - 1]
   const nextTail = segments[segments.length - 1]
   return Boolean(prevTail && nextTail && isLiveLastLineOnlyToolChange(prevTail, nextTail))
 }
