@@ -191,6 +191,9 @@ import {
   isLiveWriteStatAskNeededCancelAppendChange,
   isLiveWriteStatStatusAskNeededCancelAppendChange,
   isLiveStatusAskNeededCancelAppendChange,
+  isLiveWriteStatAskNeededThinkCancelAppendChange,
+  isLiveWriteStatStatusAskNeededThinkCancelAppendChange,
+  isLiveStatusAskNeededThinkCancelAppendChange,
   isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
@@ -3162,6 +3165,28 @@ describe('live stream ui snapshot', () => {
     askReconnectCancel = applyStreamChunk(askReconnectCancel, { type: 'turn_cancelled', timestamp: 74.6 })
     expect(isLiveStatusAskNeededCancelAppendChange([hello], askReconnectCancel)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello], askReconnectCancel)).toBe('tool')
+    let askReconnectThinkCancel = applyStreamChunk(askReconnectThink, {
+      type: 'turn_cancelled',
+      timestamp: 74.7
+    })
+    expect(isLiveStatusAskNeededThinkCancelAppendChange([hello], askReconnectThinkCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectThinkCancel)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello], askReconnectThinkCancel)).toBe('HmmNext')
+    let askWriteThinkCancel = applyStreamChunk(askWriteThink, { type: 'turn_cancelled', timestamp: 74.8 })
+    expect(isLiveWriteStatAskNeededThinkCancelAppendChange([hello, running], askWriteThinkCancel)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteThinkCancel)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello, running], askWriteThinkCancel)).toBe('HmmNext')
+    let askWritePlanThinkCancel = applyStreamChunk(askWritePlanThink, {
+      type: 'turn_cancelled',
+      timestamp: 74.9
+    })
+    expect(
+      isLiveWriteStatStatusAskNeededThinkCancelAppendChange([hello, running], askWritePlanThinkCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanThinkCancel)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello, running], askWritePlanThinkCancel)).toBe('HmmNext')
     const processReadyForAskHang = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello]
@@ -3322,6 +3347,24 @@ describe('live stream ui snapshot', () => {
         (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
       )
     ).toBe(true)
+    const processAfterAskReconnectThinkCancel = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askReconnectThinkCancel
+    })
+    expect(processAfterAskReconnectThinkCancel.thinkText).toBe(
+      processReadyForAskHang.thinkText + 'Next'
+    )
+    expect(
+      processAfterAskReconnectThinkCancel.processForFlow.some((segment) => segment.kind === 'thinking')
+    ).toBe(false)
+    const processAfterAskWriteThinkCancel = nextLiveProcessView(processReadyForAskWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askWriteThinkCancel
+    })
+    expect(processAfterAskWriteThinkCancel.thinkText).toBe(processReadyForAskWrite.thinkText + 'Next')
+    expect(
+      processAfterAskWriteThinkCancel.processForFlow.some((segment) => segment.kind === 'thinking')
+    ).toBe(false)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

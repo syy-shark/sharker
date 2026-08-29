@@ -103,6 +103,9 @@ import {
   isLiveWriteStatAskNeededCancelAppendChange,
   isLiveWriteStatStatusAskNeededCancelAppendChange,
   isLiveStatusAskNeededCancelAppendChange,
+  isLiveWriteStatAskNeededThinkCancelAppendChange,
+  isLiveWriteStatStatusAskNeededThinkCancelAppendChange,
+  isLiveStatusAskNeededThinkCancelAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveCancelChange,
@@ -872,6 +875,9 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatAskNeededCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusAskNeededCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusAskNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededThinkCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusSettleChange(prevSegments, segments)
   ) {
     return null

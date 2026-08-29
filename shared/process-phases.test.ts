@@ -1030,6 +1030,33 @@ describe('process phases privacy', () => {
     expect(afterReconnectAskCancel).not.toBeNull()
     expect(afterReconnectAskCancel!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
     expect(afterReconnectAskCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    const afterReconnectAskThinkCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, reconnectAskStatus, askReadyCancelled, askStatusCancelled, nextThinkCancelledAsk],
+      true
+    )
+    expect(afterReconnectAskThinkCancel).not.toBeNull()
+    expect(afterReconnectAskThinkCancel!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
+    expect(afterReconnectAskThinkCancel!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const afterWriteAskThinkCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReadyCancelled, askStatusCancelled, nextThinkCancelledAsk],
+      true
+    )
+    expect(afterWriteAskThinkCancel).not.toBeNull()
+    expect(afterWriteAskThinkCancel![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteAskThinkCancel!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const afterWritePlanAskThinkCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, planStatusDone, askReadyCancelled, askStatusCancelled, nextThinkCancelledAsk],
+      true
+    )
+    expect(afterWritePlanAskThinkCancel).not.toBeNull()
+    expect(afterWritePlanAskThinkCancel!.some((step) => step.segment === planStatusDone)).toBe(true)
+    expect(afterWritePlanAskThinkCancel!.some((step) => step.segment.kind === 'thinking')).toBe(false)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',
