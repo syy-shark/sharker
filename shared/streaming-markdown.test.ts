@@ -1430,6 +1430,30 @@ describe('splitStreamingMarkdown', () => {
       expect(closedFenceJsSuffix[0].items[0]?.blocks?.[0]).toBe(closedFenceJsFirst[0].items[0]?.blocks?.[0])
       expect(closedFenceJsSuffix[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
     }
+    const fenceThenTable = continueCheapProseBlocks(
+      closedFence,
+      closedFenceFirst,
+      `${closedFence}\n  | A | B |`
+    )
+    if (closedFenceFirst[0]?.type === 'list' && fenceThenTable[0]?.type === 'list') {
+      expect(fenceThenTable[0].items[0]?.nodes).toBe(closedFenceFirst[0].items[0]?.nodes)
+      expect(fenceThenTable[0].items[0]?.blocks?.[0]).toBe(closedFenceFirst[0].items[0]?.blocks?.[0])
+      expect(fenceThenTable[0].items[0]?.blocks?.map((block) => block.type)).toEqual(['pre', 'table'])
+    }
+    const fenceThenHeading = continueCheapProseBlocks(
+      closedFence,
+      closedFenceFirst,
+      `${closedFence}\n  # title`
+    )
+    if (closedFenceFirst[0]?.type === 'list' && fenceThenHeading[0]?.type === 'list') {
+      expect(fenceThenHeading[0].items[0]?.blocks?.[0]).toBe(closedFenceFirst[0].items[0]?.blocks?.[0])
+      expect(fenceThenHeading[0].items[0]?.blocks?.map((block) => block.type)).toEqual(['pre', 'heading'])
+    }
+    const fenceThenQuote = continueCheapProseBlocks(closedFence, closedFenceFirst, `${closedFence}\n  > quoted`)
+    if (closedFenceFirst[0]?.type === 'list' && fenceThenQuote[0]?.type === 'list') {
+      expect(fenceThenQuote[0].items[0]?.blocks?.[0]).toBe(closedFenceFirst[0].items[0]?.blocks?.[0])
+      expect(fenceThenQuote[0].items[0]?.blocks?.map((block) => block.type)).toEqual(['pre', 'quote'])
+    }
     const nestedClosedFence = '- a\n  - b\n    ```\n    x\n    ```'
     const nestedClosedFirst = parseCheapProseBlocks(nestedClosedFence)
     const nestedClosedSuffix = continueCheapProseBlocks(

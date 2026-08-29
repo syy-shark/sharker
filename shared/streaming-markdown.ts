@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏闭合后的后续段、引用内换行后的列表项、脚注缩进续行与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、引用内围栏闭合后的后续段、引用内换行后的列表项、脚注缩进续行与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2839,8 +2839,8 @@ function suffixAfterClosedTable(prevNorm: string, nextText: string): string | nu
   return after
 }
 
-/** 已闭合项内围栏后面的后缀原文；另起块时退回全量解析 */
-function suffixAfterClosedFence(prevNorm: string, nextText: string): string | null {
+/** 已闭合项内围栏后面的原文（含另起的表 / 标题 / 引用） */
+function textAfterClosedFence(prevNorm: string, nextText: string): string | null {
   const prevLines = prevNorm.split('\n')
   const nextLines = nextText.split('\n')
   const open = parseFenceLine(prevLines[0] ?? '') ?? parseFenceLine(nextLines[0] ?? '')
@@ -2854,9 +2854,26 @@ function suffixAfterClosedFence(prevNorm: string, nextText: string): string | nu
   if (closerAt(prevLines) < 0) return null
   const closer = closerAt(nextLines)
   if (closer < 0) return null
-  const after = nextLines.slice(closer + 1)
-  if (after.some((line) => lineOpensNewCheapBlock(line))) return null
-  return after.join('\n')
+  return nextLines.slice(closer + 1).join('\n')
+}
+
+/** 闭合块后的续行：先当 suffix，遇到新块再另起项内块 */
+function splitSuffixAndSiblingBlocks(
+  after: string,
+  prevSuffix: CheapInlineNode[] | undefined,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): { suffix?: CheapInlineNode[]; blocks: CheapProseBlock[] } | null {
+  const lines = after.split('\n')
+  let split = 0
+  while (split < lines.length && !lineOpensNewCheapBlock(lines[split]!)) split++
+  const suffixSrc = lines.slice(0, split).join('\n')
+  const rest = lines.slice(split).join('\n')
+  const blocks = rest ? parseCheapProseBlocks(rest, defs) : []
+  if (rest && !blocks.length) return null
+  const suffix = suffixSrc
+    ? continueCheapInlineMarkdown(cheapInlineSourceAll(prevSuffix ?? []), prevSuffix ?? [], suffixSrc, defs)
+    : undefined
+  return { suffix, blocks }
 }
 
 /** 只续最后一项的最后一块（含嵌套项内引用 / 围栏），已画外层项与嵌套项标题保持同一引用 */
@@ -2922,27 +2939,30 @@ function growLastListItemInnerBlocks(
   const prevWindow = stripItemIndent(itemPrev.slice(start))
   const nextWindow = stripItemIndent(itemNext.slice(start))
   const grown = continueLastBlockOfType(last, prevWindow, nextWindow, defs)
-  const suffixText =
+  const afterClosed =
     last.type === 'pre'
-      ? suffixAfterClosedFence(prevWindow, nextWindow)
+      ? textAfterClosedFence(prevWindow, nextWindow)
       : last.type === 'heading' || last.type === 'hr'
         ? suffixAfterClosedSingleLineBlock(prevWindow, nextWindow)
         : last.type === 'table'
           ? suffixAfterClosedTable(prevWindow, nextWindow)
           : null
-  if (suffixText != null) {
-    if (suffixText.includes(']:')) return null
+  if (afterClosed != null) {
+    if (afterClosed.includes(']:')) return null
     const nextBlocks =
       grown && grown.length === 1 && grown[0] !== last
         ? [...item.blocks.slice(0, -1), grown[0]!]
         : item.blocks
-    if (!suffixText) {
+    if (!afterClosed) {
       return nextBlocks === item.blocks ? item : { ...item, blocks: nextBlocks }
     }
-    const prevSrc = cheapInlineSourceAll(item.suffix ?? [])
-    const nodes = continueCheapInlineMarkdown(prevSrc, item.suffix ?? [], suffixText, defs)
-    if (nodes === item.suffix && nextBlocks === item.blocks) return item
-    return { ...item, blocks: nextBlocks, suffix: nodes }
+    const split = splitSuffixAndSiblingBlocks(afterClosed, item.suffix, defs)
+    if (!split) return null
+    const blocks = split.blocks.length ? [...nextBlocks, ...split.blocks] : nextBlocks
+    if (split.suffix === item.suffix && blocks === nextBlocks && nextBlocks === item.blocks) {
+      return item
+    }
+    return { ...item, blocks, suffix: split.suffix }
   }
   if (!grown || grown.length !== 1) return null
   if (grown[0] === last) return item
