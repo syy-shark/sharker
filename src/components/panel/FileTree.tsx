@@ -3,7 +3,7 @@
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
  * 图片预览按预览窗 CSS 像素 contain（对标 Codex #26851 / #31112），不订直播 token。
  * 源码预览按扩展名 highlight.js 着色（对标 Codex 文件查看器 / #18966），不发明 .tex 语法。
- * 文件右键打开 / 访达 / 复制路径，目录只揭示 / 复制（对标 Codex file tree Open menu）。
+ * 文件右键打开 / Open in Finder / Copy path，目录只揭示 / 复制（对标 Codex file tree Open menu）。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import {

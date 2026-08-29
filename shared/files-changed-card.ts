@@ -2,12 +2,12 @@
  * 对话写盘卡：官方 Edited basename / Edited N files（对标 Codex render_changes_block）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
  * 头栏与文件行可画 +N −M（对标 Codex Edited N files / TUI render_changes_block）。
- * 右键打开 / 揭示 / 复制路径。不发明回合 Undo / 自定义 Open with。
+ * 右键打开 / Open in Finder / Copy path。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
 
 import { formatEditedFilesHeader } from './edit-activity'
-import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
+import { COPY_PATH_LABEL, revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 export type FilesChangedLineStats = { added: number; removed: number }
 
@@ -174,7 +174,7 @@ export function filesChangedFileMenuItems(
   return [
     { action: 'open', title: '打开预览' },
     { action: 'reveal', title: revealInFolderLabel(platform) },
-    { action: 'copy', title: '复制路径' }
+    { action: 'copy', title: COPY_PATH_LABEL }
   ]
 }
 

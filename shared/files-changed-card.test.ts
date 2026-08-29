@@ -21,9 +21,9 @@ describe('files changed card', () => {
       'reveal',
       'copy'
     ])
-    expect(filesChangedFileMenuItems('darwin')[1]?.title).toBe('在访达中显示')
-    expect(filesChangedFileMenuItems('darwin')[2]?.title).toBe('复制路径')
-    expect(filesChangedFileMenuItems('win32')[1]?.title).toBe('在资源管理器中显示')
+    expect(filesChangedFileMenuItems('darwin')[1]?.title).toBe('Open in Finder')
+    expect(filesChangedFileMenuItems('darwin')[2]?.title).toBe('Copy path')
+    expect(filesChangedFileMenuItems('win32')[1]?.title).toBe('Open in Explorer')
     expect(
       filesChangedDisplayPaths(['src/a.ts', ' src/a.ts ', 'lib\\\\b.ts', '', 'src/a.ts'])
     ).toEqual(['src/a.ts', 'lib/b.ts'])

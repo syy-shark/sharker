@@ -2,11 +2,11 @@
  * 对话里的本地文件引用：对标 Codex TUI / 桌面端 `path:line`、`#L`、`(line N)`。
  * 拒绝尾斜杠目录与 `a\\` 假路径，避免把反斜杠硬换行收成文件芯片。
  * 百分号路径先解一层再打开 / 揭示 / 复制（对标 Codex #13123）。
- * 右键：打开预览 / 在访达中显示 / 复制路径；不接自定义 Open with。
+ * 右键：打开预览 / Open in Finder / Copy path；不接自定义 Open with。
  * @see shared/ARCH.md
  */
 
-import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
+import { COPY_PATH_LABEL, revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 /** 常见源码扩展名，无斜杠时也认作路径 */
 const CODE_EXT =
@@ -51,7 +51,7 @@ export function fileCitationMenuItems(
   return [
     { action: 'open', title: '打开预览' },
     { action: 'reveal', title: revealInFolderLabel(platform) },
-    { action: 'copy', title: '复制路径' }
+    { action: 'copy', title: COPY_PATH_LABEL }
   ]
 }
 

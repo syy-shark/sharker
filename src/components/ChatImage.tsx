@@ -1,6 +1,6 @@
 /**
  * 对话渲染图：悬停复制 / 保存；工作区相对路径经 readFileDataUrl 成图。
- * 右键页内菜单：复制/保存；工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778）。
+ * 右键页内菜单：复制/保存；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
  * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
  * @see src/components/ARCH.md
  */

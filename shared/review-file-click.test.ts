@@ -17,7 +17,7 @@ describe('review file click', () => {
       'reveal',
       'toggle'
     ])
-    expect(reviewFileMenuItems(false, 'darwin')[1]?.title).toBe('在访达中显示')
+    expect(reviewFileMenuItems(false, 'darwin')[1]?.title).toBe('Open in Finder')
     expect(reviewFileMenuItems(true, 'linux')[2]?.title).toBe('收起 diff')
     expect(clampReviewMenuPosition(1200, 800, { width: 160, height: 72 }, { width: 1280, height: 800 })).toEqual({
       x: 1112,

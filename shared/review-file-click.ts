@@ -1,7 +1,7 @@
 /**
  * 审查面板文件名 / 行背景点击（对标 Codex Review pane）。
  * 文件名走 `file_opener`（none 为应用内预览）；行背景展开或收起 diff。
- * ⌘/Ctrl+单击 diff 行跳到该行。右键含打开预览、在访达中显示、展开 diff。
+ * ⌘/Ctrl+单击 diff 行跳到该行。右键含打开预览、Open in Finder、展开 diff。
  * @see shared/ARCH.md
  */
 

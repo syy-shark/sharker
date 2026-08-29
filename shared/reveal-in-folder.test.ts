@@ -9,10 +9,10 @@ import {
 
 describe('reveal in folder', () => {
   it('labels Finder Explorer and File Manager and resolves thread or review paths', () => {
-    expect(revealInFolderLabel('darwin')).toBe('在访达中显示')
-    expect(revealInFolderLabel('win32')).toBe('在资源管理器中显示')
-    expect(revealInFolderLabel('linux')).toBe('在文件管理器中显示')
-    expect(revealInFolderLabel()).toBe('在文件管理器中显示')
+    expect(revealInFolderLabel('darwin')).toBe('Open in Finder')
+    expect(revealInFolderLabel('win32')).toBe('Open in Explorer')
+    expect(revealInFolderLabel('linux')).toBe('Open in File Manager')
+    expect(revealInFolderLabel()).toBe('Open in File Manager')
     expect(
       threadRevealFolderPath({
         mode: 'worktree',
@@ -56,6 +56,7 @@ describe('reveal in folder', () => {
       'Copy as Markdown'
     ])
     expect(threadCopyMenuItems()[3]?.title).toBe('Copy as Markdown')
-    expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('在文件管理器中显示')
+    expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('Open in File Manager')
+    expect(threadMenuItems({ platform: 'darwin' })[0]?.title).toBe('Open in Finder')
   })
 })

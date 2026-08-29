@@ -9,11 +9,18 @@ import { resolveConversationPath } from './conversation'
 /** 官方桌面按平台换文案 */
 export type RevealFolderPlatform = 'darwin' | 'win32' | string
 
-/** 官方 macOS Finder / Windows Explorer / Linux File Manager */
+/** 官方 macOS Finder / Windows Explorer / Linux File Manager（对标 Codex #13123 / #29449） */
+export const OPEN_IN_FINDER_LABEL = 'Open in Finder'
+export const OPEN_IN_EXPLORER_LABEL = 'Open in Explorer'
+export const OPEN_IN_FILE_MANAGER_LABEL = 'Open in File Manager'
+/** 官方文件引用 / 文件树 / Files changed 右键（对标 Codex #13123 / #17591 / #29316） */
+export const COPY_PATH_LABEL = 'Copy path'
+
+/** 官方桌面按平台换文案 */
 export function revealInFolderLabel(platform: RevealFolderPlatform = 'linux'): string {
-  if (platform === 'darwin') return '在访达中显示'
-  if (platform === 'win32') return '在资源管理器中显示'
-  return '在文件管理器中显示'
+  if (platform === 'darwin') return OPEN_IN_FINDER_LABEL
+  if (platform === 'win32') return OPEN_IN_EXPLORER_LABEL
+  return OPEN_IN_FILE_MANAGER_LABEL
 }
 
 /** 线程项目目录：隔离 worktree 优先，否则工作区 cwd */

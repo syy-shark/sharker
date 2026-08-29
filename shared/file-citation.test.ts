@@ -97,8 +97,8 @@ describe('file citations', () => {
       'reveal',
       'copy'
     ])
-    expect(fileCitationMenuItems('darwin')[1]?.title).toBe('在访达中显示')
-    expect(fileCitationMenuItems('win32')[2]?.title).toBe('复制路径')
+    expect(fileCitationMenuItems('darwin')[1]?.title).toBe('Open in Finder')
+    expect(fileCitationMenuItems('win32')[2]?.title).toBe('Copy path')
     expect(fileTreeRowMenuItems(false, 'darwin').map((item) => item.action)).toEqual([
       'open',
       'reveal',
@@ -108,6 +108,6 @@ describe('file citations', () => {
       'reveal',
       'copy'
     ])
-    expect(fileTreeRowMenuItems(true, 'darwin')[0]?.title).toBe('在访达中显示')
+    expect(fileTreeRowMenuItems(true, 'darwin')[0]?.title).toBe('Open in Finder')
   })
 })

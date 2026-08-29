@@ -1,7 +1,7 @@
 /**
  * 对话渲染图：导出文件名与来源判定（对标 Codex Save or copy rendered images）。
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
- * 右键：复制/保存图片；工作区图再加打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单）。
+ * 右键：复制/保存图片；工作区图再加打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778 页内菜单）。
  * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
  * 右侧文件预览图同一套 contain（`filePreviewImageFit`），避免高图只露上半张。
  * @see shared/ARCH.md
@@ -9,7 +9,7 @@
 
 import { resolveCitationPath } from './file-citation'
 import { filePreviewKind } from './file-preview'
-import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
+import { COPY_PATH_LABEL, revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 export type ChatImageExportInput = {
   src?: string
@@ -126,7 +126,7 @@ export function chatImageMenuItems(options: {
     items.push(
       { action: 'open', title: '打开预览' },
       { action: 'reveal', title: revealInFolderLabel(options.platform) },
-      { action: 'copy-path', title: '复制路径' }
+      { action: 'copy-path', title: COPY_PATH_LABEL }
     )
   }
   if (options.canExport) {

@@ -1,6 +1,6 @@
 /**
  * 对话中的可点文件引用：默认打开右侧预览；设置 file_opener 后走官方 URI。
- * 右键：打开预览 / 在访达中显示 / 复制路径（对标 Codex file citation Open menu / #13123）。
+ * 右键：打开预览 / Open in Finder / Copy path（对标 Codex file citation Open menu / #13123）。
  * 不接自定义 Open with，不订直播 token。
  * @see src/components/ARCH.md
  */

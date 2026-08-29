@@ -99,11 +99,12 @@ describe('chat-image', () => {
       }).map((item) => item.action)
     ).toEqual(['lightbox', 'open', 'reveal', 'copy-path', 'copy-image', 'save'])
     expect(chatImageMenuItems({ workspace: true, platform: 'darwin' })[1]?.title).toBe(
-      '在访达中显示'
+      'Open in Finder'
     )
     expect(
       chatImageMenuItems({ workspace: true, platform: 'darwin', canLightbox: true })[2]?.title
-    ).toBe('在访达中显示')
+    ).toBe('Open in Finder')
+    expect(chatImageMenuItems({ workspace: true, platform: 'darwin' })[2]?.title).toBe('Copy path')
     expect(chatImageMenuItems({ canLightbox: true })[0]).toEqual({
       action: 'lightbox',
       title: '查看大图'
