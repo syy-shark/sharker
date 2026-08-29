@@ -1,7 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
- * ⌘F 查找条在滚动层外占位，不盖正文（对标 Codex #40788 / #38220）。
+ * ⌘F 查找条与「新消息」芯片都在滚动层外占位，不盖正文（对标 Codex #40788 / #38220）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -1538,7 +1538,7 @@ export function ChatView({
     // 输入框变高 / 窗口变矮会挤视口，只盯内容高度会把直播尾藏进底部（对标 Codex #40788）
     ro.observe(scroller)
     // 输入区是滚动层的 flex 兄弟：变高时先挤矮视口。有的引擎只报被挤的子节点，
-    // 同时盯 composer-stage 才能在排队/权限条长高的同一帧跟上贴底。
+    // 同时盯 composer-stage 才能在排队 / 权限条 / 「新消息」芯片占位的同一帧跟上贴底。
     const composer = composerStageRef.current
     if (composer) ro.observe(composer)
     follow()
@@ -1927,16 +1927,6 @@ export function ChatView({
           </div>
         ) : null}
         <div className="composer-wrap">
-          {worktreeMissing ? (
-            <div className="composer-worktree-banner" role="status">
-              <span>隔离 worktree 已被清理。可从快照恢复后继续。</span>
-              {onRestoreWorktree ? (
-                <button type="button" className="composer-worktree-banner-btn" onClick={onRestoreWorktree}>
-                  恢复
-                </button>
-              ) : null}
-            </div>
-          ) : null}
           {canJumpToBottom ? (
             <div className="chat-scroll-bottom-wrap">
               <button
@@ -1947,6 +1937,16 @@ export function ChatView({
               >
                 {jumpBottom.label}
               </button>
+            </div>
+          ) : null}
+          {worktreeMissing ? (
+            <div className="composer-worktree-banner" role="status">
+              <span>隔离 worktree 已被清理。可从快照恢复后继续。</span>
+              {onRestoreWorktree ? (
+                <button type="button" className="composer-worktree-banner-btn" onClick={onRestoreWorktree}>
+                  恢复
+                </button>
+              ) : null}
             </div>
           ) : null}
           {copyPicker?.length ? (

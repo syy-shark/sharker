@@ -532,7 +532,11 @@ export function shouldClearUnseenLive(options: {
   return options.stickToBottom && !options.userLocked
 }
 
-/** 「回到底部」在有未读直播时改成「新消息」，仍不抢镜头 */
+/**
+ * 「回到底部」在有未读直播时改成「新消息」，仍不抢镜头。
+ * ChatView 把芯片放进 composer-stage 流里占位，不得 absolute 盖直播尾
+ * （对标 Codex #38220 non-disruptive new message / #40788 reserve space）。
+ */
 export function jumpToBottomAffordance(hasUnseenLive: boolean): {
   label: string
   ariaLabel: string

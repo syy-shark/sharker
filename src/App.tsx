@@ -7506,6 +7506,14 @@ export default function App() {
     () => getActiveWorkspace(settings)?.extraPaths ?? [],
     [settings]
   )
+  /** 首轮直播 token 不重建排队数组，避免 ComposerQueue 跟 16ms flush 一起重挂 */
+  const composerQueuedPrompts = useMemo(
+    () =>
+      heldBusyFollowUps.length > 0
+        ? [...heldFollowUpsAsQueued(heldBusyFollowUps), ...queuedPrompts]
+        : queuedPrompts,
+    [heldBusyFollowUps, queuedPrompts]
+  )
 
   const liveConversationIds = (() => {
     void sessionLiveVersion
@@ -7637,11 +7645,7 @@ export default function App() {
               liveTurnMeta={liveTurnMeta}
               turnStartedAt={turnStartedAt}
               turnHadThinking={turnHadThinking}
-              queuedPrompts={
-                heldBusyFollowUps.length > 0
-                  ? [...heldFollowUpsAsQueued(heldBusyFollowUps), ...queuedPrompts]
-                  : queuedPrompts
-              }
+              queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}

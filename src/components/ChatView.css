@@ -1534,16 +1534,14 @@ html.theme-dark .composer-worktree-banner {
   transform: scale(0.98);
 }
 
+/* 在输入区流里占位，不 absolute 盖直播尾（对标 Codex #38220 / #40788） */
 .chat-scroll-bottom-wrap {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
   display: flex;
   justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  padding: 0 0 8px;
   pointer-events: none;
-  z-index: 10;
-  margin: 0 0 10px;
 }
 
 .chat-scroll-bottom {
