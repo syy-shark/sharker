@@ -76,6 +76,38 @@ function isLiveThinking(segment: TurnSegment): boolean {
   return segment.kind === 'thinking'
 }
 
+function isLiveStatus(segment: TurnSegment): boolean {
+  return segment.kind === 'status'
+}
+
+/** 16ms flush：前缀没变时不必整表 extract / 思考预览 / 找 active tool */
+export type LiveStreamDerivationSkip = 'think' | 'status' | 'text'
+
+export function shouldSkipLiveStreamDerivation(
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[]
+): LiveStreamDerivationSkip | null {
+  if (!prevSegments || prevSegments.length !== segments.length) return null
+  const last = segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prevSegments[i] !== segments[i]) return null
+  }
+  const prevTail = prevSegments[last]
+  const nextTail = segments[last]
+  if (!prevTail || !nextTail) return null
+  if (prevTail.id !== nextTail.id || prevTail.kind !== nextTail.kind) return null
+  if (prevTail !== nextTail && prevTail.status !== nextTail.status) return null
+  if (isLiveThinking(nextTail)) return 'think'
+  if (isLiveStatus(nextTail)) return 'status'
+  if (
+    isLiveAnswerText(nextTail) &&
+    !hasStreamingDemoFenceGrowth(prevTail.content ?? '', nextTail.content ?? '')
+  ) {
+    return 'text'
+  }
+  return null
+}
+
 /** 前缀引用没变时只续思考尾，不 `filter` 全段 */
 export function nextLiveThinkText(
   prev: string,

@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state（对标 Codex #22860）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent（对标 Codex #22860）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -92,7 +92,11 @@ import {
   liveStreamPatchFromSegments,
   shouldPublishTurnMetaReset
 } from '../shared/live-stream-ui'
-import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
+import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
+import {
+  nextLiveThinkText,
+  shouldSkipLiveStreamDerivation
+} from '../shared/live-stream-slices'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import {
@@ -1539,21 +1543,35 @@ export default function App() {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
       lastStreamRenderAt.current = performance.now()
-      // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
-      const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
-      const thinkPreview = thinkingPreviewFromSegments(segmentsRef.current)
-      const activeToolSeg = findLastSegment(
-        segmentsRef.current,
-        (s) => s.kind === 'tool' && s.status === 'active'
-      )
-      const nextTool = activeToolSeg?.toolName ?? null
-      // 16ms 只写外部 store，不抬 App / ChatView（对标 Codex #22860）
-      publishLiveStreamUi({
-        streaming: finalPreview,
-        liveSegments: segmentsRef.current,
-        turnThinking: thinkPreview,
-        activeTool: nextTool
-      })
+      const segments = segmentsRef.current
+      const prevSnap = getLiveStreamUi()
+      const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
+      // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
+      if (skip === 'think' || skip === 'status') {
+        publishLiveStreamUi({
+          liveSegments: segments,
+          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments)
+        })
+      } else if (skip === 'text') {
+        const tail = segments[segments.length - 1]
+        publishLiveStreamUi({
+          liveSegments: segments,
+          streaming: tail?.content ?? ''
+        })
+      } else {
+        const finalPreview = extractFinalContent(segments, { isStreaming: true })
+        const thinkPreview = thinkingPreviewFromSegments(segments)
+        const activeToolSeg = findLastSegment(
+          segments,
+          (s) => s.kind === 'tool' && s.status === 'active'
+        )
+        publishLiveStreamUi({
+          streaming: finalPreview,
+          liveSegments: segments,
+          turnThinking: thinkPreview,
+          activeTool: activeToolSeg?.toolName ?? null
+        })
+      }
       // 当前可见会话也持续写 buffer，切换对话返回时不会丢 live 步骤
       const activeId = activeConversationIdRef.current
       const stillLive =
@@ -1583,11 +1601,12 @@ export default function App() {
               turnMeta: { browsedFiles: [], activities: [] }
             }
           }
+          const flushed = getLiveStreamUi()
           buf.messages = messagesRef.current
           buf.segments = segmentsRef.current
-          buf.streaming = finalPreview
-          buf.turnThinking = thinkingPreviewFromSegments(segmentsRef.current)
-          buf.activeTool = activeToolSeg?.toolName ?? null
+          buf.streaming = flushed.streaming
+          buf.turnThinking = flushed.turnThinking
+          buf.activeTool = flushed.activeTool
           buf.loading = true
           buf.sendInFlight = sendInFlightRef.current || buf.loading
           buf.approval = approvalRef.current

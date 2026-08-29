@@ -28,7 +28,8 @@ import {
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
   shouldSkipLiveAnswerIdentity,
-  shouldSkipLiveProcessIdentity
+  shouldSkipLiveProcessIdentity,
+  shouldSkipLiveStreamDerivation
 } from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
@@ -172,6 +173,20 @@ describe('live stream ui snapshot', () => {
     ).toBe(true)
     expect(liveProcessIdentity([think('Hmm')])).toBe(liveProcessIdentity([think('Hmm more')]))
     expect(nextLiveThinkText('Hmm', [think('Hmm')], [think('Hmm more')])).toBe('Hmm more')
+    expect(shouldSkipLiveStreamDerivation([think('Hmm')], [think('Hmm more')])).toBe('think')
+    expect(shouldSkipLiveStreamDerivation([think('Hmm')], [tool])).toBe(null)
+    expect(shouldSkipLiveStreamDerivation([text('Hello')], [text('Hello world')])).toBe('text')
+    expect(
+      shouldSkipLiveStreamDerivation([text('Hello')], [
+        {
+          id: 'a1',
+          kind: 'text',
+          role: 'final',
+          status: 'active',
+          content: 'Hello\n```demo\n<div>'
+        }
+      ])
+    ).toBe(null)
     const answerWhileThink = nextLiveAnswerView(null, thinkSnap1)
     expect(nextLiveAnswerView(answerWhileThink, thinkSnap2)).toBe(answerWhileThink)
     expect(
@@ -205,6 +220,9 @@ describe('live stream ui snapshot', () => {
         segments: [statusGrow('Preparing…')]
       })
     ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation([statusGrow('Preparing')], [statusGrow('Preparing…')])
+    ).toBe('status')
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
@@ -414,6 +432,7 @@ describe('live stream ui snapshot', () => {
     expect(appSrc.includes('setTurnThinking(')).toBe(false)
     expect(appSrc.includes('setActiveTool(')).toBe(false)
     expect(appSrc).toContain('publishLiveStreamUi')
+    expect(appSrc).toContain('shouldSkipLiveStreamDerivation')
     expect(appSrc).toContain('shouldDeferLastTurnUi')
     expect(appSrc.includes('refreshOpenPreviewRef')).toBe(false)
     expect(appSrc).toContain('bumpChangesSoon')
