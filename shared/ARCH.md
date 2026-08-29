@@ -158,7 +158,7 @@
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
-| `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
+| `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；用户可见 Allow once / Allow for session / Deny；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
 | `user-input.ts` | Codex 桌面 `request_user_input`：解析 1–3 题、剥掉模型 Other、序列化 `{ answers: { [id]: { answers } } }`；直播摘要 Question requested / N questions requested / 第一题 header。Stop 用 AbortError 解开等待。不发明选项备注、分页问卷或 TUI Questions n/n 历史格 |
 | `view-image.ts` | 官方 `view_image`：别名、`original` detail、短结果与 `path:` 解析；过程行固定 Viewed Image（对标 Codex ImageView）；像素回灌不进直播 base64（对标 Codex #36966）。`viewedImagePathFromTool` 给过程区 ImageView 卡。不发明 ImageGen 或关闭开关 |
@@ -250,7 +250,7 @@
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 当前目录脚手架（含 Code Review Rules）；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
-| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不注入不写入） |
+| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories |
 | `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先、功能默认关 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案；`shouldOpenMcpSettings` 空配置且非 verbose 时打开设置 → MCP（对标 Codex Open MCP status） |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表；空配置打开设置、已有 Server / verbose 不跳 |

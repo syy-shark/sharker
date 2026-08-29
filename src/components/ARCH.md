@@ -28,7 +28,7 @@
 | `LiveDuration.tsx` | 直播耗时独立组件，500ms tick 只重绘秒表 |
 | `TurnFlow.tsx` / `.css` | 直播过程：思考默认折叠成 Thinking（对标 Codex 桌面，避免增长正文顶回答）；连接中一行状态字+耗时（`LiveDuration`）；生成演示时改头标签；有工具才展开时间线；正文已上屏或回合结束后把过程收成 Working / Worked for（对标 Codex，点开才看步骤；审批/失败仍露出；回答刚上屏时收回已展开的 Thought / Worked for）；`memo` 过程行与整棵树，已完成步骤保持同一对象，避免回答 token / status 心跳重挂时间线；命令输出按 `toolOutputDisplay` 截尾/折叠，`<pre>` 只在 `<details>` 打开后挂载；占位输出点开再取全文（对标 Codex #38653）；直播中不挂「查看输出」/ 退出码 / 「执行中… Ns」摘要与过程行/直播头秒表心跳 detail、也不自动展开 verbose，对标 Codex #19260）；秒表预留 `1h 59m` 宽以免跨分钟挤过程区；工具间隙直播头停在最后一条实质步骤，不闪「规划下一步」（对标 Codex flashing thinking summaries）；正文已上屏时仍隐藏命令输出以免过程区顶回答；子 Agent 步骤可点开活动；官方 `view_image` 过程行标题 Viewed Image，完成后画 ImageView（工作区路径走 `ChatImage` 占位高，不灌 base64 / 不发明画布）；`web_search` 完成后挂 title+url 来源花片（对标 Codex webSearch results，点进内置浏览器）；`update_plan` 在过程区画 pending / in_progress / completed 清单（对标 Codex PlanUpdate，不发明底栏 Step N/5 徽章）；MCP 过程行用 Calling / Called `server.tool(args)`，不倾倒 JSON（对标 Codex #20677，不抄 #22300）；`run_terminal_cmd` 用 Running / Ran + 命令（对标 Codex exec_cell）；探索工具用 Read / List / Search + basename（对标 Codex parsed Read/List/Search，不发明 Exploring 分组）；写盘过程行用 Edited / Deleted / Edited N files（对标 Codex render_changes_block） |
 | `ProcessTimeline.tsx` / `.css` | 旧消息回退过程时间线；探索/写盘/命令标题走官方 Read / List / Search / Edited / Deleted / Ran；子 Agent 步骤可点开活动 |
-| `InlineApproval.tsx` / `.css` | 过程内高危操作审批块，眉题 Awaiting approval（对标 Codex 桌面）；出现时 view-enter + 呼吸，`focus({ preventScroll: true })` 不 `scrollIntoView`（贴底由 ChatView 跟，读历史不抢镜头）；参数长行换行以免横向撑开直播柱；MCP 工具名用 Calling `server.tool({compact})`（对标官方审批提示），不发明 always-allow 配置 |
+| `InlineApproval.tsx` / `.css` | 过程内高危操作审批块，眉题 Awaiting approval，按钮 Allow once / Allow for session / Deny（对标 Codex 桌面）；出现时 view-enter + 呼吸，`focus({ preventScroll: true })` 不 `scrollIntoView`（贴底由 ChatView 跟，读历史不抢镜头）；参数长行换行以免横向撑开直播柱；MCP 工具名用 Calling `server.tool({compact})`（对标官方审批提示），不发明 always-allow 配置 |
 | `InlineUserInput.tsx` / `.css` | Codex 桌面 Ask User：最多 3 题叠放，互斥选项 + 铅笔 Other，提交后继续；输入框禁用并提示「请先回答问题后再继续。」；不发明选项备注或分页问卷；`focus({ preventScroll: true })`，等待时按审批同样不抢贴底 |
 | `ThinkingIndicator.tsx` / `.css` | 兼容旧路径的轻量 Thinking；秒表同样预留 `1h 59m` 宽；直播主路径用 TurnFlow 状态行 |
 | `MarkdownBody.tsx` | Markdown 渲染；代码/diff / mermaid 分流；本地代码引用点开右侧预览；http(s) 与 `file://` HTML 默认进内置浏览器（对标 Codex clicking a URL / #32773）；http(s) 与工作区相对路径图走 `ChatImage` 可点开灯箱 / 复制/保存；保住 GFM 任务列表 class；元素子节点不套 span，避免收束跳动 |
@@ -54,7 +54,7 @@
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |
 | `ShareDialog.tsx` / `.css` | `/share` 只读快照（对标 Codex Share）：打开时拍一帧，预览脱敏 Markdown，复制到剪贴板，不上传、不含工具 I/O |
 | `ReviewScopeDialog.tsx` / `.css` | `/review` 空参数先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；选定前不派发回合 |
-| `MemoryChatDialog.tsx` / `.css` | `/memories` 空参数先选本对话使用 / 写入 / 关闭 / 跟随全局（对标 Codex chat-level memories；不改全局 Enable memories） |
+| `MemoryChatDialog.tsx` / `.css` | `/memories` 空参数先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改全局 Enable memories） |
 | `ProjectFoldersDialog.tsx` / `.css` | 编辑项目：主文件夹 + 附加文件夹（对标 Codex Edit project）；附加夹可「设为主文件夹」，旧主路径留下；Git / AGENTS.md / Skill 仍走主路径 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
 | `ARCH.md` | 本层架构说明 |

@@ -4,7 +4,12 @@
  * @see src/components/ARCH.md
  */
 import { useEffect } from 'react'
-import type { MemoryChatPick } from '../../shared/memory-command'
+import {
+  ENABLE_MEMORIES_LABEL,
+  GENERATE_MEMORIES_LABEL,
+  USE_MEMORIES_LABEL,
+  type MemoryChatPick
+} from '../../shared/memory-command'
 import './MemoryChatDialog.css'
 
 interface Props {
@@ -47,25 +52,25 @@ export function MemoryChatDialog({ open, onClose, onPick }: Props) {
           <h2 id="memory-chat-title">本对话记忆</h2>
           <p>
             对标 Codex <code>/memories</code>
-            ：只改当前对话，不改设置 → 个性化的「启用记忆」。功能关闭时本对话选择会记下，打开后才注入或写入。
+            ：只改当前对话，不改设置 → 个性化的 {ENABLE_MEMORIES_LABEL}。功能关闭时本对话选择会记下，打开后才 Use / Generate。
           </p>
         </div>
         <div className="memory-chat-choices">
           <button type="button" onClick={() => onPick('use')}>
-            <strong>使用已有记忆</strong>
-            <span>本对话注入已有条目，不把本轮写成新记忆</span>
+            <strong>{USE_MEMORIES_LABEL}</strong>
+            <span>本对话使用已有条目，不把本轮写成新记忆</span>
           </button>
           <button type="button" onClick={() => onPick('generate')}>
-            <strong>写入新记忆</strong>
-            <span>注入已有条目，并允许本对话贡献新记忆</span>
+            <strong>{GENERATE_MEMORIES_LABEL}</strong>
+            <span>使用已有条目，并允许本对话贡献新记忆</span>
           </button>
           <button type="button" onClick={() => onPick('off')}>
-            <strong>关闭本对话记忆</strong>
-            <span>本对话不注入、不写入（官方 disabled）</span>
+            <strong>Disabled</strong>
+            <span>本对话不 Use、不 Generate（官方 disabled）</span>
           </button>
           <button type="button" onClick={() => onPick('inherit')}>
-            <strong>跟随全局</strong>
-            <span>清掉本对话覆盖，回到设置 → 个性化</span>
+            <strong>Inherit</strong>
+            <span>清掉本对话覆盖，回到设置 → Personalization</span>
           </button>
         </div>
       </div>

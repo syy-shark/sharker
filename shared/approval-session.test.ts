@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALLOW_FOR_SESSION_LABEL,
+  ALLOW_ONCE_LABEL,
+  approvalActionLabel,
   ConversationApprovalRegistry,
+  DENY_LABEL,
   SessionApprovalStore,
   formatApproveRetry,
   isApprovalGranted,
@@ -17,6 +21,12 @@ describe('approval decision enforcement (once / session / deny)', () => {
     expect(normalizeApprovalDecision('once')).toBe('once')
     expect(normalizeApprovalDecision('deny')).toBe('deny')
     expect(normalizeApprovalDecision(null)).toBe('deny')
+    expect(ALLOW_ONCE_LABEL).toBe('Allow once')
+    expect(ALLOW_FOR_SESSION_LABEL).toBe('Allow for session')
+    expect(DENY_LABEL).toBe('Deny')
+    expect(approvalActionLabel('once')).toBe('Allow once')
+    expect(approvalActionLabel('session')).toBe('Allow for session')
+    expect(approvalActionLabel('deny')).toBe('Deny')
   })
 
   it('once grants only that request — does not skip later approvals', () => {

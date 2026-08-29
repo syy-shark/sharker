@@ -11,6 +11,11 @@ export type MemoryCommand =
 /** 官方空 `/memories`：为本对话选使用 / 写入 / 关闭 */
 export type MemoryChatPick = 'use' | 'generate' | 'off' | 'inherit'
 
+/** Official desktop Settings → Personalization (learn.chatgpt.com / config-reference). */
+export const ENABLE_MEMORIES_LABEL = 'Enable memories'
+export const USE_MEMORIES_LABEL = 'Use memories'
+export const GENERATE_MEMORIES_LABEL = 'Generate memories'
+
 export interface MemoryListItem {
   id: string
   scope: string
@@ -88,20 +93,20 @@ export function formatMemoryStatus(opts: {
   items: MemoryListItem[]
 }): string {
   const inheritNote = (inherited?: boolean) =>
-    inherited == null ? '' : inherited ? '（跟随全局）' : '（本对话）'
+    inherited == null ? '' : inherited ? '（inherit）' : '（this chat）'
   const lines = [
-    '**记忆**（对标 Codex `/memories`：本对话开关，不改全局）',
+    '**Memories**（对标 Codex `/memories`：本对话开关，不改全局）',
     ''
   ]
   if (opts.featureEnabled === false) {
     lines.push(
-      '全局记忆功能已关闭。到设置 → 个性化打开「启用记忆」后才会注入或写入。',
+      `全局记忆功能已关闭。到设置 → Personalization 打开「${ENABLE_MEMORIES_LABEL}」后才会 Use / Generate。`,
       ''
     )
   }
   lines.push(
-    `- 注入：${opts.injection ? '开' : '关'}${inheritNote(opts.injectionInherited)}`,
-    `- 写入：${opts.generation ? '开' : '关'}${inheritNote(opts.generationInherited)}`,
+    `- ${USE_MEMORIES_LABEL}：${opts.injection ? 'on' : 'off'}${inheritNote(opts.injectionInherited)}`,
+    `- ${GENERATE_MEMORIES_LABEL}：${opts.generation ? 'on' : 'off'}${inheritNote(opts.generationInherited)}`,
     '',
     '用法：空命令先选本对话；`/memories on|off|use|inherit` · `/memories inject on|off` · `/memories generate on|off`',
     ''

@@ -1,7 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, LoaderCircle, ShieldCheck, ShieldPlus, X } from 'lucide-react'
 import type { ApprovalRequest } from '../../shared/types'
-import type { ApprovalDecision } from '../../shared/approval-session'
+import {
+  ALLOW_FOR_SESSION_LABEL,
+  ALLOW_ONCE_LABEL,
+  DENY_LABEL,
+  type ApprovalDecision
+} from '../../shared/approval-session'
 import { formatMcpApprovalLabel } from '../../shared/mcp-activity'
 import './InlineApproval.css'
 
@@ -25,7 +30,7 @@ function formatArgs(args: Record<string, unknown>): string {
 }
 
 /**
- * 过程内高危确认：允许一次 / 本会话 / 拒绝。
+ * 过程内高危确认：Allow once / Allow for session / Deny。
  * MCP 工具名走官方 Calling server.tool({compact})，不发明 always-allow 配置。
  */
 export function InlineApproval({ request, onRespond, responding = false }: InlineApprovalProps) {
@@ -126,17 +131,17 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
           onClick={() => respond('deny')}
         >
           <X size={15} aria-hidden="true" />
-          拒绝
+          {DENY_LABEL}
         </button>
         <button
           type="button"
           className="inline-approval__button inline-approval__button--session"
           disabled={busy}
           onClick={() => respond('session')}
-          title="本会话内同一工具不再询问"
+          title="Do not ask again for this tool in the current session"
         >
           <ShieldPlus size={15} aria-hidden="true" />
-          允许本会话
+          {ALLOW_FOR_SESSION_LABEL}
         </button>
         <button
           type="button"
@@ -145,7 +150,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
           onClick={() => respond('once')}
         >
           <ShieldCheck size={15} aria-hidden="true" />
-          允许一次
+          {ALLOW_ONCE_LABEL}
         </button>
       </div>
     </section>

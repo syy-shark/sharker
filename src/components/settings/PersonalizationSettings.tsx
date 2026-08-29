@@ -7,6 +7,11 @@ import type { AppSettings } from '../../../shared/types'
 import type { AgentPersonality } from '../../../shared/personality'
 import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
 import {
+  ENABLE_MEMORIES_LABEL,
+  GENERATE_MEMORIES_LABEL,
+  USE_MEMORIES_LABEL
+} from '../../../shared/memory-command'
+import {
   SettingsCard,
   SettingsChoiceGroup,
   SettingsRow,
@@ -64,22 +69,22 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="记忆">
+      <SettingsSection title="Memories">
         <SettingsCard>
           <SettingsRow
-            title="启用记忆"
-            description="对标 Codex Settings → Personalization Enable memories：本地记忆默认关闭。打开后新对话才按下面两项注入或写入。单对话用 /memories 覆盖，不改这里。"
+            title={ENABLE_MEMORIES_LABEL}
+            description="对标 Codex Settings → Personalization Enable memories：本地记忆默认关闭。打开后新对话才按下面两项 Use / Generate。单对话用 /memories 覆盖，不改这里。"
           >
             <SettingsToggle
               checked={draft.memoriesEnabled === true}
               onChange={(memoriesEnabled) => {
                 scheduleSave({ ...draftRef.current, memoriesEnabled })
               }}
-              label="启用记忆"
+              label={ENABLE_MEMORIES_LABEL}
             />
           </SettingsRow>
           <SettingsRow
-            title="注入记忆"
+            title={USE_MEMORIES_LABEL}
             description="对标 Codex memories.use_memories：新对话默认把检索到的长期记忆写入 system。"
           >
             <SettingsToggle
@@ -88,11 +93,11 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
               onChange={(memoryInjection) => {
                 scheduleSave({ ...draftRef.current, memoryInjection })
               }}
-              label="注入记忆"
+              label={USE_MEMORIES_LABEL}
             />
           </SettingsRow>
           <SettingsRow
-            title="写入记忆"
+            title={GENERATE_MEMORIES_LABEL}
             description="对标 Codex memories.generate_memories：新对话默认在回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
             last
           >
@@ -102,7 +107,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
               onChange={(memoryGeneration) => {
                 scheduleSave({ ...draftRef.current, memoryGeneration })
               }}
-              label="写入记忆"
+              label={GENERATE_MEMORIES_LABEL}
             />
           </SettingsRow>
         </SettingsCard>

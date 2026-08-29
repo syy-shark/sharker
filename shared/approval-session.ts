@@ -7,6 +7,17 @@
 /** 用户对单次审批请求的选择 */
 export type ApprovalDecision = 'once' | 'session' | 'deny'
 
+/** Official desktop approval actions (gap-matrix / #10760 / #5131). */
+export const ALLOW_ONCE_LABEL = 'Allow once'
+export const ALLOW_FOR_SESSION_LABEL = 'Allow for session'
+export const DENY_LABEL = 'Deny'
+
+export function approvalActionLabel(decision: ApprovalDecision): string {
+  if (decision === 'once') return ALLOW_ONCE_LABEL
+  if (decision === 'session') return ALLOW_FOR_SESSION_LABEL
+  return DENY_LABEL
+}
+
 /** 兼容旧 IPC：boolean → decision */
 export function normalizeApprovalDecision(
   input: ApprovalDecision | boolean | undefined | null

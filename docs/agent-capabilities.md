@@ -29,7 +29,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/changes` | 打开右侧变更审查 |
 | `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；设置 → 通用 → **代码审查** 可改独立线程，并可指定审查模型（对标 Codex `review_model`，空则当前会话）；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
 | `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
-| `/memories` | 空命令先选本对话使用 / 写入 / 关闭 / 跟随全局（对标 Codex chat-level memories；不改设置 → 个性化的「启用记忆」）；功能关闭时本对话选择会记下，打开后才注入或写入；`on|off|use|inherit` 可直接改本对话 |
+| `/memories` | 空命令先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改设置 → 个性化的 Enable memories）；功能关闭时本对话选择会记下，打开后才 Use / Generate；`on|off|use|inherit` 可直接改本对话 |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
@@ -124,7 +124,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 通知（对标 Codex Settings → Notifications）：回合完成 **从不 / 后台 / 始终**、**批准通知**、**系统通知权限**。`sharker://settings/notifications` 打开该页
 - 设置 → 外观 → **新弹出对话置顶**（对标 Codex Always on top）
 - 设置 → 通用 → **运行时防止休眠**（对标 Codex Prevent sleep while running）
-- 设置 → 个性化 → **启用记忆**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设注入 / 写入（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选使用 / 写入 / 关闭 / 跟随全局，不改全局）
+- 设置 → 个性化 → **Enable memories**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设 **Use memories** / **Generate memories**（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选 Use / Generate / Disabled / Inherit，不改全局）
 - 设置 → 个性化 → **人格** 与 **自定义说明**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - `sharker://settings/general` 打开通用；`sharker://settings/browser` / `sharker://settings/history` 打开浏览器历史（对标 Codex Settings → Browser）；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化
 - 设置 → **MCP 服务器**（对标 Codex Settings → MCP servers）：列表、开关、添加 STDIO 或 Streamable HTTP、Restart；写入 `~/.sharker/mcp.json` 或工作区 `.sharker/mcp.json`。`sharker://settings/mcp` 打开该页。不接 OAuth Authenticate / CIMD / DCR。对话里 `/mcp` 查看已连接的 Server；未配置时打开设置 → MCP 服务器（对标 Codex Open MCP status）
@@ -250,7 +250,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 1. 确保应用窗口在前台
 2. 截图 → **视觉模型看图**
 3. 坐标 `desktop_click` → 输入 → 再截图核对
-4. 点击/打字需用户在审批块点「允许一次」
+4. 点击/打字需用户在审批块点 Allow once
 
 **模型建议**：桌面任务请用支持**原生工具调用 + 视觉**的模型（gpt-4o、Claude 3+、Gemini 等）。
 

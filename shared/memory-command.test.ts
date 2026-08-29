@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ENABLE_MEMORIES_LABEL,
+  GENERATE_MEMORIES_LABEL,
+  USE_MEMORIES_LABEL,
   formatMemoryStatus,
   memoryFlagsForPick,
   memoryNeedsChatPicker,
@@ -52,9 +55,12 @@ describe('memory command', () => {
   })
 
   it('formats empty and listed memories', () => {
+    expect(ENABLE_MEMORIES_LABEL).toBe('Enable memories')
+    expect(USE_MEMORIES_LABEL).toBe('Use memories')
+    expect(GENERATE_MEMORIES_LABEL).toBe('Generate memories')
     expect(
       formatMemoryStatus({ injection: true, generation: false, items: [] })
-    ).toContain('写入：关')
+    ).toContain(`${GENERATE_MEMORIES_LABEL}：off`)
     expect(
       formatMemoryStatus({
         injection: false,
@@ -62,7 +68,7 @@ describe('memory command', () => {
         featureEnabled: false,
         items: []
       })
-    ).toContain('启用记忆')
+    ).toContain(ENABLE_MEMORIES_LABEL)
     const text = formatMemoryStatus({
       injection: true,
       generation: true,
