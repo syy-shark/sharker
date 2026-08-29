@@ -168,6 +168,7 @@ describe('command palette', () => {
     expect(ids).toContain('search-files')
     expect(ids).toContain('open-browser')
     expect(ids).toContain('focus-browser-address')
+    expect(ids).toContain('go-to-line-or-focus-browser')
     expect(ids).toContain('reload-browser-page')
     expect(ids).toContain('browser-back')
     expect(ids).toContain('browser-forward')
@@ -177,6 +178,9 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'open-browser')?.title).toBe('Open browser tab')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'focus-browser-address')?.title).toBe(
       'Focus Browser Address Bar'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'go-to-line-or-focus-browser')?.title).toBe(
+      'Go to line or focus browser address bar'
     )
     expect(PALETTE_COMMANDS.find((c) => c.id === 'reload-browser-page')?.title).toBe(
       'Reload Browser Page'
@@ -230,6 +234,11 @@ describe('command palette', () => {
     expect(
       filterPaletteCommands('Focus Browser Address Bar').some(
         (c) => c.action === 'focus_browser_address'
+      )
+    ).toBe(true)
+    expect(
+      filterPaletteCommands('Go to line or focus browser address bar').some(
+        (c) => c.action === 'go_to_line_or_focus_browser'
       )
     ).toBe(true)
     expect(

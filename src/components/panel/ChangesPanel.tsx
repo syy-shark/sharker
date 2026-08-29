@@ -100,6 +100,8 @@ interface Props {
   reviewFocus?: { mode: CompareMode; sha?: string; token: number } | null
   /** 项目附加文件夹：其中不同 Git 仓库出现在审查选择器 */
   extraRoots?: string[]
+  /** 命令面板 Go to line：已展开 diff 时打开跳行框 */
+  goToLineCommand?: { token: number } | null
 }
 
 function statusLabel(file: ChangeFile): string {
@@ -145,7 +147,8 @@ export const ChangesPanel = memo(function ChangesPanel({
   suggestedCommit = '',
   gitBranchPrefix = '',
   reviewFocus = null,
-  extraRoots = []
+  extraRoots = [],
+  goToLineCommand = null
 }: Props) {
   const [branch, setBranch] = useState('')
   const [isRepo, setIsRepo] = useState(true)
@@ -750,6 +753,18 @@ export const ChangesPanel = memo(function ChangesPanel({
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [expandedKeys.length])
+
+  useEffect(() => {
+    if (!goToLineCommand?.token) return
+    if (!expandedKeys.length) return
+    setGoToOpen(true)
+    setGoToDraft('')
+    const id = requestAnimationFrame(() => {
+      goToInputRef.current?.focus()
+      goToInputRef.current?.select()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [goToLineCommand])
 
   const reviewFindFiles = useMemo(
     () =>

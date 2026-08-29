@@ -168,6 +168,8 @@ interface Props {
   onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
   /** 工具写盘后递增：静默重拉树，不清预览、不折叠已展开目录 */
   revision?: number
+  /** 命令面板 Go to line：已打开文本预览时打开跳行框 */
+  goToLineCommand?: { token: number } | null
 }
 
 function TreeNodeView({
@@ -246,7 +248,8 @@ export const FileTree = memo(function FileTree({
   extraRoots = EMPTY_EXTRA_ROOTS,
   onAskInSideChat,
   onInsertComposer,
-  revision = 0
+  revision = 0,
+  goToLineCommand = null
 }: Props) {
   const extras = useMemo(
     () => extraRoots.filter((root) => root && root !== workspacePath),
@@ -504,6 +507,23 @@ export const FileTree = memo(function FileTree({
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [openFile?.kind, openFile?.line])
+
+  useEffect(() => {
+    if (!goToLineCommand?.token) return
+    if (openFile?.kind !== 'text') return
+    if (openFile.markdownView === 'preview') {
+      setOpenFile((prev) =>
+        prev && prev.kind === 'text' ? { ...prev, markdownView: 'source' } : prev
+      )
+    }
+    setGoToOpen(true)
+    setGoToDraft(openFile.line ? String(openFile.line) : '')
+    const id = requestAnimationFrame(() => {
+      goToInputRef.current?.focus()
+      goToInputRef.current?.select()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [goToLineCommand])
 
   const syncSideAsk = useCallback(() => {
     if (!onAskInSideChat && !onInsertComposer) {

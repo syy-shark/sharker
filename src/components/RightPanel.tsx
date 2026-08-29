@@ -76,6 +76,8 @@ interface Props {
   browserOpenNonce?: number
   /** View 菜单 Focus Browser Address Bar / Reload Browser Page */
   browserMenuCommand?: BrowserMenuCommand | null
+  /** 命令面板 Go to line：交给当前文件预览或审查 diff */
+  goToLineCommand?: { token: number } | null
   /** 内置浏览器当前 URL → 开轮 ambient */
   onBrowserAmbientUrl?: (url: string) => void
 }
@@ -109,6 +111,7 @@ export const RightPanel = memo(function RightPanel({
   browserOpenUrl,
   browserOpenNonce = 0,
   browserMenuCommand = null,
+  goToLineCommand = null,
   onBrowserAmbientUrl
 }: Props) {
   const viewportWidth = () => (typeof window === 'undefined' ? 1440 : window.innerWidth || 1440)
@@ -424,6 +427,7 @@ export const RightPanel = memo(function RightPanel({
             onAskInSideChat={onAskInSideChat}
             onInsertComposer={onInsertComposer}
             revision={changesRevision}
+            goToLineCommand={goToLineCommand}
           />
         )}
         {tab === 'changes' && (
@@ -437,6 +441,7 @@ export const RightPanel = memo(function RightPanel({
             onSendComments={onSendReviewComments}
             gitBranchPrefix={gitBranchPrefix}
             extraRoots={extraRoots}
+            goToLineCommand={goToLineCommand}
           />
         )}
         {tab === 'browser' && (

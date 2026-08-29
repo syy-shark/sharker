@@ -480,6 +480,7 @@ export default function App() {
   const [browserOpenUrl, setBrowserOpenUrl] = useState('')
   const [browserOpenNonce, setBrowserOpenNonce] = useState(0)
   const [browserMenuCommand, setBrowserMenuCommand] = useState<BrowserMenuCommand | null>(null)
+  const [goToLineMenuCommand, setGoToLineMenuCommand] = useState<{ token: number } | null>(null)
   const rightPanelOpenRef = useRef(false)
   const rightPanelTabRef = useRef<RightPanelTab>('files')
   const inAppBrowserUrlRef = useRef('')
@@ -5174,6 +5175,15 @@ export default function App() {
     [handleOpenBrowserTab]
   )
 
+  const dispatchGoToLineOrFocusBrowser = useCallback(() => {
+    const tab = rightPanelTabRef.current
+    if (rightPanelOpenRef.current && (tab === 'files' || tab === 'changes')) {
+      setGoToLineMenuCommand((prev) => ({ token: (prev?.token ?? 0) + 1 }))
+      return
+    }
+    dispatchBrowserMenu('focus-address')
+  }, [dispatchBrowserMenu])
+
   const handleToggleActivity = useCallback(() => {
     setPage('chat')
     localStorage.setItem('sharker-sidebar-collapsed', '0')
@@ -6730,6 +6740,10 @@ export default function App() {
         dispatchBrowserMenu('focus-address')
         return
       }
+      if (cmd.action === 'go_to_line_or_focus_browser') {
+        dispatchGoToLineOrFocusBrowser()
+        return
+      }
       if (cmd.action === 'reload_browser_page') {
         dispatchBrowserMenu('reload')
         return
@@ -6865,6 +6879,7 @@ export default function App() {
       handleNavStep,
       handleNextAttention,
       dispatchBrowserMenu,
+      dispatchGoToLineOrFocusBrowser,
       handleOpenBrowserTab,
       handleOpenTerminal,
       handlePlanModeChange,
@@ -8829,6 +8844,7 @@ export default function App() {
           browserOpenUrl={browserOpenUrl}
           browserOpenNonce={browserOpenNonce}
           browserMenuCommand={browserMenuCommand}
+          goToLineCommand={goToLineMenuCommand}
           onBrowserAmbientUrl={handleBrowserAmbientUrl}
         />
         )}

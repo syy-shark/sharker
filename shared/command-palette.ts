@@ -51,6 +51,7 @@ import {
   BROWSER_FORWARD_LABEL,
   COPY_BROWSER_URL_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
+  GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
   OPEN_BROWSER_TAB_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
   RELOAD_BROWSER_PAGE_MENU_LABEL,
@@ -610,6 +611,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘L',
     keywords: 'focus browser address bar omnibox 地址栏',
     action: 'focus_browser_address'
+  },
+  {
+    id: 'go-to-line-or-focus-browser',
+    title: GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
+    shortcut: '⌘L',
+    keywords: 'go to line focus browser address bar 跳行 地址栏',
+    action: 'go_to_line_or_focus_browser'
   },
   {
     id: 'reload-browser-page',
