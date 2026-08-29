@@ -24,7 +24,8 @@ import {
   nextLiveAnswerView,
   nextLiveProcessView,
   shouldGrowLiveAnswerTail,
-  shouldReuseLiveProcessView
+  shouldReuseLiveProcessView,
+  shouldSkipLiveProcessIdentity
 } from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
@@ -112,6 +113,28 @@ describe('live stream ui snapshot', () => {
           text('Hello world')
         ]),
         prevIdentity: processId
+      })
+    ).toBe(false)
+    const grownProcess = [tool, text('Hello world')]
+    expect(
+      shouldSkipLiveProcessIdentity({
+        prev: first,
+        prevSegments: [tool, text('Hello')],
+        segments: grownProcess
+      })
+    ).toBe(true)
+    expect(
+      nextLiveProcessView(first, { ...EMPTY_LIVE_STREAM_UI, liveSegments: grownProcess })
+    ).toBe(first)
+    expect(
+      shouldSkipLiveProcessIdentity({
+        prev: first,
+        prevSegments: [tool, text('Hello')],
+        segments: [
+          tool,
+          { id: 't2', kind: 'tool', toolName: 'write_file', status: 'active', content: '' },
+          text('Hello world')
+        ]
       })
     ).toBe(false)
     const sharedSegs = [tool, text('Same ref')]

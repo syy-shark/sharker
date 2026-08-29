@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文加长不重跑过程 / 回答 buildAnswerParts。
+ * 直播行过程 / 回答切片：token 只换回答；正文加长不扫过程指纹、不重跑过程 / 回答 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -86,6 +86,36 @@ export function shouldReuseLiveProcessView(input: {
   return input.prev.contentStreaming && input.prev.answerStreaming && !input.prev.generatingDemo
 }
 
+/**
+ * 前缀引用没变、末段仍是同一段增长正文：不必拼过程指纹。
+ * 对标 Codex #22860：回答 token 不扫整条工具时间线。
+ */
+export function shouldSkipLiveProcessIdentity(input: {
+  prev: LiveProcessView | null
+  prevSegments: readonly TurnSegment[] | null
+  segments: readonly TurnSegment[]
+}): boolean {
+  if (!input.prev || !input.prevSegments) return false
+  if (!input.prev.contentStreaming || !input.prev.answerStreaming || input.prev.generatingDemo) {
+    return false
+  }
+  if (input.prevSegments.length !== input.segments.length) return false
+  const last = input.segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (input.prevSegments[i] !== input.segments[i]) return false
+  }
+  const prevTail = input.prevSegments[last]
+  const nextTail = input.segments[last]
+  if (!prevTail || !nextTail) return false
+  if (prevTail === nextTail) return true
+  return (
+    isLiveAnswerText(prevTail) &&
+    isLiveAnswerText(nextTail) &&
+    prevTail.id === nextTail.id &&
+    !hasStreamingDemoFence(nextTail.content ?? '')
+  )
+}
+
 function splitClosedTail(parts: AnswerPart[]): { closed: AnswerPart[]; tail: AnswerPart | null } {
   if (!parts.length) return { closed: [], tail: null }
   if (parts.length === 1) return { closed: [], tail: parts[0]! }
@@ -120,6 +150,18 @@ export function nextLiveProcessView(
 ): LiveProcessView {
   const segments = snap.liveSegments
   if (prev && processHold?.view === prev && processHold.segments === segments) return prev
+  if (
+    prev &&
+    processHold?.view === prev &&
+    shouldSkipLiveProcessIdentity({
+      prev,
+      prevSegments: processHold.segments,
+      segments
+    })
+  ) {
+    processHold = { view: prev, identity: processHold.identity, segments }
+    return prev
+  }
   const identity = liveProcessIdentity(segments)
   const prevIdentity = processHold?.view === prev ? processHold.identity : ''
   if (prev && shouldReuseLiveProcessView({ prev, identity, prevIdentity })) {
