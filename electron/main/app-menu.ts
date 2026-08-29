@@ -115,10 +115,16 @@ export function installApplicationMenu(): void {
           ...send('toggle_terminal')
         },
         {
-          label: '打开审查',
+          label: '开关审查面板',
           accelerator: 'Command+Alt+B',
           registerAccelerator: false,
           ...send('toggle_review')
+        },
+        {
+          label: '打开审查',
+          accelerator: 'Control+Shift+G',
+          registerAccelerator: false,
+          ...send('open_review')
         },
         {
           label: '打开文件树',

@@ -7,6 +7,7 @@
 export type WorkbenchShortcutAction =
   | 'toggle_sidebar'
   | 'toggle_review'
+  | 'open_review'
   | 'toggle_panel'
   | 'toggle_terminal'
   | 'new_conversation'
@@ -123,7 +124,7 @@ export function matchDefaultWorkbenchShortcut(event: {
     !event.metaKey &&
     !event.altKey
   ) {
-    return 'toggle_review'
+    return 'open_review'
   }
   // 官方 Search chats 默认不绑；⌘G 留给 Find next（对话或审查）
   if (key === 'z' && event.shiftKey && !event.altKey) return 'redo_app'
@@ -248,6 +249,18 @@ export function isEmbeddedTerminalTarget(target: EventTarget | null): boolean {
   return Boolean(el.closest('.embedded-terminal-shell, .embedded-terminal, .xterm'))
 }
 
+/**
+ * ⌘⌥B 开关审查面板；⌃⇧G 只打开审查标签（对标 Codex Toggle review panel / Open review tab）。
+ * 打开时始终切到审查 Tab；关掉时不必改 Tab。
+ */
+export function shouldOpenReviewPanel(
+  action: 'toggle_review' | 'open_review',
+  current: { open: boolean; tab: string }
+): boolean {
+  if (action === 'open_review') return true
+  return !(current.open && current.tab === 'changes')
+}
+
 /** 在当前项目对话列表里循环切到上一条 / 下一条（对标 Codex ⌘⇧[ / ⌘⇧]） */
 export function adjacentConversationId(
   ids: string[],
@@ -264,7 +277,8 @@ export function adjacentConversationId(
 /** ⌘/ 快捷键一览（对标 Codex Shortcuts window） */
 export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘B', title: '切换侧栏' },
-  { keys: '⌘⌥B / ⌃⇧G', title: '打开审查' },
+  { keys: '⌘⌥B', title: '开关审查面板' },
+  { keys: '⌃⇧G', title: '打开审查' },
   { keys: '⌘Z / ⌘⇧Z', title: '撤销 / 重做上一次应用操作' },
   { keys: '⌘⌥U', title: '活动视图' },
   { keys: '⌘⌥⇧U', title: '子 Agent 活动' },
@@ -341,9 +355,15 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'toggle_sidebar', title: '切换侧栏', defaultKeys: '⌘B', defaultChord: 'mod+b' },
   {
     action: 'toggle_review',
+    title: '开关审查面板',
+    defaultKeys: '⌘⌥B',
+    defaultChord: 'mod+alt+b'
+  },
+  {
+    action: 'open_review',
     title: '打开审查',
-    defaultKeys: '⌘⌥B / ⌃⇧G',
-    defaultChord: ['mod+alt+b', 'mod+ctrl+shift+g']
+    defaultKeys: '⌃⇧G',
+    defaultChord: 'mod+ctrl+shift+g'
   },
   { action: 'undo_app', title: '撤销上一次应用操作', defaultKeys: '⌘Z', defaultChord: 'mod+z' },
   {

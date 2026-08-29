@@ -5634,6 +5634,9 @@ export default function App() {
         case 'open_appearance':
           void handleNavigate('settings', 'appearance')
           break
+        case 'open_personalization':
+          void handleNavigate('settings', 'personalization')
+          break
         case 'open_usage':
           void handleNavigate('settings', 'usage')
           break
@@ -6075,6 +6078,10 @@ export default function App() {
         handleShortcutPanel('changes')
         return
       }
+      if (action === 'open_review') {
+        handleTogglePanel('changes')
+        return
+      }
       if (action === 'toggle_panel') {
         handleToggleRightPanel()
         return
@@ -6371,7 +6378,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -6407,6 +6414,10 @@ export default function App() {
         handleShortcutPanel('changes')
         return
       }
+      if (action === 'open_review') {
+        handleTogglePanel('changes')
+        return
+      }
       if (action === 'toggle_panel') {
         handleToggleRightPanel()
         return
@@ -6439,6 +6450,7 @@ export default function App() {
     openShareThread,
     handleShortcutPanel,
     handleStandaloneConversation,
+    handleTogglePanel,
     handleToggleRightPanel,
     toggleSidebar
   ])

@@ -13,6 +13,7 @@ export type KeymapOverrides = Partial<Record<WorkbenchShortcutAction, string>>
 const ACTION_SET = new Set<string>([
   'toggle_sidebar',
   'toggle_review',
+  'open_review',
   'toggle_panel',
   'toggle_terminal',
   'new_conversation',

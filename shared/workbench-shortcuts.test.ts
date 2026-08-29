@@ -3,7 +3,8 @@ import {
   adjacentConversationId,
   isEmbeddedTerminalTarget,
   isTerminalClearChord,
-  matchDefaultWorkbenchShortcut
+  matchDefaultWorkbenchShortcut,
+  shouldOpenReviewPanel
 } from './workbench-shortcuts'
 import { matchWorkbenchShortcut } from './keymap'
 
@@ -32,8 +33,12 @@ describe('workbench shortcuts', () => {
       'toggle_review'
     )
     expect(matchWorkbenchShortcut(ev({ key: 'g', ctrlKey: true, shiftKey: true }))).toBe(
-      'toggle_review'
+      'open_review'
     )
+    expect(shouldOpenReviewPanel('open_review', { open: true, tab: 'changes' })).toBe(true)
+    expect(shouldOpenReviewPanel('toggle_review', { open: true, tab: 'changes' })).toBe(false)
+    expect(shouldOpenReviewPanel('toggle_review', { open: true, tab: 'files' })).toBe(true)
+    expect(shouldOpenReviewPanel('toggle_review', { open: false, tab: 'changes' })).toBe(true)
     expect(matchWorkbenchShortcut(ev({ key: 'g', metaKey: true, shiftKey: true }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'z', metaKey: true }))).toBe('undo_app')
     expect(matchWorkbenchShortcut(ev({ key: 'z', metaKey: true, shiftKey: true }))).toBe(
