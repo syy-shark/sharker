@@ -1124,6 +1124,35 @@ describe('splitStreamingMarkdown', () => {
       expect(headingParaGrown[1].nodes[0]).toBe(headingPara[1].nodes[0])
       expect(headingParaGrown[1].nodes[1]).toBe(headingPara[1].nodes[1])
     }
+    const headingParaNl = continueCheapProseBlocks(
+      '# 标题\n见 `foo` 与 ',
+      headingPara,
+      '# 标题\n见 `foo` 与 \nbar'
+    )
+    expect(headingParaNl[0]).toBe(headingPara[0])
+    if (headingPara[1]?.type === 'p' && headingParaNl[1]?.type === 'p') {
+      expect(headingParaNl[1].nodes[0]).toBe(headingPara[1].nodes[0])
+      expect(headingParaNl[1].nodes[1]).toBe(headingPara[1].nodes[1])
+    }
+    const headingParaThenList = continueCheapProseBlocks(
+      '# 标题\n见 `foo` 与 ',
+      headingPara,
+      '# 标题\n见 `foo` 与 \n- 一项'
+    )
+    expect(headingParaThenList[0]).toBe(headingPara[0])
+    expect(headingParaThenList.map((b) => b.type)).toEqual(['heading', 'p', 'list'])
+    const paraSoft = parseCheapProseBlocks('见 `foo` 与 ')
+    const paraSoftGrown = continueCheapProseBlocks('见 `foo` 与 ', paraSoft, '见 `foo` 与 \n下一句')
+    if (paraSoft[0]?.type === 'p' && paraSoftGrown[0]?.type === 'p') {
+      expect(paraSoftGrown[0].nodes[0]).toBe(paraSoft[0].nodes[0])
+      expect(paraSoftGrown[0].nodes[1]).toBe(paraSoft[0].nodes[1])
+    }
+    const paraSoftNl = continueCheapProseBlocks('见 `foo` 与 ', paraSoft, '见 `foo` 与 \n')
+    const paraSoftAfterNl = continueCheapProseBlocks('见 `foo` 与 \n', paraSoftNl, '见 `foo` 与 \n下一句')
+    if (paraSoft[0]?.type === 'p' && paraSoftAfterNl[0]?.type === 'p') {
+      expect(paraSoftAfterNl[0].nodes[0]).toBe(paraSoft[0].nodes[0])
+      expect(paraSoftAfterNl[0].nodes[1]).toBe(paraSoft[0].nodes[1])
+    }
     const headingList = parseCheapProseBlocks('# 标题\n- 一项')
     const headingListGrown = continueCheapProseBlocks('# 标题\n- 一项', headingList, '# 标题\n- 一项更长')
     expect(headingListGrown[0]).toBe(headingList[0])
