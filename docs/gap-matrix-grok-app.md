@@ -7,7 +7,7 @@
 
 | Capability (grok-app defining) | Status | Sharker note |
 |--------------------------------|--------|--------------|
-| Projects + sessions (trusted dirs, sidebar list, archive) | have | 工作区 `workspaces` + 对话列表；侧栏新建/切换/归档（设置 → 已归档） |
+| Projects + sessions (trusted dirs, sidebar list, archive) | have | 工作区 `workspaces` + 对话列表；侧栏新建/切换/单条归档；项目菜单「归档对话」一并归档（设置 → 已归档恢复） |
 | Permission Ask default; Allow once / Allow for session / Deny | have | 默认需确认（Ask）；`InlineApproval` + `SessionApprovalStore` 强制 once/session/deny；全局 always-allow 非默认（`permissionMode` 沙箱/完整是路径策略，不是 YOLO 默认） |
 | Multi-session stream continuity (switch without clobber) | have | 流式 chunk 带 `conversationId`；渲染层按会话缓冲；切换不 abort 进行中 turn；返回仍见该会话 in-flight/完成态 |
 | Composer follow-up queue while busy | have | 忙时 Tab 排队、Enter 注入；可暂停自动出队；队列按 `conversationId` 归属 |

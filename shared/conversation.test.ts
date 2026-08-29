@@ -9,6 +9,7 @@ import {
   conversationPreview,
   filterChatList,
   collectAttentionConversationIds,
+  conversationIdsToArchiveForProject,
   filterSidebarChats,
   forkConversationTitle,
   nextActivitySidebarFilter,
@@ -152,5 +153,18 @@ describe('conversation search', () => {
         waitingIds: ['b']
       }).map((id) => id)
     ).toEqual(['b', 'c'])
+    expect(
+      conversationIdsToArchiveForProject(
+        [
+          { id: 'a', workspaceId: 'p1' },
+          { id: 'b', workspaceId: 'p2' },
+          { id: 'c', workspaceId: 'p1', status: 'archived' },
+          { id: 'd', workspaceId: 'p1' }
+        ],
+        'p1',
+        ['d']
+      )
+    ).toEqual(['a'])
+    expect(conversationIdsToArchiveForProject([], '')).toEqual([])
   })
 })

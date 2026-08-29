@@ -326,7 +326,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'skills',
-    description: '浏览并选用已安装 Skill（无参数打开选择器）',
+    description: '浏览并选用已安装 Skill（无参数打开侧栏 Skills 页）',
     scope: 'ui',
     action: 'show_skills',
     argsHint: '[过滤]',

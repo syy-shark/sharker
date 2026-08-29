@@ -23,7 +23,7 @@
 | `review-repos.test.ts` | 同仓子目录合并、本轮 All repos、附加根路径匹配、多文件 diff 展开键；审查列表按文件树排序 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、项目菜单「归档对话」只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、置顶排序、`/rename` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
@@ -59,7 +59,7 @@
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
 | `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；终端聚焦 ⌘K 清屏判定） |
 | `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
-| `app-undo.ts` | 应用操作撤销栈（归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
+| `app-undo.ts` | 应用操作撤销栈（归档 / 项目批量归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑；`shouldInterruptTurn` 默认裸 Esc（可改绑 / 解绑；IME 选词与 keyCode 229 不触发）；F1–F24 可单独成键（对标 Codex `interrupt_turn = "f12"`） |
 | `keymap.test.ts` | 改绑后默认失效 |
@@ -71,7 +71,7 @@
 | `code-font.ts` | 代码字体白名单与 `--mono` 栈（对标 Codex Code font） |
 | `code-font.test.ts` | 未知值回退 system、别名与栈含 monospace |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
-| `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4 |
+| `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
 | `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；Review delivery（inline / detached）与 here/detached 覆盖；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
@@ -118,7 +118,7 @@
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
@@ -185,8 +185,8 @@
 | `fast-mode.test.ts` | on/off、off/low 优先 |
 | `copy-output.ts` | `/copy` 取最近一条助手正文；有围栏或引用时列出整段 / 代码块 / 引用（对标 Codex /copy picker） |
 | `copy-output.test.ts` | 跳过空助手行；围栏与引用分列、围栏内 `>` 不当引用 |
-| `skills-status.ts` | `/skills` 已安装列表 |
-| `skills-status.test.ts` | 过滤 |
+| `skills-status.ts` | `/skills` 已安装列表；侧栏 Skills 页跨项目合并与过滤 |
+| `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
 | `memory-command.ts` | `/memories` 开关解析与条目文案 |

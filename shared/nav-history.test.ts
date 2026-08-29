@@ -22,6 +22,8 @@ describe('nav history', () => {
     expect(fwd.entry?.conversationId).toBe('b')
     expect(navBack(stack, 0).entry).toBeNull()
     expect(sameNav({ page: 'chat' }, { page: 'chat', conversationId: null })).toBe(true)
+    expect(sameNav({ page: 'skills' }, { page: 'skills' })).toBe(true)
+    expect(sameNav({ page: 'skills' }, { page: 'automations' })).toBe(false)
   })
 
   it('maps mouse side buttons', () => {

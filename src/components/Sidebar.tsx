@@ -63,6 +63,8 @@ interface Props {
   onNewConversation: (workspaceId: string) => void
   onDeleteConversation: (workspaceId: string, conversationId: string) => void
   onArchiveConversation: (workspaceId: string, conversationId: string) => void
+  /** 项目菜单「归档对话」：一并归档该项目下的对话（进行中跳过） */
+  onArchiveProjectChats?: (workspaceId: string) => void
   onRenameConversation?: (workspaceId: string, conversationId: string, title: string) => void
   onTogglePinConversation?: (workspaceId: string, conversationId: string) => void
   /** 快捷键 / `/rename` 无参数时进入行内改名 */
@@ -143,6 +145,7 @@ export function Sidebar({
   onNewConversation,
   onDeleteConversation: _onDeleteConversation,
   onArchiveConversation,
+  onArchiveProjectChats,
   onRenameConversation,
   onTogglePinConversation,
   renameRequestId = null,
@@ -596,7 +599,7 @@ export function Sidebar({
     )
   }
 
-  /** 项目：文件夹 + 新对话 + 三点菜单（重命名 / 置顶 / 移除） */
+  /** 项目：文件夹 + 新对话 + 三点菜单（重命名 / 置顶 / 归档对话 / 移除） */
   const renderProject = (ws: WorkspaceItem, keyPrefix = '') => {
     const menuOpen = projectMenuId === ws.id
     const menuClosing = projectMenuClosingId === ws.id
@@ -706,6 +709,19 @@ export function Sidebar({
                     创建永久 worktree
                   </button>
                 ) : null}
+                {onArchiveProjectChats ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeProjectMenu()
+                      onArchiveProjectChats(ws.id)
+                    }}
+                  >
+                    归档对话
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   role="menuitem"
@@ -785,6 +801,14 @@ export function Sidebar({
                 {unreadChatCount}
               </span>
             ) : null}
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item${page === 'skills' ? ' active' : ''}`}
+            onClick={() => onNavigate('skills')}
+          >
+            <Sparkles size={18} className="sidebar-nav-ico" aria-hidden />
+            <span>Skills</span>
           </button>
           <button
             type="button"

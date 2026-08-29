@@ -78,6 +78,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'archive_thread'
   },
   {
+    id: 'archive-project-chats',
+    title: '归档当前项目对话',
+    keywords: 'archive chats project 归档 项目 对话 归档项目',
+    action: 'archive_project_chats'
+  },
+  {
     id: 'init',
     title: '初始化 AGENTS.md',
     keywords: 'init agents.md 项目说明',

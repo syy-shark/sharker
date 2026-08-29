@@ -1,0 +1,120 @@
+.skills-page {
+  flex: 1;
+  overflow: auto;
+  padding: 24px 28px 48px;
+  transition:
+    background-color var(--motion-duration-panel) var(--motion-ease-soft),
+    color var(--motion-duration-panel) var(--motion-ease-soft);
+}
+
+.skills-inner {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  animation: view-enter var(--motion-duration-normal) var(--motion-ease-soft) both;
+}
+
+.skills-head h1 {
+  margin: 8px 0 4px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.skills-head p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.skills-head code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.skills-back {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    transform var(--motion-duration-fast) var(--motion-ease-spring),
+    opacity var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.skills-back:hover {
+  color: var(--accent);
+}
+
+.skills-back:active {
+  transform: translateX(-1px);
+  opacity: 0.9;
+}
+
+.skills-search {
+  display: block;
+  margin: 18px 0 14px;
+}
+
+.skills-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0.5px solid var(--glass-edge-soft);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font-size: 13px;
+}
+
+html.theme-dark .skills-search input {
+  backdrop-filter: none;
+}
+
+.skills-empty {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.skills-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skills-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.skills-item-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.skills-item-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.skills-item-projects {
+  font-size: 11px;
+  color: var(--text-muted);
+}

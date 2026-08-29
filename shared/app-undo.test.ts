@@ -18,7 +18,11 @@ describe('app undo stack', () => {
 
   it('drops the oldest record when over the limit', () => {
     const stack = createAppUndoStack(1)
-    stack.push({ kind: 'archive', workspaceId: 'w', conversationId: 'a' })
+    stack.push({
+      kind: 'archive-batch',
+      workspaceId: 'w',
+      conversationIds: ['a', 'c']
+    })
     stack.push({ kind: 'archive', workspaceId: 'w', conversationId: 'b' })
     expect(stack.popUndo()).toEqual({
       kind: 'archive',

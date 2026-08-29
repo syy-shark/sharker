@@ -353,6 +353,20 @@ export function toConversationSummary(c: Conversation): ConversationSummary {
   }
 }
 
+/** 项目菜单「归档对话」：只收该项目未归档对话，可跳过进行中以免中断直播 */
+export function conversationIdsToArchiveForProject(
+  conversations: Array<{ id: string; workspaceId: string; status?: ConversationStatus }>,
+  workspaceId: string,
+  skipIds?: Iterable<string>
+): string[] {
+  const target = String(workspaceId || '')
+  if (!target) return []
+  const skip = skipIds instanceof Set ? skipIds : new Set(skipIds ?? [])
+  return conversations
+    .filter((c) => c.workspaceId === target && c.status !== 'archived' && !skip.has(c.id))
+    .map((c) => c.id)
+}
+
 /** Search chats 用的 git 分支：显式字段 > worktree 起点 > 工作区当前分支 */
 export function resolveConversationGitBranch(input: {
   gitBranch?: string

@@ -7,6 +7,7 @@
 /** 可撤销的工作台动作（对话元数据，不含发消息 / 删库） */
 export type AppUndoRecord =
   | { kind: 'archive'; workspaceId: string; conversationId: string }
+  | { kind: 'archive-batch'; workspaceId: string; conversationIds: string[] }
   | { kind: 'pin'; workspaceId: string; conversationId: string; afterPinned: boolean }
   | {
       kind: 'rename'

@@ -9,6 +9,7 @@ import {
   applyCustomTitle,
   buildForkedConversation,
   parseForkDestination,
+  conversationIdsToArchiveForProject,
   conversationPreview,
   deriveConversationTitle,
   formatPinNote,
@@ -88,6 +89,7 @@ import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
+import { SkillsPage } from './pages/SkillsPage'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
 import { SLASH_COMMANDS } from '../shared/slash-commands'
@@ -3890,6 +3892,31 @@ export default function App() {
     }
   }
 
+  /** 归档一条对话并清托管 worktree（不改侧栏、不切会话） */
+  const persistArchivedConversation = async (workspaceId: string, conversationId: string) => {
+    await window.sharker.archiveConversation(workspaceId, conversationId, true)
+    const cwd = settingsRef.current.workspaces.find((w) => w.id === workspaceId)?.path
+    if (cwd && window.sharker.removeManagedWorktree) {
+      const cleaned = await window.sharker.removeManagedWorktree(cwd, conversationId)
+      if (cleaned.ok && cleaned.removed) {
+        const runtime = loadThreadRuntime(conversationId)
+        saveThreadRuntime(conversationId, { ...runtime, worktreePath: undefined })
+      }
+    }
+  }
+
+  const collectSessionLiveIds = () => {
+    const ids = new Set<string>()
+    for (const [id, buf] of sessionBuffersRef.current.entries()) {
+      if (buf.loading || buf.sendInFlight) ids.add(id)
+    }
+    if (sendInFlightRef.current || loading) {
+      const current = activeConversationIdRef.current
+      if (current) ids.add(current)
+    }
+    return ids
+  }
+
   /** 归档对话（主侧栏）：移出列表，当前对话则切换相邻 */
   const handleArchiveConversation = async (workspaceId: string, conversationId: string) => {
     if (typeof window.sharker.archiveConversation !== 'function') {
@@ -3910,17 +3937,9 @@ export default function App() {
     setConversationList((prev) => prev.filter((c) => c.id !== conversationId))
 
     try {
-      await window.sharker.archiveConversation(workspaceId, conversationId, true)
+      await persistArchivedConversation(workspaceId, conversationId)
       if (!appUndoSilentRef.current) {
         appUndoRef.current.push({ kind: 'archive', workspaceId, conversationId })
-      }
-      const cwd = settingsRef.current.workspaces.find((w) => w.id === workspaceId)?.path
-      if (cwd && window.sharker.removeManagedWorktree) {
-        const cleaned = await window.sharker.removeManagedWorktree(cwd, conversationId)
-        if (cleaned.ok && cleaned.removed) {
-          const runtime = loadThreadRuntime(conversationId)
-          saveThreadRuntime(conversationId, { ...runtime, worktreePath: undefined })
-        }
       }
     } catch (e) {
       console.error('归档失败', e)
@@ -3931,6 +3950,102 @@ export default function App() {
 
     const state = await refreshConversationList(workspaceId)
 
+    if (!wasActive) return
+
+    const pick =
+      archivedIndex >= 0
+        ? state.conversations[Math.min(archivedIndex, state.conversations.length - 1)]
+        : state.conversations[state.conversations.length - 1]
+    if (pick) {
+      const conv = await loadConversationForUi(workspaceId, pick.id)
+      await window.sharker.setActiveConversation(workspaceId, pick.id)
+      setActiveConversationId(pick.id)
+      historyLoadGenRef.current += 1
+      applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
+    } else {
+      await window.sharker.setActiveConversation(workspaceId, null)
+      setActiveConversationId(null)
+      applyConversationMessages([])
+    }
+  }
+
+  /** 项目菜单「归档对话」：一并归档该项目对话；进行中跳过以免中断直播 */
+  const handleArchiveProjectChats = async (
+    workspaceId: string,
+    opts?: { skipConfirm?: boolean; ids?: string[] }
+  ) => {
+    if (typeof window.sharker.archiveConversation !== 'function') {
+      console.error('archiveConversation 不可用：请完全重启应用以加载 preload')
+      window.alert('归档功能需要重启应用后生效，请关闭并重新打开 Sharker。')
+      return
+    }
+
+    let listed = conversationListRef.current
+    if (settingsRef.current.activeWorkspaceId !== workspaceId || opts?.ids) {
+      try {
+        listed = (await window.sharker.listConversations(workspaceId)).conversations
+      } catch (e) {
+        console.error('列出项目对话失败', e)
+        listed = conversationListRef.current.filter((c) => c.workspaceId === workspaceId)
+      }
+    }
+
+    const liveSkip = collectSessionLiveIds()
+    const allIds = conversationIdsToArchiveForProject(listed, workspaceId)
+    const ids = conversationIdsToArchiveForProject(
+      listed.filter((c) => !opts?.ids || opts.ids.includes(c.id)),
+      workspaceId,
+      liveSkip
+    )
+    if (ids.length === 0) {
+      if (!opts?.skipConfirm) {
+        window.alert(
+          allIds.length === 0
+            ? '此项目没有可归档的对话。'
+            : '此项目的对话都在进行中，已跳过以免中断直播。'
+        )
+      }
+      return
+    }
+
+    if (!opts?.skipConfirm) {
+      const label =
+        settingsRef.current.workspaces.find((w) => w.id === workspaceId)?.label?.trim() || '项目'
+      const skipped = Math.max(0, allIds.length - ids.length)
+      const ok = window.confirm(
+        `将一并归档「${label}」下的 ${ids.length} 条对话？可在设置 → 已归档恢复。${
+          skipped ? `已跳过 ${skipped} 条进行中对话。` : ''
+        }`
+      )
+      if (!ok) return
+    }
+
+    const activeId = activeConversationIdRef.current
+    const wasActive = Boolean(activeId && ids.includes(activeId))
+    const archivedIndex = wasActive
+      ? conversationListRef.current.findIndex((c) => c.id === activeId)
+      : -1
+
+    if (settingsRef.current.activeWorkspaceId === workspaceId) {
+      const remove = new Set(ids)
+      setConversationList((prev) => prev.filter((c) => !remove.has(c.id)))
+    }
+
+    try {
+      for (const id of ids) {
+        await persistArchivedConversation(workspaceId, id)
+      }
+      if (!appUndoSilentRef.current) {
+        appUndoRef.current.push({ kind: 'archive-batch', workspaceId, conversationIds: ids })
+      }
+    } catch (e) {
+      console.error('归档项目对话失败', e)
+      window.alert(e instanceof Error ? e.message : '归档失败')
+      await refreshConversationList(workspaceId)
+      return
+    }
+
+    const state = await refreshConversationList(workspaceId)
     if (!wasActive) return
 
     const pick =
@@ -4107,8 +4222,7 @@ export default function App() {
       return
     }
     if (action.type === 'skills') {
-      setPage('chat')
-      setComposerIntent('skill')
+      setPage('skills')
       return
     }
     if (action.type === 'open_thread') {
@@ -4382,6 +4496,8 @@ export default function App() {
           await handleNavigate('settings', (entry.settingsTab as SettingsTab) || 'models')
         } else if (entry.page === 'automations') {
           await handleNavigate('automations')
+        } else if (entry.page === 'skills') {
+          await handleNavigate('skills')
         } else {
           await handleNavigate('chat')
           const ws = settingsRef.current.activeWorkspaceId
@@ -4634,6 +4750,23 @@ export default function App() {
           await handleArchiveConversation(record.workspaceId, record.conversationId)
           return
         }
+        if (record.kind === 'archive-batch') {
+          if (direction === 'undo') {
+            if (typeof window.sharker.archiveConversation !== 'function') return
+            for (const id of record.conversationIds) {
+              await window.sharker.archiveConversation(record.workspaceId, id, false)
+            }
+            await refreshConversationList(record.workspaceId)
+            const first = record.conversationIds[0]
+            if (first) await handleSelectConversation(record.workspaceId, first)
+            return
+          }
+          await handleArchiveProjectChats(record.workspaceId, {
+            skipConfirm: true,
+            ids: record.conversationIds
+          })
+          return
+        }
         if (record.kind === 'pin') {
           const pinned = direction === 'undo' ? !record.afterPinned : record.afterPinned
           if (!window.sharker.patchConversationMeta) return
@@ -4836,6 +4969,11 @@ export default function App() {
           const ws = settingsRef.current.activeWorkspaceId
           const id = activeConversationIdRef.current
           if (ws && id) await handleArchiveConversation(ws, id)
+          break
+        }
+        case 'archive_project_chats': {
+          const ws = settingsRef.current.activeWorkspaceId
+          if (ws) await handleArchiveProjectChats(ws)
           break
         }
         case 'rename_conversation': {
@@ -5463,8 +5601,7 @@ export default function App() {
         }
         case 'show_skills': {
           if (!args.trim()) {
-            setPage('chat')
-            setComposerIntent('skill')
+            setPage('skills')
             break
           }
           const cwd = getActiveWorkspacePath(settingsRef.current) || ''
@@ -5634,6 +5771,11 @@ export default function App() {
         const ws = settingsRef.current.activeWorkspaceId
         const id = activeConversationIdRef.current
         if (ws && id) void handleArchiveConversation(ws, id)
+        return
+      }
+      if (cmd.action === 'archive_project_chats') {
+        const ws = settingsRef.current.activeWorkspaceId
+        if (ws) void handleArchiveProjectChats(ws)
         return
       }
       if (cmd.action === 'open_browser') {
@@ -5975,6 +6117,11 @@ export default function App() {
         const ws = settingsRef.current.activeWorkspaceId
         const id = activeConversationIdRef.current
         if (ws && id) void handleArchiveConversation(ws, id)
+        return
+      }
+      if (action === 'archive_project_chats') {
+        const ws = settingsRef.current.activeWorkspaceId
+        if (ws) void handleArchiveProjectChats(ws)
         return
       }
       if (action === 'side_conversation') {
@@ -7196,6 +7343,7 @@ export default function App() {
           onNewConversation={handleNewConversation}
           onDeleteConversation={handleDeleteConversation}
           onArchiveConversation={(ws, id) => void handleArchiveConversation(ws, id)}
+          onArchiveProjectChats={(ws) => void handleArchiveProjectChats(ws)}
           onRenameConversation={(ws, id, title) => void handleRenameConversation(ws, id, title)}
           onTogglePinConversation={(ws, id) => void handleTogglePinConversation(ws, id)}
           renameRequestId={renameRequestId}
@@ -7359,6 +7507,18 @@ export default function App() {
               onSearchThread={handleSearchThread}
               onRevealFindHit={handleRevealFindHit}
             />
+            </div>
+          ) : page === 'skills' ? (
+            <div key="skills" className="main-pane view-enter main-pane--page">
+              <div className="main-drag-strip" aria-hidden />
+              <SkillsPage
+                workspaces={settings.workspaces}
+                onBack={() => setPage('chat')}
+                onUseSkill={(name) => {
+                  seedComposer(`$${name} `)
+                  setPage('chat')
+                }}
+              />
             </div>
           ) : page === 'automations' ? (
             <div key="automations" className="main-pane view-enter main-pane--page">

@@ -3,7 +3,7 @@
  * @see shared/ARCH.md
  */
 
-export type NavPage = 'chat' | 'settings' | 'automations'
+export type NavPage = 'chat' | 'settings' | 'automations' | 'skills'
 
 export interface NavEntry {
   page: NavPage

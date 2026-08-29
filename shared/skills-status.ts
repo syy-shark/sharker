@@ -33,3 +33,52 @@ export function formatSkillsStatus(items: SkillStatusItem[], query = ''): string
   }
   return lines.join('\n')
 }
+
+/** 侧栏 Skills 页：同一 Skill 跨项目合并，带上来源工作区 */
+export type SkillExplorerItem = {
+  name: string
+  description: string
+  workspaces: Array<{ id: string; label: string }>
+}
+
+export function mergeSkillsAcrossProjects(
+  groups: Array<{ workspaceId: string; workspaceLabel: string; skills: SkillStatusItem[] }>
+): SkillExplorerItem[] {
+  const byName = new Map<string, SkillExplorerItem>()
+  for (const group of groups) {
+    const label = group.workspaceLabel.trim() || group.workspaceId
+    for (const skill of group.skills) {
+      const name = String(skill.name || '').trim()
+      if (!name) continue
+      const cur = byName.get(name)
+      if (!cur) {
+        byName.set(name, {
+          name,
+          description: skill.description || '',
+          workspaces: [{ id: group.workspaceId, label }]
+        })
+        continue
+      }
+      if (!cur.description && skill.description) cur.description = skill.description
+      if (!cur.workspaces.some((w) => w.id === group.workspaceId)) {
+        cur.workspaces.push({ id: group.workspaceId, label })
+      }
+    }
+  }
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+}
+
+/** 侧栏 Skills 页过滤：名称 / 说明 / 项目名 */
+export function filterSkillExplorerItems(
+  items: SkillExplorerItem[],
+  query: string
+): SkillExplorerItem[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return items
+  return items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q) ||
+      item.workspaces.some((w) => w.label.toLowerCase().includes(q))
+  )
+}

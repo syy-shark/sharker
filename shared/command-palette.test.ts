@@ -30,6 +30,7 @@ describe('command palette', () => {
     expect(ids).toContain('worktree')
     expect(ids).toContain('side')
     expect(ids).toContain('archive')
+    expect(ids).toContain('archive-project-chats')
     expect(ids).toContain('init')
     expect(ids).toContain('permissions')
     expect(ids).toContain('memories')
@@ -74,6 +75,9 @@ describe('command palette', () => {
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
+    expect(filterPaletteCommands('归档项目').some((c) => c.action === 'archive_project_chats')).toBe(
+      true
+    )
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })
