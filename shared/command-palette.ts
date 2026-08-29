@@ -30,6 +30,7 @@ import {
   OPEN_TERMINAL_MENU_LABEL,
   RELOAD_BROWSER_PAGE_MENU_LABEL,
   OPEN_FOLDER_LABEL,
+  OPEN_IN_FINDER_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
@@ -51,6 +52,7 @@ import {
   GENERAL_SETTINGS_LABEL,
   PROFILE_SETTINGS_LABEL,
   MCP_SERVERS_LABEL,
+  OPEN_MCP_STATUS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
@@ -250,8 +252,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'open-worktree',
-    title: '在文件管理器中显示项目',
-    keywords: 'open worktree folder finder explorer 访达 资源管理器 打开 隔离',
+    title: OPEN_IN_FINDER_LABEL,
+    keywords: 'open worktree folder finder explorer 访达 资源管理器 打开 隔离 在文件管理器中显示项目',
     action: 'open_worktree'
   },
   {
@@ -275,8 +277,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'mcp',
-    title: 'MCP 状态',
-    keywords: 'mcp tools 工具',
+    title: OPEN_MCP_STATUS_LABEL,
+    keywords: 'open mcp status tools 工具 MCP 状态',
     action: 'show_mcp'
   },
   {

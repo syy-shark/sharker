@@ -26,9 +26,7 @@ describe('command palette', () => {
     expect(ids).toContain('goal')
     expect(ids).toContain('diff')
     expect(ids).toContain('open-worktree')
-    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-worktree')?.title).toBe(
-      '在文件管理器中显示项目'
-    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-worktree')?.title).toBe('Open in Finder')
     expect(ids).toContain('create-branch')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'create-branch')?.title).toBe(
       'Create branch here'
@@ -36,6 +34,7 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'local')?.title).toBe('Local')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'worktree')?.title).toBe('Worktree')
     expect(ids).toContain('mcp')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'mcp')?.title).toBe('Open MCP status')
     expect(ids).toContain('mcp-servers')
     expect(ids).toContain('codex-docs')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'codex-docs')?.title).toBe('Codex Documentation')
@@ -195,6 +194,11 @@ describe('command palette', () => {
     ).toBe(true)
     expect(filterPaletteCommands('分享只读快照').some((c) => c.id === 'share')).toBe(true)
     expect(filterPaletteCommands('访达').some((c) => c.action === 'open_worktree')).toBe(true)
+    expect(filterPaletteCommands('Open in Finder').some((c) => c.action === 'open_worktree')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('Open MCP status').some((c) => c.action === 'show_mcp')).toBe(true)
+    expect(filterPaletteCommands('MCP 状态').some((c) => c.action === 'show_mcp')).toBe(true)
     expect(filterPaletteCommands('Copy as Markdown').some((c) => c.id === 'copy-markdown')).toBe(
       true
     )

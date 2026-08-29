@@ -8,6 +8,7 @@ import {
   GENERAL_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
+  OPEN_MCP_STATUS_LABEL,
   SHOW_CONTEXT_WINDOW_USAGE_LABEL,
   PREVENT_SLEEP_WHILE_RUNNING_LABEL,
   PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION,
@@ -154,6 +155,7 @@ describe('reveal in folder', () => {
     expect(SUGGESTED_PROMPTS_SETTINGS_LABEL).toBe('Suggested prompts')
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
+    expect(OPEN_MCP_STATUS_LABEL).toBe('Open MCP status')
     expect(PROFILE_SETTINGS_LABEL).toBe('Profile')
     expect(UNARCHIVE_LABEL).toBe('Unarchive')
     expect(SHOW_CONTEXT_WINDOW_USAGE_LABEL).toBe('Show context window usage')
