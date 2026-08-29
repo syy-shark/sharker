@@ -55,6 +55,15 @@ export function fileCitationMenuItems(
   ]
 }
 
+/** 文件树右键：文件打开预览 / 揭示 / 复制；目录只揭示 / 复制。不发明 Open with */
+export function fileTreeRowMenuItems(
+  isDirectory: boolean,
+  platform: RevealFolderPlatform = 'linux'
+): Array<{ action: FileCitationMenuAction; title: string }> {
+  const items = fileCitationMenuItems(platform)
+  return isDirectory ? items.filter((item) => item.action !== 'open') : items
+}
+
 /** 规范化分隔符，去掉一层包裹反引号 */
 export function normalizeCitationPath(raw: string): string {
   let text = String(raw || '').trim()

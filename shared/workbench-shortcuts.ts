@@ -296,10 +296,10 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⌥U', title: '活动视图' },
   { keys: '⌘⌥⇧U', title: '子 Agent 活动' },
   { keys: '⌘J', title: '开关工作区面板' },
-  { keys: 'Ctrl+`', title: '打开终端' },
-  { keys: '⌘⇧E', title: '打开文件树' },
+  { keys: 'Ctrl+`', title: '开关终端' },
+  { keys: '⌘⇧E', title: '开关文件树' },
   { keys: '⌘⇧D', title: '运行环境动作 1' },
-  { keys: '⌘⇧B', title: '打开内置浏览器' },
+  { keys: '⌘⇧B', title: '开关内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
   { keys: '⌘N / ⌘⇧O', title: '新对话' },
   { keys: '⌘⌥O / ⌘⌥N', title: '独立新对话' },
@@ -393,21 +393,21 @@ export const SHORTCUT_CATALOG: Array<{
     defaultKeys: '⌘J',
     defaultChord: 'mod+j'
   },
-  { action: 'toggle_terminal', title: '打开终端', defaultKeys: 'Ctrl+`', defaultChord: 'mod+`' },
+  { action: 'toggle_terminal', title: '开关终端', defaultKeys: 'Ctrl+`', defaultChord: 'mod+`' },
   {
     action: 'clear_terminal',
     title: '清终端',
     defaultKeys: 'Ctrl+L / ⌘K（终端聚焦）',
     defaultChord: 'mod+ctrl+l'
   },
-  { action: 'toggle_files', title: '打开文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },
+  { action: 'toggle_files', title: '开关文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },
   {
     action: 'run_environment_action',
     title: '运行环境动作 1',
     defaultKeys: '⌘⇧D',
     defaultChord: 'mod+shift+d'
   },
-  { action: 'toggle_browser', title: '打开内置浏览器', defaultKeys: '⌘⇧B', defaultChord: 'mod+shift+b' },
+  { action: 'toggle_browser', title: '开关内置浏览器', defaultKeys: '⌘⇧B', defaultChord: 'mod+shift+b' },
   { action: 'open_browser', title: '打开浏览器标签', defaultKeys: '⌘T', defaultChord: 'mod+t' },
   {
     action: 'toggle_activity',

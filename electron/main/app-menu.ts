@@ -114,7 +114,7 @@ export function installApplicationMenu(): void {
           ...send('toggle_panel')
         },
         {
-          label: '打开终端',
+          label: '开关终端',
           accelerator: 'Control+`',
           registerAccelerator: false,
           ...send('toggle_terminal')
@@ -132,7 +132,7 @@ export function installApplicationMenu(): void {
           ...send('open_review')
         },
         {
-          label: '打开文件树',
+          label: '开关文件树',
           accelerator: 'Command+Shift+E',
           registerAccelerator: false,
           ...send('toggle_files')

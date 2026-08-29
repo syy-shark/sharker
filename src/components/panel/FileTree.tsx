@@ -1,10 +1,12 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器；Markdown 默认可切富预览。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
+ * 文件右键打开 / 访达 / 复制路径，目录只揭示 / 复制（对标 Codex file tree Open menu）。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { resolveCitationPath } from '../../../shared/file-citation'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { fileTreeRowMenuItems, resolveCitationPath } from '../../../shared/file-citation'
+import { clampReviewMenuPosition } from '../../../shared/review-file-click'
 import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
@@ -22,6 +24,10 @@ import {
 } from '../../../shared/file-preview'
 import { FileMarkdownPreview } from './FileMarkdownPreview'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
+import {
+  dispatchCopyWorkspaceFilePath,
+  dispatchRevealWorkspaceFile
+} from '../../lib/open-workspace-file'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -57,7 +63,8 @@ function TreeNodeView({
   expanded,
   isHome,
   onToggle,
-  onOpenFile
+  onOpenFile,
+  onRowMenu
 }: {
   node: WorkspaceTreeNode
   depth: number
@@ -65,6 +72,7 @@ function TreeNodeView({
   isHome?: boolean
   onToggle: (path: string) => void
   onOpenFile: (path: string) => void
+  onRowMenu: (event: MouseEvent, node: WorkspaceTreeNode) => void
 }) {
   const isOpen = expanded.has(node.path)
   const hasChildren = Boolean(node.isDirectory && node.children?.length)
@@ -78,6 +86,11 @@ function TreeNodeView({
         onClick={() => {
           if (node.isDirectory) onToggle(node.path)
           else if (!isHome) onOpenFile(node.path)
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onRowMenu(event, node)
         }}
         title={node.path}
       >
@@ -103,6 +116,7 @@ function TreeNodeView({
               isHome={isHome}
               onToggle={onToggle}
               onOpenFile={onOpenFile}
+              onRowMenu={onRowMenu}
             />
           ))}
         </ul>
@@ -143,6 +157,12 @@ export const FileTree = memo(function FileTree({
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [goToOpen, setGoToOpen] = useState(false)
   const [goToDraft, setGoToDraft] = useState('')
+  const [rowMenu, setRowMenu] = useState<{
+    path: string
+    isDirectory: boolean
+    x: number
+    y: number
+  } | null>(null)
   const lineTargetRef = useRef<HTMLDivElement | null>(null)
   const viewerBodyRef = useRef<HTMLElement | null>(null)
   const treeRef = useRef<HTMLDivElement | null>(null)
@@ -275,6 +295,39 @@ export const FileTree = memo(function FileTree({
     if (!previewRequest?.path || isHome) return
     void onOpenFile(previewRequest.path, previewRequest.line)
   }, [isHome, onOpenFile, previewRequest])
+
+  const onRowMenu = useCallback((event: MouseEvent, node: WorkspaceTreeNode) => {
+    const next = clampReviewMenuPosition(
+      event.clientX,
+      event.clientY,
+      { width: 176, height: node.isDirectory ? 76 : 108 },
+      { width: window.innerWidth, height: window.innerHeight }
+    )
+    setRowMenu({
+      path: node.path,
+      isDirectory: Boolean(node.isDirectory),
+      x: next.x,
+      y: next.y
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!rowMenu) return
+    const onDoc = (event: MouseEvent) => {
+      const node = event.target
+      if (node instanceof Element && node.closest('[data-file-tree-menu]')) return
+      setRowMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRowMenu(null)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [rowMenu])
 
   useEffect(() => {
     lineTargetRef.current?.scrollIntoView({ block: 'center' })
@@ -569,9 +622,37 @@ export const FileTree = memo(function FileTree({
             isHome={isHome}
             onToggle={onToggle}
             onOpenFile={(p) => void onOpenFile(p)}
+            onRowMenu={onRowMenu}
           />
         ))}
       </ul>
+      {rowMenu ? (
+        <div
+          className="file-tree-menu glass-popover popover-enter"
+          role="menu"
+          data-file-tree-menu
+          style={{ top: rowMenu.y, left: rowMenu.x }}
+        >
+          {fileTreeRowMenuItems(rowMenu.isDirectory, window.sharker?.platform).map((item) => (
+            <button
+              key={item.action}
+              type="button"
+              role="menuitem"
+              className="file-tree-menu-item"
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                if (item.action === 'open') void onOpenFile(rowMenu.path)
+                else if (item.action === 'reveal') dispatchRevealWorkspaceFile(rowMenu.path)
+                else dispatchCopyWorkspaceFilePath(rowMenu.path)
+                setRowMenu(null)
+              }}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 })

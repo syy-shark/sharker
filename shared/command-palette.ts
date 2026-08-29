@@ -262,8 +262,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'files',
-    title: '打开文件树',
-    keywords: 'files tree 文件',
+    title: '开关文件树',
+    keywords: 'files tree 文件 开关 toggle',
     action: 'toggle_files'
   },
   {
@@ -275,9 +275,9 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'terminal',
-    title: '打开终端',
+    title: '开关终端',
     shortcut: 'Ctrl+`',
-    keywords: 'terminal 终端',
+    keywords: 'terminal 终端 开关 toggle',
     action: 'toggle_terminal'
   },
   {
@@ -289,8 +289,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'browser',
-    title: '打开内置浏览器',
-    keywords: 'browser 浏览器',
+    title: '开关内置浏览器',
+    keywords: 'browser 浏览器 开关 toggle',
     action: 'toggle_browser'
   },
   {

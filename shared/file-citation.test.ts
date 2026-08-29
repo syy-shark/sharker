@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   decodeCitationFilesystemPath,
   fileCitationMenuItems,
+  fileTreeRowMenuItems,
   formatCitationClipboardPath,
   looksLikeFilePath,
   matchFileCitationAt,
@@ -98,5 +99,15 @@ describe('file citations', () => {
     ])
     expect(fileCitationMenuItems('darwin')[1]?.title).toBe('在访达中显示')
     expect(fileCitationMenuItems('win32')[2]?.title).toBe('复制路径')
+    expect(fileTreeRowMenuItems(false, 'darwin').map((item) => item.action)).toEqual([
+      'open',
+      'reveal',
+      'copy'
+    ])
+    expect(fileTreeRowMenuItems(true, 'darwin').map((item) => item.action)).toEqual([
+      'reveal',
+      'copy'
+    ])
+    expect(fileTreeRowMenuItems(true, 'darwin')[0]?.title).toBe('在访达中显示')
   })
 })

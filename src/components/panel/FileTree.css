@@ -346,6 +346,35 @@ html.theme-dark .file-tree-side-ask {
   -webkit-backdrop-filter: none;
 }
 
+.file-tree-menu {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  min-width: 168px;
+  flex-direction: column;
+  padding: 5px;
+  border-radius: 14px;
+}
+
+.file-tree-menu-item {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.file-tree-menu-item:hover,
+.file-tree-menu-item:focus-visible {
+  background: var(--glass-fill-nested);
+}
+
 .file-tree-row:focus-visible,
 .file-tree-refresh:focus-visible,
 .file-tree-goto-input:focus-visible,
