@@ -1153,6 +1153,54 @@ export function buildAnswerParts(
   return parts
 }
 
+function sameFileDiff(a: FileDiff, b: FileDiff): boolean {
+  if (a === b) return true
+  if (a.path !== b.path) return false
+  if (a.stats.added !== b.stats.added || a.stats.removed !== b.stats.removed) return false
+  if (a.lines === b.lines) return true
+  if (a.lines.length !== b.lines.length) return false
+  return a.lines.every((line, index) => {
+    const other = b.lines[index]
+    return (
+      line === other ||
+      (line.kind === other?.kind &&
+        line.content === other.content &&
+        line.oldLine === other.oldLine &&
+        line.newLine === other.newLine)
+    )
+  })
+}
+
+function sameAnswerPart(prev: AnswerPart, next: AnswerPart): boolean {
+  if (prev.id !== next.id || prev.type !== next.type) return false
+  if (prev.type === 'text' && next.type === 'text') return prev.content === next.content
+  if (prev.type === 'demo' && next.type === 'demo') {
+    return (
+      prev.html === next.html &&
+      prev.caption === next.caption &&
+      prev.streaming === next.streaming
+    )
+  }
+  if (prev.type === 'diff' && next.type === 'diff') return sameFileDiff(prev.diff, next.diff)
+  return false
+}
+
+/** 已闭合的正文 / diff / demo 保持同一对象，只换增长中的那一块（对标直播写盘预览不重挂已完成变更） */
+export function reuseAnswerParts(prev: AnswerPart[], next: AnswerPart[]): AnswerPart[] {
+  if (prev === next) return prev
+  if (!prev.length) return next
+  const out: AnswerPart[] = []
+  const shared = Math.min(prev.length, next.length)
+  for (let i = 0; i < shared; i++) {
+    const a = prev[i]!
+    const b = next[i]!
+    out.push(sameAnswerPart(a, b) ? a : b)
+  }
+  if (next.length > prev.length) out.push(...next.slice(prev.length))
+  if (out.length === prev.length && out.every((part, index) => part === prev[index])) return prev
+  return out
+}
+
 /** 统计思考段数量与总字符（用于摘要） */
 function countThinking(segments: TurnSegment[]): { count: number; hasContent: boolean } {
   const thinks = segments.filter((s) => s.kind === 'thinking')

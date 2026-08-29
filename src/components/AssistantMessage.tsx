@@ -13,6 +13,7 @@ import {
   extractFinalContent,
   hasProcessFlow,
   processSegments,
+  reuseAnswerParts,
   shouldDisplayFinalBody
 } from '../../shared/turn-segments'
 import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
@@ -191,9 +192,15 @@ export const AssistantMessage = memo(function AssistantMessage({
     : finalContent
 
   // 文字 + 内联演示按时间顺序交错（可在 demo 上/下）
+  const answerPartsRef = useRef<ReturnType<typeof buildAnswerParts>>([])
   const answerParts = useMemo(() => {
-    if (!useSegmentFlow || !segments?.length || isError || isAborted) return []
-    return buildAnswerParts(segments, { isStreaming })
+    if (!useSegmentFlow || !segments?.length || isError || isAborted) {
+      answerPartsRef.current = []
+      return []
+    }
+    const next = reuseAnswerParts(answerPartsRef.current, buildAnswerParts(segments, { isStreaming }))
+    answerPartsRef.current = next
+    return next
   }, [useSegmentFlow, segments, isStreaming, isError, isAborted])
 
   const processOnly = useMemo(

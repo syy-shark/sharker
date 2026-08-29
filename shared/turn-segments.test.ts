@@ -7,7 +7,8 @@ import {
   finalizeSegments,
   hasProcessFlow,
   isDemoFenceLangPrefix,
-  processSegments
+  processSegments,
+  reuseAnswerParts
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
 import {
@@ -189,7 +190,8 @@ describe('turn segment event state machine', () => {
     })
     expect(previewSegs).toHaveLength(1)
     expect(previewSegs[0]!.id).toBe(previewId)
-    expect(buildAnswerParts(previewSegs, { isStreaming: true }).find((part) => part.type === 'diff')).toMatchObject({
+    const grownParts = buildAnswerParts(previewSegs, { isStreaming: true })
+    expect(grownParts.find((part) => part.type === 'diff')).toMatchObject({
       id: `${previewId}-diff-0`,
       diff: {
         path: 'c.ts',
@@ -202,6 +204,12 @@ describe('turn segment event state machine', () => {
         stats: { added: 4, removed: 0 }
       }
     })
+    const grownAgain = buildAnswerParts(previewSegs, { isStreaming: true })
+    expect(reuseAnswerParts(grownParts, grownAgain)).toBe(grownParts)
+    expect(reuseAnswerParts(grownParts, grownAgain)[0]).toBe(grownParts[0])
+    if (pathOnly) {
+      expect(reuseAnswerParts([pathOnly], grownParts)[0]).not.toBe(pathOnly)
+    }
     previewSegs = applyStreamChunk(previewSegs, {
       type: 'tool_start',
       toolName: 'write_file',
