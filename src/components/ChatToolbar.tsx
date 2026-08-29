@@ -26,8 +26,10 @@ import {
 } from 'lucide-react'
 import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
+  ALWAYS_ON_TOP_LABEL,
   COPY_LABEL,
   NEW_CHAT_LABEL,
+  OPEN_IN_POPUP_WINDOW_LABEL,
   SHARE_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
@@ -422,8 +424,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onPopOut()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="弹出当前对话"
-              aria-label="弹出当前对话"
+              title={OPEN_IN_POPUP_WINDOW_LABEL}
+              aria-label={OPEN_IN_POPUP_WINDOW_LABEL}
             >
               <AppWindow size={18} strokeWidth={1.75} aria-hidden />
             </button>
@@ -439,8 +441,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                   onToggleAlwaysOnTop?.()
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title={alwaysOnTop ? '取消置顶' : '窗口置顶'}
-                aria-label={alwaysOnTop ? '取消置顶' : '窗口置顶'}
+                title={ALWAYS_ON_TOP_LABEL}
+                aria-label={ALWAYS_ON_TOP_LABEL}
                 aria-pressed={alwaysOnTop}
               >
                 <Pin size={18} strokeWidth={1.75} aria-hidden />

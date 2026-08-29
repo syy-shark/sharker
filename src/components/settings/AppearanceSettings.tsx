@@ -2,6 +2,7 @@
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
  * Reduce Motion 写 `html.reduce-motion`，关掉直播思考扫光（对标 Codex #16857）。
+ * Keep a chat near your work / Always on top 写新弹出窗默认置顶。
  * 人格与个人说明在 `PersonalizationSettings`；回合通知在 `NotificationSettings`。
  * @see src/components/settings/ARCH.md
  */
@@ -17,7 +18,13 @@ import {
 } from '../../../shared/ui-font-scale'
 import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
 import { parseReduceMotion, REDUCE_MOTION_LABEL } from '../../../shared/reduce-motion'
-import { DECREASE_FONT_SIZE_LABEL, INCREASE_FONT_SIZE_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  ALWAYS_ON_TOP_DESCRIPTION,
+  ALWAYS_ON_TOP_LABEL,
+  DECREASE_FONT_SIZE_LABEL,
+  INCREASE_FONT_SIZE_LABEL,
+  KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL
+} from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsRow,
@@ -271,19 +278,15 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title="窗口">
+      <SettingsSection title={KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL}>
         <SettingsCard>
-          <SettingsRow
-            title="新弹出对话置顶"
-            description="对标 Codex Always on top：新弹出的对话窗默认浮在其它应用之上。"
-            last
-          >
+          <SettingsRow title={ALWAYS_ON_TOP_LABEL} description={ALWAYS_ON_TOP_DESCRIPTION} last>
             <SettingsToggle
               checked={draft.popoutAlwaysOnTop === true}
               onChange={(popoutAlwaysOnTop) => {
                 scheduleSave({ ...draftRef.current, popoutAlwaysOnTop })
               }}
-              label="新弹出对话置顶"
+              label={ALWAYS_ON_TOP_LABEL}
             />
           </SettingsRow>
         </SettingsCard>

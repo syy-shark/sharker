@@ -7,7 +7,9 @@ import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'elect
 import { IPC } from '../../shared/ipc'
 import {
   COPY_AS_MARKDOWN_LABEL,
+  NEW_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
+  OPEN_FOLDER_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_REVIEW_TAB_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
@@ -55,7 +57,7 @@ export function installApplicationMenu(): void {
       label: '文件',
       submenu: [
         {
-          label: '新对话',
+          label: NEW_CHAT_LABEL,
           accelerator: 'Command+N',
           registerAccelerator: false,
           ...send('new_conversation')
@@ -68,7 +70,7 @@ export function installApplicationMenu(): void {
         },
         { type: 'separator' },
         {
-          label: '打开文件夹…',
+          label: OPEN_FOLDER_LABEL,
           accelerator: 'Command+O',
           registerAccelerator: false,
           ...send('open_folder')

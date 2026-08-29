@@ -15,7 +15,7 @@
 |------|------|
 | `SettingsPrimitives.tsx` / `.css` | Section / Card / Row / Toggle / 选择组等 |
 | `SettingsSelect.tsx` / `.css` | 自定义下拉；portal 菜单 + usePopoverAnimation 180ms enter/exit 后卸载；Esc/外侧关闭 |
-| `AppearanceSettings.tsx` / `.css` | 外观：浅色玻璃 / 深色金属；界面字号（`uiFontScale` / `--ui-font-scale`）；代码字号（`codeFontScale` / `--code-font-scale`，对标 Codex Code font size）；代码字体（`codeFont` / `--mono`，对标 Codex Code font）；Reduce Motion（关掉直播思考扫光，进度圈仍转，对标 Codex #16857 / #22787）；新弹出置顶 |
+| `AppearanceSettings.tsx` / `.css` | 外观：浅色玻璃 / 深色金属；界面字号（`uiFontScale` / `--ui-font-scale`）；代码字号（`codeFontScale` / `--code-font-scale`，对标 Codex Code font size）；代码字体（`codeFont` / `--mono`，对标 Codex Code font）；Reduce Motion（关掉直播思考扫光，进度圈仍转，对标 Codex #16857 / #22787）；Keep a chat near your work / Always on top（对标 Codex Settings） |
 | `NotificationSettings.tsx` / `.css` | 通知：回合完成档 / 批准通知 / 系统通知权限（对标 Codex Settings → Notifications） |
 | `GeneralSettings.tsx` | 通用：Follow-up behavior（Queue / Steer）、Enter 发送、`file_opener` 默认打开位置、Show context window usage 用量环（官方默认关）、/review 交付与审查模型（对标 Codex `review_model`）、运行防休眠 |
 | `BrowserSettings.tsx` / `.css` | 设置 → 浏览器：历史搜索 / 重新打开 / 删除，按时间清除历史，Cookie / 缓存，以及下载位置与每次询问保存（对标 Codex Settings → Browser）。不发明 @Browser / 导入系统配置 |

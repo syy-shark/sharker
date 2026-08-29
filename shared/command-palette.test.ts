@@ -13,6 +13,7 @@ describe('command palette', () => {
     expect(ids).toContain('dictate')
     expect(ids).toContain('voice-chat')
     expect(ids).toContain('popout')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'popout')?.title).toBe('Open in Popup Window')
     expect(ids).toContain('agents')
     expect(ids).toContain('activity')
     expect(ids).toContain('personality')
@@ -160,6 +161,9 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('Open settings').some((c) => c.id === 'settings')).toBe(true)
+    expect(filterPaletteCommands('Open in Popup Window').some((c) => c.id === 'popout')).toBe(true)
+    expect(filterPaletteCommands('弹出当前对话').some((c) => c.id === 'popout')).toBe(true)
+    expect(filterPaletteCommands('Always on top').some((c) => c.id === 'theme')).toBe(true)
     expect(filterPaletteCommands('Toggle sidebar').some((c) => c.id === 'sidebar')).toBe(true)
     expect(filterPaletteCommands('Start dictation').some((c) => c.id === 'dictate')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])

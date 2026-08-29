@@ -9,6 +9,9 @@ import {
   OPEN_COMMAND_MENU_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SHARE_LABEL,
+  ALWAYS_ON_TOP_LABEL,
+  KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
+  OPEN_IN_POPUP_WINDOW_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -101,5 +104,8 @@ describe('reveal in folder', () => {
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
     expect(SHARE_LABEL).toBe('Share')
+    expect(OPEN_IN_POPUP_WINDOW_LABEL).toBe('Open in Popup Window')
+    expect(ALWAYS_ON_TOP_LABEL).toBe('Always on top')
+    expect(KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL).toBe('Keep a chat near your work')
   })
 })

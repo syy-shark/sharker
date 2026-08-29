@@ -22,6 +22,7 @@ import {
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
   OPEN_BROWSER_TAB_LABEL,
   OPEN_FOLDER_LABEL,
+  OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
@@ -166,7 +167,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'theme',
     title: APPEARANCE_SETTINGS_LABEL,
-    keywords: 'theme appearance 外观 主题',
+    keywords: 'theme appearance Always on top Keep a chat near your work 外观 主题 置顶 弹出',
     action: 'open_appearance'
   },
   {
@@ -398,8 +399,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'popout',
-    title: '弹出当前对话',
-    keywords: 'popout popup window 弹出 窗口',
+    title: OPEN_IN_POPUP_WINDOW_LABEL,
+    keywords: 'popout popup window Open in Popup Window 弹出当前对话 窗口',
     action: 'popout_thread'
   },
   {

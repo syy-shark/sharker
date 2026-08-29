@@ -63,6 +63,7 @@ import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
 import type { AppPage, SettingsTab } from '../types/navigation'
+import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator'
 import './Sidebar.css'
 import { SIDEBAR_LAYOUT } from '../constants/layout'
@@ -161,6 +162,12 @@ function readSidebarWidth(): number {
 
 function convTitle(c: ConversationSummary): string {
   return (c.customTitle || c.title || '新对话').trim() || '新对话'
+}
+
+/** 侧栏进行中点滚出视口时停脉冲，减轻 GPU（对标 Codex #16857） */
+function SidebarLiveDot() {
+  const ref = useOffscreenLiveShimmer<HTMLSpanElement>(true)
+  return <span ref={ref} className="sidebar-live-dot" aria-label="进行中" title="进行中" />
 }
 
 function conversationFolderPath(c: ConversationSummary, workspaces: WorkspaceItem[]): string {
@@ -651,7 +658,7 @@ export const Sidebar = memo(function Sidebar({
             ) : null}
             <span className="sidebar-row-status">
               {live ? (
-                <span className="sidebar-live-dot" aria-label="进行中" title="进行中" />
+                <SidebarLiveDot />
               ) : c.unread ? (
                 <span className="sidebar-unread-dot" aria-label="未读" title="未读" />
               ) : null}
