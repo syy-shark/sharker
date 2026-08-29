@@ -559,6 +559,58 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
+/** 同一工具只改详情：只换该步，不重扫整条时间线（对标 Codex #22860） */
+export function retargetProcessPhaseStepsOnToolMeta(
+  prevSteps: ProcessPhaseStep[],
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[],
+  isStreaming: boolean
+): ProcessPhaseStep[] | null {
+  if (!prevSteps.length || !prevSegments || prevSegments.length !== segments.length) return null
+  const last = segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prevSegments[i] !== segments[i]) return null
+  }
+  const prevTail = prevSegments[last]
+  const nextTail = segments[last]
+  if (!prevTail || !nextTail) return null
+  if (prevTail.kind !== 'tool' || nextTail.kind !== 'tool') return null
+  if (prevTail.id !== nextTail.id || prevTail.status !== nextTail.status) return null
+  if (prevTail.toolName !== nextTail.toolName) return null
+  if (
+    prevTail.toolArgs !== nextTail.toolArgs ||
+    prevTail.fileDiff !== nextTail.fileDiff ||
+    prevTail.fileDiffs !== nextTail.fileDiffs ||
+    prevTail.editPreview !== nextTail.editPreview
+  ) {
+    return null
+  }
+  const index = prevSteps.findIndex((step) => step.segment === prevTail)
+  if (index < 0) return prevSteps
+  const rebuilt = buildStepsFromSource([nextTail], isStreaming)[0]
+  if (!rebuilt) return prevSteps
+  const prev = prevSteps[index]!
+  if (
+    rebuilt.title === prev.title &&
+    rebuilt.detail === prev.detail &&
+    rebuilt.status === prev.status
+  ) {
+    if (prev.segment === nextTail) return prevSteps
+    const same: ProcessPhaseStep = { ...prev, segment: nextTail }
+    const out = prevSteps.slice()
+    out[index] = same
+    return out
+  }
+  const nextStep: ProcessPhaseStep = {
+    ...rebuilt,
+    id: prev.id,
+    phase: prev.phase
+  }
+  const out = prevSteps.slice()
+  out[index] = nextStep
+  return out
+}
+
 /** 从原始片段派生稳定的四阶段展示模型；不暴露 thinking.content。 */
 export function deriveProcessPhases(
   segments: TurnSegment[],

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { deriveChronologicalSteps, reuseProcessPhaseSteps } from './process-phases'
+import {
+  deriveChronologicalSteps,
+  retargetProcessPhaseStepsOnToolMeta,
+  reuseProcessPhaseSteps
+} from './process-phases'
 import type { TurnSegment } from './types'
 
 describe('process phases privacy', () => {
@@ -54,6 +58,34 @@ describe('process phases privacy', () => {
     expect(reusedCloned[0]).toBe(steps[0])
     expect(reusedCloned[1]).toBe(steps[1])
     expect(reusedCloned[2]).toBe(clonedGrown[2])
+    const cmdRunning: TurnSegment = {
+      id: 'cmd1',
+      kind: 'tool',
+      toolName: 'run_terminal_cmd',
+      toolArgs: { command: 'npm test' },
+      status: 'active',
+      startedAt: 8
+    }
+    const cmdLine: TurnSegment = { ...cmdRunning, toolDetail: 'PASS src/a.test.ts' }
+    const cmdSteps = deriveChronologicalSteps([cmdRunning], { isStreaming: true })
+    const retargeted = retargetProcessPhaseStepsOnToolMeta(
+      cmdSteps,
+      [cmdRunning],
+      [cmdLine],
+      true
+    )
+    expect(retargeted).not.toBeNull()
+    expect(retargeted![0]).not.toBe(cmdSteps[0])
+    expect(retargeted![0].segment).toBe(cmdLine)
+    expect(retargeted![0].title).toBe(cmdSteps[0].title)
+    expect(retargeted![0]).toMatchObject({ id: cmdSteps[0].id, phase: cmdSteps[0].phase })
+    const cmdPreview: TurnSegment = {
+      ...cmdRunning,
+      editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
+    }
+    expect(
+      retargetProcessPhaseStepsOnToolMeta(cmdSteps, [cmdRunning], [cmdPreview], true)
+    ).toBeNull()
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',

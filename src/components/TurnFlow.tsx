@@ -5,6 +5,7 @@
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
  * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
+ * - 同一工具只改详情时只换该步，不重扫整条时间线（对标 Codex #22860）
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
  * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
@@ -20,6 +21,7 @@ import { LiveDuration } from './LiveDuration'
 import type { TurnSegment } from '../../shared/types'
 import {
   deriveChronologicalSteps,
+  retargetProcessPhaseStepsOnToolMeta,
   reuseProcessPhaseSteps,
   type ProcessPhaseStep
 } from '../../shared/process-phases'
@@ -737,11 +739,28 @@ export const TurnFlow = memo(function TurnFlow({
   }, [contentStreaming])
 
   const chronologicalRef = useRef<ProcessPhaseStep[]>([])
+  const prevSegmentsRef = useRef(segments)
+  const prevStreamingRef = useRef(isStreaming)
   const chronological = useMemo(() => {
-    const next = reuseProcessPhaseSteps(
-      chronologicalRef.current,
-      deriveChronologicalSteps(segments, { isStreaming })
-    )
+    const prevSegments = prevSegmentsRef.current
+    const streamingUnchanged = prevStreamingRef.current === isStreaming
+    prevSegmentsRef.current = segments
+    prevStreamingRef.current = isStreaming
+    const retargeted =
+      streamingUnchanged
+        ? retargetProcessPhaseStepsOnToolMeta(
+            chronologicalRef.current,
+            prevSegments,
+            segments,
+            isStreaming
+          )
+        : null
+    const next =
+      retargeted ??
+      reuseProcessPhaseSteps(
+        chronologicalRef.current,
+        deriveChronologicalSteps(segments, { isStreaming })
+      )
     chronologicalRef.current = next
     return next
   }, [isStreaming, segments])
