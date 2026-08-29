@@ -107,5 +107,29 @@ describe('files changed card', () => {
         ]
       })
     ).toBe(false)
+    expect(
+      shouldSkipFilesChangedIdentity({
+        prevSegments: [prefix],
+        segments: [prefix, answerTail]
+      })
+    ).toBe(true)
+    expect(
+      shouldSkipFilesChangedIdentity({
+        prevSegments: [prefix],
+        segments: [
+          prefix,
+          { fileDiff: { path: 'src/b.ts', stats: { added: 1, removed: 0 } } }
+        ]
+      })
+    ).toBe(false)
+    const thinkActive = {}
+    const thinkDone = {}
+    expect(
+      shouldSkipFilesChangedIdentity({
+        prevSegments: [thinkActive],
+        segments: [thinkDone, answerTail]
+      })
+    ).toBe(true)
+    expect(nextFilesChangedStats(first, [prefix, thinkDone, answerTail])).toBe(first)
   })
 })

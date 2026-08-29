@@ -1,7 +1,7 @@
 /**
  * 对话写盘卡：官方 Edited basename / Edited N files（对标 Codex render_changes_block）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
- * 头栏与文件行可画 +N −M；正文加长不扫 +/- 指纹、不重跑合计（对标 Codex Edited N files / #22860）。
+ * 头栏与文件行可画 +N −M；正文加长或无 +/- 新工具不扫指纹、不重跑合计；有写盘仍立刻显示（对标 Codex Edited N files / #22860，不复制官方 #38695）。
  * 右键打开 / Open in Finder / Copy path。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
@@ -120,8 +120,9 @@ function segmentHasFilesChangedStats(segment: FilesChangedStatSegment | undefine
 }
 
 /**
- * 前缀引用没变、末段没有写盘 +/-：不必拼指纹。
- * 对标 Codex #22860：回答 token 不扫已改文件卡。
+ * 前缀引用没变或只换成无 +/- 的桥接段、追加的工具也没有写盘 +/-：不必拼指纹。
+ * 对标 Codex #22860：回答 token / 读工具不扫已改文件卡。
+ * 有 fileDiff / fileDiffs / editPreview 仍立刻合计（不复制官方 #38695 回合结束才出 diff）。
  */
 export function shouldSkipFilesChangedIdentity(input: {
   prevSegments: readonly FilesChangedStatSegment[] | null | undefined
@@ -129,16 +130,19 @@ export function shouldSkipFilesChangedIdentity(input: {
 }): boolean {
   const prev = input.prevSegments
   const next = input.segments
-  if (!prev || !next || prev.length !== next.length) return false
-  const last = next.length - 1
-  for (let i = 0; i < last; i++) {
-    if (prev[i] !== next[i]) return false
+  if (!prev || !next) return false
+  if (prev === next) return true
+  if (next.length < prev.length) return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (before === after) continue
+    if (segmentHasFilesChangedStats(before) || segmentHasFilesChangedStats(after)) return false
   }
-  const prevTail = prev[last]
-  const nextTail = next[last]
-  if (!prevTail || !nextTail) return false
-  if (prevTail === nextTail) return true
-  return !segmentHasFilesChangedStats(prevTail) && !segmentHasFilesChangedStats(nextTail)
+  for (let i = prev.length; i < next.length; i++) {
+    if (segmentHasFilesChangedStats(next[i])) return false
+  }
+  return true
 }
 
 /** 只盯写盘 +/-；正文加长不进指纹，避免每枚 token 重合计 */
