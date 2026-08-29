@@ -216,6 +216,11 @@ describe('workbench shortcuts', () => {
       WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⇧N' && row.title === 'New window')
     ).toBe(true)
     expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘W' && row.title === 'Close current tab or window'
+      )
+    ).toBe(true)
+    expect(
       WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⌥R' && row.title === 'Rename chat')
     ).toBe(true)
     expect(

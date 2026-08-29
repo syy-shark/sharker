@@ -75,6 +75,7 @@ import {
   TOGGLE_SIDEBAR_LABEL,
   FILE_MENU_LABEL,
   FILE_CLOSE_LABEL,
+  CLOSE_CURRENT_TAB_OR_WINDOW_LABEL,
   NEW_WINDOW_LABEL,
   EDIT_MENU_LABEL,
   VIEW_MENU_LABEL,
@@ -245,6 +246,7 @@ describe('reveal in folder', () => {
     expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')
     expect(FILE_MENU_LABEL).toBe('File')
     expect(FILE_CLOSE_LABEL).toBe('Close')
+    expect(CLOSE_CURRENT_TAB_OR_WINDOW_LABEL).toBe('Close current tab or window')
     expect(NEW_WINDOW_LABEL).toBe('New window')
     expect(EDIT_MENU_LABEL).toBe('Edit')
     expect(VIEW_MENU_LABEL).toBe('View')

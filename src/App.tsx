@@ -6834,6 +6834,11 @@ export default function App() {
         void window.sharker.openNewWindow?.()
         return
       }
+      if (cmd.action === 'close_current_tab_or_window') {
+        if (rightPanelOpenRef.current) setRightPanelOpen(false)
+        else window.close()
+        return
+      }
       if (cmd.action === 'toggle_plan') {
         const id = activeConversationIdRef.current
         const on = id ? planModeByConvRef.current.get(id) === true : false

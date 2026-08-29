@@ -27,6 +27,7 @@ import {
   NAVIGATE_FORWARD_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  CLOSE_CURRENT_TAB_OR_WINDOW_LABEL,
   NEW_WINDOW_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
   NEXT_CHAT_OR_TAB_LABEL,
@@ -390,7 +391,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⌥S', title: OPEN_SIDE_CHAT_LABEL },
   { keys: '⌘⌥A', title: NEXT_CHAT_NEEDING_ATTENTION_LABEL },
   { keys: '⌘P', title: SEARCH_FILES_LABEL },
-  { keys: '⌘W', title: '关闭右侧面板' },
+  { keys: '⌘W', title: CLOSE_CURRENT_TAB_OR_WINDOW_LABEL },
   { keys: '⌘T', title: OPEN_BROWSER_TAB_LABEL },
   {
     keys: '⌘R / ⌘⇧R',

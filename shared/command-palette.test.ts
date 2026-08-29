@@ -26,6 +26,10 @@ describe('command palette', () => {
     expect(ids).toContain('new-window')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'popout')?.title).toBe('Open in Popup Window')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'new-window')?.title).toBe('New window')
+    expect(ids).toContain('close-tab-or-window')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'close-tab-or-window')?.title).toBe(
+      'Close current tab or window'
+    )
     expect(ids).toContain('agents')
     expect(ids).toContain('activity')
     expect(ids).toContain('personality')
@@ -350,6 +354,11 @@ describe('command palette', () => {
     expect(filterPaletteCommands('Open settings').some((c) => c.id === 'settings')).toBe(true)
     expect(filterPaletteCommands('Open in Popup Window').some((c) => c.id === 'popout')).toBe(true)
     expect(filterPaletteCommands('New window').some((c) => c.id === 'new-window')).toBe(true)
+    expect(
+      filterPaletteCommands('Close current tab or window').some(
+        (c) => c.action === 'close_current_tab_or_window'
+      )
+    ).toBe(true)
     expect(filterPaletteCommands('弹出当前对话').some((c) => c.id === 'popout')).toBe(true)
     expect(filterPaletteCommands('Always on top').some((c) => c.id === 'theme')).toBe(true)
     expect(filterPaletteCommands('Toggle sidebar').some((c) => c.id === 'sidebar')).toBe(true)

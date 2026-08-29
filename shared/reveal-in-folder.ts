@@ -128,6 +128,8 @@ export const SEND_FEEDBACK_LABEL = 'Send Feedback'
 export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
 export const FILE_CLOSE_LABEL = 'Close'
+/** Official commands table (learn.chatgpt.com/docs/reference/commands). File menu stays Close. */
+export const CLOSE_CURRENT_TAB_OR_WINDOW_LABEL = 'Close current tab or window'
 /** Official File menu (github.com/openai/codex#12773 / #26890 New Window, ⌘⇧N). */
 export const NEW_WINDOW_LABEL = 'New window'
 export const TOGGLE_FULL_SCREEN_LABEL = 'Toggle Full Screen'

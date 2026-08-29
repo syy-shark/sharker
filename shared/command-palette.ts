@@ -41,6 +41,7 @@ import {
   NAVIGATE_FORWARD_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  CLOSE_CURRENT_TAB_OR_WINDOW_LABEL,
   NEW_WINDOW_LABEL,
   GO_TO_CHAT_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
@@ -750,6 +751,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⇧N',
     keywords: 'new window File 新窗口',
     action: 'new_window'
+  },
+  {
+    id: 'close-tab-or-window',
+    title: CLOSE_CURRENT_TAB_OR_WINDOW_LABEL,
+    shortcut: '⌘W',
+    keywords: 'close tab window 关闭 窗口 面板 ⌘W',
+    action: 'close_current_tab_or_window'
   },
   {
     id: 'project-picker',
