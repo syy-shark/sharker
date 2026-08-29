@@ -104,7 +104,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 ### 排队与插队
 
 - 设置 → 外观 → **后续行为**（对标 Codex Settings → General → Follow-up behavior）：默认 **排队**，忙时 Enter 等到当前回合结束；也可改成 **注入**（加入当前回合，下一工具/采样后交给模型，不中止直播）。输入框上方先画注入预览，再画排队后续。
-- **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
+- **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队。忙时输入 `/review`、`/status` 或 `!command` 先出现在输入框上方队列，当前回合结束后再解析（对标 Codex Tab queue slash；注入仍把原文交给当前回合）
 - 设置 → 外观 → **Enter 发送**（对标 Codex `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
 - 可打开 **建议提示**（空对话先给出进行中 / 未读 / 最近更新的对话，再审查 / 设定目标，对标 Codex Settings → Suggested prompts）
 - 设置 → 权限 → Git **审查交付**：`/review` 默认当前对话（官方 Inline）；Detached 才新开审查线程。直播中排队或注入，不中止当前回合

@@ -92,7 +92,8 @@ import { AutomationsPage } from './pages/AutomationsPage'
 import { SkillsPage } from './pages/SkillsPage'
 import { Sidebar } from './components/Sidebar'
 import type { SlashCommandMeta } from '../shared/slash-commands'
-import { SLASH_COMMANDS } from '../shared/slash-commands'
+import { BANG_SLASH_COMMAND, matchUiSlashCommand, SLASH_COMMANDS } from '../shared/slash-commands'
+import { parseBangCommand } from '../shared/bang-command'
 import {
   adjacentConversationId,
   isEmbeddedTerminalTarget,
@@ -536,6 +537,20 @@ export default function App() {
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
+  /** 排队跟进出队：先解析 UI 斜杠 / bang，再开模型回合 */
+  const dispatchFollowUpRef = useRef<
+    (
+      text: string,
+      attachments?: ChatAttachment[],
+      conversationId?: string,
+      options?: {
+        skipUserMessage?: boolean
+        excludeMessageIds?: string[]
+        providerId?: string
+        thinkingLevel?: string
+      }
+    ) => void
+  >(() => {})
   const handleSelectConversationRef = useRef<
     (workspaceId: string, conversationId: string) => Promise<void>
   >(async () => {})
@@ -643,7 +658,7 @@ export default function App() {
             }
             if (follow === 'ignore') continue
             if (follow === 'send') {
-              void dispatchTurnRef.current(
+              void dispatchFollowUpRef.current(
                 item.text,
                 item.attachments ?? [],
                 conversationId
@@ -685,7 +700,7 @@ export default function App() {
           sessionQueuesRef.current = follow.queues
         }
         if (follow.next) {
-          void dispatchTurnRef.current(
+          void dispatchFollowUpRef.current(
             follow.next.text,
             follow.next.attachments,
             conversationId,
@@ -2300,7 +2315,7 @@ export default function App() {
             syncActiveQueueUi(queues, ownerId)
           }
           if (next) {
-            void dispatchTurnRef.current(next.text, next.attachments, ownerId, {
+            void dispatchFollowUpRef.current(next.text, next.attachments, ownerId, {
               providerId: next.providerId,
               thinkingLevel: next.thinkingLevel
             })
@@ -2596,7 +2611,7 @@ export default function App() {
           })
           syncActiveQueueUi(queues, activeConversationIdRef.current)
           if (next) {
-            void dispatchTurnRef.current(next.text, next.attachments, next.conversationId, {
+            void dispatchFollowUpRef.current(next.text, next.attachments, next.conversationId, {
               providerId: next.providerId,
               thinkingLevel: next.thinkingLevel
             })
@@ -3084,6 +3099,21 @@ export default function App() {
 
   useEffect(() => {
     dispatchTurnRef.current = dispatchTurn
+    dispatchFollowUpRef.current = (text, attachments = [], conversationId, options) => {
+      if (attachments.length === 0) {
+        const slash = matchUiSlashCommand(text)
+        if (slash) {
+          void handleSlashActionRef.current(slash.cmd, slash.args)
+          return
+        }
+        const bang = parseBangCommand(text)
+        if (bang) {
+          void handleSlashActionRef.current(BANG_SLASH_COMMAND, bang)
+          return
+        }
+      }
+      void dispatchTurn(text, attachments, conversationId, options)
+    }
   }, [dispatchTurn])
 
   /** 切换右侧面板 Tab（斜杠命令 /files 等） */
@@ -3259,8 +3289,6 @@ export default function App() {
       const trimmed = text.trim()
       if (!trimmed) return
 
-      // 斜杠命令 UI/拦截暂关（后续再恢复）
-
       const convId = activeConversationIdRef.current
       const busy = loading || sendInFlightRef.current
       if (busy) {
@@ -3370,6 +3398,18 @@ export default function App() {
         return
       }
 
+      if (attachments.length === 0) {
+        const slash = matchUiSlashCommand(trimmed)
+        if (slash) {
+          await handleSlashActionRef.current(slash.cmd, slash.args)
+          return
+        }
+        const bang = parseBangCommand(trimmed)
+        if (bang) {
+          await handleSlashActionRef.current(BANG_SLASH_COMMAND, bang)
+          return
+        }
+      }
       await dispatchTurn(trimmed, attachments, convId ?? undefined)
     },
     [
@@ -3395,7 +3435,7 @@ export default function App() {
       const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, convId)
       syncActiveQueueUi(queues, convId)
       if (next) {
-        void dispatchTurnRef.current(next.text, next.attachments, convId, {
+        void dispatchFollowUpRef.current(next.text, next.attachments, convId, {
           providerId: next.providerId,
           thinkingLevel: next.thinkingLevel
         })

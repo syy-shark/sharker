@@ -15,6 +15,7 @@ import {
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
   shouldEditLastUserOnEscape,
+  shouldQueueComposerSlash,
   shouldStickAfterComposerSubmit
 } from './composer-submit'
 
@@ -47,6 +48,9 @@ describe('composer submit', () => {
     expect(shouldStickAfterComposerSubmit('send')).toBe(true)
     expect(shouldStickAfterComposerSubmit('queue')).toBe(false)
     expect(shouldStickAfterComposerSubmit('jump')).toBe(false)
+    expect(shouldQueueComposerSlash('queue')).toBe(true)
+    expect(shouldQueueComposerSlash('send')).toBe(false)
+    expect(shouldQueueComposerSlash('jump')).toBe(false)
   })
 
   it('inverts follow-up with Cmd+Shift+Enter while a turn is running', () => {

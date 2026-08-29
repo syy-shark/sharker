@@ -142,7 +142,7 @@
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；排队项可带定时任务的 `providerId` / `thinkingLevel`；直播行预留助手 id / 收束 upsert；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
-| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置） |
+| `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置）；`shouldQueueComposerSlash` 让忙时 `/` 与 `!` 先排队、收束后再解析（对标 Codex Tab queue slash） |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编、只有 send 贴底 |
 | `pending-preview.ts` | 注入/排队芯片预览截到 3 行 / 240 字（对标 Codex #39864 pending input wrapping），避免长文折行把对话柱挤矮（#40788） |
 | `pending-preview.test.ts` | 短文不截、多行与超长加省略号、CRLF 归一 |
@@ -182,7 +182,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表 |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或插入当前输入框：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat / send selection to composer） |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |

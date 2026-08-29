@@ -447,6 +447,38 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   }
 ]
 
+/** Composer `!command` 走终端，不经过模型 */
+export const BANG_SLASH_COMMAND: SlashCommandMeta = {
+  name: 'shell',
+  description: '在终端执行',
+  scope: 'ui',
+  action: 'run_shell',
+  category: 'tools'
+}
+
+/**
+ * 识别输入框里的 UI 斜杠（`/review branch`）。
+ * 忙时先原样排队，收束后再解析（对标 Codex Tab queue slash）。
+ */
+export function matchUiSlashCommand(text: string): { cmd: SlashCommandMeta; args: string } | null {
+  const t = String(text ?? '').trim()
+  if (!t.startsWith('/')) return null
+  const body = t.slice(1).trim()
+  if (!body) return null
+  const space = body.search(/\s/)
+  const name = (space >= 0 ? body.slice(0, space) : body).toLowerCase()
+  const args = space >= 0 ? body.slice(space + 1).trim() : ''
+  const cmd = SLASH_COMMANDS.find((c) => c.name === name && c.scope === 'ui')
+  return cmd ? { cmd, args } : null
+}
+
+/** 菜单选中命令时：已有 `/…` 草稿则整行排队，否则用 `/${name}` */
+export function composerSlashLine(input: string, cmdName: string): string {
+  const raw = String(input ?? '').trim()
+  if (raw.startsWith('/')) return raw
+  return `/${String(cmdName || '').trim()}`
+}
+
 /** 按输入过滤命令（/ 后文本，不含 /） */
 export function filterSlashCommands(query: string): SlashCommandMeta[] {
   const q = query.trim().toLowerCase()

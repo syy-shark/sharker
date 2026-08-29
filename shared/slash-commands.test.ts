@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { filterSlashCommands, slashItemsWithSkills, SLASH_COMMANDS } from './slash-commands'
+import {
+  composerSlashLine,
+  filterSlashCommands,
+  matchUiSlashCommand,
+  slashItemsWithSkills,
+  SLASH_COMMANDS
+} from './slash-commands'
 
 describe('slash commands', () => {
   it('lists changes as a panel command and review as a working-tree review', () => {
@@ -70,6 +76,16 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'changes')?.action).toBe('toggle_changes')
     expect(SLASH_COMMANDS.find((c) => c.name === 'review')?.action).toBe('review_working_tree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'review')?.argsHint).toContain('关注点')
+    expect(matchUiSlashCommand('/review branch here').cmd.action).toBe('review_working_tree')
+    expect(matchUiSlashCommand('/review branch here').args).toBe('branch here')
+    expect(matchUiSlashCommand('/status')).toEqual({
+      cmd: SLASH_COMMANDS.find((c) => c.name === 'status'),
+      args: ''
+    })
+    expect(matchUiSlashCommand('/plan 先拆步骤')).toBeNull()
+    expect(matchUiSlashCommand('review branch')).toBeNull()
+    expect(composerSlashLine('/review branch', 'status')).toBe('/review branch')
+    expect(composerSlashLine('', 'review')).toBe('/review')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mention')?.action).toBe('mention_file')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skill')?.action).toBe('mention_skill')
     expect(SLASH_COMMANDS.find((c) => c.name === 'rename')?.action).toBe('rename_conversation')

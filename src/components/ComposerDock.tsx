@@ -27,7 +27,13 @@ import {
   defaultThinkingLevel,
   resolveThinkingOptions
 } from '../../shared/thinking-levels'
-import { SLASH_COMMANDS, slashItemsWithSkills, type SlashCommandMeta } from '../../shared/slash-commands'
+import {
+  BANG_SLASH_COMMAND,
+  composerSlashLine,
+  SLASH_COMMANDS,
+  slashItemsWithSkills,
+  type SlashCommandMeta
+} from '../../shared/slash-commands'
 import { parseBangCommand } from '../../shared/bang-command'
 import { insertAtMention, parseAtMention } from '../../shared/at-mention'
 import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
@@ -57,6 +63,7 @@ import {
   restorePreviousComposerPrompt,
   isPlanModeToggleKey,
   shouldEditLastUserOnEscape,
+  shouldQueueComposerSlash,
   type ComposerEnterBehavior,
   type FollowUpBehavior
 } from '../../shared/composer-submit'
@@ -798,6 +805,20 @@ export const ComposerDock = memo(
         return
       }
       if (cmd.scope === 'ui' && onSlashAction) {
+        if (loading && shouldQueueComposerSlash('queue')) {
+          const line = composerSlashLine(input, cmd.name)
+          setInput('')
+          setPendingAttachments([])
+          setAttachmentError('')
+          setSlashDismissed(true)
+          onSubmitted?.('queue')
+          onSend(line, 'queue', [])
+          requestAnimationFrame(() => {
+            syncTextareaHeight()
+            textareaRef.current?.focus()
+          })
+          return
+        }
         setInput('')
         setPendingAttachments([])
         setAttachmentError('')
@@ -1078,7 +1099,7 @@ export const ComposerDock = memo(
       const t = resolved.text.trim()
       const attachments = resolved.attachments
       if (!t && attachments.length === 0) return
-      if (t.startsWith('/') && attachments.length === 0) {
+      if (!shouldQueueComposerSlash(mode) && t.startsWith('/') && attachments.length === 0) {
         const body = t.slice(1).trim()
         const space = body.search(/\s/)
         const name = (space >= 0 ? body.slice(0, space) : body).toLowerCase()
@@ -1099,22 +1120,13 @@ export const ComposerDock = memo(
         }
       }
       const bang = attachments.length === 0 ? parseBangCommand(t) : null
-      if (bang && onSlashAction) {
+      if (!shouldQueueComposerSlash(mode) && bang && onSlashAction) {
         clearComposerDraft(draftKey)
         setInput('')
         setPendingAttachments([])
         setPastePreviewId(null)
         setAttachmentError('')
-        onSlashAction(
-          {
-            name: 'shell',
-            description: '在终端执行',
-            scope: 'ui',
-            action: 'run_shell',
-            category: 'tools'
-          },
-          bang
-        )
+        onSlashAction(BANG_SLASH_COMMAND, bang)
         requestAnimationFrame(() => {
           syncTextareaHeight()
           textareaRef.current?.focus()

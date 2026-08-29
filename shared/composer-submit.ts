@@ -132,6 +132,14 @@ export function shouldStickAfterComposerSubmit(mode: ComposerSubmitMode): boolea
   return mode === 'send'
 }
 
+/**
+ * 忙时排队：斜杠 / bang 先当跟进文本，等当前回合结束再解析。
+ * 注入（jump）仍把原文交给当前回合（对标 Codex Steer）。
+ */
+export function shouldQueueComposerSlash(mode: ComposerSubmitMode): boolean {
+  return mode === 'queue'
+}
+
 /** 输入框 Shift+Tab：切换计划模式（对标 Codex Best practices：`/plan` 或 Shift+Tab） */
 export function isPlanModeToggleKey(options: {
   key: string
