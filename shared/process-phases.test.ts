@@ -780,6 +780,74 @@ describe('process phases privacy', () => {
     expect(afterPlanThinkApproval).not.toBeNull()
     expect(afterPlanThinkApproval!.at(-1)?.segment).toBe(awaitingStatus)
     expect(afterPlanThinkApproval!.some((step) => step.segment === nextThink)).toBe(false)
+    const helloAskHang: TurnSegment = {
+      id: 'hello-ask-hang',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Hello'
+    }
+    const helloAskHangDone: TurnSegment = { ...helloAskHang, status: 'done' }
+    const helloAskHangSteps = deriveChronologicalSteps([helloAskHang], { isStreaming: true })
+    const askStatusDoneForHang: TurnSegment = { ...askStatus, status: 'done', endedAt: 21 }
+    const afterAskHangThink = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReady, askStatus, nextThink],
+      true
+    )
+    expect(afterAskHangThink).not.toBeNull()
+    expect(afterAskHangThink!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterAskHangThink!.some((step) => step.segment === askStatus)).toBe(true)
+    expect(afterAskHangThink!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterAskHangToken = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReady, askStatusDoneForHang, firstReply],
+      true
+    )
+    expect(afterAskHangToken).not.toBeNull()
+    expect(afterAskHangToken!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterAskHangToken!.some((step) => step.segment === firstReply)).toBe(false)
+    const afterAskHangThinkSettled = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReady, askStatusDoneForHang, { ...nextThink, status: 'done' }, cmdNextSettled],
+      true
+    )
+    expect(afterAskHangThinkSettled).not.toBeNull()
+    expect(afterAskHangThinkSettled!.at(-1)?.segment).toBe(cmdNextSettled)
+    expect(afterAskHangThinkSettled!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const afterWriteAskThink = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReady, askStatus, nextThink],
+      true
+    )
+    expect(afterWriteAskThink).not.toBeNull()
+    expect(afterWriteAskThink![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteAskThink!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterWriteAskThink!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterWriteAskToken = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReady, askStatusDoneForHang, firstReply],
+      true
+    )
+    expect(afterWriteAskToken).not.toBeNull()
+    expect(afterWriteAskToken!.some((step) => step.segment === firstReply)).toBe(false)
+    const planStatusDone: TurnSegment = { ...planStatus, status: 'done', endedAt: 21.5 }
+    const afterWritePlanAskThink = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, planStatusDone, askReady, askStatus, nextThink],
+      true
+    )
+    expect(afterWritePlanAskThink).not.toBeNull()
+    expect(afterWritePlanAskThink![0].segment).toBe(cmdDoneDiff)
+    expect(afterWritePlanAskThink!.some((step) => step.segment === planStatusDone)).toBe(true)
+    expect(afterWritePlanAskThink!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterWritePlanAskThink!.some((step) => step.segment === nextThink)).toBe(false)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',

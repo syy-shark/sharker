@@ -63,6 +63,16 @@ import {
   isLiveStatusSettleChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
+  isLiveAskNeededThinkAppendChange,
+  isLiveAskNeededAnswerAppendChange,
+  isLiveAskNeededThinkAnswerAppendChange,
+  isLiveAskNeededThinkSettledToolAppendChange,
+  isLiveAskNeededAnswerSettledToolAppendChange,
+  isLiveAskNeededAnswerDemoAppendChange,
+  isLiveAskNeededThinkAnswerDemoAppendChange,
+  isLiveWriteStatAskNeededThinkAppendChange,
+  isLiveWriteStatAskNeededAnswerAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveCancelChange,
@@ -693,7 +703,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具（正文/思考可在同一 16ms 先加长再标 done）、末尾新开一或多个工具（可带一条 Awaiting / Question requested 行）或一条已收束 tool_start+tool_done 工具（可夹 think / 首枚 token / think+token / think+```demo；写盘收束同时下一工具已收束也走 remap，可再夹 think / 首枚 token / think+token / ```demo，或先追加 规划下一步）、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具、status、status+思考、status+散文、status+工具 / 思考+工具 / status+思考+工具、思考+Ask/Awaiting / status+思考+Ask/Awaiting 或 compress 也走 remap + 追加；无新写盘收束同时新开 status+思考 / status+散文 / status+工具 / 思考+工具 / status+思考+工具 / 思考+Ask/Awaiting / status+思考+Ask/Awaiting 也走 remap + 追加；审批或 Ask User 挂上/收束或改写规划下一步为 Awaiting / Question requested 只换工具步与该行，Ask User 作答后同一帧 resolved + tool_done 只把该行与工具收成 done，Deny 后同一帧 resolved + tool_done error 只把 Awaiting 行与工具收成 error（可再追加 规划下一步或下一工具），Allow once 后同一帧 resolved + 首枚 tool_preview 只换 Awaiting 行与该工具写盘 +/-（可再追加 规划下一步或下一工具），Allow once 后同一帧 resolved + tool_done 只把 Awaiting 行与工具收成 done（可再追加 规划下一步或下一工具）；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / token 尾 + tool_start / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格 / TUI Questions n/n） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具（正文/思考可在同一 16ms 先加长再标 done）、末尾新开一或多个工具（可带一条 Awaiting / Question requested 行）或一条已收束 tool_start+tool_done 工具（可夹 think / 首枚 token / think+token / think+```demo；写盘收束同时下一工具已收束也走 remap，可再夹 think / 首枚 token / think+token / ```demo，或先追加 规划下一步）、一条 status 或已完成 compress：只追加这些步；写盘收束同时新开工具、status、status+思考、status+散文、status+工具 / 思考+工具 / status+思考+工具、思考+Ask/Awaiting / status+思考+Ask/Awaiting 或 compress 也走 remap + 追加；无新写盘收束同时新开 status+思考 / status+散文 / status+工具 / 思考+工具 / status+思考+工具 / 思考+Ask/Awaiting / status+思考+Ask/Awaiting 也走 remap + 追加；审批或 Ask User 挂上/收束或改写规划下一步为 Awaiting / Question requested 只换工具步与该行，Ask User 挂起后同一帧可再夹 think / 首枚 token / ```demo（写盘收束时 remap 并追加问句行），作答后同一帧 resolved + tool_done 只把该行与工具收成 done，Deny 后同一帧 resolved + tool_done error 只把 Awaiting 行与工具收成 error（可再追加 规划下一步或下一工具），Allow once 后同一帧 resolved + 首枚 tool_preview 只换 Awaiting 行与该工具写盘 +/-（可再追加 规划下一步或下一工具），Allow once 后同一帧 resolved + tool_done 只把 Awaiting 行与工具收成 done（可再追加 规划下一步或下一工具）；Stop 多条 cancelled 只换这些步；错误收口走思考 remap、不把错误正文推进过程（对标 Codex exec_cell complete_call + add_call / token 尾 + tool_start / 只读并行 / Reconnecting... n/5 / Awaiting approval / request_user_input；不发明 Exploring 分组格 / TUI Questions n/n） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -792,6 +802,16 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveApprovalResolvedChange(prevSegments, segments) &&
     !isLiveUserInputNeededChange(prevSegments, segments) &&
     !isLiveAskResolvedSettleChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkAppendChange(prevSegments, segments) &&
     !isLiveStatusSettleChange(prevSegments, segments)
   ) {
     return null

@@ -151,6 +151,16 @@ import {
   isLiveApprovalResolvedChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
+  isLiveAskNeededThinkAppendChange,
+  isLiveAskNeededAnswerAppendChange,
+  isLiveAskNeededThinkAnswerAppendChange,
+  isLiveAskNeededThinkSettledToolAppendChange,
+  isLiveAskNeededAnswerSettledToolAppendChange,
+  isLiveAskNeededAnswerDemoAppendChange,
+  isLiveAskNeededThinkAnswerDemoAppendChange,
+  isLiveWriteStatAskNeededThinkAppendChange,
+  isLiveWriteStatAskNeededAnswerAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAppendChange,
   isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
@@ -2466,6 +2476,264 @@ describe('live stream ui snapshot', () => {
           segment.status === 'done'
       )
     ).toBe(true)
+    const askHangNeeded = { ...askNeeded, timestamp: 60 }
+    let askHangThink = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 60.1
+    })
+    askHangThink = applyStreamChunk(askHangThink, askHangNeeded)
+    askHangThink = applyStreamChunk(askHangThink, { type: 'think', content: 'Next', timestamp: 60.2 })
+    expect(isLiveAskNeededThinkAppendChange([hello], askHangThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', [hello], askHangThink)).toBe('HmmNext')
+    let askHangToken = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 60.3
+    })
+    askHangToken = applyStreamChunk(askHangToken, { ...askNeeded, timestamp: 60.4 })
+    askHangToken = applyStreamChunk(askHangToken, { type: 'token', content: 'Hi', timestamp: 60.5 })
+    expect(isLiveAskNeededAnswerAppendChange([hello], askHangToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangToken)).toBe('text')
+    let askHangThinkToken = applyStreamChunk(askHangThink, { type: 'token', content: 'Hi', timestamp: 60.6 })
+    expect(isLiveAskNeededThinkAnswerAppendChange([hello], askHangThinkToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangThinkToken)).toBe('text')
+    let askHangThinkSettled = applyStreamChunk(askHangThink, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-hang-think-settle-1',
+      timestamp: 60.7
+    })
+    askHangThinkSettled = applyStreamChunk(askHangThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-hang-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 60.8
+    })
+    expect(isLiveAskNeededThinkSettledToolAppendChange([hello], askHangThinkSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangThinkSettled)).toBe('tool')
+    let askHangTokenSettled = applyStreamChunk(askHangToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'ask-hang-token-settle-1',
+      timestamp: 60.9
+    })
+    askHangTokenSettled = applyStreamChunk(askHangTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'ask-hang-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 61.1
+    })
+    expect(isLiveAskNeededAnswerSettledToolAppendChange([hello], askHangTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangTokenSettled)).toBe('text')
+    let askHangDemo = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 61.2
+    })
+    askHangDemo = applyStreamChunk(askHangDemo, { ...askNeeded, timestamp: 61.3 })
+    askHangDemo = applyStreamChunk(askHangDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 61.4
+    })
+    askHangDemo = applyStreamChunk(askHangDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 61.5
+    })
+    expect(isLiveAskNeededAnswerDemoAppendChange([hello], askHangDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangDemo)).toBe('tool')
+    let askHangThinkDemo = applyStreamChunk(askHangThink, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 61.6
+    })
+    askHangThinkDemo = applyStreamChunk(askHangThinkDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 61.7
+    })
+    expect(isLiveAskNeededThinkAnswerDemoAppendChange([hello], askHangThinkDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangThinkDemo)).toBe('tool')
+    let askPlanThink = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 61.8
+    })
+    askPlanThink = applyStreamChunk(askPlanThink, { ...askNeeded, timestamp: 61.9 })
+    askPlanThink = applyStreamChunk(askPlanThink, { type: 'think', content: 'Next', timestamp: 62.1 })
+    expect(isLiveAskNeededThinkAppendChange(afterPlanStatus, askPlanThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, askPlanThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', afterPlanStatus, askPlanThink)).toBe('HmmNext')
+    let askPlanToken = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 62.2
+    })
+    askPlanToken = applyStreamChunk(askPlanToken, { ...askNeeded, timestamp: 62.3 })
+    askPlanToken = applyStreamChunk(askPlanToken, { type: 'token', content: 'Hi', timestamp: 62.4 })
+    expect(isLiveAskNeededAnswerAppendChange(afterPlanStatus, askPlanToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, askPlanToken)).toBe('text')
+    let askPlanDemo = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 62.5
+    })
+    askPlanDemo = applyStreamChunk(askPlanDemo, { ...askNeeded, timestamp: 62.6 })
+    askPlanDemo = applyStreamChunk(askPlanDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 62.7
+    })
+    askPlanDemo = applyStreamChunk(askPlanDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 62.8
+    })
+    expect(isLiveAskNeededAnswerDemoAppendChange(afterPlanStatus, askPlanDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, askPlanDemo)).toBe('tool')
+    let askRunThink = applyStreamChunk([hello, running], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 63.1
+    })
+    askRunThink = applyStreamChunk(askRunThink, { ...askNeeded, timestamp: 63.2 })
+    askRunThink = applyStreamChunk(askRunThink, { type: 'think', content: 'Next', timestamp: 63.3 })
+    expect(isLiveAskNeededThinkAppendChange([hello, running], askRunThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askRunThink)).toBe('think')
+    const writeAskDone = {
+      type: 'tool_done' as const,
+      toolName: 'run_terminal_cmd',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add' as const, content: 'hi' }],
+        stats: { added: 1, removed: 0 }
+      },
+      timestamp: 63.4
+    }
+    let askWriteThink = applyStreamChunk([hello, running], writeAskDone)
+    askWriteThink = applyStreamChunk(askWriteThink, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 63.5
+    })
+    askWriteThink = applyStreamChunk(askWriteThink, { ...askNeeded, timestamp: 63.6 })
+    askWriteThink = applyStreamChunk(askWriteThink, { type: 'think', content: 'Next', timestamp: 63.7 })
+    expect(isLiveWriteStatAskNeededThinkAppendChange([hello, running], askWriteThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', [hello, running], askWriteThink)).toBe('HmmNext')
+    let askWriteToken = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 63.8 })
+    askWriteToken = applyStreamChunk(askWriteToken, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 63.9
+    })
+    askWriteToken = applyStreamChunk(askWriteToken, { ...askNeeded, timestamp: 64.1 })
+    askWriteToken = applyStreamChunk(askWriteToken, { type: 'token', content: 'Hi', timestamp: 64.2 })
+    expect(isLiveWriteStatAskNeededAnswerAppendChange([hello, running], askWriteToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteToken)).toBe('text')
+    let askWritePlanThink = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 64.3 })
+    askWritePlanThink = applyStreamChunk(askWritePlanThink, {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      timestamp: 64.4
+    })
+    askWritePlanThink = applyStreamChunk(askWritePlanThink, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 64.5
+    })
+    askWritePlanThink = applyStreamChunk(askWritePlanThink, { ...askNeeded, timestamp: 64.6 })
+    askWritePlanThink = applyStreamChunk(askWritePlanThink, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 64.7
+    })
+    expect(isLiveWriteStatStatusAskNeededThinkAppendChange([hello, running], askWritePlanThink)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', [hello, running], askWritePlanThink)).toBe('HmmNext')
+    const processReadyForAskHang = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const processAfterAskHangThink = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangThink
+    })
+    expect(
+      processAfterAskHangThink.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
+      )
+    ).toBe(true)
+    expect(processAfterAskHangThink.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterAskHangThink.thinkText).toBe(processReadyForAskHang.thinkText + 'Next')
+    const processAfterAskHangToken = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangToken
+    })
+    expect(processAfterAskHangToken.contentStreaming).toBe(true)
+    expect(
+      processAfterAskHangToken.processForFlow.some((segment) => segment.kind === 'text')
+    ).toBe(false)
+    const processAfterAskHangDemo = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangDemo
+    })
+    expect(
+      processAfterAskHangDemo.processForFlow.some(
+        (segment) => segment.toolName === 'present_inline_demo'
+      )
+    ).toBe(false)
+    const processReadyForAskWrite = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterAskWriteThink = nextLiveProcessView(processReadyForAskWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askWriteThink
+    })
+    expect(processAfterAskWriteThink.thinkText).toBe(processReadyForAskWrite.thinkText + 'Next')
+    expect(
+      processAfterAskWriteThink.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
+      )
+    ).toBe(true)
+    const answerReadyForAskHang = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const helloAskHangPart = answerReadyForAskHang.parts.find((part) => part.type === 'text')
+    const answerAfterAskHangThink = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangThink
+    })
+    expect(
+      answerAfterAskHangThink.parts.find((part) => part.type === 'text' && part.id === hello.id)
+        ?.content
+    ).toBe(helloAskHangPart?.content)
+    const answerAfterAskHangToken = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangToken
+    })
+    expect(
+      answerAfterAskHangToken.parts.some((part) => part.type === 'text' && part.content.includes('Hi'))
+    ).toBe(true)
+    const answerAfterAskHangDemo = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangDemo
+    })
+    expect(answerAfterAskHangDemo.parts.some((part) => part.type === 'demo')).toBe(true)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

@@ -1300,6 +1300,151 @@ export function isLiveAskResolvedSettleChange(
   return statusSettled === 1 && toolSettled === 1
 }
 
+function isLiveAddedAskTool(segment: TurnSegment | undefined): boolean {
+  return Boolean(
+    segment &&
+      segment.kind === 'tool' &&
+      segment.status === 'active' &&
+      segment.toolName === REQUEST_USER_INPUT_TOOL
+  )
+}
+
+function isLiveAddedAskStatusPair(segment: TurnSegment | undefined): boolean {
+  return isLiveAddedStatusPair(segment) && segment!.toolName === REQUEST_USER_INPUT_TOOL
+}
+
+function hasLiveAskNeededHead(
+  next: readonly TurnSegment[],
+  start: number
+): boolean {
+  return isLiveAddedAskTool(next[start]) && isLiveAddedAskStatusPair(next[start + 1])
+}
+
+function hasLiveAskNeededPrefixClose(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveToolAppendPrefixClose(prev, next) && hasLiveAskNeededHead(next, prev!.length)
+}
+
+function hasLiveAskNeededWriteStatPrefix(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveWriteStatPrefix(prev, next) && hasLiveAskNeededHead(next, prev!.length)
+}
+
+function hasLiveAskNeededWriteStatStatusPrefix(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  return hasLiveAskNeededHead(next, prev!.length + 1)
+}
+
+/** 规划下一步 / 正文后同一帧 Ask User 挂上并立刻 think：过程追加问句与 Question requested，旁白续尾（不发明 TUI Questions n/n） */
+export function isLiveAskNeededThinkAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || next.length !== prev!.length + 3) return false
+  return isLiveAddedThinkPair(next[prev!.length + 2])
+}
+
+/** Ask User 挂上后同一帧首枚 token：过程追加问句行，回答开散文尾 */
+export function isLiveAskNeededAnswerAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || next.length !== prev!.length + 3) return false
+  return isLiveAddedAnswerPair(next[prev!.length + 2])
+}
+
+/** Ask User 挂上后同一帧 think + 首枚 token */
+export function isLiveAskNeededThinkAnswerAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || next.length !== prev!.length + 4) return false
+  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedAnswerPair(next[prev!.length + 3])
+}
+
+/** Ask User 挂上后同一帧 think + 下一工具已 complete_call */
+export function isLiveAskNeededThinkSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length + 2])) {
+    return false
+  }
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+}
+
+/** Ask User 挂上后同一帧首枚 token + 下一工具已 complete_call */
+export function isLiveAskNeededAnswerSettledToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || !isLiveAddedAnswerPair(next[prev!.length + 2])) {
+    return false
+  }
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+}
+
+/** Ask User 挂上后同一帧 ```demo + present_inline_demo */
+export function isLiveAskNeededAnswerDemoAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || next.length !== prev!.length + 4) return false
+  const text = next[prev!.length + 2]
+  if (!text || text.kind !== 'text' || !hasStreamingDemoFence(text.content ?? '')) return false
+  return isLiveAddedInlineDemo(next[prev!.length + 3])
+}
+
+/** Ask User 挂上后同一帧 think + ```demo + present_inline_demo */
+export function isLiveAskNeededThinkAnswerDemoAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length + 2])) {
+    return false
+  }
+  if (next.length !== prev!.length + 5) return false
+  const text = next[prev!.length + 3]
+  if (!text || text.kind !== 'text' || !hasStreamingDemoFence(text.content ?? '')) return false
+  return isLiveAddedInlineDemo(next[prev!.length + 4])
+}
+
+/** 写盘收束同时 Ask User 挂上并立刻 think：过程 remap 并追加问句行，旁白续尾，回答只换 diff 槽 */
+export function isLiveWriteStatAskNeededThinkAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededWriteStatPrefix(prev, next) || next.length !== prev!.length + 3) return false
+  return isLiveAddedThinkPair(next[prev!.length + 2])
+}
+
+/** 写盘收束同时 Ask User 挂上并立刻首枚 token */
+export function isLiveWriteStatAskNeededAnswerAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededWriteStatPrefix(prev, next) || next.length !== prev!.length + 3) return false
+  return isLiveAddedAnswerPair(next[prev!.length + 2])
+}
+
+/** 写盘收束同时 规划下一步 + Ask User 挂上并立刻 think */
+export function isLiveWriteStatStatusAskNeededThinkAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveAskNeededWriteStatStatusPrefix(prev, next) || next.length !== prev!.length + 4) {
+    return false
+  }
+  return isLiveAddedThinkPair(next[prev!.length + 3])
+}
+
 function isLiveCancelRetarget(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev.id !== next.id || prev.kind !== next.kind) return false
   if (next.status !== 'cancelled') return false
@@ -2416,6 +2561,16 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return 'tool'
   if (isLiveUserInputNeededChange(prevSegments, segments)) return 'tool'
   if (isLiveAskResolvedSettleChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskNeededThinkAppendChange(prevSegments, segments)) return 'think'
+  if (isLiveAskNeededAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveAskNeededThinkAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveAskNeededThinkSettledToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskNeededAnswerSettledToolAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveAskNeededAnswerDemoAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskNeededThinkAnswerDemoAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatAskNeededThinkAppendChange(prevSegments, segments)) return 'think'
+  if (isLiveWriteStatAskNeededAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveWriteStatStatusAskNeededThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveStatusSettleChange(prevSegments, segments)) return 'status'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (isLiveMultiToolSettleChange(prevSegments, segments)) return 'tool'
@@ -2528,6 +2683,19 @@ export function nextLiveThinkText(
       isLiveWriteStatStatusThinkStatusAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
+  }
+  if (
+    prevSegments &&
+    (isLiveAskNeededThinkAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkAnswerAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkSettledToolAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) ||
+      isLiveWriteStatAskNeededThinkAppendChange(prevSegments, segments))
+  ) {
+    return prev + (segments[prevSegments.length + 2]?.content ?? '')
+  }
+  if (prevSegments && isLiveWriteStatStatusAskNeededThinkAppendChange(prevSegments, segments)) {
+    return prev + (segments[prevSegments.length + 3]?.content ?? '')
   }
   if (prevSegments && shouldSkipLiveStreamDerivation(prevSegments, segments)) {
     return nextLiveThinkTextOnPrefixChange(prev, prevSegments, segments)
@@ -2811,6 +2979,64 @@ export function nextLiveProcessView(
       identity: processHold.identity,
       segments,
       answerTailPlain: liveAnswerTailIsPlain(segments)
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
+    (isLiveAskNeededThinkAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededAnswerAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededThinkAnswerAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededThinkSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededAnswerSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededAnswerDemoAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededThinkAnswerDemoAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatAskNeededThinkAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatAskNeededAnswerAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusAskNeededThinkAppendChange(processHold.segments, segments))
+  ) {
+    const added = segments.slice(processHold.segments.length).filter((segment) => {
+      if (segment.kind === 'thinking' || segment.kind === 'text') return false
+      return segment.toolName !== 'present_inline_demo'
+    })
+    const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
+    const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const inlineDemo =
+      isLiveAskNeededAnswerDemoAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededThinkAnswerDemoAppendChange(processHold.segments, segments)
+    const answer =
+      isLiveAskNeededAnswerAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededThinkAnswerAppendChange(processHold.segments, segments) ||
+      isLiveAskNeededAnswerSettledToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatAskNeededAnswerAppendChange(processHold.segments, segments)
+    const hasProse =
+      answer &&
+      segments.some(
+        (segment, index) =>
+          index >= processHold.segments.length &&
+          segment.kind === 'text' &&
+          Boolean((segment.content ?? '').trim())
+      )
+    const flags = inlineDemo
+      ? liveDemoProcessFlags(prev, segments[segments.length - 1]!)
+      : answer
+        ? {
+            contentStreaming: prev.contentStreaming || Boolean(hasProse),
+            answerStreaming: prev.answerStreaming || Boolean(hasProse)
+          }
+        : {}
+    const view = {
+      ...prev,
+      processForFlow: [...remapped, ...added],
+      thinkText,
+      ...flags
+    }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: inlineDemo ? processHold.answerTailPlain : Boolean(hasProse) || processHold.answerTailPlain
     }
     return view
   }
@@ -3410,6 +3636,20 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (isLiveApprovalResolvedChange(input.prevSegments, input.segments)) return true
   if (isLiveUserInputNeededChange(input.prevSegments, input.segments)) return true
   if (isLiveAskResolvedSettleChange(input.prevSegments, input.segments)) return true
+  if (isLiveAskNeededThinkAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
+  if (isLiveAskNeededThinkSettledToolAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
+  if (isLiveAskNeededAnswerAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAskNeededThinkAnswerAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAskNeededAnswerSettledToolAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAskNeededAnswerDemoAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveAskNeededThinkAnswerDemoAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveWriteStatAskNeededThinkAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveWriteStatAskNeededAnswerAppendChange(input.prevSegments, input.segments)) return false
+  if (isLiveWriteStatStatusAskNeededThinkAppendChange(input.prevSegments, input.segments)) return false
   if (isLiveStatusSettleChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (isLiveMultiToolSettleChange(input.prevSegments, input.segments)) return true
@@ -3695,7 +3935,8 @@ export function nextLiveAnswerView(
         isLiveWriteStatStatusAnswerAppendChange(prevSegments, segments) ||
         isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments) ||
         isLiveApprovalAllowedWriteStatAnswerAppendChange(prevSegments, segments) ||
-        isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(prevSegments, segments)
+        isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(prevSegments, segments) ||
+        isLiveWriteStatAskNeededAnswerAppendChange(prevSegments, segments)
       ) {
         const view = appendLiveAnswerView(patched, segments[segments.length - 1]!)
         answerGrowHold = { view, segments, tailPlain: true }
@@ -3829,7 +4070,9 @@ export function nextLiveAnswerView(
       isLiveStatusCancelAppendChange(prevSegments, segments) ||
       isLiveThinkCancelAppendChange(prevSegments, segments) ||
       isLiveStatusThinkCancelAppendChange(prevSegments, segments) ||
-      isLiveStatusAppendChange(prevSegments, segments))
+      isLiveStatusAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkSettledToolAppendChange(prevSegments, segments))
   ) {
     const sealed = findLiveClosedAnswerText(prevSegments, segments)
     if (sealed) {
@@ -3885,6 +4128,24 @@ export function nextLiveAnswerView(
   }
   if (
     prev &&
+    (isLiveAskNeededAnswerAppendChange(prevSegments, segments) ||
+      isLiveAskNeededAnswerSettledToolAppendChange(prevSegments, segments))
+  ) {
+    const text = segments[prevSegments!.length + 2]!
+    const appended = appendLiveAnswerView(prev, text)
+    const view = text.status === 'done' ? sealLiveAnswerTail(appended, text) : appended
+    answerGrowHold = { view, segments, tailPlain: text.status === 'active' }
+    return view
+  }
+  if (prev && isLiveAskNeededThinkAnswerAppendChange(prevSegments, segments)) {
+    const text = segments[prevSegments!.length + 3]!
+    const appended = appendLiveAnswerView(prev, text)
+    const view = text.status === 'done' ? sealLiveAnswerTail(appended, text) : appended
+    answerGrowHold = { view, segments, tailPlain: text.status === 'active' }
+    return view
+  }
+  if (
+    prev &&
     (isLiveAnswerAppendChange(prevSegments, segments) ||
       isLiveThinkAnswerAppendChange(prevSegments, segments) ||
       isLiveStatusAnswerAppendChange(prevSegments, segments) ||
@@ -3933,6 +4194,8 @@ export function nextLiveAnswerView(
       isLiveThinkAnswerDemoAppendChange(prevSegments, segments) ||
       isLiveApprovalAllowedAnswerDemoAppendChange(prevSegments, segments) ||
       isLiveApprovalAllowedThinkAnswerDemoAppendChange(prevSegments, segments) ||
+      isLiveAskNeededAnswerDemoAppendChange(prevSegments, segments) ||
+      isLiveAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) ||
       isLiveStatusDemoAppendChange(prevSegments, segments) ||
       isLiveThinkDemoAppendChange(prevSegments, segments) ||
       isLiveStatusThinkDemoAppendChange(prevSegments, segments))
