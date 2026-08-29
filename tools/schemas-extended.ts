@@ -244,7 +244,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'manage_scheduled_task',
       description:
-        'Create, update, list, pause, resume, or delete a desktop scheduled task. Use when the user asks to schedule recurring work, return to this chat on a cadence, or change an existing scheduled task. Cron is 5 fields (min hour day month weekday). destination=thread returns to the current or named chat; destination=new starts a new chat. run_in=worktree isolates Git changes; run_in=local edits the project checkout. Leave model and reasoning empty to use the current defaults, or set providerId/model and thinkingLevel/reasoning to pin them.',
+        'Create, update, list, pause, resume, or delete a desktop scheduled task. Use when the user asks to schedule recurring work, return to this chat on a cadence, or change an existing scheduled task. Cron is 5 fields (min hour day month weekday). For an advanced cadence, set rrule to an RFC 5545 rule such as RRULE:FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0. destination=thread returns to the current or named chat; destination=new starts a new chat. run_in=worktree isolates Git changes; run_in=local edits the project checkout. workspaceIds lets the same standalone task run on more than one project. Leave model and reasoning empty to use the current defaults, or set providerId/model and thinkingLevel/reasoning to pin them.',
       parameters: {
         type: 'object',
         properties: {
@@ -256,6 +256,18 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
           title: { type: 'string' },
           prompt: { type: 'string' },
           cron: { type: 'string', description: 'Five-field cron, e.g. 0 9 * * 1' },
+          rrule: {
+            type: 'string',
+            description:
+              'RFC 5545 RRULE, e.g. RRULE:FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0'
+          },
+          schedule: { type: 'string', description: 'Alias of rrule' },
+          workspaceIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Project ids for a standalone task that runs on more than one project'
+          },
+          workspace_ids: { type: 'array', items: { type: 'string' } },
           destination: { type: 'string', enum: ['new', 'thread'] },
           conversationId: { type: 'string' },
           run_in: { type: 'string', enum: ['worktree', 'local'] },

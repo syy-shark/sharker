@@ -7,8 +7,10 @@ import {
   applyScheduledTurnSettings,
   parseAutomationDestination,
   parseAutomationRunIn,
+  parseAutomationWorkspaceIds,
   parseOptionalAutomationId,
   resolveAutomationRunPlan,
+  resolveAutomationWorkspaceTargets,
   shouldPrepareAutomationWorktree
 } from './automation'
 
@@ -121,6 +123,48 @@ describe('automation destination', () => {
       ]
     })
     expect(applyScheduledTurnSettings(settings, { providerId: 'missing' })).toBe(settings)
+    expect(parseAutomationWorkspaceIds('ws-a, ws-b')).toEqual(['ws-a', 'ws-b'])
+    const rruleJob = applyScheduledTaskAction([], {
+      op: 'create',
+      id: 'job-3',
+      title: '月初',
+      prompt: '盘点',
+      rrule: 'FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0',
+      workspace_ids: ['ws-a', 'ws-b']
+    })
+    expect(rruleJob.jobs[0]).toMatchObject({
+      rrule: 'RRULE:FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0',
+      workspaceIds: ['ws-a', 'ws-b']
+    })
+    expect(
+      resolveAutomationWorkspaceTargets({
+        destination: 'new',
+        workspaceIds: ['ws-b', 'missing'],
+        workspaces: [
+          { id: 'ws-a', path: '/a' },
+          { id: 'ws-b', path: '/b' }
+        ],
+        activeWorkspaceId: 'ws-a'
+      })
+    ).toEqual([{ workspaceId: 'ws-b', workspacePath: '/b' }])
+    expect(
+      resolveAutomationWorkspaceTargets({
+        destination: 'thread',
+        workspaceIds: ['ws-a'],
+        workspaces: [{ id: 'ws-a', path: '/a' }],
+        activeWorkspaceId: 'ws-a'
+      })
+    ).toEqual([])
+    expect(
+      resolveAutomationWorkspaceTargets({
+        destination: 'new',
+        workspaces: [
+          { id: 'ws-a', path: '/a' },
+          { id: 'ws-b', path: '/b' }
+        ],
+        activeWorkspaceId: 'ws-b'
+      })
+    ).toEqual([{ workspaceId: 'ws-b', workspacePath: '/b' }])
     expect(
       applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
     ).toBe(false)

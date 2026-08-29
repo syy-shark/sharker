@@ -3,7 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConversationSummary } from '../../shared/conversation'
-import type { ProviderConfig } from '../../shared/types'
+import type { ProviderConfig, WorkspaceItem } from '../../shared/types'
 import { resolveThinkingOptions } from '../../shared/thinking-levels'
 import {
   defaultAutomationThreadId,
@@ -34,6 +34,8 @@ interface Props {
   activeConversationId?: string | null
   providers?: ProviderConfig[]
   activeProviderId?: string
+  workspaces?: WorkspaceItem[]
+  activeWorkspaceId?: string
 }
 
 /** 自动化列表与编辑 */
@@ -46,7 +48,9 @@ export function AutomationsPage({
   conversations = [],
   activeConversationId = null,
   providers = [],
-  activeProviderId = ''
+  activeProviderId = '',
+  workspaces = [],
+  activeWorkspaceId = ''
 }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
@@ -250,6 +254,18 @@ export function AutomationsPage({
                 </label>
 
                 <label className="automation-field">
+                  <span>RRULE</span>
+                  <input
+                    value={j.rrule || ''}
+                    placeholder="RRULE:FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0"
+                    onChange={(e) => updateJob(j.id, { rrule: e.target.value })}
+                    onBlur={persistCurrent}
+                    spellCheck={false}
+                    aria-label="高级日程 RRULE"
+                  />
+                </label>
+
+                <label className="automation-field">
                   <span>提示词</span>
                   <textarea
                     value={j.prompt}
@@ -282,20 +298,57 @@ export function AutomationsPage({
                 </label>
 
                 {parseAutomationDestination(j.destination) === 'new' ? (
-                  <label className="automation-field">
-                    <span>环境</span>
-                    <select
-                      value={parseAutomationRunIn(j.runIn)}
-                      onChange={(e) => {
-                        updateJob(j.id, { runIn: parseAutomationRunIn(e.target.value) })
-                        persistCurrent()
-                      }}
-                      aria-label="运行环境"
-                    >
-                      <option value="worktree">隔离 worktree</option>
-                      <option value="local">本地项目</option>
-                    </select>
-                  </label>
+                  <>
+                    <label className="automation-field">
+                      <span>环境</span>
+                      <select
+                        value={parseAutomationRunIn(j.runIn)}
+                        onChange={(e) => {
+                          updateJob(j.id, { runIn: parseAutomationRunIn(e.target.value) })
+                          persistCurrent()
+                        }}
+                        aria-label="运行环境"
+                      >
+                        <option value="worktree">隔离 worktree</option>
+                        <option value="local">本地项目</option>
+                      </select>
+                    </label>
+                    <fieldset className="automation-field automation-projects">
+                      <legend>项目</legend>
+                      <p className="automation-projects-hint">
+                        不勾选则跟当前项目；可同一任务跑多个项目
+                      </p>
+                      {workspaces.length === 0 ? (
+                        <p className="automations-empty">还没有工作区</p>
+                      ) : (
+                        workspaces.map((ws) => {
+                          const checked = (j.workspaceIds ?? []).includes(ws.id)
+                          return (
+                            <label key={ws.id} className="automation-project">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const cur = j.workspaceIds ?? []
+                                  const next = checked
+                                    ? cur.filter((id) => id !== ws.id)
+                                    : [...cur, ws.id]
+                                  updateJob(j.id, {
+                                    workspaceIds: next.length ? next : undefined
+                                  })
+                                  persistCurrent()
+                                }}
+                              />
+                              <span>
+                                {ws.label || ws.path}
+                                {ws.id === activeWorkspaceId ? '（当前）' : ''}
+                              </span>
+                            </label>
+                          )
+                        })
+                      )}
+                    </fieldset>
+                  </>
                 ) : null}
 
                 <label className="automation-field">

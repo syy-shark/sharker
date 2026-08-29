@@ -124,6 +124,7 @@ import {
 import type { AutomationQueueItem, QueueTriageAction } from '../shared/automation-queue'
 import {
   resolveAutomationRunPlan,
+  resolveAutomationWorkspaceTargets,
   shouldPrepareAutomationWorktree,
   type AutomationJob
 } from '../shared/automation'
@@ -1759,42 +1760,51 @@ export default function App() {
           return
         }
 
-        const wsId = settingsRef.current.activeWorkspaceId
-        if (!wsId || !window.sharker.createConversation) {
+        const targets = resolveAutomationWorkspaceTargets({
+          destination: j.destination,
+          workspaceIds: j.workspaceIds,
+          workspacePath: j.workspacePath,
+          workspaces: settingsRef.current.workspaces,
+          activeWorkspaceId: settingsRef.current.activeWorkspaceId
+        })
+        if (!targets.length || !window.sharker.createConversation) {
           void dispatchTurnRef.current(`[自动化] ${j.prompt}`, [], undefined, {
             providerId: j.providerId,
             thinkingLevel: j.thinkingLevel
           })
           return
         }
-        const conv = await window.sharker.createConversation(wsId)
-        const cwd = getActiveWorkspacePath(settingsRef.current)
-        let workspacePath = cwd || undefined
-        if (
-          shouldPrepareAutomationWorktree({ runMode: 'new', runIn: j.runIn }) &&
-          cwd &&
-          window.sharker.prepareWorktree
-        ) {
-          saveThreadRuntime(conv.id, { mode: 'worktree' })
-          const prepared = await window.sharker.prepareWorktree(cwd, conv.id, {
-            keep: settingsRef.current.worktreeKeepCount
+        for (const target of targets) {
+          const conv = await window.sharker.createConversation(target.workspaceId, {
+            activate: false
           })
-          if (prepared.ok) {
-            saveThreadRuntime(conv.id, { mode: 'worktree', worktreePath: prepared.path })
-            workspacePath = prepared.path
+          let workspacePath = target.workspacePath || undefined
+          if (
+            shouldPrepareAutomationWorktree({ runMode: 'new', runIn: j.runIn }) &&
+            target.workspacePath &&
+            window.sharker.prepareWorktree
+          ) {
+            saveThreadRuntime(conv.id, { mode: 'worktree' })
+            const prepared = await window.sharker.prepareWorktree(target.workspacePath, conv.id, {
+              keep: settingsRef.current.worktreeKeepCount
+            })
+            if (prepared.ok) {
+              saveThreadRuntime(conv.id, { mode: 'worktree', worktreePath: prepared.path })
+              workspacePath = prepared.path
+            } else {
+              saveThreadRuntime(conv.id, { mode: 'local' })
+              console.warn('[automation] worktree fallback', prepared.error)
+            }
           } else {
             saveThreadRuntime(conv.id, { mode: 'local' })
-            console.warn('[automation] worktree fallback', prepared.error)
           }
-        } else {
-          saveThreadRuntime(conv.id, { mode: 'local' })
+          await recordInbox(conv.id, target.workspaceId, workspacePath)
+          void refreshConversationList(target.workspaceId)
+          void dispatchTurnRef.current(text, [], conv.id, {
+            providerId: j.providerId,
+            thinkingLevel: j.thinkingLevel
+          })
         }
-        await recordInbox(conv.id, wsId, workspacePath)
-        void refreshConversationList(wsId)
-        void dispatchTurnRef.current(text, [], conv.id, {
-          providerId: j.providerId,
-          thinkingLevel: j.thinkingLevel
-        })
       })()
     })
     return () => off?.()
@@ -7360,6 +7370,8 @@ export default function App() {
                 activeConversationId={activeConversationId}
                 providers={settings.providers}
                 activeProviderId={settings.activeProviderId}
+                workspaces={settings.workspaces}
+                activeWorkspaceId={settings.activeWorkspaceId}
                 onBack={() => setPage('chat')}
                 onOpenConversation={(conversationId) => {
                   const wsId = settingsRef.current.activeWorkspaceId

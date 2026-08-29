@@ -168,8 +168,10 @@
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
-| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前，对标 Codex leave model and reasoning on default）；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
-| `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队、本地/隔离、对话内创建 |
+| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前）；可选 `rrule` 与 `workspaceIds`（对标 Codex RRULE / 同一任务多个项目）；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
+| `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队、本地/隔离、对话内创建、RRULE / 多项目 |
+| `automation-schedule.ts` | 五字段 cron 与 RFC 5545 RRULE 分钟匹配（官方例 `FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0`）；有 RRULE 优先 |
+| `automation-schedule.test.ts` | cron 通配 / 步进、官方 RRULE、UNTIL、日程回退 |
 | `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc |
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |

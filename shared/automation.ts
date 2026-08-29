@@ -3,6 +3,7 @@
  * 对标 Codex Scheduled：standalone 每次新对话，或回到指定对话沿用上下文。
  * @see shared/ARCH.md
  */
+import { formatAutomationRRule, isAutomationSchedule } from './automation-schedule'
 
 /** 到期后开新对话，或回到绑定的那条对话（对标 Codex return to current chat / start a new chat） */
 export type AutomationDestination = 'new' | 'thread'
@@ -15,10 +16,14 @@ export interface AutomationJob {
   id: string
   title: string
   prompt: string
-  /** 简易 cron：分 时 日 月 周 */
+  /** 简易 cron：分 时 日 月 周；有 `rrule` 时只作备用 */
   cron: string
+  /** 高级日程 RFC 5545（对标 Codex edit RRULE） */
+  rrule?: string
   enabled: boolean
   workspacePath?: string
+  /** 同一任务跑多个项目（对标 Codex one scheduled task on more than one project） */
+  workspaceIds?: string[]
   lastRunAt?: string
   destination?: AutomationDestination
   /** `destination === 'thread'` 时绑定的对话 */
@@ -78,6 +83,53 @@ export function isAutomationCron(expr: unknown): boolean {
   return String(expr ?? '').trim().split(/\s+/).length >= 5
 }
 
+/** 勾选的工作区 id，去空去重 */
+export function parseAutomationWorkspaceIds(raw: unknown): string[] | undefined {
+  const list = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? raw.split(/[,;\s]+/)
+      : []
+  const ids = [...new Set(list.map((row) => String(row ?? '').trim()).filter(Boolean))]
+  return ids.length ? ids : undefined
+}
+
+/**
+ * 独立新对话要跑哪些项目。回到指定对话时不拆项目。
+ * 没勾选则跟当前工作区（或遗留的单个 `workspacePath`）。
+ */
+export function resolveAutomationWorkspaceTargets(input: {
+  destination?: unknown
+  workspaceIds?: unknown
+  workspacePath?: unknown
+  workspaces: Array<{ id: string; path: string }>
+  activeWorkspaceId?: string
+}): Array<{ workspaceId: string; workspacePath: string }> {
+  if (parseAutomationDestination(input.destination) === 'thread') return []
+  const byId = new Map(input.workspaces.map((row) => [row.id, row]))
+  const wanted = parseAutomationWorkspaceIds(input.workspaceIds)
+  if (wanted?.length) {
+    return wanted.flatMap((id) => {
+      const row = byId.get(id)
+      return row ? [{ workspaceId: row.id, workspacePath: row.path }] : []
+    })
+  }
+  const legacy = String(input.workspacePath ?? '').trim()
+  if (legacy) {
+    const hit = input.workspaces.find((row) => row.path === legacy)
+    return [
+      {
+        workspaceId: hit?.id || String(input.activeWorkspaceId || ''),
+        workspacePath: hit?.path || legacy
+      }
+    ].filter((row) => row.workspacePath)
+  }
+  const active = byId.get(String(input.activeWorkspaceId || ''))
+  if (active) return [{ workspaceId: active.id, workspacePath: active.path }]
+  const first = input.workspaces[0]
+  return first ? [{ workspaceId: first.id, workspacePath: first.path }] : []
+}
+
 export function normalizeAutomationJob(
   raw: Partial<AutomationJob> & Pick<AutomationJob, 'id'>
 ): AutomationJob {
@@ -89,8 +141,10 @@ export function normalizeAutomationJob(
     title: String(raw.title ?? ''),
     prompt: String(raw.prompt ?? ''),
     cron: String(raw.cron ?? ''),
+    rrule: formatAutomationRRule(raw.rrule),
     enabled: Boolean(raw.enabled),
     workspacePath: raw.workspacePath ? String(raw.workspacePath) : undefined,
+    workspaceIds: parseAutomationWorkspaceIds(raw.workspaceIds),
     lastRunAt: raw.lastRunAt ? String(raw.lastRunAt) : undefined,
     destination,
     conversationId,
@@ -144,6 +198,8 @@ export function applyScheduledTaskAction(
     title?: unknown
     prompt?: unknown
     cron?: unknown
+    rrule?: unknown
+    schedule?: unknown
     destination?: unknown
     conversationId?: unknown
     runIn?: unknown
@@ -153,6 +209,8 @@ export function applyScheduledTaskAction(
     model?: unknown
     thinkingLevel?: unknown
     reasoning?: unknown
+    workspaceIds?: unknown
+    workspace_ids?: unknown
   },
   options?: { currentConversationId?: string }
 ): { jobs: AutomationJob[]; message: string; changed: boolean } {
@@ -166,7 +224,9 @@ export function applyScheduledTaskAction(
             const env = parseAutomationRunIn(job.runIn)
             const model = job.providerId || 'default'
             const effort = job.thinkingLevel || 'default'
-            return `- ${job.id} ${job.enabled ? 'on' : 'off'} ${dest} ${env} ${model}/${effort} ${job.cron} ${job.title}`
+            const when = job.rrule || job.cron
+            const projects = job.workspaceIds?.length ? ` projects=${job.workspaceIds.length}` : ''
+            return `- ${job.id} ${job.enabled ? 'on' : 'off'} ${dest} ${env} ${model}/${effort}${projects} ${when} ${job.title}`
           })
           .join('\n')
 
@@ -176,8 +236,11 @@ export function applyScheduledTaskAction(
     const title = String(action.title ?? '').trim()
     const prompt = String(action.prompt ?? '').trim()
     const cron = String(action.cron ?? '').trim()
+    const rrule = formatAutomationRRule(action.rrule ?? action.schedule)
     if (!title || !prompt) throw new Error('title and prompt are required')
-    if (!isAutomationCron(cron)) throw new Error('cron must have 5 fields (min hour day month weekday)')
+    if (!isAutomationSchedule({ cron, rrule })) {
+      throw new Error('cron must have 5 fields, or rrule must be an RFC 5545 RRULE')
+    }
     const destination = parseAutomationDestination(action.destination)
     const conversationId =
       destination === 'thread'
@@ -189,12 +252,14 @@ export function applyScheduledTaskAction(
       title,
       prompt,
       cron,
+      rrule,
       enabled: action.enabled === false ? false : true,
       destination,
       conversationId,
       runIn: parseAutomationRunIn(action.runIn ?? action.run_in),
       providerId: parseOptionalAutomationId(action.providerId ?? action.model),
-      thinkingLevel: parseOptionalAutomationId(action.thinkingLevel ?? action.reasoning)
+      thinkingLevel: parseOptionalAutomationId(action.thinkingLevel ?? action.reasoning),
+      workspaceIds: parseAutomationWorkspaceIds(action.workspaceIds ?? action.workspace_ids)
     })
     return {
       jobs: [...jobs, job],
@@ -224,8 +289,12 @@ export function applyScheduledTaskAction(
   }
   if (op === 'update') {
     const cron = action.cron != null ? String(action.cron).trim() : prev.cron
-    if (action.cron != null && !isAutomationCron(cron)) {
-      throw new Error('cron must have 5 fields (min hour day month weekday)')
+    const rrule =
+      action.rrule != null || action.schedule != null
+        ? formatAutomationRRule(action.rrule ?? action.schedule)
+        : prev.rrule
+    if (!isAutomationSchedule({ cron, rrule })) {
+      throw new Error('cron must have 5 fields, or rrule must be an RFC 5545 RRULE')
     }
     const destination =
       action.destination != null
@@ -241,6 +310,7 @@ export function applyScheduledTaskAction(
       title: action.title != null ? String(action.title) : prev.title,
       prompt: action.prompt != null ? String(action.prompt) : prev.prompt,
       cron,
+      rrule,
       enabled: typeof action.enabled === 'boolean' ? action.enabled : prev.enabled,
       destination,
       conversationId,
@@ -255,7 +325,11 @@ export function applyScheduledTaskAction(
       thinkingLevel:
         action.thinkingLevel != null || action.reasoning != null
           ? parseOptionalAutomationId(action.thinkingLevel ?? action.reasoning)
-          : prev.thinkingLevel
+          : prev.thinkingLevel,
+      workspaceIds:
+        action.workspaceIds != null || action.workspace_ids != null
+          ? parseAutomationWorkspaceIds(action.workspaceIds ?? action.workspace_ids)
+          : prev.workspaceIds
     })
     return {
       jobs: jobs.map((job) => (job.id === id ? updated : job)),
