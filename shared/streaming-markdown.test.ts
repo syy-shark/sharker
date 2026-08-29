@@ -1442,6 +1442,28 @@ describe('splitStreamingMarkdown', () => {
         expect(nextTable.rows[0]?.[1]).toEqual([{ type: 'text', text: '20' }])
       }
     }
+    const quoteFence = '> ```\n> x\n> ```'
+    const quoteFenceFirst = parseCheapProseBlocks(quoteFence)
+    const quoteFenceAfter = continueCheapProseBlocks(quoteFence, quoteFenceFirst, `${quoteFence}\n> after`)
+    if (quoteFenceFirst[0]?.type === 'quote' && quoteFenceAfter[0]?.type === 'quote') {
+      expect(quoteFenceAfter[0].blocks[0]).toBe(quoteFenceFirst[0].blocks[0])
+      expect(quoteFenceAfter[0].blocks[1]).toMatchObject({
+        type: 'p',
+        nodes: [{ type: 'text', text: 'after' }]
+      })
+    }
+    const quoteFenceMore = continueCheapProseBlocks(
+      `${quoteFence}\n> after`,
+      quoteFenceAfter,
+      `${quoteFence}\n> after more`
+    )
+    if (quoteFenceAfter[0]?.type === 'quote' && quoteFenceMore[0]?.type === 'quote') {
+      expect(quoteFenceMore[0].blocks[0]).toBe(quoteFenceAfter[0].blocks[0])
+      expect(quoteFenceMore[0].blocks[1]).toMatchObject({
+        type: 'p',
+        nodes: [{ type: 'text', text: 'after more' }]
+      })
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
