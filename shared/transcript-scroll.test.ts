@@ -6,8 +6,13 @@ import {
 } from './transcript-scroll'
 import {
   effectiveTranscriptWindowStart,
+  mergeConversationHistory,
+  nextHistoryStartSeq,
+  prependHistoryPage,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
+  shiftPinnedStartAfterPrepend,
+  shouldFetchOlderHistoryPage,
   shouldRevealOlderTranscript,
   stickTranscriptWindowStart,
   windowStartToIncludeIndex
@@ -106,5 +111,35 @@ describe('transcript scroll restore', () => {
     expect(
       shouldRevealOlderTranscript({ scrollTop: 200, locked: true, canReveal: true })
     ).toBe(false)
+    expect(
+      shouldFetchOlderHistoryPage({
+        scrollTop: 8,
+        locked: true,
+        windowStart: 0,
+        hasOlder: true
+      })
+    ).toBe(true)
+    expect(
+      shouldFetchOlderHistoryPage({
+        scrollTop: 8,
+        locked: true,
+        windowStart: 12,
+        hasOlder: true
+      })
+    ).toBe(false)
+    expect(prependHistoryPage([{ id: 'b' }, { id: 'c' }], [{ id: 'a' }, { id: 'b' }])).toEqual([
+      { id: 'a' },
+      { id: 'b' },
+      { id: 'c' }
+    ])
+    expect(mergeConversationHistory([{ id: 'a' }, { id: 'b' }], [{ id: 'b' }, { id: 'c' }])).toEqual([
+      { id: 'a' },
+      { id: 'b' },
+      { id: 'c' }
+    ])
+    expect(shiftPinnedStartAfterPrepend(10, 30)).toBe(40)
+    expect(shiftPinnedStartAfterPrepend(null, 30)).toBeNull()
+    expect(nextHistoryStartSeq(160, 30)).toBe(130)
+    expect(nextHistoryStartSeq(10, 30)).toBe(0)
   })
 })

@@ -67,7 +67,55 @@ function rowToMessage(row: {
   return msg
 }
 
+/** 会话消息条数（给尾页起点） */
+async function countSessionMessages(sessionId: string): Promise<number> {
+  const db = await getMemoryDb()
+  const res = await db.query<{ n: string | number }>(
+    'SELECT COUNT(*)::int AS n FROM session_messages WHERE session_id = $1',
+    [sessionId]
+  )
+  return Number(res.rows[0]?.n ?? 0)
+}
+
 async function loadMessages(sessionId: string): Promise<ChatMessage[]> {
+  return loadMessagesFromSeq(sessionId, 0)
+}
+
+/** 从 `startSeq` 起按序取出消息（可限条数） */
+export async function loadMessagesFromSeq(
+  sessionId: string,
+  startSeq: number,
+  limit?: number
+): Promise<ChatMessage[]> {
+  const db = await getMemoryDb()
+  const start = Math.max(0, Math.floor(startSeq))
+  const res = await db.query<{
+    id: string
+    role: string
+    content: string
+    tool_call_id: string | null
+    tool_name: string | null
+    meta: unknown
+  }>(
+    limit != null
+      ? `SELECT id, role, content, tool_call_id, tool_name, meta
+         FROM session_messages WHERE session_id = $1 AND seq >= $2
+         ORDER BY seq ASC LIMIT $3`
+      : `SELECT id, role, content, tool_call_id, tool_name, meta
+         FROM session_messages WHERE session_id = $1 AND seq >= $2
+         ORDER BY seq ASC`,
+    limit != null ? [sessionId, start, Math.max(0, Math.floor(limit))] : [sessionId, start]
+  )
+  return res.rows.map(rowToMessage)
+}
+
+/** 取 `beforeSeq` 之前更早的一页（对标 Codex thread/turns/list nextCursor） */
+export async function loadOlderMessages(
+  sessionId: string,
+  beforeSeq: number,
+  limit: number
+): Promise<ChatMessage[]> {
+  if (beforeSeq <= 0 || limit <= 0) return []
   const db = await getMemoryDb()
   const res = await db.query<{
     id: string
@@ -78,10 +126,16 @@ async function loadMessages(sessionId: string): Promise<ChatMessage[]> {
     meta: unknown
   }>(
     `SELECT id, role, content, tool_call_id, tool_name, meta
-     FROM session_messages WHERE session_id = $1 ORDER BY seq ASC`,
-    [sessionId]
+     FROM session_messages WHERE session_id = $1 AND seq < $2
+     ORDER BY seq DESC LIMIT $3`,
+    [sessionId, Math.floor(beforeSeq), Math.floor(limit)]
   )
-  return res.rows.map(rowToMessage)
+  return res.rows.map(rowToMessage).reverse()
+}
+
+/** UI 打开长线程时只取最近一段 */
+export type ConversationLoadOptions = {
+  tail?: number
 }
 
 function normalizeConversation(raw: Conversation, workspaceId: string): Conversation {
@@ -181,11 +235,12 @@ export async function listWorkspaceConversations(
   return { conversations, activeConversationId: activeId }
 }
 
-/** 加载单条对话 */
+/** 加载单条对话。`tail` 只取最近一段（对标 Codex initialTurnsPage）；不传则全量给模型/落盘。 */
 export async function loadConversation(
   workspacePath: string,
   workspaceId: string,
-  id: string
+  id: string,
+  options?: ConversationLoadOptions
 ): Promise<Conversation | null> {
   await ensureWorkspaceRow(workspaceId, workspacePath)
   const db = await getMemoryDb()
@@ -207,8 +262,12 @@ export async function loadConversation(
   const s = row.rows[0]
   if (!s) return null
 
-  const messages = await loadMessages(id)
-  return normalizeConversation(
+  const total = await countSessionMessages(id)
+  const tail = options?.tail
+  const startSeq =
+    tail != null && tail > 0 && total > tail ? total - Math.floor(tail) : 0
+  const messages = startSeq > 0 ? await loadMessagesFromSeq(id, startSeq) : await loadMessages(id)
+  const conv = normalizeConversation(
     {
       id: s.id,
       workspaceId,
@@ -222,22 +281,51 @@ export async function loadConversation(
     },
     workspaceId
   )
+  return { ...conv, historyStartSeq: startSeq, historyTotal: total }
 }
 
-/** 保存对话（消息全量替换）。默认把该会话设为活跃。 */
+/** 上滑取更早一页；会话不属于该工作区时返回空 */
+export async function loadOlderConversationMessages(
+  workspacePath: string,
+  workspaceId: string,
+  id: string,
+  beforeSeq: number,
+  limit: number
+): Promise<ChatMessage[]> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const row = await db.query<{ id: string }>(
+    'SELECT id FROM sessions WHERE id = $1 AND workspace_id = $2',
+    [id, workspaceId]
+  )
+  if (!row.rows[0]) return []
+  return loadOlderMessages(id, beforeSeq, limit)
+}
+
+/** 保存对话。`fromSeq` / `historyStartSeq` > 0 时只改该 seq 起的消息，不删更早页。 */
 export async function saveConversation(
   workspacePath: string,
   conversation: Conversation,
-  options?: { activate?: boolean }
+  options?: { activate?: boolean; fromSeq?: number }
 ): Promise<Conversation> {
   await ensureWorkspaceRow(conversation.workspaceId, workspacePath)
   const db = await getMemoryDb()
+  const fromSeq = Math.max(
+    0,
+    Math.floor(options?.fromSeq ?? conversation.historyStartSeq ?? 0)
+  )
 
   let touchUpdatedAt = true
-  const existing = await loadConversation(workspacePath, conversation.workspaceId, conversation.id)
-  if (existing) {
+  if (fromSeq > 0) {
+    const existingTail = await loadMessagesFromSeq(conversation.id, fromSeq)
     touchUpdatedAt =
-      messagesFingerprint(existing.messages) !== messagesFingerprint(conversation.messages)
+      messagesFingerprint(existingTail) !== messagesFingerprint(conversation.messages)
+  } else {
+    const existing = await loadConversation(workspacePath, conversation.workspaceId, conversation.id)
+    if (existing) {
+      touchUpdatedAt =
+        messagesFingerprint(existing.messages) !== messagesFingerprint(conversation.messages)
+    }
   }
 
   const now = Date.now()
@@ -245,10 +333,13 @@ export async function saveConversation(
     ...conversation,
     title: conversation.customTitle
       ? conversation.title
-      : deriveConversationTitle(conversation.messages),
+      : fromSeq > 0
+        ? conversation.title?.trim() || DEFAULT_CONVERSATION_TITLE
+        : deriveConversationTitle(conversation.messages),
     pinned: Boolean(conversation.pinned),
     unread: Boolean(conversation.unread),
-    updatedAt: touchUpdatedAt ? now : conversation.updatedAt
+    updatedAt: touchUpdatedAt ? now : conversation.updatedAt,
+    historyStartSeq: fromSeq
   }
 
   await db.query(
@@ -272,9 +363,17 @@ export async function saveConversation(
     ]
   )
 
-  await db.query('DELETE FROM session_messages WHERE session_id = $1', [next.id])
-  for (let seq = 0; seq < next.messages.length; seq++) {
-    const m = next.messages[seq]
+  if (fromSeq > 0) {
+    await db.query('DELETE FROM session_messages WHERE session_id = $1 AND seq >= $2', [
+      next.id,
+      fromSeq
+    ])
+  } else {
+    await db.query('DELETE FROM session_messages WHERE session_id = $1', [next.id])
+  }
+  for (let i = 0; i < next.messages.length; i++) {
+    const m = next.messages[i]
+    const seq = fromSeq + i
     await db.query(
       `INSERT INTO session_messages (id, session_id, role, content, tool_call_id, tool_name, meta, seq)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,

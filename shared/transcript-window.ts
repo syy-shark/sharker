@@ -4,6 +4,8 @@
  * @see shared/ARCH.md
  */
 
+type ChatMessageLike = { id: string }
+
 /** 新开会话先画的最近消息条数（消息比官方 turn 更细，略多于 5 turn） */
 export const TRANSCRIPT_TAIL = 40
 
@@ -81,4 +83,66 @@ export function shouldRevealOlderTranscript(input: {
 }): boolean {
   if (!input.canReveal || !input.locked) return false
   return input.scrollTop <= (input.revealPx ?? TRANSCRIPT_REVEAL_PX)
+}
+
+/**
+ * 内存窗已到头、盘上还有更早页时，改为取一页而不是再切片。
+ */
+export function shouldFetchOlderHistoryPage(input: {
+  scrollTop: number
+  locked: boolean
+  windowStart: number
+  hasOlder: boolean
+  revealPx?: number
+}): boolean {
+  return shouldRevealOlderTranscript({
+    scrollTop: input.scrollTop,
+    locked: input.locked,
+    canReveal: input.hasOlder && input.windowStart <= 0,
+    revealPx: input.revealPx
+  })
+}
+
+/**
+ * 把更早一页接到当前列表前面，按 id 去重。
+ */
+export function prependHistoryPage(
+  current: readonly ChatMessageLike[],
+  older: readonly ChatMessageLike[]
+): ChatMessageLike[] {
+  if (!older.length) return [...current]
+  const seen = new Set(current.map((m) => m.id))
+  const unique = older.filter((m) => m.id && !seen.has(m.id))
+  return unique.length ? [...unique, ...current] : [...current]
+}
+
+/**
+ * 全量（或更长前缀）与当前未落盘的新消息合并：已有 id 以已加载为准，只追加未见过的尾。
+ */
+export function mergeConversationHistory(
+  loaded: readonly ChatMessageLike[],
+  current: readonly ChatMessageLike[]
+): ChatMessageLike[] {
+  if (!loaded.length) return [...current]
+  const seen = new Set(loaded.map((m) => m.id))
+  const extra = current.filter((m) => m.id && !seen.has(m.id))
+  return extra.length ? [...loaded, ...extra] : [...loaded]
+}
+
+/**
+ * 前面插入了 `prepended` 条后，钉住的窗口下标跟着后移，镜头不跳。
+ */
+export function shiftPinnedStartAfterPrepend(
+  pinned: number | null | undefined,
+  prepended: number
+): number | null {
+  if (pinned == null || prepended <= 0) return pinned ?? null
+  return pinned + prepended
+}
+
+/**
+ * 取走更早一页后的盘上起点。
+ */
+export function nextHistoryStartSeq(startSeq: number, prepended: number): number {
+  return Math.max(0, Math.floor(startSeq) - Math.max(0, prepended))
 }

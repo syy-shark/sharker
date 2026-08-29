@@ -19,7 +19,7 @@
 | 文件 | 说明 |
 |------|------|
 | `settings-store.ts` | `settings.json` + `safeStorage` 加密 API Key |
-| `conversations-store.ts` | 对话 CRUD 门面，委托 `agent/memory/conversations` |
+| `conversations-store.ts` | 对话 CRUD 门面，委托 `agent/memory/conversations`（含尾页加载与 `loadOlderConversationMessages`） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 关键 IPC

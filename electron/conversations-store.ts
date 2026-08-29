@@ -6,6 +6,7 @@ export {
   listWorkspaceConversations,
   listArchivedConversations,
   loadConversation,
+  loadOlderConversationMessages,
   saveConversation,
   deleteConversation,
   setConversationArchived,

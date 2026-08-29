@@ -48,6 +48,8 @@ export const IPC = {
   PICK_WORKSPACE_FOLDER: 'workspace:pick',
   LIST_CONVERSATIONS: 'conversations:list',
   LOAD_CONVERSATION: 'conversations:load',
+  /** 上滑取更早一页（对标 Codex thread/turns/list） */
+  LOAD_OLDER_CONVERSATION: 'conversations:load-older',
   SAVE_CONVERSATION: 'conversations:save',
   DELETE_CONVERSATION: 'conversations:delete',
   ARCHIVE_CONVERSATION: 'conversations:archive',

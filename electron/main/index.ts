@@ -68,6 +68,7 @@ import {
   listArchivedConversations,
   listWorkspaceConversations,
   loadConversation,
+  loadOlderConversationMessages,
   saveConversation,
   setActiveConversation,
   patchConversationMeta,
@@ -964,9 +965,28 @@ function registerIpc(): void {
 
   ipcMain.handle(
     IPC.LOAD_CONVERSATION,
-    async (_e, workspaceId: string, conversationId: string) => {
+    async (
+      _e,
+      workspaceId: string,
+      conversationId: string,
+      options?: { tail?: number }
+    ) => {
       const p = workspacePathById(workspaceId)
-      return loadConversation(p, workspaceId, conversationId)
+      return loadConversation(p, workspaceId, conversationId, options)
+    }
+  )
+
+  ipcMain.handle(
+    IPC.LOAD_OLDER_CONVERSATION,
+    async (
+      _e,
+      workspaceId: string,
+      conversationId: string,
+      beforeSeq: number,
+      limit: number
+    ) => {
+      const p = workspacePathById(workspaceId)
+      return loadOlderConversationMessages(p, workspaceId, conversationId, beforeSeq, limit)
     }
   )
 

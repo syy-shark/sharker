@@ -59,7 +59,9 @@ import {
   effectiveTranscriptWindowStart,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
+  shouldFetchOlderHistoryPage,
   shouldRevealOlderTranscript,
+  shiftPinnedStartAfterPrepend,
   stickTranscriptWindowStart
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
@@ -337,6 +339,12 @@ interface Props {
   scrollSnapshot?: TranscriptScrollSnapshot | null
   onScrollSnapshot?: (conversationId: string, snap: TranscriptScrollSnapshot) => void
   keyboardShortcuts?: KeymapOverrides
+  /** 盘上还有更早消息未进内存（对标 Codex olderCursor） */
+  hasOlderHistory?: boolean
+  /** 上滑到顶且内存窗已到头时取更早一页 */
+  onLoadOlderHistory?: () => void | Promise<void>
+  /** 查找 / 跳到对话顶需要全量时再拉 */
+  onNeedFullHistory?: () => void | Promise<void>
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -409,7 +417,10 @@ export function ChatView({
   onCopyPickerClose,
   scrollSnapshot = null,
   onScrollSnapshot,
-  keyboardShortcuts
+  keyboardShortcuts,
+  hasOlderHistory = false,
+  onLoadOlderHistory,
+  onNeedFullHistory
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -560,6 +571,29 @@ export function ChatView({
   messagesLengthRef.current = messages.length
   const revealPreserveHeightRef = useRef<number | null>(null)
   const pendingJumpTopRef = useRef(false)
+  const loadOlderBusyRef = useRef(false)
+  const hasOlderHistoryRef = useRef(hasOlderHistory)
+  hasOlderHistoryRef.current = hasOlderHistory
+  const onLoadOlderHistoryRef = useRef(onLoadOlderHistory)
+  onLoadOlderHistoryRef.current = onLoadOlderHistory
+  const prevHeadRef = useRef<{ id?: string; len: number; session?: string | null }>({
+    id: messages[0]?.id,
+    len: messages.length,
+    session: sessionKey
+  })
+  if (sessionKey !== prevHeadRef.current.session) {
+    prevHeadRef.current = { id: messages[0]?.id, len: messages.length, session: sessionKey }
+  } else if (
+    messages[0]?.id &&
+    messages[0].id !== prevHeadRef.current.id &&
+    messages.length > prevHeadRef.current.len
+  ) {
+    const delta = messages.length - prevHeadRef.current.len
+    prevHeadRef.current = { id: messages[0].id, len: messages.length, session: sessionKey }
+    setPinnedStart((p) => shiftPinnedStartAfterPrepend(p, delta))
+  } else {
+    prevHeadRef.current = { id: messages[0]?.id, len: messages.length, session: sessionKey }
+  }
   const queuedPersistRef = useRef<{ id: string; snap: TranscriptScrollSnapshot } | null>(null)
   const onScrollSnapshotRef = useRef(onScrollSnapshot)
   onScrollSnapshotRef.current = onScrollSnapshot
@@ -652,11 +686,12 @@ export function ChatView({
       setFindHit(0)
     }
     setFindOpen(true)
+    void onNeedFullHistory?.()
     requestAnimationFrame(() => {
       findInputRef.current?.focus()
       if (seeded) findInputRef.current?.select()
     })
-  }, [])
+  }, [onNeedFullHistory])
 
   useEffect(() => {
     if (composerIntent === 'find') {
@@ -711,13 +746,14 @@ export function ChatView({
       const back = e.shiftKey
       if (!findOpen) {
         setFindOpen(true)
+        void onNeedFullHistory?.()
         requestAnimationFrame(() => findInputRef.current?.focus())
       }
       stepFindHit(back ? -1 : 1)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [findOpen, stepFindHit])
+  }, [findOpen, onNeedFullHistory, stepFindHit])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -978,8 +1014,9 @@ export function ChatView({
         stickToBottomRef.current = false
         setStickToBottom(false)
         setCanJumpToBottom(true)
-        pendingJumpTopRef.current = pinnedStartRef.current !== 0
+        pendingJumpTopRef.current = pinnedStartRef.current !== 0 || hasOlderHistoryRef.current
         setPinnedStart(0)
+        if (hasOlderHistoryRef.current) void onNeedFullHistory?.()
         if (pinnedStartRef.current === 0) {
           programmaticScrollRef.current = true
           el.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1021,6 +1058,20 @@ export function ChatView({
       ) {
         revealPreserveHeightRef.current = el.scrollHeight
         setPinnedStart(revealOlderWindowStart(currentStart))
+      } else if (
+        !loadOlderBusyRef.current &&
+        shouldFetchOlderHistoryPage({
+          scrollTop: top,
+          locked: userScrollLockRef.current,
+          windowStart: currentStart,
+          hasOlder: hasOlderHistoryRef.current
+        })
+      ) {
+        loadOlderBusyRef.current = true
+        revealPreserveHeightRef.current = el.scrollHeight
+        void Promise.resolve(onLoadOlderHistoryRef.current?.()).finally(() => {
+          loadOlderBusyRef.current = false
+        })
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })

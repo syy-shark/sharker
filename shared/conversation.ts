@@ -33,6 +33,10 @@ export interface Conversation {
   preview?: string
   /** 关联 git 分支 / worktree 名（Search chats 扩匹配） */
   gitBranch?: string
+  /** 当前 `messages[0]` 在全量中的 seq；>0 表示还有更早页未加载（对标 Codex initialTurnsPage） */
+  historyStartSeq?: number
+  /** 全量消息条数；缺省按 `messages.length` */
+  historyTotal?: number
 }
 
 /** 侧栏展示的对话摘要（无消息体） */

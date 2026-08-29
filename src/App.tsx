@@ -70,6 +70,13 @@ import {
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
+import {
+  TRANSCRIPT_PAGE,
+  TRANSCRIPT_TAIL,
+  mergeConversationHistory,
+  nextHistoryStartSeq,
+  prependHistoryPage
+} from '../shared/transcript-window'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
@@ -234,6 +241,8 @@ interface SessionLiveBuffer {
   lastTurnPaths?: string[]
   /** 本轮助手气泡预留 id，直播行与收束后历史行共用，避免整行卸载重挂 */
   liveAssistantId?: string | null
+  /** 当前 messages[0] 在全量中的 seq；>0 还有更早页 */
+  historyStartSeq?: number
 }
 
 /** DEV 专用：把审批/错误/直播态注入真实 React 树，供 CDP 与本地验收 */
@@ -319,6 +328,9 @@ export default function App() {
   const settingsDraftRef = useRef<AppSettings>(DEFAULT_SETTINGS)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('models')
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [historyStartSeq, setHistoryStartSeq] = useState(0)
+  const historyStartSeqRef = useRef(0)
+  const historyLoadGenRef = useRef(0)
   const [conversationList, setConversationList] = useState<ConversationSummary[]>([])
   const conversationListRef = useRef<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
@@ -513,9 +525,15 @@ export default function App() {
     return true
   }, [])
 
+  const applyConversationMessages = useCallback((msgs: ChatMessage[], startSeq = 0) => {
+    messagesRef.current = msgs
+    setMessages(msgs)
+    historyStartSeqRef.current = startSeq
+    setHistoryStartSeq(startSeq)
+  }, [])
+
   const applyBufferToUi = useCallback((buf: SessionLiveBuffer) => {
-    messagesRef.current = buf.messages
-    setMessages(buf.messages)
+    applyConversationMessages(buf.messages, buf.historyStartSeq ?? 0)
     sendInFlightRef.current = buf.sendInFlight
     doneCommittedRef.current = buf.doneCommitted
     streamingRef.current = buf.streaming
@@ -549,7 +567,7 @@ export default function App() {
     setLiveAssistantId(buf.liveAssistantId ?? null)
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     setLastTurnPaths(buf.lastTurnPaths ?? lastTurnPathsByConvRef.current.get(activeConversationIdRef.current ?? '') ?? [])
-  }, [])
+  }, [applyConversationMessages])
 
   const activeWorkspaceId = settings.activeWorkspaceId
 
@@ -648,6 +666,12 @@ export default function App() {
     bumpSessionLive()
   }, [loading, activeConversationId, bumpSessionLive])
 
+  const loadConversationForUi = useCallback(
+    (workspaceId: string, conversationId: string) =>
+      window.sharker.loadConversation(workspaceId, conversationId, { tail: TRANSCRIPT_TAIL }),
+    []
+  )
+
   /** 加载工作区的活跃对话与消息 */
   const loadWorkspaceSession = useCallback(
     async (workspaceId: string) => {
@@ -659,50 +683,112 @@ export default function App() {
         if (!convId) {
           setActiveConversationId(null)
           activeConversationIdRef.current = null
-          setMessages([])
-          messagesRef.current = []
+          applyConversationMessages([])
           return
         }
 
-        const conv = await window.sharker.loadConversation(workspaceId, convId)
+        const conv = await loadConversationForUi(workspaceId, convId)
         if (settingsRef.current.activeWorkspaceId !== workspaceId) return
 
         if (!conv) {
           setActiveConversationId(null)
           activeConversationIdRef.current = null
-          setMessages([])
-          messagesRef.current = []
+          applyConversationMessages([])
           await window.sharker.setActiveConversation(workspaceId, null)
           return
         }
 
         setActiveConversationId(conv.id)
         activeConversationIdRef.current = conv.id
-        setMessages(conv.messages)
-        messagesRef.current = conv.messages
+        historyLoadGenRef.current += 1
+        applyConversationMessages(conv.messages, conv.historyStartSeq ?? 0)
       } catch (e) {
         console.error('加载工作区会话失败', e)
       }
     },
-    [refreshConversationList]
+    [applyConversationMessages, loadConversationForUi, refreshConversationList]
   )
 
   /** 将当前对话消息落盘并刷新列表 */
   const persistActiveConversation = useCallback(
-    async (msgs: ChatMessage[], convId = activeConversationIdRef.current) => {
+    async (
+      msgs: ChatMessage[],
+      convId = activeConversationIdRef.current,
+      options?: { replaceAll?: boolean }
+    ) => {
       const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
       if (!workspaceId || !convId) return
-      const existing = await window.sharker.loadConversation(workspaceId, convId)
+      const existing = await window.sharker.loadConversation(workspaceId, convId, { tail: 1 })
       if (!existing) return
+      const fromSeq = options?.replaceAll ? 0 : historyStartSeqRef.current
+      if (options?.replaceAll) {
+        historyStartSeqRef.current = 0
+        setHistoryStartSeq(0)
+      }
       await window.sharker.saveConversation(workspaceId, {
         ...existing,
         messages: msgs,
-        title: deriveConversationTitle(msgs)
+        title:
+          existing.customTitle || fromSeq > 0
+            ? existing.title
+            : deriveConversationTitle(msgs),
+        historyStartSeq: fromSeq
       })
       await refreshConversationList(workspaceId)
     },
     [refreshConversationList]
   )
+
+  const ensureConversationHistory = useCallback(async (workspaceId: string, convId: string) => {
+    const isActive = convId === activeConversationIdRef.current
+    const start = isActive
+      ? historyStartSeqRef.current
+      : sessionBuffersRef.current.get(convId)?.historyStartSeq ?? 0
+    if (start <= 0) return
+    const gen = historyLoadGenRef.current
+    const conv = await window.sharker.loadConversation(workspaceId, convId)
+    if (!conv || historyLoadGenRef.current !== gen) return
+    if (isActive) {
+      if (activeConversationIdRef.current !== convId) return
+      applyConversationMessages(mergeConversationHistory(conv.messages, messagesRef.current), 0)
+      return
+    }
+    const buf = sessionBuffersRef.current.get(convId)
+    if (!buf) return
+    buf.messages = mergeConversationHistory(conv.messages, buf.messages)
+    buf.historyStartSeq = 0
+  }, [applyConversationMessages])
+
+  const handleLoadOlderHistory = useCallback(async () => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    const before = historyStartSeqRef.current
+    if (!workspaceId || !convId || before <= 0 || !window.sharker.loadOlderConversation) return
+    const gen = historyLoadGenRef.current
+    const older = await window.sharker.loadOlderConversation(
+      workspaceId,
+      convId,
+      before,
+      TRANSCRIPT_PAGE
+    )
+    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
+    if (!older.length) {
+      historyStartSeqRef.current = 0
+      setHistoryStartSeq(0)
+      return
+    }
+    applyConversationMessages(
+      prependHistoryPage(messagesRef.current, older),
+      nextHistoryStartSeq(before, older.length)
+    )
+  }, [applyConversationMessages])
+
+  const handleNeedFullHistory = useCallback(async () => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    if (!workspaceId || !convId) return
+    await ensureConversationHistory(workspaceId, convId)
+  }, [ensureConversationHistory])
 
   /** 将 ref 中的回合元信息同步到 React state */
   const syncLiveTurnMeta = useCallback(() => {
@@ -784,7 +870,8 @@ export default function App() {
       },
       changedRelPaths: [...turnChangedPathsRef.current],
       lastTurnPaths: lastTurnPathsByConvRef.current.get(prevId) ?? [],
-      liveAssistantId: liveAssistantIdRef.current
+      liveAssistantId: liveAssistantIdRef.current,
+      historyStartSeq: historyStartSeqRef.current
     })
     return prevId
   }, [])
@@ -946,8 +1033,7 @@ export default function App() {
           setActiveConversationId(conv.id)
           activeConversationIdRef.current = conv.id
           if (!opts?.preserveMessages) {
-            setMessages([])
-            messagesRef.current = []
+            applyConversationMessages([])
           }
           // 侧栏列表刷新失败/变慢时绝不能挡住发消息
           void refreshConversationList(workspaceId).catch((e) =>
@@ -1892,18 +1978,19 @@ export default function App() {
       }
       if (chunk.type === 'command' && chunk.command === 'clear') {
         if (!applyToUi && ownerId) return
-        setMessages([])
-        messagesRef.current = []
-        void persistActiveConversation([])
+        applyConversationMessages([])
+        void persistActiveConversation([], undefined, { replaceAll: true })
       }
       if (chunk.type === 'command' && chunk.command === 'compact') {
         if (!applyToUi && ownerId) return
         void (async () => {
+          const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+          const convId = ownerId || activeConversationIdRef.current
+          if (workspaceId && convId) await ensureConversationHistory(workspaceId, convId)
           const result = await window.sharker.compressContext(messagesRef.current)
           if (!result.compressed) return
-          setMessages(result.messages)
-          messagesRef.current = result.messages
-          await persistActiveConversation(result.messages)
+          applyConversationMessages(result.messages, 0)
+          await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
         })()
       }
       if (chunk.type === 'done') {
@@ -2226,6 +2313,10 @@ export default function App() {
       const excludeIds = options?.excludeMessageIds ?? []
 
       // 后台会话续跑：只更新该会话 buffer，不污染当前可见会话
+      if (convId) {
+        const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+        if (workspaceId) await ensureConversationHistory(workspaceId, convId)
+      }
       if (convId && convId !== activeConversationIdRef.current) {
         let buf = sessionBuffersRef.current.get(convId)
         if (!buf) {
@@ -2454,6 +2545,7 @@ export default function App() {
       beginTurnMeta,
       commitAssistantReply,
       ensureActiveConversation,
+      ensureConversationHistory,
       ensureWorktreeForTurn,
       persistActiveConversation,
       withTimeout
@@ -3046,8 +3138,7 @@ export default function App() {
       setConversationList([])
       setActiveConversationId(null)
       activeConversationIdRef.current = null
-      setMessages([])
-      messagesRef.current = []
+      applyConversationMessages([])
 
       try {
         await window.sharker.saveSettings(next)
@@ -3142,10 +3233,11 @@ export default function App() {
     }
 
     // 先加载目标会话，再一次性替换 UI，避免“清空 → 等待”造成的空白闪帧
-    const conv = await window.sharker.loadConversation(workspaceId, conversationId)
+    const conv = await loadConversationForUi(workspaceId, conversationId)
     await setActiveP
     if (activeConversationIdRef.current !== conversationId) return
-    const loaded = conv?.messages ?? []
+    historyLoadGenRef.current += 1
+    applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
     sendInFlightRef.current = false
     doneCommittedRef.current = true
     streamingRef.current = ''
@@ -3159,8 +3251,6 @@ export default function App() {
     setApproval(null)
     setApprovalResponding(false)
     resetTurnMeta()
-    messagesRef.current = loaded
-    setMessages(loaded)
     const summary = conversationListRef.current.find((c) => c.id === conversationId)
     if ((conv?.unread || summary?.unread) && window.sharker.patchConversationMeta) {
       setConversationList((list) =>
@@ -3208,17 +3298,15 @@ export default function App() {
         : state.conversations[state.conversations.length - 1]
     const next = pick
     if (next) {
-      const conv = await window.sharker.loadConversation(workspaceId, next.id)
+      const conv = await loadConversationForUi(workspaceId, next.id)
       await window.sharker.setActiveConversation(workspaceId, next.id)
       setActiveConversationId(next.id)
-      const loaded = conv?.messages ?? []
-      messagesRef.current = loaded
-      setMessages(loaded)
+      historyLoadGenRef.current += 1
+      applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
     } else {
       await window.sharker.setActiveConversation(workspaceId, null)
       setActiveConversationId(null)
-      messagesRef.current = []
-      setMessages([])
+      applyConversationMessages([])
     }
   }
 
@@ -3270,17 +3358,15 @@ export default function App() {
         ? state.conversations[Math.min(archivedIndex, state.conversations.length - 1)]
         : state.conversations[state.conversations.length - 1]
     if (pick) {
-      const conv = await window.sharker.loadConversation(workspaceId, pick.id)
+      const conv = await loadConversationForUi(workspaceId, pick.id)
       await window.sharker.setActiveConversation(workspaceId, pick.id)
       setActiveConversationId(pick.id)
-      const loaded = conv?.messages ?? []
-      messagesRef.current = loaded
-      setMessages(loaded)
+      historyLoadGenRef.current += 1
+      applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
     } else {
       await window.sharker.setActiveConversation(workspaceId, null)
       setActiveConversationId(null)
-      messagesRef.current = []
-      setMessages([])
+      applyConversationMessages([])
     }
   }
 
@@ -3330,8 +3416,7 @@ export default function App() {
     })
     setActiveConversationId(conv.id)
     activeConversationIdRef.current = conv.id
-    messagesRef.current = []
-    setMessages([])
+    applyConversationMessages([])
     // 不要清空其他会话的 streamOwner：后台 turn 仍依赖它做无 conversationId 的回落
     if (streamOwnerRef.current === conv.id) {
       streamOwnerRef.current = null
@@ -3380,8 +3465,7 @@ export default function App() {
     setConversationList([])
     setActiveConversationId(null)
     activeConversationIdRef.current = null
-    setMessages([])
-    messagesRef.current = []
+    applyConversationMessages([])
 
     try {
       await window.sharker.saveSettings(next)
@@ -3560,8 +3644,7 @@ export default function App() {
       setConversationList([])
       setActiveConversationId(null)
       activeConversationIdRef.current = null
-      setMessages([])
-      messagesRef.current = []
+      applyConversationMessages([])
     }
 
     try {
@@ -4092,6 +4175,7 @@ export default function App() {
           const ws = settingsRef.current.activeWorkspaceId
           if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) break
           const sourceId = activeConversationIdRef.current
+          if (sourceId) await ensureConversationHistory(ws, sourceId)
           const dest = parseForkDestination(args)
           const created = await window.sharker.createConversation(ws)
           const forked = buildForkedConversation(created, {
@@ -6055,8 +6139,7 @@ export default function App() {
       },
       /** 调试：清空当前会话消息与 live，便于无历史干扰地验直播过程 */
       resetChatVisual: () => {
-        messagesRef.current = []
-        setMessages([])
+        applyConversationMessages([])
         segmentsRef.current = []
         setLiveSegments([])
         setStreaming('')
@@ -6135,8 +6218,7 @@ export default function App() {
               return
             }
             if (buf.messages.length > 0) {
-              messagesRef.current = buf.messages
-              setMessages(buf.messages)
+              applyConversationMessages(buf.messages, buf.historyStartSeq ?? 0)
               sendInFlightRef.current = false
               doneCommittedRef.current = true
               streamingRef.current = ''
@@ -6154,9 +6236,10 @@ export default function App() {
               return
             }
           }
-          const conv = await window.sharker.loadConversation(workspaceId, id)
+          const conv = await loadConversationForUi(workspaceId, id)
           if (activeConversationIdRef.current !== id) return
-          const loaded = conv?.messages ?? []
+          historyLoadGenRef.current += 1
+          applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
           sendInFlightRef.current = false
           doneCommittedRef.current = true
           streamingRef.current = ''
@@ -6170,8 +6253,6 @@ export default function App() {
           setApproval(null)
           setApprovalResponding(false)
           resetTurnMeta()
-          messagesRef.current = loaded
-          setMessages(loaded)
         })()
         return activeConversationIdRef.current === id
       },
@@ -6633,6 +6714,9 @@ export default function App() {
               }
               onScrollSnapshot={rememberTranscriptScroll}
               keyboardShortcuts={settings.keyboardShortcuts}
+              hasOlderHistory={historyStartSeq > 0}
+              onLoadOlderHistory={handleLoadOlderHistory}
+              onNeedFullHistory={handleNeedFullHistory}
             />
             </div>
           ) : page === 'automations' ? (
