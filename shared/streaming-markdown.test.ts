@@ -1217,6 +1217,81 @@ describe('splitStreamingMarkdown', () => {
       ])
       expect(itemIndentThenHeading[0].items[0]?.blocks?.[0]).toBe(itemIndent[0].items[0]?.blocks?.[0])
     }
+    const fenceThenPara = '```\nx\n```\n见 `foo` 与 '
+    const fenceThenParaFirst = parseCheapProseBlocks(fenceThenPara)
+    const fenceThenParaGrown = continueCheapProseBlocks(
+      fenceThenPara,
+      fenceThenParaFirst,
+      `${fenceThenPara}bar`
+    )
+    expect(fenceThenParaGrown[0]).toBe(fenceThenParaFirst[0])
+    if (fenceThenParaFirst[1]?.type === 'p' && fenceThenParaGrown[1]?.type === 'p') {
+      expect(fenceThenParaGrown[1].nodes[0]).toBe(fenceThenParaFirst[1].nodes[0])
+      expect(fenceThenParaGrown[1].nodes[1]).toBe(fenceThenParaFirst[1].nodes[1])
+    }
+    const tableThenPara = '| A |\n| --- |\n| 1 |\n见 `foo` 与 '
+    const tableThenParaFirst = parseCheapProseBlocks(tableThenPara)
+    const tableThenParaGrown = continueCheapProseBlocks(
+      tableThenPara,
+      tableThenParaFirst,
+      `${tableThenPara}bar`
+    )
+    expect(tableThenParaGrown[0]).toBe(tableThenParaFirst[0])
+    if (tableThenParaFirst[1]?.type === 'p' && tableThenParaGrown[1]?.type === 'p') {
+      expect(tableThenParaGrown[1].nodes[0]).toBe(tableThenParaFirst[1].nodes[0])
+      expect(tableThenParaGrown[1].nodes[1]).toBe(tableThenParaFirst[1].nodes[1])
+    }
+    const twoPara = '第一段\n\n见 `foo` 与 '
+    const twoParaFirst = parseCheapProseBlocks(twoPara)
+    const twoParaGrown = continueCheapProseBlocks(twoPara, twoParaFirst, `${twoPara}bar`)
+    expect(twoParaGrown[0]).toBe(twoParaFirst[0])
+    if (twoParaFirst[1]?.type === 'p' && twoParaGrown[1]?.type === 'p') {
+      expect(twoParaGrown[1].nodes[0]).toBe(twoParaFirst[1].nodes[0])
+      expect(twoParaGrown[1].nodes[1]).toBe(twoParaFirst[1].nodes[1])
+    }
+    const listThenPara = '- x\n\n见 `foo` 与 '
+    const listThenParaFirst = parseCheapProseBlocks(listThenPara)
+    const listThenParaGrown = continueCheapProseBlocks(listThenPara, listThenParaFirst, `${listThenPara}bar`)
+    expect(listThenParaGrown[0]).toBe(listThenParaFirst[0])
+    if (listThenParaFirst[1]?.type === 'p' && listThenParaGrown[1]?.type === 'p') {
+      expect(listThenParaGrown[1].nodes[0]).toBe(listThenParaFirst[1].nodes[0])
+      expect(listThenParaGrown[1].nodes[1]).toBe(listThenParaFirst[1].nodes[1])
+    }
+    const quoteThenPara = '> q\n\n见 `foo` 与 '
+    const quoteThenParaFirst = parseCheapProseBlocks(quoteThenPara)
+    const quoteThenParaGrown = continueCheapProseBlocks(
+      quoteThenPara,
+      quoteThenParaFirst,
+      `${quoteThenPara}bar`
+    )
+    expect(quoteThenParaGrown[0]).toBe(quoteThenParaFirst[0])
+    if (quoteThenParaFirst[1]?.type === 'p' && quoteThenParaGrown[1]?.type === 'p') {
+      expect(quoteThenParaGrown[1].nodes[0]).toBe(quoteThenParaFirst[1].nodes[0])
+      expect(quoteThenParaGrown[1].nodes[1]).toBe(quoteThenParaFirst[1].nodes[1])
+    }
+    const indentThenPara = '    const x = 1\n见 `foo` 与 '
+    const indentThenParaFirst = parseCheapProseBlocks(indentThenPara)
+    const indentThenParaGrown = continueCheapProseBlocks(
+      indentThenPara,
+      indentThenParaFirst,
+      `${indentThenPara}bar`
+    )
+    expect(indentThenParaGrown[0]).toBe(indentThenParaFirst[0])
+    if (indentThenParaFirst[1]?.type === 'p' && indentThenParaGrown[1]?.type === 'p') {
+      expect(indentThenParaGrown[1].nodes[0]).toBe(indentThenParaFirst[1].nodes[0])
+      expect(indentThenParaGrown[1].nodes[1]).toBe(indentThenParaFirst[1].nodes[1])
+    }
+    const fenceEntityPara = '```\nx\n```\n见 &amp; 与 '
+    const fenceEntityFirst = parseCheapProseBlocks(fenceEntityPara)
+    const fenceEntityGrown = continueCheapProseBlocks(
+      fenceEntityPara,
+      fenceEntityFirst,
+      `${fenceEntityPara}bar`
+    )
+    expect(fenceEntityGrown[0]).toBe(fenceEntityFirst[0])
+    if (fenceEntityFirst[1]?.type === 'p' && fenceEntityGrown[1]?.type === 'p') {
+      expect(fenceEntityGrown[1].nodes).toEqual([{ type: 'text', text: '见 & 与 bar' }])
+    }
     const quoteHeading = parseCheapProseBlocks('> # 标题')
     const quoteHeadingGrown = continueCheapProseBlocks('> # 标题', quoteHeading, '> # 标题更长')
     if (quoteHeadingGrown[0]?.type === 'quote' && quoteHeadingGrown[0].blocks[0]?.type === 'heading') {
