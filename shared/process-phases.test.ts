@@ -126,6 +126,17 @@ describe('process phases privacy', () => {
     expect(appended).toHaveLength(2)
     expect(appended![0]).toBe(doneRetargeted![0])
     expect(appended![1].segment).toBe(cmdNext)
+    const twoActive = deriveChronologicalSteps([cmdRunning, cmdNext], { isStreaming: true })
+    const earlierSettled = retargetProcessPhaseStepsOnToolMeta(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNext],
+      true
+    )
+    expect(earlierSettled).not.toBeNull()
+    expect(earlierSettled![0].status).toBe('done')
+    expect(earlierSettled![0].segment).toBe(cmdDone)
+    expect(earlierSettled![1].segment).toBe(cmdNext)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',

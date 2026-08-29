@@ -363,6 +363,34 @@ describe('live stream ui snapshot', () => {
     expect(processWhileNext).not.toBe(processWhileRan)
     expect(processWhileNext.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(processWhileNext.processForFlow.some((segment) => segment === ran)).toBe(true)
+    const processWhileTwo = nextLiveProcessView(processWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running, nextCmd]
+    })
+    expect(shouldSkipLiveStreamDerivation([hello, running, nextCmd], [hello, ran, nextCmd])).toBe(
+      'tool'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running, nextCmd],
+        segments: [hello, ran, nextCmd]
+      })
+    ).toBe(true)
+    expect(
+      shouldRetargetLiveProcessOnToolMeta({
+        prev: processWhileTwo,
+        prevSegments: [hello, running, nextCmd],
+        segments: [hello, ran, nextCmd]
+      })
+    ).toBe(true)
+    const processWhileEarlier = nextLiveProcessView(processWhileTwo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextCmd]
+    })
+    expect(processWhileEarlier.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processWhileEarlier.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
+    expect(processWhileEarlier.processForFlow.some((segment) => segment === running)).toBe(false)
     const thinking: TurnSegment = {
       id: 'th-1',
       kind: 'thinking',
