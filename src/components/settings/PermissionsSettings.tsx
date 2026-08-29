@@ -5,6 +5,12 @@
 import { useEffect, useRef } from 'react'
 import type { AppSettings, NetworkMode, PermissionMode } from '../../../shared/types'
 import {
+  ASK_FOR_APPROVAL_DESCRIPTION,
+  ASK_FOR_APPROVAL_LABEL,
+  FULL_ACCESS_DESCRIPTION,
+  FULL_ACCESS_LABEL
+} from '../../../shared/permission-mode'
+import {
   parseToolOutputDisplay,
   type ToolOutputDisplay
 } from '../../../shared/tool-output-display'
@@ -65,7 +71,7 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="工作模式">
+      <SettingsSection title="Permissions">
         <SettingsCard>
           <SettingsChoiceGroup
             value={draft.permissionMode}
@@ -73,14 +79,14 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
             options={[
               {
                 value: 'sandbox',
-                title: '沙箱',
-                description: '仅允许访问当前工作区内的文件与命令。',
+                title: ASK_FOR_APPROVAL_LABEL,
+                description: ASK_FOR_APPROVAL_DESCRIPTION,
                 icon: <SandboxModeIcon />
               },
               {
                 value: 'full',
-                title: '完全权限',
-                description: '可访问整机文件系统；请谨慎使用。',
+                title: FULL_ACCESS_LABEL,
+                description: FULL_ACCESS_DESCRIPTION,
                 icon: <FullModeIcon />
               }
             ]}

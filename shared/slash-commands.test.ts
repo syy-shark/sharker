@@ -10,7 +10,8 @@ import {
   formatPermissionChanged,
   formatPermissionStatus,
   parsePermissionMode,
-  permissionModeChipLabel
+  permissionModeChipLabel,
+  permissionModeChipTitle
 } from './permission-mode'
 
 describe('slash commands', () => {
@@ -95,10 +96,14 @@ describe('slash commands', () => {
     expect(parsePermissionMode('ask')).toBeNull()
     expect(parsePermissionMode('sandbox')).toBe('sandbox')
     expect(parsePermissionMode('FULL extra')).toBe('full')
-    expect(permissionModeChipLabel('sandbox')).toBe('沙箱')
-    expect(permissionModeChipLabel('full')).toBe('完整')
-    expect(formatPermissionStatus('sandbox')).toContain('沙箱（仅工作区）')
-    expect(formatPermissionChanged('full')).toContain('完整（整机）')
+    expect(permissionModeChipLabel('sandbox')).toBe('Ask for approval')
+    expect(permissionModeChipLabel('full')).toBe('Full access')
+    expect(permissionModeChipTitle('sandbox')).toBe(
+      'Always ask to edit external files and use the internet'
+    )
+    expect(permissionModeChipTitle('full')).toMatch(/full access/i)
+    expect(formatPermissionStatus('sandbox')).toContain('Ask for approval')
+    expect(formatPermissionChanged('full')).toContain('Full access')
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.action).toBe('archive_thread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.description).toBe('Archive chat')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.action).toBe('side_conversation')

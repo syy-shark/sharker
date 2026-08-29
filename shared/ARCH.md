@@ -229,7 +229,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
+| `permission-mode.ts` | Ask for approval / Full access 文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Approve for me / Auto / 命名 profile） |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan Toggle plan mode、/plan-mode、/mcp Open MCP status、/feedback、/share、/local、/worktree、/approve、/subagents、/settings Open settings、/keymap Open keyboard shortcuts；官方表里且语义一致的描述用 learn.chatgpt.com slash-commands 原文，不改 /local 成交云对照、不把 /feedback 写成外发日志）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览（含 Markdown 富预览）/ 浏览器批注 → Add to chat 芯片或 Ask in side chat：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex desktop / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |

@@ -1,7 +1,7 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
  * 划选进 Selection 芯片，不灌 textarea；发送收成官方 `# Selected text:`（对标 Codex selected-text previews）。
- * 输入框下方有沙箱 / 完整权限芯片（对标 Codex permissions control beneath the composer）。
+ * 输入框下方有 Ask for approval / Full access 芯片（对标 Codex permissions control beneath the composer）。
  * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
  * @see src/components/ARCH.md
  */
