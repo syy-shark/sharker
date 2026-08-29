@@ -1662,6 +1662,36 @@ describe('splitStreamingMarkdown', () => {
         nodes: [{ type: 'text', text: 'after' }]
       })
     }
+    const quoteAtxThenParaSrc = '> # t'
+    const quoteAtxFirst = parseCheapProseBlocks(quoteAtxThenParaSrc)
+    const quoteAtxThenPara = continueCheapProseBlocks(
+      quoteAtxThenParaSrc,
+      quoteAtxFirst,
+      `${quoteAtxThenParaSrc}\n> after`
+    )
+    if (quoteAtxFirst[0]?.type === 'quote' && quoteAtxThenPara[0]?.type === 'quote') {
+      expect(quoteAtxThenPara[0].blocks[0]).toBe(quoteAtxFirst[0].blocks[0])
+      expect(quoteAtxThenPara[0].blocks.map((block) => block.type)).toEqual(['heading', 'p'])
+      expect(quoteAtxThenPara[0].blocks[1]).toMatchObject({
+        type: 'p',
+        nodes: [{ type: 'text', text: 'after' }]
+      })
+    }
+    const quoteAtxFenceSrc = '> # t\n> ```\n> x\n> ```'
+    const quoteAtxFenceFirst = parseCheapProseBlocks(quoteAtxFenceSrc)
+    const quoteAtxFenceAfter = continueCheapProseBlocks(
+      quoteAtxFenceSrc,
+      quoteAtxFenceFirst,
+      `${quoteAtxFenceSrc}\n> after`
+    )
+    if (quoteAtxFenceFirst[0]?.type === 'quote' && quoteAtxFenceAfter[0]?.type === 'quote') {
+      expect(quoteAtxFenceAfter[0].blocks[0]).toBe(quoteAtxFenceFirst[0].blocks[0])
+      expect(quoteAtxFenceAfter[0].blocks[1]).toBe(quoteAtxFenceFirst[0].blocks[1])
+      expect(quoteAtxFenceAfter[0].blocks.map((block) => block.type)).toEqual(['heading', 'pre', 'p'])
+    }
+    const atxThenPara = continueCheapProseBlocks('## 标题', headingOnly, '## 标题\n见 foo')
+    expect(atxThenPara[0]).toBe(headingOnly[0])
+    expect(atxThenPara.map((block) => block.type)).toEqual(['heading', 'p'])
     const quoteFenceMore = continueCheapProseBlocks(
       `${quoteFence}\n> after`,
       quoteFenceAfter,
