@@ -319,6 +319,30 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(processWhilePreview.processForFlow.some((segment) => segment === running)).toBe(false)
+    const helloTextPart = answerWhileTool.parts.find((part) => part.type === 'text')
+    const answerAfterPreview = nextLiveAnswerView(answerWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningPreview]
+    })
+    expect(answerAfterPreview).not.toBe(answerWhileTool)
+    expect(answerAfterPreview.parts.find((part) => part.type === 'text')).toBe(helloTextPart)
+    expect(answerAfterPreview.parts.some((part) => part.type === 'diff' && part.id === 'run-1-diff-0')).toBe(
+      true
+    )
+    expect(answerAfterPreview.tail).toBe(answerWhileTool.tail)
+    const runningPreviewMore: TurnSegment = {
+      ...running,
+      editPreview: [
+        { path: 'a.ts', stats: { added: 1, removed: 0 } },
+        { path: 'b.ts', stats: { added: 1, removed: 0 } }
+      ]
+    }
+    const answerAfterPreviewMore = nextLiveAnswerView(answerAfterPreview, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningPreviewMore]
+    })
+    expect(answerAfterPreviewMore.parts.find((part) => part.type === 'text')).toBe(helloTextPart)
+    expect(answerAfterPreviewMore.parts.filter((part) => part.type === 'diff')).toHaveLength(2)
     expect(isLiveLastLineOnlyToolChange(running, runningLine)).toBe(true)
     expect(isLiveLastLineOnlyToolChange(running, runningPreview)).toBe(false)
     expect(shouldSkipLiveStreamPublish([hello, running], [hello, runningLine])).toBe(true)
@@ -929,6 +953,19 @@ describe('live stream ui snapshot', () => {
     )
     expect(processAfterWriteStatAnswer.contentStreaming).toBe(true)
     expect(processAfterWriteStatAnswer.answerStreaming).toBe(true)
+    const answerReadyForWriteStat = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloWritePart = answerReadyForWriteStat.parts.find((part) => part.type === 'text')
+    const answerAfterWriteStatReply = nextLiveAnswerView(answerReadyForWriteStat, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, firstReply]
+    })
+    expect(answerAfterWriteStatReply.parts.find((part) => part.type === 'text' && part.id === hello.id)).toBe(
+      helloWritePart
+    )
+    expect(answerAfterWriteStatReply.tail?.content).toBe('Hi')
     const processReadyForWriteStatFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

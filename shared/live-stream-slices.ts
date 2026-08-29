@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加、回答仍重拆；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答仍重拆以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答只换 diff 槽以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -639,7 +639,7 @@ function isLiveToolStatusHoldOrSettle(prev: TurnSegment, next: TurnSegment): boo
   return next.status === 'done' || next.status === 'error' || next.status === 'cancelled'
 }
 
-/** 同一工具只改写盘 +/- / 参数，或收束时带上核实 diff：就地换该步，回答仍重拆（对标 Codex Edited 格 / ~0.5s，不复制 #38695） */
+/** 同一工具只改写盘 +/- / 参数，或收束时带上核实 diff：就地换该步；回答只换该工具的 diff 槽（对标 Codex Edited 格 / ~0.5s，不复制 #38695） */
 export function isLiveToolWriteStatChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev.kind !== 'tool' || next.kind !== 'tool') return false
   if (prev.id !== next.id || prev.toolName !== next.toolName) return false
@@ -689,7 +689,7 @@ function hasLiveWriteStatPrefix(
   return writeStats === 1
 }
 
-/** 一条写盘 +/- 收束，同时末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：过程 remap + 追加，回答仍重拆（对标 Codex ~0.5s / add_call / Awaiting approval，不复制 #38695） */
+/** 一条写盘 +/- 收束，同时末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：过程 remap + 追加，回答只换 diff 槽（对标 Codex ~0.5s / add_call / Awaiting approval，不复制 #38695） */
 export function isLiveToolWriteStatAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -697,7 +697,7 @@ export function isLiveToolWriteStatAppendChange(
   return hasLiveWriteStatPrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
 }
 
-/** 写盘收束同时新开 status：过程 remap + 追加，回答仍重拆（对标 规划下一步 / Reconnecting... n/5） */
+/** 写盘收束同时新开 status：过程 remap + 追加，回答只换 diff 槽（对标 规划下一步 / Reconnecting... n/5） */
 export function isLiveWriteStatStatusAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -707,7 +707,7 @@ export function isLiveWriteStatStatusAppendChange(
   return Boolean(added && added.kind === 'status' && added.status === 'active')
 }
 
-/** 写盘收束同时新开思考：过程 remap，旁白续尾，回答仍重拆（不复制 #24850） */
+/** 写盘收束同时新开思考：过程 remap，旁白续尾，回答只换 diff 槽（不复制 #24850） */
 export function isLiveWriteStatThinkAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -739,7 +739,7 @@ export function isLiveWriteStatDemoFenceAppendChange(
   return hasStreamingDemoFence(added.content ?? '')
 }
 
-/** 写盘收束同时新开已完成 compress：过程 remap + 追加，回答仍重拆（对标 contextCompaction 紧跟 Edited） */
+/** 写盘收束同时新开已完成 compress：过程 remap + 追加，回答只换 diff 槽（对标 contextCompaction 紧跟 Edited） */
 export function isLiveWriteStatCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -1640,6 +1640,69 @@ function growLiveDemoView(prev: LiveAnswerView, demo: TurnSegment): LiveAnswerVi
   }
 }
 
+function liveWriteStatDiffParts(tool: TurnSegment): Extract<AnswerPart, { type: 'diff' }>[] {
+  return buildAnswerParts([tool], { isStreaming: true }).filter(
+    (part): part is Extract<AnswerPart, { type: 'diff' }> => part.type === 'diff'
+  )
+}
+
+function findLiveWriteStatTool(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): TurnSegment | null {
+  if (!prev) return null
+  const n = Math.min(prev.length, next.length)
+  let found: TurnSegment | null = null
+  for (let i = 0; i < n; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after || before === after) continue
+    if (isLiveToolWriteStatChange(before, after)) {
+      if (found) return null
+      found = after
+      continue
+    }
+    if (next.length === prev.length) return null
+    if (!isLivePrefixClose(before, after)) return null
+  }
+  return found
+}
+
+/** 写盘 +/- 只换该工具的 diff 槽，已画正文 / 尾不重拆（对标 ~0.5s / #22860，不复制 #38695） */
+function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveAnswerView {
+  const diffs = liveWriteStatDiffParts(tool)
+  const prefix = `${tool.id}-diff-`
+  let start = -1
+  let end = -1
+  for (let i = 0; i < prev.parts.length; i++) {
+    const part = prev.parts[i]
+    if (part.type === 'diff' && part.id.startsWith(prefix)) {
+      if (start < 0) start = i
+      end = i + 1
+      continue
+    }
+    if (start >= 0) break
+  }
+  if (start < 0) {
+    if (!diffs.length) return prev
+    const parts =
+      prev.tail && prev.parts.length && prev.parts[prev.parts.length - 1] === prev.tail
+        ? [...prev.parts.slice(0, -1), ...diffs, prev.tail]
+        : [...prev.parts, ...diffs]
+    return { ...prev, parts, show: true }
+  }
+  const reused = diffs.map((diff, index) => {
+    const old = prev.parts[start + index]
+    if (old && old.type === 'diff' && old.id === diff.id && old.diff === diff.diff) return old
+    return diff
+  })
+  if (reused.length === end - start && reused.every((part, index) => part === prev.parts[start + index])) {
+    return prev
+  }
+  const parts = [...prev.parts.slice(0, start), ...reused, ...prev.parts.slice(end)]
+  return { ...prev, parts, show: parts.length > 0 }
+}
+
 /** 工具后新开一段散文：先收起上一尾，再开新尾，不重跑 buildAnswerParts */
 function appendLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
   if (prev.tail && prev.tail.id !== tail.id) {
@@ -1685,6 +1748,38 @@ export function nextLiveAnswerView(
   if (prev && shouldSkipLiveAnswerIdentity({ prev, prevSegments, segments })) {
     answerGrowHold = { view: prev, segments, tailPlain: Boolean(grow.tail) }
     return prev
+  }
+  if (prev) {
+    const writeStat = findLiveWriteStatTool(prevSegments, segments)
+    if (writeStat) {
+      const patched = retargetLiveAnswerDiffs(prev, writeStat)
+      if (isLiveWriteStatAnswerAppendChange(prevSegments, segments)) {
+        const view = appendLiveAnswerView(patched, segments[segments.length - 1]!)
+        answerGrowHold = { view, segments, tailPlain: true }
+        return view
+      }
+      if (isLiveWriteStatDemoFenceAppendChange(prevSegments, segments)) {
+        const view = applyLiveDemoFenceView(patched, segments[segments.length - 1]!)
+        answerGrowHold = { view, segments, tailPlain: false }
+        return view
+      }
+      if (isLiveWriteStatDemoAppendChange(prevSegments, segments)) {
+        const view = appendLiveDemoView(patched, segments[segments.length - 1]!)
+        answerGrowHold = { view, segments, tailPlain: false }
+        return view
+      }
+      if (isLiveWriteStatErrorAppendChange(prevSegments, segments)) {
+        const view = appendLiveAnswerView(patched, segments[segments.length - 1]!)
+        answerGrowHold = { view, segments, tailPlain: false }
+        return view
+      }
+      answerGrowHold = {
+        view: patched,
+        segments,
+        tailPlain: Boolean(prev.tail?.type === 'text')
+      }
+      return patched
+    }
   }
   if (
     prev &&
