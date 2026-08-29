@@ -3,7 +3,7 @@
  * 自定义项 `registerAccelerator: false`，避免与渲染进程快捷键双触发。
  * @see electron/main/ARCH.md
  */
-import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'electron'
+import { BrowserWindow, Menu, app, shell, type MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../../shared/ipc'
 import {
   COPY_AS_MARKDOWN_LABEL,
@@ -13,6 +13,9 @@ import {
   FILE_CLOSE_LABEL,
   FILE_MENU_LABEL,
   HELP_MENU_LABEL,
+  CODEX_DOCUMENTATION_LABEL,
+  CODEX_DOCUMENTATION_URL,
+  SEND_FEEDBACK_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   NEW_WINDOW_LABEL,
@@ -253,6 +256,18 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
       label: HELP_MENU_LABEL,
       role: 'help',
       submenu: [
+        {
+          label: CODEX_DOCUMENTATION_LABEL,
+          click: () => {
+            void shell.openExternal(CODEX_DOCUMENTATION_URL)
+          }
+        },
+        {
+          label: SEND_FEEDBACK_LABEL,
+          registerAccelerator: false,
+          ...send('show_feedback')
+        },
+        { type: 'separator' },
         {
           label: OPEN_COMMAND_MENU_LABEL,
           accelerator: 'Command+K',

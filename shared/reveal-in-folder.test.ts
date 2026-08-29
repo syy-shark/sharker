@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   APPEARANCE_SETTINGS_LABEL,
@@ -54,6 +57,9 @@ import {
   VIEW_MENU_LABEL,
   WINDOW_MENU_LABEL,
   HELP_MENU_LABEL,
+  CODEX_DOCUMENTATION_LABEL,
+  CODEX_DOCUMENTATION_URL,
+  SEND_FEEDBACK_LABEL,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -179,6 +185,9 @@ describe('reveal in folder', () => {
     expect(VIEW_MENU_LABEL).toBe('View')
     expect(WINDOW_MENU_LABEL).toBe('Window')
     expect(HELP_MENU_LABEL).toBe('Help')
+    expect(CODEX_DOCUMENTATION_LABEL).toBe('Codex Documentation')
+    expect(CODEX_DOCUMENTATION_URL).toBe('https://developers.openai.com/codex')
+    expect(SEND_FEEDBACK_LABEL).toBe('Send Feedback')
     expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
     expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
     expect(FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL).toBe('Focus Browser Address Bar')
@@ -195,5 +204,16 @@ describe('reveal in folder', () => {
     expect(COPY_LABEL).toBe('Copy')
     expect(PASTE_LABEL).toBe('Paste')
     expect(SELECT_ALL_LABEL).toBe('Select All')
+    const root = dirname(fileURLToPath(import.meta.url))
+    const menuSrc = readFileSync(join(root, '../electron/main/app-menu.ts'), 'utf8')
+    expect(menuSrc).toContain('CODEX_DOCUMENTATION_LABEL')
+    expect(menuSrc).toContain('CODEX_DOCUMENTATION_URL')
+    expect(menuSrc).toContain('SEND_FEEDBACK_LABEL')
+    expect(menuSrc).toContain("send('show_feedback')")
+    expect(menuSrc).not.toContain('Check for Updates')
+    const appSrc = readFileSync(join(root, '../src/App.tsx'), 'utf8')
+    expect(appSrc).toContain("action === 'show_feedback'")
+    expect(appSrc).toContain("cmd.action === 'open_codex_docs'")
+    expect(appSrc).toContain('CODEX_DOCUMENTATION_URL')
   })
 })

@@ -37,7 +37,10 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'worktree')?.title).toBe('Worktree')
     expect(ids).toContain('mcp')
     expect(ids).toContain('mcp-servers')
+    expect(ids).toContain('codex-docs')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'codex-docs')?.title).toBe('Codex Documentation')
     expect(ids).toContain('feedback')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'feedback')?.title).toBe('Send Feedback')
     expect(ids).toContain('share')
     expect(ids).toContain('copy-markdown')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-markdown')?.title).toBe('Copy as Markdown')
@@ -185,6 +188,11 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('Share').some((c) => c.id === 'share')).toBe(true)
+    expect(filterPaletteCommands('Send Feedback').some((c) => c.id === 'feedback')).toBe(true)
+    expect(filterPaletteCommands('打开反馈').some((c) => c.id === 'feedback')).toBe(true)
+    expect(
+      filterPaletteCommands('Codex Documentation').some((c) => c.action === 'open_codex_docs')
+    ).toBe(true)
     expect(filterPaletteCommands('分享只读快照').some((c) => c.id === 'share')).toBe(true)
     expect(filterPaletteCommands('访达').some((c) => c.action === 'open_worktree')).toBe(true)
     expect(filterPaletteCommands('Copy as Markdown').some((c) => c.id === 'copy-markdown')).toBe(

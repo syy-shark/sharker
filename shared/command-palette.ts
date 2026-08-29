@@ -44,6 +44,8 @@ import {
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_FILES_LABEL,
+  CODEX_DOCUMENTATION_LABEL,
+  SEND_FEEDBACK_LABEL,
   START_DICTATION_LABEL,
   APPEARANCE_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
@@ -284,9 +286,15 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'open_mcp'
   },
   {
+    id: 'codex-docs',
+    title: CODEX_DOCUMENTATION_LABEL,
+    keywords: 'codex documentation docs help 文档 帮助 developers.openai',
+    action: 'open_codex_docs'
+  },
+  {
     id: 'feedback',
-    title: '打开反馈',
-    keywords: 'feedback diagnose 反馈 诊断 问题',
+    title: SEND_FEEDBACK_LABEL,
+    keywords: 'send feedback diagnose 打开反馈 反馈 诊断 问题',
     action: 'show_feedback'
   },
   {

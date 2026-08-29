@@ -121,6 +121,8 @@ import {
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
   COPY_WORKING_DIRECTORY_LABEL,
+  CODEX_DOCUMENTATION_URL,
+  SEND_FEEDBACK_LABEL,
   type ThreadCopyAction
 } from '../shared/reveal-in-folder'
 import { PlanBuildBar } from './components/PlanBuildBar'
@@ -6725,6 +6727,10 @@ export default function App() {
         void window.sharker.openNewWindow?.()
         return
       }
+      if (cmd.action === 'open_codex_docs') {
+        void window.sharker.openExternal?.(CODEX_DOCUMENTATION_URL)
+        return
+      }
       if (cmd.action === 'run_environment_action') {
         handleRunEnvironmentAction()
         return
@@ -7209,6 +7215,19 @@ export default function App() {
       }
       if (action === 'share_thread') {
         openShareThread()
+        return
+      }
+      if (action === 'show_feedback') {
+        void handleSlashActionRef.current(
+          {
+            name: 'feedback',
+            description: SEND_FEEDBACK_LABEL,
+            scope: 'ui',
+            action: 'show_feedback',
+            category: 'other'
+          },
+          ''
+        )
         return
       }
       if (action === 'copy_conversation_markdown') {

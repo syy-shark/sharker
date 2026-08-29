@@ -107,6 +107,11 @@ export const EDIT_MENU_LABEL = 'Edit'
 export const VIEW_MENU_LABEL = 'View'
 export const WINDOW_MENU_LABEL = 'Window'
 export const HELP_MENU_LABEL = 'Help'
+/** Official Help menu (github.com/openai/codex#26890 Codex Documentation / Send Feedback). */
+export const CODEX_DOCUMENTATION_LABEL = 'Codex Documentation'
+export const SEND_FEEDBACK_LABEL = 'Send Feedback'
+/** Official README / Help target. Do not invent Check for Updates. */
+export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
 export const FILE_CLOSE_LABEL = 'Close'
 /** Official File menu (github.com/openai/codex#12773 / #26890 New Window, ⌘⇧N). */
