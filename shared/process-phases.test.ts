@@ -434,6 +434,58 @@ describe('process phases privacy', () => {
     expect(afterAllowedWrite![0].segment).toBe(cmdAllowedPreview)
     expect(afterAllowedWrite!.at(-1)?.segment).toBe(awaitingDone)
     expect(afterAllowedWrite!.at(-1)?.status).toBe('done')
+    const cmdAllowedSettled: TurnSegment = {
+      ...runningCmd,
+      status: 'done',
+      resultSummary: 'exit 0',
+      endedAt: 17
+    }
+    const afterAllowedSettle = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone],
+      true
+    )
+    expect(afterAllowedSettle).not.toBeNull()
+    expect(afterAllowedSettle).toHaveLength(2)
+    expect(afterAllowedSettle![0].segment).toBe(cmdAllowedSettled)
+    expect(afterAllowedSettle![0].status).toBe('done')
+    expect(afterAllowedSettle!.at(-1)?.segment).toBe(awaitingDone)
+    const planAfterAllow: TurnSegment = {
+      id: 'st-plan-allow',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…',
+      startedAt: 18
+    }
+    const afterAllowedPlan = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, planAfterAllow],
+      true
+    )
+    expect(afterAllowedPlan).not.toBeNull()
+    expect(afterAllowedPlan).toHaveLength(3)
+    expect(afterAllowedPlan![0].segment).toBe(cmdAllowedSettled)
+    expect(afterAllowedPlan!.at(-1)?.segment).toBe(planAfterAllow)
+    const nextAfterAllow: TurnSegment = {
+      id: 'read-after-allow',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolDetail: 'src/a.ts',
+      status: 'active',
+      startedAt: 18
+    }
+    const afterAllowedNext = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextAfterAllow],
+      true
+    )
+    expect(afterAllowedNext).not.toBeNull()
+    expect(afterAllowedNext).toHaveLength(3)
+    expect(afterAllowedNext![0].segment).toBe(cmdAllowedSettled)
+    expect(afterAllowedNext!.at(-1)?.segment).toBe(nextAfterAllow)
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',

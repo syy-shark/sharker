@@ -567,6 +567,56 @@ export function isLiveApprovalAllowedWriteStatChange(
   return resolved === 1 && writeStat === 1
 }
 
+function hasLiveApprovalAllowedSettlePrefix(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length < prev.length) return false
+  let statusResolved = 0
+  let toolSettled = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (isLiveAwaitingStatusResolve(before, after)) {
+      statusResolved += 1
+      continue
+    }
+    if (isLiveToolSettleChange(before, after) && after.status === 'done') {
+      toolSettled += 1
+      continue
+    }
+    return false
+  }
+  return statusResolved === 1 && toolSettled === 1
+}
+
+/** Allow once 后同一帧 approval_resolved + tool_done：Awaiting 行与工具一起收口（对标 query-loop 放行后立即执行；不复制 #10760 / #36115） */
+export function isLiveApprovalAllowedSettleChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveApprovalAllowedSettlePrefix(prev, next) && next.length === prev!.length
+}
+
+/** Allow 收口后同一帧新开 规划下一步：过程 remap 并追加 status */
+export function isLiveApprovalAllowedStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefix(prev, next) || next.length !== prev!.length + 1) return false
+  return isLiveAddedStatusPair(next[prev!.length])
+}
+
+/** Allow 收口后同一帧下一工具（可带一条 规划下一步）：过程 remap 并追加这些步 */
+export function isLiveApprovalAllowedToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveApprovalAllowedSettlePrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
+}
+
 function isLiveUserInputToolRetarget(prev: TurnSegment, next: TurnSegment): boolean {
   if (!sameLiveToolCore(prev, next) || prev.toolName !== REQUEST_USER_INPUT_TOOL) return false
   return (prev.toolTitle ?? '') !== (next.toolTitle ?? '') || (prev.toolDetail ?? '') !== (next.toolDetail ?? '')
@@ -1753,6 +1803,9 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveApprovalDeniedStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveApprovalDeniedToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalAllowedWriteStatChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedStatusAppendChange(prevSegments, segments)) return 'status'
+  if (isLiveApprovalAllowedToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return 'tool'
   if (isLiveUserInputNeededChange(prevSegments, segments)) return 'tool'
   if (isLiveAskResolvedSettleChange(prevSegments, segments)) return 'tool'
@@ -2142,6 +2195,7 @@ export function nextLiveProcessView(
       isLiveWriteStatThinkToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusThinkToolAppendChange(processHold.segments, segments) ||
       isLiveApprovalDeniedToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedToolAppendChange(processHold.segments, segments) ||
       isLiveThinkStatusAppendChange(processHold.segments, segments) ||
       isLiveStatusThinkStatusAppendChange(processHold.segments, segments) ||
       isLiveWriteStatThinkStatusAppendChange(processHold.segments, segments) ||
@@ -2246,6 +2300,7 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     (isLiveStatusAppendChange(processHold.segments, segments) ||
       isLiveApprovalDeniedStatusAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedStatusAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusAppendChange(processHold.segments, segments))
   ) {
     const added = segments[segments.length - 1]!
@@ -2408,6 +2463,7 @@ export function nextLiveProcessView(
     (isLiveApprovalNeededChange(processHold.segments, segments) ||
       isLiveApprovalDeniedSettleChange(processHold.segments, segments) ||
       isLiveApprovalAllowedWriteStatChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleChange(processHold.segments, segments) ||
       isLiveApprovalResolvedChange(processHold.segments, segments) ||
       isLiveUserInputNeededChange(processHold.segments, segments) ||
       isLiveAskResolvedSettleChange(processHold.segments, segments) ||
@@ -2604,6 +2660,13 @@ export function shouldSkipLiveAnswerIdentity(input: {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
   if (isLiveApprovalDeniedToolAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
+  if (isLiveApprovalAllowedSettleChange(input.prevSegments, input.segments)) return true
+  if (isLiveApprovalAllowedStatusAppendChange(input.prevSegments, input.segments)) {
+    return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
+  }
+  if (isLiveApprovalAllowedToolAppendChange(input.prevSegments, input.segments)) {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
   if (isLiveApprovalResolvedChange(input.prevSegments, input.segments)) return true
