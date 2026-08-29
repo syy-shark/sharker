@@ -169,6 +169,31 @@ describe('process phases privacy', () => {
     expect(remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, firstReply])).toBe(
       appended
     )
+    const inlineDemo: TurnSegment = {
+      id: 'demo-tool-1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: '',
+      startedAt: 12
+    }
+    expect(
+      appendProcessPhaseStepOnToolStart(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, inlineDemo], true)
+    ).toBeNull()
+    expect(
+      remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, inlineDemo])
+    ).toBe(appended)
+    const demoHtml: TurnSegment = {
+      ...inlineDemo,
+      content: '<div class="scene"><h1>广义相对论</h1><p>spacetime curvature demo</p></div>'
+    }
+    expect(
+      remapProcessPhaseStepsOnThinkAppend(
+        appended!,
+        [cmdDone, cmdNext, inlineDemo],
+        [cmdDone, cmdNext, demoHtml]
+      )
+    ).toBe(appended)
     const liveText: TurnSegment = {
       id: 'ans1',
       kind: 'text',

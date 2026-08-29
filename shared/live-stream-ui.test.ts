@@ -31,6 +31,8 @@ import {
   isLiveToolAppendChange,
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
+  isLiveDemoAppendChange,
+  isLiveDemoHtmlChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
   isLiveToolSettleChange,
@@ -556,6 +558,91 @@ describe('live stream ui snapshot', () => {
     expect(answerFirstReply.tail?.content).toBe('Hi')
     expect(answerFirstReply.show).toBe(true)
     expect(answerFirstReply.closed).toEqual([])
+    const inlineDemo: TurnSegment = {
+      id: 'demo-tool-1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: ''
+    }
+    expect(isLiveToolAppendChange([ran], [ran, inlineDemo])).toBe(false)
+    expect(isLiveDemoAppendChange([ran], [ran, inlineDemo])).toBe(true)
+    expect(isLiveDemoAppendChange([thinking], [thinkingDone, inlineDemo])).toBe(true)
+    expect(isLiveDemoAppendChange([hello], [helloDone, inlineDemo])).toBe(true)
+    expect(isLiveAnswerAppendChange([ran], [ran, inlineDemo])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([ran], [ran, inlineDemo])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [ran],
+        segments: [ran, inlineDemo]
+      })
+    ).toBe(false)
+    const processAfterDemo = nextLiveProcessView(processToolsOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, inlineDemo]
+    })
+    expect(processAfterDemo.processForFlow).toEqual(processToolsOnly.processForFlow)
+    expect(
+      processAfterDemo.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')
+    ).toBe(false)
+    expect(processAfterDemo.generatingDemo).toBe(true)
+    const answerAfterDemo = nextLiveAnswerView(answerToolsOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, inlineDemo]
+    })
+    expect(answerAfterDemo.tail?.type).toBe('demo')
+    expect(answerAfterDemo.tail?.id).toBe(inlineDemo.id)
+    const demoHtml: TurnSegment = {
+      ...inlineDemo,
+      content: '<div class="scene"><h1>广义相对论</h1><p>spacetime curvature demo</p></div>'
+    }
+    expect(isLiveDemoHtmlChange(inlineDemo, demoHtml)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([ran, inlineDemo], [ran, demoHtml])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerAfterDemo,
+        prevSegments: [ran, inlineDemo],
+        segments: [ran, demoHtml]
+      })
+    ).toBe(false)
+    const processAfterDemoHtml = nextLiveProcessView(processAfterDemo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoHtml]
+    })
+    expect(processAfterDemoHtml.processForFlow).toBe(processAfterDemo.processForFlow)
+    expect(processAfterDemoHtml.generatingDemo).toBe(false)
+    expect(processAfterDemoHtml.contentStreaming).toBe(true)
+    const answerAfterDemoHtml = nextLiveAnswerView(answerAfterDemo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoHtml]
+    })
+    expect(answerAfterDemoHtml.tail?.type).toBe('demo')
+    expect(answerAfterDemoHtml.tail && 'html' in answerAfterDemoHtml.tail).toBe(true)
+    if (answerAfterDemoHtml.tail && 'html' in answerAfterDemoHtml.tail) {
+      expect(answerAfterDemoHtml.tail.html).toBe(demoHtml.content)
+    }
+    const demoDone: TurnSegment = { ...demoHtml, status: 'done' }
+    const answerAfterDemoDone = nextLiveAnswerView(answerAfterDemoHtml, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoDone]
+    })
+    expect(answerAfterDemoDone.tail?.type).toBe('demo')
+    if (answerAfterDemoDone.tail && 'streaming' in answerAfterDemoDone.tail) {
+      expect(answerAfterDemoDone.tail.streaming).toBe(false)
+    }
+    const answerWithHello = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const answerHelloThenDemo = nextLiveAnswerView(answerWithHello, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [helloDone, inlineDemo]
+    })
+    expect(answerHelloThenDemo.closed.some((part) => part.id === hello.id && part.type === 'text')).toBe(
+      true
+    )
+    expect(answerHelloThenDemo.tail?.type).toBe('demo')
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

@@ -21,8 +21,10 @@ import {
   resolveReconnectLiveStatus
 } from './stream-reconnect'
 import {
+  findLiveDemoHtmlChange,
   findLiveToolRetargetChange,
   isLiveAnswerAppendChange,
+  isLiveDemoAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange,
   isLiveToolWriteStatChange
@@ -605,7 +607,7 @@ export function appendProcessPhaseStepOnToolStart(
   return [...remapped, built]
 }
 
-/** 前缀没变或只收束思考/status、末尾新开思考或散文：时间线不追加该步（旁白 / 回答另订） */
+/** 前缀没变或只收束思考/status、末尾新开思考/散文/演示，或演示 HTML 增长：时间线不追加该步（旁白 / 回答 / 演示槽另订） */
 export function remapProcessPhaseStepsOnThinkAppend(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -613,7 +615,9 @@ export function remapProcessPhaseStepsOnThinkAppend(
 ): ProcessPhaseStep[] | null {
   if (
     !isLiveThinkAppendChange(prevSegments, segments) &&
-    !isLiveAnswerAppendChange(prevSegments, segments)
+    !isLiveAnswerAppendChange(prevSegments, segments) &&
+    !isLiveDemoAppendChange(prevSegments, segments) &&
+    !findLiveDemoHtmlChange(prevSegments, segments)
   ) {
     return null
   }

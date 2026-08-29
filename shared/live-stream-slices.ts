@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 present_inline_demo 只开演示槽（过程不追加、```demo 围栏仍整拆）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -89,6 +89,12 @@ function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean
   if (prev.kind !== 'tool' || next.kind !== 'tool') return false
   if (prev.id !== next.id || prev.status !== next.status) return false
   if (prev.toolName !== next.toolName) return false
+  if (
+    prev.toolName === 'present_inline_demo' &&
+    ((prev.content ?? '') !== (next.content ?? '') || (prev.toolDetail ?? '') !== (next.toolDetail ?? ''))
+  ) {
+    return false
+  }
   return (
     prev.toolArgs === next.toolArgs &&
     prev.fileDiff === next.fileDiff &&
@@ -101,6 +107,7 @@ function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean
 export function isLiveToolSettleChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev.kind !== 'tool' || next.kind !== 'tool') return false
   if (prev.id !== next.id || prev.toolName !== next.toolName) return false
+  if (prev.toolName === 'present_inline_demo') return false
   if (prev.status !== 'active') return false
   if (next.status !== 'done' && next.status !== 'error' && next.status !== 'cancelled') return false
   return (
@@ -208,6 +215,65 @@ export function isLiveAnswerAppendChange(
   return true
 }
 
+/** 前缀没变或只收束思考/status/散文、末尾新开演示：过程不追加、回答只开演示槽（```demo 围栏仍整拆） */
+export function isLiveDemoAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  const added = next[next.length - 1]
+  if (
+    !added ||
+    added.kind !== 'tool' ||
+    added.status !== 'active' ||
+    added.toolName !== 'present_inline_demo'
+  ) {
+    return false
+  }
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLivePrefixClose(before, after)) return false
+  }
+  return true
+}
+
+function isLiveDemoSegment(segment: TurnSegment): boolean {
+  return segment.kind === 'tool' && segment.toolName === 'present_inline_demo'
+}
+
+/** 同一演示只改 HTML / 说明 / 收束：只换该槽，不重拆过程 / buildAnswerParts */
+export function isLiveDemoHtmlChange(prev: TurnSegment, next: TurnSegment): boolean {
+  if (!isLiveDemoSegment(prev) || !isLiveDemoSegment(next)) return false
+  if (prev.id !== next.id) return false
+  if (!isLiveToolStatusHoldOrSettle(prev, next)) return false
+  return (
+    prev.content !== next.content ||
+    prev.toolDetail !== next.toolDetail ||
+    prev.toolArgs !== next.toolArgs ||
+    prev.status !== next.status
+  )
+}
+
+export function findLiveDemoHtmlChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): { from: TurnSegment; to: TurnSegment } | null {
+  if (!prev || prev.length !== next.length) return null
+  let found: { from: TurnSegment; to: TurnSegment } | null = null
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (before === after) continue
+    if (!before || !after || !isLiveDemoHtmlChange(before, after)) return null
+    if (found) return null
+    found = { from: before, to: after }
+  }
+  return found
+}
+
 /** 同一列表里只有一个工具就地改详情或收束：找出该对，供非末步 complete_call */
 export function findLiveToolInPlaceChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -300,6 +366,8 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveDemoAppendChange(prevSegments, segments)) return 'tool'
+  if (findLiveDemoHtmlChange(prevSegments, segments)) return 'tool'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (findLiveToolWriteStatChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
@@ -336,6 +404,8 @@ export function nextLiveThinkText(
     return prev + (segments[segments.length - 1]?.content ?? '')
   }
   if (isLiveAnswerAppendChange(prevSegments, segments)) return prev
+  if (isLiveDemoAppendChange(prevSegments, segments)) return prev
+  if (findLiveDemoHtmlChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -503,6 +573,18 @@ function processForAnswer(segments: TurnSegment[], answerParts: AnswerPart[]): T
   })
 }
 
+function liveDemoProcessFlags(
+  prev: LiveProcessView,
+  demo: TurnSegment
+): Pick<LiveProcessView, 'generatingDemo' | 'contentStreaming' | 'answerStreaming'> {
+  const paintable = isInlineDemoPaintable(demo.content ?? '')
+  return {
+    generatingDemo: demo.status === 'active' && !paintable,
+    contentStreaming: prev.contentStreaming || paintable,
+    answerStreaming: prev.answerStreaming
+  }
+}
+
 function sameProcessView(prev: LiveProcessView, next: LiveProcessView): boolean {
   return (
     prev.processForFlow === next.processForFlow &&
@@ -628,6 +710,58 @@ export function nextLiveProcessView(
       answerTailPlain: true
     }
     return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
+    isLiveDemoAppendChange(processHold.segments, segments)
+  ) {
+    const added = segments[segments.length - 1]!
+    const processForFlow = remapProcessFlowRefs(
+      prev.processForFlow,
+      processHold.segments,
+      segments
+    )
+    const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const flags = liveDemoProcessFlags(prev, added)
+    const view = {
+      ...prev,
+      processForFlow,
+      thinkText,
+      ...flags
+    }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (prev && processHold?.view === prev) {
+    const demoChange = findLiveDemoHtmlChange(processHold.segments, segments)
+    if (demoChange) {
+      const processForFlow = remapProcessFlowRefs(
+        prev.processForFlow,
+        processHold.segments,
+        segments
+      )
+      const flags = liveDemoProcessFlags(prev, demoChange.to)
+      const view =
+        processForFlow === prev.processForFlow &&
+        flags.generatingDemo === prev.generatingDemo &&
+        flags.contentStreaming === prev.contentStreaming &&
+        flags.answerStreaming === prev.answerStreaming
+          ? prev
+          : { ...prev, processForFlow, ...flags }
+      processHold = {
+        view,
+        identity: liveProcessIdentity(segments),
+        segments,
+        answerTailPlain: processHold.answerTailPlain
+      }
+      return view
+    }
   }
   if (
     prev &&
@@ -809,6 +943,88 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   }
 }
 
+function liveDemoAnswerPart(demo: TurnSegment): Extract<AnswerPart, { type: 'demo' }> {
+  const html = demo.content ?? ''
+  return {
+    type: 'demo',
+    id: demo.id,
+    html: html || '<!-- streaming -->',
+    caption: demo.toolDetail,
+    streaming: demo.status === 'active'
+  }
+}
+
+/** 新开 present_inline_demo：先收起上一尾，再开演示槽，不重跑 buildAnswerParts */
+function appendLiveDemoView(prev: LiveAnswerView, demo: TurnSegment): LiveAnswerView {
+  const demoPart = liveDemoAnswerPart(demo)
+  const closed = prev.tail ? [...prev.closed, prev.tail] : prev.closed
+  const parts = [...closed, demoPart]
+  const copyable = copyableFromAnswerParts(parts)
+  return {
+    parts,
+    closed,
+    tail: demoPart,
+    show: true,
+    copyable,
+    hasCopyable: Boolean(copyable)
+  }
+}
+
+/** 同一演示 HTML / 说明 / 收束：只换该槽 */
+function growLiveDemoView(prev: LiveAnswerView, demo: TurnSegment): LiveAnswerView {
+  const demoPart = liveDemoAnswerPart(demo)
+  if (prev.tail?.type === 'demo' && prev.tail.id === demo.id) {
+    if (
+      prev.tail.html === demoPart.html &&
+      prev.tail.caption === demoPart.caption &&
+      prev.tail.streaming === demoPart.streaming
+    ) {
+      return prev
+    }
+    const parts = prev.closed.length ? [...prev.closed, demoPart] : [demoPart]
+    return {
+      ...prev,
+      parts,
+      tail: demoPart,
+      show: true
+    }
+  }
+  const index = prev.parts.findIndex((part) => part.type === 'demo' && part.id === demo.id)
+  if (index < 0) {
+    return {
+      parts: reuseAnswerParts(prev.parts, [...prev.parts, demoPart]),
+      closed: prev.closed,
+      tail: demoPart,
+      show: true,
+      copyable: prev.copyable,
+      hasCopyable: prev.hasCopyable
+    }
+  }
+  const current = prev.parts[index]!
+  if (
+    current.type === 'demo' &&
+    current.html === demoPart.html &&
+    current.caption === demoPart.caption &&
+    current.streaming === demoPart.streaming
+  ) {
+    return prev
+  }
+  const parts = prev.parts.slice()
+  parts[index] = demoPart
+  const tail = prev.tail?.id === demo.id ? demoPart : prev.tail
+  const closed =
+    prev.tail?.id === demo.id
+      ? prev.closed
+      : prev.closed.map((part) => (part.id === demo.id && part.type === 'demo' ? demoPart : part))
+  return {
+    ...prev,
+    parts,
+    closed,
+    tail,
+    show: true
+  }
+}
+
 /** 工具后新开一段散文：先收起上一尾，再开新尾，不重跑 buildAnswerParts */
 function appendLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
   if (prev.tail && prev.tail.id !== tail.id) {
@@ -868,6 +1084,22 @@ export function nextLiveAnswerView(
     const view = appendLiveAnswerView(prev, added)
     answerGrowHold = { view, segments, tailPlain: true }
     return view
+  }
+  if (prev && isLiveDemoAppendChange(prevSegments, segments)) {
+    const added = segments[segments.length - 1]!
+    const sealed = findLiveClosedAnswerText(prevSegments, segments)
+    const base = sealed ? sealLiveAnswerTail(prev, sealed) : prev
+    const view = appendLiveDemoView(base, added)
+    answerGrowHold = { view, segments, tailPlain: false }
+    return view
+  }
+  if (prev) {
+    const demoChange = findLiveDemoHtmlChange(prevSegments, segments)
+    if (demoChange) {
+      const view = growLiveDemoView(prev, demoChange.to)
+      answerGrowHold = { view, segments, tailPlain: false }
+      return view
+    }
   }
   if (prev && shouldGrowLiveAnswerTail({ prev, prevSegments, segments, tail: grow.tail })) {
     const view = growLiveAnswerView(prev, grow.tail!)
