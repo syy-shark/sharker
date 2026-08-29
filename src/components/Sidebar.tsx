@@ -89,7 +89,7 @@ interface Props {
   onClearUnread?: () => void
   /** 侧栏铃铛：开关 Activity（对标 Codex 铃铛 / ⌘⌥U） */
   onToggleActivity?: () => void
-  /** 线程右键复制为 Markdown（对标 Codex Copy as Markdown / #25646） */
+  /** 线程右键 Copy as Markdown（对标 Codex Copy as Markdown / #25646） */
   onCopyConversationMarkdown?: (workspaceId: string, conversationId: string) => void
   /** 自动化审查队列未读数（Codex Triage） */
   queueUnread?: number

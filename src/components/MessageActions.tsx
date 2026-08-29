@@ -1,9 +1,10 @@
 /**
- * 消息复制等操作按钮
+ * 消息 Copy / Fork 等操作按钮（对标 Codex hover Copy / Fork）
  * @see src/ARCH.md
  */
 import { useState } from 'react'
 import { Check, Copy, GitFork, Pencil, RotateCcw } from 'lucide-react'
+import { COPY_LABEL } from '../../shared/reveal-in-folder'
 import './MessageActions.css'
 
 /** MessageActions Props：消息正文与 ID */
@@ -57,8 +58,8 @@ export function MessageActions({
       <button
         type="button"
         className={`message-actions-btn${copied ? ' message-actions-btn--copied' : ''}`}
-        title={copied ? '已复制' : '复制'}
-        aria-label={copied ? '已复制' : '复制'}
+        title={COPY_LABEL}
+        aria-label={COPY_LABEL}
         onClick={copy}
       >
         {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}

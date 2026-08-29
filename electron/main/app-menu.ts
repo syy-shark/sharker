@@ -5,6 +5,7 @@
  */
 import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../../shared/ipc'
+import { COPY_AS_MARKDOWN_LABEL } from '../../shared/reveal-in-folder'
 
 /** 把菜单动作发给所有渲染窗 */
 export function sendMenuAction(action: string): void {
@@ -68,7 +69,7 @@ export function installApplicationMenu(): void {
           ...send('share_thread')
         },
         {
-          label: '复制为 Markdown',
+          label: COPY_AS_MARKDOWN_LABEL,
           registerAccelerator: false,
           ...send('copy_conversation_markdown')
         },

@@ -2,6 +2,13 @@
  * Codex 式工作台快捷键匹配（纯逻辑，供 App 与单测共用）。
  * @see shared/ARCH.md
  */
+import {
+  COPY_BROWSER_URL_LABEL,
+  COPY_CHAT_DEEP_LINK_LABEL,
+  COPY_CONVERSATION_PATH_LABEL,
+  COPY_SESSION_ID_LABEL,
+  COPY_WORKING_DIRECTORY_LABEL
+} from './reveal-in-folder'
 
 /** 快捷键对应的工作台动作 */
 export type WorkbenchShortcutAction =
@@ -307,9 +314,10 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⌥R', title: '重命名对话' },
   { keys: '⌘⌥P', title: '置顶 / 取消置顶' },
   { keys: '⌘⇧U', title: '标为未读' },
-  { keys: '⌘⇧C', title: '复制工作目录（浏览器聚焦时复制网址）' },
-  { keys: '⌘⌥C', title: '复制会话 ID' },
-  { keys: '⌘⌥⇧C', title: '复制对话路径' },
+  { keys: '⌘⇧C', title: `${COPY_WORKING_DIRECTORY_LABEL} / ${COPY_BROWSER_URL_LABEL}` },
+  { keys: '⌘⌥C', title: COPY_SESSION_ID_LABEL },
+  { keys: '⌘⌥L', title: COPY_CHAT_DEEP_LINK_LABEL },
+  { keys: '⌘⌥⇧C', title: COPY_CONVERSATION_PATH_LABEL },
   { keys: '⌘[ / ⌘]', title: '后退 / 前进' },
   { keys: '⌘+ / ⌘-', title: '放大 / 缩小字号' },
   { keys: '⌘0', title: '重置字号' },
@@ -464,17 +472,17 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'select_chat', title: '跳到第 N 条对话', defaultKeys: '⌘1–9' },
   { action: 'select_recent', title: '最近对话 1–6', defaultKeys: '⌘⌥1–6' },
   { action: 'pick_model', title: '模型选择', defaultKeys: 'Ctrl⇧M', defaultChord: 'mod+ctrl+shift+m' },
-  { action: 'copy_cwd', title: '复制工作目录', defaultKeys: '⌘⇧C', defaultChord: 'mod+shift+c' },
-  { action: 'copy_session_id', title: '复制会话 ID', defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' },
+  { action: 'copy_cwd', title: COPY_WORKING_DIRECTORY_LABEL, defaultKeys: '⌘⇧C', defaultChord: 'mod+shift+c' },
+  { action: 'copy_session_id', title: COPY_SESSION_ID_LABEL, defaultKeys: '⌘⌥C', defaultChord: 'mod+alt+c' },
   {
     action: 'copy_conversation_path',
-    title: '复制对话路径',
+    title: COPY_CONVERSATION_PATH_LABEL,
     defaultKeys: '⌘⌥⇧C',
     defaultChord: 'mod+alt+shift+c'
   },
   {
     action: 'copy_deep_link',
-    title: '复制对话深链',
+    title: COPY_CHAT_DEEP_LINK_LABEL,
     defaultKeys: '⌘⌥L',
     defaultChord: 'mod+alt+l'
   },

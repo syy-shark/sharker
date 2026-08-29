@@ -41,7 +41,7 @@ describe('reveal in folder', () => {
       'pin',
       'archive'
     ])
-    expect(threadMenuItems({ platform: 'darwin' })[1]?.title).toBe('复制为 Markdown')
+    expect(threadMenuItems({ platform: 'darwin' })[1]?.title).toBe('Copy as Markdown')
     expect(threadMenuItems({ pinned: true, platform: 'win32' })[3]?.title).toBe('取消置顶')
     expect(threadCopyMenuItems().map((item) => item.action)).toEqual([
       'copy-cwd',
@@ -49,7 +49,13 @@ describe('reveal in folder', () => {
       'copy-deeplink',
       'copy-markdown'
     ])
-    expect(threadCopyMenuItems()[3]?.title).toBe('复制为 Markdown')
+    expect(threadCopyMenuItems().map((item) => item.title)).toEqual([
+      'Copy working directory',
+      'Copy session ID',
+      'Copy deeplink',
+      'Copy as Markdown'
+    ])
+    expect(threadCopyMenuItems()[3]?.title).toBe('Copy as Markdown')
     expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('在文件管理器中显示')
   })
 })

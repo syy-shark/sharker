@@ -32,6 +32,13 @@ describe('command palette', () => {
     expect(ids).toContain('feedback')
     expect(ids).toContain('share')
     expect(ids).toContain('copy-markdown')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-markdown')?.title).toBe('Copy as Markdown')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-cwd')?.title).toBe('Copy working directory')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-session')?.title).toBe('Copy session ID')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-deeplink')?.title).toBe('Copy chat deep link')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-conversation-path')?.title).toBe(
+      'Copy conversation path'
+    )
     expect(ids).toContain('local')
     expect(ids).toContain('worktree')
     expect(ids).toContain('side')
@@ -104,6 +111,12 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('访达').some((c) => c.action === 'open_worktree')).toBe(true)
+    expect(filterPaletteCommands('Copy as Markdown').some((c) => c.id === 'copy-markdown')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('Copy working directory').some((c) => c.id === 'copy-cwd')).toBe(
+      true
+    )
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

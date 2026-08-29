@@ -2,6 +2,13 @@
  * Codex 式命令面板目录（⌘K / ⌘⇧P）。
  * @see shared/ARCH.md
  */
+import {
+  COPY_AS_MARKDOWN_LABEL,
+  COPY_CHAT_DEEP_LINK_LABEL,
+  COPY_CONVERSATION_PATH_LABEL,
+  COPY_SESSION_ID_LABEL,
+  COPY_WORKING_DIRECTORY_LABEL
+} from './reveal-in-folder'
 
 /** 命令面板条目 */
 export interface PaletteCommand {
@@ -237,7 +244,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'copy-markdown',
-    title: '复制为 Markdown',
+    title: COPY_AS_MARKDOWN_LABEL,
     keywords: 'copy as markdown conversation export 复制 对话 markdown',
     action: 'copy_conversation_markdown'
   },
@@ -519,28 +526,28 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'copy-cwd',
-    title: '复制工作目录',
+    title: COPY_WORKING_DIRECTORY_LABEL,
     shortcut: '⌘⇧C',
-    keywords: 'copy cwd directory 工作目录 路径',
+    keywords: 'copy cwd directory working 工作目录 路径',
     action: 'copy_cwd'
   },
   {
     id: 'copy-session',
-    title: '复制会话 ID',
+    title: COPY_SESSION_ID_LABEL,
     shortcut: '⌘⌥C',
     keywords: 'copy session id 会话',
     action: 'copy_session_id'
   },
   {
     id: 'copy-deeplink',
-    title: '复制对话深链',
+    title: COPY_CHAT_DEEP_LINK_LABEL,
     shortcut: '⌘⌥L',
-    keywords: 'copy deep link url sharker:// 深链',
+    keywords: 'copy deep link deeplink url sharker:// 深链',
     action: 'copy_deep_link'
   },
   {
     id: 'copy-conversation-path',
-    title: '复制对话路径',
+    title: COPY_CONVERSATION_PATH_LABEL,
     shortcut: '⌘⌥⇧C',
     keywords: 'copy conversation path worktree 对话路径 隔离',
     action: 'copy_conversation_path'

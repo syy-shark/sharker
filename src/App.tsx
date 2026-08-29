@@ -116,7 +116,13 @@ import {
 } from '../shared/transcript-window'
 import { mergeHydratedMessage, shouldReloadUnslimmedHistory } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
-import type { ThreadCopyAction } from '../shared/reveal-in-folder'
+import {
+  COPY_CHAT_DEEP_LINK_LABEL,
+  COPY_CONVERSATION_PATH_LABEL,
+  COPY_SESSION_ID_LABEL,
+  COPY_WORKING_DIRECTORY_LABEL,
+  type ThreadCopyAction
+} from '../shared/reveal-in-folder'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
@@ -5562,20 +5568,20 @@ export default function App() {
         action === 'copy-cwd'
           ? {
               name: 'cwd',
-              description: '复制工作目录',
+              description: COPY_WORKING_DIRECTORY_LABEL,
               action: 'copy_cwd',
               category: 'workspace' as const
             }
           : action === 'copy-session'
             ? {
                 name: 'session',
-                description: '复制会话 ID',
+                description: COPY_SESSION_ID_LABEL,
                 action: 'copy_session_id',
                 category: 'session' as const
               }
             : {
                 name: 'deeplink',
-                description: '复制对话深链',
+                description: COPY_CHAT_DEEP_LINK_LABEL,
                 action: 'copy_deep_link',
                 category: 'session' as const
               }
@@ -7083,7 +7089,7 @@ export default function App() {
         void handleSlashActionRef.current(
           {
             name: 'cwd',
-            description: '复制工作目录',
+            description: COPY_WORKING_DIRECTORY_LABEL,
             scope: 'ui',
             action: 'copy_cwd',
             category: 'workspace'
@@ -7096,7 +7102,7 @@ export default function App() {
         void handleSlashActionRef.current(
           {
             name: 'session',
-            description: '复制会话 ID',
+            description: COPY_SESSION_ID_LABEL,
             scope: 'ui',
             action: 'copy_session_id',
             category: 'session'
@@ -7109,7 +7115,7 @@ export default function App() {
         void handleSlashActionRef.current(
           {
             name: 'deeplink',
-            description: '复制对话深链',
+            description: COPY_CHAT_DEEP_LINK_LABEL,
             scope: 'ui',
             action: 'copy_deep_link',
             category: 'session'
@@ -7122,7 +7128,7 @@ export default function App() {
         void handleSlashActionRef.current(
           {
             name: 'path',
-            description: '复制对话路径',
+            description: COPY_CONVERSATION_PATH_LABEL,
             scope: 'ui',
             action: 'copy_conversation_path',
             category: 'workspace'

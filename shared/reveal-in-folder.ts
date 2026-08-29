@@ -50,13 +50,26 @@ export function reviewFileRevealPath(filePath: string, repoRoot: string): string
 
 export type ThreadCopyAction = 'copy-cwd' | 'copy-session' | 'copy-deeplink' | 'copy-markdown'
 
+/** 官方桌面消息 hover / Copy 子菜单名（对标 Codex #20643 / #25201） */
+export const COPY_LABEL = 'Copy'
+/** 官方桌面 Copy 子菜单与快捷键（对标 Codex #25201 / #28233 / learn.chatgpt.com） */
+export const COPY_WORKING_DIRECTORY_LABEL = 'Copy working directory'
+export const COPY_SESSION_ID_LABEL = 'Copy session ID'
+/** 顶栏 Copy 子菜单原文（对标 Codex #25201 / #28233） */
+export const COPY_DEEPLINK_LABEL = 'Copy deeplink'
+/** 官方快捷键表名（对标 learn.chatgpt.com Copy chat deep link） */
+export const COPY_CHAT_DEEP_LINK_LABEL = 'Copy chat deep link'
+export const COPY_AS_MARKDOWN_LABEL = 'Copy as Markdown'
+export const COPY_CONVERSATION_PATH_LABEL = 'Copy conversation path'
+export const COPY_BROWSER_URL_LABEL = 'Copy browser URL'
+
 /** 顶栏 Copy 子菜单（对标 Codex threadHeader Copy：cwd / session / deeplink / Markdown） */
 export function threadCopyMenuItems(): Array<{ action: ThreadCopyAction; title: string }> {
   return [
-    { action: 'copy-cwd', title: '复制工作目录' },
-    { action: 'copy-session', title: '复制会话 ID' },
-    { action: 'copy-deeplink', title: '复制对话深链' },
-    { action: 'copy-markdown', title: '复制为 Markdown' }
+    { action: 'copy-cwd', title: COPY_WORKING_DIRECTORY_LABEL },
+    { action: 'copy-session', title: COPY_SESSION_ID_LABEL },
+    { action: 'copy-deeplink', title: COPY_DEEPLINK_LABEL },
+    { action: 'copy-markdown', title: COPY_AS_MARKDOWN_LABEL }
   ]
 }
 
@@ -69,7 +82,7 @@ export function threadMenuItems(input: {
 }): Array<{ action: ThreadMenuAction; title: string }> {
   return [
     { action: 'reveal', title: revealInFolderLabel(input.platform) },
-    { action: 'copy-markdown', title: '复制为 Markdown' },
+    { action: 'copy-markdown', title: COPY_AS_MARKDOWN_LABEL },
     { action: 'rename', title: '重命名' },
     { action: 'pin', title: input.pinned ? '取消置顶' : '置顶' },
     { action: 'archive', title: '归档' }

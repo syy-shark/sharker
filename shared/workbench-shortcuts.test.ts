@@ -182,6 +182,27 @@ describe('workbench shortcuts', () => {
     expect(WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === 'Tab' && row.title.includes('Queue'))).toBe(
       true
     )
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) =>
+          row.keys === '⌘⇧C' &&
+          row.title.includes('Copy working directory') &&
+          row.title.includes('Copy browser URL')
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⌥C' && row.title === 'Copy session ID')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘⌥L' && row.title === 'Copy chat deep link'
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘⌥⇧C' && row.title === 'Copy conversation path'
+      )
+    ).toBe(true)
   })
 
   it('cycles conversation ids', () => {

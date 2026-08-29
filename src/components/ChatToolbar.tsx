@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
+  COPY_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
   type ThreadCopyAction
@@ -380,15 +381,15 @@ export const ChatToolbar = memo(function ChatToolbar({
                   setCopyOpen((open) => !open)
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title="对话操作"
-                aria-label="对话操作"
+                title={COPY_LABEL}
+                aria-label={COPY_LABEL}
                 aria-expanded={copyOpen}
                 aria-haspopup="menu"
               >
                 <MoreHorizontal size={18} strokeWidth={1.75} aria-hidden />
               </button>
               {copyOpen ? (
-                <div className="chat-toolbar-actions-menu glass-popover" role="menu" aria-label="复制">
+                <div className="chat-toolbar-actions-menu glass-popover" role="menu" aria-label={COPY_LABEL}>
                   {threadCopyMenuItems().map((item) => (
                     <button
                       key={item.action}
