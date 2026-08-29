@@ -931,6 +931,105 @@ describe('process phases privacy', () => {
     expect(afterWriteAskThinkTokenSettled).not.toBeNull()
     expect(afterWriteAskThinkTokenSettled!.at(-1)?.segment).toBe(cmdNextSettled)
     expect(afterWriteAskThinkTokenSettled!.some((step) => step.segment === firstReplyEarly)).toBe(false)
+    const askHangCompressDone: TurnSegment = {
+      id: 'cp-ask-hang',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Context automatically compacted',
+      status: 'done',
+      startedAt: 23,
+      endedAt: 23
+    }
+    const afterAskHangCompress = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReady, askStatusDoneForHang, askHangCompressDone],
+      true
+    )
+    expect(afterAskHangCompress).not.toBeNull()
+    expect(afterAskHangCompress!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterAskHangCompress!.at(-1)?.segment).toBe(askHangCompressDone)
+    const askReadyCancelled: TurnSegment = {
+      ...askReady,
+      status: 'cancelled',
+      errorMessage: '任务已停止',
+      resultSummary: '已停止',
+      endedAt: 24
+    }
+    const askStatusCancelled: TurnSegment = { ...askStatus, status: 'cancelled', endedAt: 24 }
+    const afterAskHangCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusCancelled],
+      true
+    )
+    expect(afterAskHangCancel).not.toBeNull()
+    expect(afterAskHangCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    expect(afterAskHangCancel!.some((step) => step.segment === askStatusCancelled)).toBe(true)
+    const nextThinkCancelledAsk: TurnSegment = { ...nextThink, status: 'cancelled', endedAt: 24 }
+    const afterAskHangThinkCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusCancelled, nextThinkCancelledAsk],
+      true
+    )
+    expect(afterAskHangThinkCancel).not.toBeNull()
+    expect(afterAskHangThinkCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    expect(afterAskHangThinkCancel!.some((step) => step.segment.kind === 'thinking')).toBe(false)
+    const afterWriteAskCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReady, askStatusDoneForHang, askHangCompressDone],
+      true
+    )
+    expect(afterWriteAskCompress).not.toBeNull()
+    expect(afterWriteAskCompress![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteAskCompress!.at(-1)?.segment).toBe(askHangCompressDone)
+    const afterWriteAskCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReadyCancelled, askStatusCancelled],
+      true
+    )
+    expect(afterWriteAskCancel).not.toBeNull()
+    expect(afterWriteAskCancel![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteAskCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    const afterWritePlanAskCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, planStatusDone, askReady, askStatusDoneForHang, askHangCompressDone],
+      true
+    )
+    expect(afterWritePlanAskCompress).not.toBeNull()
+    expect(afterWritePlanAskCompress!.some((step) => step.segment === planStatusDone)).toBe(true)
+    expect(afterWritePlanAskCompress!.at(-1)?.segment).toBe(askHangCompressDone)
+    const afterWritePlanAskCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, planStatusDone, askReadyCancelled, askStatusCancelled],
+      true
+    )
+    expect(afterWritePlanAskCancel).not.toBeNull()
+    expect(afterWritePlanAskCancel!.some((step) => step.segment === planStatusDone)).toBe(true)
+    expect(afterWritePlanAskCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    const afterReconnectAskCompress = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, reconnectAskStatus, askReady, askStatusDoneForHang, askHangCompressDone],
+      true
+    )
+    expect(afterReconnectAskCompress).not.toBeNull()
+    expect(afterReconnectAskCompress!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
+    expect(afterReconnectAskCompress!.at(-1)?.segment).toBe(askHangCompressDone)
+    const afterReconnectAskCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, reconnectAskStatus, askReadyCancelled, askStatusCancelled],
+      true
+    )
+    expect(afterReconnectAskCancel).not.toBeNull()
+    expect(afterReconnectAskCancel!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
+    expect(afterReconnectAskCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',

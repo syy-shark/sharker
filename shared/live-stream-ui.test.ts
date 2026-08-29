@@ -182,6 +182,15 @@ import {
   isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange,
   isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange,
   isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange,
+  isLiveAskNeededCompressAppendChange,
+  isLiveWriteStatAskNeededCompressAppendChange,
+  isLiveWriteStatStatusAskNeededCompressAppendChange,
+  isLiveStatusAskNeededCompressAppendChange,
+  isLiveAskNeededCancelAppendChange,
+  isLiveAskNeededThinkCancelAppendChange,
+  isLiveWriteStatAskNeededCancelAppendChange,
+  isLiveWriteStatStatusAskNeededCancelAppendChange,
+  isLiveStatusAskNeededCancelAppendChange,
   isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
@@ -3019,6 +3028,140 @@ describe('live stream ui snapshot', () => {
       )
     ).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanThinkTokenSettled)).toBe('text')
+    let askHangCompress = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.1
+    })
+    askHangCompress = applyStreamChunk(askHangCompress, { ...askNeeded, timestamp: 71.2 })
+    askHangCompress = applyStreamChunk(askHangCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 71.3
+    })
+    expect(isLiveAskNeededCompressAppendChange([hello], askHangCompress)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangCompress)).toBe('tool')
+    let askHangCancel = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.4
+    })
+    askHangCancel = applyStreamChunk(askHangCancel, { ...askNeeded, timestamp: 71.5 })
+    askHangCancel = applyStreamChunk(askHangCancel, { type: 'turn_cancelled', timestamp: 71.6 })
+    expect(isLiveAskNeededCancelAppendChange([hello], askHangCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangCancel)).toBe('tool')
+    let askHangThinkCancel = applyStreamChunk(askHangThink, { type: 'turn_cancelled', timestamp: 71.7 })
+    expect(isLiveAskNeededThinkCancelAppendChange([hello], askHangThinkCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askHangThinkCancel)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello], askHangThinkCancel)).toBe('HmmNext')
+    let askWriteCompress = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 71.8 })
+    askWriteCompress = applyStreamChunk(askWriteCompress, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.9
+    })
+    askWriteCompress = applyStreamChunk(askWriteCompress, { ...askNeeded, timestamp: 72.1 })
+    askWriteCompress = applyStreamChunk(askWriteCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 72.2
+    })
+    expect(isLiveWriteStatAskNeededCompressAppendChange([hello, running], askWriteCompress)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteCompress)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: askWriteCompress
+      })
+    ).toBe(false)
+    let askWriteCancel = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 72.3 })
+    askWriteCancel = applyStreamChunk(askWriteCancel, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 72.4
+    })
+    askWriteCancel = applyStreamChunk(askWriteCancel, { ...askNeeded, timestamp: 72.5 })
+    askWriteCancel = applyStreamChunk(askWriteCancel, { type: 'turn_cancelled', timestamp: 72.6 })
+    expect(isLiveWriteStatAskNeededCancelAppendChange([hello, running], askWriteCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWriteCancel)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: askWriteCancel
+      })
+    ).toBe(false)
+    let askWritePlanCompress = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 72.7 })
+    askWritePlanCompress = applyStreamChunk(askWritePlanCompress, {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      timestamp: 72.8
+    })
+    askWritePlanCompress = applyStreamChunk(askWritePlanCompress, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 72.9
+    })
+    askWritePlanCompress = applyStreamChunk(askWritePlanCompress, { ...askNeeded, timestamp: 73.1 })
+    askWritePlanCompress = applyStreamChunk(askWritePlanCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 73.2
+    })
+    expect(
+      isLiveWriteStatStatusAskNeededCompressAppendChange([hello, running], askWritePlanCompress)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanCompress)).toBe('tool')
+    let askWritePlanCancel = applyStreamChunk([hello, running], { ...writeAskDone, timestamp: 73.3 })
+    askWritePlanCancel = applyStreamChunk(askWritePlanCancel, {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      timestamp: 73.4
+    })
+    askWritePlanCancel = applyStreamChunk(askWritePlanCancel, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 73.5
+    })
+    askWritePlanCancel = applyStreamChunk(askWritePlanCancel, { ...askNeeded, timestamp: 73.6 })
+    askWritePlanCancel = applyStreamChunk(askWritePlanCancel, { type: 'turn_cancelled', timestamp: 73.7 })
+    expect(isLiveWriteStatStatusAskNeededCancelAppendChange([hello, running], askWritePlanCancel)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running], askWritePlanCancel)).toBe('tool')
+    let askReconnectCompress = applyStreamChunk([hello], {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 73.8
+    })
+    askReconnectCompress = applyStreamChunk(askReconnectCompress, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 73.9
+    })
+    askReconnectCompress = applyStreamChunk(askReconnectCompress, { ...askNeeded, timestamp: 74.1 })
+    askReconnectCompress = applyStreamChunk(askReconnectCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 74.2
+    })
+    expect(isLiveStatusAskNeededCompressAppendChange([hello], askReconnectCompress)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectCompress)).toBe('tool')
+    let askReconnectCancel = applyStreamChunk([hello], {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 74.3
+    })
+    askReconnectCancel = applyStreamChunk(askReconnectCancel, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 74.4
+    })
+    askReconnectCancel = applyStreamChunk(askReconnectCancel, { ...askNeeded, timestamp: 74.5 })
+    askReconnectCancel = applyStreamChunk(askReconnectCancel, { type: 'turn_cancelled', timestamp: 74.6 })
+    expect(isLiveStatusAskNeededCancelAppendChange([hello], askReconnectCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askReconnectCancel)).toBe('tool')
     const processReadyForAskHang = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello]
@@ -3112,6 +3255,71 @@ describe('live stream ui snapshot', () => {
     expect(
       answerAfterAskReconnectToken.parts.some(
         (part) => part.type === 'text' && part.content.includes('Hi')
+      )
+    ).toBe(true)
+    const processAfterAskHangCompress = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangCompress
+    })
+    expect(
+      processAfterAskHangCompress.processForFlow.some((segment) => segment.toolName === 'compress')
+    ).toBe(true)
+    expect(
+      processAfterAskHangCompress.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
+      )
+    ).toBe(true)
+    const answerAfterAskHangCompress = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangCompress
+    })
+    expect(
+      answerAfterAskHangCompress.parts.find((part) => part.type === 'text' && part.id === hello.id)
+        ?.content
+    ).toBe(helloAskHangPart?.content)
+    const processAfterAskHangCancel = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangCancel
+    })
+    expect(
+      processAfterAskHangCancel.processForFlow.some(
+        (segment) =>
+          segment.toolName === REQUEST_USER_INPUT_TOOL && segment.status === 'cancelled'
+      )
+    ).toBe(true)
+    const answerAfterAskHangCancel = nextLiveAnswerView(answerReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangCancel
+    })
+    expect(
+      answerAfterAskHangCancel.parts.find((part) => part.type === 'text' && part.id === hello.id)
+        ?.content
+    ).toBe(helloAskHangPart?.content)
+    const processAfterAskHangThinkCancel = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askHangThinkCancel
+    })
+    expect(processAfterAskHangThinkCancel.thinkText).toBe(processReadyForAskHang.thinkText + 'Next')
+    expect(
+      processAfterAskHangThinkCancel.processForFlow.some((segment) => segment.kind === 'thinking')
+    ).toBe(false)
+    const processAfterAskWriteCompress = nextLiveProcessView(processReadyForAskWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askWriteCompress
+    })
+    expect(
+      processAfterAskWriteCompress.processForFlow.some((segment) => segment.toolName === 'compress')
+    ).toBe(true)
+    const processAfterAskReconnectCompress = nextLiveProcessView(processReadyForAskHang, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askReconnectCompress
+    })
+    expect(
+      processAfterAskReconnectCompress.processForFlow.some((segment) => segment.toolName === 'compress')
+    ).toBe(true)
+    expect(
+      processAfterAskReconnectCompress.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
       )
     ).toBe(true)
     const processReadyForDemoFence = nextLiveProcessView(null, {

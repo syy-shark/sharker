@@ -94,6 +94,15 @@ import {
   isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange,
   isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange,
   isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange,
+  isLiveAskNeededCompressAppendChange,
+  isLiveWriteStatAskNeededCompressAppendChange,
+  isLiveWriteStatStatusAskNeededCompressAppendChange,
+  isLiveStatusAskNeededCompressAppendChange,
+  isLiveAskNeededCancelAppendChange,
+  isLiveAskNeededThinkCancelAppendChange,
+  isLiveWriteStatAskNeededCancelAppendChange,
+  isLiveWriteStatStatusAskNeededCancelAppendChange,
+  isLiveStatusAskNeededCancelAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveCancelChange,
@@ -854,6 +863,15 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatStatusAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusAskNeededAnswerSettledToolAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusAskNeededThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusSettleChange(prevSegments, segments)
   ) {
     return null
