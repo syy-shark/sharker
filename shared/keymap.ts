@@ -57,7 +57,8 @@ const ACTION_SET = new Set<string>([
   'thinking_higher',
   'undo_app',
   'redo_app',
-  'interrupt_turn'
+  'interrupt_turn',
+  'run_environment_action'
 ])
 
 function normalizeKeyName(key: string, code?: string): string {

@@ -116,6 +116,14 @@ import type { SlashCommandMeta } from '../shared/slash-commands'
 import { BANG_SLASH_COMMAND, matchUiSlashCommand, SLASH_COMMANDS } from '../shared/slash-commands'
 import { parseBangCommand } from '../shared/bang-command'
 import {
+  hostLocalEnvironmentPlatform,
+  localEnvironmentTomlPath,
+  parseLocalEnvironmentActions,
+  primaryLocalEnvironmentAction,
+  resolveLocalEnvironmentActions,
+  type LocalEnvironmentAction
+} from '../shared/local-environment'
+import {
   adjacentConversationId,
   isEmbeddedTerminalTarget,
   isTerminalClearChord
@@ -454,6 +462,8 @@ export default function App() {
   const appUndoRef = useRef(createAppUndoStack())
   const appUndoSilentRef = useRef(false)
   const [pendingTerminalCommand, setPendingTerminalCommand] = useState<string | null>(null)
+  const [environmentActions, setEnvironmentActions] = useState<LocalEnvironmentAction[]>([])
+  const environmentActionsRef = useRef<LocalEnvironmentAction[]>([])
   const [terminalClearTick, setTerminalClearTick] = useState(0)
   const navStackRef = useRef<NavEntry[]>([{ page: 'chat' }])
   const navIndexRef = useRef(0)
@@ -915,6 +925,38 @@ export default function App() {
   useEffect(() => {
     threadWorktreePathRef.current = threadWorktreePath
   }, [threadWorktreePath])
+
+  useEffect(() => {
+    environmentActionsRef.current = environmentActions
+  }, [environmentActions])
+
+  useEffect(() => {
+    const cwd =
+      threadMode === 'worktree' && threadWorktreePath
+        ? threadWorktreePath
+        : (getActiveWorkspacePath(settings) ?? '')
+    let cancelled = false
+    if (!cwd || !window.sharker?.readTextFile) {
+      setEnvironmentActions([])
+      return
+    }
+    void window.sharker.readTextFile(localEnvironmentTomlPath(cwd)).then((result) => {
+      if (cancelled) return
+      if (!result.ok) {
+        setEnvironmentActions([])
+        return
+      }
+      setEnvironmentActions(
+        resolveLocalEnvironmentActions(
+          parseLocalEnvironmentActions(result.content),
+          hostLocalEnvironmentPlatform()
+        )
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [settings.activeWorkspaceId, settings.workspacePath, threadMode, threadWorktreePath])
 
   useEffect(() => {
     messagesRef.current = messages
@@ -3330,6 +3372,17 @@ export default function App() {
     setRightPanelOpen(true)
     setPage('chat')
   }, [])
+
+  /** 顶栏 / ⌘⇧D：在集成终端跑官方 `[[actions]]`（对标 Codex Local environments） */
+  const handleRunEnvironmentAction = useCallback(
+    (action?: LocalEnvironmentAction | null) => {
+      const next = action ?? primaryLocalEnvironmentAction(environmentActionsRef.current)
+      if (!next) return
+      handleTogglePanel('terminal')
+      setPendingTerminalCommand(next.command)
+    },
+    [handleTogglePanel]
+  )
 
   /** 对标 Codex Toggle bottom panel：⌘J 只开关面板，不改当前 Tab */
   const handleToggleRightPanel = useCallback(() => {
@@ -6290,6 +6343,10 @@ export default function App() {
         void handleStandaloneConversation()
         return
       }
+      if (cmd.action === 'run_environment_action') {
+        handleRunEnvironmentAction()
+        return
+      }
       if (cmd.id === 'fork-worktree') {
         void handleSlashActionRef.current(
           {
@@ -6321,6 +6378,7 @@ export default function App() {
       handleNavStep,
       handleNextAttention,
       handleOpenBrowserTab,
+      handleRunEnvironmentAction,
       handleStandaloneConversation,
       handleToggleActivity,
       handleToggleRightPanel,
@@ -6450,6 +6508,10 @@ export default function App() {
       }
       if (action === 'toggle_files') {
         handleShortcutPanel('files')
+        return
+      }
+      if (action === 'run_environment_action') {
+        handleRunEnvironmentAction()
         return
       }
       if (action === 'toggle_browser') {
@@ -6736,7 +6798,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleRunEnvironmentAction, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return
@@ -7991,6 +8053,8 @@ export default function App() {
               onCreateBranchHere={handleCreateBranchHereUi}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
+              environmentActions={environmentActions}
+              onRunEnvironmentAction={handleRunEnvironmentAction}
               onShare={openShareThread}
               onFork={activeConversationId ? handleForkCurrentThread : undefined}
               onPopOut={handlePopOut}

@@ -2,7 +2,7 @@
  * 为会话准备隔离 Git worktree（对标 Codex 桌面端 Worktree 线程）。
  * 创建时按 `.worktreeinclude` 拷贝被忽略的本地文件，并跑仓库 `[setup] script`。
  * 删除托管 worktree 前先快照再跑 `[cleanup] script`。
- * 不发明顶栏 Actions / ⌘⇧D。
+ * 顶栏环境动作不在本文件解析。
  * @see tools/ARCH.md
  */
 import { copyFile, lstat, mkdir, readFile, readdir, stat, utimes, writeFile } from 'fs/promises'

@@ -275,6 +275,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'toggle_terminal'
   },
   {
+    id: 'environment-action',
+    title: '运行环境动作',
+    shortcut: '⌘⇧D',
+    keywords: 'run action environment local worktree 环境 动作 setup',
+    action: 'run_environment_action'
+  },
+  {
     id: 'browser',
     title: '打开内置浏览器',
     keywords: 'browser 浏览器',

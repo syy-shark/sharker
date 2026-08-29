@@ -73,11 +73,15 @@ describe('command palette', () => {
     expect(ids).toContain('redo-app')
     expect(ids).toContain('task')
     expect(ids).toContain('model')
+    expect(ids).toContain('environment-action')
   })
 
   it('filters by title and keywords', () => {
     expect(filterPaletteCommands('审查').some((c) => c.id === 'review')).toBe(true)
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
+    expect(
+      filterPaletteCommands('环境').some((c) => c.action === 'run_environment_action')
+    ).toBe(true)
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('/chat').some((c) => c.action === 'new_global_conversation')).toBe(

@@ -4,9 +4,13 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   LOCAL_ENVIRONMENT_REL,
+  hostLocalEnvironmentPlatform,
   localEnvironmentTomlPath,
+  parseLocalEnvironmentActions,
   parseLocalEnvironmentCleanupScript,
-  parseLocalEnvironmentSetupScript
+  parseLocalEnvironmentSetupScript,
+  primaryLocalEnvironmentAction,
+  resolveLocalEnvironmentActions
 } from './local-environment'
 
 describe('local environment setup script', () => {
@@ -40,5 +44,63 @@ describe('local environment setup script', () => {
     expect(wtSrc).toContain("runLocalEnvironmentScript(cwd, dest, 'cleanup')")
     expect(wtSrc).toContain('localEnvironmentTomlPath')
     expect(wtSrc.includes('[[actions]]')).toBe(false)
+    const expoToml = [
+      'version = 1',
+      'name = "app"',
+      '[setup]',
+      'script = ""',
+      '[[actions]]',
+      'name = "Run"',
+      'icon = "run"',
+      'command = "./script/build_and_run.sh"',
+      '[[actions]]',
+      'name = "Test"',
+      'icon = "test"',
+      'command = """',
+      'npm test',
+      '"""',
+      '[[actions]]',
+      'name = "Run"',
+      'icon = "run"',
+      'command = ".\\\\run_chain.cmd"',
+      'platform = "windows"',
+      '[[actions]]',
+      'name = "Run"',
+      'icon = "run"',
+      'command = "./run_chain"',
+      'platform = "darwin"',
+      '[[actions]]',
+      'name = "Skip"',
+      'command = ""',
+      ''
+    ].join('\n')
+    const parsed = parseLocalEnvironmentActions(expoToml)
+    expect(parsed.map((item) => `${item.name}:${item.platform ?? '*'}`)).toEqual([
+      'Run:*',
+      'Test:*',
+      'Run:win32',
+      'Run:darwin'
+    ])
+    const darwin = resolveLocalEnvironmentActions(parsed, 'macos')
+    expect(darwin.map((item) => item.command)).toEqual(['./run_chain', 'npm test'])
+    expect(primaryLocalEnvironmentAction(darwin)?.name).toBe('Run')
+    expect(resolveLocalEnvironmentActions(parsed, 'linux').map((item) => item.command)).toEqual([
+      './script/build_and_run.sh',
+      'npm test'
+    ])
+    expect(resolveLocalEnvironmentActions(parsed, 'win32')[0]?.command).toBe('.\\run_chain.cmd')
+    expect(hostLocalEnvironmentPlatform()).toMatch(/^(darwin|win32|linux)$/)
+    const appSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'),
+      'utf8'
+    )
+    expect(appSrc).toContain('resolveLocalEnvironmentActions')
+    expect(appSrc).toContain('run_environment_action')
+    const toolbarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatToolbar.tsx'),
+      'utf8'
+    )
+    expect(toolbarSrc).toContain('environmentActions')
+    expect(toolbarSrc).toContain('onRunEnvironmentAction')
   })
 })

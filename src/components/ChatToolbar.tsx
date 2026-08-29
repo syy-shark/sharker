@@ -1,10 +1,10 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / 隔离 worktree / PR / 右侧面板；中间空白拖窗
+ * - 右：Hand off / 隔离 worktree / Local environment Actions / PR / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   PanelLeft,
@@ -17,8 +17,13 @@ import {
   GitFork,
   FolderOpen,
   GitBranch,
-  Pin
+  Pin,
+  Play,
+  FlaskConical,
+  Bug,
+  ChevronDown
 } from 'lucide-react'
+import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
 
@@ -49,6 +54,19 @@ interface Props {
   /** 顶栏 Hand off（对标 Codex：header 在 Local / Worktree 之间交接） */
   threadMode?: ThreadMode
   onThreadModeChange?: (mode: ThreadMode) => void
+  /** 官方 Local environment `[[actions]]`；空则不画顶栏按钮 */
+  environmentActions?: LocalEnvironmentAction[]
+  onRunEnvironmentAction?: (action: LocalEnvironmentAction) => void
+}
+
+const EMPTY_ENVIRONMENT_ACTIONS: LocalEnvironmentAction[] = []
+
+/** 官方 icon 只认出现过的 run / test / debug */
+function actionIcon(icon?: string) {
+  const name = String(icon || 'run').toLowerCase()
+  if (name === 'test') return <FlaskConical size={12} strokeWidth={2} aria-hidden />
+  if (name === 'debug') return <Bug size={12} strokeWidth={2} aria-hidden />
+  return <Play size={12} strokeWidth={2} aria-hidden />
 }
 
 /** 挂到 body，用 fixed 相对视口，避免 flex 壳把 absolute 子节点挤到底部 */
@@ -75,13 +93,41 @@ export const ChatToolbar = memo(function ChatToolbar({
   onOpenWorktree,
   onCreateBranchHere,
   threadMode = 'local',
-  onThreadModeChange
+  onThreadModeChange,
+  environmentActions = EMPTY_ENVIRONMENT_ACTIONS,
+  onRunEnvironmentAction
 }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const actionsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setHost(getChromeHost())
   }, [])
+
+  useEffect(() => {
+    if (!actionsOpen) return
+    const onDoc = (event: MouseEvent) => {
+      const node = event.target
+      if (node instanceof Node && actionsRef.current?.contains(node)) return
+      setActionsOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setActionsOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [actionsOpen])
+
+  const primaryAction = environmentActions[0] ?? null
+  const runAction = (action: LocalEnvironmentAction) => {
+    setActionsOpen(false)
+    onRunEnvironmentAction?.(action)
+  }
 
   const handleToggleSidebar = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -142,6 +188,65 @@ export const ChatToolbar = memo(function ChatToolbar({
         <div className="chat-toolbar-drag" aria-hidden />
 
         <div className="chat-toolbar-right">
+          {primaryAction && onRunEnvironmentAction && !popout ? (
+            <div className="chat-toolbar-actions" ref={actionsRef}>
+              <button
+                type="button"
+                className="chat-toolbar-pr-chip"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (environmentActions.length > 1) {
+                    setActionsOpen((open) => !open)
+                    return
+                  }
+                  runAction(primaryAction)
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title={
+                  environmentActions.length > 1
+                    ? `环境动作（${primaryAction.name} · ⌘⇧D）`
+                    : `${primaryAction.name} ⌘⇧D`
+                }
+                aria-label={
+                  environmentActions.length > 1
+                    ? '打开环境动作'
+                    : `运行 ${primaryAction.name}`
+                }
+                aria-expanded={environmentActions.length > 1 ? actionsOpen : undefined}
+                aria-haspopup={environmentActions.length > 1 ? 'menu' : undefined}
+              >
+                {actionIcon(primaryAction.icon)}
+                <span>{primaryAction.name}</span>
+                {environmentActions.length > 1 ? (
+                  <ChevronDown size={12} strokeWidth={2} aria-hidden />
+                ) : null}
+              </button>
+              {actionsOpen && environmentActions.length > 1 ? (
+                <div className="chat-toolbar-actions-menu glass-popover" role="menu">
+                  {environmentActions.map((action, index) => (
+                    <button
+                      key={`${action.name}:${action.command}`}
+                      type="button"
+                      role="menuitem"
+                      className="chat-toolbar-actions-item"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        runAction(action)
+                      }}
+                    >
+                      {actionIcon(action.icon)}
+                      <span>{action.name}</span>
+                      {index === 0 ? (
+                        <span className="chat-toolbar-actions-chord">⌘⇧D</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {onThreadModeChange && !popout ? (
             <button
               type="button"

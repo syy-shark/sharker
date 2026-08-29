@@ -52,6 +52,7 @@ export type WorkbenchShortcutAction =
   | 'undo_app'
   | 'redo_app'
   | 'interrupt_turn'
+  | 'run_environment_action'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -156,6 +157,10 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_panel'
   if (key === 'e' && event.shiftKey && !event.altKey) return 'toggle_files'
   if (key === 'b' && event.shiftKey && !event.altKey) return 'toggle_browser'
+  // ⌘⇧D 跑第一条 Local environment action；Ctrl⇧D 留给听写（对标 Codex）
+  if (key === 'd' && event.shiftKey && !event.altKey && event.metaKey) {
+    return 'run_environment_action'
+  }
   if (
     key === 'm' &&
     event.shiftKey &&
@@ -293,6 +298,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘J', title: '开关工作区面板' },
   { keys: 'Ctrl+`', title: '打开终端' },
   { keys: '⌘⇧E', title: '打开文件树' },
+  { keys: '⌘⇧D', title: '运行环境动作 1' },
   { keys: '⌘⇧B', title: '打开内置浏览器' },
   { keys: '⌘K', title: '命令面板' },
   { keys: '⌘N / ⌘⇧O', title: '新对话' },
@@ -394,6 +400,12 @@ export const SHORTCUT_CATALOG: Array<{
     defaultChord: 'mod+ctrl+l'
   },
   { action: 'toggle_files', title: '打开文件树', defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },
+  {
+    action: 'run_environment_action',
+    title: '运行环境动作 1',
+    defaultKeys: '⌘⇧D',
+    defaultChord: 'mod+shift+d'
+  },
   { action: 'toggle_browser', title: '打开内置浏览器', defaultKeys: '⌘⇧B', defaultChord: 'mod+shift+b' },
   { action: 'open_browser', title: '打开浏览器标签', defaultKeys: '⌘T', defaultChord: 'mod+t' },
   {

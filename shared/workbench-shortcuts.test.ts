@@ -67,6 +67,10 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'e', metaKey: true, shiftKey: true }))).toBe(
       'toggle_files'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'd', metaKey: true, shiftKey: true }))).toBe(
+      'run_environment_action'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'd', ctrlKey: true, shiftKey: true }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'b', metaKey: true, shiftKey: true }))).toBe(
       'toggle_browser'
     )
