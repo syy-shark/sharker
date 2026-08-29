@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
@@ -244,5 +247,11 @@ describe('live stream ui snapshot', () => {
       { streaming: '', activeTool: null, turnStartedAt: 4 }
     )
     expect(reconnectPatch.liveSegments?.[0]?.content).toBe('正在重新连接… 2/5')
+    const appSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'), 'utf8')
+    expect(appSrc.includes('setLiveSegments')).toBe(false)
+    expect(appSrc.includes('setStreaming(')).toBe(false)
+    expect(appSrc.includes('setTurnThinking(')).toBe(false)
+    expect(appSrc.includes('setActiveTool(')).toBe(false)
+    expect(appSrc).toContain('publishLiveStreamUi')
   })
 })

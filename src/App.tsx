@@ -410,10 +410,6 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const loadingLiveRef = useRef(false)
   loadingLiveRef.current = loading
-  const [liveSegments, setLiveSegments] = useState<TurnSegment[]>([])
-  const [streaming, setStreaming] = useState('')
-  const [turnThinking, setTurnThinking] = useState('')
-  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
@@ -847,11 +843,7 @@ export default function App() {
     streamingRef.current = buf.streaming
     turnThinkingRef.current = buf.turnThinking
     segmentsRef.current = cloneSegments(buf.segments)
-    setLiveSegments(cloneSegments(buf.segments))
-    setStreaming(buf.streaming)
-    setTurnThinking(buf.turnThinking)
     setLoading(buf.loading || buf.sendInFlight)
-    setActiveTool(buf.activeTool)
     setApproval(buf.approval)
     setApprovalResponding(false)
     turnHadThinkingRef.current = buf.turnHadThinking
@@ -1372,11 +1364,7 @@ export default function App() {
     streamingRef.current = ''
     turnThinkingRef.current = ''
     segmentsRef.current = []
-    setLiveSegments([])
-    setStreaming('')
-    setTurnThinking('')
     setLoading(false)
-    setActiveTool(null)
     resetLiveStreamUi()
     setApproval(null)
     setApprovalResponding(false)
@@ -1630,8 +1618,6 @@ export default function App() {
         streamingRef.current = ''
         turnThinkingRef.current = ''
         // segments 先保留 finalized，等 done 收尾再清
-        setStreaming('')
-        setTurnThinking('')
         resetTurnMeta('commit')
       } else if (targetId) {
         const buf = sessionBuffersRef.current.get(targetId)
@@ -2710,16 +2696,11 @@ export default function App() {
             turnHadThinking: turnHadThinkingRef.current
           })
         )
-        setLiveSegments(cloneSegments(segmentsRef.current))
-        setTurnThinking(thinkingPreviewFromSegments(segmentsRef.current))
-        setStreaming(finalPreview)
-        setActiveTool(null)
         sendInFlightRef.current = false
         rememberLastTurn(completedId, [...turnChangedPathsRef.current])
         turnChangedPathsRef.current = []
         commitAssistantReply(streamingRef.current, '', turnOutcomeRef.current, completedId)
         segmentsRef.current = []
-        setLiveSegments([])
         setLoading(false)
         bumpSessionLive()
         // 当前会话完成后再删 buffer；后台会话保留给切回恢复
@@ -3099,9 +3080,6 @@ export default function App() {
           startedAt: seedAt
         }
       ]
-      setLiveSegments(cloneSegments(segmentsRef.current))
-      setStreaming('')
-      setTurnThinking('')
       publishLiveStreamUi(
         liveStreamPatchFromSegments(segmentsRef.current, {
           streaming: '',
@@ -3189,7 +3167,6 @@ export default function App() {
             },
             ...segmentsRef.current
           ]
-          setLiveSegments(cloneSegments(segmentsRef.current))
           publishLiveStreamUi(
             liveStreamPatchFromSegments(segmentsRef.current, {
               streaming: streamingRef.current,
@@ -3233,8 +3210,6 @@ export default function App() {
           )
           commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`, 'error')
           segmentsRef.current = []
-          setLiveSegments([])
-          setStreaming('')
           setLoading(false)
         }
       } finally {
@@ -3248,10 +3223,8 @@ export default function App() {
           const stillActive = !convId || activeConversationIdRef.current === convId
           if (stillActive) {
             sendInFlightRef.current = false
-            setActiveTool(null)
             if (doneCommittedRef.current) {
               segmentsRef.current = []
-              setLiveSegments([])
               setLoading(false)
             }
           } else if (convId) {
@@ -3555,12 +3528,8 @@ export default function App() {
             )
           }
           segmentsRef.current = []
-          setLiveSegments([])
-          setStreaming('')
           streamingRef.current = ''
-          setTurnThinking('')
           turnThinkingRef.current = ''
-          setActiveTool(null)
           setApproval(null)
           approvalRef.current = null
           sendInFlightRef.current = false
@@ -3777,10 +3746,7 @@ export default function App() {
       }
       setApproval(null)
       approvalRef.current = null
-      setActiveTool(null)
-      setStreaming('')
       streamingRef.current = ''
-      setTurnThinking('')
       turnThinkingRef.current = ''
       const seedAt = Date.now()
       segmentsRef.current = [
@@ -3792,7 +3758,6 @@ export default function App() {
           startedAt: seedAt
         }
       ]
-      setLiveSegments(cloneSegments(segmentsRef.current))
       setLoading(true)
       turnStartedAtRef.current = seedAt
       publishLiveStreamUi(
@@ -3859,7 +3824,6 @@ export default function App() {
         timestamp: Date.now()
       })
       segmentsRef.current = finalizeSegments(segmentsRef.current)
-      setLiveSegments(cloneSegments(segmentsRef.current))
       publishLiveStreamUi(
         liveStreamPatchFromSegments(segmentsRef.current, {
           streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
@@ -3889,10 +3853,8 @@ export default function App() {
     if (action.commitStopToConversationId === activeConversationIdRef.current) {
       sendInFlightRef.current = false
       doneCommittedRef.current = true
-      setActiveTool(null)
       setApproval(null)
       setApprovalResponding(false)
-      setTurnThinking(turnThinkingRef.current)
       turnOutcomeRef.current = 'aborted'
       // 再次收口，防止 abort 回调间隙又写入 active 工具
       segmentsRef.current = applyStreamChunk(segmentsRef.current, {
@@ -3917,8 +3879,6 @@ export default function App() {
         action.commitStopToConversationId
       )
       segmentsRef.current = []
-      setLiveSegments([])
-      setStreaming('')
       setLoading(false)
       if (streamOwnerRef.current === action.abortConversationId) {
         streamOwnerRef.current = null
@@ -4103,11 +4063,7 @@ export default function App() {
         streamingRef.current = ''
         turnThinkingRef.current = ''
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
-        setTurnThinking('')
         setLoading(false)
-        setActiveTool(null)
         setApproval(null)
         setApprovalResponding(false)
         resetTurnMeta()
@@ -4130,11 +4086,7 @@ export default function App() {
     streamingRef.current = ''
     turnThinkingRef.current = ''
     segmentsRef.current = []
-    setLiveSegments([])
-    setStreaming('')
-    setTurnThinking('')
     setLoading(false)
-    setActiveTool(null)
     setApproval(null)
     setApprovalResponding(false)
     resetTurnMeta()
@@ -4931,7 +4883,6 @@ export default function App() {
             }
           ]
           segmentsRef.current = segs
-          setLiveSegments(cloneSegments(segs))
           setLoading(true)
           ensureLiveAssistantId()
           publishLiveStreamUi(
@@ -4951,7 +4902,6 @@ export default function App() {
             }
           ]
           segmentsRef.current = segs
-          setLiveSegments(cloneSegments(segs))
           setLoading(true)
           ensureLiveAssistantId()
           publishLiveStreamUi(
@@ -5757,7 +5707,6 @@ export default function App() {
           compactingRef.current = true
           ensureLiveAssistantId()
           segmentsRef.current = [liveCompactStatusSegment(seedAt)]
-          setLiveSegments(cloneSegments(segmentsRef.current))
           setLoading(true)
           publishLiveStreamUi(
             liveStreamPatchFromSegments(segmentsRef.current, {
@@ -5791,7 +5740,6 @@ export default function App() {
           } finally {
             compactingRef.current = false
             segmentsRef.current = []
-            setLiveSegments([])
             setLoading(false)
             resetLiveStreamUi()
           }
@@ -6846,7 +6794,6 @@ export default function App() {
           }
         ]
         segmentsRef.current = segs
-        setLiveSegments(cloneSegments(segs))
         if (!turnStartedAtRef.current) turnStartedAtRef.current = now
         publishLiveStreamUi(
           liveStreamPatchFromSegments(segs, { turnStartedAt: turnStartedAtRef.current || now })
@@ -6873,12 +6820,8 @@ export default function App() {
         sendInFlightRef.current = false
         doneCommittedRef.current = true
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
-        setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
         setLoading(false)
@@ -6928,12 +6871,8 @@ export default function App() {
         setApproval(null)
         approvalRef.current = null
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
-        setActiveTool(null)
         turnStartedAtRef.current = 0
         liveTurnMetaRef.current = null
         resetLiveStreamUi()
@@ -6954,12 +6893,8 @@ export default function App() {
         sendInFlightRef.current = false
         doneCommittedRef.current = true
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
-        setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
         setLoading(false)
@@ -7005,12 +6940,8 @@ export default function App() {
         setApproval(null)
         approvalRef.current = null
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
-        setActiveTool(null)
         turnStartedAtRef.current = 0
         liveTurnMetaRef.current = null
         resetLiveStreamUi()
@@ -7022,12 +6953,8 @@ export default function App() {
         setApproval(null)
         approvalRef.current = null
         streamingRef.current = ''
-        setStreaming('')
-        setTurnThinking('')
         turnThinkingRef.current = ''
         segmentsRef.current = []
-        setLiveSegments([])
-        setActiveTool(null)
         let segs: TurnSegment[] = []
         if (mode === 'preparing') {
           segs = [
@@ -7121,7 +7048,6 @@ export default function App() {
             }
           ]
           streamingRef.current = '正在整理结果…'
-          setStreaming('正在整理结果…')
         } else {
           segs = [
             {
@@ -7144,7 +7070,6 @@ export default function App() {
           approvalRef.current = req
         }
         segmentsRef.current = segs
-        setLiveSegments(cloneSegments(segs))
         setLoading(true)
         ensureLiveAssistantId()
         sendInFlightRef.current = true
@@ -7160,7 +7085,6 @@ export default function App() {
         turnStartedAtRef.current = now - 3000
         const nextTool =
           mode === 'tool' ? 'read_file' : mode === 'chain' ? 'list_dir' : null
-        setActiveTool(nextTool)
         const seededMeta = liveAssistantMeta([], [])
         liveTurnMetaRef.current = seededMeta
         publishLiveStreamUi(
@@ -7181,14 +7105,10 @@ export default function App() {
       },
       clearLiveProcess: () => {
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
         setLoading(false)
         sendInFlightRef.current = false
-        setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
         turnStartedAtRef.current = 0
@@ -7222,14 +7142,11 @@ export default function App() {
           setApproval(null)
           approvalRef.current = null
           segmentsRef.current = segs
-          setLiveSegments(cloneSegments(segs))
           setLoading(true)
           ensureLiveAssistantId()
           sendInFlightRef.current = true
           const streaming = opts?.streaming ?? ''
           streamingRef.current = streaming
-          setStreaming(streaming)
-          setActiveTool(opts?.activeTool ?? null)
           const now = Date.now()
           if (!turnStartedAtRef.current) turnStartedAtRef.current = now - 1200
           publishLiveStreamUi(
@@ -7392,14 +7309,10 @@ export default function App() {
       resetChatVisual: () => {
         applyConversationMessages([])
         segmentsRef.current = []
-        setLiveSegments([])
-        setStreaming('')
         streamingRef.current = ''
-        setTurnThinking('')
         turnThinkingRef.current = ''
         setLoading(false)
         sendInFlightRef.current = false
-        setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
         turnStartedAtRef.current = 0
@@ -7476,11 +7389,7 @@ export default function App() {
               streamingRef.current = ''
               turnThinkingRef.current = ''
               segmentsRef.current = []
-              setLiveSegments([])
-              setStreaming('')
-              setTurnThinking('')
               setLoading(false)
-              setActiveTool(null)
               setApproval(null)
               setApprovalResponding(false)
               resetTurnMeta()
@@ -7497,11 +7406,7 @@ export default function App() {
           streamingRef.current = ''
           turnThinkingRef.current = ''
           segmentsRef.current = []
-          setLiveSegments([])
-          setStreaming('')
-          setTurnThinking('')
           setLoading(false)
-          setActiveTool(null)
           setApproval(null)
           setApprovalResponding(false)
           resetTurnMeta()
