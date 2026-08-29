@@ -3,7 +3,7 @@
  * 对标 Codex #22860：已画历史列不应跟每枚 token 重绘。
  * @see src/hooks/ARCH.md
  */
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback, useRef, useSyncExternalStore } from 'react'
 import {
   EMPTY_LIVE_STREAM_UI,
   nextLiveStreamUi,
@@ -45,6 +45,36 @@ export function subscribeLiveStreamUi(onStoreChange: () => void): () => void {
 /** 直播行 / 未读芯片：跟 token 走 */
 export function useLiveStreamUi(): LiveStreamUiSnapshot {
   return useSyncExternalStore(subscribeLiveStreamUi, getLiveStreamUi, getLiveStreamUi)
+}
+
+/**
+ * 只订切片。getSnapshot 返回同一引用则不重绘（过程区不跟 token）。
+ * select 第二参是上一帧选中值，便于 reuseAnswerParts。
+ */
+export function useLiveStreamUiSelect<T>(
+  select: (snap: LiveStreamUiSnapshot, prev: T | undefined) => T,
+  isEqual: (left: T, right: T) => boolean = Object.is
+): T {
+  const selectRef = useRef(select)
+  const equalRef = useRef(isEqual)
+  selectRef.current = select
+  equalRef.current = isEqual
+  const cache = useRef<{ snap: LiveStreamUiSnapshot; value: T } | null>(null)
+
+  const getSelected = () => {
+    const snap = getLiveStreamUi()
+    const hit = cache.current
+    if (hit && hit.snap === snap) return hit.value
+    const next = selectRef.current(snap, hit?.value)
+    if (hit && equalRef.current(hit.value, next)) {
+      cache.current = { snap, value: hit.value }
+      return hit.value
+    }
+    cache.current = { snap, value: next }
+    return next
+  }
+
+  return useSyncExternalStore(subscribeLiveStreamUi, getSelected, getSelected)
 }
 
 /**

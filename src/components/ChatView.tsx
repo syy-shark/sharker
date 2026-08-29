@@ -28,6 +28,7 @@ import type {
 import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
+import { LiveAssistantArticle } from './LiveAssistantParts'
 import { ChatImage, ChatImageWorkspaceProvider } from './ChatImage'
 import { MessageActions } from './MessageActions'
 import {
@@ -49,6 +50,7 @@ import {
   liveRowMessageId,
   shouldRenderLiveAssistantRow
 } from '../../shared/session-runtime'
+import { liveHasAssistantBody } from '../../shared/live-stream-slices'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
@@ -93,7 +95,7 @@ import {
   windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
-import { useLiveStreamUi, useLiveStreamUiWhen } from '../hooks/useLiveStreamUi'
+import { useLiveStreamUi, useLiveStreamUiSelect, useLiveStreamUiWhen } from '../hooks/useLiveStreamUi'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -696,7 +698,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
   )
 })
 
-/** 直播助手行：只订 token store，历史列不跟着重绘 */
+/** 直播助手行：只订「有没有直播体」布尔；过程/回答各自订切片 */
 const LiveAssistantSlot = memo(function LiveAssistantSlot({
   liveRowId,
   loading,
@@ -704,8 +706,8 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   findHit,
   findCurrent,
   liveTurnMeta,
-  modelLabel,
-  turnHadThinking,
+  modelLabel: _modelLabel,
+  turnHadThinking: _turnHadThinking,
   turnStartedAt,
   approval,
   approvalResponding,
@@ -730,13 +732,9 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
 }) {
-  const live = useLiveStreamUi()
-  const liveBody = hasLiveAssistantBody({
-    streaming: live.streaming,
-    liveSegmentCount: live.liveSegments.length,
-    thinking: live.turnThinking,
-    approvalWaiting: Boolean(approval)
-  })
+  const liveBody = useLiveStreamUiSelect((snap) =>
+    liveHasAssistantBody(snap, Boolean(approval))
+  )
   if (
     !shouldRenderLiveAssistantRow({
       loading,
@@ -746,12 +744,6 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   ) {
     return null
   }
-  const isThinkingLive =
-    loading &&
-    !live.streaming.trim() &&
-    (Boolean(live.turnThinking.trim()) ||
-      live.liveSegments.some((s) => s.kind === 'thinking' && s.status === 'active') ||
-      live.liveSegments.some((s) => s.kind === 'status' && s.status === 'active'))
   return (
     <div
       key={liveRowId}
@@ -760,17 +752,10 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         findHit ? ' is-find-hit' : ''
       }${findCurrent ? ' is-find-current' : ''}`}
     >
-      <AssistantMessage
+      <LiveAssistantArticle
         messageId={liveRowId}
-        content={live.streaming}
         meta={liveTurnMeta ?? undefined}
-        liveSegments={live.liveSegments}
-        modelLabel={modelLabel}
-        hadThinkingLive={turnHadThinking}
-        isThinkingLive={isThinkingLive}
-        activeTool={live.activeTool}
         liveStartedAt={turnStartedAt ?? undefined}
-        isStreaming
         approval={approval}
         approvalResponding={approvalResponding}
         onApproval={onApproval}

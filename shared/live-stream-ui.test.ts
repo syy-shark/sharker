@@ -5,6 +5,7 @@ import {
   nextLiveStreamUi,
   sameLiveStreamUi
 } from './live-stream-ui'
+import { nextLiveAnswerView, nextLiveProcessView } from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
   it('reuses the previous object when token fields do not change', () => {
@@ -29,5 +30,43 @@ describe('live stream ui snapshot', () => {
     expect(grown.streaming).toBe('hi!')
     expect(grown.liveSegments).toBe(segs)
     expect(nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, {})).toBe(EMPTY_LIVE_STREAM_UI)
+    const tool: TurnSegment = {
+      id: 't1',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'done',
+      content: ''
+    }
+    const text = (content: string): TurnSegment => ({
+      id: 'a1',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content
+    })
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello')],
+      streaming: 'Hello'
+    })
+    const still = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello world')],
+      streaming: 'Hello world'
+    })
+    expect(still).toBe(first)
+    expect(still.processForFlow[0]).toBe(tool)
+    const a1 = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello')],
+      streaming: 'Hello'
+    })
+    const a2 = nextLiveAnswerView(a1, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [tool, text('Hello world')],
+      streaming: 'Hello world'
+    })
+    expect(a2).not.toBe(a1)
+    expect(a2.copyable).toBe('Hello world')
   })
 })

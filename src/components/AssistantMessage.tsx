@@ -68,7 +68,7 @@ interface Props {
 }
 
 /** 直播文件 diff：写入一开始占槽，参数流填 +/-；直播中不折行，内层跟尾 */
-const LiveFileDiff = memo(function LiveFileDiff({
+export const LiveFileDiff = memo(function LiveFileDiff({
   diff,
   streaming = false
 }: {
