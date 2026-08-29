@@ -1,7 +1,7 @@
 /**
  * 审查面板文件名 / 行背景点击（对标 Codex Review pane）。
  * 文件名打开右侧预览（本机没有「默认编辑器」钩子）；行背景展开或收起 diff。
- * ⌘/Ctrl+单击 diff 行跳到该行预览。
+ * ⌘/Ctrl+单击 diff 行跳到该行预览。右键菜单打开预览或展开 diff。
  * @see shared/ARCH.md
  */
 
