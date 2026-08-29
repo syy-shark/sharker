@@ -79,5 +79,22 @@ describe('process phases privacy', () => {
       }
     ])
     expect(searched[0]?.title).toBe('Searched the web for codex desktop')
+    const planning = deriveChronologicalSteps([
+      {
+        id: 'up1',
+        kind: 'tool',
+        toolName: 'update_plan',
+        toolTitle: '更新计划',
+        toolArgs: {
+          plan: [
+            { step: 'Add types', status: 'completed' },
+            { step: 'Wire tool', status: 'in_progress' }
+          ]
+        },
+        status: 'active',
+        startedAt: 8
+      }
+    ])
+    expect(planning[0]?.title).toBe('Wire tool')
   })
 })

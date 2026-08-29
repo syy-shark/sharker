@@ -34,6 +34,7 @@ const TOOL_TITLES: Record<string, string> = {
   edit_notebook: '编辑笔记本',
   enter_plan_mode: '进入计划模式',
   exit_plan_mode: '退出计划模式',
+  update_plan: '更新计划',
   git_worktree_add: 'Git Worktree 添加',
   git_worktree_list: 'Git Worktree 列表',
   git_worktree_remove: 'Git Worktree 移除',

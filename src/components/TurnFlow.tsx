@@ -36,6 +36,7 @@ import { ChatLink } from './ChatLink'
 import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
 import { viewedImagePathFromTool } from '../../shared/view-image'
 import { parseWebSearchSources } from '../../shared/web-search'
+import { parseUpdatePlanArgs } from '../../shared/update-plan'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
 import {
   clipToolOutput,
@@ -471,6 +472,8 @@ const ProcessStepRow = memo(function ProcessStepRow({
     step.status === 'done' && segment?.toolName === 'web_search'
       ? parseWebSearchSources(segment.resultOutput || '')
       : []
+  const updatePlan =
+    segment?.toolName === 'update_plan' ? parseUpdatePlanArgs(segment.toolArgs) : null
   const title = step.title
   const subAgentId = subAgentIdFromTool(
     segment?.toolName,
@@ -516,7 +519,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
             detail: step.detail,
             title,
             isStreaming
-          }) && !isDemo ? (
+          }) && !isDemo && !updatePlan?.plan.length ? (
             <code className="turn-flow-step-detail" title={step.detail || segment?.toolDetail}>
               {step.detail}
             </code>
@@ -527,12 +530,32 @@ const ProcessStepRow = memo(function ProcessStepRow({
             <InlineDemo html={segment.content} caption={segment.toolDetail} />
           </div>
         ) : null}
+        {updatePlan && updatePlan.plan.length > 0 ? (
+          <div className="turn-flow-plan">
+            {updatePlan.explanation ? (
+              <p className="turn-flow-plan-note">{updatePlan.explanation}</p>
+            ) : null}
+            <ol className="turn-flow-plan-list">
+              {updatePlan.plan.map((item, index) => (
+                <li
+                  key={`${index}:${item.step}`}
+                  className={`turn-flow-plan-item turn-flow-plan-item--${item.status}`}
+                >
+                  <span className="turn-flow-plan-mark" aria-hidden>
+                    {item.status === 'completed' ? '✓' : item.status === 'in_progress' ? '→' : '○'}
+                  </span>
+                  <span className="turn-flow-plan-step">{item.step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
         {shouldMountToolResultSummary({
           summary: segment?.resultSummary,
           detail: step.detail,
           status: step.status,
           isStreaming,
-          isDemo
+          isDemo: isDemo || Boolean(updatePlan?.plan.length)
         }) ? (
           <span className="turn-flow-step-result">{segment?.resultSummary}</span>
         ) : null}
@@ -580,6 +603,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
             !isDemo &&
               !viewedImageSrc &&
               webSources.length === 0 &&
+              !updatePlan?.plan.length &&
               ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
                 (segment && segmentHasDeferredOutput(segment)))
           ),

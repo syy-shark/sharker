@@ -615,6 +615,66 @@ html.theme-dark .turn-flow-live-head {
   color: var(--text-secondary);
 }
 
+.turn-flow-plan {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--glass-fill-nested);
+}
+
+.turn-flow-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turn-flow-plan-note {
+  margin: 0 0 2px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.turn-flow-plan-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.turn-flow-plan-item--completed {
+  color: var(--text-muted);
+}
+
+.turn-flow-plan-item--completed .turn-flow-plan-step {
+  text-decoration: line-through;
+}
+
+.turn-flow-plan-item--in_progress {
+  color: var(--text);
+}
+
+.turn-flow-plan-mark {
+  flex: 0 0 auto;
+  width: 0.9em;
+  color: var(--text-muted);
+}
+
+.turn-flow-plan-item--in_progress .turn-flow-plan-mark {
+  color: var(--accent);
+}
+
+.turn-flow-plan-step {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 /* 正文已上屏：收起命令输出，避免过程区在回答上方突然长高 */
 .turn-flow--answer-out .turn-flow-step-output {
   display: none;

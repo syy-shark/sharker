@@ -4,6 +4,7 @@
  */
 import type { TurnSegment } from './types'
 import { isToolProgressSummary } from './tool-output-display'
+import { formatUpdatePlanActivity } from './update-plan'
 
 function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
   for (let i = items.length - 1; i >= 0; i--) {
@@ -197,6 +198,9 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
     ) {
       const leaf = shortNameFromDetail(segment.toolDetail)
       if (leaf && !base.includes(leaf)) return `${base} · ${leaf}`
+    }
+    if (tool === 'update_plan') {
+      return formatUpdatePlanActivity(segment.toolArgs, segment.status)
     }
     if (tool === 'web_search') {
       const query =

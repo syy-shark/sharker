@@ -22,6 +22,7 @@ import { requestUserInputTool } from './builtins/request-user-input'
 import { uninstallApplicationTool } from './builtins/uninstall-application'
 import { verifyRemovalTool } from './builtins/verify-removal'
 import { enterPlanModeTool, exitPlanModeTool } from './builtins/mode/plan'
+import { updatePlanTool } from './builtins/update-plan'
 import { worktreeTools } from './builtins/mode/worktree'
 import { computerUseTools } from './builtins/computer-use'
 import { browserTools } from './builtins/browser'
@@ -93,7 +94,8 @@ function getAllToolHandlers(): ToolHandler[] {
     ...computerUseTools,
     ...agentTools,
     enterPlanModeTool,
-    exitPlanModeTool
+    exitPlanModeTool,
+    updatePlanTool
   ]
 }
 

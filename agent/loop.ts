@@ -30,6 +30,7 @@ const CODING_RULES_BASE = `# Work rules
 - Browser automation: browser_* tools (Playwright); desktop automation: desktop_* on macOS (screencapture / osascript / cliclick).
 - Visible browsing: when the user asks to open a website for them (e.g. "用 Chrome 打开哔哩哔哩"), call open_url with browser="chrome" or "default"; use browser_* only for headless page inspection/automation.
 - When Computer Use is available (see # Computer Use section below if present), follow the Computer Use workflow there — do NOT stop after list_windows/screenshot alone.
+- For non-trivial multi-step work, call update_plan with a short checklist (pending / in_progress / completed). At most one step in_progress. This is a live task list, not plan mode.
 
 # Communication style
 - Do NOT use emoji or decorative symbols (e.g. ✅ 📋 📌 🎉) anywhere in your reply — not in prose, lists, or simulated terminal/command output.

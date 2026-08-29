@@ -43,6 +43,7 @@
 | `uninstall-application.ts` | macOS 应用卸载流水线 |
 | `verify-removal.ts` | 检查卸载/路径残留 |
 | `request-user-input.ts` | `request_user_input` 兜底 handler；真实等待在 query-loop（对标 Codex Ask User） |
+| `update-plan.ts` | 官方 `update_plan` 清单：只回 `Plan updated`，过程区画步骤（不是计划模式） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 注册

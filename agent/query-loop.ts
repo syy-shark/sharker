@@ -50,6 +50,8 @@ function summarizeToolOutput(output: string, toolName?: string): string | undefi
     .filter(Boolean)
   if (!lines.length) return undefined
 
+  if (toolName === 'update_plan') return 'Plan updated'
+
   if (toolName === 'web_search') {
     const official = lines.find((line) => /^Searched the web/.test(line))
     if (official) return official.length > 120 ? `${official.slice(0, 117)}...` : official

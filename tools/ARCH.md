@@ -38,6 +38,7 @@
 | `thread-worktree.test.ts` | worktree 创建/复用、自定义根、include 拷贝、起点分支、安装脚本只在新建时跑、归档删除前跑 cleanup、非 git 拒绝、清理与快照恢复 |
 | `builtins/present-inline-demo.ts` | 对话内嵌 HTML 演示（不写文件、不开浏览器） |
 | `builtins/request-user-input.ts` | Ask User 兜底 handler（对标 Codex `request_user_input`；等待在 query-loop） |
+| `builtins/update-plan.ts` | 官方 `update_plan` 清单（不是计划模式） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 对外接口

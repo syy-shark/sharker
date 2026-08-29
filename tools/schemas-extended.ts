@@ -151,6 +151,39 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'update_plan',
+      description:
+        'Updates the task plan. Provide an optional explanation and a list of plan items, each with a step and status. At most one step can be in_progress at a time. This is a checklist for the current task, not plan mode.',
+      parameters: {
+        type: 'object',
+        properties: {
+          explanation: {
+            type: 'string',
+            description: 'Optional short rationale when the plan changes'
+          },
+          plan: {
+            type: 'array',
+            description: 'The list of steps',
+            items: {
+              type: 'object',
+              properties: {
+                step: { type: 'string', description: 'One-sentence step (about 5-7 words)' },
+                status: {
+                  type: 'string',
+                  description: 'One of: pending, in_progress, completed'
+                }
+              },
+              required: ['step', 'status']
+            }
+          }
+        },
+        required: ['plan']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'git_worktree_add',
       description: 'git worktree add',
       parameters: {
