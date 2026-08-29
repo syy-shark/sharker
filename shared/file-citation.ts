@@ -79,7 +79,8 @@ export function looksLikeFilePath(path: string): boolean {
   if (/^www\./i.test(text)) return false
   if (text.startsWith('<')) return false
   if (text.includes('://')) return false
-  if (/\s/.test(text)) return false
+  // 解码后的空格只留给带目录的本机路径（对标 Codex #17548 / #13123）
+  if (/\s/.test(text) && !text.includes('/')) return false
   if (text.startsWith('-')) return false
   // `a\` 归一成 `a/`，不能当成路径，否则 `a\` + 换行会被吃掉、硬换行画不成
   if (text.endsWith('/')) return false

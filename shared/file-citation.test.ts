@@ -77,6 +77,11 @@ describe('file citations', () => {
     expect(
       parseFileCitation('/tmp/%E6%8A%80%E8%83%BD/a.ts:12')
     ).toEqual({ path: '/tmp/技能/a.ts', line: 12, column: undefined })
+    expect(parseFileCitation('/Users/me/My%20Project/a.ts')).toEqual({
+      path: '/Users/me/My Project/a.ts'
+    })
+    expect(looksLikeFilePath('/Users/me/My Project/a.ts')).toBe(true)
+    expect(looksLikeFilePath('foo bar.ts')).toBe(false)
     expect(decodeCitationFilesystemPath('%E6%8A%80%E8%83%BD')).toBe(
       decodeCitationFilesystemPath(decodeCitationFilesystemPath('%E6%8A%80%E8%83%BD'))
     )
