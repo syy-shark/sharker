@@ -102,6 +102,7 @@ import {
   isLiveApprovalDeniedSettleChange,
   isLiveApprovalDeniedStatusAppendChange,
   isLiveApprovalDeniedToolAppendChange,
+  isLiveApprovalAllowedWriteStatChange,
   isLiveApprovalResolvedChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
@@ -2354,6 +2355,52 @@ describe('live stream ui snapshot', () => {
     })
     expect(processAfterDeniedTool.processForFlow.some((segment) => segment === cmdDenied)).toBe(true)
     expect(processAfterDeniedTool.processForFlow.some((segment) => segment === nextAfterDeny)).toBe(true)
+    const cmdAllowedPreview: TurnSegment = {
+      ...cmdApproved,
+      editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
+    }
+    expect(
+      isLiveApprovalAllowedWriteStatChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone]
+      )
+    ).toBe(true)
+    expect(
+      isLiveApprovalResolvedChange([cmdAwaiting, awaitingStatus], [cmdAllowedPreview, awaitingDone])
+    ).toBe(false)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone]
+      )
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [cmdAwaiting, awaitingStatus],
+        segments: [cmdAllowedPreview, awaitingDone]
+      })
+    ).toBe(false)
+    const processAfterAllowedWrite = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAllowedPreview, awaitingDone]
+    })
+    expect(processAfterAllowedWrite.processForFlow.some((segment) => segment === cmdAllowedPreview)).toBe(
+      true
+    )
+    expect(processAfterAllowedWrite.processForFlow.some((segment) => segment === awaitingDone)).toBe(true)
+    const answerReadyForAllowedWrite = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAwaiting, awaitingStatus]
+    })
+    const answerAfterAllowedWrite = nextLiveAnswerView(answerReadyForAllowedWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAllowedPreview, awaitingDone]
+    })
+    expect(answerAfterAllowedWrite).not.toBe(answerReadyForAllowedWrite)
+    expect(
+      answerAfterAllowedWrite.parts.some((part) => part.type === 'diff' && part.id === 'run-appr-diff-0')
+    ).toBe(true)
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',

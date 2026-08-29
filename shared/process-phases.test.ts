@@ -419,6 +419,21 @@ describe('process phases privacy', () => {
     expect(afterDeniedTool).toHaveLength(3)
     expect(afterDeniedTool![0].segment).toBe(cmdDenied)
     expect(afterDeniedTool!.at(-1)?.segment).toBe(nextAfterDeny)
+    const cmdAllowedPreview: TurnSegment = {
+      ...runningCmd,
+      editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
+    }
+    const afterAllowedWrite = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedPreview, awaitingDone],
+      true
+    )
+    expect(afterAllowedWrite).not.toBeNull()
+    expect(afterAllowedWrite).toHaveLength(2)
+    expect(afterAllowedWrite![0].segment).toBe(cmdAllowedPreview)
+    expect(afterAllowedWrite!.at(-1)?.segment).toBe(awaitingDone)
+    expect(afterAllowedWrite!.at(-1)?.status).toBe('done')
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',

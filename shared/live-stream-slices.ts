@@ -541,6 +541,32 @@ export function isLiveApprovalDeniedToolAppendChange(
   return hasLiveApprovalDeniedPrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
 }
 
+/** Allow once 后同一帧 approval_resolved + 首枚 tool_preview：Awaiting 行收口并换该工具写盘 +/-（对标 query-loop 放行后立即 runToolWithLiveStatus；不复制 #10760 / #38695） */
+export function isLiveApprovalAllowedWriteStatChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || prev.length !== next.length || prev.length === 0) return false
+  let resolved = 0
+  let writeStat = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (isLiveAwaitingStatusResolve(before, after)) {
+      resolved += 1
+      continue
+    }
+    if (isLiveToolWriteStatChange(before, after)) {
+      writeStat += 1
+      continue
+    }
+    return false
+  }
+  return resolved === 1 && writeStat === 1
+}
+
 function isLiveUserInputToolRetarget(prev: TurnSegment, next: TurnSegment): boolean {
   if (!sameLiveToolCore(prev, next) || prev.toolName !== REQUEST_USER_INPUT_TOOL) return false
   return (prev.toolTitle ?? '') !== (next.toolTitle ?? '') || (prev.toolDetail ?? '') !== (next.toolDetail ?? '')
@@ -1726,6 +1752,7 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveApprovalDeniedSettleChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalDeniedStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveApprovalDeniedToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedWriteStatChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return 'tool'
   if (isLiveUserInputNeededChange(prevSegments, segments)) return 'tool'
   if (isLiveAskResolvedSettleChange(prevSegments, segments)) return 'tool'
@@ -2380,6 +2407,7 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     (isLiveApprovalNeededChange(processHold.segments, segments) ||
       isLiveApprovalDeniedSettleChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedWriteStatChange(processHold.segments, segments) ||
       isLiveApprovalResolvedChange(processHold.segments, segments) ||
       isLiveUserInputNeededChange(processHold.segments, segments) ||
       isLiveAskResolvedSettleChange(processHold.segments, segments) ||
@@ -2768,7 +2796,10 @@ function findLiveWriteStatTool(
       found = after
       continue
     }
-    if (next.length === prev.length) return null
+    if (next.length === prev.length) {
+      if (isLiveAwaitingStatusResolve(before, after)) continue
+      return null
+    }
     if (!isLivePrefixClose(before, after)) return null
   }
   return found
