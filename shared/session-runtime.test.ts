@@ -3,6 +3,7 @@ import {
   appendAssistantMessage,
   historicalMessagesDuringLive,
   hasLiveAssistantBody,
+  shouldHideReservedDuringLive,
   liveRowMessageId,
   shouldRenderLiveAssistantRow,
   upsertAssistantMessage,
@@ -259,6 +260,43 @@ describe('commitAssistantReply persist targeting', () => {
     ])
     expect(
       historicalMessagesDuringLive(liveTranscript, 'a-live', true, false).map((m) => m.id)
+    ).toEqual(['u1', 'a-live'])
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: true,
+        hasLiveBody: true,
+        reservedId: 'a-live',
+        hasReservedInHistory: false
+      })
+    ).toBe(false)
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: true,
+        hasLiveBody: true,
+        reservedId: 'a-live',
+        hasReservedInHistory: true
+      })
+    ).toBe(true)
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: true,
+        hasLiveBody: false,
+        reservedId: 'a-live',
+        hasReservedInHistory: true
+      })
+    ).toBe(false)
+    const hideEarlyToken = shouldHideReservedDuringLive({
+      isLive: true,
+      hasLiveBody: true,
+      reservedId: 'a-live',
+      hasReservedInHistory: false
+    })
+    expect(
+      historicalMessagesDuringLive(
+        liveTranscript,
+        hideEarlyToken ? 'a-live' : null,
+        hideEarlyToken
+      ).map((m) => m.id)
     ).toEqual(['u1', 'a-live'])
     expect(hasLiveAssistantBody({ streaming: '', liveSegmentCount: 0 })).toBe(false)
     expect(hasLiveAssistantBody({ streaming: 'hi' })).toBe(true)

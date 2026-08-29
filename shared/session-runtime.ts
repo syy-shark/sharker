@@ -328,6 +328,24 @@ export function shouldRenderLiveAssistantRow(options: {
 }
 
 /**
+ * 只有历史列真有预留行且直播体已上屏才藏。
+ * 开轮预留 id 还不在 messages 里时，首枚 token 不把历史 JSX 整列重建（对标 Codex #22860）。
+ */
+export function shouldHideReservedDuringLive(options: {
+  isLive: boolean
+  hasLiveBody: boolean
+  reservedId?: string | null
+  hasReservedInHistory: boolean
+}): boolean {
+  return Boolean(
+    options.isLive &&
+      options.hasLiveBody &&
+      options.reservedId?.trim() &&
+      options.hasReservedInHistory
+  )
+}
+
+/**
  * 直播中不把已提交的同一条助手再画进历史列，避免与直播行叠两份。
  * 直播体已空时不再藏历史行，否则会出现「消息未挂上、直播已空」的空窗。
  * 收束后 `isLive` 为假，预留 id 那一行只出现在历史列（React 复用同一 key）。

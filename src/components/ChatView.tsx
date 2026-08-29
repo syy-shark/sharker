@@ -4,6 +4,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
+ * 历史列只在预留行真进 messages 后才因直播体显隐重建（对标 Codex #22860）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -46,6 +47,7 @@ import {
 import {
   historicalMessagesDuringLive,
   liveRowMessageId,
+  shouldHideReservedDuringLive,
   shouldRenderLiveAssistantRow
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody } from '../../shared/live-stream-slices'
@@ -2014,9 +2016,21 @@ export const ChatView = memo(function ChatView({
     setEditUserMessageId(null)
   }, [])
 
+  const hideReservedLive = shouldHideReservedDuringLive({
+    isLive: loading,
+    hasLiveBody: liveBody,
+    reservedId: liveAssistantId,
+    hasReservedInHistory: Boolean(
+      liveAssistantId && windowedMessages.some((m) => m.id === liveAssistantId)
+    )
+  })
   const historicalRows = useMemo(
     () =>
-      historicalMessagesDuringLive(windowedMessages, liveAssistantId, loading, liveBody).map((m, index, rows) => {
+      historicalMessagesDuringLive(
+        windowedMessages,
+        hideReservedLive ? liveAssistantId : null,
+        hideReservedLive
+      ).map((m, index, rows) => {
         const nearLive = isNearLiveMessageRow(index, rows.length)
         return m.role === 'user' ? (
           <UserMessageRow
@@ -2081,9 +2095,8 @@ export const ChatView = memo(function ChatView({
       historicalFindIds,
       handleEditRequestHandled,
       intrinsicHeights,
+      hideReservedLive,
       liveAssistantId,
-      liveBody,
-      loading,
       windowedMessages,
       modelLabel,
       onOpenSubAgent,
