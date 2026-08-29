@@ -8,9 +8,11 @@ import {
   formatWebSearchDetail,
   formatWebSearchLiveStatus,
   formatWebSearchToolOutput,
+  isWebSearchActivityToolName,
   normalizeWebSearchSources,
   parseWebSearchQuery,
-  parseWebSearchSources
+  parseWebSearchSources,
+  webSearchDetailFromArgs
 } from './web-search'
 
 describe('web-search', () => {
@@ -19,6 +21,13 @@ describe('web-search', () => {
     expect(formatWebSearchActivity('')).toBe('Searched')
     expect(formatWebSearchActivity(' rust async ')).toBe('Searched')
     expect(formatWebSearchDetail(' rust async ')).toBe('rust async')
+    expect(isWebSearchActivityToolName('web_search')).toBe(true)
+    expect(isWebSearchActivityToolName('web_fetch')).toBe(true)
+    expect(isWebSearchActivityToolName('open_url')).toBe(false)
+    expect(webSearchDetailFromArgs({ query: ' rust async ' })).toBe('rust async')
+    expect(webSearchDetailFromArgs({ url: 'https://example.com/docs' })).toBe(
+      'https://example.com/docs'
+    )
     expect(parseWebSearchQuery('Searched the web for rust async')).toBe('rust async')
     const output = formatWebSearchToolOutput({
       query: 'codex desktop',

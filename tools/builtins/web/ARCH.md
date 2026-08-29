@@ -12,6 +12,6 @@
 
 | 文件 | 说明 |
 |------|------|
-| `index.ts` | web_fetch / web_search；搜索直播用官方 Searching the web / Searched + query detail，来源结构化（对标 Codex TUI web_search_header / #9960 / #24693 / #32898），不发明 find_in_page / web.run |
+| `index.ts` | web_fetch / web_search；直播都用官方 Searching the web / Searched（fetch 的 URL 走 detail，对标 open_page / #9960 / #7390），搜索来源结构化。不发明 Fetched / find_in_page / web.run |
 | `web-search.test.ts` | Instant Answer → title/url 来源 |
 | `ARCH.md` | 本层架构说明 |

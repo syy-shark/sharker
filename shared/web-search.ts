@@ -1,13 +1,20 @@
 /**
  * 官方 web_search 过程文案与结构化来源（对标 Codex #9960 / #24693 / #32898）。
- * 直播头用 Searching / Searched，来源只留 title+url，不发明 find_in_page / web.run。
+ * 直播头用 Searching / Searched，来源只留 title+url。web_fetch 共用同一格（官方 open_page，#7390 不另开 WebFetch）。
+ * 不发明 Fetched / find_in_page / web.run。
  * @see shared/ARCH.md
  */
 
 export const WEB_SEARCH_TOOL = 'web_search'
+/** Sharker 抓 URL；官方 open_page 仍走同一 Search 格（#9960 / #7390 不另开 WebFetch） */
+export const WEB_FETCH_TOOL = 'web_fetch'
 export const WEB_SEARCH_LIVE_STATUS = 'Searching the web'
 /** 官方完成后头：Searched；query 走 detail，避免标题随查询变长挤过程区 */
 export const WEB_SEARCH_DONE_TITLE = 'Searched'
+
+export function isWebSearchActivityToolName(tool: string): boolean {
+  return tool === WEB_SEARCH_TOOL || tool === WEB_FETCH_TOOL
+}
 
 export type WebSearchSource = {
   title: string
@@ -25,9 +32,15 @@ export function formatWebSearchActivity(_query?: string): string {
   return WEB_SEARCH_DONE_TITLE
 }
 
-/** 官方 web_search 副行：查询本身 */
+/** 官方 web_search 副行：查询本身；open_page / web_fetch 用 URL */
 export function formatWebSearchDetail(query: string): string {
   return String(query || '').trim()
+}
+
+export function webSearchDetailFromArgs(args?: Record<string, unknown> | null): string {
+  const query = typeof args?.query === 'string' ? args.query : ''
+  const url = typeof args?.url === 'string' ? args.url : ''
+  return formatWebSearchDetail(query || url)
 }
 
 export function isWebSearchSourceUrl(url: string): boolean {

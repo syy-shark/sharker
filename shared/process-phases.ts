@@ -33,9 +33,10 @@ import {
 } from './user-input'
 import {
   formatWebSearchActivity,
-  formatWebSearchDetail,
   formatWebSearchLiveStatus,
-  parseWebSearchQuery
+  isWebSearchActivityToolName,
+  parseWebSearchQuery,
+  webSearchDetailFromArgs
 } from './web-search'
 
 function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
@@ -230,7 +231,7 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
     if (tool === 'update_plan') {
       return formatUpdatePlanActivity(segment.toolArgs, segment.status)
     }
-    if (tool === 'web_search') {
+    if (isWebSearchActivityToolName(tool)) {
       if (segment.status === 'active') return formatWebSearchLiveStatus()
       return formatWebSearchActivity()
     }
@@ -481,11 +482,9 @@ function buildStepsFromSource(
         detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
       }
     }
-    if (segment.kind === 'tool' && segment.toolName === 'web_search') {
+    if (segment.kind === 'tool' && isWebSearchActivityToolName(segment.toolName || '')) {
       const query =
-        formatWebSearchDetail(
-          typeof segment.toolArgs?.query === 'string' ? segment.toolArgs.query : ''
-        ) ||
+        webSearchDetailFromArgs(segment.toolArgs) ||
         parseWebSearchQuery(segment.resultSummary || '') ||
         parseWebSearchQuery(segment.toolDetail || '') ||
         ''

@@ -199,7 +199,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 工具 | 说明 |
 |------|------|
-| `web_fetch` | HTTP 抓取 + 粗略 HTML→文本 |
+| `web_fetch` | HTTP 抓取 + 粗略 HTML→文本；直播与过程行共用官方 Searching the web / Searched + URL detail（对标 Codex open_page / #9960）。不发明单独 WebFetch 格（#7390 已关）或 Fetched |
 | `web_search` | DuckDuckGo Instant Answer；直播 Searching the web / 完成后 Searched + query detail（对标 Codex TUI web_search_header / #9960 / #24693），过程区 title+url 来源花片（#32898）。不发明 find_in_page / web.run / 官方 search API |
 | `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
 | `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；工具一开始就占演示槽（未可绘先 96px 骨架叠在同一 iframe 上，可绘只换 srcDoc）；正文 ```demo 围栏未写完 `dem` / `viz` 就占同一 `demo-stream` 槽（不先当散文再跳；不认 ```diff / ```html / ```vim），开闭都挂 `InlineDemo`；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
@@ -301,7 +301,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Computer Use macOS | **partial** | screencapture/cliclick `desktop_*` |
 | 视觉截图回灌 | **done** | agent/vision-feedback.ts + Provider vision 开关 |
 | `view_image` | **done** | 官方读本地图（#36966）：短结果 + 视觉回灌；相对路径接工作区 cwd（#29526）；过程区 ImageView 卡（#7468）。不发明 ImageGen / 关闭开关 |
-| web search 活动 | **done** | 直播 Searching the web / 完成后 Searched + query detail（TUI web_search_header / #9960 / #24693）；过程区 title+url 来源花片（#32898）。不发明 find_in_page / 官方 search API |
+| web search 活动 | **done** | 直播 Searching the web / 完成后 Searched + query/URL detail（TUI web_search_header / #9960 / #24693）；`web_fetch` 同格（官方 open_page，#7390 不另开 WebFetch）。过程区 title+url 来源花片（#32898）。不发明 Fetched / find_in_page / 官方 search API |
 | MCP 工具调用活动 | **done** | 直播 Calling / Called `server.tool(args)`（#20677 / #23236）；不倾倒 JSON、不抄 InProgress 当完成（#22300）。不发明 Apps / node_repl |
 | 命令 Running / Ran | **done** | 直播头 `Running cmd` / `Ran cmd`（对标 Codex exec_cell）。不发明 You ran / unified-exec |
 | 探索 Read / List / Search | **done** | `read_file` / `list_dir` / `grep` / `glob_file_search` 过程行用官方 Read / List / Search + basename。不发明 Exploring 分组头或完整路径标题 |

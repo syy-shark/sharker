@@ -81,6 +81,33 @@ describe('process phases privacy', () => {
     expect(searched[0]?.title).toBe('Searched')
     expect(searched[0]?.detail).toBe('codex desktop')
     expect(search[0]?.detail).toBe('codex desktop')
+    const fetching = deriveChronologicalSteps([
+      {
+        id: 'wf1',
+        kind: 'tool',
+        toolName: 'web_fetch',
+        toolTitle: '抓取网页',
+        toolArgs: { url: 'https://example.com/docs' },
+        status: 'active',
+        startedAt: 8
+      }
+    ])
+    expect(fetching[0]?.title).toBe('Searching the web')
+    expect(fetching[0]?.detail).toBe('https://example.com/docs')
+    const fetched = deriveChronologicalSteps([
+      {
+        id: 'wf2',
+        kind: 'tool',
+        toolName: 'web_fetch',
+        toolTitle: '抓取网页',
+        toolArgs: { url: 'https://example.com/docs' },
+        status: 'done',
+        startedAt: 8,
+        endedAt: 9
+      }
+    ])
+    expect(fetched[0]?.title).toBe('Searched')
+    expect(fetched[0]?.detail).toBe('https://example.com/docs')
     const planning = deriveChronologicalSteps([
       {
         id: 'up1',

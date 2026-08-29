@@ -1,6 +1,6 @@
 /**
  * web_fetch / web_search。
- * web_search 直播用官方 Searching the web / Searched + query detail，来源结构化，不把 Instant Answer 灌进直播头。
+ * 直播都用官方 Searching the web / Searched（fetch 的 URL 走 detail）；搜索来源结构化，不把 Instant Answer 灌进直播头。
  * @see tools/ARCH.md
  */
 import { ok } from '../../context'
@@ -26,7 +26,7 @@ function htmlToText(html: string): string {
 
 export const webFetchTool: ToolHandler = {
   name: 'web_fetch',
-  title: '抓取网页',
+  title: 'Searched',
   async execute(args, ctx) {
     const url = String(args.url)
     assertWebAccessAllowed(url, ctx.settings)

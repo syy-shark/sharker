@@ -52,7 +52,7 @@ const TOOL_TITLES: Record<string, string> = {
   run_background_shell: '后台 Shell',
   shell_read_output: '读 Shell 输出',
   shell_kill: '终止 Shell',
-  web_fetch: '抓取网页',
+  web_fetch: 'Searched',
   web_search: 'Searched',
   mcp_list_tools: 'MCP 工具列表',
   mcp_call_tool: 'MCP 调用',

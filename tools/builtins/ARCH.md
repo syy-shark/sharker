@@ -20,7 +20,7 @@
 | [skill/](./skill/ARCH.md) | list_skills / read_skill（`git-commit` 接用户 Git 文案模板） |
 | [tasks/](./tasks/ARCH.md) | 后台任务列表与控制；`manage_scheduled_task` 对话内改定时任务 |
 | [voice/](./voice/ARCH.md) | 语音朗读（macOS say） |
-| [web/](./web/ARCH.md) | web_fetch / web_search |
+| [web/](./web/ARCH.md) | web_fetch / web_search（直播共用 Searching / Searched） |
 
 ## 同级文件
 
