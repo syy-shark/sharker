@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   chatLinkMenuItems,
   chatLinkOpensInSystemBrowser,
+  findHttpLinksInText,
   isInAppBrowserChatHref,
   resolveChatLinkOpen
 } from './chat-link'
@@ -34,6 +35,13 @@ describe('chat link open', () => {
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/StreamingMarkdown.tsx'),
       'utf8'
     )
+    expect(findHttpLinksInText('Local: http://localhost:5173/')).toEqual([
+      { start: 7, end: 29, href: 'http://localhost:5173/' }
+    ])
+    expect(findHttpLinksInText('see https://ex.com/a).')).toEqual([
+      { start: 4, end: 20, href: 'https://ex.com/a' }
+    ])
+    expect(findHttpLinksInText('no links here')).toEqual([])
     expect(chatLinkMenuItems().map((item) => item.action)).toEqual(['in-app', 'system', 'copy'])
     expect(md).toContain('ChatLink')
     expect(live).toContain('ChatLink')
@@ -44,5 +52,12 @@ describe('chat link open', () => {
     expect(linkSrc).toContain('chatLinkMenuItems')
     expect(linkSrc).toContain('resolveChatLinkOpen')
     expect(linkSrc).toContain('dispatchOpenBrowserUrl')
+    const termSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedTerminal.tsx'),
+      'utf8'
+    )
+    expect(termSrc).toContain('registerLinkProvider')
+    expect(termSrc).toContain('findHttpLinksInText')
+    expect(termSrc).toContain('linkHandler')
   })
 })

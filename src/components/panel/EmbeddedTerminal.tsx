@@ -1,6 +1,7 @@
 /**
  * 集成终端（xterm.js + node-pty IPC）。
  * 按线程保留会话，线程内可开多个标签（对标 Codex terminal tabs per thread）。
+ * 输出里的 http(s) 点进内置浏览器，⌘/Ctrl+点进系统浏览器（对标 Codex clicking a URL / #38387）。
  * 浅色主题强制水滴玻璃浅底（非黑屏）；无红绿灯。
  * @see ./ARCH.md
  */
@@ -22,8 +23,10 @@ import {
   rememberThreadTerminalPanes,
   threadTerminalKey
 } from '../../../shared/terminal-tabs'
+import { findHttpLinksInText, resolveChatLinkOpen } from '../../../shared/chat-link'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
-import { Terminal, type ITheme } from '@xterm/xterm'
+import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
+import { Terminal, type ILink, type ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import './EmbeddedTerminal.css'
@@ -205,10 +208,40 @@ function TerminalSession({
         'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Monaco, monospace',
       theme,
       allowTransparency: true,
-      scrollback: 5000
+      scrollback: 5000,
+      linkHandler: {
+        activate(event, uri) {
+          const target = resolveChatLinkOpen(uri, event)
+          if (target === 'in-app') dispatchOpenBrowserUrl(uri)
+          else if (target === 'system') void window.sharker?.openExternal?.(uri)
+        }
+      }
     })
     const fit = new FitAddon()
     term.loadAddon(fit)
+    term.registerLinkProvider({
+      provideLinks(y, callback) {
+        const line = term.buffer.active.getLine(y - 1)
+        if (!line) {
+          callback(undefined)
+          return
+        }
+        const hits = findHttpLinksInText(line.translateToString(true))
+        const links: ILink[] = hits.map((hit) => ({
+          text: hit.href,
+          range: {
+            start: { x: hit.start + 1, y },
+            end: { x: hit.end, y }
+          },
+          activate(event) {
+            const target = resolveChatLinkOpen(hit.href, event)
+            if (target === 'in-app') dispatchOpenBrowserUrl(hit.href)
+            else if (target === 'system') void window.sharker?.openExternal?.(hit.href)
+          }
+        }))
+        callback(links.length ? links : undefined)
+      }
+    })
     term.open(host)
     term.options.theme = theme
     termRef.current = term

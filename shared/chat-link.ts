@@ -1,5 +1,5 @@
 /**
- * 对话里的 http(s) 链接打开目标（对标 Codex：点 URL 进内置浏览器，⌘/Ctrl+点进系统浏览器）。
+ * 对话 / 终端里的 http(s) 链接打开目标（对标 Codex：点 URL 进内置浏览器，⌘/Ctrl+点进系统浏览器）。
  * mailto 仍走系统。不发明 Shift+点、自定义 Open with。
  * @see shared/ARCH.md
  */
@@ -28,6 +28,25 @@ export function chatLinkOpensInSystemBrowser(event: {
   ctrlKey?: boolean
 }): boolean {
   return Boolean(event.metaKey || event.ctrlKey)
+}
+
+/** 终端一行里的 http(s) 链接（去掉尾标点） */
+export function findHttpLinksInText(text: string): Array<{ start: number; end: number; href: string }> {
+  const raw = String(text || '')
+  const out: Array<{ start: number; end: number; href: string }> = []
+  const re = /https?:\/\/[^\s<>"'`]+/gi
+  let match: RegExpExecArray | null
+  while ((match = re.exec(raw))) {
+    let href = match[0]
+    let end = match.index + href.length
+    while (href.length > 8 && /[.,);\]>'"]$/.test(href)) {
+      href = href.slice(0, -1)
+      end -= 1
+    }
+    if (!isInAppBrowserChatHref(href)) continue
+    out.push({ start: match.index, end, href })
+  }
+  return out
 }
 
 /** 点链接：默认内置浏览器；修饰键或 mailto 走系统 */
