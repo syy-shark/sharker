@@ -1,5 +1,5 @@
 /**
- * 右侧可展开面板：文件树 / 终端 / 内置浏览器；支持拖拽调宽与全屏。
+ * 右侧可展开面板：文件树 / 终端 / 内置浏览器；拖拽调宽按窗口比例记忆（对标 Codex）。
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Expand, Minimize2, X } from 'lucide-react'
@@ -10,6 +10,12 @@ import { ChangesPanel } from './panel/ChangesPanel'
 import { AgentsPanel } from './panel/AgentsPanel'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
+import {
+  panelWidthFromRatio,
+  panelWidthToRatio,
+  parseStoredPanelWidth,
+  serializePanelWidthRatio
+} from '../../shared/panel-width'
 
 export type RightPanelTab = 'files' | 'changes' | 'terminal' | 'browser' | 'agents'
 
@@ -88,13 +94,24 @@ export function RightPanel({
   onAskInSideChat,
   onInsertComposer
 }: Props) {
-  const [width, setWidth] = useState(() => {
-    const saved = localStorage.getItem(PANEL_WIDTH_KEY)
-    const n = saved ? Number(saved) : PANEL_DEFAULT_WIDTH
-    return Number.isFinite(n)
-      ? Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, n))
-      : PANEL_DEFAULT_WIDTH
-  })
+  const viewportWidth = () => (typeof window === 'undefined' ? 1440 : window.innerWidth || 1440)
+  const [width, setWidth] = useState(() =>
+    parseStoredPanelWidth(
+      typeof localStorage === 'undefined' ? null : localStorage.getItem(PANEL_WIDTH_KEY),
+      viewportWidth(),
+      PANEL_MIN_WIDTH,
+      PANEL_MAX_WIDTH,
+      PANEL_DEFAULT_WIDTH
+    )
+  )
+  const ratioRef = useRef(panelWidthToRatio(width, viewportWidth()))
+  useEffect(() => {
+    try {
+      localStorage.setItem(PANEL_WIDTH_KEY, serializePanelWidthRatio(width, viewportWidth()))
+    } catch {
+      /* quota / private mode */
+    }
+  }, [])
   const [fullscreen, setFullscreen] = useState(false)
   const [resizing, setResizing] = useState(false)
   const [animating, setAnimating] = useState(false)
@@ -117,6 +134,7 @@ export function RightPanel({
         PANEL_MAX_WIDTH,
         Math.max(PANEL_MIN_WIDTH, dragRef.current.startWidth + delta)
       )
+      ratioRef.current = panelWidthToRatio(next, viewportWidth())
       setWidth(next)
     }
 
@@ -124,7 +142,9 @@ export function RightPanel({
       setResizing(false)
       document.body.classList.remove('right-panel-resizing')
       setWidth((w) => {
-        localStorage.setItem(PANEL_WIDTH_KEY, String(w))
+        const ratio = panelWidthToRatio(w, viewportWidth())
+        ratioRef.current = ratio
+        localStorage.setItem(PANEL_WIDTH_KEY, serializePanelWidthRatio(w, viewportWidth()))
         return w
       })
     }
@@ -214,13 +234,23 @@ export function RightPanel({
     const onChange = () => syncCompact()
     if (typeof mql.addEventListener === 'function') mql.addEventListener('change', onChange)
     else mql.addListener(onChange)
+    const syncWidth = () => {
+      if (document.body.classList.contains('right-panel-resizing')) return
+      setWidth(
+        panelWidthFromRatio(ratioRef.current, viewportWidth(), PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
+      )
+    }
     window.addEventListener('resize', syncCompact)
+    window.addEventListener('resize', syncWidth)
     window.visualViewport?.addEventListener('resize', syncCompact)
+    window.visualViewport?.addEventListener('resize', syncWidth)
     return () => {
       if (typeof mql.removeEventListener === 'function') mql.removeEventListener('change', onChange)
       else mql.removeListener(onChange)
       window.removeEventListener('resize', syncCompact)
+      window.removeEventListener('resize', syncWidth)
       window.visualViewport?.removeEventListener('resize', syncCompact)
+      window.visualViewport?.removeEventListener('resize', syncWidth)
     }
   }, [])
 

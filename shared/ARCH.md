@@ -65,6 +65,8 @@
 | `keymap.test.ts` | 改绑后默认失效 |
 | `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key） |
 | `debug-config.test.ts` | 密钥打码 |
+| `panel-width.ts` | 右侧面板宽度按窗口比例记忆（对标 Codex percentage-based file tree resizing）；旧像素值仍能读 |
+| `panel-width.test.ts` | 夹取、比例还原、兼容旧像素 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
 | `code-font.ts` | 代码字体白名单与 `--mono` 栈（对标 Codex Code font） |
 | `code-font.test.ts` | 未知值回退 system、别名与栈含 monospace |
