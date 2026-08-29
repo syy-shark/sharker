@@ -148,10 +148,11 @@ function parseTomlStringField(body: string, key: string): string {
 }
 
 function unescapeTomlBasic(value: string): string {
-  return value
-    .replace(/\\n/g, '\n')
-    .replace(/\\t/g, '\t')
-    .replace(/\\r/g, '\r')
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, '\\')
+  return value.replace(/\\([ntr"\\])/g, (_, ch: string) => {
+    if (ch === 'n') return '\n'
+    if (ch === 't') return '\t'
+    if (ch === 'r') return '\r'
+    if (ch === '"') return '"'
+    return '\\'
+  })
 }
