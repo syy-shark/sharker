@@ -136,7 +136,7 @@ export function assessMcpDynamicToolRisk(
   const entry = resolveMcpDynamicTool(externalName)
   if (!entry) return NO_RISK
   if (entry.destructive) {
-    return { highRisk: true, reason: `MCP 工具 ${entry.server}/${entry.toolName}（可能修改状态）` }
+    return { highRisk: true, reason: `MCP 工具 ${entry.server}.${entry.toolName}（可能修改状态）` }
   }
   return NO_RISK
 }

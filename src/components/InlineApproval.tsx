@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, LoaderCircle, ShieldCheck, ShieldPlus, X } from 'lucide-react'
 import type { ApprovalRequest } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
+import { formatMcpApprovalLabel } from '../../shared/mcp-activity'
 import './InlineApproval.css'
 
 export interface InlineApprovalProps {
@@ -23,7 +24,10 @@ function formatArgs(args: Record<string, unknown>): string {
   }
 }
 
-/** Inline, non-modal confirmation: Allow once / Allow for session / Deny. */
+/**
+ * 过程内高危确认：允许一次 / 本会话 / 拒绝。
+ * MCP 工具名走官方 Calling server.tool({compact})，不发明 always-allow 配置。
+ */
 export function InlineApproval({ request, onRespond, responding = false }: InlineApprovalProps) {
   const rootRef = useRef<HTMLElement>(null)
   const submittedRequestRef = useRef<string | null>(null)
@@ -96,7 +100,9 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
       <details className="inline-approval__details" key={request.id}>
         <summary>
           <span>查看操作参数</span>
-          <code title={request.toolName}>{request.toolName}</code>
+          <code title={request.toolName}>
+            {formatMcpApprovalLabel(request.toolName, request.args)}
+          </code>
           <ChevronDown className="inline-approval__chevron" size={15} aria-hidden="true" />
         </summary>
         <div className="inline-approval__args">

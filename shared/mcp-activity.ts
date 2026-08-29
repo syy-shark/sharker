@@ -98,6 +98,14 @@ export function formatMcpActivity(
   return `${header} ${formatMcpInvocation(invocation)}`
 }
 
+/** 审批条工具名：官方提示用 Calling server.tool({compact})，非 MCP 保持原名 */
+export function formatMcpApprovalLabel(
+  toolName: string,
+  args?: Record<string, unknown>
+): string {
+  return formatMcpActivity(toolName, args, 'active') ?? toolName
+}
+
 /** 大段 JSON / 数组不当过程行正文，避免直播卡顿 */
 export function isMcpJsonDump(text: string | null | undefined): boolean {
   const value = String(text || '').trim()

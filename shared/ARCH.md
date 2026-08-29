@@ -163,7 +163,7 @@
 | `web-search.test.ts` | 活动文案、source 往返、忽略非 http(s) |
 | `update-plan.ts` | 官方 `update_plan` 清单：pending / in_progress / completed、短结果 `Plan updated`。不是计划模式，不发明 /plan-model 或底栏徽章 |
 | `update-plan.test.ts` | 状态解析、空参、直播头当前步 / `Plan · n/m`、计划模式白名单 |
-| `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
+| `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用；审批条 `formatMcpApprovalLabel`。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
 | `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定 |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |

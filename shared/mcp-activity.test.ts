@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatMcpActivity,
+  formatMcpApprovalLabel,
   formatMcpArgs,
   formatMcpInvocation,
   isMcpActivityToolName,
@@ -67,5 +68,9 @@ describe('mcp-activity', () => {
     expect(isMcpJsonDump('{"ok":true}')).toBe(true)
     expect(isMcpJsonDump('[1,2]')).toBe(true)
     expect(isMcpJsonDump('Listed 2 tools')).toBe(false)
+    expect(formatMcpApprovalLabel('mcp_github__search', { q: 'codex' })).toBe(
+      'Calling github.search({"q":"codex"})'
+    )
+    expect(formatMcpApprovalLabel('read_file', { path: 'a.ts' })).toBe('read_file')
   })
 })
