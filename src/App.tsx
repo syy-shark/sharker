@@ -5139,6 +5139,12 @@ export default function App() {
     setTerminalClearTick((n) => n + 1)
   }, [])
 
+  const handleOpenTerminal = useCallback(() => {
+    setPage('chat')
+    setRightPanelTab('terminal')
+    setRightPanelOpen(true)
+  }, [])
+
   const handleOpenBrowserTab = useCallback(() => {
     setPage('chat')
     setRightPanelTab('browser')
@@ -6679,6 +6685,10 @@ export default function App() {
         if (ws) void handleArchiveProjectChats(ws)
         return
       }
+      if (cmd.action === 'open_terminal') {
+        handleOpenTerminal()
+        return
+      }
       if (cmd.action === 'open_browser') {
         handleOpenBrowserTab()
         return
@@ -6751,6 +6761,7 @@ export default function App() {
       handleNextAttention,
       handleFocusBrowserAddress,
       handleOpenBrowserTab,
+      handleOpenTerminal,
       handleReloadBrowserPage,
       handleRunEnvironmentAction,
       handleStandaloneConversation,
@@ -7232,6 +7243,10 @@ export default function App() {
         handleShortcutPanel('files')
         return
       }
+      if (action === 'open_terminal') {
+        handleOpenTerminal()
+        return
+      }
       if (action === 'open_browser') {
         handleOpenBrowserTab()
         return
@@ -7290,6 +7305,7 @@ export default function App() {
     handleNewConversation,
     handleFocusBrowserAddress,
     handleOpenBrowserTab,
+    handleOpenTerminal,
     handleReloadBrowserPage,
     handleSelectConversation,
     openShareThread,
@@ -8503,6 +8519,7 @@ export default function App() {
               onPopOut={handlePopOut}
               onToggleSidebar={toggleSidebar}
               onToggleRightPanel={handleToggleRightPanel}
+              onOpenTerminal={handleOpenTerminal}
               onNewConversation={handleToolbarNewConversation}
             />
             {pendingPlan && (

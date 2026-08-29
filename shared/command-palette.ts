@@ -27,6 +27,7 @@ import {
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
   OPEN_BROWSER_TAB_LABEL,
+  OPEN_TERMINAL_MENU_LABEL,
   RELOAD_BROWSER_PAGE_MENU_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -338,6 +339,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: 'Ctrl+`',
     keywords: 'terminal 终端 开关 toggle',
     action: 'toggle_terminal'
+  },
+  {
+    id: 'open-terminal',
+    title: OPEN_TERMINAL_MENU_LABEL,
+    keywords: 'open terminal 打开 终端',
+    action: 'open_terminal'
   },
   {
     id: 'environment-action',

@@ -102,5 +102,7 @@ describe('local environment setup script', () => {
     )
     expect(toolbarSrc).toContain('environmentActions')
     expect(toolbarSrc).toContain('onRunEnvironmentAction')
+    expect(toolbarSrc).toContain('OPEN_TERMINAL_MENU_LABEL')
+    expect(toolbarSrc).toContain('onOpenTerminal')
   })
 })

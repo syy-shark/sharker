@@ -23,6 +23,7 @@ import {
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
   RELOAD_BROWSER_PAGE_MENU_LABEL,
+  OPEN_TERMINAL_MENU_LABEL,
   PASTE_LABEL,
   PREVIOUS_CHAT_MENU_LABEL,
   REDO_LABEL,
@@ -39,7 +40,6 @@ import {
   TOGGLE_FULL_SCREEN_LABEL,
   TOGGLE_REVIEW_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
-  TOGGLE_TERMINAL_LABEL,
   VIEW_MENU_LABEL,
   WINDOW_MENU_LABEL
 } from '../../shared/reveal-in-folder'
@@ -158,10 +158,9 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
           ...send('toggle_panel')
         },
         {
-          label: TOGGLE_TERMINAL_LABEL,
-          accelerator: 'Control+`',
+          label: OPEN_TERMINAL_MENU_LABEL,
           registerAccelerator: false,
-          ...send('toggle_terminal')
+          ...send('open_terminal')
         },
         {
           label: TOGGLE_REVIEW_PANEL_LABEL,

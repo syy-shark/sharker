@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / Worktree / Local environment Actions / PR / Copy 子菜单 / 右侧面板；中间空白拖窗
+ * - 右：Hand off / Worktree / Local environment Actions / PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -12,6 +12,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   SquarePen,
+  SquareTerminal,
   AppWindow,
   Share2,
   GitFork,
@@ -33,6 +34,7 @@ import {
   HAND_OFF_LABEL,
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
+  OPEN_TERMINAL_MENU_LABEL,
   SHARE_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
@@ -47,6 +49,8 @@ interface Props {
   sidebarCollapsed?: boolean
   onToggleSidebar?: () => void
   onToggleRightPanel: () => void
+  /** View / 顶栏 Open Terminal（对标 Codex #30659 / learn.chatgpt.com Integrated terminal） */
+  onOpenTerminal?: () => void
   onNewConversation?: () => void
   /** 弹出当前对话到独立窗（对标 Codex Open in Popup Window） */
   onPopOut?: () => void
@@ -99,6 +103,7 @@ export const ChatToolbar = memo(function ChatToolbar({
   sidebarCollapsed = false,
   onToggleSidebar,
   onToggleRightPanel,
+  onOpenTerminal,
   onNewConversation,
   onPopOut,
   onShare,
@@ -449,6 +454,23 @@ export const ChatToolbar = memo(function ChatToolbar({
               <span className="chat-toolbar-popout-label">弹出对话</span>
             </>
           ) : (
+          <>
+          {onOpenTerminal ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenTerminal()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title={OPEN_TERMINAL_MENU_LABEL}
+              aria-label={OPEN_TERMINAL_MENU_LABEL}
+            >
+              <SquareTerminal size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
           <button
             type="button"
             className={`panel-rail-toggle ${rightPanelOpen ? 'panel-rail-toggle--open' : ''}`}
@@ -471,6 +493,7 @@ export const ChatToolbar = memo(function ChatToolbar({
               <PanelRightOpen size={18} aria-hidden />
             )}
           </button>
+          </>
           )}
         </div>
       </div>

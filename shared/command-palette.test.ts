@@ -72,6 +72,8 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'files')?.title).toBe('Toggle file tree')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'panel')?.title).toBe('Toggle bottom panel')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'terminal')?.title).toBe('Toggle terminal')
+    expect(ids).toContain('open-terminal')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-terminal')?.title).toBe('Open Terminal')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'model')?.title).toBe('Open model picker')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'project-picker')?.title).toBe('Open project picker')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'dictate')?.title).toBe('Start dictation')
@@ -152,6 +154,9 @@ describe('command palette', () => {
     expect(
       filterPaletteCommands('Reload Browser Page').some((c) => c.action === 'reload_browser_page')
     ).toBe(true)
+    expect(filterPaletteCommands('Open Terminal').some((c) => c.action === 'open_terminal')).toBe(
+      true
+    )
     expect(
       filterPaletteCommands('环境').some((c) => c.action === 'run_environment_action')
     ).toBe(true)
