@@ -17,9 +17,12 @@ import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import { TURN_START_LIVE_STATUS } from './live-display'
 import {
+  liveAnswerViewFromSnap,
+  liveProcessIdentity,
   nextLiveAnswerActions,
   nextLiveAnswerView,
-  nextLiveProcessView
+  nextLiveProcessView,
+  shouldReuseLiveProcessView
 } from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
@@ -89,6 +92,39 @@ describe('live stream ui snapshot', () => {
     })
     expect(still).toBe(first)
     expect(still.processForFlow[0]).toBe(tool)
+    const processId = liveProcessIdentity([tool, text('Hello')])
+    expect(processId).toBe(liveProcessIdentity([tool, text('Hello world')]))
+    expect(
+      shouldReuseLiveProcessView({
+        prev: first,
+        identity: processId,
+        prevIdentity: processId
+      })
+    ).toBe(true)
+    expect(
+      shouldReuseLiveProcessView({
+        prev: first,
+        identity: liveProcessIdentity([
+          tool,
+          { id: 't2', kind: 'tool', toolName: 'write_file', status: 'active', content: '' },
+          text('Hello world')
+        ]),
+        prevIdentity: processId
+      })
+    ).toBe(false)
+    const sharedSegs = [tool, text('Same ref')]
+    const answerSameRef = liveAnswerViewFromSnap({
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: sharedSegs,
+      streaming: 'Same ref'
+    })
+    expect(
+      liveAnswerViewFromSnap({
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: sharedSegs,
+        streaming: 'Same ref and more'
+      })
+    ).toBe(answerSameRef)
     const a1 = nextLiveAnswerView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [tool, text('Hello')],

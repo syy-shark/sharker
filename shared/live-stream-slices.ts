@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答，过程对象能复用就不换。
+ * 直播行过程 / 回答切片：token 只换回答；正文加长不重跑过程 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -45,6 +45,48 @@ export interface LiveAnswerActions {
 }
 
 let answerCache: { snap: LiveStreamUiSnapshot; view: LiveAnswerView } | null = null
+let processHold: {
+  view: LiveProcessView
+  identity: string
+  segments: readonly TurnSegment[]
+} | null = null
+
+/** 正文里的演示围栏会改过程头，必须进指纹 */
+const LIVE_PROCESS_DEMO_FENCE_RE =
+  /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)\b/i
+
+function isLiveAnswerText(segment: TurnSegment): boolean {
+  return segment.kind === 'text' && (segment.role === 'final' || segment.status === 'active')
+}
+
+/**
+ * 过程区指纹：增长中的回答正文只记 id，不拼全文。
+ * 工具 / 思考 / 演示围栏变了才变，避免每枚 token 重跑 buildAnswerParts。
+ */
+export function liveProcessIdentity(segments: readonly TurnSegment[]): string {
+  let out = ''
+  for (const segment of segments) {
+    if (isLiveAnswerText(segment) && !LIVE_PROCESS_DEMO_FENCE_RE.test(segment.content ?? '')) {
+      out += `a:${segment.id};`
+      continue
+    }
+    out += `${segment.kind}:${segment.id}:${segment.status}:${segment.role ?? ''}:${segment.toolName ?? ''}:${segment.toolTitle ?? ''}:${segment.toolDetail ?? ''}:${segment.content ?? ''};`
+  }
+  return out
+}
+
+/**
+ * 已在回答且不是演示生成中：指纹没变就复用过程视图。
+ * 对标 Codex #22860：工具时间线不跟正文 token。
+ */
+export function shouldReuseLiveProcessView(input: {
+  prev: LiveProcessView | null
+  identity: string
+  prevIdentity: string
+}): boolean {
+  if (!input.prev || !input.identity || input.identity !== input.prevIdentity) return false
+  return input.prev.contentStreaming && input.prev.answerStreaming && !input.prev.generatingDemo
+}
 
 function splitClosedTail(parts: AnswerPart[]): { closed: AnswerPart[]; tail: AnswerPart | null } {
   if (!parts.length) return { closed: [], tail: null }
@@ -73,12 +115,19 @@ function sameProcessView(prev: LiveProcessView, next: LiveProcessView): boolean 
   )
 }
 
-/** 过程切片：正文增长且工具引用没变时退回 prev */
+/** 过程切片：正文增长且工具引用没变时退回 prev，不重跑 buildAnswerParts */
 export function nextLiveProcessView(
   prev: LiveProcessView | null,
   snap: LiveStreamUiSnapshot
 ): LiveProcessView {
   const segments = snap.liveSegments
+  if (prev && processHold?.view === prev && processHold.segments === segments) return prev
+  const identity = liveProcessIdentity(segments)
+  const prevIdentity = processHold?.view === prev ? processHold.identity : ''
+  if (prev && shouldReuseLiveProcessView({ prev, identity, prevIdentity })) {
+    processHold = { view: prev, identity, segments }
+    return prev
+  }
   const answerParts = buildAnswerParts(segments, { isStreaming: true })
   const flow = processForAnswer(segments, answerParts)
   const processForFlow =
@@ -96,8 +145,9 @@ export function nextLiveProcessView(
     generatingDemo: hasLiveDemo && !hasPaintableDemo,
     answerStreaming: Boolean(finalRaw.trim() || hasLiveProse)
   }
-  if (prev && sameProcessView(prev, next)) return prev
-  return next
+  const view = prev && sameProcessView(prev, next) ? prev : next
+  processHold = { view, identity, segments }
+  return view
 }
 
 /** 回答切片：闭合块走 reuseAnswerParts，closed 数组能复用就复用 */
@@ -139,9 +189,13 @@ export function nextLiveAnswerView(
   return next
 }
 
-/** 同一帧快照只派生一次回答视图（过程/闭合/尾/操作条共用） */
+/** 同一帧快照只派生一次回答视图；片段引用没变则不重拆（过程/闭合/尾/操作条共用） */
 export function liveAnswerViewFromSnap(snap: LiveStreamUiSnapshot): LiveAnswerView {
   if (answerCache && answerCache.snap === snap) return answerCache.view
+  if (answerCache && answerCache.snap.liveSegments === snap.liveSegments) {
+    answerCache = { snap, view: answerCache.view }
+    return answerCache.view
+  }
   const view = nextLiveAnswerView(answerCache?.view ?? null, snap)
   answerCache = { snap, view }
   return view
