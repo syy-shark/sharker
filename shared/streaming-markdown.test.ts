@@ -1187,6 +1187,49 @@ describe('splitStreamingMarkdown', () => {
       '见注[^1]。\n[^1]: 说明更'
     )
     expect(liveNotesGrown[0]).toBe(liveNotes[0])
+    const quoteInListLive = parseCheapProseBlocks('- note\n  > quoted')
+    const quoteInListGrown = continueCheapProseBlocks(
+      '- note\n  > quoted',
+      quoteInListLive,
+      '- note\n  > quoted more'
+    )
+    if (quoteInListLive[0]?.type === 'list' && quoteInListGrown[0]?.type === 'list') {
+      expect(quoteInListGrown[0].items[0]?.nodes).toBe(quoteInListLive[0].items[0]?.nodes)
+    }
+    const headingQuoteInList = parseCheapProseBlocks('- note\n  # title\n  > quoted')
+    const headingQuoteGrown = continueCheapProseBlocks(
+      '- note\n  # title\n  > quoted',
+      headingQuoteInList,
+      '- note\n  # title\n  > quoted more'
+    )
+    if (headingQuoteInList[0]?.type === 'list' && headingQuoteGrown[0]?.type === 'list') {
+      expect(headingQuoteGrown[0].items[0]?.nodes).toBe(headingQuoteInList[0].items[0]?.nodes)
+      expect(headingQuoteGrown[0].items[0]?.blocks?.[0]).toBe(headingQuoteInList[0].items[0]?.blocks?.[0])
+    }
+    const fenceInListLive = parseCheapProseBlocks('1. item\n   ```js\n   x')
+    const fenceInListGrown = continueCheapProseBlocks(
+      '1. item\n   ```js\n   x',
+      fenceInListLive,
+      '1. item\n   ```js\n   xy'
+    )
+    if (fenceInListLive[0]?.type === 'list' && fenceInListGrown[0]?.type === 'list') {
+      expect(fenceInListGrown[0].items[0]?.nodes).toBe(fenceInListLive[0].items[0]?.nodes)
+      expect(fenceInListGrown[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'pre', text: 'xy', lang: 'js' })
+    }
+    const manyThenQuote =
+      Array.from({ length: 8 }, (_, i) => `- keep-${i}`).join('\n') + '\n- note\n  > quoted'
+    const manyThenQuoteFirst = parseCheapProseBlocks(manyThenQuote)
+    const manyThenQuoteGrown = continueCheapProseBlocks(
+      manyThenQuote,
+      manyThenQuoteFirst,
+      `${manyThenQuote} more`
+    )
+    if (manyThenQuoteFirst[0]?.type === 'list' && manyThenQuoteGrown[0]?.type === 'list') {
+      expect(manyThenQuoteGrown[0].items.slice(0, 8).every((item, i) => item === manyThenQuoteFirst[0].items[i])).toBe(
+        true
+      )
+      expect(manyThenQuoteGrown[0].items[8]?.nodes).toBe(manyThenQuoteFirst[0].items[8]?.nodes)
+    }
     const paraQuoteList = parseCheapProseBlocks('先说一句\n> - 一项')
     expect(paraQuoteList.map((b) => b.type)).toEqual(['p', 'quote'])
     const paraQuoteListGrown = continueCheapProseBlocks(
