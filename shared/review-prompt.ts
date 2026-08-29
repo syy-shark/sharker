@@ -118,3 +118,31 @@ export function formatReviewPrompt(
 export function parseReviewScope(args: string): 'uncommitted' | 'branch' | 'commit' {
   return parseReviewRequest(args).scope
 }
+
+/**
+ * 官方 `/review` 先选范围：空、或只有 here/detached 时出选择器。
+ * 已写 uncommitted / branch / commit / sha / 关注点则直接开审。
+ */
+export function reviewNeedsScopePicker(args: string): boolean {
+  const tokens = args.trim().split(/\s+/).filter(Boolean)
+  for (const token of tokens) {
+    const lower = token.toLowerCase()
+    if (REVIEW_INLINE_TOKENS.has(lower) || REVIEW_DETACHED_TOKENS.has(lower)) continue
+    return false
+  }
+  return true
+}
+
+/** 把选择器结果接到原参数前面，保证再次解析不再弹出选择器 */
+export function composeReviewScopeArgs(
+  pendingArgs: string,
+  scope: 'uncommitted' | 'branch' | 'commit',
+  commit?: string
+): string {
+  const rest = pendingArgs.trim()
+  if (scope === 'commit') {
+    const sha = String(commit || '').trim()
+    return (sha ? `commit ${sha} ${rest}` : `commit ${rest}`).trim()
+  }
+  return `${scope} ${rest}`.trim()
+}

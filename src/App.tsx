@@ -107,7 +107,13 @@ import {
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
 import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
-import { formatReviewPrompt, parseReviewRequest, reviewSubmitMode } from '../shared/review-prompt'
+import {
+  composeReviewScopeArgs,
+  formatReviewPrompt,
+  parseReviewRequest,
+  reviewNeedsScopePicker,
+  reviewSubmitMode
+} from '../shared/review-prompt'
 import {
   nextPersonality,
   parsePersonality,
@@ -135,6 +141,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { FeedbackDialog } from './components/FeedbackDialog'
 import { ShareDialog } from './components/ShareDialog'
+import { ReviewScopeDialog } from './components/ReviewScopeDialog'
 import { ProjectFoldersDialog } from './components/ProjectFoldersDialog'
 import { formatThreadSnapshot } from '../shared/thread-snapshot'
 import type { PaletteCommand } from '../shared/command-palette'
@@ -450,6 +457,7 @@ export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackInfo, setFeedbackInfo] = useState<FeedbackBundleInfo | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [reviewScopePick, setReviewScopePick] = useState<string | null>(null)
   const [shareBundle, setShareBundle] = useState<{
     title: string
     markdown: string
@@ -5457,6 +5465,11 @@ export default function App() {
           handleTogglePanel('changes')
           break
         case 'review_working_tree': {
+          if (reviewNeedsScopePicker(args)) {
+            handleTogglePanel('changes')
+            setReviewScopePick(args)
+            break
+          }
           const review = parseReviewRequest(args, {
             delivery: settingsRef.current.reviewDelivery
           })
@@ -7685,6 +7698,24 @@ export default function App() {
           onClose={() => {
             setFeedbackOpen(false)
             setFeedbackInfo(null)
+          }}
+        />
+        <ReviewScopeDialog
+          open={reviewScopePick !== null}
+          onClose={() => setReviewScopePick(null)}
+          onPick={(scope, commit) => {
+            const pending = reviewScopePick ?? ''
+            setReviewScopePick(null)
+            void handleSlashActionRef.current(
+              {
+                name: 'review',
+                description: '审查变更',
+                scope: 'ui',
+                action: 'review_working_tree',
+                category: 'panel'
+              },
+              composeReviewScopeArgs(pending, scope, commit)
+            )
           }}
         />
         <ShareDialog

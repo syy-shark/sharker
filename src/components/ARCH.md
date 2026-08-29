@@ -47,6 +47,7 @@
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex：分类 / 说明 / 附带会话）；只复制本机诊断，不上传 |
 | `ShareDialog.tsx` / `.css` | `/share` 只读快照（对标 Codex Share）：打开时拍一帧，预览脱敏 Markdown，复制到剪贴板，不上传、不含工具 I/O |
+| `ReviewScopeDialog.tsx` / `.css` | `/review` 空参数先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；选定前不派发回合 |
 | `ProjectFoldersDialog.tsx` / `.css` | 编辑项目：主文件夹 + 附加文件夹（对标 Codex Edit project）；附加夹可「设为主文件夹」，旧主路径留下；Git / AGENTS.md / Skill 仍走主路径 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
 | `ARCH.md` | 本层架构说明 |

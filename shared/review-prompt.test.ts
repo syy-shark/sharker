@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  composeReviewScopeArgs,
   formatReviewPrompt,
   parseReviewDelivery,
   parseReviewRequest,
   parseReviewScope,
+  reviewNeedsScopePicker,
   reviewSubmitMode,
   withReviewInstructions
 } from './review-prompt'
@@ -42,6 +44,16 @@ describe('review scope', () => {
     expect(reviewSubmitMode({ detached: false, busy: true })).toBe('queue')
     expect(reviewSubmitMode({ detached: false, busy: true, followUp: 'steer' })).toBe('jump')
     expect(reviewSubmitMode({ detached: true, busy: true, followUp: 'queue' })).toBe('detach')
+    expect(reviewNeedsScopePicker('')).toBe(true)
+    expect(reviewNeedsScopePicker('here')).toBe(true)
+    expect(reviewNeedsScopePicker('detached')).toBe(true)
+    expect(reviewNeedsScopePicker('uncommitted')).toBe(false)
+    expect(reviewNeedsScopePicker('branch')).toBe(false)
+    expect(reviewNeedsScopePicker('commit abc1234')).toBe(false)
+    expect(reviewNeedsScopePicker('Focus on auth')).toBe(false)
+    expect(composeReviewScopeArgs('here', 'branch')).toBe('branch here')
+    expect(composeReviewScopeArgs('', 'commit', 'abc1234')).toBe('commit abc1234')
+    expect(reviewNeedsScopePicker(composeReviewScopeArgs('here', 'uncommitted'))).toBe(false)
   })
 
   it('uses Review delivery and allows here/detached overrides', () => {
