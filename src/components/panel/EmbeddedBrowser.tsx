@@ -37,9 +37,18 @@ import { PAGE_GLASS_INJECT_CSS, shouldInjectGlass } from './browser-glass-css'
 import type { SideChatSource } from '../../../shared/side-chat-quote'
 import './EmbeddedBrowser.css'
 
-/** View 菜单 Focus Browser Address Bar / Reload Browser Page（对标 Codex #30659） */
+/** View / 命令面板：先开浏览器再选中地址栏、刷新、前进后退、复制网址或切换批注（对标 Codex #30659 / learn.chatgpt.com commands） */
+export type BrowserMenuCommandKind =
+  | 'focus-address'
+  | 'reload'
+  | 'reload-bypass-cache'
+  | 'back'
+  | 'forward'
+  | 'copy-url'
+  | 'toggle-annotate'
+
 export type BrowserMenuCommand = {
-  kind: 'focus-address' | 'reload'
+  kind: BrowserMenuCommandKind
   token: number
 }
 
@@ -159,10 +168,32 @@ export function EmbeddedBrowser({
       const id = requestAnimationFrame(focus)
       return () => cancelAnimationFrame(id)
     }
+    if (menuCommand.kind === 'copy-url') {
+      const text = displayUrlForBar(urlRef.current)
+      if (text && navigator.clipboard?.writeText) void navigator.clipboard.writeText(text)
+      return
+    }
+    if (menuCommand.kind === 'toggle-annotate') {
+      if (!shouldToggleBrowserAnnotate(urlRef.current, annotatingRef.current)) return
+      setAnnotating((on) => !on)
+      return
+    }
     const run = () =>
       safeCall(() => {
         const wv = webviewRef.current
         if (!wv) return
+        if (menuCommand.kind === 'back') {
+          wv.goBack()
+          return
+        }
+        if (menuCommand.kind === 'forward') {
+          wv.goForward()
+          return
+        }
+        if (menuCommand.kind === 'reload-bypass-cache') {
+          wv.reloadIgnoringCache?.()
+          return
+        }
         if (wv.isLoading?.()) wv.stop()
         else wv.reload()
       })

@@ -169,12 +169,26 @@ describe('command palette', () => {
     expect(ids).toContain('open-browser')
     expect(ids).toContain('focus-browser-address')
     expect(ids).toContain('reload-browser-page')
+    expect(ids).toContain('browser-back')
+    expect(ids).toContain('browser-forward')
+    expect(ids).toContain('reload-browser-page-without-cache')
+    expect(ids).toContain('copy-browser-url')
+    expect(ids).toContain('toggle-browser-comment')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'open-browser')?.title).toBe('Open browser tab')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'focus-browser-address')?.title).toBe(
       'Focus Browser Address Bar'
     )
     expect(PALETTE_COMMANDS.find((c) => c.id === 'reload-browser-page')?.title).toBe(
       'Reload Browser Page'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'browser-back')?.title).toBe('Browser back')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'browser-forward')?.title).toBe('Browser forward')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'reload-browser-page-without-cache')?.title).toBe(
+      'Reload browser page without cache'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-browser-url')?.title).toBe('Copy browser URL')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'toggle-browser-comment')?.title).toBe(
+      'Toggle browser browse or comment mode'
     )
     expect(ids).toContain('next-attention')
     expect(ids).toContain('prev-chat')
@@ -216,6 +230,23 @@ describe('command palette', () => {
     ).toBe(true)
     expect(
       filterPaletteCommands('Reload Browser Page').some((c) => c.action === 'reload_browser_page')
+    ).toBe(true)
+    expect(filterPaletteCommands('Browser back').some((c) => c.action === 'browser_back')).toBe(true)
+    expect(filterPaletteCommands('Browser forward').some((c) => c.action === 'browser_forward')).toBe(
+      true
+    )
+    expect(
+      filterPaletteCommands('Reload browser page without cache').some(
+        (c) => c.action === 'reload_browser_page_without_cache'
+      )
+    ).toBe(true)
+    expect(
+      filterPaletteCommands('Copy browser URL').some((c) => c.action === 'copy_browser_url')
+    ).toBe(true)
+    expect(
+      filterPaletteCommands('Toggle browser browse or comment mode').some(
+        (c) => c.action === 'toggle_browser_comment_mode'
+      )
     ).toBe(true)
     expect(filterPaletteCommands('Open Terminal').some((c) => c.action === 'open_terminal')).toBe(
       true

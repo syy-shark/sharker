@@ -47,10 +47,15 @@ import {
   NEXT_CHAT_OR_TAB_LABEL,
   OPEN_RECENT_CHAT_LABEL,
   PREVIOUS_CHAT_OR_TAB_LABEL,
+  BROWSER_BACK_LABEL,
+  BROWSER_FORWARD_LABEL,
+  COPY_BROWSER_URL_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
   OPEN_BROWSER_TAB_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
   RELOAD_BROWSER_PAGE_MENU_LABEL,
+  RELOAD_BROWSER_PAGE_WITHOUT_CACHE_LABEL,
+  TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_IN_FINDER_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -610,6 +615,41 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘R',
     keywords: 'reload browser page refresh 刷新',
     action: 'reload_browser_page'
+  },
+  {
+    id: 'browser-back',
+    title: BROWSER_BACK_LABEL,
+    shortcut: '⌘←',
+    keywords: 'browser back history 后退',
+    action: 'browser_back'
+  },
+  {
+    id: 'browser-forward',
+    title: BROWSER_FORWARD_LABEL,
+    shortcut: '⌘→',
+    keywords: 'browser forward history 前进',
+    action: 'browser_forward'
+  },
+  {
+    id: 'reload-browser-page-without-cache',
+    title: RELOAD_BROWSER_PAGE_WITHOUT_CACHE_LABEL,
+    shortcut: '⌘⇧R',
+    keywords: 'reload browser page without cache hard refresh 无缓存 刷新',
+    action: 'reload_browser_page_without_cache'
+  },
+  {
+    id: 'copy-browser-url',
+    title: COPY_BROWSER_URL_LABEL,
+    shortcut: '⌘⇧C',
+    keywords: 'copy browser url address 复制 网址',
+    action: 'copy_browser_url'
+  },
+  {
+    id: 'toggle-browser-comment',
+    title: TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL,
+    shortcut: '⌘.',
+    keywords: 'toggle browser browse comment annotate 批注 浏览',
+    action: 'toggle_browser_comment_mode'
   },
   {
     id: 'next-attention',

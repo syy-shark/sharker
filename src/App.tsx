@@ -5165,15 +5165,13 @@ export default function App() {
     setRightPanelOpen(true)
   }, [])
 
-  const handleFocusBrowserAddress = useCallback(() => {
-    handleOpenBrowserTab()
-    setBrowserMenuCommand((prev) => ({ kind: 'focus-address', token: (prev?.token ?? 0) + 1 }))
-  }, [handleOpenBrowserTab])
-
-  const handleReloadBrowserPage = useCallback(() => {
-    handleOpenBrowserTab()
-    setBrowserMenuCommand((prev) => ({ kind: 'reload', token: (prev?.token ?? 0) + 1 }))
-  }, [handleOpenBrowserTab])
+  const dispatchBrowserMenu = useCallback(
+    (kind: BrowserMenuCommand['kind']) => {
+      handleOpenBrowserTab()
+      setBrowserMenuCommand((prev) => ({ kind, token: (prev?.token ?? 0) + 1 }))
+    },
+    [handleOpenBrowserTab]
+  )
 
   const handleToggleActivity = useCallback(() => {
     setPage('chat')
@@ -6727,11 +6725,31 @@ export default function App() {
         return
       }
       if (cmd.action === 'focus_browser_address') {
-        handleFocusBrowserAddress()
+        dispatchBrowserMenu('focus-address')
         return
       }
       if (cmd.action === 'reload_browser_page') {
-        handleReloadBrowserPage()
+        dispatchBrowserMenu('reload')
+        return
+      }
+      if (cmd.action === 'browser_back') {
+        dispatchBrowserMenu('back')
+        return
+      }
+      if (cmd.action === 'browser_forward') {
+        dispatchBrowserMenu('forward')
+        return
+      }
+      if (cmd.action === 'reload_browser_page_without_cache') {
+        dispatchBrowserMenu('reload-bypass-cache')
+        return
+      }
+      if (cmd.action === 'copy_browser_url') {
+        dispatchBrowserMenu('copy-url')
+        return
+      }
+      if (cmd.action === 'toggle_browser_comment_mode') {
+        dispatchBrowserMenu('toggle-annotate')
         return
       }
       if (cmd.action === 'next_attention') {
@@ -6836,11 +6854,10 @@ export default function App() {
       handleClearUnread,
       handleNavStep,
       handleNextAttention,
-      handleFocusBrowserAddress,
+      dispatchBrowserMenu,
       handleOpenBrowserTab,
       handleOpenTerminal,
       handlePlanModeChange,
-      handleReloadBrowserPage,
       handleRunEnvironmentAction,
       handleShortcutPanel,
       handleStandaloneConversation,
@@ -7347,11 +7364,11 @@ export default function App() {
         return
       }
       if (action === 'focus_browser_address') {
-        handleFocusBrowserAddress()
+        dispatchBrowserMenu('focus-address')
         return
       }
       if (action === 'reload_browser_page') {
-        handleReloadBrowserPage()
+        dispatchBrowserMenu('reload')
         return
       }
       if (action === 'find_in_thread') {
@@ -7398,10 +7415,9 @@ export default function App() {
     handleNavigate,
     handleNavStep,
     handleNewConversation,
-    handleFocusBrowserAddress,
+    dispatchBrowserMenu,
     handleOpenBrowserTab,
     handleOpenTerminal,
-    handleReloadBrowserPage,
     handleSelectConversation,
     openShareThread,
     copyConversationMarkdown,
