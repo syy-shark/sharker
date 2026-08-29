@@ -175,6 +175,8 @@ import {
   isLiveApprovalDeniedThinkAnswerCancelAppendChange,
   isLiveApprovalDeniedAnswerCancelAppendChange,
   isLiveApprovalDeniedAnswerDemoCancelAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoCancelAppendChange,
+  isLiveApprovalDeniedThinkErrorCancelAppendChange,
   isLiveApprovalDeniedErrorCancelAppendChange,
   isLiveApprovalDeniedAnswerDemoAppendChange,
   isLiveApprovalDeniedAnswerDemoCompressAppendChange,
@@ -183,6 +185,7 @@ import {
   isLiveApprovalAllowedSettleErrorCancelAppendChange,
   isLiveApprovalAllowedSettleThinkErrorCancelAppendChange,
   isLiveApprovalAllowedSettleAnswerDemoCancelAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoCancelAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoCompressAppendChange,
   isLiveApprovalAllowedSettleToolAppendChange,
   isLiveApprovalAllowedSettleThinkCancelAppendChange,
@@ -193,10 +196,14 @@ import {
   isLiveWriteStatApprovalResolvedThinkCompressAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerCancelAppendChange,
   isLiveWriteStatApprovalResolvedAnswerCancelAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedAnswerDemoCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkSettledToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedErrorCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorCompressAppendChange,
   isLiveWriteStatStatusApprovalResolvedToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedAskAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerCompressAppendChange,
@@ -253,6 +260,9 @@ import {
   isLiveAskResolvedAnswerCancelCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoCancelAppendChange,
+  isLiveAskResolvedThinkErrorCancelAppendChange,
+  isLiveAskResolvedErrorCancelAppendChange,
+  isLiveAskResolvedAnswerDemoCancelAppendChange,
   isLiveAskResolvedThinkToolAppendChange,
   isLiveAskResolvedAnswerDemoCompressAppendChange,
   isLiveAskResolvedSettledToolAppendChange,
@@ -3421,6 +3431,87 @@ describe('live stream ui snapshot', () => {
     ).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello], askResolveThinkDemoCancel)).toBe('tool')
     expect(nextLiveThinkText('Hmm', [hello], askResolveThinkDemoCancel)).toBe('HmmNext')
+    let askResolveThinkErrorCancel = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.736
+    })
+    askResolveThinkErrorCancel = applyStreamChunk(askResolveThinkErrorCancel, {
+      ...askNeeded,
+      timestamp: 71.737
+    })
+    askResolveThinkErrorCancel = applyStreamChunk(askResolveThinkErrorCancel, {
+      type: 'user_input_resolved',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.738
+    })
+    askResolveThinkErrorCancel = applyStreamChunk(askResolveThinkErrorCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 71.739
+    })
+    askResolveThinkErrorCancel = applyStreamChunk(askResolveThinkErrorCancel, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 71.741
+    })
+    askResolveThinkErrorCancel = applyStreamChunk(askResolveThinkErrorCancel, {
+      type: 'turn_cancelled',
+      timestamp: 71.742
+    })
+    expect(isLiveAskResolvedThinkErrorCancelAppendChange([hello], askResolveThinkErrorCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askResolveThinkErrorCancel)).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello], askResolveThinkErrorCancel)).toBe('HmmNext')
+    let askResolveErrorCancel = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.743
+    })
+    askResolveErrorCancel = applyStreamChunk(askResolveErrorCancel, { ...askNeeded, timestamp: 71.744 })
+    askResolveErrorCancel = applyStreamChunk(askResolveErrorCancel, {
+      type: 'user_input_resolved',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.745
+    })
+    askResolveErrorCancel = applyStreamChunk(askResolveErrorCancel, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 71.746
+    })
+    askResolveErrorCancel = applyStreamChunk(askResolveErrorCancel, {
+      type: 'turn_cancelled',
+      timestamp: 71.747
+    })
+    expect(isLiveAskResolvedErrorCancelAppendChange([hello], askResolveErrorCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askResolveErrorCancel)).toBe('text')
+    let askResolveDemoCancel = applyStreamChunk([hello], {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.748
+    })
+    askResolveDemoCancel = applyStreamChunk(askResolveDemoCancel, { ...askNeeded, timestamp: 71.749 })
+    askResolveDemoCancel = applyStreamChunk(askResolveDemoCancel, {
+      type: 'user_input_resolved',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 71.751
+    })
+    askResolveDemoCancel = applyStreamChunk(askResolveDemoCancel, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 71.752
+    })
+    askResolveDemoCancel = applyStreamChunk(askResolveDemoCancel, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 71.753
+    })
+    askResolveDemoCancel = applyStreamChunk(askResolveDemoCancel, {
+      type: 'turn_cancelled',
+      timestamp: 71.754
+    })
+    expect(isLiveAskResolvedAnswerDemoCancelAppendChange([hello], askResolveDemoCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], askResolveDemoCancel)).toBe('tool')
     let askHangResolveThinkDemoCompress = applyStreamChunk(askHangForResolve, {
       type: 'user_input_resolved',
       toolName: REQUEST_USER_INPUT_TOOL,
@@ -4227,6 +4318,14 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowDemo)).toBe('tool')
+    let approvalWriteAllowDemoCancel = applyStreamChunk(approvalWriteAllowDemo, {
+      type: 'turn_cancelled',
+      timestamp: 86.71
+    })
+    expect(
+      isLiveWriteStatApprovalResolvedAnswerDemoCancelAppendChange([hello, running], approvalWriteAllowDemoCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowDemoCancel)).toBe('tool')
     let approvalWriteAllowThinkCancel = applyStreamChunk([hello, running], {
       ...writeAskDone,
       timestamp: 86.8
@@ -4974,6 +5073,155 @@ describe('live stream ui snapshot', () => {
       )
     ).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusErrorCancel)).toBe(
+      'text'
+    )
+    let approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.981
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'status',
+      content: '规划下一步',
+      timestamp: 91.982
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.983
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      ...approvalHang,
+      timestamp: 91.984
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.985
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 91.986
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 91.987
+    })
+    approvalWriteAllowStatusThinkErrorCancel = applyStreamChunk(approvalWriteAllowStatusThinkErrorCancel, {
+      type: 'turn_cancelled',
+      timestamp: 91.988
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedThinkErrorCancelAppendChange(
+        [hello, running],
+        approvalWriteAllowStatusThinkErrorCancel
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusThinkErrorCancel)).toBe(
+      'text'
+    )
+    expect(nextLiveThinkText('Hmm', [hello, running], approvalWriteAllowStatusThinkErrorCancel)).toBe('HmmNext')
+    let approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.989
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 91.991
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.992
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      ...approvalHang,
+      timestamp: 91.993
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.994
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 91.995
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 91.996
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 91.997
+    })
+    approvalWriteAllowStatusThinkDemoCancel = applyStreamChunk(approvalWriteAllowStatusThinkDemoCancel, {
+      type: 'turn_cancelled',
+      timestamp: 91.998
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoCancelAppendChange(
+        [hello, running],
+        approvalWriteAllowStatusThinkDemoCancel
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusThinkDemoCancel)).toBe(
+      'tool'
+    )
+    let approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.9991
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'status',
+      content: '规划下一步',
+      timestamp: 91.9992
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.9993
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      ...approvalHang,
+      timestamp: 91.9994
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.9995
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 91.9996
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 91.9997
+    })
+    approvalWriteAllowStatusThinkErrorCompress = applyStreamChunk(approvalWriteAllowStatusThinkErrorCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 91.9998
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedThinkErrorCompressAppendChange(
+        [hello, running],
+        approvalWriteAllowStatusThinkErrorCompress
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusThinkErrorCompress)).toBe(
       'text'
     )
     let approvalReconnectAllowThinkToken = applyStreamChunk([hello], {
@@ -7237,6 +7485,43 @@ describe('live stream ui snapshot', () => {
       isLiveApprovalAllowedSettleAnswerDemoCancelAppendChange(awaitingLive, allowSettledDemoCancel)
     ).toBe(true)
     expect(shouldSkipLiveStreamDerivation(awaitingLive, allowSettledDemoCancel)).toBe('tool')
+    let allowSettledThinkDemoCancel = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 52.88706
+    })
+    allowSettledThinkDemoCancel = applyStreamChunk(allowSettledThinkDemoCancel, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'ok',
+      timestamp: 52.88707
+    })
+    allowSettledThinkDemoCancel = applyStreamChunk(allowSettledThinkDemoCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 52.88708
+    })
+    allowSettledThinkDemoCancel = applyStreamChunk(allowSettledThinkDemoCancel, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 52.88709
+    })
+    allowSettledThinkDemoCancel = applyStreamChunk(allowSettledThinkDemoCancel, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 52.88711
+    })
+    allowSettledThinkDemoCancel = applyStreamChunk(allowSettledThinkDemoCancel, {
+      type: 'turn_cancelled',
+      timestamp: 52.88712
+    })
+    expect(
+      isLiveApprovalAllowedSettleThinkAnswerDemoCancelAppendChange(awaitingLive, allowSettledThinkDemoCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowSettledThinkDemoCancel)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', awaitingLive, allowSettledThinkDemoCancel)).toBe('HmmNext')
     let allowSettledNext = applyStreamChunk(awaitingLive, {
       type: 'approval_resolved',
       toolName: 'run_terminal_cmd',
@@ -7596,6 +7881,75 @@ describe('live stream ui snapshot', () => {
     })
     expect(isLiveApprovalDeniedAnswerDemoCancelAppendChange(awaitingLive, denySettledDemoCancel)).toBe(true)
     expect(shouldSkipLiveStreamDerivation(awaitingLive, denySettledDemoCancel)).toBe('tool')
+    let denySettledThinkDemoCancel = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: false,
+      timestamp: 52.93791
+    })
+    denySettledThinkDemoCancel = applyStreamChunk(denySettledThinkDemoCancel, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolStatus: 'error',
+      resultSummary: 'denied',
+      timestamp: 52.93792
+    })
+    denySettledThinkDemoCancel = applyStreamChunk(denySettledThinkDemoCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 52.93793
+    })
+    denySettledThinkDemoCancel = applyStreamChunk(denySettledThinkDemoCancel, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 52.93794
+    })
+    denySettledThinkDemoCancel = applyStreamChunk(denySettledThinkDemoCancel, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 52.93795
+    })
+    denySettledThinkDemoCancel = applyStreamChunk(denySettledThinkDemoCancel, {
+      type: 'turn_cancelled',
+      timestamp: 52.93796
+    })
+    expect(
+      isLiveApprovalDeniedThinkAnswerDemoCancelAppendChange(awaitingLive, denySettledThinkDemoCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denySettledThinkDemoCancel)).toBe('tool')
+    let denySettledThinkErrorCancel = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: false,
+      timestamp: 52.93797
+    })
+    denySettledThinkErrorCancel = applyStreamChunk(denySettledThinkErrorCancel, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolStatus: 'error',
+      resultSummary: 'denied',
+      timestamp: 52.93798
+    })
+    denySettledThinkErrorCancel = applyStreamChunk(denySettledThinkErrorCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 52.93799
+    })
+    denySettledThinkErrorCancel = applyStreamChunk(denySettledThinkErrorCancel, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 52.938
+    })
+    denySettledThinkErrorCancel = applyStreamChunk(denySettledThinkErrorCancel, {
+      type: 'turn_cancelled',
+      timestamp: 52.938001
+    })
+    expect(
+      isLiveApprovalDeniedThinkErrorCancelAppendChange(awaitingLive, denySettledThinkErrorCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denySettledThinkErrorCancel)).toBe('text')
+    expect(nextLiveThinkText('Hmm', awaitingLive, denySettledThinkErrorCancel)).toBe('HmmNext')
     let denySettledErrorCancel = applyStreamChunk(awaitingWithHello, {
       type: 'approval_resolved',
       toolName: 'run_terminal_cmd',

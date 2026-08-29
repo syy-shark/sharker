@@ -1123,6 +1123,64 @@ describe('process phases privacy', () => {
     )
     expect(afterWriteAllowStatusErrorCancel).not.toBeNull()
     expect(afterWriteAllowStatusErrorCancel!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterWriteAllowDemoCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, runningCmdAfterAllowCancelled, awaitingDone, reconnectDemoFenceCancelled, reconnectDemoCancelled],
+      true
+    )
+    expect(afterWriteAllowDemoCancel).not.toBeNull()
+    expect(afterWriteAllowDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(false)
+    const afterWriteAllowStatusThinkErrorCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [
+        cmdDoneDiff,
+        reconnectApprovalStatus,
+        runningCmdAfterAllowCancelled,
+        awaitingDone,
+        nextThinkCancelledReconnect,
+        denyErrorText
+      ],
+      true
+    )
+    expect(afterWriteAllowStatusThinkErrorCancel).not.toBeNull()
+    expect(afterWriteAllowStatusThinkErrorCancel!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterWriteAllowStatusThinkDemoCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [
+        cmdDoneDiff,
+        reconnectApprovalStatus,
+        runningCmdAfterAllowCancelled,
+        awaitingDone,
+        nextThink,
+        reconnectDemoFenceCancelled,
+        reconnectDemoCancelled
+      ],
+      true
+    )
+    expect(afterWriteAllowStatusThinkDemoCancel).not.toBeNull()
+    expect(afterWriteAllowStatusThinkDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(
+      false
+    )
+    const afterWriteAllowStatusThinkErrorCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [
+        cmdDoneDiff,
+        reconnectApprovalStatus,
+        runningCmdAfterAllow,
+        awaitingDone,
+        nextThink,
+        denyErrorText,
+        approvalCompressDone
+      ],
+      true
+    )
+    expect(afterWriteAllowStatusThinkErrorCompress).not.toBeNull()
+    expect(afterWriteAllowStatusThinkErrorCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    expect(afterWriteAllowStatusThinkErrorCompress!.some((step) => step.segment === denyErrorText)).toBe(false)
     const afterDeniedDemoCancel = appendProcessPhaseStepOnToolStart(
       afterApproval!,
       [cmdAwaiting, awaitingStatus],
@@ -1314,6 +1372,32 @@ describe('process phases privacy', () => {
     expect(afterAllowedSettleDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(
       false
     )
+    const afterAllowedSettleThinkDemoCancel = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextThink, reconnectDemoFenceCancelled, reconnectDemoCancelled],
+      true
+    )
+    expect(afterAllowedSettleThinkDemoCancel).not.toBeNull()
+    expect(afterAllowedSettleThinkDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(
+      false
+    )
+    const afterDeniedThinkDemoCancel = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThink, reconnectDemoFenceCancelled, reconnectDemoCancelled],
+      true
+    )
+    expect(afterDeniedThinkDemoCancel).not.toBeNull()
+    expect(afterDeniedThinkDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(false)
+    const afterDeniedThinkErrorCancel = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThinkCancelledReconnect, denyErrorText],
+      true
+    )
+    expect(afterDeniedThinkErrorCancel).not.toBeNull()
+    expect(afterDeniedThinkErrorCancel!.some((step) => step.segment === denyErrorText)).toBe(false)
     const afterAllowedThinkSettled = appendProcessPhaseStepOnToolStart(
       afterApproval!,
       [cmdAwaiting, awaitingStatus],
@@ -1704,6 +1788,30 @@ describe('process phases privacy', () => {
       false
     )
     expect(afterAskResolveThinkDemoCancel!.some((step) => step.segment === askReadyCancelled)).toBe(true)
+    const afterAskResolveThinkErrorCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusDoneForHang, nextThinkCancelledAskResolve, denyErrorText],
+      true
+    )
+    expect(afterAskResolveThinkErrorCancel).not.toBeNull()
+    expect(afterAskResolveThinkErrorCancel!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterAskResolveErrorCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusDoneForHang, denyErrorText],
+      true
+    )
+    expect(afterAskResolveErrorCancel).not.toBeNull()
+    expect(afterAskResolveErrorCancel!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterAskResolveDemoCancel = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, askReadyCancelled, askStatusDoneForHang, reconnectDemoFenceCancelled, reconnectDemoCancelled],
+      true
+    )
+    expect(afterAskResolveDemoCancel).not.toBeNull()
+    expect(afterAskResolveDemoCancel!.some((step) => step.segment === reconnectDemoFenceCancelled)).toBe(false)
     const afterAskResolveNext = appendProcessPhaseStepOnToolStart(
       helloAskHangSteps,
       [helloAskHang],
