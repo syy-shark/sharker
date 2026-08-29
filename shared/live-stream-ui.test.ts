@@ -168,20 +168,21 @@ describe('live stream ui snapshot', () => {
     expect(a2.tail?.type).toBe('text')
     const grownPrefix = [tool]
     const grownTail = text('Hello world')
-    expect(liveAnswerGrowState([...grownPrefix, grownTail]).tail?.id).toBe('a1')
+    const grownSegs = [...grownPrefix, grownTail]
+    expect(liveAnswerGrowState(grownSegs).tail?.id).toBe('a1')
     expect(
       shouldGrowLiveAnswerTail({
         prev: a1,
-        prevPrefix: grownPrefix,
-        prefix: grownPrefix,
+        prevSegments: grownSegs,
+        segments: grownSegs,
         tail: grownTail
       })
     ).toBe(true)
     expect(
       shouldGrowLiveAnswerTail({
         prev: a1,
-        prevPrefix: grownPrefix,
-        prefix: grownPrefix,
+        prevSegments: grownSegs,
+        segments: grownSegs,
         tail: {
           id: 'a1',
           kind: 'text',

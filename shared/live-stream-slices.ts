@@ -49,7 +49,7 @@ export interface LiveAnswerActions {
 let answerCache: { snap: LiveStreamUiSnapshot; view: LiveAnswerView } | null = null
 let answerGrowHold: {
   view: LiveAnswerView
-  prefix: readonly TurnSegment[]
+  segments: readonly TurnSegment[]
   tailPlain: boolean
 } | null = null
 let processHold: {
@@ -223,41 +223,42 @@ export function nextLiveProcessView(
   return view
 }
 
-/** 末段是增长中的回答正文时，前面的片段是可复用前缀 */
+/** 末段是增长中的回答正文时可以只换 tail，不必切出前缀数组 */
 export function liveAnswerGrowState(
   segments: readonly TurnSegment[],
   prevTail?: { content: string; plain: boolean }
-): {
-  prefix: readonly TurnSegment[]
-  tail: TurnSegment | null
-} {
+): { tail: TurnSegment | null } {
   const tail = segments[segments.length - 1]
   if (!tail || tail.kind !== 'text' || !tail.content?.trim()) {
-    return { prefix: segments, tail: null }
+    return { tail: null }
   }
   const hasFence =
     prevTail?.plain === true
       ? hasStreamingDemoFenceGrowth(prevTail.content, tail.content)
       : hasStreamingDemoFence(tail.content)
-  if (hasFence) return { prefix: segments, tail: null }
-  return { prefix: segments.slice(0, -1), tail }
+  if (hasFence) return { tail: null }
+  return { tail }
 }
 
 /**
  * 前缀引用没变且尾仍是同一段正文：只换 tail，不重跑 buildAnswerParts。
- * 出现 ```demo 或新工具时走全量拆栏（对标 Codex #22860）。
+ * 就地比 all-but-last，不 `slice`（对标 Codex #22860）。
  */
 export function shouldGrowLiveAnswerTail(input: {
   prev: LiveAnswerView | null
-  prevPrefix: readonly TurnSegment[] | null
-  prefix: readonly TurnSegment[]
+  prevSegments: readonly TurnSegment[] | null
+  segments: readonly TurnSegment[]
   tail: TurnSegment | null
 }): boolean {
   if (!input.prev?.tail || input.prev.tail.type !== 'text' || !input.tail) return false
   if (input.tail.kind !== 'text' || input.tail.id !== input.prev.tail.id) return false
   if (hasStreamingDemoFenceGrowth(input.prev.tail.content, input.tail.content ?? '')) return false
-  if (!input.prevPrefix || input.prevPrefix.length !== input.prefix.length) return false
-  return input.prevPrefix.every((segment, index) => segment === input.prefix[index])
+  if (!input.prevSegments || input.prevSegments.length !== input.segments.length) return false
+  const last = input.segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (input.prevSegments[i] !== input.segments[i]) return false
+  }
+  return true
 }
 
 function copyableFromAnswerParts(parts: readonly AnswerPart[]): string {
@@ -273,7 +274,7 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   if (prev.tail?.type === 'text' && prev.tail.content === content) return prev
   const tailPart: AnswerPart = { type: 'text', id: tail.id, content }
   const parts = prev.closed.length ? [...prev.closed, tailPart] : [tailPart]
-  const copyable = copyableFromAnswerParts(parts)
+  const copyable = prev.closed.length ? copyableFromAnswerParts(parts) : content.trim()
   return {
     parts,
     closed: prev.closed,
@@ -297,10 +298,10 @@ export function nextLiveAnswerView(
       ? { content: prevTextTail.content, plain: answerGrowHold.tailPlain }
       : undefined
   )
-  const prevPrefix = answerGrowHold?.view === prev ? answerGrowHold.prefix : null
-  if (prev && shouldGrowLiveAnswerTail({ prev, prevPrefix, prefix: grow.prefix, tail: grow.tail })) {
+  const prevSegments = answerGrowHold?.view === prev ? answerGrowHold.segments : null
+  if (prev && shouldGrowLiveAnswerTail({ prev, prevSegments, segments, tail: grow.tail })) {
     const view = growLiveAnswerView(prev, grow.tail!)
-    answerGrowHold = { view, prefix: grow.prefix, tailPlain: true }
+    answerGrowHold = { view, segments, tailPlain: true }
     return view
   }
   const parts = reuseAnswerParts(
@@ -331,7 +332,7 @@ export function nextLiveAnswerView(
       : next
   answerGrowHold = {
     view,
-    prefix: grow.tail ? grow.prefix : segments,
+    segments,
     tailPlain: Boolean(grow.tail)
   }
   return view
