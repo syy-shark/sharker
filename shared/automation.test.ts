@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyScheduledTaskAction,
   defaultAutomationThreadId,
   normalizeAutomationJob,
   normalizeAutomationJobs,
   parseAutomationDestination,
-  resolveAutomationRunPlan
+  parseAutomationRunIn,
+  resolveAutomationRunPlan,
+  shouldPrepareAutomationWorktree
 } from './automation'
 
 describe('automation destination', () => {
@@ -62,5 +65,30 @@ describe('automation destination', () => {
       conversationExists: true,
       conversationBusy: false
     })).toEqual({ mode: 'new' })
+    expect(parseAutomationRunIn(undefined)).toBe('worktree')
+    expect(parseAutomationRunIn('local')).toBe('local')
+    expect(shouldPrepareAutomationWorktree({ runMode: 'new', runIn: 'worktree' })).toBe(true)
+    expect(shouldPrepareAutomationWorktree({ runMode: 'new', runIn: 'local' })).toBe(false)
+    expect(shouldPrepareAutomationWorktree({ runMode: 'thread', runIn: 'worktree' })).toBe(false)
+    const created = applyScheduledTaskAction([], {
+      op: 'create',
+      id: 'job-1',
+      title: '跟进部署',
+      prompt: '检查部署',
+      cron: '*/15 * * * *',
+      destination: 'thread',
+      runIn: 'local'
+    }, { currentConversationId: 'conv-1' })
+    expect(created.changed).toBe(true)
+    expect(created.jobs[0]).toMatchObject({
+      id: 'job-1',
+      destination: 'thread',
+      conversationId: 'conv-1',
+      runIn: 'local'
+    })
+    expect(
+      applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
+    ).toBe(false)
+    expect(applyScheduledTaskAction(created.jobs, { op: 'list' }).changed).toBe(false)
   })
 })

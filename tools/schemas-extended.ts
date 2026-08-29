@@ -242,6 +242,32 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'manage_scheduled_task',
+      description:
+        'Create, update, list, pause, resume, or delete a desktop scheduled task. Use when the user asks to schedule recurring work, return to this chat on a cadence, or change an existing scheduled task. Cron is 5 fields (min hour day month weekday). destination=thread returns to the current or named chat; destination=new starts a new chat. run_in=worktree isolates Git changes; run_in=local edits the project checkout.',
+      parameters: {
+        type: 'object',
+        properties: {
+          op: {
+            type: 'string',
+            enum: ['create', 'update', 'list', 'pause', 'resume', 'delete']
+          },
+          id: { type: 'string', description: 'Existing task id (required except create/list)' },
+          title: { type: 'string' },
+          prompt: { type: 'string' },
+          cron: { type: 'string', description: 'Five-field cron, e.g. 0 9 * * 1' },
+          destination: { type: 'string', enum: ['new', 'thread'] },
+          conversationId: { type: 'string' },
+          run_in: { type: 'string', enum: ['worktree', 'local'] },
+          enabled: { type: 'boolean' }
+        },
+        required: ['op']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'run_background_shell',
       description: 'Run shell in background, returns task_id',
       parameters: {

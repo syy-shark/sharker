@@ -6,6 +6,7 @@ import type { ConversationSummary } from '../../shared/conversation'
 import {
   defaultAutomationThreadId,
   parseAutomationDestination,
+  parseAutomationRunIn,
   type AutomationJob
 } from '../../shared/automation'
 import {
@@ -91,7 +92,8 @@ export function AutomationsPage({
       prompt: '每天总结工作区变更',
       cron: '0 9 * * *',
       enabled: true,
-      destination: 'new'
+      destination: 'new',
+      runIn: 'worktree'
     }
     await save([...jobsRef.current, job])
     return job.id
@@ -271,6 +273,23 @@ export function AutomationsPage({
                     <option value="thread">回到指定对话</option>
                   </select>
                 </label>
+
+                {parseAutomationDestination(j.destination) === 'new' ? (
+                  <label className="automation-field">
+                    <span>环境</span>
+                    <select
+                      value={parseAutomationRunIn(j.runIn)}
+                      onChange={(e) => {
+                        updateJob(j.id, { runIn: parseAutomationRunIn(e.target.value) })
+                        persistCurrent()
+                      }}
+                      aria-label="运行环境"
+                    >
+                      <option value="worktree">隔离 worktree</option>
+                      <option value="local">本地项目</option>
+                    </select>
+                  </label>
+                ) : null}
 
                 {parseAutomationDestination(j.destination) === 'thread' ? (
                   <label className="automation-field">

@@ -44,6 +44,7 @@ const TOOL_TITLES: Record<string, string> = {
   task_list: '列出任务',
   task_output: '任务输出',
   task_stop: '停止任务',
+  manage_scheduled_task: '定时任务',
   run_background_shell: '后台 Shell',
   shell_read_output: '读 Shell 输出',
   shell_kill: '终止 Shell',

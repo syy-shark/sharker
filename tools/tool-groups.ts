@@ -62,6 +62,7 @@ export const WRITE_TOOL_NAMES = new Set([
   'task_create',
   'task_update',
   'task_stop',
+  'manage_scheduled_task',
   'shell_send_input',
   'shell_kill',
   'agent_spawn',

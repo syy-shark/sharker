@@ -122,7 +122,11 @@ import {
   unreadQueueCount
 } from '../shared/automation-queue'
 import type { AutomationQueueItem, QueueTriageAction } from '../shared/automation-queue'
-import { resolveAutomationRunPlan, type AutomationJob } from '../shared/automation'
+import {
+  resolveAutomationRunPlan,
+  shouldPrepareAutomationWorktree,
+  type AutomationJob
+} from '../shared/automation'
 import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
@@ -1604,7 +1608,11 @@ export default function App() {
         const conv = await window.sharker.createConversation(wsId)
         const cwd = getActiveWorkspacePath(settingsRef.current)
         let workspacePath = cwd || undefined
-        if (cwd && window.sharker.prepareWorktree) {
+        if (
+          shouldPrepareAutomationWorktree({ runMode: 'new', runIn: j.runIn }) &&
+          cwd &&
+          window.sharker.prepareWorktree
+        ) {
           saveThreadRuntime(conv.id, { mode: 'worktree' })
           const prepared = await window.sharker.prepareWorktree(cwd, conv.id, {
             keep: settingsRef.current.worktreeKeepCount
@@ -1616,6 +1624,8 @@ export default function App() {
             saveThreadRuntime(conv.id, { mode: 'local' })
             console.warn('[automation] worktree fallback', prepared.error)
           }
+        } else {
+          saveThreadRuntime(conv.id, { mode: 'local' })
         }
         await recordInbox(conv.id, wsId, workspacePath)
         void refreshConversationList(wsId)

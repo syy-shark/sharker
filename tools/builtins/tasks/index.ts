@@ -12,6 +12,7 @@ import {
 } from '../../services/task-manager'
 import { assertAccess, ok, toolCwd } from '../../context'
 import type { ToolHandler } from '../../types'
+import { manageScheduledTaskTool } from './scheduled'
 
 export const taskCreateTool: ToolHandler = {
   name: 'task_create',
@@ -105,5 +106,6 @@ export const taskTools: ToolHandler[] = [
   taskGetTool,
   taskListTool,
   taskOutputTool,
-  taskStopTool
+  taskStopTool,
+  manageScheduledTaskTool
 ]

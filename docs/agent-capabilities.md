@@ -90,7 +90,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 自动化审查队列
 
-定时任务可选择 **每次新对话**（默认，优先隔离 Git worktree）或 **回到指定对话** 沿用上下文（对标 Codex Scheduled：return to the current chat / start a new chat）。目标对话不在了则回退新建；目标对话正在直播时只把提示词排进该会话队列，不中止、不抢当前镜头。结果进入侧栏 **审查队列**（未读徽标）。可 **接受**（只暂存并提交该任务改过的文件，再尝试推送；若当前分支还没有 PR 则 `gh pr create`。推送/开 PR 失败不回滚提交，可在审查面板重试）、**修订**（打开线程继续改）、**拒绝**（只还原该任务改过的文件并归档）。没有记录到路径时不碰工作区其它脏文件。不打断当前线程。对标 Codex Triage。
+定时任务可选择 **每次新对话**（默认；环境可选隔离 Git worktree 或本地项目）或 **回到指定对话** 沿用上下文（对标 Codex Scheduled：return to the current chat / start a new chat，以及 worktree vs local environment）。目标对话不在了则回退新建；目标对话正在直播时只把提示词排进该会话队列，不中止、不抢当前镜头。也可在对话里让模型调用 `manage_scheduled_task` 创建或改任务（对标 Ask ChatGPT to create or update scheduled tasks）。结果进入侧栏 **审查队列**（未读徽标）。可 **接受**（只暂存并提交该任务改过的文件，再尝试推送；若当前分支还没有 PR 则 `gh pr create`。推送/开 PR 失败不回滚提交，可在审查面板重试）、**修订**（打开线程继续改）、**拒绝**（只还原该任务改过的文件并归档）。没有记录到路径时不碰工作区其它脏文件。不打断当前线程。对标 Codex Triage。
 
 `/review` 结束时会解析 `review-findings` 围栏，把发现挂到审查 diff 对应行上（与人手评论一起发送）。
 
@@ -172,7 +172,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### Git / Tasks / Sub-agents
 
-见 `tools/ARCH.md` 完整列表。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥⇧U` / `/agents`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。主线程时间线里的启动子 Agent / 转向 / 取结果步骤可点 **打开**，选中对应孩子（对标 Codex「Open a subagent thread from the activity shown in the main thread」）。快照落 `~/.sharker/subagents.json`，重启后仍能查看已结束的孩子；启动时仍在跑的标为「应用重启后中断」。
+见 `tools/ARCH.md` 完整列表。`manage_scheduled_task` 在对话里创建或改定时任务（对标 Codex Ask ChatGPT to create or update scheduled tasks）。`agent_spawn` 会按**父线程**归组，不进侧栏对话列表（对标 Codex 不把 child 当顶层会话）。右侧 **活动** 面板（`⌘⌥⇧U` / `/agents`）可看进行中/已结束、直播正文、停止与转向。启动子 Agent 时自动打开该面板。主线程时间线里的启动子 Agent / 转向 / 取结果步骤可点 **打开**，选中对应孩子（对标 Codex「Open a subagent thread from the activity shown in the main thread」）。快照落 `~/.sharker/subagents.json`，重启后仍能查看已结束的孩子；启动时仍在跑的标为「应用重启后中断」。
 
 ### 子 Agent 活动
 
