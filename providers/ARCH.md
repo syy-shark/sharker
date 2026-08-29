@@ -4,7 +4,7 @@
 
 - OpenAI 兼容 **Chat Completions** 流式调用
 - 工具调用（tools + 失败时无 tools 重试）
-- 连接/首包超时、URL 规范化、设置页测试连接与拉模型列表
+- 连接/首包超时、短暂中断最多重连 5 次（直播「正在重新连接… n/5」）、URL 规范化、设置页测试连接与拉模型列表
 - **不管**：Turn 调度、工具执行、UI
 
 ## 同级目录
@@ -15,13 +15,13 @@
 
 | 文件 | 说明 |
 |------|------|
-| `openai.ts` | OpenAI 兼容流式；读 SSE 时响应 AbortSignal，Stop 立即打断；`listProviderModels` 会按预设剔除 Chat Completions 调不了的 id；写入/补丁参数流抽出 `partialToolArgs`（`extractPartialWriteToolArgs`），首个 path 立刻推 `tool_status`，之后约 500ms / 240 字符对齐 Codex PatchApplyUpdated |
+| `openai.ts` | OpenAI 兼容流式；读 SSE 时响应 AbortSignal，Stop 立即打断；首包前 429/5xx/网络抖动经 `retryTransientStreamChat` 最多重连 5 次并推 status（对标 Codex #37337）；`listProviderModels` 会按预设剔除 Chat Completions 调不了的 id；写入/补丁参数流抽出 `partialToolArgs`（`extractPartialWriteToolArgs`），首个 path 立刻推 `tool_status`，之后约 500ms / 240 字符对齐 Codex PatchApplyUpdated |
 | `openai.test.ts` | 未闭合 write / replace / patch JSON 抽出 path 与内容片段，不把读文件当写入 |
 | `ARCH.md` | 本层架构说明 |
 
 ## 对外接口
 
-- `streamChat(settings, messages, signal?, options?)` — 异步生成 delta / reasoning / tool_calls
+- `streamChat(settings, messages, signal?, options?)` — 异步生成 delta / reasoning / tool_calls / status（重连）
 - `simpleCompletion` — 非流式（标题、压缩）
 - `testProviderConfig(provider)` — 设置里「测试」
 - `listProviderModels(provider)` — `GET …/models`

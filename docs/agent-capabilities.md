@@ -267,6 +267,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 工作区快照 | 干活前注入 README、package.json、顶层目录 |
 | 网络模式 | open / local_only / disabled |
 | 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示「正在自动压缩上下文…」（对标 Codex Automatically compacting context），摘要完成再挂压缩步骤 |
+| 短暂中断重连 | 首包前 429/502/503/504 与网络抖动最多重连 5 次，直播行显示「正在重新连接… n/5」（对标 Codex #37337 Turns reconnect）；已吐出正文 / 思考 / 工具参数后不重开，以免重复 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |
 | 续跑提醒 | 对可执行任务，若模型停在启动服务器/打开/检查等中间话术但没有工具调用，会继续 nudging 直到完成或遇到真实阻塞 |
@@ -291,6 +292,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Read Aloud / Kokoro | **deferred** | 可选 install-kokoro-runtime.sh |
 | Chrome 扩展 + native host | **deferred** | 可选 scripts/setup-browser-use.sh |
 | Remote Control / Mobile | **deferred** | 需 Secure Enclave 替代 + app-server 守护 |
+| Turns reconnect | **partial** | 首包前短暂中断最多 5 次并显示「正在重新连接… n/5」（对标 Codex #37337）；通用 Chat Completions 无 event cursor，已流出 token 后不重开同一流 |
 | 编辑快照/撤销 | **missing** | 路线图 |
 | `.sharker/AGENTS.md` | **done** | 全局 `~/.sharker` + 根到 cwd；`/init` 脚手架；override 优先 |
 

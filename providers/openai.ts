@@ -1,5 +1,5 @@
 /**
- * OpenAI 兼容 Chat Completions 客户端：流式输出、工具调用、超时与降级重试。
+ * OpenAI 兼容 Chat Completions 客户端：流式输出、工具调用、超时与短暂中断重连。
  * @see providers/ARCH.md
  */
 import type { AppSettings, ProviderConfig } from '../shared/types'
@@ -9,6 +9,7 @@ import { inferProviderVision } from '../shared/provider-vision'
 import { buildThinkingRequestFields } from '../shared/thinking-levels'
 import { filterListedModels } from '../shared/provider-catalog'
 import { toolTitle } from '../shared/process-steps'
+import { retryTransientStreamChat } from '../shared/stream-reconnect'
 
 /** OpenAI Chat Completions 多模态 content 片段 */
 export type ChatCompletionContentPart =
@@ -42,7 +43,7 @@ export interface ToolCallStatus {
 }
 
 type StreamChatChunk = {
-  type: 'delta' | 'reasoning' | 'tool_calls' | 'tool_status' | 'done'
+  type: 'delta' | 'reasoning' | 'tool_calls' | 'tool_status' | 'status' | 'done'
   content?: string
   toolCalls?: ChatCompletionMessage['tool_calls']
   toolStatus?: ToolCallStatus
@@ -873,7 +874,7 @@ async function* streamChatAttempt(
   }
 }
 
-/** 流式对话入口：优先带 tools 请求，超时后可降级为无工具重试 */
+/** 流式对话入口：优先带 tools；首包前短暂中断最多重连 5 次（对标 Codex #37337） */
 export async function* streamChat(
   settings: AppSettings,
   messages: ChatCompletionMessage[],
@@ -882,12 +883,10 @@ export async function* streamChat(
 ): AsyncGenerator<StreamChatChunk> {
   const preferTools = options?.preferTools !== false
   const tools = options?.toolDefinitions ?? getToolDefinitionsForPhase()
-
-  try {
-    yield* streamChatAttempt(settings, messages, signal, preferTools, tools)
-  } catch (e) {
-    throw e instanceof Error ? e : new Error(String(e))
-  }
+  yield* retryTransientStreamChat(
+    () => streamChatAttempt(settings, messages, signal, preferTools, tools),
+    signal
+  )
 }
 
 /** 非流式单次补全（用于标题生成等轻量任务） */

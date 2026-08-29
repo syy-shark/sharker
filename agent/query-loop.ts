@@ -466,6 +466,9 @@ export async function* queryLoop(
       preferTools,
       toolDefinitions: toolDefs
     })) {
+      if (chunk.type === 'status' && chunk.content) {
+        yield { type: 'status', content: chunk.content }
+      }
       if (chunk.type === 'reasoning' && chunk.content) {
         yield { type: 'think', content: chunk.content }
       }
@@ -605,6 +608,9 @@ export async function* queryLoop(
           if (signal?.aborted) {
             yield { type: 'done' }
             return
+          }
+          if (chunk.type === 'status' && chunk.content) {
+            yield { type: 'status', content: chunk.content }
           }
           if (chunk.type === 'reasoning' && chunk.content) {
             yield { type: 'think', content: chunk.content }
@@ -984,6 +990,9 @@ export async function* queryLoop(
     if (signal?.aborted) {
       yield { type: 'done' }
       return
+    }
+    if (chunk.type === 'status' && chunk.content) {
+      yield { type: 'status', content: chunk.content }
     }
     if (chunk.type === 'reasoning' && chunk.content) {
       yield { type: 'think', content: chunk.content }

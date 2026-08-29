@@ -10,6 +10,7 @@ import {
   liveCompactStatusSegment
 } from './live-stream-ui'
 import { AUTO_COMPACT_LIVE_STATUS } from './context-compress'
+import { streamReconnectLiveStatus } from './stream-reconnect'
 import {
   nextLiveAnswerActions,
   nextLiveAnswerView,
@@ -238,5 +239,10 @@ describe('live stream ui snapshot', () => {
     expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, autoCompact)).processForFlow[0]?.kind).toBe(
       'status'
     )
+    const reconnectPatch = liveStreamPatchFromSegments(
+      [{ id: 're', kind: 'status', content: streamReconnectLiveStatus(2), status: 'active', startedAt: 4 }],
+      { streaming: '', activeTool: null, turnStartedAt: 4 }
+    )
+    expect(reconnectPatch.liveSegments?.[0]?.content).toBe('正在重新连接… 2/5')
   })
 })

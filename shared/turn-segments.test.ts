@@ -103,6 +103,14 @@ describe('turn segment event state machine', () => {
     })
     expect(compacting[0]?.content).toBe('正在自动压缩上下文…')
     expect(compacting[0]?.status).toBe('active')
+    let reconnecting = applyStreamChunk([], { type: 'turn_start', timestamp: 1 })
+    reconnecting = applyStreamChunk(reconnecting, {
+      type: 'status',
+      content: '正在重新连接… 1/5',
+      timestamp: 2
+    })
+    expect(reconnecting[0]?.content).toBe('正在重新连接… 1/5')
+    expect(reconnecting[0]?.status).toBe('active')
     compacting = applyStreamChunk(compacting, {
       type: 'context_compress',
       timestamp: 3,
