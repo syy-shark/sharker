@@ -9,7 +9,9 @@ import {
 } from './review-diff-search'
 import {
   escapeLikePattern,
+  appendLiveFindHits,
   findAllOccurrences,
+  findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
   locateFlatRange,
@@ -86,6 +88,15 @@ describe('thread search', () => {
     expect(findHitNeedsHistory(disk[0], ['tail'])).toBe(true)
     expect(findHitNeedsHistory(memory[0], ['tail'])).toBe(false)
     expect(resolveFindHitIndex(mergeThreadSearchHits(memory, disk), memory[0], 0)).toBe(1)
+    const historical = findInThread([{ id: 'old', content: 'review old', seq: 2 }], 'review')
+    const liveEmpty: typeof historical = []
+    const liveHit = findInThread([{ id: 'live', content: 'review now', seq: 41 }], 'review')
+    expect(appendLiveFindHits(historical, liveEmpty)).toBe(historical)
+    expect(appendLiveFindHits(historical, liveHit).map((h) => h.messageId)).toEqual([
+      'old',
+      'live'
+    ])
+    expect([...findHitMessageIds(historical)]).toEqual(['old'])
   })
 
   it('returns nothing for empty query', () => {

@@ -2,6 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
+ * 查找把直播命中与历史命中拆开，token 不重挂历史气泡（对标 Codex #33907）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -87,6 +88,8 @@ import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import {
+  appendLiveFindHits,
+  findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
   mergeThreadSearchHits,
@@ -834,30 +837,47 @@ export function ChatView({
 
   const liveRowId = liveRowMessageId(liveAssistantId)
 
-  const memoryFindHits = useMemo(() => {
+  const historicalMemoryFindHits = useMemo(() => {
     if (!findQuery.trim()) return EMPTY_FIND_HITS
     const rows: { id: string; content: string; seq: number }[] = []
     if (historyHead?.length) {
       for (let i = 0; i < historyHead.length; i++) {
         const m = historyHead[i]
+        if (m.id === liveRowId) continue
         rows.push({ id: m.id, content: m.content, seq: historyHeadStartSeq + i })
       }
     }
     const start = historyStartSeq
     for (let i = 0; i < messages.length; i++) {
       const m = messages[i]
+      if (m.id === liveRowId) continue
       rows.push({ id: m.id, content: m.content, seq: start + i })
     }
-    if (streaming.trim()) {
-      rows.push({ id: liveRowId, content: streaming, seq: start + messages.length })
-    }
     return findInThread(rows, findQuery)
-  }, [historyHead, historyHeadStartSeq, historyStartSeq, liveRowId, messages, findQuery, streaming])
+  }, [historyHead, historyHeadStartSeq, historyStartSeq, liveRowId, messages, findQuery])
+
+  const liveMemoryFindHits = useMemo(() => {
+    if (!findQuery.trim() || !streaming.trim()) return EMPTY_FIND_HITS
+    return findInThread(
+      [{ id: liveRowId, content: streaming, seq: historyStartSeq + messages.length }],
+      findQuery
+    )
+  }, [findQuery, historyStartSeq, liveRowId, messages.length, streaming])
+
+  const memoryFindHits = useMemo(
+    () => appendLiveFindHits(historicalMemoryFindHits, liveMemoryFindHits),
+    [historicalMemoryFindHits, liveMemoryFindHits]
+  )
 
   const findHits = useMemo(
     () => mergeThreadSearchHits(memoryFindHits, diskFindHits),
     [memoryFindHits, diskFindHits]
   )
+  const historicalFindIds = useMemo(
+    () => findHitMessageIds(historicalMemoryFindHits),
+    [historicalMemoryFindHits]
+  )
+  const currentFindMessageId = findHits[findHit]?.messageId
 
   useEffect(() => {
     setFindHit(0)
@@ -1684,8 +1704,8 @@ export function ChatView({
             id={m.id}
             content={m.content}
             attachments={m.attachments}
-            findHit={findHits.some((h) => h.messageId === m.id)}
-            findCurrent={findHits[findHit]?.messageId === m.id}
+            findHit={historicalFindIds.has(m.id)}
+            findCurrent={currentFindMessageId === m.id}
             nearLive={nearLive}
             intrinsicHeight={resolveRowIntrinsicHeight(
               intrinsicHeights.get(m.id),
@@ -1702,8 +1722,8 @@ export function ChatView({
             id={`msg-${m.id}`}
             className={`message-row message-row--assistant${
               nearLive ? ' message-row--near-live' : ''
-            }${findHits.some((h) => h.messageId === m.id) ? ' is-find-hit' : ''}${
-              findHits[findHit]?.messageId === m.id ? ' is-find-current' : ''
+            }${historicalFindIds.has(m.id) ? ' is-find-hit' : ''}${
+              currentFindMessageId === m.id ? ' is-find-current' : ''
             }`}
             style={
               nearLive
@@ -1736,9 +1756,9 @@ export function ChatView({
         )
       }),
     [
+      currentFindMessageId,
       editUserMessageId,
-      findHit,
-      findHits,
+      historicalFindIds,
       handleEditRequestHandled,
       intrinsicHeights,
       liveAssistantId,
@@ -1875,8 +1895,8 @@ export function ChatView({
                 key={liveRowId}
                 id={`msg-${liveRowId}`}
                 className={`message-row message-row--assistant message-row--live${
-                  findHits.some((hit) => hit.messageId === liveRowId) ? ' is-find-hit' : ''
-                }${findHits[findHit]?.messageId === liveRowId ? ' is-find-current' : ''}`}
+                  liveMemoryFindHits.length ? ' is-find-hit' : ''
+                }${currentFindMessageId === liveRowId ? ' is-find-current' : ''}`}
               >
                 <AssistantMessage
                   messageId={liveRowId}

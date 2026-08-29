@@ -94,6 +94,26 @@ export function findInThread(
 }
 
 /**
+ * 直播命中接在历史命中后面。直播 token 变了不要换历史数组引用
+ * （对标 Codex #33907：Find 含正在直播的回答，但不重挂历史气泡）。
+ */
+export function appendLiveFindHits(
+  historical: readonly ThreadSearchHit[],
+  live: readonly ThreadSearchHit[]
+): ThreadSearchHit[] {
+  if (!live.length) return historical as ThreadSearchHit[]
+  if (!historical.length) return live as ThreadSearchHit[]
+  return historical.concat(live)
+}
+
+/** 历史命中的消息 id；直播 token 不改这个集合 */
+export function findHitMessageIds(hits: readonly ThreadSearchHit[]): Set<string> {
+  const ids = new Set<string>()
+  for (const hit of hits) ids.add(hit.messageId)
+  return ids
+}
+
+/**
  * 内存命中优先（含直播行），盘上只补尚未加载的更早消息
  * （对标 Codex #33907 thread/searchOccurrences，不回放整段线程）。
  */
