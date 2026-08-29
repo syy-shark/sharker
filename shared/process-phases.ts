@@ -39,6 +39,13 @@ import {
   isLiveWriteStatApprovalNeededCancelAppendChange,
   isLiveStatusApprovalNeededCompressAppendChange,
   isLiveStatusApprovalNeededCancelAppendChange,
+  isLiveWriteStatApprovalResolvedCompressAppendChange,
+  isLiveWriteStatApprovalResolvedCancelAppendChange,
+  isLiveStatusApprovalResolvedCompressAppendChange,
+  isLiveStatusApprovalResolvedCancelAppendChange,
+  isLiveApprovalResolvedCompressAppendChange,
+  isLiveApprovalResolvedCancelAppendChange,
+  isLiveApprovalResolvedCancelChange,
   isLiveApprovalDeniedSettleChange,
   isLiveApprovalDeniedStatusAppendChange,
   isLiveApprovalDeniedToolAppendChange,
@@ -73,6 +80,7 @@ import {
   isLiveStatusSettleChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
+  isLiveAskResolvedCancelAppendChange,
   isLiveAskNeededThinkAppendChange,
   isLiveAskNeededAnswerAppendChange,
   isLiveAskNeededThinkAnswerAppendChange,
@@ -831,6 +839,13 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatApprovalNeededCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusApprovalNeededCompressAppendChange(prevSegments, segments) &&
     !isLiveStatusApprovalNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedCancelChange(prevSegments, segments) &&
     !isLiveApprovalDeniedSettleChange(prevSegments, segments) &&
     !isLiveApprovalDeniedStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedToolAppendChange(prevSegments, segments) &&
@@ -855,6 +870,7 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveApprovalResolvedChange(prevSegments, segments) &&
     !isLiveUserInputNeededChange(prevSegments, segments) &&
     !isLiveAskResolvedSettleChange(prevSegments, segments) &&
+    !isLiveAskResolvedCancelAppendChange(prevSegments, segments) &&
     !isLiveAskNeededThinkAppendChange(prevSegments, segments) &&
     !isLiveAskNeededAnswerAppendChange(prevSegments, segments) &&
     !isLiveAskNeededThinkAnswerAppendChange(prevSegments, segments) &&
