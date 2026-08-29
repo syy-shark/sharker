@@ -35,7 +35,7 @@ interface Props {
   onClose?: () => void
   /** 工具写盘后递增，审查列表与打开的文件树立刻刷新 */
   changesRevision?: number
-  /** 审查行内评论 → 当前对话 */
+  /** 审查行内评论 → 写入输入框跟进草稿，不自动开一轮 */
   onSendReviewComments?: (prompt: string) => void
   /** 上一轮助手写过的相对路径 */
   lastTurnPaths?: string[]

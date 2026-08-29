@@ -74,7 +74,7 @@ export function parseReviewFindings(markdown: string): ReviewLineComment[] {
   return findings
 }
 
-/** 把评论收成只读修改指令（对标 Codex：评论后回线程发送） */
+/** 把评论收成跟进草稿（对标 Codex：评论留在 diff，用户再发消息，不自动开一轮） */
 export function formatReviewCommentsPrompt(comments: ReviewLineComment[]): string {
   const body = comments
     .map((c) => {

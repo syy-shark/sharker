@@ -640,8 +640,8 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
   userLockedRef: { current: boolean }
   stickToBottomRef: { current: boolean }
 }) {
-  const live = useLiveStreamUi()
   const [unseen, setUnseen] = useState(false)
+  const live = useLiveStreamUiWhen(visible || unseen)
   const lastKeyRef = useRef('')
   useEffect(() => {
     const next = liveProgressKey({

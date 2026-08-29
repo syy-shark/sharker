@@ -17,6 +17,7 @@ describe('review comments', () => {
     expect(prompt).toContain('不要吞掉错误')
     expect(prompt).toContain('catch {}')
     expect(prompt).toContain('保持范围最小')
+    expect(prompt.startsWith('请根据审查行内评论修改')).toBe(true)
   })
 
   it('parses review-findings fences and ### path:line headings', () => {

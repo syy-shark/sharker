@@ -7605,9 +7605,9 @@ export default function App() {
   const handleSendReviewComments = useCallback(
     (prompt: string) => {
       setPage('chat')
-      void handlePromptSubmit(prompt)
+      seedComposer(prompt, 'append')
     },
-    [handlePromptSubmit]
+    [seedComposer]
   )
 
   const handleCloseRightPanel = useCallback(() => {

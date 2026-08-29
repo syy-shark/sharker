@@ -3,6 +3,7 @@
  * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line）。
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
+ * 行内评论「插入输入框」只接草稿，不自动开一轮（对标 Codex send a follow-up after comments）。
  * @see ./ARCH.md
  */
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -81,7 +82,7 @@ interface Props {
   revision?: number
   /** 上一轮助手写过的相对路径（Codex Last turn） */
   lastTurnPaths?: string[]
-  /** 把行内评论派发给当前对话 */
+  /** 把行内评论写入输入框，由用户再发跟进（对标 Codex：评论后自己发送，不自动开一轮） */
   onSendComments?: (prompt: string) => void
   /** `/review` 解析出的行内发现 */
   agentFindings?: ReviewLineComment[]
@@ -1504,10 +1505,9 @@ export const ChangesPanel = memo(function ChangesPanel({
                 className="changes-panel__action"
                 onClick={() => {
                   onSendComments(formatReviewCommentsPrompt(comments))
-                  setComments([])
                 }}
               >
-                发送评论
+                插入输入框
               </button>
               {prContext && window.sharker.postPullRequestReview ? (
                 <button
