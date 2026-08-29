@@ -66,6 +66,19 @@ type RunHandler = (job: AutomationJob) => void | Promise<void>
 let timer: ReturnType<typeof setInterval> | null = null
 let ticking = false
 
+/** 立刻跑一条（对标 Codex Scheduled Run now），并记下 lastRunAt 以免同一分钟 cron 再打一次 */
+export async function triggerAutomationRun(jobId: string): Promise<AutomationJob | null> {
+  const id = String(jobId || '').trim()
+  if (!id) return null
+  const jobs = await listAutomations()
+  const index = jobs.findIndex((job) => job.id === id)
+  if (index < 0) return null
+  const job = { ...jobs[index]!, lastRunAt: new Date().toISOString() }
+  jobs[index] = job
+  await saveAutomations(jobs)
+  return job
+}
+
 /** 每分钟检查到期任务 */
 export function startAutomationScheduler(onRun: RunHandler): void {
   if (timer) return

@@ -7,10 +7,13 @@ import type { ProviderConfig, WorkspaceItem } from '../../shared/types'
 import { resolveThinkingOptions } from '../../shared/thinking-levels'
 import {
   defaultAutomationThreadId,
+  filterAutomationJobs,
   parseAutomationDestination,
+  parseAutomationJobFilter,
   parseAutomationRunIn,
   parseOptionalAutomationId,
-  type AutomationJob
+  type AutomationJob,
+  type AutomationJobFilter
 } from '../../shared/automation'
 import {
   applyQueueTriageAction,
@@ -55,6 +58,8 @@ export function AutomationsPage({
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
   const [busy, setBusy] = useState(false)
+  const [jobFilter, setJobFilter] = useState<AutomationJobFilter>('all')
+  const [runningId, setRunningId] = useState<string | null>(null)
   const jobsRef = useRef<AutomationJob[]>([])
 
   useEffect(() => {
@@ -127,6 +132,19 @@ export function AutomationsPage({
     await save(jobsRef.current.filter((x) => x.id !== id))
   }
 
+  const runNow = async (id: string) => {
+    if (!window.sharker.runAutomation) return
+    setRunningId(id)
+    try {
+      await window.sharker.runAutomation(id)
+      await refresh()
+    } finally {
+      setRunningId(null)
+    }
+  }
+
+  const visibleJobs = filterAutomationJobs(jobs, jobFilter)
+
   return (
     <div className="automations-page view-enter">
       <div className="automations-inner">
@@ -137,7 +155,7 @@ export function AutomationsPage({
           <h1>自动化</h1>
           <p>
             默认可新建对话并在隔离 worktree 后台跑；也可回到指定对话沿用上下文（对标 Codex
-            Scheduled）。结果进审查队列，不打断正在看的直播。
+            Scheduled）。结果进审查队列，不打断正在看的直播。可用全部 / 进行中 / 已暂停筛选，或立刻跑一次。
           </p>
         </header>
 
@@ -216,11 +234,39 @@ export function AutomationsPage({
           )}
         </section>
 
+        <div className="automations-filters" role="tablist" aria-label="任务筛选">
+          {(
+            [
+              ['all', '全部'],
+              ['active', '进行中'],
+              ['paused', '已暂停']
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={jobFilter === id}
+              className={`automations-filter${jobFilter === id ? ' is-on' : ''}`}
+              onClick={() => setJobFilter(parseAutomationJobFilter(id))}
+            >
+              {label}
+              <span className="automations-filter-count">
+                {filterAutomationJobs(jobs, id).length}
+              </span>
+            </button>
+          ))}
+        </div>
+
         <div className="automations-list">
           {jobs.length === 0 ? (
             <p className="automations-empty">还没有自动化任务</p>
+          ) : visibleJobs.length === 0 ? (
+            <p className="automations-empty">
+              {jobFilter === 'active' ? '没有进行中的任务' : '没有已暂停的任务'}
+            </p>
           ) : (
-            jobs.map((j) => (
+            visibleJobs.map((j) => (
               <div key={j.id} className="automation-card">
                 <div className="automation-card-top">
                   <input
@@ -450,6 +496,14 @@ export function AutomationsPage({
                     <span className="st-toggle-knob" />
                   </button>
                   <span className="automation-toggle-label">{j.enabled ? '已启用' : '已停用'}</span>
+                  <button
+                    type="button"
+                    className="automation-run-now"
+                    disabled={busy || runningId === j.id}
+                    onClick={() => void runNow(j.id)}
+                  >
+                    {runningId === j.id ? '正在跑…' : '立刻跑'}
+                  </button>
                 </div>
               </div>
             ))

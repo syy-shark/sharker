@@ -313,6 +313,7 @@ contextBridge.exposeInMainWorld('sharker', {
   saveAutomations: (jobs: unknown) => ipcRenderer.invoke(IPC.SAVE_AUTOMATIONS, jobs),
   listAutomationQueue: () => ipcRenderer.invoke(IPC.LIST_AUTOMATION_QUEUE),
   saveAutomationQueue: (queue: unknown) => ipcRenderer.invoke(IPC.SAVE_AUTOMATION_QUEUE, queue),
+  runAutomation: (jobId: string) => ipcRenderer.invoke(IPC.RUN_AUTOMATION, jobId),
   onAutomationRun: (cb: (job: unknown) => void) => {
     const handler = (_: unknown, job: unknown) => cb(job)
     ipcRenderer.on('automation:run', handler)

@@ -7,6 +7,8 @@ import {
   applyScheduledTurnSettings,
   parseAutomationDestination,
   parseAutomationRunIn,
+  filterAutomationJobs,
+  parseAutomationJobFilter,
   parseAutomationWorkspaceIds,
   parseOptionalAutomationId,
   resolveAutomationRunPlan,
@@ -165,6 +167,15 @@ describe('automation destination', () => {
         activeWorkspaceId: 'ws-b'
       })
     ).toEqual([{ workspaceId: 'ws-b', workspacePath: '/b' }])
+    expect(parseAutomationJobFilter('paused')).toBe('paused')
+    expect(parseAutomationJobFilter('nope')).toBe('all')
+    const mixed = [
+      { ...created.jobs[0]!, enabled: true },
+      { ...created.jobs[0]!, id: 'off', enabled: false }
+    ]
+    expect(filterAutomationJobs(mixed, 'active')).toHaveLength(1)
+    expect(filterAutomationJobs(mixed, 'paused').map((row) => row.id)).toEqual(['off'])
+    expect(filterAutomationJobs(mixed, 'all')).toHaveLength(2)
     expect(
       applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
     ).toBe(false)

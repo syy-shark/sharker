@@ -178,6 +178,23 @@ export function defaultAutomationThreadId(
 
 export type AutomationRunMode = 'new' | 'thread' | 'queue'
 
+/** 官方 Scheduled 页：All / Active / Paused */
+export type AutomationJobFilter = 'all' | 'active' | 'paused'
+
+export function parseAutomationJobFilter(raw: unknown): AutomationJobFilter {
+  return raw === 'active' || raw === 'paused' ? raw : 'all'
+}
+
+export function filterAutomationJobs(
+  jobs: AutomationJob[],
+  filter: unknown
+): AutomationJob[] {
+  const mode = parseAutomationJobFilter(filter)
+  if (mode === 'active') return jobs.filter((job) => job.enabled)
+  if (mode === 'paused') return jobs.filter((job) => !job.enabled)
+  return jobs
+}
+
 export function shouldPrepareAutomationWorktree(input: {
   runMode: AutomationRunMode
   runIn?: unknown

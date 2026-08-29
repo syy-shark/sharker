@@ -154,6 +154,8 @@ export const IPC = {
   SAVE_AUTOMATIONS: 'automations:save',
   LIST_AUTOMATION_QUEUE: 'automations:queue-list',
   SAVE_AUTOMATION_QUEUE: 'automations:queue-save',
+  /** 立刻跑一条定时任务（对标 Codex Scheduled Run now） */
+  RUN_AUTOMATION: 'automations:run-now',
   AGENTS_LIST: 'agents:list',
   AGENTS_STOP: 'agents:stop',
   AGENTS_STEER: 'agents:steer'

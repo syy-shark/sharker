@@ -137,7 +137,8 @@ import {
   listAutomationQueue,
   saveAutomations,
   saveAutomationQueue,
-  startAutomationScheduler
+  startAutomationScheduler,
+  triggerAutomationRun
 } from './automation-scheduler'
 import { stopLsp } from '../../tools/services/lsp-client'
 
@@ -1446,6 +1447,14 @@ function registerIpc(): void {
   ipcMain.handle(IPC.LIST_AUTOMATION_QUEUE, async () => listAutomationQueue())
   ipcMain.handle(IPC.SAVE_AUTOMATION_QUEUE, async (_e, queue) => {
     await saveAutomationQueue(Array.isArray(queue) ? queue : [])
+    return true
+  })
+  ipcMain.handle(IPC.RUN_AUTOMATION, async (_e, jobId: string) => {
+    const job = await triggerAutomationRun(String(jobId || ''))
+    if (!job) return false
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('automation:run', job)
+    }
     return true
   })
 

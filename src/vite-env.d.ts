@@ -368,6 +368,7 @@ export interface SharkerApi {
   saveAutomations: (jobs: AutomationJob[]) => Promise<boolean>
   listAutomationQueue: () => Promise<AutomationQueueItem[]>
   saveAutomationQueue: (queue: AutomationQueueItem[]) => Promise<boolean>
+  runAutomation: (jobId: string) => Promise<boolean>
   onAutomationRun: (cb: (job: AutomationJob) => void) => () => void
   listSubAgents: (
     parentConversationId?: string
