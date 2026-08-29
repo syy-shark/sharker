@@ -7,6 +7,8 @@ import {
   formatReviewLineStats,
   resolveReviewRepoId,
   expandAllReviewDiffKeys,
+  mergeReviewExpandedKeys,
+  reviewDiffKeysForFindings,
   parseReviewDiffKey,
   pruneReviewDiffKeys,
   reviewDiffKey,
@@ -114,6 +116,24 @@ describe('review repos', () => {
         '/proj'
       )
     ).toEqual(['/proj\0src/a.ts', '/extra\0lib/b.ts'])
+    expect(
+      reviewDiffKeysForFindings(
+        [
+          { path: 'src/a.ts', repoRoot: '/proj' },
+          { path: 'lib/b.ts', repoRoot: '/extra' },
+          { path: 'docs/skip.md', repoRoot: '/proj' }
+        ],
+        [{ path: 'src/a.ts' }, { path: 'lib/b.ts' }],
+        '/proj'
+      )
+    ).toEqual(['/proj\0src/a.ts', '/extra\0lib/b.ts'])
+    expect(reviewDiffKeysForFindings([{ path: 'src/a.ts' }], [], '/proj')).toEqual([])
+    const kept = ['/proj\0src/a.ts']
+    expect(mergeReviewExpandedKeys(kept, ['/proj\0src/a.ts'])).toBe(kept)
+    expect(mergeReviewExpandedKeys(kept, ['/proj\0src/a.ts', '/extra\0lib/b.ts'])).toEqual([
+      '/proj\0src/a.ts',
+      '/extra\0lib/b.ts'
+    ])
     expect(pruneReviewDiffKeys(['/proj\0a.ts', '/proj\0gone.ts'], ['/proj\0a.ts'])).toEqual(['/proj\0a.ts'])
     expect(compareFileTreePaths('src/a.ts', 'src/components/A.tsx')).toBeGreaterThan(0)
     expect(

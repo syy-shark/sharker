@@ -4,7 +4,7 @@
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
  * 行内评论「插入输入框」只接草稿，不自动开一轮（对标 Codex send a follow-up after comments）。
- * 直播 `/review` 围栏一闭合就挂发现，不抬 App（对标 Codex review findings appear inline）。
+ * 直播 `/review` 围栏一闭合就挂发现并展开对应 diff，不抬 App（对标 Codex review findings appear inline）。
  * @see ./ARCH.md
  */
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -47,6 +47,8 @@ import {
 import {
   ALL_REPOS_ID,
   expandAllReviewDiffKeys,
+  mergeReviewExpandedKeys,
+  reviewDiffKeysForFindings,
   fileInLastTurnForRepo,
   lastTurnPendingRelPaths,
   formatReviewLineStats,
@@ -282,6 +284,19 @@ export const ChangesPanel = memo(function ChangesPanel({
     }),
     workspacePath
   )
+  const findingExpandKeySig = reviewDiffKeysForFindings(
+    visible,
+    liveFindings.length ? [...liveFindings, ...agentFindings] : agentFindings,
+    reviewCwd
+  ).join('\0')
+  const autoExpandedFindingKeysRef = useRef<string[]>([])
+  useEffect(() => {
+    const keys = findingExpandKeySig ? findingExpandKeySig.split('\0') : []
+    const fresh = keys.filter((key) => !autoExpandedFindingKeysRef.current.includes(key))
+    if (!fresh.length) return
+    autoExpandedFindingKeysRef.current = [...autoExpandedFindingKeysRef.current, ...fresh]
+    setExpandedKeys((prev) => mergeReviewExpandedKeys(prev, fresh))
+  }, [findingExpandKeySig])
   const stagedCount = taggedRepoFiles.filter(isStaged).length
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {

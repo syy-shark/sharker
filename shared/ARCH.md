@@ -19,8 +19,8 @@
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
-| `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
-| `review-repos.test.ts` | 同仓子目录合并、本轮固定 All repos（选中单仓也不改）、附加根路径匹配、本轮预览未落盘路径、多文件 diff 展开键；审查列表按文件树排序 |
+| `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
+| `review-repos.test.ts` | 同仓子目录合并、本轮固定 All repos（选中单仓也不改）、附加根路径匹配、本轮预览未落盘路径、多文件 diff 展开键、发现路径展开对应 diff；审查列表按文件树排序 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
 | `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 定时 / 置顶筛选、⌘⌥U 开关 Activity、项目菜单「归档对话」只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`messagesThroughInclusive` / `canForkThroughMessage`（对标 Codex `thread/fork` `lastTurnId`，直播未完成行拒分叉）、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
@@ -120,7 +120,7 @@
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
 | `terminal-snapshot.ts` | 集成终端快照：去 ANSI、环形缓冲、`read_thread_terminal` 文案 |
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
-| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏（对标 Codex review findings appear inline） |
+| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline） |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、审查面板订直播切片 |
 | `review-file-click.ts` | 审查文件名打开预览、行背景展开/收起、⌘单击行跳预览；右键菜单「打开预览 / 展开 diff」（对标 Codex review file tree open menu） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |

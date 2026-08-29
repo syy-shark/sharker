@@ -121,6 +121,42 @@ export function toggleReviewDiffKey(keys: string[], key: string): string[] {
   return keys.includes(next) ? keys.filter((item) => item !== next) : [...keys, next]
 }
 
+/**
+ * 有 `/review` 发现的文件键。展开后评论才能画在 diff 行上
+ * （对标 Codex：Review findings appear as inline comments）。
+ */
+export function reviewDiffKeysForFindings(
+  files: Array<{ path: string; repoRoot?: string }>,
+  findings: Array<{ path: string }>,
+  fallbackRoot: string
+): string[] {
+  const wanted = new Set(
+    findings.map((item) => posixPath(item.path)).filter(Boolean)
+  )
+  if (!wanted.size) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  const fallback = posixPath(fallbackRoot)
+  for (const file of files) {
+    const path = posixPath(file.path)
+    if (!path || !wanted.has(path)) continue
+    const repo = posixPath(file.repoRoot || fallback)
+    if (!repo) continue
+    const key = reviewDiffKey(repo, path)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(key)
+  }
+  return out
+}
+
+/** 把发现对应的 diff 键并进已展开列表；已有的不换引用 */
+export function mergeReviewExpandedKeys(prev: string[], incoming: string[]): string[] {
+  if (!incoming.length) return prev
+  const extra = incoming.filter((key) => key && !prev.includes(key))
+  return extra.length ? [...prev, ...extra] : prev
+}
+
 export function expandAllReviewDiffKeys(
   files: Array<{ path: string; repoRoot?: string }>,
   fallbackRoot: string

@@ -60,5 +60,7 @@ describe('review comments', () => {
     const panelSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'), 'utf8')
     expect(panelSrc).toContain('parseLiveReviewFindings')
     expect(panelSrc).toContain('useLiveStreamUiSelect')
+    expect(panelSrc).toContain('reviewDiffKeysForFindings')
+    expect(panelSrc).toContain('mergeReviewExpandedKeys')
   })
 })
