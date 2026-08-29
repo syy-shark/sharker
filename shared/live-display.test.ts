@@ -20,6 +20,7 @@ import {
   isInlineDemoPaintable,
   readCachedInlineDemoHeight,
   seedInlineDemoHeight,
+  shouldMeasureInlineDemoInParent,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
@@ -208,6 +209,9 @@ describe('inline demo paintability', () => {
   it('accepts HTML with a real structure node', () => {
     const scene = '<style>body{color:#fff}</style><div class="scene"><h1>广义相对论</h1></div>'
     expect(isInlineDemoPaintable(scene)).toBe(true)
+    expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: true })).toBe(false)
+    expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: false })).toBe(true)
+    expect(shouldMeasureInlineDemoInParent({ paintable: false, streaming: false })).toBe(false)
     expect(estimateInlineDemoHeight('')).toBe(48)
     expect(estimateInlineDemoHeight(scene)).toBeGreaterThanOrEqual(96)
     expect(estimateInlineDemoHeight('<div class="card" style="height: 240px"></div>')).toBe(256)

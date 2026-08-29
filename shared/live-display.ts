@@ -172,6 +172,17 @@ export function clearInlineDemoHeightCache(): void {
   demoHeightCache.clear()
 }
 
+/**
+ * 父页才对 iframe 做全树 getBoundingClientRect。
+ * 直播中只信估高与 iframe postMessage，避免 srcDoc 每 40–120ms 重挂 RO 扫整棵（对标 Codex #22860 / #39120）。
+ */
+export function shouldMeasureInlineDemoInParent(options: {
+  paintable: boolean
+  streaming?: boolean
+}): boolean {
+  return options.paintable && !options.streaming
+}
+
 /** 直播首帧：缓存实测高，否则用估高，流式至少 96 */
 export function seedInlineDemoHeight(html: string, streaming = false): number {
   return Math.max(

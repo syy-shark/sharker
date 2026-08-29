@@ -7,6 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   isInlineDemoPaintable,
   seedInlineDemoHeight,
+  shouldMeasureInlineDemoInParent,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
 import './InlineDemo.css'
@@ -1272,7 +1273,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
 
   useEffect(() => {
     const frame = frameRef.current
-    if (!frame || !paintable) return
+    if (!frame || !shouldMeasureInlineDemoInParent({ paintable, streaming })) return
     let ro: ResizeObserver | null = null
     const measure = () => {
       try {
@@ -1325,7 +1326,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       frame.removeEventListener('load', attach)
       ro?.disconnect()
     }
-  }, [srcDoc, paintable])
+  }, [srcDoc, paintable, streaming])
 
   const label = caption?.trim() || '内联演示'
   const frameH = expanded ? Math.max(height, streaming ? 96 : 48) : 0

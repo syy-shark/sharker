@@ -284,5 +284,10 @@ describe('live stream ui snapshot', () => {
     expect(fenceSrc).toContain('growRef')
     expect(fenceSrc).toContain('code-artifact-grow')
     expect(fenceSrc).not.toContain('[followTail, children]')
+    const demoSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/InlineDemo.tsx'),
+      'utf8'
+    )
+    expect(demoSrc).toContain('shouldMeasureInlineDemoInParent')
   })
 })
