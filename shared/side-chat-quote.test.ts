@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ADD_TO_CHAT_LABEL,
+  ASK_IN_SIDE_CHAT_LABEL,
   FILE_PREVIEW_SEL,
   formatComposerInsert,
   formatSideChatPrompt,
@@ -86,14 +88,16 @@ describe('side chat quote', () => {
     })
   })
 
-  it('accepts transcript ranges and rejects composer or live rows', () => {
+  it('accepts transcript and live rows and rejects composer', () => {
     const hits = (match: string | null) => (selector: string) => (match === selector ? {} : null)
     expect(shouldOfferSideChat(hits(SIDE_CHAT_TRANSCRIPT_SEL))).toBe(true)
-    expect(shouldOfferSideChat(hits(SIDE_CHAT_LIVE_ROW_SEL))).toBe(false)
+    expect(shouldOfferSideChat(hits(SIDE_CHAT_LIVE_ROW_SEL))).toBe(true)
     expect(shouldOfferSideChat(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
     expect(shouldOfferSideChat(() => null)).toBe(false)
     expect(shouldOfferFilePreviewSelection(hits(FILE_PREVIEW_SEL))).toBe(true)
     expect(shouldOfferFilePreviewSelection(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
     expect(shouldOfferFilePreviewSelection(() => null)).toBe(false)
+    expect(ADD_TO_CHAT_LABEL).toBe('加入对话')
+    expect(ASK_IN_SIDE_CHAT_LABEL).toBe('旁路提问')
   })
 })

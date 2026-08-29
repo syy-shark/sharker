@@ -1,6 +1,6 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
- * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选进 composer 芯片或旁路提问。
+ * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -16,6 +16,8 @@ import {
   type FileTreeReloadReason
 } from '../../../shared/file-preview'
 import {
+  ADD_TO_CHAT_LABEL,
+  ASK_IN_SIDE_CHAT_LABEL,
   formatSideChatPrompt,
   isFilePreviewSelectionRange,
   normalizeTranscriptSelection,
@@ -467,7 +469,7 @@ export const FileTree = memo(function FileTree({
                     window.getSelection()?.removeAllRanges()
                   }}
                 >
-                  插入输入框
+                  {ADD_TO_CHAT_LABEL}
                 </button>
               ) : null}
               {onAskInSideChat ? (
@@ -481,7 +483,7 @@ export const FileTree = memo(function FileTree({
                     window.getSelection()?.removeAllRanges()
                   }}
                 >
-                  旁路提问
+                  {ASK_IN_SIDE_CHAT_LABEL}
                 </button>
               ) : null}
             </div>

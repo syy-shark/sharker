@@ -1,6 +1,6 @@
 /**
- * 对话 / 终端 / 文件预览划选 → 旁路提问或插入输入框。
- * 对标 Codex desktop「Ask in side chat」与「Send transcript selections to the composer」。
+ * 对话 / 终端 / 文件预览划选 → 加入对话芯片或旁路提问。
+ * 对标 Codex desktop「Add to chat」/「Ask in side chat」；直播已出现正文也可加入（#37560）。
  * @see shared/ARCH.md
  */
 
@@ -26,11 +26,14 @@ export const SIDE_CHAT_TRANSCRIPT_SEL =
 export const FILE_PREVIEW_SEL =
   '.file-tree-viewer-body, .file-tree-viewer-line, .file-tree-viewer-text'
 
-/** 用 closest 判定：输入框 / 查找栏 / 直播行不要条，历史消息行要 */
+/** 官方划选条：Add to chat / Ask in side chat */
+export const ADD_TO_CHAT_LABEL = '加入对话'
+export const ASK_IN_SIDE_CHAT_LABEL = '旁路提问'
+
+/** 用 closest 判定：输入框 / 查找栏不要条；历史与直播已出现正文都要（对标 Codex #37560） */
 export function shouldOfferSideChat(closest: (selector: string) => unknown): boolean {
   if (closest(SIDE_CHAT_COMPOSER_SEL)) return false
-  if (closest(SIDE_CHAT_LIVE_ROW_SEL)) return false
-  return Boolean(closest(SIDE_CHAT_TRANSCRIPT_SEL))
+  return Boolean(closest(SIDE_CHAT_TRANSCRIPT_SEL) || closest(SIDE_CHAT_LIVE_ROW_SEL))
 }
 
 /** 文件预览正文划选（对标 Codex Project Preview selection actions） */
@@ -39,7 +42,7 @@ export function shouldOfferFilePreviewSelection(closest: (selector: string) => u
   return Boolean(closest(FILE_PREVIEW_SEL))
 }
 
-/** 划选是否落在对话正文（不要输入框 / 查找栏 / 直播行） */
+/** 划选是否落在对话正文（不要输入框 / 查找栏；直播已出现正文也算） */
 export function isTranscriptSelectionRange(range: AbstractRange, root: ParentNode): boolean {
   const node = range.commonAncestorContainer
   if (!root.contains(node)) return false

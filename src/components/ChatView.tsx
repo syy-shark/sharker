@@ -118,6 +118,8 @@ import {
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
+  ADD_TO_CHAT_LABEL,
+  ASK_IN_SIDE_CHAT_LABEL,
   formatSideChatPrompt,
   isTranscriptSelectionRange,
   normalizeTranscriptSelection,
@@ -2399,7 +2401,7 @@ export const ChatView = memo(function ChatView({
                 window.getSelection()?.removeAllRanges()
               }}
             >
-              插入输入框
+              {ADD_TO_CHAT_LABEL}
             </button>
           ) : null}
           {onAskInSideChat ? (
@@ -2413,7 +2415,7 @@ export const ChatView = memo(function ChatView({
                 window.getSelection()?.removeAllRanges()
               }}
             >
-              旁路提问
+              {ASK_IN_SIDE_CHAT_LABEL}
             </button>
           ) : null}
         </div>

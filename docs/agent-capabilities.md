@@ -34,7 +34,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
 | `/fork` | 分叉到新本地线程（拷贝全部消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree）。顶栏分叉按钮走同一条整段路径。历史气泡悬停「从此条分叉」只拷到该条（含），省略其后回合（对标 Codex fork from an earlier message / `thread/fork` `lastTurnId`）；直播未完成行不分叉 |
-| `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史正文、文件预览或集成终端输出可「插入输入框」进 composer Selection 芯片（发送收成 `# Selected text:`），或「旁路提问」把摘录交给旁路（对标 Codex selected-text previews、`/side [question]` 与 Ask in side chat） |
+| `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史 / 直播已出现正文、文件预览或集成终端输出可「加入对话」进 composer Selection 芯片（发送收成 `# Selected text:`），或「旁路提问」把摘录交给旁路（对标 Codex Add to chat / #37560、`/side [question]` 与 Ask in side chat） |
 | `/status` | 显示对话 ID、模型、权限、Fast、可写根（项目附加文件夹）、线程模式、分支、上下文占用（`used / limit（%）`）与本机今日用量；长线程从库取未瘦身全文再估，不按 UI 尾页（对标 Codex /status chat ID / context usage / writable roots，避免打开历史线程像 0%；不发明供应商额度）。设置 → 通用可打开输入框旁用量环（对标 Codex Show context window usage，官方默认关；悬停数字与 `/status` 相同，直播增量不重走整段历史） |
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
@@ -87,7 +87,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 线程内查找
 
-划选历史正文、文件预览或集成终端输出会出现「插入输入框」与「旁路提问」（对标 Codex selected-text previews 与 Ask in side chat）。插入进 composer `Selection N` 芯片，不把长摘录灌进输入框；发送收成官方 `# Selected text:` / `## My request for Codex:`。芯片可预览、移除，或「插入正文」回退成引用块。`/` 与 `!` 仍清芯片。旁路提问仍把摘录交给新线程。
+划选历史正文、**直播已出现正文**、文件预览或集成终端输出会出现「加入对话」与「旁路提问」（对标 Codex Add to chat / Ask in side chat / #37560）。加入对话进 composer `Selection N` 芯片，不把长摘录灌进输入框；发送收成官方 `# Selected text:` / `## My request for Codex:`。芯片可预览、移除，或「插入正文」回退成引用块。`/` 与 `!` 仍清芯片。旁路提问仍把摘录交给新线程。
 
 `⌘F` 或命令面板「在对话中查找」：大小写不敏感扫用户/助手正文（含直播行），同一条里每处各算一次；长线程先在盘上检索，不回放整段也不灌进 DOM（对标 Codex #33907 thread/searchOccurrences）。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。Enter / ↑↓ / `⌘G` / `⌘⇧G` / `F3` / `⇧F3` 跳转并高亮当前词（查找未开时先打开再跳，关闭栏时保留上次词；命中只改对话柱 `scrollTop` 并锁贴底，不 `scrollIntoView`，以免直播增高把镜头拽回底部；未加载的更早命中先揭开该 seq 起的一段再跳，屏外已加载行会先扩进窗口）。审查面板聚焦时同一组快捷键改搜当前对比的 diff（跨文件、屏外命中展开并滚入视口，对标 Codex search in long review files）；输入框 / 对话柱仍走线程查找。Search chats 官方默认不绑，走命令面板或设置 → 键盘。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
 

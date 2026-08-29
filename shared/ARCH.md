@@ -206,8 +206,8 @@
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
-| `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或 `formatComposerInsert` 回退成正文引用：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat；默认插入走 `selected-text-preview` 芯片） |
-| `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
+| `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
+| `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |

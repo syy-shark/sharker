@@ -7,6 +7,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import {
+  ADD_TO_CHAT_LABEL,
+  ASK_IN_SIDE_CHAT_LABEL,
   formatSideChatPrompt,
   normalizeTranscriptSelection,
   placeSelectionAskBar,
@@ -444,7 +446,7 @@ function TerminalSession({
                 termRef.current?.clearSelection()
               }}
             >
-              插入输入框
+              {ADD_TO_CHAT_LABEL}
             </button>
           ) : null}
           {onAskInSideChat ? (
@@ -458,7 +460,7 @@ function TerminalSession({
                 termRef.current?.clearSelection()
               }}
             >
-              旁路提问
+              {ASK_IN_SIDE_CHAT_LABEL}
             </button>
           ) : null}
         </div>
