@@ -29,6 +29,16 @@ import {
   isLiveDemoAppendChange,
   isLiveDemoFenceAppendChange,
   isLiveApprovalNeededChange,
+  isLiveApprovalNeededThinkAppendChange,
+  isLiveApprovalNeededAnswerAppendChange,
+  isLiveApprovalNeededCompressAppendChange,
+  isLiveApprovalNeededThinkCompressAppendChange,
+  isLiveApprovalNeededErrorAppendChange,
+  isLiveApprovalNeededAnswerDemoAppendChange,
+  isLiveWriteStatApprovalNeededCompressAppendChange,
+  isLiveWriteStatApprovalNeededCancelAppendChange,
+  isLiveStatusApprovalNeededCompressAppendChange,
+  isLiveStatusApprovalNeededCancelAppendChange,
   isLiveApprovalDeniedSettleChange,
   isLiveApprovalDeniedStatusAppendChange,
   isLiveApprovalDeniedToolAppendChange,
@@ -811,6 +821,16 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveCancelChange(prevSegments, segments) &&
     !isLiveStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalNeededChange(prevSegments, segments) &&
+    !isLiveApprovalNeededThinkAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededThinkCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededErrorAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededCancelAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedSettleChange(prevSegments, segments) &&
     !isLiveApprovalDeniedStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedToolAppendChange(prevSegments, segments) &&

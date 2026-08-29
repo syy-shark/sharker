@@ -397,6 +397,108 @@ describe('process phases privacy', () => {
     expect(afterApproval![0].segment).toBe(cmdAwaiting)
     expect(afterApproval!.at(-1)?.segment).toBe(awaitingStatus)
     expect(afterApproval!.at(-1)?.title).toMatch(/Awaiting approval/)
+    const awaitingStatusDone: TurnSegment = { ...awaitingStatus, status: 'done', endedAt: 16.5 }
+    const approvalCompressDone: TurnSegment = {
+      id: 'cp-appr-hang',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Context automatically compacted',
+      status: 'done',
+      startedAt: 16.6,
+      endedAt: 16.6
+    }
+    const afterApprovalThink = appendProcessPhaseStepOnToolStart(
+      approvalSteps,
+      [runningCmd],
+      [cmdAwaiting, awaitingStatus, nextThink],
+      true
+    )
+    expect(afterApprovalThink).not.toBeNull()
+    expect(afterApprovalThink!.some((step) => step.segment === awaitingStatus)).toBe(true)
+    expect(afterApprovalThink!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterApprovalToken = appendProcessPhaseStepOnToolStart(
+      approvalSteps,
+      [runningCmd],
+      [cmdAwaiting, awaitingStatusDone, firstReply],
+      true
+    )
+    expect(afterApprovalToken).not.toBeNull()
+    expect(afterApprovalToken!.some((step) => step.segment === firstReply)).toBe(false)
+    const afterApprovalCompress = appendProcessPhaseStepOnToolStart(
+      approvalSteps,
+      [runningCmd],
+      [cmdAwaiting, awaitingStatusDone, approvalCompressDone],
+      true
+    )
+    expect(afterApprovalCompress).not.toBeNull()
+    expect(afterApprovalCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const afterWriteApprovalCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, cmdAwaiting, awaitingStatusDone, approvalCompressDone],
+      true
+    )
+    expect(afterWriteApprovalCompress).not.toBeNull()
+    expect(afterWriteApprovalCompress![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteApprovalCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const cmdAwaitingCancelled: TurnSegment = {
+      ...cmdAwaiting,
+      status: 'cancelled',
+      errorMessage: '任务已停止',
+      resultSummary: '已停止',
+      endedAt: 16.7
+    }
+    const awaitingStatusCancelled: TurnSegment = { ...awaitingStatus, status: 'cancelled', endedAt: 16.7 }
+    const afterWriteApprovalCancel = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, cmdAwaitingCancelled, awaitingStatusCancelled],
+      true
+    )
+    expect(afterWriteApprovalCancel).not.toBeNull()
+    expect(afterWriteApprovalCancel![0].segment).toBe(cmdDoneDiff)
+    expect(afterWriteApprovalCancel!.some((step) => step.segment === cmdAwaitingCancelled)).toBe(true)
+    const reconnectApprovalStatus: TurnSegment = {
+      id: 'st-reconnect-appr',
+      kind: 'status',
+      status: 'done',
+      content: 'Reconnecting... 1/5',
+      endedAt: 16.8
+    }
+    const helloApprovalHang: TurnSegment = {
+      id: 'hello-appr-hang',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Hello'
+    }
+    const helloApprovalHangDone: TurnSegment = { ...helloApprovalHang, status: 'done' }
+    const helloApprovalHangSteps = deriveChronologicalSteps([helloApprovalHang], { isStreaming: true })
+    const afterReconnectApprovalCompress = appendProcessPhaseStepOnToolStart(
+      helloApprovalHangSteps,
+      [helloApprovalHang],
+      [
+        helloApprovalHangDone,
+        reconnectApprovalStatus,
+        cmdAwaiting,
+        awaitingStatusDone,
+        approvalCompressDone
+      ],
+      true
+    )
+    expect(afterReconnectApprovalCompress).not.toBeNull()
+    expect(afterReconnectApprovalCompress!.some((step) => step.segment === reconnectApprovalStatus)).toBe(
+      true
+    )
+    expect(afterReconnectApprovalCompress!.at(-1)?.segment).toBe(approvalCompressDone)
+    const afterReconnectApprovalCancel = appendProcessPhaseStepOnToolStart(
+      helloApprovalHangSteps,
+      [helloApprovalHang],
+      [helloApprovalHangDone, reconnectApprovalStatus, cmdAwaitingCancelled, awaitingStatusCancelled],
+      true
+    )
+    expect(afterReconnectApprovalCancel).not.toBeNull()
+    expect(afterReconnectApprovalCancel!.some((step) => step.segment === cmdAwaitingCancelled)).toBe(true)
     const appendApproval = appendProcessPhaseStepOnToolStart(
       doneRetargeted!,
       [cmdDone],
