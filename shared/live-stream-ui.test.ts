@@ -1036,6 +1036,29 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(processAfterWriteStatCompress.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(isLiveCompressAppendChange([hello, running], [hello, ran, compressTool])).toBe(true)
+    expect(isLiveCompressAppendChange([hello, running, compactStatus], [hello, ran, compactStatusDone, compressTool])).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, compressTool])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, compressTool]
+      })
+    ).toBe(true)
+    const processReadyForSettleCompress = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterSettleCompress = nextLiveProcessView(processReadyForSettleCompress, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, compressTool]
+    })
+    expect(processAfterSettleCompress.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processAfterSettleCompress.processForFlow.some((segment) => segment === compressTool)).toBe(true)
+    expect(processAfterSettleCompress.processForFlow.some((segment) => segment === running)).toBe(false)
     const runningCmd: TurnSegment = {
       id: 'run-appr',
       kind: 'tool',
@@ -1250,6 +1273,26 @@ describe('live stream ui snapshot', () => {
     expect(processAfterWriteStatError.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
     expect(processAfterWriteStatError.processForFlow.some((segment) => segment === errorText)).toBe(false)
     expect(processAfterWriteStatError.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(isLiveErrorAppendChange([hello, running], [hello, ran, errorText])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, errorText])).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, errorText]
+      })
+    ).toBe(false)
+    const processReadyForSettleError = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterSettleError = nextLiveProcessView(processReadyForSettleError, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, errorText]
+    })
+    expect(processAfterSettleError.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processAfterSettleError.processForFlow.some((segment) => segment === errorText)).toBe(false)
+    expect(processAfterSettleError.processForFlow.some((segment) => segment === running)).toBe(false)
     const liveReply: TurnSegment = { id: 'reply-err', kind: 'text', status: 'active', content: 'Hi' }
     const liveReplyErr: TurnSegment = {
       ...liveReply,

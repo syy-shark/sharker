@@ -421,6 +421,17 @@ describe('process phases privacy', () => {
     expect(afterError).toHaveLength(1)
     expect(afterError![0].segment).toBe(errStatusDone)
     expect(afterError![0].status).toBe('done')
+    const settleAndError = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, errText],
+      true
+    )
+    expect(settleAndError).not.toBeNull()
+    expect(settleAndError).toHaveLength(1)
+    expect(settleAndError![0].id).toBe(cmdSteps[0].id)
+    expect(settleAndError![0].segment).toBe(cmdDone)
+    expect(settleAndError![0].status).toBe('done')
     const demoFence: TurnSegment = {
       id: 'demo-fence-1',
       kind: 'text',
@@ -813,6 +824,18 @@ describe('process phases privacy', () => {
     expect(writeAndCompress![0].segment).toBe(cmdDoneDiff)
     expect(writeAndCompress![0].status).toBe('done')
     expect(writeAndCompress!.at(-1)?.segment).toBe(compressDoneSeg)
+    const settleAndCompress = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, compressDoneSeg],
+      true
+    )
+    expect(settleAndCompress).not.toBeNull()
+    expect(settleAndCompress).toHaveLength(2)
+    expect(settleAndCompress![0].id).toBe(cmdSteps[0].id)
+    expect(settleAndCompress![0].segment).toBe(cmdDone)
+    expect(settleAndCompress![0].status).toBe('done')
+    expect(settleAndCompress!.at(-1)?.segment).toBe(compressDoneSeg)
     const asking = deriveChronologicalSteps([
       {
         id: 'ask1',
