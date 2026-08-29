@@ -271,5 +271,11 @@ describe('live stream ui snapshot', () => {
     )
     expect(treeSrc).toContain('shouldRereadOpenPreviewOnReload')
     expect(treeSrc).toContain('keepIfClosed')
+    const chatSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
+      'utf8'
+    )
+    expect(chatSrc).toContain('shouldObserveRowIntrinsicHeight')
+    expect(chatSrc).toContain('mutation.addedNodes')
   })
 })

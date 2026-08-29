@@ -481,6 +481,20 @@ export function sameRefList<T>(prev: readonly T[] | null | undefined, next: read
   return prev.every((item, i) => item === next[i])
 }
 
+/**
+ * 只给历史行量 content-visibility 内在高度。
+ * 直播行每枚 token 都会长高，高度由贴底 ResizeObserver 跟，再盯会叠一层
+ * ResizeObserver 回调（对标 Codex #22860 / #39120，不复制官方 RO 风暴）。
+ */
+export function shouldObserveRowIntrinsicHeight(input: {
+  id?: string
+  live?: boolean
+}): boolean {
+  const id = String(input.id || '').trim()
+  if (!id || id === 'streaming') return false
+  return !input.live
+}
+
 /** 该历史行是否落在贴底窗口内（0-based index） */
 export function isNearLiveMessageRow(
   index: number,

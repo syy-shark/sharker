@@ -22,6 +22,7 @@ import {
   seedInlineDemoHeight,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
+  shouldObserveRowIntrinsicHeight,
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
@@ -235,6 +236,10 @@ describe('near-live message rows', () => {
     expect(isNearLiveMessageRow(0, 3, 8)).toBe(true)
     expect(isNearLiveMessageRow(-1, 3, 8)).toBe(false)
     expect(isNearLiveMessageRow(0, 0, 8)).toBe(false)
+    expect(shouldObserveRowIntrinsicHeight({ id: 'streaming' })).toBe(false)
+    expect(shouldObserveRowIntrinsicHeight({ id: 'a1', live: true })).toBe(false)
+    expect(shouldObserveRowIntrinsicHeight({ id: '' })).toBe(false)
+    expect(shouldObserveRowIntrinsicHeight({ id: 'hist-1' })).toBe(true)
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(0)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })
