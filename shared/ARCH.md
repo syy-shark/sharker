@@ -133,8 +133,8 @@
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
-| `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播 |
-| `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition |
+| `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
+| `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition、无会话 id 暂存与冲进 retry |
 | `transcript-scroll.ts` | 对话柱滚动快照：贴底跟到底、读历史钉 scrollTop、内容未画高先按距底占位（对标 Codex 26.406 按会话记住位置；窗口内、不落盘）；快照可带 `transcriptWindowStart` |
 | `transcript-scroll.test.ts` | 贴底 / 中段 / 内容变高 / 未画完推迟恢复；长线程尾窗起点与上滑揭示；启动窗瘦身与点开补水 |
 | `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；DOM 有挂载上限；⌘↑ / 查找命中 / 尾页上滑只算 `historyHead` 有界页（`headRangeForJumpTop` / `headRangeForFindHit` / `olderPageRangeForTail` / `nextHeadRange`），不把瘦身全文或更早页 prepend 进尾页 `messages`、空页也不把 `historyStartSeq` 置 0；直播中不取跳顶头页（`shouldFetchSlimHistoryOnJumpTop`），收束后再取（对标 Codex older history fetched as needed / 官方分页，不一次铺开、无「加载更早」按钮）；盘页合并 / 钉窗下标后移 |

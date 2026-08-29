@@ -220,16 +220,27 @@ import {
 } from '../shared/session-runtime'
 import {
   appendConsumedSteerMessage,
+  applyHeldBusyFollowUp,
+  cancelHeldBusyFollowUp,
   createPendingSteer,
   enqueuePendingSteer,
+  heldFollowUpsAsQueued,
+  holdBusyFollowUp,
   historyWithoutSteerIds,
   joinLeftoverSteerPrompt,
+  moveHeldBusyFollowUp,
   queuedChipPrimaryAction,
   resolveBusyFollowUp,
+  resolveBusyFollowUpWithoutConversation,
   placeMessageBeforeIds,
+  takeHeldBusyFollowUp,
+  takeHeldBusyFollowUps,
+  type HeldBusyFlushPhase,
+  type HeldBusyFollowUp,
   type SteerAcceptResult,
   listPendingSteers,
   cancelPendingSteer,
+  updateHeldBusyFollowUpText,
   updatePendingSteerText,
   type PendingSteerMap
 } from '../shared/pending-steer'
@@ -376,6 +387,7 @@ export default function App() {
   )
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPrompt[]>([])
   const [pendingSteers, setPendingSteers] = useState<QueuedPrompt[]>([])
+  const [heldBusyFollowUps, setHeldBusyFollowUps] = useState<HeldBusyFollowUp[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
@@ -474,6 +486,7 @@ export default function App() {
   const sessionQueuesRef = useRef<SessionQueueMap>({})
   const pendingSteersRef = useRef<PendingSteerMap>({})
   const queuedPromptsRef = useRef<QueuedPrompt[]>([])
+  const heldBusyFollowUpsRef = useRef<HeldBusyFollowUp[]>([])
   /** 后台会话 live 状态（切换离开后继续收流） */
   const sessionBuffersRef = useRef<Map<string, SessionLiveBuffer>>(new Map())
   /** 当前 IPC 回合归属的 conversationId */
@@ -533,6 +546,137 @@ export default function App() {
     pendingSteersRef.current = boxes
     setPendingSteers(listPendingSteers(boxes, convId))
   }, [])
+
+  const syncHeldBusyFollowUps = useCallback((next: HeldBusyFollowUp[]) => {
+    heldBusyFollowUpsRef.current = next
+    setHeldBusyFollowUps(next)
+  }, [])
+
+  const flushHeldBusyFollowUpsRef = useRef<
+    (conversationId: string, phase: HeldBusyFlushPhase, onlyId?: string) => Promise<void>
+  >(async () => {})
+  const heldFlushTailRef = useRef(Promise.resolve())
+
+  /** 对话 id 落库后冲暂存：Steer 进当前回合，Queue 等收束；首轮未就绪则再等，不 abort */
+  const flushHeldBusyFollowUps = useCallback(
+    async (conversationId: string, phase: HeldBusyFlushPhase, onlyId?: string) => {
+      const run = async () => {
+        let items: HeldBusyFollowUp[] = []
+        if (onlyId) {
+          const taken = takeHeldBusyFollowUp(heldBusyFollowUpsRef.current, onlyId)
+          if (!taken.item) return
+          items = [taken.item]
+          syncHeldBusyFollowUps(taken.rest)
+        } else {
+          const taken = takeHeldBusyFollowUps(heldBusyFollowUpsRef.current)
+          items = taken.items
+          if (items.length === 0) return
+          syncHeldBusyFollowUps([])
+        }
+        const retry: HeldBusyFollowUp[] = []
+        const activeId = activeConversationIdRef.current
+        for (const item of items) {
+          if (item.intent === 'steer') {
+            let accepted: SteerAcceptResult | null = null
+            if (window.sharker.steerChat) {
+              try {
+                accepted = await window.sharker.steerChat(
+                  conversationId,
+                  item.text,
+                  item.attachments?.length ? item.attachments : undefined
+                )
+              } catch (e) {
+                console.error('steer held follow-up failed', e)
+                accepted = null
+              }
+            }
+            const follow = applyHeldBusyFollowUp({
+              intent: 'steer',
+              accepted,
+              phase
+            })
+            if (follow === 'pending' && accepted?.ok) {
+              syncPendingSteerUi(
+                enqueuePendingSteer(
+                  pendingSteersRef.current,
+                  conversationId,
+                  createPendingSteer(
+                    conversationId,
+                    item.text,
+                    item.attachments,
+                    accepted.id
+                  )
+                ),
+                activeId
+              )
+              continue
+            }
+            if (follow === 'retry') {
+              retry.push(item)
+              continue
+            }
+            if (follow === 'ignore') continue
+            if (follow === 'send') {
+              void dispatchTurnRef.current(
+                item.text,
+                item.attachments ?? [],
+                conversationId
+              )
+              continue
+            }
+          }
+          const queued = createQueuedPrompt(
+            conversationId,
+            item.text,
+            item.attachments
+          )
+          const queues = enqueueForConversation(
+            sessionQueuesRef.current,
+            conversationId,
+            queued,
+            'append'
+          )
+          if (conversationId === activeConversationIdRef.current) {
+            syncActiveQueueUi(queues, conversationId)
+          } else {
+            sessionQueuesRef.current = queues
+          }
+        }
+        if (retry.length) {
+          syncHeldBusyFollowUps([...heldBusyFollowUpsRef.current, ...retry])
+        }
+        if (phase !== 'idle') return
+        const stillHeld = queueHeldByConvRef.current.has(conversationId)
+        const busyNow =
+          conversationId === activeConversationIdRef.current
+            ? sendInFlightRef.current || loadingLiveRef.current
+            : Boolean(sessionBuffersRef.current.get(conversationId)?.sendInFlight)
+        if (busyNow || stillHeld) return
+        const follow = nextFollowUpAfterTurn(sessionQueuesRef.current, conversationId)
+        if (conversationId === activeConversationIdRef.current) {
+          syncActiveQueueUi(follow.queues, conversationId)
+        } else {
+          sessionQueuesRef.current = follow.queues
+        }
+        if (follow.next) {
+          void dispatchTurnRef.current(
+            follow.next.text,
+            follow.next.attachments,
+            conversationId
+          )
+        }
+      }
+      const next = heldFlushTailRef.current.then(run, run)
+      heldFlushTailRef.current = next.then(
+        () => undefined,
+        () => undefined
+      )
+      await next
+    },
+    [syncActiveQueueUi, syncHeldBusyFollowUps, syncPendingSteerUi]
+  )
+
+  flushHeldBusyFollowUpsRef.current = flushHeldBusyFollowUps
 
   const continueLeftoverSteersAfterTurn = useCallback((convId: string): boolean => {
     const leftover = leftoverFinishByConvRef.current.get(convId)
@@ -2022,6 +2166,9 @@ export default function App() {
           buf.doneCommitted = false
           buf.loading = true
           buf.sendInFlight = true
+          if (heldBusyFollowUpsRef.current.length) {
+            void flushHeldBusyFollowUpsRef.current(ownerId, 'live')
+          }
         }
         if (chunk.type === 'turn_cancelled') {
           buf.turnOutcome = 'aborted'
@@ -2227,6 +2374,9 @@ export default function App() {
           if (ownerId) delete awaitingTurnStartByConvRef.current[ownerId]
           doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, ownerId)
           doneCommittedRef.current = false
+          if (heldBusyFollowUpsRef.current.length) {
+            void flushHeldBusyFollowUpsRef.current(ownerId, 'live')
+          }
         }
         if (chunk.type === 'turn_cancelled') {
           turnOutcomeRef.current = 'aborted'
@@ -2744,6 +2894,9 @@ export default function App() {
         // 确保有 conversationId 再发（新建会话时 ensure 会写入 active）
         await ensureP
         convId = activeConversationIdRef.current ?? convId
+        if (convId && heldBusyFollowUpsRef.current.length) {
+          void flushHeldBusyFollowUpsRef.current(convId, 'starting')
+        }
         // streamOwner 仅在主进程真正 turn_start 时设置，避免 B 排队时抢占 A 的归属
         if (convId) {
           doneCommittedMapRef.current = clearDoneCommitted(doneCommittedMapRef.current, convId)
@@ -2813,6 +2966,9 @@ export default function App() {
         // 若 done 事件尚未提交（极少数竞态），保留 loading，让 onStream(done) 收尾，避免直播区突然消失。
         // 若用户已切到其他会话，只维护原会话 buffer，绝不污染当前可见 UI。
         if (turnGenRef.current === myTurn) {
+          if (convId && heldBusyFollowUpsRef.current.length) {
+            void flushHeldBusyFollowUpsRef.current(convId, 'idle')
+          }
           const stillActive = !convId || activeConversationIdRef.current === convId
           if (stillActive) {
             sendInFlightRef.current = false
@@ -3029,18 +3185,17 @@ export default function App() {
       const convId = activeConversationIdRef.current
       const busy = loading || sendInFlightRef.current
       if (busy) {
-        // 无会话 id 时无法安全归属队列：插队中止后直接发
+        // 首轮对话 id 未落库：Steer / Queue 先暂存，绝不 abort 也不丢跟进
         if (!convId) {
-          if (mode === 'jump') {
-            try {
-              await window.sharker.abortChat()
-            } catch (e) {
-              console.error('abort failed', e)
-            }
-            sendInFlightRef.current = false
-            setLoading(false)
-            await dispatchTurn(trimmed, attachments)
-          }
+          const hold = resolveBusyFollowUpWithoutConversation(mode)
+          if (hold === 'ignore') return
+          syncHeldBusyFollowUps(
+            holdBusyFollowUp(heldBusyFollowUpsRef.current, {
+              text: trimmed,
+              attachments: attachments.length ? attachments : undefined,
+              intent: hold === 'hold-steer' ? 'steer' : 'queue'
+            })
+          )
           return
         }
         const item = createQueuedPrompt(
@@ -3138,7 +3293,15 @@ export default function App() {
 
       await dispatchTurn(trimmed, attachments, convId ?? undefined)
     },
-    [commitAssistantReply, dispatchTurn, flushSettingsDraftIfNeeded, loading, syncActiveQueueUi, syncPendingSteerUi]
+    [
+      commitAssistantReply,
+      dispatchTurn,
+      flushSettingsDraftIfNeeded,
+      loading,
+      syncActiveQueueUi,
+      syncHeldBusyFollowUps,
+      syncPendingSteerUi
+    ]
   )
 
   /** 暂停 / 恢复当前会话的排队自动出队 */
@@ -3160,6 +3323,10 @@ export default function App() {
   /** 取消排队中的消息（仅当前会话） */
   const handleCancelQueued = useCallback(
     (id: string) => {
+      if (heldBusyFollowUpsRef.current.some((row) => row.id === id)) {
+        syncHeldBusyFollowUps(cancelHeldBusyFollowUp(heldBusyFollowUpsRef.current, id))
+        return
+      }
       const convId = activeConversationIdRef.current
       if (!convId) return
       if (listPendingSteers(pendingSteersRef.current, convId).some((row) => row.id === id)) {
@@ -3170,11 +3337,15 @@ export default function App() {
       const queues = cancelQueuedPrompt(sessionQueuesRef.current, convId, id)
       syncActiveQueueUi(queues, convId)
     },
-    [syncActiveQueueUi, syncPendingSteerUi]
+    [syncActiveQueueUi, syncHeldBusyFollowUps, syncPendingSteerUi]
   )
 
   const handleEditQueued = useCallback(
     (id: string, text: string) => {
+      if (heldBusyFollowUpsRef.current.some((row) => row.id === id)) {
+        syncHeldBusyFollowUps(updateHeldBusyFollowUpText(heldBusyFollowUpsRef.current, id, text))
+        return
+      }
       const convId = activeConversationIdRef.current
       if (!convId) return
       if (listPendingSteers(pendingSteersRef.current, convId).some((row) => row.id === id)) {
@@ -3185,22 +3356,36 @@ export default function App() {
       const queues = updateQueuedPromptText(sessionQueuesRef.current, convId, id, text)
       syncActiveQueueUi(queues, convId)
     },
-    [syncActiveQueueUi, syncPendingSteerUi]
+    [syncActiveQueueUi, syncHeldBusyFollowUps, syncPendingSteerUi]
   )
 
   const handleMoveQueued = useCallback(
     (id: string, direction: -1 | 1) => {
+      if (heldBusyFollowUpsRef.current.some((row) => row.id === id)) {
+        syncHeldBusyFollowUps(moveHeldBusyFollowUp(heldBusyFollowUpsRef.current, id, direction))
+        return
+      }
       const convId = activeConversationIdRef.current
       if (!convId) return
       const queues = moveQueuedPrompt(sessionQueuesRef.current, convId, id, direction)
       syncActiveQueueUi(queues, convId)
     },
-    [syncActiveQueueUi]
+    [syncActiveQueueUi, syncHeldBusyFollowUps]
   )
 
   const handleSendQueued = useCallback(
     (id: string) => {
+      const takenHeld = takeHeldBusyFollowUp(heldBusyFollowUpsRef.current, id)
       const convId = activeConversationIdRef.current
+      if (takenHeld.item) {
+        if (!convId) return
+        void flushHeldBusyFollowUps(
+          convId,
+          loading || sendInFlightRef.current ? 'live' : 'idle',
+          takenHeld.item.id
+        )
+        return
+      }
       if (!convId) return
       const queued = sessionQueuesRef.current[convId] ?? []
       const item = queued.find((row) => row.id === id)
@@ -3239,7 +3424,14 @@ export default function App() {
       if (!taken.item?.text.trim()) return
       void handlePromptSubmit(taken.item.text, 'send', taken.item.attachments)
     },
-    [handlePromptSubmit, loading, syncActiveQueueUi, syncPendingSteerUi]
+    [
+      flushHeldBusyFollowUps,
+      handlePromptSubmit,
+      loading,
+      syncActiveQueueUi,
+      syncHeldBusyFollowUps,
+      syncPendingSteerUi
+    ]
   )
 
   /** Replay a user turn without duplicating its bubble; optional edited text. */
@@ -7028,7 +7220,11 @@ export default function App() {
               liveTurnMeta={liveTurnMeta}
               turnStartedAt={turnStartedAt}
               turnHadThinking={turnHadThinking}
-              queuedPrompts={queuedPrompts}
+              queuedPrompts={
+                heldBusyFollowUps.length > 0
+                  ? [...heldFollowUpsAsQueued(heldBusyFollowUps), ...queuedPrompts]
+                  : queuedPrompts
+              }
               pendingSteers={pendingSteers}
               onSend={handlePromptSubmit}
               onCancelQueued={handleCancelQueued}

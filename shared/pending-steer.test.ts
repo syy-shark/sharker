@@ -1,19 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendConsumedSteerMessage,
+  applyHeldBusyFollowUp,
+  cancelHeldBusyFollowUp,
   cancelPendingSteer,
   createPendingSteer,
   drainPendingSteers,
   enqueuePendingSteer,
   formatSteerForModel,
+  heldFollowUpsAsQueued,
+  holdBusyFollowUp,
   historyWithoutSteerIds,
   joinLeftoverSteerPrompt,
   leftoverSteerDisposition,
+  moveHeldBusyFollowUp,
   placeMessageBeforeIds,
   queuedChipPrimaryAction,
   resolveBusyFollowUp,
+  resolveBusyFollowUpWithoutConversation,
   listPendingSteers,
   shouldDrainPendingSteers,
+  takeHeldBusyFollowUp,
+  takeHeldBusyFollowUps,
+  updateHeldBusyFollowUpText,
   updatePendingSteerText
 } from './pending-steer'
 
@@ -76,5 +85,61 @@ describe('pending steer mailbox', () => {
     expect(
       resolveBusyFollowUp({ intent: 'steer', accepted: { ok: false, reason: 'no_conversation' } })
     ).toBe('queue')
+    expect(resolveBusyFollowUpWithoutConversation('jump')).toBe('hold-steer')
+    expect(resolveBusyFollowUpWithoutConversation('queue')).toBe('hold-queue')
+    expect(resolveBusyFollowUpWithoutConversation('send')).toBe('ignore')
+    expect(holdBusyFollowUp([], { text: '  ', intent: 'steer' })).toEqual([])
+    const held = holdBusyFollowUp([], { text: '  继续  ', intent: 'steer' })
+    expect(held).toHaveLength(1)
+    expect(held[0]?.text).toBe('继续')
+    expect(held[0]?.intent).toBe('steer')
+    const two = holdBusyFollowUp(held, { text: '排队', intent: 'queue' })
+    expect(two.map((row) => row.intent)).toEqual(['steer', 'queue'])
+    expect(heldFollowUpsAsQueued(two)[0]).toMatchObject({
+      id: held[0]?.id,
+      conversationId: '',
+      text: '继续'
+    })
+    expect(updateHeldBusyFollowUpText(two, two[1]!.id, '改排队')[1]?.text).toBe('改排队')
+    expect(moveHeldBusyFollowUp(two, two[1]!.id, -1).map((row) => row.intent)).toEqual([
+      'queue',
+      'steer'
+    ])
+    expect(cancelHeldBusyFollowUp(two, two[0]!.id)).toHaveLength(1)
+    const one = takeHeldBusyFollowUp(two, two[0]!.id)
+    expect(one.item?.id).toBe(two[0]?.id)
+    expect(one.rest).toHaveLength(1)
+    const taken = takeHeldBusyFollowUps(two)
+    expect(taken.items).toHaveLength(2)
+    expect(taken.rest).toEqual([])
+    expect(
+      applyHeldBusyFollowUp({
+        intent: 'steer',
+        accepted: { ok: false, reason: 'no_active_turn' },
+        phase: 'starting'
+      })
+    ).toBe('retry')
+    expect(
+      applyHeldBusyFollowUp({
+        intent: 'steer',
+        accepted: { ok: false, reason: 'no_active_turn' },
+        phase: 'live'
+      })
+    ).toBe('retry')
+    expect(
+      applyHeldBusyFollowUp({
+        intent: 'steer',
+        accepted: { ok: false, reason: 'no_active_turn' },
+        phase: 'idle'
+      })
+    ).toBe('send')
+    expect(
+      applyHeldBusyFollowUp({
+        intent: 'steer',
+        accepted: { ok: true, id: 's-held' },
+        phase: 'starting'
+      })
+    ).toBe('pending')
+    expect(applyHeldBusyFollowUp({ intent: 'queue', phase: 'starting' })).toBe('queue')
   })
 })

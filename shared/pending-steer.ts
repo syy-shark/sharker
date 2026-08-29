@@ -41,6 +41,142 @@ export function resolveBusyFollowUp(input: {
   return 'queue'
 }
 
+/**
+ * 首轮 `sendMessage` 已把 loading 拉起、对话 id 还没落库。
+ * 对标 Codex Steer / Queue：此时不得 abort，也不得把跟进丢掉。
+ */
+export type HeldBusyFollowUpIntent = 'steer' | 'queue'
+
+/** 对话 id 尚未落库时的忙时跟进 */
+export interface HeldBusyFollowUp {
+  id: string
+  text: string
+  attachments?: ChatAttachment[]
+  intent: HeldBusyFollowUpIntent
+}
+
+/** 把暂存冲进已落库会话时，当前回合到了哪一步 */
+export type HeldBusyFlushPhase = 'starting' | 'live' | 'idle'
+
+/**
+ * 无 conversationId 时的忙时后续：Steer / Queue 都先暂存。
+ * `send` 不该在忙时出现；出现也不 abort。
+ */
+export function resolveBusyFollowUpWithoutConversation(
+  mode: 'send' | 'queue' | 'jump'
+): 'hold-steer' | 'hold-queue' | 'ignore' {
+  if (mode === 'send') return 'ignore'
+  if (mode === 'queue') return 'hold-queue'
+  return 'hold-steer'
+}
+
+/**
+ * 对话 id 已有、冲暂存时的去向。
+ * 首轮还没 `turn_start` / 仍在直播时，`no_active_turn` 只能再等，不得 abort 首轮。
+ */
+export function applyHeldBusyFollowUp(input: {
+  intent: HeldBusyFollowUpIntent
+  accepted?: SteerAcceptResult | null
+  phase: HeldBusyFlushPhase
+}): BusyFollowUpAction | 'retry' {
+  if (input.intent === 'queue') return 'queue'
+  const follow = resolveBusyFollowUp({ intent: 'steer', accepted: input.accepted })
+  if (follow === 'send' && input.phase !== 'idle') return 'retry'
+  return follow
+}
+
+/** 收下一条尚未归属会话的忙时跟进 */
+export function holdBusyFollowUp(
+  held: HeldBusyFollowUp[],
+  next: Omit<HeldBusyFollowUp, 'id'> & { id?: string }
+): HeldBusyFollowUp[] {
+  const text = String(next.text || '').trim()
+  const attachments = next.attachments?.length ? next.attachments : undefined
+  if (!text && !attachments?.length) return held
+  return [
+    ...held,
+    {
+      id: next.id ?? `held-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      text,
+      attachments,
+      intent: next.intent
+    }
+  ]
+}
+
+/** 取消一条尚未冲进会话的跟进 */
+export function cancelHeldBusyFollowUp(
+  held: HeldBusyFollowUp[],
+  id: string
+): HeldBusyFollowUp[] {
+  const next = held.filter((item) => item.id !== id)
+  return next.length === held.length ? held : next
+}
+
+/** 改写一条尚未冲进会话的跟进正文 */
+export function updateHeldBusyFollowUpText(
+  held: HeldBusyFollowUp[],
+  id: string,
+  text: string
+): HeldBusyFollowUp[] {
+  const trimmed = text.trim()
+  if (!trimmed) return cancelHeldBusyFollowUp(held, id)
+  let changed = false
+  const next = held.map((item) => {
+    if (item.id !== id) return item
+    changed = true
+    return { ...item, text: trimmed }
+  })
+  return changed ? next : held
+}
+
+/** 重排尚未冲进会话的跟进 */
+export function moveHeldBusyFollowUp(
+  held: HeldBusyFollowUp[],
+  id: string,
+  direction: -1 | 1
+): HeldBusyFollowUp[] {
+  const i = held.findIndex((item) => item.id === id)
+  const j = i + direction
+  if (i < 0 || j < 0 || j >= held.length) return held
+  const next = held.slice()
+  const [row] = next.splice(i, 1)
+  if (!row) return held
+  next.splice(j, 0, row)
+  return next
+}
+
+/** 取出一条尚未冲进会话的跟进 */
+export function takeHeldBusyFollowUp(
+  held: HeldBusyFollowUp[],
+  id: string
+): { item: HeldBusyFollowUp | null; rest: HeldBusyFollowUp[] } {
+  const item = held.find((row) => row.id === id) ?? null
+  if (!item) return { item: null, rest: held }
+  return { item, rest: held.filter((row) => row.id !== id) }
+}
+
+/** 取出全部暂存，准备冲进已落库会话 */
+export function takeHeldBusyFollowUps(held: HeldBusyFollowUp[]): {
+  items: HeldBusyFollowUp[]
+  rest: HeldBusyFollowUp[]
+} {
+  if (held.length === 0) return { items: [], rest: held }
+  return { items: held, rest: [] }
+}
+
+/** 输入框上方芯片：暂存跟进先按排队条展示，冲进后再进注入/会话队列 */
+export function heldFollowUpsAsQueued(
+  held: HeldBusyFollowUp[]
+): Array<{ id: string; conversationId: string; text: string; attachments?: ChatAttachment[] }> {
+  return held.map((item) => ({
+    id: item.id,
+    conversationId: '',
+    text: item.text,
+    attachments: item.attachments
+  }))
+}
+
 /** 创建注入项（强制绑定 conversationId） */
 export function createPendingSteer(
   conversationId: string,

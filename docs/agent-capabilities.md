@@ -130,7 +130,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 用户气泡、输入框与排队条保留换行，并把长 URL 折在对话柱内（对标 Codex #37709 / #38380 / #38704）；历史 CRLF 先归一再画，避免空白行或横向撑开把直播贴底顶跳
 - 排队消息出现在输入框上方，可编辑、重排、删除；空闲可立即发送，直播中点「注入」推进当前回合（对标 Codex queued chip Steer），失败留在队列、不中止直播（不进对话滚动区，避免直播贴底跳动）。忙时排队 / 注入不贴底、不离开正在读的 `historyHead`（对标 Codex #38220）；只有空闲发送新用户气泡才跳到底（对标 Codex #13698 by design）
 - 当前 turn 结束后默认按序执行下一条；可点 **暂停队列** 先审再继续（对标 hold queue）
-- Composer 「注入」按钮 / ⌘⇧Enter 把本条加入当前回合（不中止直播）；注入失败改排队，只有没有进行中回合才新开（对标 Codex Steer，不 abort）。回合正常结束仍未排空时收成用户气泡并立刻续跑（对标 Codex leftover pending input at task finish）；中止 / 失败或本地 `!` 命令从未采样则还回排队（对标 Codex #18290 / 中止还原 composer）
+- Composer 「注入」按钮 / ⌘⇧Enter 把本条加入当前回合（不中止直播）；注入失败改排队，只有没有进行中回合才新开（对标 Codex Steer，不 abort）。首轮对话 id 还没落库时，忙时注入 / 排队先出现在输入框上方芯片，等会话就绪再冲进当前回合或队列，不中止也不丢跟进。回合正常结束仍未排空时收成用户气泡并立刻续跑（对标 Codex leftover pending input at task finish）；中止 / 失败或本地 `!` 命令从未采样则还回排队（对标 Codex #18290 / 中止还原 composer）
 
 ---
 
