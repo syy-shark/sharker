@@ -1,6 +1,7 @@
 /**
  * 长线程只挂最近一段对话，上滑再揭示更早消息（对标 Codex
  * “older history fetched as needed” / scroll-to-top 分页；不预拉全量、不设「加载更早」按钮）。
+ * ⌘↑ / 查找命中走独立 `historyHead` 最旧或命中页，禁止把瘦身全文灌进尾页 `messages`。
  * @see shared/ARCH.md
  */
 
@@ -118,14 +119,96 @@ export function windowIncludesLatest(total: number, end: number): boolean {
 }
 
 /**
- * ⌘↑ 要不要立刻揭开已瘦身全文。直播中灌进 React 会卡住贴底（官方也不在 turn 中抽干）。
- * 收束后再揭开；直播中只滚到当前已加载窗顶。
+ * ⌘↑ 要不要立刻取最旧一页（`historyHead`）。直播中灌进 React 会卡住贴底（官方也不在 turn 中抽干）。
+ * 收束后再取；直播中只滚到当前已加载窗顶。已在最旧页则只滚动。
  */
 export function shouldFetchSlimHistoryOnJumpTop(input: {
   hasOlder: boolean
   loading?: boolean
+  alreadyAtHead?: boolean
 }): boolean {
-  return Boolean(input.hasOlder) && !input.loading
+  return Boolean(input.hasOlder) && !input.loading && !input.alreadyAtHead
+}
+
+/** ⌘↑：只取线程最旧一段，不把尾页或中间段灌进 `messages` */
+export function headRangeForJumpTop(
+  tailStartSeq: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): { fromSeq: number; toSeq: number } | null {
+  const tail = Math.max(0, Math.floor(tailStartSeq))
+  if (tail <= 0) return null
+  return { fromSeq: 0, toSeq: Math.min(tail, Math.max(1, Math.floor(maxMounted))) }
+}
+
+/**
+ * 查找命中落在尾页之前：只取命中起最多 `maxMounted` 条，不揭开 [hit, tail)。
+ */
+export function headRangeForFindHit(
+  hitSeq: number,
+  tailStartSeq: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): { fromSeq: number; toSeq: number } | null {
+  const hit = Math.max(0, Math.floor(hitSeq))
+  const tail = Math.max(0, Math.floor(tailStartSeq))
+  if (hit >= tail) return null
+  return { fromSeq: hit, toSeq: Math.min(tail, hit + Math.max(1, Math.floor(maxMounted))) }
+}
+
+/** 头页下翻：取 [headEnd, tail) 里下一页；已接上尾页则返回 null（改回尾页） */
+export function nextHeadRange(
+  headEndSeq: number,
+  tailStartSeq: number,
+  page: number = TRANSCRIPT_PAGE
+): { fromSeq: number; toSeq: number } | null {
+  const fromSeq = Math.max(0, Math.floor(headEndSeq))
+  const tail = Math.max(0, Math.floor(tailStartSeq))
+  if (fromSeq >= tail) return null
+  const toSeq = Math.min(tail, fromSeq + Math.max(1, Math.floor(page)))
+  if (toSeq <= fromSeq) return null
+  return { fromSeq, toSeq }
+}
+
+/** 头页上翻：取 [headStart - page, headStart) */
+export function prevHeadRange(
+  headStartSeq: number,
+  page: number = TRANSCRIPT_PAGE
+): { fromSeq: number; toSeq: number } | null {
+  const toSeq = Math.max(0, Math.floor(headStartSeq))
+  if (toSeq <= 0) return null
+  const fromSeq = Math.max(0, toSeq - Math.max(1, Math.floor(page)))
+  if (toSeq <= fromSeq) return null
+  return { fromSeq, toSeq }
+}
+
+/** 头页追加后若超过挂载上限，丢掉最旧若干条 */
+export function slideHeadAfterAppend(
+  prevStart: number,
+  prevLen: number,
+  appended: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): { startSeq: number; keepFrom: number } {
+  const total = Math.max(0, Math.floor(prevLen)) + Math.max(0, Math.floor(appended))
+  const cap = Math.max(1, Math.floor(maxMounted))
+  if (total <= cap) return { startSeq: Math.max(0, Math.floor(prevStart)), keepFrom: 0 }
+  const drop = total - cap
+  return { startSeq: Math.max(0, Math.floor(prevStart)) + drop, keepFrom: drop }
+}
+
+/** 头页前插后若超过挂载上限，丢掉最新若干条 */
+export function slideHeadAfterPrepend(
+  prevEnd: number,
+  prevLen: number,
+  prepended: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): { endSeq: number; keepLen: number } {
+  const extra = Math.max(0, Math.floor(prepended))
+  const total = Math.max(0, Math.floor(prevLen)) + extra
+  const cap = Math.max(1, Math.floor(maxMounted))
+  if (total <= cap) return { endSeq: Math.max(0, Math.floor(prevEnd)), keepLen: total }
+  return {
+    endSeq: Math.max(0, Math.floor(prevEnd) - (total - cap)),
+    keepLen: cap
+  }
 }
 
 /**

@@ -356,15 +356,24 @@ interface Props {
   hasOlderHistory?: boolean
   /** 上滑到顶且内存窗已到头时取更早一页 */
   onLoadOlderHistory?: () => void | Promise<void>
-  /** 跳到对话顶需要全量时再拉 */
+  /** 跳到对话顶时取最旧一页（不灌瘦身全文） */
   onNeedFullHistory?: () => void | Promise<void>
+  /** 头页下翻取更新一段，接上尾页则清掉头页 */
+  onNeedNewerHead?: () => void | Promise<void>
+  /** 头页上翻取更旧一段 */
+  onNeedOlderHead?: () => void | Promise<void>
+  /** 回到尾页（跳底 / 发送 / 查找命中在尾） */
+  onLeaveHistoryHead?: () => void
   /** 点开瘦身后的命令输出 / 思考时取一条完整消息 */
   onNeedFullMessage?: (messageId: string) => void
   /** 已加载尾页的盘上起点 seq，给查找命中对齐 */
   historyStartSeq?: number
+  /** ⌘↑ / 查找命中用的最旧一段，与尾页 messages 分开，禁止拼成一段假连续列表 */
+  historyHead?: ChatMessage[] | null
+  historyHeadStartSeq?: number
   /** 分页线程查找：只扫用户/助手正文，不回放整段（对标 Codex #33907） */
   onSearchThread?: (query: string) => void | Promise<ThreadSearchHit[]>
-  /** 查找跳到未加载的更早命中时揭开 [seq, historyStart) */
+  /** 查找跳到未加载的更早命中时揭开命中起的有界一段 */
   onRevealFindHit?: (fromSeq: number) => void | Promise<void>
 }
 
@@ -442,8 +451,13 @@ export function ChatView({
   hasOlderHistory = false,
   onLoadOlderHistory,
   onNeedFullHistory,
+  onNeedNewerHead,
+  onNeedOlderHead,
+  onLeaveHistoryHead,
   onNeedFullMessage,
   historyStartSeq = 0,
+  historyHead = null,
+  historyHeadStartSeq = 0,
   onSearchThread,
   onRevealFindHit
 }: Props) {
@@ -596,8 +610,7 @@ export function ChatView({
   const sessionKeyRef = useRef<string | null | undefined>(undefined)
   const pinnedStartRef = useRef<number | null>(pinnedStart)
   pinnedStartRef.current = pinnedStart
-  const messagesLengthRef = useRef(messages.length)
-  messagesLengthRef.current = messages.length
+  const messagesLengthRef = useRef(0)
   const revealPreserveHeightRef = useRef<number | null>(null)
   const pendingJumpTopRef = useRef(false)
   const pendingFullHistoryAfterLiveRef = useRef(false)
@@ -610,30 +623,76 @@ export function ChatView({
   onLoadOlderHistoryRef.current = onLoadOlderHistory
   const onNeedFullHistoryRef = useRef(onNeedFullHistory)
   onNeedFullHistoryRef.current = onNeedFullHistory
-  const messagesListRef = useRef(messages)
-  messagesListRef.current = messages
+  const onNeedNewerHeadRef = useRef(onNeedNewerHead)
+  onNeedNewerHeadRef.current = onNeedNewerHead
+  const onNeedOlderHeadRef = useRef(onNeedOlderHead)
+  onNeedOlderHeadRef.current = onNeedOlderHead
+  const onLeaveHistoryHeadRef = useRef(onLeaveHistoryHead)
+  onLeaveHistoryHeadRef.current = onLeaveHistoryHead
+  const viewingHead = Boolean(historyHead?.length)
+  const viewingHeadRef = useRef(viewingHead)
+  viewingHeadRef.current = viewingHead
+  const historyHeadStartSeqRef = useRef(historyHeadStartSeq)
+  historyHeadStartSeqRef.current = historyHeadStartSeq
+  const transcriptMessages = viewingHead ? historyHead! : messages
+  messagesLengthRef.current = transcriptMessages.length
+  const messagesListRef = useRef(transcriptMessages)
+  messagesListRef.current = transcriptMessages
   const trimTopIdsRef = useRef<string[]>([])
-  const prevHeadRef = useRef<{ id?: string; len: number; session?: string | null }>({
-    id: messages[0]?.id,
-    len: messages.length,
-    session: sessionKey
+  const prevHeadRef = useRef<{
+    id?: string
+    len: number
+    session?: string | null
+    head?: boolean
+  }>({
+    id: transcriptMessages[0]?.id,
+    len: transcriptMessages.length,
+    session: sessionKey,
+    head: viewingHead
   })
-  if (sessionKey !== prevHeadRef.current.session) {
-    prevHeadRef.current = { id: messages[0]?.id, len: messages.length, session: sessionKey }
-  } else if (
-    messages[0]?.id &&
-    messages[0].id !== prevHeadRef.current.id &&
-    messages.length > prevHeadRef.current.len
+  const prevViewRef = useRef({ head: viewingHead, session: sessionKey })
+  if (
+    prevViewRef.current.head &&
+    !viewingHead &&
+    prevViewRef.current.session === sessionKey &&
+    userScrollLockRef.current
   ) {
-    const delta = messages.length - prevHeadRef.current.len
-    prevHeadRef.current = { id: messages[0].id, len: messages.length, session: sessionKey }
+    setPinnedStart(0)
+    pendingJumpTopRef.current = true
+  }
+  prevViewRef.current = { head: viewingHead, session: sessionKey }
+  if (sessionKey !== prevHeadRef.current.session || viewingHead !== prevHeadRef.current.head) {
+    prevHeadRef.current = {
+      id: transcriptMessages[0]?.id,
+      len: transcriptMessages.length,
+      session: sessionKey,
+      head: viewingHead
+    }
+    if (viewingHead) setPinnedStart(0)
+  } else if (
+    transcriptMessages[0]?.id &&
+    transcriptMessages[0].id !== prevHeadRef.current.id &&
+    transcriptMessages.length > prevHeadRef.current.len
+  ) {
+    const delta = transcriptMessages.length - prevHeadRef.current.len
+    prevHeadRef.current = {
+      id: transcriptMessages[0].id,
+      len: transcriptMessages.length,
+      session: sessionKey,
+      head: viewingHead
+    }
     if (pendingJumpTopRef.current) {
       setPinnedStart(0)
     } else {
       setPinnedStart((p) => shiftPinnedStartAfterPrepend(p, delta))
     }
   } else {
-    prevHeadRef.current = { id: messages[0]?.id, len: messages.length, session: sessionKey }
+    prevHeadRef.current = {
+      id: transcriptMessages[0]?.id,
+      len: transcriptMessages.length,
+      session: sessionKey,
+      head: viewingHead
+    }
   }
   const queuedPersistRef = useRef<{ id: string; snap: TranscriptScrollSnapshot } | null>(null)
   const onScrollSnapshotRef = useRef(onScrollSnapshot)
@@ -748,17 +807,23 @@ export function ChatView({
 
   const memoryFindHits = useMemo(() => {
     if (!findQuery.trim()) return EMPTY_FIND_HITS
+    const rows: { id: string; content: string; seq: number }[] = []
+    if (historyHead?.length) {
+      for (let i = 0; i < historyHead.length; i++) {
+        const m = historyHead[i]
+        rows.push({ id: m.id, content: m.content, seq: historyHeadStartSeq + i })
+      }
+    }
     const start = historyStartSeq
-    const rows = messages.map((m, i) => ({
-      id: m.id,
-      content: m.content,
-      seq: start + i
-    }))
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i]
+      rows.push({ id: m.id, content: m.content, seq: start + i })
+    }
     if (streaming.trim()) {
       rows.push({ id: liveRowId, content: streaming, seq: start + messages.length })
     }
     return findInThread(rows, findQuery)
-  }, [historyStartSeq, liveRowId, messages, findQuery, streaming])
+  }, [historyHead, historyHeadStartSeq, historyStartSeq, liveRowId, messages, findQuery, streaming])
 
   const findHits = useMemo(
     () => mergeThreadSearchHits(memoryFindHits, diskFindHits),
@@ -909,7 +974,8 @@ export function ChatView({
     if (userScrollLockRef.current) {
       const total = messagesLengthRef.current
       const start = effectiveTranscriptWindowStart(total, pinnedStartRef.current)
-      const moreBelow = effectiveTranscriptWindowEnd(total, start) < total
+      const moreBelow =
+        viewingHeadRef.current || effectiveTranscriptWindowEnd(total, start) < total
       const resume =
         !moreBelow && lastScrollIntentRef.current === 'down' && distance <= AT_BOTTOM_PX
       if (resume) {
@@ -953,9 +1019,12 @@ export function ChatView({
   const findCurrent = findHits[findHit]
   const loadedFindIds = useMemo(() => {
     const ids = new Set(messages.map((m) => m.id))
+    if (historyHead) {
+      for (const m of historyHead) ids.add(m.id)
+    }
     ids.add(liveRowId)
     return ids
-  }, [liveRowId, messages])
+  }, [historyHead, liveRowId, messages])
 
   useEffect(() => {
     if (!findOpen || !findCurrent || !onRevealFindHit) return
@@ -966,28 +1035,39 @@ export function ChatView({
 
   const findHitIndex =
     findOpen && findCurrent && findCurrent.messageId !== liveRowId
-      ? messages.findIndex((m) => m.id === findCurrent.messageId)
+      ? transcriptMessages.findIndex((m) => m.id === findCurrent.messageId)
       : -1
   const windowStart = effectiveTranscriptWindowStart(
-    messages.length,
+    transcriptMessages.length,
     findHitIndex >= 0
-      ? windowStartToCoverIndex(messages.length, pinnedStart, findHitIndex)
+      ? windowStartToCoverIndex(transcriptMessages.length, pinnedStart, findHitIndex)
       : pinnedStart
   )
-  const windowEnd = effectiveTranscriptWindowEnd(messages.length, windowStart)
+  const windowEnd = effectiveTranscriptWindowEnd(transcriptMessages.length, windowStart)
   const windowedMessages = useMemo(
-    () => messages.slice(windowStart, windowEnd),
-    [messages, windowStart, windowEnd]
+    () => transcriptMessages.slice(windowStart, windowEnd),
+    [transcriptMessages, windowStart, windowEnd]
   )
-  const atLatestWindow = windowIncludesLatest(messages.length, windowEnd)
+  const atLatestWindow = !viewingHead && windowIncludesLatest(transcriptMessages.length, windowEnd)
 
   useLayoutEffect(() => {
     if (findHitIndex < 0) return
     setPinnedStart((p) => {
-      const next = windowStartToCoverIndex(messages.length, p, findHitIndex)
+      const next = windowStartToCoverIndex(transcriptMessages.length, p, findHitIndex)
       return next === p ? p : next
     })
-  }, [findHitIndex, messages.length])
+  }, [findHitIndex, transcriptMessages.length])
+
+  useLayoutEffect(() => {
+    if (!findOpen || !findCurrent || !viewingHead) return
+    if (historyHead!.some((m) => m.id === findCurrent.messageId)) return
+    if (
+      findCurrent.messageId === liveRowId ||
+      messages.some((m) => m.id === findCurrent.messageId)
+    ) {
+      onLeaveHistoryHeadRef.current?.()
+    }
+  }, [findCurrent, findOpen, historyHead, liveRowId, messages, viewingHead])
 
   useLayoutEffect(() => {
     const el = messagesRef.current
@@ -1115,6 +1195,7 @@ export function ChatView({
     setCanJumpToBottom(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
+    onLeaveHistoryHeadRef.current?.()
     scrollToBottom(loading ? 'auto' : 'smooth')
   }, [loading, scrollToBottom])
 
@@ -1124,6 +1205,7 @@ export function ChatView({
     setStickToBottom(true)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
+    onLeaveHistoryHeadRef.current?.()
   }, [])
 
   const dockIntent = composerIntent === 'find' ? null : composerIntent
@@ -1150,17 +1232,20 @@ export function ChatView({
         setCanJumpToBottom(true)
         pendingJumpTopRef.current = true
         setPinnedStart(0)
+        const alreadyAtHead =
+          viewingHeadRef.current && historyHeadStartSeqRef.current <= 0
         if (
           shouldFetchSlimHistoryOnJumpTop({
             hasOlder: hasOlderHistoryRef.current,
-            loading: loadingRef.current
+            loading: loadingRef.current,
+            alreadyAtHead
           })
         ) {
           void onNeedFullHistoryRef.current?.()
         } else if (hasOlderHistoryRef.current && loadingRef.current) {
           pendingFullHistoryAfterLiveRef.current = true
         }
-        if (pinnedStartRef.current === 0 && !hasOlderHistoryRef.current) {
+        if (alreadyAtHead || (pinnedStartRef.current === 0 && !hasOlderHistoryRef.current)) {
           programmaticScrollRef.current = true
           el.scrollTo({ top: 0, behavior: 'smooth' })
           window.setTimeout(() => {
@@ -1207,6 +1292,37 @@ export function ChatView({
       const currentStart = effectiveTranscriptWindowStart(total, pinnedStartRef.current)
       const currentEnd = effectiveTranscriptWindowEnd(total, currentStart)
       const distanceFromBottom = Math.max(0, el.scrollHeight - el.clientHeight - top)
+      if (viewingHeadRef.current) {
+        if (
+          !loadOlderBusyRef.current &&
+          shouldFetchOlderHistoryPage({
+            scrollTop: top,
+            locked: userScrollLockRef.current,
+            windowStart: currentStart,
+            hasOlder: historyHeadStartSeqRef.current > 0
+          })
+        ) {
+          loadOlderBusyRef.current = true
+          revealPreserveHeightRef.current = el.scrollHeight
+          void Promise.resolve(onNeedOlderHeadRef.current?.()).finally(() => {
+            loadOlderBusyRef.current = false
+          })
+        } else if (
+          !loadOlderBusyRef.current &&
+          shouldRevealNewerTranscript({
+            distanceFromBottom,
+            locked: userScrollLockRef.current,
+            canReveal: true
+          })
+        ) {
+          loadOlderBusyRef.current = true
+          revealPreserveHeightRef.current = el.scrollHeight
+          void Promise.resolve(onNeedNewerHeadRef.current?.()).finally(() => {
+            loadOlderBusyRef.current = false
+          })
+        }
+        return
+      }
       if (
         shouldRevealOlderTranscript({
           scrollTop: top,
@@ -1333,7 +1449,7 @@ export function ChatView({
         applyTranscriptRestore(scroller, pending)
         if (pendingRestoreRef.current) return
       }
-      if (!stickToBottomRef.current || userScrollLockRef.current) return
+      if (!stickToBottomRef.current || userScrollLockRef.current || viewingHeadRef.current) return
       const h = scroller.scrollHeight
       const client = scroller.clientHeight
       if (
@@ -1403,7 +1519,7 @@ export function ChatView({
   }, [isEmpty, windowedMessages])
 
   useEffect(() => {
-    if (isEmpty || loading) return
+    if (isEmpty || loading || viewingHead) return
     const { distance } = readScrollMetrics()
     if (
       !shouldForceStickScroll({
@@ -1416,11 +1532,12 @@ export function ChatView({
       return
     }
     scrollToBottom('auto')
-  }, [messages, isEmpty, loading, findOpen, scrollToBottom, readScrollMetrics])
+  }, [messages, isEmpty, loading, findOpen, viewingHead, scrollToBottom, readScrollMetrics])
 
   const handleEditLastUser = useCallback(() => {
     const id = lastUserMessageId(messages)
     if (!id) return
+    if (viewingHeadRef.current) onLeaveHistoryHeadRef.current?.()
     const idx = messages.findIndex((m) => m.id === id)
     if (idx >= 0) {
       setPinnedStart((p) => windowStartToCoverIndex(messages.length, p, idx))
@@ -1547,6 +1664,8 @@ export function ChatView({
       data-session-key={sessionKey || undefined}
       data-transcript-window-start={windowStart}
       data-transcript-window-end={windowEnd}
+      data-transcript-head={viewingHead ? '1' : undefined}
+      data-transcript-head-start={viewingHead ? historyHeadStartSeq : undefined}
     >
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
@@ -1555,6 +1674,7 @@ export function ChatView({
           ref={messagesRef}
           data-transcript-window-start={windowStart}
           data-transcript-window-end={windowEnd}
+          data-transcript-head={viewingHead ? '1' : undefined}
           tabIndex={0}
           role="region"
           aria-label="对话"

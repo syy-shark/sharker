@@ -71,11 +71,18 @@ import {
 import { ChatView } from './components/ChatView'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
+  TRANSCRIPT_MAX_MOUNTED,
   TRANSCRIPT_PAGE,
   TRANSCRIPT_TAIL,
+  headRangeForFindHit,
+  headRangeForJumpTop,
   mergeConversationHistory,
+  nextHeadRange,
   nextHistoryStartSeq,
-  prependHistoryPage
+  prependHistoryPage,
+  prevHeadRange,
+  slideHeadAfterAppend,
+  slideHeadAfterPrepend
 } from '../shared/transcript-window'
 import { mergeHydratedMessage, shouldReloadUnslimmedHistory } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
@@ -332,6 +339,11 @@ export default function App() {
   const [historyStartSeq, setHistoryStartSeq] = useState(0)
   const historyStartSeqRef = useRef(0)
   const historyLoadGenRef = useRef(0)
+  const [historyHead, setHistoryHead] = useState<ChatMessage[] | null>(null)
+  const historyHeadRef = useRef<ChatMessage[] | null>(null)
+  const [historyHeadStartSeq, setHistoryHeadStartSeq] = useState(0)
+  const historyHeadStartSeqRef = useRef(0)
+  const historyHeadEndSeqRef = useRef(0)
   const [conversationList, setConversationList] = useState<ConversationSummary[]>([])
   const conversationListRef = useRef<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
@@ -528,11 +540,47 @@ export default function App() {
     return true
   }, [])
 
-  const applyConversationMessages = useCallback((msgs: ChatMessage[], startSeq = 0) => {
+  const clearHistoryHead = useCallback(() => {
+    historyHeadRef.current = null
+    historyHeadStartSeqRef.current = 0
+    historyHeadEndSeqRef.current = 0
+    setHistoryHead(null)
+    setHistoryHeadStartSeq(0)
+  }, [])
+
+  const applyHistoryHead = useCallback((msgs: ChatMessage[] | null, startSeq = 0) => {
+    if (!msgs?.length) {
+      historyHeadRef.current = null
+      historyHeadStartSeqRef.current = 0
+      historyHeadEndSeqRef.current = 0
+      setHistoryHead(null)
+      setHistoryHeadStartSeq(0)
+      return
+    }
+    const start = Math.max(0, Math.floor(startSeq))
+    historyHeadRef.current = msgs
+    historyHeadStartSeqRef.current = start
+    historyHeadEndSeqRef.current = start + msgs.length
+    setHistoryHead(msgs)
+    setHistoryHeadStartSeq(start)
+  }, [])
+
+  const applyConversationMessages = useCallback((
+    msgs: ChatMessage[],
+    startSeq = 0,
+    opts?: { preserveHead?: boolean }
+  ) => {
     messagesRef.current = msgs
     setMessages(msgs)
     historyStartSeqRef.current = startSeq
     setHistoryStartSeq(startSeq)
+    if (!opts?.preserveHead) {
+      historyHeadRef.current = null
+      historyHeadStartSeqRef.current = 0
+      historyHeadEndSeqRef.current = 0
+      setHistoryHead(null)
+      setHistoryHeadStartSeq(0)
+    }
   }, [])
 
   const applyBufferToUi = useCallback((buf: SessionLiveBuffer) => {
@@ -771,27 +819,6 @@ export default function App() {
     [loadUnslimmedHistoryMessages]
   )
 
-  /** ⌘↑：揭开已瘦身的全线程，不把命令输出原文灌进 DOM */
-  const ensureConversationHistory = useCallback(async (workspaceId: string, convId: string) => {
-    const isActive = convId === activeConversationIdRef.current
-    const start = isActive
-      ? historyStartSeqRef.current
-      : sessionBuffersRef.current.get(convId)?.historyStartSeq ?? 0
-    if (start <= 0) return
-    const gen = historyLoadGenRef.current
-    const conv = await window.sharker.loadConversation(workspaceId, convId, { slim: true })
-    if (!conv || historyLoadGenRef.current !== gen) return
-    if (isActive) {
-      if (activeConversationIdRef.current !== convId) return
-      applyConversationMessages(mergeConversationHistory(conv.messages, messagesRef.current), 0)
-      return
-    }
-    const buf = sessionBuffersRef.current.get(convId)
-    if (!buf) return
-    buf.messages = mergeConversationHistory(conv.messages, buf.messages)
-    buf.historyStartSeq = 0
-  }, [applyConversationMessages])
-
   const handleLoadOlderHistory = useCallback(async () => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
@@ -816,13 +843,98 @@ export default function App() {
     )
   }, [applyConversationMessages])
 
+  /** ⌘↑：只取最旧一页进 historyHead，不把瘦身全文灌进 messages / 不改 historyStartSeq */
   const handleNeedFullHistory = useCallback(async () => {
     if (loadingLiveRef.current) return
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
+    const range = headRangeForJumpTop(historyStartSeqRef.current)
+    if (!workspaceId || !convId || !range || !window.sharker.loadConversationRange) return
+    const gen = historyLoadGenRef.current
+    const page = await window.sharker.loadConversationRange(
+      workspaceId,
+      convId,
+      range.fromSeq,
+      range.toSeq
+    )
+    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
+    applyHistoryHead(page, range.fromSeq)
+  }, [applyHistoryHead])
+
+  const handleNeedNewerHead = useCallback(async () => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    const tailStart = historyStartSeqRef.current
+    const range = nextHeadRange(historyHeadEndSeqRef.current, tailStart)
     if (!workspaceId || !convId) return
-    await ensureConversationHistory(workspaceId, convId)
-  }, [ensureConversationHistory])
+    if (!range) {
+      clearHistoryHead()
+      return
+    }
+    if (!window.sharker.loadConversationRange) return
+    const gen = historyLoadGenRef.current
+    const newer = await window.sharker.loadConversationRange(
+      workspaceId,
+      convId,
+      range.fromSeq,
+      range.toSeq
+    )
+    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
+    if (!newer.length) {
+      clearHistoryHead()
+      return
+    }
+    const prev = historyHeadRef.current ?? []
+    const seen = new Set(prev.map((m) => m.id))
+    const unique = newer.filter((m) => m.id && !seen.has(m.id))
+    if (!unique.length) {
+      clearHistoryHead()
+      return
+    }
+    const merged = [...prev, ...unique]
+    const slide = slideHeadAfterAppend(
+      historyHeadStartSeqRef.current,
+      prev.length,
+      unique.length,
+      TRANSCRIPT_MAX_MOUNTED
+    )
+    applyHistoryHead(merged.slice(slide.keepFrom), slide.startSeq)
+  }, [applyHistoryHead, clearHistoryHead])
+
+  const handleNeedOlderHead = useCallback(async () => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    const range = prevHeadRange(historyHeadStartSeqRef.current)
+    if (!workspaceId || !convId || !range || !window.sharker.loadConversationRange) return
+    const gen = historyLoadGenRef.current
+    const older = await window.sharker.loadConversationRange(
+      workspaceId,
+      convId,
+      range.fromSeq,
+      range.toSeq
+    )
+    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
+    if (!older.length) {
+      applyHistoryHead(historyHeadRef.current, 0)
+      return
+    }
+    const prev = historyHeadRef.current ?? []
+    const seen = new Set(prev.map((m) => m.id))
+    const unique = older.filter((m) => m.id && !seen.has(m.id))
+    if (!unique.length) return
+    const merged = [...unique, ...prev]
+    const slide = slideHeadAfterPrepend(
+      historyHeadEndSeqRef.current,
+      prev.length,
+      unique.length,
+      TRANSCRIPT_MAX_MOUNTED
+    )
+    applyHistoryHead(merged.slice(0, slide.keepLen), range.fromSeq)
+  }, [applyHistoryHead])
+
+  const handleLeaveHistoryHead = useCallback(() => {
+    clearHistoryHead()
+  }, [clearHistoryHead])
 
   const handleSearchThread = useCallback(async (query: string) => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
@@ -834,35 +946,22 @@ export default function App() {
   const handleRevealFindHit = useCallback(async (fromSeq: number) => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
-    const before = historyStartSeqRef.current
-    if (
-      !workspaceId ||
-      !convId ||
-      fromSeq >= before ||
-      !window.sharker.loadConversationRange
-    ) {
+    const range = headRangeForFindHit(fromSeq, historyStartSeqRef.current)
+    if (!workspaceId || !convId || !range || !window.sharker.loadConversationRange) {
       return
     }
     const gen = historyLoadGenRef.current
-    const older = await window.sharker.loadConversationRange(
+    const page = await window.sharker.loadConversationRange(
       workspaceId,
       convId,
-      fromSeq,
-      before
+      range.fromSeq,
+      range.toSeq
     )
     if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) {
       return
     }
-    if (!older.length) {
-      historyStartSeqRef.current = fromSeq
-      setHistoryStartSeq(fromSeq)
-      return
-    }
-    applyConversationMessages(
-      prependHistoryPage(messagesRef.current, older),
-      fromSeq
-    )
-  }, [applyConversationMessages])
+    applyHistoryHead(page, range.fromSeq)
+  }, [applyHistoryHead])
 
   const handleNeedFullMessage = useCallback(async (messageId: string) => {
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
@@ -874,10 +973,14 @@ export default function App() {
       return
     }
     const next = messagesRef.current.map((m) => mergeHydratedMessage(m, full))
-    applyConversationMessages(next, historyStartSeqRef.current)
+    const head = historyHeadRef.current
+    const nextHead = head?.map((m) => mergeHydratedMessage(m, full)) ?? null
+    const headChanged = Boolean(head && nextHead && nextHead.some((m, i) => m !== head[i]))
+    applyConversationMessages(next, historyStartSeqRef.current, { preserveHead: true })
+    if (headChanged && nextHead) applyHistoryHead(nextHead, historyHeadStartSeqRef.current)
     const buf = sessionBuffersRef.current.get(convId)
     if (buf) buf.messages = next
-  }, [applyConversationMessages])
+  }, [applyConversationMessages, applyHistoryHead])
 
   /** 将 ref 中的回合元信息同步到 React state */
   const syncLiveTurnMeta = useCallback(() => {
@@ -6883,8 +6986,13 @@ export default function App() {
               keyboardShortcuts={settings.keyboardShortcuts}
               hasOlderHistory={historyStartSeq > 0}
               historyStartSeq={historyStartSeq}
+              historyHead={historyHead}
+              historyHeadStartSeq={historyHeadStartSeq}
               onLoadOlderHistory={handleLoadOlderHistory}
               onNeedFullHistory={handleNeedFullHistory}
+              onNeedNewerHead={handleNeedNewerHead}
+              onNeedOlderHead={handleNeedOlderHead}
+              onLeaveHistoryHead={handleLeaveHistoryHead}
               onNeedFullMessage={handleNeedFullMessage}
               onSearchThread={handleSearchThread}
               onRevealFindHit={handleRevealFindHit}

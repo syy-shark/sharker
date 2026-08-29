@@ -373,7 +373,7 @@ export async function searchConversationOccurrences(
   )
 }
 
-/** 取 [fromSeq, beforeSeq) 一段并按启动窗预算瘦身，给查找跳到未加载命中 */
+/** 取 [fromSeq, beforeSeq) 一段并按启动窗预算瘦身，给 ⌘↑ 头页 / 查找命中 */
 export async function loadConversationMessageRange(
   workspacePath: string,
   workspaceId: string,

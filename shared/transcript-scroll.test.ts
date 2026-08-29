@@ -20,9 +20,13 @@ import {
   TRANSCRIPT_MAX_MOUNTED,
   effectiveTranscriptWindowEnd,
   effectiveTranscriptWindowStart,
+  headRangeForFindHit,
+  headRangeForJumpTop,
   mergeConversationHistory,
+  nextHeadRange,
   nextHistoryStartSeq,
   prependHistoryPage,
+  prevHeadRange,
   revealNewerWindowStart,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
@@ -31,6 +35,8 @@ import {
   shouldFetchSlimHistoryOnJumpTop,
   shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
+  slideHeadAfterAppend,
+  slideHeadAfterPrepend,
   stickTranscriptWindowStart,
   windowIncludesLatest,
   windowStartToCoverIndex,
@@ -145,6 +151,25 @@ describe('transcript scroll restore', () => {
     expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: true, loading: false })).toBe(true)
     expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: true, loading: true })).toBe(false)
     expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: false, loading: false })).toBe(false)
+    expect(
+      shouldFetchSlimHistoryOnJumpTop({ hasOlder: true, loading: false, alreadyAtHead: true })
+    ).toBe(false)
+    expect(headRangeForJumpTop(0)).toBeNull()
+    expect(headRangeForJumpTop(400)).toEqual({ fromSeq: 0, toSeq: TRANSCRIPT_MAX_MOUNTED })
+    expect(headRangeForJumpTop(20)).toEqual({ fromSeq: 0, toSeq: 20 })
+    expect(headRangeForFindHit(12, 400)).toEqual({ fromSeq: 12, toSeq: 12 + TRANSCRIPT_MAX_MOUNTED })
+    expect(headRangeForFindHit(390, 400)).toEqual({ fromSeq: 390, toSeq: 400 })
+    expect(headRangeForFindHit(400, 400)).toBeNull()
+    expect(nextHeadRange(70, 400)).toEqual({ fromSeq: 70, toSeq: 100 })
+    expect(nextHeadRange(390, 400)).toEqual({ fromSeq: 390, toSeq: 400 })
+    expect(nextHeadRange(400, 400)).toBeNull()
+    expect(prevHeadRange(0)).toBeNull()
+    expect(prevHeadRange(70)).toEqual({ fromSeq: 40, toSeq: 70 })
+    expect(prevHeadRange(20)).toEqual({ fromSeq: 0, toSeq: 20 })
+    expect(slideHeadAfterAppend(0, 70, 30)).toEqual({ startSeq: 30, keepFrom: 30 })
+    expect(slideHeadAfterAppend(0, 40, 20)).toEqual({ startSeq: 0, keepFrom: 0 })
+    expect(slideHeadAfterPrepend(70, 70, 30)).toEqual({ endSeq: 40, keepLen: TRANSCRIPT_MAX_MOUNTED })
+    expect(slideHeadAfterPrepend(70, 40, 20)).toEqual({ endSeq: 70, keepLen: 60 })
     expect(
       shouldRevealOlderTranscript({ scrollTop: 12, locked: true, canReveal: true })
     ).toBe(true)
