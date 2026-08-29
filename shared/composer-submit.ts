@@ -12,6 +12,8 @@ export type FollowUpBehavior = 'queue' | 'steer'
 
 /** Official desktop Settings → General → Follow-up behavior (#17285 / #33416). */
 export const FOLLOW_UP_BEHAVIOR_LABEL = 'Follow-up behavior'
+export const WAIT_FOR_THE_NEXT_RUN_LABEL = 'Wait for the next run'
+export const STEER_THE_CURRENT_RUN_LABEL = 'Steer the current run'
 /** Official desktop composer action while a turn is running. */
 export const STEER_LABEL = 'Steer'
 /** Official desktop queued follow-up chip / settings option. */

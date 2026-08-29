@@ -10,6 +10,8 @@ import {
   FOLLOW_UP_BEHAVIOR_LABEL,
   QUEUE_LABEL,
   STEER_LABEL,
+  STEER_THE_CURRENT_RUN_LABEL,
+  WAIT_FOR_THE_NEXT_RUN_LABEL,
   CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
   composerEnterBehaviorLabel,
   parseComposerEnterBehavior,
@@ -82,13 +84,13 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               {
                 value: 'queue',
                 title: QUEUE_LABEL,
-                description: '忙时 Enter 等到当前回合结束。⌘⇧Enter 改为 Steer。',
+                description: WAIT_FOR_THE_NEXT_RUN_LABEL,
                 icon: <span aria-hidden>Q</span>
               },
               {
                 value: 'steer',
                 title: STEER_LABEL,
-                description: '忙时 Enter 加入当前回合，不中止直播。⌘⇧Enter 改为 Queue。',
+                description: STEER_THE_CURRENT_RUN_LABEL,
                 icon: <span aria-hidden>S</span>
               }
             ]}

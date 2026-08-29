@@ -3,6 +3,8 @@ import {
   collectUserPrompts,
   filterPromptHistory,
   FOLLOW_UP_BEHAVIOR_LABEL,
+  WAIT_FOR_THE_NEXT_RUN_LABEL,
+  STEER_THE_CURRENT_RUN_LABEL,
   formatBusyFollowUpPlaceholder,
   formatQueueChipLabel,
   isDoubleEscape,
@@ -64,6 +66,8 @@ describe('composer submit', () => {
     expect(shouldQueueComposerSlash('send')).toBe(false)
     expect(shouldQueueComposerSlash('jump')).toBe(false)
     expect(FOLLOW_UP_BEHAVIOR_LABEL).toBe('Follow-up behavior')
+    expect(WAIT_FOR_THE_NEXT_RUN_LABEL).toBe('Wait for the next run')
+    expect(STEER_THE_CURRENT_RUN_LABEL).toBe('Steer the current run')
     expect(STEER_LABEL).toBe('Steer')
     expect(QUEUE_LABEL).toBe('Queue')
     expect(SEND_LABEL).toBe('Send')
