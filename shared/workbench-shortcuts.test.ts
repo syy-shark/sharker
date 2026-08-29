@@ -171,9 +171,12 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'Tab', metaKey: true }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'PageDown', ctrlKey: true }))).toBe('next_thread')
     expect(matchWorkbenchShortcut(ev({ key: 'PageUp', ctrlKey: true }))).toBe('prev_thread')
-    expect(WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘.' && row.title.includes('批注'))).toBe(
-      true
-    )
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) =>
+          row.keys === '⌘.' && row.title === 'Toggle browser browse or comment mode'
+      )
+    ).toBe(true)
     expect(
       WORKBENCH_SHORTCUT_HELP.some(
         (row) => row.keys === 'Enter' && row.title.includes('Queue') && row.title.includes('Steer')
