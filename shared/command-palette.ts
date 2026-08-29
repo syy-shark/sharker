@@ -16,6 +16,7 @@ import {
   SLASH_STATUS_DESCRIPTION,
   SLASH_TASK_DESCRIPTION
 } from './slash-commands'
+import { SCHEDULED_LABEL } from './automation'
 import {
   ARCHIVE_CHAT_LABEL,
   ARCHIVE_CHATS_ACTION_LABEL,
@@ -59,6 +60,7 @@ import {
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_FILES_LABEL,
+  SKILLS_LABEL,
   CODEX_DOCUMENTATION_LABEL,
   SEND_FEEDBACK_LABEL,
   START_DICTATION_LABEL,
@@ -242,8 +244,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'skills',
-    title: '浏览 Skills',
-    keywords: 'skills $ 技能',
+    title: SKILLS_LABEL,
+    keywords: 'skills $ 技能 浏览',
     action: 'show_skills'
   },
   {
@@ -465,8 +467,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'automations',
-    title: '打开自动化',
-    keywords: 'automations triage queue 自动化 审查队列',
+    title: SCHEDULED_LABEL,
+    keywords: 'scheduled automations triage queue 自动化 审查队列',
     action: 'open_automations'
   },
   {

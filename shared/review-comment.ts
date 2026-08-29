@@ -76,19 +76,54 @@ export function parseReviewFindings(markdown: string): ReviewLineComment[] {
 
 const EMPTY_REVIEW_FINDINGS: ReviewLineComment[] = []
 
+/** 直播审查发现：围栏原文没变则复用上一帧，避免 token 重解析 JSON */
+export type LiveReviewFindingsState = {
+  findings: ReviewLineComment[]
+  fence: string
+}
+
+const EMPTY_LIVE_REVIEW_FINDINGS: LiveReviewFindingsState = {
+  findings: EMPTY_REVIEW_FINDINGS,
+  fence: ''
+}
+
+const LIVE_REVIEW_FINDINGS_OPEN = /```review-findings/i
+
+/** 已闭合的第一段 `review-findings` 围栏原文；半截返回空 */
+export function extractClosedReviewFindingsFence(streaming: string): string {
+  const text = String(streaming || '')
+  if (!LIVE_REVIEW_FINDINGS_OPEN.test(text)) return ''
+  const fence = /```review-findings\s*([\s\S]*?)```/i.exec(text)
+  return fence?.[0] ?? ''
+}
+
+/**
+ * 直播正文里只认已闭合的 `review-findings` 围栏。
+ * 半截围栏不挂；标题格式等收束后再解析，避免增长中的段落闪评论。
+ * 闭合后只追加时复用上一帧，不重扫全文、不重 parse JSON（对标 Codex #22860）。
+ */
+export function nextLiveReviewFindings(
+  prev: LiveReviewFindingsState | null,
+  streaming: string
+): LiveReviewFindingsState {
+  const text = String(streaming || '')
+  if (prev?.fence && text.includes(prev.fence)) return prev
+  if (!LIVE_REVIEW_FINDINGS_OPEN.test(text)) {
+    return prev && prev.fence === '' ? prev : EMPTY_LIVE_REVIEW_FINDINGS
+  }
+  const fence = extractClosedReviewFindingsFence(text)
+  if (!fence) return prev && prev.fence === '' ? prev : EMPTY_LIVE_REVIEW_FINDINGS
+  if (prev?.fence === fence) return prev
+  return { fence, findings: parseReviewFindings(fence) }
+}
+
 /**
  * 直播正文里只认已闭合的 `review-findings` 围栏。
  * 半截围栏不挂；标题格式等收束后再解析，避免增长中的段落闪评论。
  * 对标 Codex：`/review` comments show up directly inline in the review pane。
  */
 export function parseLiveReviewFindings(streaming: string): ReviewLineComment[] {
-  const text = String(streaming || '')
-  if (!text.includes('```review-findings') && !text.includes('```REVIEW-FINDINGS')) {
-    return EMPTY_REVIEW_FINDINGS
-  }
-  const fence = /```review-findings\s*([\s\S]*?)```/i.exec(text)
-  if (!fence) return EMPTY_REVIEW_FINDINGS
-  return parseReviewFindings(fence[0])
+  return nextLiveReviewFindings(null, streaming).findings
 }
 
 /** 行内发现没变则复用上一帧，避免直播 token 重挂审查列表 */

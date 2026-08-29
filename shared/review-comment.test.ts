@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   formatReviewCommentsPrompt,
+  nextLiveReviewFindings,
   parseLiveReviewFindings,
   parseReviewFindings,
   sameReviewFindings
@@ -57,8 +58,14 @@ describe('review comments', () => {
     expect(parseLiveReviewFindings('### src/b.ts:9\n不要吞错\n')).toEqual([])
     expect(sameReviewFindings(fromFence, fromFence)).toBe(true)
     expect(sameReviewFindings(fromFence, [])).toBe(false)
+    const closed =
+      '概述\n```review-findings\n[{"path":"src/a.ts","line":4,"text":"缺少测试"}]\n```\n'
+    const first = nextLiveReviewFindings(null, closed)
+    expect(first.findings).toEqual(fromFence)
+    expect(nextLiveReviewFindings(first, `${closed}还在写`)).toBe(first)
+    expect(nextLiveReviewFindings(first, '概述')).toEqual({ findings: [], fence: '' })
     const panelSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'), 'utf8')
-    expect(panelSrc).toContain('parseLiveReviewFindings')
+    expect(panelSrc).toContain('nextLiveReviewFindings')
     expect(panelSrc).toContain('useLiveStreamUiSelect')
     expect(panelSrc).toContain('reviewDiffKeysForFindings')
     expect(panelSrc).toContain('mergeReviewExpandedKeys')

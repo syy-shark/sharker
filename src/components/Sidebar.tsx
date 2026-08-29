@@ -58,6 +58,7 @@ import {
   RENAME_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
+  SKILLS_LABEL,
   revealInFolderLabel,
   threadMenuItems,
   threadRevealFolderPath,
@@ -936,7 +937,7 @@ export const Sidebar = memo(function Sidebar({
             onClick={() => onNavigate('skills')}
           >
             <Sparkles size={18} className="sidebar-nav-ico" aria-hidden />
-            <span>Skills</span>
+            <span>{SKILLS_LABEL}</span>
           </button>
           <button
             type="button"

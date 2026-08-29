@@ -59,6 +59,7 @@ import {
   UNARCHIVE_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_SETTINGS_LABEL,
+  SKILLS_LABEL,
   revealInFolderLabel,
   reviewFileRevealPath,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
@@ -163,6 +164,7 @@ describe('reveal in folder', () => {
     expect(threadMenuItems({ platform: 'darwin' })[0]?.title).toBe('Open in Finder')
     expect(OPEN_COMMAND_MENU_LABEL).toBe('Open command menu')
     expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
+    expect(SKILLS_LABEL).toBe('Skills')
     expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')

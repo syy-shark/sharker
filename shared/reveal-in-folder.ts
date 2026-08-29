@@ -100,6 +100,8 @@ export const FIND_PREVIOUS_MATCH_LABEL = 'Find previous match'
 export const CLEAR_ALL_UNREAD_INDICATORS_LABEL = 'Clear all unread indicators'
 export const NEXT_CHAT_NEEDING_ATTENTION_LABEL = 'Next chat needing attention'
 export const SEARCH_FILES_LABEL = 'Search files'
+/** Official sidebar / `codex://skills` (learn.chatgpt.com/docs/reference/commands). */
+export const SKILLS_LABEL = 'Skills'
 
 /** Official Codex app-menu roots (github.com/openai/codex#14450 File, Edit, View, Window, Help). */
 export const FILE_MENU_LABEL = 'File'
