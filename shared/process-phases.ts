@@ -24,7 +24,8 @@ import {
   findLiveToolRetargetChange,
   isLiveAnswerAppendChange,
   isLiveThinkAppendChange,
-  isLiveToolAppendChange
+  isLiveToolAppendChange,
+  isLiveToolWriteStatChange
 } from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
@@ -649,7 +650,11 @@ export function retargetProcessPhaseStepsOnToolMeta(
     rebuilt.detail === prev.detail &&
     rebuilt.status === prev.status
   ) {
-    return prevSteps
+    if (prev.segment === change.to) return prevSteps
+    if (!isLiveToolWriteStatChange(change.from, change.to)) return prevSteps
+    const same = prevSteps.slice()
+    same[index] = { ...prev, segment: change.to }
+    return same
   }
   const nextStep: ProcessPhaseStep = {
     ...rebuilt,
