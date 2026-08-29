@@ -14,6 +14,17 @@ export function cloneSegments(segments: TurnSegment[]): TurnSegment[] {
   return segments.map((s) => ({ ...s }))
 }
 
+/** 只换数组；改某一段时再浅拷该段，已完成工具保持引用（对标直播过程行 memo） */
+function copyOnWriteSegments(segments: TurnSegment[]): TurnSegment[] {
+  return segments.slice()
+}
+
+function writeSegmentAt(list: TurnSegment[], index: number): TurnSegment {
+  const copy = { ...list[index]! }
+  list[index] = copy
+  return copy
+}
+
 /** 从工具活动 label 解析详情（· 后部分） */
 function detailFromToolLabel(label: string): string | undefined {
   const dot = label.indexOf(' · ')
@@ -200,18 +211,18 @@ function mergeGrowingToolArgs(
   return out
 }
 
-function findActiveToolPreview(
+function findActiveToolPreviewIndex(
   segments: TurnSegment[],
   toolName: string,
   toolCallId?: string
-): TurnSegment | undefined {
+): number {
   for (let i = segments.length - 1; i >= 0; i--) {
     const s = segments[i]
     if (s.kind !== 'tool' || s.toolName !== toolName || s.status !== 'active') continue
     if (toolCallId && s.toolCallId && s.toolCallId !== toolCallId) continue
-    return s
+    return i
   }
-  return undefined
+  return -1
 }
 
 function diffsFromChunk(chunk: StreamChunk): FileDiff[] | undefined {
@@ -322,7 +333,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   ) {
     return segments
   }
-  const next = cloneSegments(segments)
+  const next = copyOnWriteSegments(segments)
 
   // 回合一启动就给出可见“准备”步骤，避免 UI 空白停住
   if (chunk.type === 'turn_start') {
@@ -348,15 +359,21 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
   if (chunk.type === 'status' && chunk.content) {
     // 工具进行中的状态：写回 active tool 详情，直播步骤不会看起来“卡住不动”
-    const activeTools = next.filter((s) => s.kind === 'tool' && s.status === 'active')
-    const activeTool = chunk.toolName
-      ? findLastSegment(next, (s) => s.kind === 'tool' && s.status === 'active' && s.toolName === chunk.toolName)
-      : activeTools.length === 1
-        ? activeTools[0]
-        : undefined
-    if (activeTool) {
+    const activeToolIndex = chunk.toolName
+      ? findLastSegmentIndex(
+          next,
+          (s) => s.kind === 'tool' && s.status === 'active' && s.toolName === chunk.toolName
+        )
+      : (() => {
+          const activeTools = next
+            .map((s, i) => (s.kind === 'tool' && s.status === 'active' ? i : -1))
+            .filter((i) => i >= 0)
+          return activeTools.length === 1 ? activeTools[0]! : -1
+        })()
+    if (activeToolIndex >= 0) {
       const clean = chunk.content.trim()
       if (clean) {
+        const activeTool = writeSegmentAt(next, activeToolIndex)
         // 源码/JSON 首行不适合当工具详情
         const codeLike = /^(L\d+:|[{}\[\]]|```)/.test(clean)
         // 进度心跳（执行中… / 已启动…）只写 resultSummary，避免冲掉 path/command 标题摘要
@@ -374,20 +391,23 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       return next
     }
 
-    const last = next[next.length - 1]
+    const lastIndex = next.length - 1
+    const last = next[lastIndex]
     if (last?.kind === 'status' && last.status === 'active') {
-      last.content = chunk.content
-      last.toolName = chunk.toolName ?? last.toolName
-      last.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : last.toolTitle
+      const written = writeSegmentAt(next, lastIndex)
+      written.content = chunk.content
+      written.toolName = chunk.toolName ?? written.toolName
+      written.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : written.toolTitle
       return next
     }
     // 合并本地 seed / 过期 status，避免堆多条「准备中」
     for (let i = next.length - 1; i >= 0; i--) {
       const s = next[i]
       if (s.kind === 'status' && s.status === 'active') {
-        s.content = chunk.content
-        s.toolName = chunk.toolName ?? s.toolName
-        s.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : s.toolTitle
+        const written = writeSegmentAt(next, i)
+        written.content = chunk.content
+        written.toolName = chunk.toolName ?? written.toolName
+        written.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : written.toolTitle
         return next
       }
     }
@@ -405,17 +425,19 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
   if (chunk.type === 'tool_preview' && chunk.toolName && isWritePreviewTool(chunk.toolName)) {
     const incoming = chunk.toolArgs
-    let target = findActiveToolPreview(next, chunk.toolName, chunk.toolCallId)
-    if (!target) {
-      for (const s of next) {
+    let targetIndex = findActiveToolPreviewIndex(next, chunk.toolName, chunk.toolCallId)
+    if (targetIndex < 0) {
+      for (let i = 0; i < next.length; i++) {
+        const s = next[i]!
         if (s.status === 'active' && (s.kind === 'thinking' || s.kind === 'status')) {
-          s.status = 'done'
-          s.endedAt = timestamp
+          const written = writeSegmentAt(next, i)
+          written.status = 'done'
+          written.endedAt = timestamp
         }
       }
-      target = makeToolSegment(chunk.toolName, incoming, chunk.toolCallId, timestamp, false)
-      next.push(target)
+      next.push(makeToolSegment(chunk.toolName, incoming, chunk.toolCallId, timestamp, false))
     } else {
+      const target = writeSegmentAt(next, targetIndex)
       const merged = mergeGrowingToolArgs(target.toolArgs, incoming)
       const preview = editPreviewFromToolArgs(chunk.toolName, merged)
       target.toolArgs = merged
@@ -432,24 +454,26 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     const html = typeof chunk.content === 'string' ? chunk.content : ''
     const caption =
       typeof chunk.toolArgs?.caption === 'string' ? chunk.toolArgs.caption.trim() : undefined
-    let target: TurnSegment | undefined
+    let targetIndex = -1
     for (let i = next.length - 1; i >= 0; i--) {
       const s = next[i]
       if (s.kind !== 'tool' || s.toolName !== 'present_inline_demo') continue
       if (s.status !== 'active') continue
       if (chunk.toolCallId && s.toolCallId && s.toolCallId !== chunk.toolCallId) continue
-      target = s
+      targetIndex = i
       break
     }
-    if (!target) {
+    if (targetIndex < 0) {
       // 只结束思考/status，保留已出的文字段在主区
-      for (const s of next) {
+      for (let i = 0; i < next.length; i++) {
+        const s = next[i]!
         if (s.status === 'active' && (s.kind === 'thinking' || s.kind === 'status')) {
-          s.status = 'done'
-          s.endedAt = timestamp
+          const written = writeSegmentAt(next, i)
+          written.status = 'done'
+          written.endedAt = timestamp
         }
       }
-      target = makeToolSegment(
+      const target = makeToolSegment(
         'present_inline_demo',
         { html: html || ' ', ...(caption ? { caption } : {}) },
         chunk.toolCallId,
@@ -460,6 +484,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       if (!html) target.content = ''
       next.push(target)
     } else {
+      const target = writeSegmentAt(next, targetIndex)
       // 只前进不回退，避免乱序 chunk 把更长 html 冲短
       if (html.length >= (target.content?.length ?? 0)) {
         target.content = html
@@ -472,19 +497,22 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
   if (chunk.type === 'tool_start' && chunk.toolName) {
     // 结束进行中的思考/文字段
-    for (const s of next) {
+    for (let i = 0; i < next.length; i++) {
+      const s = next[i]!
       if (
         s.status === 'active' &&
         (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text')
       ) {
-        s.status = 'done'
-        s.endedAt = timestamp
+        const written = writeSegmentAt(next, i)
+        written.status = 'done'
+        written.endedAt = timestamp
       }
     }
     // 演示 / 写入若已有参数流预览段：合并到完整参数，避免重复块、保住 `s.id-diff-N`
     if (chunk.toolName === 'present_inline_demo' || isWritePreviewTool(chunk.toolName)) {
-      const s = findActiveToolPreview(next, chunk.toolName, chunk.toolCallId)
-      if (s) {
+      const previewIndex = findActiveToolPreviewIndex(next, chunk.toolName, chunk.toolCallId)
+      if (previewIndex >= 0) {
+        const s = writeSegmentAt(next, previewIndex)
         const full = makeToolSegment(
           chunk.toolName,
           chunk.toolArgs ?? s.toolArgs,
@@ -519,16 +547,17 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       const s = next[i]
       if (s.kind !== 'tool' || s.status !== 'active') continue
       if (chunk.toolCallId && s.toolCallId === chunk.toolCallId) {
-        s.status = chunk.toolStatus === 'error' ? 'error' : 'done'
-        s.endedAt = timestamp
-        s.resultSummary = chunk.resultSummary
-        s.resultOutput = chunk.resultOutput
-        s.errorMessage = chunk.error
-        s.exitCode = chunk.exitCode
+        const written = writeSegmentAt(next, i)
+        written.status = chunk.toolStatus === 'error' ? 'error' : 'done'
+        written.endedAt = timestamp
+        written.resultSummary = chunk.resultSummary
+        written.resultOutput = chunk.resultOutput
+        written.errorMessage = chunk.error
+        written.exitCode = chunk.exitCode
         if (diffs) {
-          s.fileDiffs = diffs
-          s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
-          s.editPreview = previewFromDiffs(diffs)
+          written.fileDiffs = diffs
+          written.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
+          written.editPreview = previewFromDiffs(diffs)
         }
         matched = true
         break
@@ -538,16 +567,17 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
       for (let i = next.length - 1; i >= 0; i--) {
         const s = next[i]
         if (s.kind === 'tool' && s.toolName === chunk.toolName && s.status === 'active') {
-          s.status = chunk.toolStatus === 'error' ? 'error' : 'done'
-          s.endedAt = timestamp
-          s.resultSummary = chunk.resultSummary
-          s.resultOutput = chunk.resultOutput
-          s.errorMessage = chunk.error
-          s.exitCode = chunk.exitCode
+          const written = writeSegmentAt(next, i)
+          written.status = chunk.toolStatus === 'error' ? 'error' : 'done'
+          written.endedAt = timestamp
+          written.resultSummary = chunk.resultSummary
+          written.resultOutput = chunk.resultOutput
+          written.errorMessage = chunk.error
+          written.exitCode = chunk.exitCode
           if (diffs) {
-            s.fileDiffs = diffs
-            s.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
-            s.editPreview = previewFromDiffs(diffs)
+            written.fileDiffs = diffs
+            written.fileDiff = chunk.fileDiff ?? diffs[diffs.length - 1]
+            written.editPreview = previewFromDiffs(diffs)
           }
           break
         }
@@ -557,20 +587,22 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'approval_needed' && chunk.approval) {
-    const active = findLastSegment(
+    const activeIndex = findLastSegmentIndex(
       next,
       (segment) =>
         segment.kind === 'tool' &&
         segment.status === 'active' &&
         segment.toolName === chunk.approval?.toolName
     )
-    if (active) active.approval = chunk.approval
+    if (activeIndex >= 0) writeSegmentAt(next, activeIndex).approval = chunk.approval
     // 显式状态步：直播区即使工具标题被折叠，也能看到“等待确认”
-    const last = next[next.length - 1]
+    const lastIndex = next.length - 1
+    const last = next[lastIndex]
     if (last?.kind === 'status' && last.status === 'active') {
-      last.content = `等待确认 · ${chunk.approval.title || chunk.approval.toolName}`
-      last.toolName = chunk.approval.toolName
-      last.toolTitle = toolTitle(chunk.approval.toolName)
+      const written = writeSegmentAt(next, lastIndex)
+      written.content = `等待确认 · ${chunk.approval.title || chunk.approval.toolName}`
+      written.toolName = chunk.approval.toolName
+      written.toolTitle = toolTitle(chunk.approval.toolName)
     } else {
       next.push({
         id: `status-approval-${timestamp}`,
@@ -586,21 +618,23 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'approval_resolved' && chunk.toolName) {
-    const active = findLastSegment(
+    const activeIndex = findLastSegmentIndex(
       next,
       (segment) =>
         segment.kind === 'tool' && segment.status === 'active' && segment.toolName === chunk.toolName
     )
-    if (active && chunk.approved) active.approval = undefined
-    for (const s of next) {
+    if (activeIndex >= 0 && chunk.approved) writeSegmentAt(next, activeIndex).approval = undefined
+    for (let i = 0; i < next.length; i++) {
+      const s = next[i]!
       if (
         s.kind === 'status' &&
         s.status === 'active' &&
         (s.content ?? '').includes('等待确认')
       ) {
-        s.status = 'done'
-        s.endedAt = timestamp
-        s.content = chunk.approved ? '已确认，继续执行' : '已拒绝该操作'
+        const written = writeSegmentAt(next, i)
+        written.status = 'done'
+        written.endedAt = timestamp
+        written.content = chunk.approved ? '已确认，继续执行' : '已拒绝该操作'
       }
     }
     return next
@@ -608,27 +642,30 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
   if (chunk.type === 'turn_cancelled') {
     let marked = false
-    for (const segment of next) {
+    for (let i = 0; i < next.length; i++) {
+      const segment = next[i]!
       if (segment.status !== 'active') continue
-      segment.status = 'cancelled'
-      segment.endedAt = timestamp
-      if (segment.kind === 'tool') {
-        segment.errorMessage = '任务已停止'
-        const summary = segment.resultSummary?.trim() || ''
+      const written = writeSegmentAt(next, i)
+      written.status = 'cancelled'
+      written.endedAt = timestamp
+      if (written.kind === 'tool') {
+        written.errorMessage = '任务已停止'
+        const summary = written.resultSummary?.trim() || ''
         const progressLike =
           /^(已启动|执行中|运行中|处理中)/.test(summary) ||
           /执行中…\s*\d+s/.test(summary) ||
           /·\s*\d+s$/.test(summary)
-        if (!summary || progressLike) segment.resultSummary = '已停止'
+        if (!summary || progressLike) written.resultSummary = '已停止'
       }
       marked = true
     }
     if (!marked) {
-      const latestTool = findLastSegment(
+      const latestToolIndex = findLastSegmentIndex(
         next,
         (segment) => segment.kind === 'tool' && segment.status === 'error'
       )
-      if (latestTool) {
+      if (latestToolIndex >= 0) {
+        const latestTool = writeSegmentAt(next, latestToolIndex)
         latestTool.status = 'cancelled'
         latestTool.endedAt = timestamp
         latestTool.errorMessage = '任务已停止'
@@ -653,12 +690,14 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
   }
 
   if (chunk.type === 'error' && chunk.error) {
-    const last = next[next.length - 1]
+    const lastIndex = next.length - 1
+    const last = next[lastIndex]
     if (last?.kind === 'text' && last.status === 'active') {
-      last.content = `${last.content ?? ''}\n\n**错误**: ${chunk.error}`
-      last.status = 'done'
+      const written = writeSegmentAt(next, lastIndex)
+      written.content = `${written.content ?? ''}\n\n**错误**: ${chunk.error}`
+      written.status = 'done'
     } else if (last?.kind === 'status' && last.status === 'active') {
-      last.status = 'done'
+      writeSegmentAt(next, lastIndex).status = 'done'
       next.push({
         id: `error-${crypto.randomUUID()}`,
         kind: 'text',
@@ -683,27 +722,31 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
 /** 回合结束：标记 final 文字、收尾 active 段 */
 export function finalizeSegments(segments: TurnSegment[], endedAt = Date.now()): TurnSegment[] {
-  const next = cloneSegments(segments)
+  const next = copyOnWriteSegments(segments)
 
-  for (const s of next) {
+  for (let i = 0; i < next.length; i++) {
+    const s = next[i]!
     if (s.status === 'active') {
-      if (s.kind === 'thinking' || s.kind === 'status' || s.kind === 'text') s.status = 'done'
+      const written = writeSegmentAt(next, i)
+      if (written.kind === 'thinking' || written.kind === 'status' || written.kind === 'text') {
+        written.status = 'done'
+      }
       // 未收到 tool_done 的工具：视为中止/未完成，而不是“已成功完成”
-      if (s.kind === 'tool') {
-        s.status = 'cancelled'
-        const summary = s.resultSummary?.trim() || ''
+      if (written.kind === 'tool') {
+        written.status = 'cancelled'
+        const summary = written.resultSummary?.trim() || ''
         const progressLike =
           /^(已启动|执行中|运行中|处理中)/.test(summary) ||
           /执行中…\s*\d+s/.test(summary) ||
           /·\s*\d+s$/.test(summary)
         if (progressLike) {
-          s.resultSummary = '已停止'
-          if (!s.errorMessage) s.errorMessage = '已停止'
-        } else if (!s.resultSummary) {
-          s.resultSummary = '已停止'
+          written.resultSummary = '已停止'
+          if (!written.errorMessage) written.errorMessage = '已停止'
+        } else if (!written.resultSummary) {
+          written.resultSummary = '已停止'
         }
       }
-      s.endedAt = endedAt
+      written.endedAt = endedAt
     }
   }
 
@@ -714,9 +757,11 @@ export function finalizeSegments(segments: TurnSegment[], endedAt = Date.now()):
   if (textIndices.length > 0) {
     const lastTextIdx = textIndices[textIndices.length - 1]
     for (let i = 0; i < next.length; i++) {
-      const s = next[i]
+      const s = next[i]!
       if (s.kind !== 'text') continue
-      s.role = i === lastTextIdx ? 'final' : 'narration'
+      const role = i === lastTextIdx ? 'final' : 'narration'
+      if (s.role === role) continue
+      writeSegmentAt(next, i).role = role
     }
   }
 
@@ -733,15 +778,22 @@ function hasActiveWork(segments: TurnSegment[]): boolean {
 }
 
 /** 从后往前找片段，避免每 token `[...].reverse()` 拷数组 */
+export function findLastSegmentIndex(
+  segments: TurnSegment[],
+  pred: (s: TurnSegment) => boolean
+): number {
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (pred(segments[i]!)) return i
+  }
+  return -1
+}
+
 export function findLastSegment(
   segments: TurnSegment[],
   pred: (s: TurnSegment) => boolean
 ): TurnSegment | undefined {
-  for (let i = segments.length - 1; i >= 0; i--) {
-    const s = segments[i]
-    if (pred(s)) return s
-  }
-  return undefined
+  const index = findLastSegmentIndex(segments, pred)
+  return index >= 0 ? segments[index] : undefined
 }
 
 /** 从片段列表提取最终回答正文 */

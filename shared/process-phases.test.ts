@@ -47,5 +47,12 @@ describe('process phases privacy', () => {
     expect(reused[1]).toBe(steps[1])
     expect(reused).toHaveLength(3)
     expect(reused[2]).toBe(grown[2])
+    const clonedGrown = grown.map((step, index) =>
+      index < 2 ? { ...step, segment: { ...step.segment } } : step
+    )
+    const reusedCloned = reuseProcessPhaseSteps(steps, clonedGrown)
+    expect(reusedCloned[0]).toBe(steps[0])
+    expect(reusedCloned[1]).toBe(steps[1])
+    expect(reusedCloned[2]).toBe(clonedGrown[2])
   })
 })

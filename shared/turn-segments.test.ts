@@ -395,6 +395,29 @@ describe('turn segment event state machine', () => {
     segments = applyStreamChunk(segments, { type: 'token', content: 'B', timestamp: 4 })
     expect(segments[0]).toBe(tool)
     expect(segments[1].content).toBe('AB')
+    const afterHeartbeat = applyStreamChunk(segments, {
+      type: 'status',
+      content: '执行中… 2s',
+      timestamp: 5
+    })
+    expect(afterHeartbeat[0]).toBe(tool)
+    const afterPreview = applyStreamChunk(afterHeartbeat, {
+      type: 'tool_preview',
+      toolName: 'write_file',
+      toolArgs: { path: 'a.ts', content: 'x' },
+      timestamp: 6
+    })
+    expect(afterPreview[0]).toBe(tool)
+    const afterWriteBeat = applyStreamChunk(afterPreview, {
+      type: 'status',
+      toolName: 'write_file',
+      content: '执行中… 3s',
+      timestamp: 7
+    })
+    expect(afterWriteBeat[0]).toBe(tool)
+    expect(afterWriteBeat[afterWriteBeat.length - 1]).not.toBe(afterPreview[afterPreview.length - 1])
+    const finalized = finalizeSegments(afterWriteBeat, 8)
+    expect(finalized[0]).toBe(tool)
   })
 })
 

@@ -437,6 +437,21 @@ export function deriveChronologicalSteps(
   return buildStepsFromSource(source, isStreaming)
 }
 
+function sameReusableSegment(a: TurnSegment, b: TurnSegment): boolean {
+  return (
+    a === b ||
+    (a.id === b.id &&
+      a.status === b.status &&
+      a.kind === b.kind &&
+      a.toolName === b.toolName &&
+      a.toolDetail === b.toolDetail &&
+      a.resultSummary === b.resultSummary &&
+      a.content === b.content &&
+      a.exitCode === b.exitCode &&
+      a.errorMessage === b.errorMessage)
+  )
+}
+
 /** 已完成步骤保持同一对象，只换增长中的那一行，避免直播重挂整条时间线 */
 export function reuseProcessPhaseSteps(
   prev: ProcessPhaseStep[],
@@ -456,7 +471,7 @@ export function reuseProcessPhaseSteps(
       a.title === b.title &&
       a.detail === b.detail &&
       a.status === b.status &&
-      a.segment === b.segment
+      sameReusableSegment(a.segment, b.segment)
     ) {
       out.push(a)
     } else {
