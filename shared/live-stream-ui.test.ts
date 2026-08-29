@@ -66,6 +66,12 @@ import {
   isLiveWriteStatStatusErrorAppendChange,
   isLiveWriteStatThinkErrorAppendChange,
   isLiveWriteStatStatusThinkErrorAppendChange,
+  isLiveStatusCompressAppendChange,
+  isLiveThinkCompressAppendChange,
+  isLiveStatusThinkCompressAppendChange,
+  isLiveWriteStatStatusCompressAppendChange,
+  isLiveWriteStatThinkCompressAppendChange,
+  isLiveWriteStatStatusThinkCompressAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1496,6 +1502,88 @@ describe('live stream ui snapshot', () => {
       answerAfterPlanError.parts.find((part) => part.type === 'text' && part.id === hello.id)
     ).toBe(helloPlanErrorPart)
     expect(answerAfterPlanError.tail?.content).toContain('**错误**:')
+    const compressPayload = {
+      removedCount: 4,
+      beforeTokens: 9000,
+      afterTokens: 4000,
+      limit: 10000,
+      messages: [] as []
+    }
+    const compressRound = applyStreamChunk(afterPlanStatus, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 29
+    })
+    expect(isLiveStatusCompressAppendChange([hello, running], compressRound)).toBe(true)
+    expect(isLiveCompressAppendChange(afterPlanStatus, compressRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], compressRound)).toBe('tool')
+    let thinkThenCompress = applyStreamChunk(afterPlanStatus, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 30
+    })
+    thinkThenCompress = applyStreamChunk(thinkThenCompress, {
+      type: 'context_compress',
+      contextCompress: compressPayload,
+      timestamp: 31
+    })
+    expect(isLiveThinkCompressAppendChange(afterPlanStatus, thinkThenCompress)).toBe(true)
+    expect(isLiveStatusThinkCompressAppendChange([hello, running], thinkThenCompress)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], thinkThenCompress)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello, running], thinkThenCompress)).toBe('HmmNext')
+    const compressDone: TurnSegment = {
+      id: 'cp-plan',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Context automatically compacted',
+      status: 'done'
+    }
+    expect(
+      isLiveWriteStatStatusCompressAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, compressDone]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatThinkCompressAppendChange(
+        [hello, running],
+        [hello, ranDiff, nextThinkDone, compressDone]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusThinkCompressAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, nextThinkDone, compressDone]
+      )
+    ).toBe(true)
+    const processReadyForPlanCompress = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterPlanCompress = nextLiveProcessView(processReadyForPlanCompress, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: compressRound
+    })
+    expect(processAfterPlanCompress.processForFlow.some((segment) => segment.kind === 'status')).toBe(
+      true
+    )
+    expect(
+      processAfterPlanCompress.processForFlow.some((segment) => segment.toolName === 'compress')
+    ).toBe(true)
+    expect(processAfterPlanCompress.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    const processAfterThinkCompress = nextLiveProcessView(processReadyForPlanCompress, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenCompress
+    })
+    expect(processAfterThinkCompress.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkCompress.thinkText).toBe(processReadyForPlanCompress.thinkText + 'Next')
+    expect(
+      processAfterThinkCompress.processForFlow.some((segment) => segment.toolName === 'compress')
+    ).toBe(true)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

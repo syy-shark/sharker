@@ -867,14 +867,79 @@ export function isLiveWriteStatDemoFenceAppendChange(
   return hasStreamingDemoFence(added.content ?? '')
 }
 
+function isLiveAddedCompress(segment: TurnSegment | undefined): boolean {
+  return Boolean(segment && segment.kind === 'tool' && segment.toolName === COMPRESS_TOOL)
+}
+
 /** 写盘收束同时新开已完成 compress：过程 remap + 追加，回答只换 diff 槽（对标 contextCompaction 紧跟 Edited） */
 export function isLiveWriteStatCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
   if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 1) return false
-  const added = next[next.length - 1]
-  return Boolean(added && added.kind === 'tool' && added.toolName === COMPRESS_TOOL)
+  return isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 规划下一步后同一帧 compress：status 可先标 done，过程追加该行与压缩步 */
+export function isLiveStatusCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  return next.length === prev!.length + 2 && isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 规划下一步已在场时 think 后 compress：旁白可仍在，过程追加工具、思考不进过程 */
+export function isLiveThinkCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) {
+    return false
+  }
+  return next.length === prev!.length + 2 && isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 规划下一步 + think + compress 同一帧：过程追加 status 与压缩步 */
+export function isLiveStatusThinkCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return next.length === prev!.length + 3 && isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 写盘收束同时新开 status + compress：过程 remap 并追加这两步，回答只换 diff 槽 */
+export function isLiveWriteStatStatusCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  return next.length === prev!.length + 2 && isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 写盘收束同时新开思考 + compress：过程 remap 并追加压缩步，旁白续尾 */
+export function isLiveWriteStatThinkCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) return false
+  return next.length === prev!.length + 2 && isLiveAddedCompress(next[next.length - 1])
+}
+
+/** 写盘收束同时新开 status + 思考 + compress：过程 remap 并追加 status 与压缩步 */
+export function isLiveWriteStatStatusThinkCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return next.length === prev!.length + 3 && isLiveAddedCompress(next[next.length - 1])
 }
 
 function isLiveAddedError(segment: TurnSegment | undefined): boolean {
@@ -1329,6 +1394,12 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveWriteStatStatusDemoAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatThinkDemoAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveThinkCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusThinkCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatThinkCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusThinkCompressAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveCompressAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveCancelChange(prevSegments, segments)) {
     return segments.some((segment, index) => {
@@ -1413,7 +1484,9 @@ export function nextLiveThinkText(
       isLiveThinkDemoAppendChange(prevSegments, segments) ||
       isLiveWriteStatThinkDemoAppendChange(prevSegments, segments) ||
       isLiveThinkErrorAppendChange(prevSegments, segments) ||
-      isLiveWriteStatThinkErrorAppendChange(prevSegments, segments))
+      isLiveWriteStatThinkErrorAppendChange(prevSegments, segments) ||
+      isLiveThinkCompressAppendChange(prevSegments, segments) ||
+      isLiveWriteStatThinkCompressAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length]?.content ?? '')
   }
@@ -1428,7 +1501,9 @@ export function nextLiveThinkText(
       isLiveStatusThinkDemoAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments) ||
       isLiveStatusThinkErrorAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusThinkErrorAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkCompressAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusThinkCompressAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
   }
@@ -1729,6 +1804,12 @@ export function nextLiveProcessView(
       isLiveWriteStatThinkToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusThinkToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatCompressAppendChange(processHold.segments, segments) ||
+      isLiveStatusCompressAppendChange(processHold.segments, segments) ||
+      isLiveThinkCompressAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkCompressAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusCompressAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatThinkCompressAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkCompressAppendChange(processHold.segments, segments) ||
       isLiveCompressAppendChange(processHold.segments, segments))
   ) {
     const added = segments.slice(processHold.segments.length).filter((segment) => {
@@ -2143,6 +2224,9 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
   if (isLiveStatusThinkAppendChange(input.prevSegments, input.segments)) return true
   if (isLiveCompressAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveStatusCompressAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveThinkCompressAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveStatusThinkCompressAppendChange(input.prevSegments, input.segments)) return true
   if (isLiveCancelChange(input.prevSegments, input.segments)) {
     return !input.segments.some((segment, index) => {
       const before = input.prevSegments![index]

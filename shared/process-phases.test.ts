@@ -783,6 +783,35 @@ describe('process phases privacy', () => {
     )
     expect(settleAndThinkError).not.toBeNull()
     expect(settleAndThinkError).toHaveLength(2)
+    const compressDone: TurnSegment = {
+      id: 'cp-plan',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Context automatically compacted',
+      status: 'done',
+      startedAt: 16,
+      endedAt: 16
+    }
+    const settleAndStatusCompress = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, compressDone],
+      true
+    )
+    expect(settleAndStatusCompress).not.toBeNull()
+    expect(settleAndStatusCompress).toHaveLength(4)
+    expect(settleAndStatusCompress![2].segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusCompress!.at(-1)?.segment).toBe(compressDone)
+    const settleAndThinkCompress = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkDone, compressDone],
+      true
+    )
+    expect(settleAndThinkCompress).not.toBeNull()
+    expect(settleAndThinkCompress).toHaveLength(3)
+    expect(settleAndThinkCompress!.at(-1)?.segment).toBe(compressDone)
+    expect(settleAndThinkCompress!.some((step) => step.segment === nextThinkDone)).toBe(false)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',
