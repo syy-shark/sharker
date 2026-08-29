@@ -1,5 +1,6 @@
 /**
- * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换
+ * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state（对标 Codex #22860）。
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
