@@ -72,7 +72,18 @@ import {
   isLiveAskNeededThinkAnswerDemoAppendChange,
   isLiveWriteStatAskNeededThinkAppendChange,
   isLiveWriteStatAskNeededAnswerAppendChange,
+  isLiveWriteStatAskNeededThinkAnswerAppendChange,
+  isLiveWriteStatAskNeededThinkSettledToolAppendChange,
+  isLiveWriteStatAskNeededAnswerSettledToolAppendChange,
+  isLiveWriteStatAskNeededAnswerDemoAppendChange,
+  isLiveWriteStatAskNeededThinkAnswerDemoAppendChange,
   isLiveWriteStatStatusAskNeededThinkAppendChange,
+  isLiveWriteStatStatusAskNeededAnswerAppendChange,
+  isLiveWriteStatStatusAskNeededThinkAnswerAppendChange,
+  isLiveWriteStatStatusAskNeededAnswerDemoAppendChange,
+  isLiveWriteStatStatusAskNeededThinkSettledToolAppendChange,
+  isLiveAskNeededThinkAnswerSettledToolAppendChange,
+  isLiveStatusAskNeededThinkAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveCancelChange,
@@ -811,7 +822,18 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatAskNeededThinkAppendChange(prevSegments, segments) &&
     !isLiveWriteStatAskNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatAskNeededThinkAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusAskNeededThinkAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusAskNeededThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveAskNeededThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveStatusAskNeededThinkAppendChange(prevSegments, segments) &&
     !isLiveStatusSettleChange(prevSegments, segments)
   ) {
     return null

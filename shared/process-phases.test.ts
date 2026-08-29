@@ -848,6 +848,48 @@ describe('process phases privacy', () => {
     expect(afterWritePlanAskThink!.some((step) => step.segment === planStatusDone)).toBe(true)
     expect(afterWritePlanAskThink!.some((step) => step.segment === askReady)).toBe(true)
     expect(afterWritePlanAskThink!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterWriteAskThinkToken = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, askReady, askStatusDoneForHang, { ...nextThink, status: 'done' }, firstReply],
+      true
+    )
+    expect(afterWriteAskThinkToken).not.toBeNull()
+    expect(afterWriteAskThinkToken!.some((step) => step.segment === firstReply)).toBe(false)
+    expect(afterWriteAskThinkToken!.some((step) => step.segment === askReady)).toBe(true)
+    const afterAskHangThinkTokenSettled = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [
+        helloAskHangDone,
+        askReady,
+        askStatusDoneForHang,
+        { ...nextThink, status: 'done' },
+        firstReplyEarly,
+        cmdNextSettled
+      ],
+      true
+    )
+    expect(afterAskHangThinkTokenSettled).not.toBeNull()
+    expect(afterAskHangThinkTokenSettled!.at(-1)?.segment).toBe(cmdNextSettled)
+    expect(afterAskHangThinkTokenSettled!.some((step) => step.segment === firstReplyEarly)).toBe(false)
+    const reconnectAskStatus: TurnSegment = {
+      id: 'st-reconnect-ask',
+      kind: 'status',
+      status: 'done',
+      content: 'Reconnecting... 1/5',
+      endedAt: 22
+    }
+    const afterReconnectAskThink = appendProcessPhaseStepOnToolStart(
+      helloAskHangSteps,
+      [helloAskHang],
+      [helloAskHangDone, reconnectAskStatus, askReady, askStatus, nextThink],
+      true
+    )
+    expect(afterReconnectAskThink).not.toBeNull()
+    expect(afterReconnectAskThink!.some((step) => step.segment === reconnectAskStatus)).toBe(true)
+    expect(afterReconnectAskThink!.some((step) => step.segment === askReady)).toBe(true)
+    expect(afterReconnectAskThink!.some((step) => step.segment === nextThink)).toBe(false)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',
