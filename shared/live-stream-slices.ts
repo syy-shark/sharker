@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换时间线末步引用；命令末行不换过程数组。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -102,6 +102,18 @@ export function isLiveLastLineOnlyToolChange(prev: TurnSegment, next: TurnSegmen
   if (!isLiveToolMetaOnlyChange(prev, next)) return false
   if ((prev.toolDetail ?? '') === (next.toolDetail ?? '')) return false
   return !isLiveStableToolDetail(next.toolDetail)
+}
+
+/** 心跳同一数组或只换命令末行：16ms flush 不发 store（对标 Codex #19260 / #22860） */
+export function shouldSkipLiveStreamPublish(
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[]
+): boolean {
+  if (prevSegments === segments) return true
+  if (shouldSkipLiveStreamDerivation(prevSegments, segments) !== 'tool') return false
+  const prevTail = prevSegments![prevSegments!.length - 1]
+  const nextTail = segments[segments.length - 1]
+  return Boolean(prevTail && nextTail && isLiveLastLineOnlyToolChange(prevTail, nextTail))
 }
 
 export function shouldSkipLiveStreamDerivation(

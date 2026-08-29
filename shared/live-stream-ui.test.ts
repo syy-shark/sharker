@@ -28,6 +28,7 @@ import {
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
+  shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveProcessIdentity,
@@ -286,6 +287,9 @@ describe('live stream ui snapshot', () => {
     ).toBe(false)
     expect(isLiveLastLineOnlyToolChange(running, runningLine)).toBe(true)
     expect(isLiveLastLineOnlyToolChange(running, runningPreview)).toBe(false)
+    expect(shouldSkipLiveStreamPublish([hello, running], [hello, runningLine])).toBe(true)
+    expect(shouldSkipLiveStreamPublish([hello, running], [hello, runningPreview])).toBe(false)
+    expect(shouldSkipLiveStreamPublish([hello, running], [hello, running])).toBe(true)
     expect(processWhileLine).toBe(processWhileTool)
     expect(processWhileLine.processForFlow).toBe(processWhileTool.processForFlow)
     const runningPath: TurnSegment = { ...running, toolDetail: 'src/a.ts' }
@@ -511,7 +515,7 @@ describe('live stream ui snapshot', () => {
     expect(appSrc).toContain('publishLiveStreamUi')
     expect(appSrc).toContain('shouldSkipLiveStreamDerivation')
     expect(appSrc).toContain("skip === 'tool'")
-    expect(appSrc).toContain('segments === prevSnap.liveSegments')
+    expect(appSrc).toContain('shouldSkipLiveStreamPublish')
     expect(appSrc).toContain('segmentsRef.current !== prevLiveSegments')
     expect(appSrc).toContain('shouldDeferLastTurnUi')
     expect(appSrc.includes('refreshOpenPreviewRef')).toBe(false)

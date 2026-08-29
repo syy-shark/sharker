@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent（对标 Codex #22860）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；命令末行不发 store（对标 Codex #22860 / #19260）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -95,7 +95,8 @@ import {
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
   nextLiveThinkText,
-  shouldSkipLiveStreamDerivation
+  shouldSkipLiveStreamDerivation,
+  shouldSkipLiveStreamPublish
 } from '../shared/live-stream-slices'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
@@ -1544,8 +1545,8 @@ export default function App() {
       streamFlushTimerRef.current = null
       const segments = segmentsRef.current
       const prevSnap = getLiveStreamUi()
-      // 心跳 / plan_ready / done 仍是同一数组：不扫也不发（对标 Codex #19260 / #22860）
-      if (segments === prevSnap.liveSegments) return
+      // 心跳同一数组、或只换命令末行：不扫也不发（对标 Codex #19260 / #22860）
+      if (shouldSkipLiveStreamPublish(prevSnap.liveSegments, segments)) return
       lastStreamRenderAt.current = performance.now()
       const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
       // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
@@ -2809,7 +2810,12 @@ export default function App() {
         if (chunk.type === 'turn_cancelled') {
           turnOutcomeRef.current = 'aborted'
         }
-        if (segmentsRef.current !== prevLiveSegments) flushSegmentsToUI()
+        if (
+          segmentsRef.current !== prevLiveSegments &&
+          !shouldSkipLiveStreamPublish(prevLiveSegments, segmentsRef.current)
+        ) {
+          flushSegmentsToUI()
+        }
         return
       }
       if (chunk.type === 'plan_ready' && chunk.planDocument) {
