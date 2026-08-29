@@ -546,7 +546,17 @@ export default function App() {
     messageCount: number
   } | null>(null)
   const [composerIntent, setComposerIntent] = useState<
-    'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | 'project' | null
+    | 'mention'
+    | 'skill'
+    | 'find'
+    | 'find_next'
+    | 'find_prev'
+    | 'restore_prompt'
+    | 'model'
+    | 'dictate'
+    | 'voice'
+    | 'project'
+    | null
   >(null)
   const [composerSeed, setComposerSeed] = useState<{
     nonce: number
@@ -6610,6 +6620,25 @@ export default function App() {
         setComposerIntent('find')
         return
       }
+      if (cmd.action === 'find_next') {
+        setPage('chat')
+        setComposerIntent('find_next')
+        return
+      }
+      if (cmd.action === 'find_prev') {
+        setPage('chat')
+        setComposerIntent('find_prev')
+        return
+      }
+      if (cmd.action === 'restore_prompt') {
+        setPage('chat')
+        setComposerIntent('restore_prompt')
+        return
+      }
+      if (cmd.action === 'toggle_review') {
+        handleShortcutPanel('changes')
+        return
+      }
       if (cmd.action === 'shortcut_help') {
         void handleNavigate('settings', 'shortcuts')
         return
@@ -6813,6 +6842,7 @@ export default function App() {
       handlePlanModeChange,
       handleReloadBrowserPage,
       handleRunEnvironmentAction,
+      handleShortcutPanel,
       handleStandaloneConversation,
       handleToggleActivity,
       handleToggleRightPanel,

@@ -415,8 +415,8 @@ interface Props {
   /** `@` 搜索根目录：隔离线程用 worktree，否则当前工作区 */
   fileSearchRoot?: string
   fileSearchExtraRoots?: string[]
-  /** 命令面板「引用文件」/「引用 Skill」/「查找」/「模型」 */
-  composerIntent?: ComposerDockIntent | 'find'
+  /** 命令面板「引用文件」/「引用 Skill」/「查找」/ Find next / 恢复上一条 /「模型」 */
+  composerIntent?: ComposerDockIntent | 'find' | 'find_next' | 'find_prev'
   onComposerIntentHandled?: () => void
   /** 暂停自动出队（对标 Codex hold queue） */
   queueHeld?: boolean
@@ -1405,6 +1405,14 @@ export const ChatView = memo(function ChatView({
     })
   }, [findHits])
 
+  useEffect(() => {
+    if (composerIntent !== 'find_next' && composerIntent !== 'find_prev') return
+    setFindOpen(true)
+    requestAnimationFrame(() => findInputRef.current?.focus())
+    stepFindHit(composerIntent === 'find_prev' ? -1 : 1)
+    onComposerIntentHandled?.()
+  }, [composerIntent, onComposerIntentHandled])
+
   /** 官方 Find next / previous：⌘G / ⌘⇧G / F3，查找未开时先打开再跳 */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1765,7 +1773,10 @@ export const ChatView = memo(function ChatView({
     onLeaveHistoryHeadRef.current?.()
   }, [])
 
-  const dockIntent = composerIntent === 'find' ? null : composerIntent
+  const dockIntent =
+    composerIntent === 'find' || composerIntent === 'find_next' || composerIntent === 'find_prev'
+      ? null
+      : composerIntent
   const speechHint = loading ? '' : textForSpeech(lastCompletedAssistantText(messages))
 
   /** ⌘↑ / ⌘↓ / Home / End：长对话跳到顶/底（输入框与右侧预览不抢，对标 Codex #39181） */

@@ -197,6 +197,7 @@ export type ComposerDockIntent =
   | 'dictate'
   | 'voice'
   | 'project'
+  | 'restore_prompt'
   | null
 
 /** 深链覆盖、审查跟进或划选芯片；nonce 变化才写入，不跟直播 token 重绘 */
@@ -836,6 +837,23 @@ export const ComposerDock = memo(
         el.setSelectionRange(1, 1)
         syncTextareaHeight()
       })
+    }, [composerIntent, onComposerIntentHandled])
+
+    useEffect(() => {
+      if (composerIntent !== 'restore_prompt') return
+      const prev = restorePreviousComposerPrompt({ input, messages })
+      if (prev) {
+        setInput(prev)
+        setCursor(prev.length)
+        requestAnimationFrame(() => {
+          const el = textareaRef.current
+          if (!el) return
+          el.focus()
+          el.setSelectionRange(prev.length, prev.length)
+          syncTextareaHeight()
+        })
+      }
+      onComposerIntentHandled?.()
     }, [composerIntent, onComposerIntentHandled])
 
     useEffect(() => {

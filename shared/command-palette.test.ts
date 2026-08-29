@@ -9,6 +9,16 @@ describe('command palette', () => {
     expect(ids).toContain('skill')
     expect(ids).toContain('settings')
     expect(ids).toContain('find')
+    expect(ids).toContain('find-next')
+    expect(ids).toContain('find-prev')
+    expect(ids).toContain('restore-prompt')
+    expect(ids).toContain('toggle-review')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'find-next')?.title).toBe('Find next match')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'find-prev')?.title).toBe('Find previous match')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'restore-prompt')?.title).toBe(
+      'Restore previous composer prompt'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'toggle-review')?.title).toBe('Toggle review panel')
     expect(ids).toContain('search-chats')
     expect(ids).toContain('dictate')
     expect(ids).toContain('voice-chat')
@@ -276,6 +286,14 @@ describe('command palette', () => {
     )
     expect(filterPaletteCommands('New chat').some((c) => c.id === 'new')).toBe(true)
     expect(filterPaletteCommands('Find in chat').some((c) => c.id === 'find')).toBe(true)
+    expect(filterPaletteCommands('Find next match').some((c) => c.id === 'find-next')).toBe(true)
+    expect(filterPaletteCommands('Find previous match').some((c) => c.id === 'find-prev')).toBe(true)
+    expect(
+      filterPaletteCommands('Restore previous composer prompt').some((c) => c.id === 'restore-prompt')
+    ).toBe(true)
+    expect(filterPaletteCommands('Toggle review panel').some((c) => c.id === 'toggle-review')).toBe(
+      true
+    )
     expect(filterPaletteCommands('Archive chat').some((c) => c.action === 'archive_thread')).toBe(
       true
     )

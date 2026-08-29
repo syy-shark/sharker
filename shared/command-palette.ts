@@ -31,6 +31,9 @@ import {
   COPY_WORKING_DIRECTORY_LABEL,
   DECREASE_FONT_SIZE_LABEL,
   FIND_IN_CHAT_LABEL,
+  FIND_NEXT_MATCH_LABEL,
+  FIND_PREVIOUS_MATCH_LABEL,
+  RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   LOCAL_LABEL,
   INCREASE_FONT_SIZE_LABEL,
   MARK_CHAT_AS_UNREAD_LABEL,
@@ -55,6 +58,7 @@ import {
   OPEN_MODEL_PICKER_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
   OPEN_REVIEW_TAB_LABEL,
+  TOGGLE_REVIEW_PANEL_LABEL,
   OPEN_SETTINGS_LABEL,
   OPEN_SIDE_CHAT_LABEL,
   PIN_OR_UNPIN_CHAT_LABEL,
@@ -357,6 +361,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'toggle_changes'
   },
   {
+    id: 'toggle-review',
+    title: TOGGLE_REVIEW_PANEL_LABEL,
+    shortcut: '⌘⌥B',
+    keywords: 'toggle review panel 审查 开关',
+    action: 'toggle_review'
+  },
+  {
     id: 'files',
     title: TOGGLE_FILE_TREE_LABEL,
     keywords: 'files tree 文件 开关 toggle',
@@ -427,6 +438,27 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘F',
     keywords: 'find search thread 查找 搜索',
     action: 'find_in_thread'
+  },
+  {
+    id: 'find-next',
+    title: FIND_NEXT_MATCH_LABEL,
+    shortcut: '⌘G',
+    keywords: 'find next match 下一个',
+    action: 'find_next'
+  },
+  {
+    id: 'find-prev',
+    title: FIND_PREVIOUS_MATCH_LABEL,
+    shortcut: '⌘⇧G',
+    keywords: 'find previous match 上一个',
+    action: 'find_prev'
+  },
+  {
+    id: 'restore-prompt',
+    title: RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
+    shortcut: '↑',
+    keywords: 'restore previous composer prompt 恢复 上一条 输入',
+    action: 'restore_prompt'
   },
   {
     id: 'search-chats',
