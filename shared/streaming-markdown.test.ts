@@ -579,6 +579,30 @@ describe('splitStreamingMarkdown', () => {
     if (multi[1]?.type === 'footnotes') {
       expect(multi[1].items[0]?.paragraphs).toHaveLength(2)
     }
+    const noteGrown = continueCheapProseBlocks('见注[^1]。\n[^1]: 说明', notes, '见注[^1]。\n[^1]: 说明更')
+    expect(noteGrown[0]).toBe(notes[0])
+    if (notes[1]?.type === 'footnotes' && noteGrown[1]?.type === 'footnotes') {
+      expect(noteGrown[1].items[0]?.paragraphs[0]?.some((n) => n.type === 'text' && n.text.includes('说明更'))).toBe(
+        true
+      )
+    }
+    const noteContLive = continueCheapProseBlocks(
+      '见注[^1]。\n[^1]: 说明',
+      notes,
+      '见注[^1]。\n[^1]: 说明\n    续行'
+    )
+    expect(noteContLive[0]).toBe(notes[0])
+    const twoNotes = parseCheapProseBlocks('见注[^1][^2]。\n[^1]: 一\n[^2]: 二')
+    const twoGrown = continueCheapProseBlocks(
+      '见注[^1][^2]。\n[^1]: 一\n[^2]: 二',
+      twoNotes,
+      '见注[^1][^2]。\n[^1]: 一\n[^2]: 二更'
+    )
+    expect(twoGrown[0]).toBe(twoNotes[0])
+    if (twoNotes[1]?.type === 'footnotes' && twoGrown[1]?.type === 'footnotes') {
+      expect(twoGrown[1].items[0]).toBe(twoNotes[1].items[0])
+      expect(twoGrown[1].items[1]).not.toBe(twoNotes[1].items[1])
+    }
     expect(parseCheapProseBlocks('[^1]: n').map((b) => b.type)).toEqual([])
   })
 
@@ -1106,6 +1130,43 @@ describe('splitStreamingMarkdown', () => {
     if (indentPre[0]?.type === 'pre' && indentGrown[0]?.type === 'pre') {
       expect(indentGrown[0].text).toBe('const x = 12')
     }
+    const quoteHeading = parseCheapProseBlocks('> # 标题')
+    const quoteHeadingGrown = continueCheapProseBlocks('> # 标题', quoteHeading, '> # 标题更长')
+    if (quoteHeadingGrown[0]?.type === 'quote' && quoteHeadingGrown[0].blocks[0]?.type === 'heading') {
+      expect(quoteHeadingGrown[0].blocks[0].nodes).toEqual([{ type: 'text', text: '标题更长' }])
+    }
+    const quoteHeadingPara = parseCheapProseBlocks('> # 标题\n> 见 `foo` 与 ')
+    const quoteHeadingParaGrown = continueCheapProseBlocks(
+      '> # 标题\n> 见 `foo` 与 ',
+      quoteHeadingPara,
+      '> # 标题\n> 见 `foo` 与 bar'
+    )
+    if (quoteHeadingPara[0]?.type === 'quote' && quoteHeadingParaGrown[0]?.type === 'quote') {
+      expect(quoteHeadingParaGrown[0].blocks[0]).toBe(quoteHeadingPara[0].blocks[0])
+      if (quoteHeadingPara[0].blocks[1]?.type === 'p' && quoteHeadingParaGrown[0].blocks[1]?.type === 'p') {
+        expect(quoteHeadingParaGrown[0].blocks[1].nodes[0]).toBe(quoteHeadingPara[0].blocks[1].nodes[0])
+        expect(quoteHeadingParaGrown[0].blocks[1].nodes[1]).toBe(quoteHeadingPara[0].blocks[1].nodes[1])
+      }
+    }
+    const quoteHeadingList = parseCheapProseBlocks('> # 标题\n> - 一项')
+    const quoteHeadingListGrown = continueCheapProseBlocks(
+      '> # 标题\n> - 一项',
+      quoteHeadingList,
+      '> # 标题\n> - 一项更长'
+    )
+    if (quoteHeadingList[0]?.type === 'quote' && quoteHeadingListGrown[0]?.type === 'quote') {
+      expect(quoteHeadingListGrown[0].blocks[0]).toBe(quoteHeadingList[0].blocks[0])
+      if (quoteHeadingListGrown[0].blocks[1]?.type === 'list') {
+        expect(quoteHeadingListGrown[0].blocks[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
+      }
+    }
+    const liveNotes = parseCheapProseBlocks('见注[^1]。\n[^1]: 说明')
+    const liveNotesGrown = continueCheapProseBlocks(
+      '见注[^1]。\n[^1]: 说明',
+      liveNotes,
+      '见注[^1]。\n[^1]: 说明更'
+    )
+    expect(liveNotesGrown[0]).toBe(liveNotes[0])
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
