@@ -23,8 +23,10 @@ import {
 import {
   findLiveDemoHtmlChange,
   findLiveToolRetargetChange,
+  findLiveDemoFenceChange,
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
+  isLiveDemoFenceAppendChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange,
@@ -623,7 +625,9 @@ export function remapProcessPhaseStepsOnThinkAppend(
     !isLiveThinkAppendChange(prevSegments, segments) &&
     !isLiveAnswerAppendChange(prevSegments, segments) &&
     !isLiveDemoAppendChange(prevSegments, segments) &&
-    !findLiveDemoHtmlChange(prevSegments, segments)
+    !findLiveDemoHtmlChange(prevSegments, segments) &&
+    !isLiveDemoFenceAppendChange(prevSegments, segments) &&
+    !findLiveDemoFenceChange(prevSegments, segments)
   ) {
     return null
   }

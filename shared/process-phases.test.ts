@@ -211,6 +211,27 @@ describe('process phases privacy', () => {
     expect(afterReconnect).toHaveLength(3)
     expect(afterReconnect!.at(-1)?.segment).toBe(reconnectStatus)
     expect(afterReconnect!.at(-1)?.title).toBe('Reconnecting... 1/5')
+    const demoFence: TurnSegment = {
+      id: 'demo-fence-1',
+      kind: 'text',
+      status: 'active',
+      content: '```demo\n<div>',
+      startedAt: 14
+    }
+    expect(
+      remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, demoFence])
+    ).toBe(appended)
+    const demoFenceGrown: TurnSegment = {
+      ...demoFence,
+      content: '```demo\n<div class="scene"><h1>广义相对论</h1></div>'
+    }
+    expect(
+      remapProcessPhaseStepsOnThinkAppend(
+        appended!,
+        [cmdDone, cmdNext, demoFence],
+        [cmdDone, cmdNext, demoFenceGrown]
+      )
+    ).toBe(appended)
     const liveText: TurnSegment = {
       id: 'ans1',
       kind: 'text',

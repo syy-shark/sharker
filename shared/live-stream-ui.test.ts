@@ -32,6 +32,8 @@ import {
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
+  isLiveDemoFenceAppendChange,
+  findLiveDemoFenceChange,
   isLiveDemoHtmlChange,
   isLiveStatusAppendChange,
   isLiveThinkOrStatusClose,
@@ -198,7 +200,7 @@ describe('live stream ui snapshot', () => {
           content: 'Hello\n```demo\n<div>'
         }
       ])
-    ).toBe(null)
+    ).toBe('text')
     const answerWhileThink = nextLiveAnswerView(null, thinkSnap1)
     expect(nextLiveAnswerView(answerWhileThink, thinkSnap2)).toBe(answerWhileThink)
     expect(
@@ -529,6 +531,63 @@ describe('live stream ui snapshot', () => {
     expect(isLiveAnswerAppendChange([ran], [ran, firstReply])).toBe(true)
     expect(isLiveAnswerAppendChange([thinking], [thinkingDone, firstReply])).toBe(true)
     expect(isLiveAnswerAppendChange([ran], [ran, demoStart])).toBe(false)
+    expect(isLiveDemoFenceAppendChange([ran], [ran, demoStart])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([ran], [ran, demoStart])).toBe('text')
+    expect(
+      findLiveDemoFenceChange(
+        [text('Hello')],
+        [
+          {
+            id: 'a1',
+            kind: 'text',
+            role: 'final',
+            status: 'active',
+            content: 'Hello\n```demo\n<div>'
+          }
+        ]
+      )
+    ).not.toBeNull()
+    const processReadyForFence = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const processAfterFence = nextLiveProcessView(processReadyForFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoStart]
+    })
+    expect(processAfterFence.processForFlow).toEqual(processReadyForFence.processForFlow)
+    expect(processAfterFence.generatingDemo).toBe(true)
+    const answerReadyForFence = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran]
+    })
+    const answerAfterFence = nextLiveAnswerView(answerReadyForFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoStart]
+    })
+    expect(answerAfterFence.tail?.type).toBe('demo')
+    expect(answerAfterFence.tail?.id).toBe('demo-1-demo-stream')
+    const demoFenceGrown: TurnSegment = {
+      ...demoStart,
+      content: '```demo\n<div class="scene"><h1>广义相对论</h1><p>spacetime curvature demo</p></div>'
+    }
+    expect(findLiveDemoFenceChange([ran, demoStart], [ran, demoFenceGrown])).not.toBeNull()
+    expect(shouldSkipLiveStreamDerivation([ran, demoStart], [ran, demoFenceGrown])).toBe('text')
+    const processAfterFenceHtml = nextLiveProcessView(processAfterFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoFenceGrown]
+    })
+    expect(processAfterFenceHtml.processForFlow).toBe(processAfterFence.processForFlow)
+    expect(processAfterFenceHtml.generatingDemo).toBe(false)
+    expect(processAfterFenceHtml.contentStreaming).toBe(true)
+    const answerAfterFenceHtml = nextLiveAnswerView(answerAfterFence, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, demoFenceGrown]
+    })
+    expect(answerAfterFenceHtml.tail?.type).toBe('demo')
+    if (answerAfterFenceHtml.tail && 'html' in answerAfterFenceHtml.tail) {
+      expect(answerAfterFenceHtml.tail.html).toContain('广义相对论')
+    }
     expect(shouldSkipLiveStreamDerivation([ran], [ran, firstReply])).toBe('text')
     expect(
       shouldSkipLiveAnswerIdentity({

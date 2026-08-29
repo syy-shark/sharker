@@ -1,6 +1,6 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、新 present_inline_demo 只开演示槽（过程不追加、```demo 围栏仍整拆）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -233,7 +233,45 @@ export function isLiveAnswerAppendChange(
   return true
 }
 
-/** 前缀没变或只收束思考/status/散文、末尾新开演示：过程不追加、回答只开演示槽（```demo 围栏仍整拆） */
+/** 前缀没变或只收束思考/status、末尾新开带 ```demo 的散文：过程不追加、回答只开演示槽 */
+export function isLiveDemoFenceAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  const added = next[next.length - 1]
+  if (!added || !isLiveAnswerText(added) || added.status === 'done') return false
+  if (!hasStreamingDemoFence(added.content ?? '')) return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLiveThinkOrStatusClose(before, after)) return false
+  }
+  return true
+}
+
+/** 同一段散文刚出现或加长 ```demo：只换该槽，不重拆过程 / 全文 buildAnswerParts */
+export function findLiveDemoFenceChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): { from: TurnSegment; to: TurnSegment } | null {
+  if (!prev || prev.length !== next.length) return null
+  const last = next.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prev[i] !== next[i]) return null
+  }
+  const from = prev[last]
+  const to = next[last]
+  if (!from || !to || from === to) return null
+  if (!isLiveAnswerText(from) || !isLiveAnswerText(to) || from.id !== to.id) return null
+  if (!hasStreamingDemoFence(to.content ?? '')) return null
+  if ((from.content ?? '') === (to.content ?? '') && from.status === to.status) return null
+  return { from, to }
+}
+
+/** 前缀没变或只收束思考/status/散文、末尾新开演示：过程不追加、回答只开演示槽 */
 export function isLiveDemoAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -385,6 +423,8 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
+  if (isLiveDemoFenceAppendChange(prevSegments, segments)) return 'text'
+  if (findLiveDemoFenceChange(prevSegments, segments)) return 'text'
   if (isLiveDemoAppendChange(prevSegments, segments)) return 'tool'
   if (findLiveDemoHtmlChange(prevSegments, segments)) return 'tool'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
@@ -424,6 +464,8 @@ export function nextLiveThinkText(
   }
   if (isLiveAnswerAppendChange(prevSegments, segments)) return prev
   if (isLiveStatusAppendChange(prevSegments, segments)) return prev
+  if (isLiveDemoFenceAppendChange(prevSegments, segments)) return prev
+  if (findLiveDemoFenceChange(prevSegments, segments)) return prev
   if (isLiveDemoAppendChange(prevSegments, segments)) return prev
   if (findLiveDemoHtmlChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
@@ -602,6 +644,23 @@ function liveDemoProcessFlags(
     generatingDemo: demo.status === 'active' && !paintable,
     contentStreaming: prev.contentStreaming || paintable,
     answerStreaming: prev.answerStreaming
+  }
+}
+
+function liveDemoFenceProcessFlags(
+  prev: LiveProcessView,
+  text: TurnSegment
+): Pick<LiveProcessView, 'generatingDemo' | 'contentStreaming' | 'answerStreaming'> {
+  const built = buildAnswerParts([text], { isStreaming: true })
+  const demo = built.find(
+    (part): part is Extract<AnswerPart, { type: 'demo' }> => part.type === 'demo'
+  )
+  const paintable = Boolean(demo && isInlineDemoPaintable(demo.html))
+  const hasProse = built.some((part) => part.type === 'text' && part.content.trim())
+  return {
+    generatingDemo: Boolean(demo?.streaming && !paintable),
+    contentStreaming: prev.contentStreaming || paintable || hasProse,
+    answerStreaming: true
   }
 }
 
@@ -799,6 +858,34 @@ export function nextLiveProcessView(
       return view
     }
   }
+  if (prev && processHold?.view === prev) {
+    const fenceText =
+      findLiveDemoFenceChange(processHold.segments, segments)?.to ??
+      (isLiveDemoFenceAppendChange(processHold.segments, segments)
+        ? segments[segments.length - 1]
+        : null)
+    if (fenceText) {
+      const processForFlow = remapProcessFlowRefs(
+        prev.processForFlow,
+        processHold.segments,
+        segments
+      )
+      const flags = liveDemoFenceProcessFlags(prev, fenceText)
+      const view = {
+        ...prev,
+        processForFlow,
+        thinkText: nextLiveThinkText(prev.thinkText, processHold.segments, segments),
+        ...flags
+      }
+      processHold = {
+        view,
+        identity: liveProcessIdentity(segments),
+        segments,
+        answerTailPlain: false
+      }
+      return view
+    }
+  }
   if (
     prev &&
     processHold?.view === prev &&
@@ -982,6 +1069,26 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   }
 }
 
+function applyLiveDemoFenceView(prev: LiveAnswerView, text: TurnSegment): LiveAnswerView {
+  const built = buildAnswerParts([text], { isStreaming: true })
+  const owned = new Set([text.id, `${text.id}-demo-stream`, `${text.id}-post`])
+  const prefix = [
+    ...prev.closed.filter((part) => !owned.has(part.id)),
+    ...(prev.tail && !owned.has(prev.tail.id) ? [prev.tail] : [])
+  ]
+  const parts = reuseAnswerParts(prev.parts, [...prefix, ...built])
+  const split = splitClosedTail(parts)
+  const copyable = copyableFromAnswerParts(parts)
+  return {
+    parts,
+    closed: sameRefList(prev.closed, split.closed) ? prev.closed : split.closed,
+    tail: split.tail,
+    show: parts.length > 0,
+    copyable,
+    hasCopyable: Boolean(copyable)
+  }
+}
+
 function liveDemoAnswerPart(demo: TurnSegment): Extract<AnswerPart, { type: 'demo' }> {
   const html = demo.content ?? ''
   return {
@@ -1127,6 +1234,20 @@ export function nextLiveAnswerView(
     const view = appendLiveAnswerView(prev, added)
     answerGrowHold = { view, segments, tailPlain: true }
     return view
+  }
+  if (prev && isLiveDemoFenceAppendChange(prevSegments, segments)) {
+    const added = segments[segments.length - 1]!
+    const view = applyLiveDemoFenceView(prev, added)
+    answerGrowHold = { view, segments, tailPlain: false }
+    return view
+  }
+  if (prev) {
+    const fenceChange = findLiveDemoFenceChange(prevSegments, segments)
+    if (fenceChange) {
+      const view = applyLiveDemoFenceView(prev, fenceChange.to)
+      answerGrowHold = { view, segments, tailPlain: false }
+      return view
+    }
   }
   if (prev && isLiveDemoAppendChange(prevSegments, segments)) {
     const added = segments[segments.length - 1]!
