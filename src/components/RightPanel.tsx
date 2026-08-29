@@ -71,6 +71,9 @@ interface Props {
     source?: import('../../shared/side-chat-quote').SideChatSource,
     comment?: string
   ) => void
+  /** 设置页重新打开历史页 */
+  browserOpenUrl?: string
+  browserOpenNonce?: number
 }
 
 /** Codex 风格右侧面板 */
@@ -96,7 +99,9 @@ export const RightPanel = memo(function RightPanel({
   filePreview = null,
   extraRoots = EMPTY_EXTRA_ROOTS,
   onAskInSideChat,
-  onInsertComposer
+  onInsertComposer,
+  browserOpenUrl,
+  browserOpenNonce = 0
 }: Props) {
   const viewportWidth = () => (typeof window === 'undefined' ? 1440 : window.innerWidth || 1440)
   const [width, setWidth] = useState(() =>
@@ -426,7 +431,13 @@ export const RightPanel = memo(function RightPanel({
             extraRoots={extraRoots}
           />
         )}
-        {tab === 'browser' && <EmbeddedBrowser onInsertComposer={onInsertComposer} />}
+        {tab === 'browser' && (
+          <EmbeddedBrowser
+            initialUrl={browserOpenUrl}
+            openNonce={browserOpenNonce}
+            onInsertComposer={onInsertComposer}
+          />
+        )}
         {tab === 'agents' && (
           <AgentsPanel conversationId={conversationId} focusId={focusSubAgentId} />
         )}

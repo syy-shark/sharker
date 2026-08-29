@@ -174,6 +174,7 @@ export interface SharkerApi {
   showItemInFolder: (targetPath: string) => Promise<boolean>
   getComputerUseStatus: (workspace: string) => Promise<ComputerUseStatus>
   getBrowserUseStatus: (workspace: string) => Promise<BrowserUseStatus>
+  clearBrowserData: (input?: { cookies?: boolean; cache?: boolean }) => Promise<{ ok: boolean }>
   installBrowserUseManifest: () => Promise<{ ok: boolean; message: string }>
   compressContext: (history: ChatMessage[]) => Promise<import('../shared/context-compress').ContextCompressResult>
   getTokenUsage: (days?: number) => Promise<import('../shared/token-usage-store').DayUsage[]>

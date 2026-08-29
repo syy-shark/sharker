@@ -166,5 +166,7 @@ export const IPC = {
   RUN_AUTOMATION: 'automations:run-now',
   AGENTS_LIST: 'agents:list',
   AGENTS_STOP: 'agents:stop',
-  AGENTS_STEER: 'agents:steer'
+  AGENTS_STEER: 'agents:steer',
+  /** 清除内置浏览器配置的 Cookie / 缓存（对标 Codex Settings → Browser） */
+  BROWSER_CLEAR_DATA: 'browser:clear-data'
 } as const

@@ -337,5 +337,7 @@ contextBridge.exposeInMainWorld('sharker', {
       cb(snapshot)
     ipcRenderer.on('agents:update', handler)
     return () => ipcRenderer.removeListener('agents:update', handler)
-  }
+  },
+  clearBrowserData: (input?: { cookies?: boolean; cache?: boolean }) =>
+    ipcRenderer.invoke(IPC.BROWSER_CLEAR_DATA, input)
 })

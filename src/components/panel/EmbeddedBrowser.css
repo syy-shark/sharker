@@ -15,6 +15,8 @@
 
 /* —— 单行工具栏 —— */
 .embedded-browser-toolbar {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -80,7 +82,7 @@
   border: 0.5px solid var(--glass-edge);
   background: var(--glass-fill-nested);
   box-shadow: var(--glass-rim-soft);
-  overflow: hidden;
+  overflow: visible;
   transition:
     border-color var(--motion-duration-fast) var(--motion-ease-soft),
     background var(--motion-duration-fast) var(--motion-ease-soft),
@@ -125,6 +127,51 @@
 
 .embedded-browser-url::placeholder {
   color: var(--text-muted);
+}
+
+.embedded-browser-suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 8;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--glass-fill-popover);
+  box-shadow: var(--glass-shadow-popover);
+}
+
+.embedded-browser-suggest-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.embedded-browser-suggest-item.is-active,
+.embedded-browser-suggest-item:hover {
+  background: var(--glass-fill-nested);
+}
+
+.embedded-browser-suggest-title,
+.embedded-browser-suggest-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.embedded-browser-suggest-url {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .embedded-browser-home-btn {

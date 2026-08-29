@@ -19,6 +19,7 @@ export type DeeplinkAction =
         | 'permissions'
         | 'models'
         | 'general'
+        | 'browser'
         | 'appearance'
         | 'notifications'
         | 'personalization'
@@ -103,6 +104,9 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   }
   if (key === 'general' || key === 'review') {
     return { type: 'settings', tab: 'general' }
+  }
+  if (key === 'browser' || key === 'browsing' || key === 'history') {
+    return { type: 'settings', tab: 'browser' }
   }
   if (key === 'notifications' || key === 'notify') {
     return { type: 'settings', tab: 'notifications' }

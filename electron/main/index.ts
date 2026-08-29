@@ -13,6 +13,7 @@ import {
   net,
   Notification,
   powerSaveBlocker,
+  session,
   shell,
   safeStorage
 } from 'electron'
@@ -22,6 +23,7 @@ import appIconBundled from '../../resources/icon.png?asset'
 import { canExportChatImage, suggestedImageFilename, type ChatImageExportInput } from '../../shared/chat-image'
 import { classifyPastedAttachment } from '../../shared/composer-paste'
 import { parseGitRefNames } from '../../shared/git-branch-list'
+import { BROWSER_SESSION_PARTITION } from '../../shared/browser-history'
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
@@ -1064,6 +1066,16 @@ function registerIpc(): void {
   ipcMain.handle(IPC.LIST_ARCHIVED_CONVERSATIONS, async () => {
     return listArchivedConversations()
   })
+
+  ipcMain.handle(
+    IPC.BROWSER_CLEAR_DATA,
+    async (_e, input?: { cookies?: boolean; cache?: boolean }) => {
+      const ses = session.fromPartition(BROWSER_SESSION_PARTITION)
+      if (input?.cache) await ses.clearCache()
+      if (input?.cookies) await ses.clearStorageData()
+      return { ok: true }
+    }
+  )
 
   ipcMain.handle(
     IPC.SET_ACTIVE_CONVERSATION,

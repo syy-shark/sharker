@@ -1,6 +1,6 @@
 /**
- * 设置页壳：权限 / 模型 / MCP / 通用 / 外观 / 通知 / 个性化 / 建议提示 / 键盘快捷键 / 已归档 / 用量
- * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
+ * 设置页壳：权限 / 模型 / MCP / 通用 / 浏览器 / 外观 / 通知 / 个性化 / 建议提示 / 键盘快捷键 / 已归档 / 用量
+ * Computer Use / Browser Use 入口暂隐藏；`BrowserSettings` 对标 Codex Settings → Browser
  * @see src/ARCH.md
  */
 import type { Dispatch, SetStateAction } from 'react'
@@ -17,6 +17,7 @@ import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
 import { McpSettings } from '../components/settings/McpSettings'
+import { BrowserSettings } from '../components/settings/BrowserSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -35,6 +36,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   general: {
     title: '通用',
     desc: '后续排队或注入、Enter 发送、文件引用打开位置、上下文用量环、/review 交付与审查模型、运行防休眠。对标 Codex Settings → General。建议提示在单独一页。'
+  },
+  browser: {
+    title: '浏览器',
+    desc: '内置浏览器自己的历史：搜索、重新打开、删除，或按时间清除历史 / Cookie / 缓存。对标 Codex Settings → Browser。不接系统 Chrome，不发明 @Browser。'
   },
   appearance: {
     title: '外观',
@@ -99,6 +104,7 @@ export function SettingsPage({ tab, draft, setDraft, onSave, workspacePath = '' 
           {tab === 'general' && (
             <GeneralSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
+          {tab === 'browser' && <BrowserSettings />}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}

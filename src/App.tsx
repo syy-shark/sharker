@@ -138,6 +138,7 @@ import {
   UI_FONT_SCALE_DEFAULT
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
+import { OPEN_BROWSER_URL_EVENT } from './lib/browser-history-store'
 import {
   COPY_WORKSPACE_FILE_PATH_EVENT,
   OPEN_WORKSPACE_FILE_EVENT,
@@ -443,6 +444,8 @@ export default function App() {
   const [heldBusyFollowUps, setHeldBusyFollowUps] = useState<HeldBusyFollowUp[]>([])
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
+  const [browserOpenUrl, setBrowserOpenUrl] = useState('')
+  const [browserOpenNonce, setBrowserOpenNonce] = useState(0)
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
   const [prChipLabel, setPrChipLabel] = useState<string | null>(null)
   const [changesRevision, setChangesRevision] = useState(0)
@@ -3453,13 +3456,24 @@ export default function App() {
         formatCitationClipboardPath(abs, window.sharker?.platform)
       )
     }
+    const onOpenBrowser = (event: Event) => {
+      const next = (event as CustomEvent<{ url?: string }>).detail?.url
+      if (!next || popoutRoute) return
+      setBrowserOpenUrl(next)
+      setBrowserOpenNonce((n) => n + 1)
+      setRightPanelTab('browser')
+      setRightPanelOpen(true)
+      setPage('chat')
+    }
     window.addEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
     window.addEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
     window.addEventListener(COPY_WORKSPACE_FILE_PATH_EVENT, onCopyPath)
+    window.addEventListener(OPEN_BROWSER_URL_EVENT, onOpenBrowser)
     return () => {
       window.removeEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
       window.removeEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
       window.removeEventListener(COPY_WORKSPACE_FILE_PATH_EVENT, onCopyPath)
+      window.removeEventListener(OPEN_BROWSER_URL_EVENT, onOpenBrowser)
     }
   }, [popoutRoute])
 
@@ -8401,6 +8415,8 @@ export default function App() {
           onAskInSideChat={handleAskInSideChat}
           onInsertComposer={handleInsertComposer}
           onSendReviewComments={handleSendReviewComments}
+          browserOpenUrl={browserOpenUrl}
+          browserOpenNonce={browserOpenNonce}
         />
         )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />

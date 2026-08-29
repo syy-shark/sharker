@@ -1,0 +1,119 @@
+.browser-settings-search,
+.browser-settings-range {
+  width: min(220px, 100%);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.browser-settings-empty {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.browser-settings-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.browser-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.browser-settings-open {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.browser-settings-open:hover,
+.browser-settings-open:focus-visible {
+  background: var(--glass-fill-nested);
+}
+
+.browser-settings-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.browser-settings-title,
+.browser-settings-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-settings-url,
+.browser-settings-time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.browser-settings-time {
+  flex: 0 0 auto;
+}
+
+.browser-settings-remove {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.browser-settings-remove:hover,
+.browser-settings-remove:focus-visible {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.browser-settings-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 10px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.browser-settings-clear {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.browser-settings-clear:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

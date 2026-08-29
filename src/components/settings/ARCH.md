@@ -18,6 +18,7 @@
 | `AppearanceSettings.tsx` / `.css` | 外观：浅色玻璃 / 深色金属；界面字号（`uiFontScale` / `--ui-font-scale`）；代码字号（`codeFontScale` / `--code-font-scale`，对标 Codex Code font size）；代码字体（`codeFont` / `--mono`，对标 Codex Code font）；新弹出置顶 |
 | `NotificationSettings.tsx` / `.css` | 通知：回合完成档 / 批准通知 / 系统通知权限（对标 Codex Settings → Notifications） |
 | `GeneralSettings.tsx` | 通用：后续排队/注入、Enter 发送、`file_opener` 默认打开位置、Show context window usage 用量环（官方默认关）、/review 交付与审查模型（对标 Codex `review_model`）、运行防休眠 |
+| `BrowserSettings.tsx` / `.css` | 设置 → 浏览器：历史搜索 / 重新打开 / 删除，按时间清除历史，以及 Cookie / 缓存（对标 Codex Settings → Browser）。不发明 @Browser / 导入系统配置 |
 | `SuggestedPromptSettings.tsx` | 建议提示开关（对标 Codex Settings → Suggested prompts） |
 | `PersonalizationSettings.tsx` / `.css` | 个性化：启用记忆（官方默认关）+ 注入/写入、人格、个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization Enable memories；单对话 `/memories` 覆盖） |
 | `ShortcutSettings.tsx` / `.css` | 键盘快捷键：搜索、按键筛选、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合） |

@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / `reviewProviderId`（对标 Codex `review_model`）/ Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener`（对标 Codex `file_opener`）/ `showContextWindowUsage`（对标 Codex Show context window usage，官方默认关）、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务 / `shell:show-item-in-folder` 在访达中显示） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务 / `shell:show-item-in-folder` 在访达中显示 / `browser:clear-data` 清内置浏览器 Cookie 与缓存） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `showContextWindowUsage` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
@@ -177,7 +177,7 @@
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、路径列表收文件、源码附件不折进 `/goal` |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标、改文件数正文与芯片文案 |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
-| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
+| `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、browser/history→浏览器、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/worktrees→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications/notify 进通知、general/review 进通用、personalization/memories 进个性化、mcp/mcp-servers 进 MCP 服务器、git/worktrees 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
 | `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
 | `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
@@ -210,6 +210,8 @@
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本（对标 Codex Annotation mode / Comment on the page）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
+| `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除（对标 Codex Settings → Browser / Search from the address bar）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史 |
+| `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |

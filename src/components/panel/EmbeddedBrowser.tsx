@@ -1,6 +1,6 @@
 /**
  * 内置浏览器：Chrome 式工具栏 + 本地新标签 + 外站玻璃注入。
- * 批注模式点元素或拖选区域，写成 composer Selection 芯片（对标 Codex Annotation mode）。
+ * 独立配置记历史，地址栏建议本机记录；批注写成 composer 芯片。
  * @see ./ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,12 +19,24 @@ import {
   placeBrowserCommentPopover,
   type BrowserCommentPick
 } from '../../../shared/browser-comment'
+import {
+  BROWSER_HISTORY_CHANGED_EVENT,
+  BROWSER_SESSION_PARTITION,
+  browserHistoryLabel,
+  recordBrowserHistoryVisit,
+  shouldRecordBrowserHistory,
+  suggestBrowserOmnibox,
+  type BrowserHistoryEntry
+} from '../../../shared/browser-history'
+import { loadBrowserHistory, saveBrowserHistory } from '../../lib/browser-history-store'
 import { PAGE_GLASS_INJECT_CSS, shouldInjectGlass } from './browser-glass-css'
 import type { SideChatSource } from '../../../shared/side-chat-quote'
 import './EmbeddedBrowser.css'
 
 interface Props {
   initialUrl?: string
+  /** 设置页重新打开时递增，迫使已挂载的 webview 导航 */
+  openNonce?: number
   /** 批注保存进 composer Selection 芯片 */
   onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
 }
@@ -57,7 +69,7 @@ function resolveNavigateTarget(raw: string, startUrl: string): string {
 }
 
 /** webview 浏览器面板 */
-export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
+export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }: Props) {
   const [startTheme, setStartTheme] = useState<BrowserStartTheme>(() => resolveBrowserStartTheme())
   /** 每次渲染取新 data URL，HMR / 版本变更后不会粘住旧快捷方式页 */
   const startSrc = initialUrl?.trim() || browserStartPageDataUrl(startTheme)
@@ -71,6 +83,9 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
     null
   )
   const [draftComment, setDraftComment] = useState('')
+  const [history, setHistory] = useState<BrowserHistoryEntry[]>(() => loadBrowserHistory())
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [suggestIndex, setSuggestIndex] = useState(0)
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -105,6 +120,35 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
   useEffect(() => {
     if (annotating && !canAnnotateBrowserUrl(url)) setAnnotating(false)
   }, [url, annotating])
+
+  useEffect(() => {
+    const sync = () => setHistory(loadBrowserHistory())
+    window.addEventListener(BROWSER_HISTORY_CHANGED_EVENT, sync)
+    return () => window.removeEventListener(BROWSER_HISTORY_CHANGED_EVENT, sync)
+  }, [])
+
+  useEffect(() => {
+    const target = initialUrl?.trim()
+    if (!target || !openNonce) return
+    setUrl(target)
+    setInput(displayUrlForBar(target))
+    safeCall(() => webviewRef.current?.loadURL(target))
+  }, [initialUrl, openNonce])
+
+  const recordVisit = useCallback(() => {
+    const wv = webviewRef.current
+    if (!wv) return
+    let live = ''
+    let title = ''
+    try {
+      live = wv.getURL() || ''
+      title = wv.getTitle?.() || ''
+    } catch {
+      return
+    }
+    if (!shouldRecordBrowserHistory(live)) return
+    setHistory(saveBrowserHistory(recordBrowserHistoryVisit(loadBrowserHistory(), { url: live, title })))
+  }, [])
 
   /** 跟随 App 主题切换起始页（不是系统 prefers-color-scheme） */
   useEffect(() => {
@@ -206,6 +250,7 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
     const onStop = () => {
       setLoading(false)
       syncNav()
+      recordVisit()
       void applyPageGlass()
     }
     const onFail = () => setLoading(false)
@@ -259,17 +304,25 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
       wv.removeEventListener('console-message', onConsole)
       glassCssKeyRef.current = null
     }
-  }, [syncNav, applyPageGlass, applyAnnotate])
+  }, [syncNav, applyPageGlass, applyAnnotate, recordVisit])
+
+  const goTo = (target: string) => {
+    const next = target.trim()
+    if (!next) return
+    setUrl(next)
+    setInput(displayUrlForBar(next))
+    setSuggestOpen(false)
+    safeCall(() => {
+      webviewRef.current?.loadURL(next)
+    })
+  }
 
   const navigate = () => {
     const home = browserStartPageDataUrl(startTheme)
-    const target = resolveNavigateTarget(input, home)
-    setUrl(target)
-    setInput(displayUrlForBar(target))
-    safeCall(() => {
-      webviewRef.current?.loadURL(target)
-    })
+    goTo(resolveNavigateTarget(input, home))
   }
+
+  const suggestions = suggestOpen ? suggestBrowserOmnibox(history, input, url) : []
 
   const goHome = () => {
     const home = browserStartPageDataUrl(startTheme)
@@ -426,20 +479,73 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
             ref={urlInputRef}
             className="embedded-browser-url"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value)
+              setSuggestOpen(true)
+              setSuggestIndex(0)
+            }}
             onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' && suggestions.length) {
+                e.preventDefault()
+                setSuggestOpen(true)
+                setSuggestIndex((i) => (i + 1) % suggestions.length)
+                return
+              }
+              if (e.key === 'ArrowUp' && suggestions.length) {
+                e.preventDefault()
+                setSuggestOpen(true)
+                setSuggestIndex((i) => (i - 1 + suggestions.length) % suggestions.length)
+                return
+              }
+              if (e.key === 'Escape' && suggestOpen) {
+                e.preventDefault()
+                setSuggestOpen(false)
+                return
+              }
               if (e.key === 'Enter') {
                 e.preventDefault()
-                navigate()
+                const pick = suggestOpen ? suggestions[suggestIndex] : null
+                if (pick) goTo(pick.url)
+                else navigate()
               }
             }}
-            onFocus={(e) => e.currentTarget.select()}
-            placeholder="搜索 Google 或输入网址"
+            onFocus={(e) => {
+              e.currentTarget.select()
+              setSuggestOpen(true)
+              setSuggestIndex(0)
+            }}
+            onBlur={() => {
+              window.setTimeout(() => setSuggestOpen(false), 120)
+            }}
+            placeholder="搜索历史、Google 或输入网址"
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
             aria-label="地址栏"
+            aria-autocomplete="list"
+            aria-expanded={suggestOpen && suggestions.length > 0}
           />
+          {suggestOpen && suggestions.length > 0 ? (
+            <ul className="embedded-browser-suggest" role="listbox">
+              {suggestions.map((item, index) => (
+                <li key={item.url}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={index === suggestIndex}
+                    className={`embedded-browser-suggest-item${index === suggestIndex ? ' is-active' : ''}`}
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      goTo(item.url)
+                    }}
+                  >
+                    <span className="embedded-browser-suggest-title">{browserHistoryLabel(item)}</span>
+                    <span className="embedded-browser-suggest-url">{item.url}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <button
@@ -481,6 +587,7 @@ export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
           ref={webviewRef as never}
           className="embedded-browser-view"
           src={url}
+          partition={BROWSER_SESSION_PARTITION}
           allowpopups="true"
           webpreferences="contextIsolation=yes, nativeWindowOpen=yes"
         />
