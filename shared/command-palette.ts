@@ -62,6 +62,8 @@ import {
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
+  APPROVE_REQUEST_LABEL,
+  DECLINE_REQUEST_LABEL,
   OPEN_REVIEW_TAB_LABEL,
   TOGGLE_REVIEW_PANEL_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -691,6 +693,20 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: SLASH_APPROVE_DESCRIPTION,
     keywords: 'approve retry denied 批准重试被拒操作 批准 重试 拒绝',
     action: 'approve_denied'
+  },
+  {
+    id: 'approve-request',
+    title: APPROVE_REQUEST_LABEL,
+    shortcut: '⏎',
+    keywords: 'approve request allow once 批准 允许一次',
+    action: 'approve_request'
+  },
+  {
+    id: 'decline-request',
+    title: DECLINE_REQUEST_LABEL,
+    shortcut: 'Esc',
+    keywords: 'decline request deny 拒绝 审批',
+    action: 'decline_request'
   },
   {
     id: 'rename',

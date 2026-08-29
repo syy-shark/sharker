@@ -202,6 +202,10 @@ describe('command palette', () => {
       'Open recent chat 1–6'
     )
     expect(ids).toContain('approve')
+    expect(ids).toContain('approve-request')
+    expect(ids).toContain('decline-request')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'approve-request')?.title).toBe('Approve request')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'decline-request')?.title).toBe('Decline request')
     expect(ids).toContain('plan')
     expect(ids).toContain('rename')
     expect(ids).toContain('pin')
@@ -272,6 +276,12 @@ describe('command palette', () => {
     expect(filterPaletteCommands('查看或设定思考档').some((c) => c.id === 'reasoning')).toBe(true)
     expect(filterPaletteCommands('切换人格').some((c) => c.id === 'personality')).toBe(true)
     expect(filterPaletteCommands('批准重试').some((c) => c.id === 'approve')).toBe(true)
+    expect(filterPaletteCommands('Approve request').some((c) => c.id === 'approve-request')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('Decline request').some((c) => c.id === 'decline-request')).toBe(
+      true
+    )
     expect(filterPaletteCommands('Toggle plan mode').some((c) => c.id === 'plan')).toBe(true)
     expect(filterPaletteCommands('Copy a local chat').some((c) => c.id === 'fork')).toBe(true)
     expect(filterPaletteCommands('/chat').some((c) => c.action === 'new_global_conversation')).toBe(

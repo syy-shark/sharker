@@ -465,6 +465,7 @@ export default function App() {
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
+  const handleApprovalRef = useRef<(decision: ApprovalDecision) => void>(() => undefined)
   const [userInput, setUserInput] = useState<UserInputRequest | null>(null)
   const [userInputResponding, setUserInputResponding] = useState(false)
   const userInputBusyRef = useRef(false)
@@ -5304,6 +5305,7 @@ export default function App() {
       setApprovalResponding(false)
     }
   }
+  handleApprovalRef.current = handleApproval
 
   const handleUserInput = async (response: UserInputResponse) => {
     if (!userInput || userInputResponding || userInputBusyRef.current) return
@@ -6788,6 +6790,14 @@ export default function App() {
           setPage('chat')
           void handleSelectConversation(wsId, nextId)
         }
+        return
+      }
+      if (cmd.action === 'approve_request') {
+        handleApprovalRef.current('once')
+        return
+      }
+      if (cmd.action === 'decline_request') {
+        handleApprovalRef.current('deny')
         return
       }
       if (cmd.action === 'toggle_activity') {
