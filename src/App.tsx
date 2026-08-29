@@ -5050,6 +5050,14 @@ export default function App() {
     [appendLocalNote, handleSelectConversation, historyForModelTurn]
   )
 
+  /** 气泡分叉：稳定回调，避免直播 token 重挂历史行 */
+  const handleForkFromMessage = useCallback(
+    (messageId: string) => {
+      void handleForkConversation('local', messageId)
+    },
+    [handleForkConversation]
+  )
+
   /** UI 斜杠命令（不经过模型） */
   const handleSlashAction = useCallback(
     async (cmd: SlashCommandMeta, args: string) => {
@@ -7663,9 +7671,7 @@ export default function App() {
               onRestoreWorktree={handleRestoreWorktreeClick}
               onRetry={handleRetryMessage}
               onEditUserMessage={handleEditUserMessage}
-              onForkFromMessage={(messageId) => {
-                void handleForkConversation('local', messageId)
-              }}
+              onForkFromMessage={handleForkFromMessage}
               composerSeed={composerSeed}
               approval={approval}
               approvalResponding={approvalResponding}
