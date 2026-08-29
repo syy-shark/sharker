@@ -146,7 +146,7 @@ import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus } from '../shared/mcp-status'
 import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
-import { buildSuggestedPrompts } from '../shared/suggested-prompts'
+import { buildSuggestedPrompts, pickResumeSuggestions } from '../shared/suggested-prompts'
 import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
 import {
   lastCompletedAssistantText,
@@ -6552,18 +6552,46 @@ export default function App() {
   }, [])
 
   const suggestedPromptItems = useMemo(() => {
-    const recent = conversationList.find((c) => c.id !== activeConversationId)
+    void sessionLiveVersion
+    const liveIds: string[] = []
+    const waitingIds = new Set<string>()
+    for (const c of conversationList) {
+      const buf = sessionBuffersRef.current.get(c.id)
+      if (buf?.loading || buf?.sendInFlight) liveIds.push(c.id)
+      if (buf?.approval) waitingIds.add(c.id)
+    }
+    if (loading && activeConversationId) liveIds.push(activeConversationId)
+    if (approval) {
+      const waitingId = approval.conversationId || activeConversationId
+      if (waitingId) waitingIds.add(waitingId)
+    }
+    const resumes = pickResumeSuggestions({
+      currentId: activeConversationId,
+      conversations: conversationList.map((c) => ({
+        id: c.id,
+        title: c.customTitle || c.title || '',
+        updatedAt: c.updatedAt,
+        unread: c.unread
+      })),
+      attentionIds: collectAttentionConversationIds({
+        conversations: conversationList,
+        liveIds,
+        waitingIds
+      }),
+      limit: 2
+    })
     return buildSuggestedPrompts({
       enabled: settings.suggestedPrompts !== false,
       hasWorkspace: Boolean(getActiveWorkspacePath(settings)),
       hasGoal: Boolean(threadGoal?.text?.trim()),
-      recent: recent
-        ? { id: recent.id, title: recent.customTitle || recent.title || '' }
-        : null
+      resumes
     })
   }, [
     activeConversationId,
+    approval,
     conversationList,
+    loading,
+    sessionLiveVersion,
     settings,
     threadGoal?.text
   ])
