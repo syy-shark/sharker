@@ -442,6 +442,47 @@ describe('process phases privacy', () => {
         [cmdDone, cmdNext, demoFenceGrown]
       )
     ).toBe(appended)
+    const writeAndStatus = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus],
+      true
+    )
+    expect(writeAndStatus).not.toBeNull()
+    expect(writeAndStatus).toHaveLength(2)
+    expect(writeAndStatus![0].id).toBe(cmdSteps[0].id)
+    expect(writeAndStatus![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndStatus![0].status).toBe('done')
+    expect(writeAndStatus!.at(-1)?.segment).toBe(reconnectStatus)
+    const writeAndThink = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, nextThink],
+      true
+    )
+    expect(writeAndThink).not.toBeNull()
+    expect(writeAndThink).toHaveLength(1)
+    expect(writeAndThink![0].id).toBe(cmdSteps[0].id)
+    expect(writeAndThink![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndThink![0].status).toBe('done')
+    const writeAndAnswer = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, firstReply],
+      true
+    )
+    expect(writeAndAnswer).not.toBeNull()
+    expect(writeAndAnswer).toHaveLength(1)
+    expect(writeAndAnswer![0].segment).toBe(cmdDoneDiff)
+    const writeAndFence = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, demoFence],
+      true
+    )
+    expect(writeAndFence).not.toBeNull()
+    expect(writeAndFence).toHaveLength(1)
+    expect(writeAndFence![0].segment).toBe(cmdDoneDiff)
     const liveText: TurnSegment = {
       id: 'ans1',
       kind: 'text',

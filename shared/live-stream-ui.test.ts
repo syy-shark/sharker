@@ -30,6 +30,10 @@ import {
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
   isLiveToolWriteStatAppendChange,
+  isLiveWriteStatStatusAppendChange,
+  isLiveWriteStatThinkAppendChange,
+  isLiveWriteStatAnswerAppendChange,
+  isLiveWriteStatDemoFenceAppendChange,
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
   isLiveCompressAppendChange,
@@ -846,6 +850,81 @@ describe('live stream ui snapshot', () => {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [ran, reconnectStatus]
     })).toBe(answerReadyForStatus)
+    expect(isLiveWriteStatStatusAppendChange([hello, running], [hello, ranDiff, nextCmd])).toBe(false)
+    expect(isLiveWriteStatStatusAppendChange([hello, running], [hello, ranDiff, reconnectStatus])).toBe(true)
+    expect(isLiveWriteStatThinkAppendChange([hello, running], [hello, ranDiff, nextThink])).toBe(true)
+    expect(isLiveWriteStatAnswerAppendChange([hello, running], [hello, ranDiff, firstReply])).toBe(true)
+    expect(isLiveWriteStatDemoFenceAppendChange([hello, running], [hello, ranDiff, demoStart])).toBe(true)
+    expect(isLiveThinkAppendChange([hello, running], [hello, ranDiff, nextThink])).toBe(false)
+    expect(isLiveAnswerAppendChange([hello, running], [hello, ranDiff, firstReply])).toBe(false)
+    expect(isLiveDemoFenceAppendChange([hello, running], [hello, ranDiff, demoStart])).toBe(false)
+    expect(isLiveStatusAppendChange([hello, running], [hello, ranDiff, reconnectStatus])).toBe(false)
+    expect(isLiveToolAppendChange([hello, running], [hello, ranDiff, nextCmd])).toBe(false)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, reconnectStatus]
+      })
+    ).toBe(false)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, nextThink]
+      })
+    ).toBe(false)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, firstReply]
+      })
+    ).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, reconnectStatus])).toBe(
+      'status'
+    )
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, nextThink])).toBe('think')
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, firstReply])).toBe('text')
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, demoStart])).toBe('text')
+    const processReadyForWriteStat = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterWriteStatStatus = nextLiveProcessView(processReadyForWriteStat, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, reconnectStatus]
+    })
+    expect(processAfterWriteStatStatus.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteStatStatus.processForFlow.some((segment) => segment === reconnectStatus)).toBe(
+      true
+    )
+    expect(processAfterWriteStatStatus.processForFlow.some((segment) => segment === running)).toBe(false)
+    const processAfterWriteStatThink = nextLiveProcessView(processReadyForWriteStat, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, nextThink]
+    })
+    expect(processAfterWriteStatThink.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteStatThink.processForFlow.some((segment) => segment === nextThink)).toBe(false)
+    expect(processAfterWriteStatThink.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(processAfterWriteStatThink.thinkText).toBe(processReadyForWriteStat.thinkText + 'Next')
+    const processAfterWriteStatAnswer = nextLiveProcessView(processReadyForWriteStat, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, firstReply]
+    })
+    expect(processAfterWriteStatAnswer.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteStatAnswer.processForFlow.some((segment) => segment === firstReply)).toBe(
+      false
+    )
+    expect(processAfterWriteStatAnswer.contentStreaming).toBe(true)
+    expect(processAfterWriteStatAnswer.answerStreaming).toBe(true)
+    const processAfterWriteStatFence = nextLiveProcessView(processReadyForWriteStat, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, demoStart]
+    })
+    expect(processAfterWriteStatFence.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processAfterWriteStatFence.processForFlow.some((segment) => segment === demoStart)).toBe(false)
+    expect(processAfterWriteStatFence.generatingDemo).toBe(true)
     const compactStatus: TurnSegment = {
       id: 'compact-1',
       kind: 'status',
