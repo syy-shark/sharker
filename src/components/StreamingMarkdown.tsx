@@ -157,7 +157,7 @@ const CheapListItemView = memo(function CheapListItemView({ item }: { item: Chea
   return <li className="task-list-item live-prose-task">{inner}</li>
 })
 
-/** 廉价列表（含嵌套），任务项用 GFM class；项内始终 `li>p`，变松时不重挂已画行内 */}
+/** 廉价列表（含嵌套），任务项用 GFM class；项内始终 `li>p`，变松时不重挂已画行内 */
 function renderCheapList(
   ordered: boolean,
   items: CheapListItem[],

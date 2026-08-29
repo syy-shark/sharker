@@ -542,7 +542,7 @@ export default function App() {
         providerId?: string
         thinkingLevel?: string
       }
-    ) => Promise<void>)
+    ) => Promise<void>
   >(async () => {})
   /** 收束前写入的残留注入：done 后开下一轮，不再加一条用户气泡 */
   const leftoverFinishByConvRef = useRef(
