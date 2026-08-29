@@ -1087,6 +1087,25 @@ describe('splitStreamingMarkdown', () => {
       expect(headingListGrown[1].items[0]).not.toBe(headingList[1].items[0])
       expect(headingListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
     }
+    const paraList = parseCheapProseBlocks('先说一句\n- 一项')
+    expect(paraList.map((b) => b.type)).toEqual(['p', 'list'])
+    const paraListGrown = continueCheapProseBlocks('先说一句\n- 一项', paraList, '先说一句\n- 一项更长')
+    expect(paraListGrown[0]).toBe(paraList[0])
+    if (paraList[1]?.type === 'list' && paraListGrown[1]?.type === 'list') {
+      expect(paraListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
+    }
+    const paraHeading = parseCheapProseBlocks('先说一句\n## 标题')
+    expect(paraHeading.map((b) => b.type)).toEqual(['p', 'heading'])
+    const paraHeadingGrown = continueCheapProseBlocks('先说一句\n## 标题', paraHeading, '先说一句\n## 标题更长')
+    expect(paraHeadingGrown[0]).toBe(paraHeading[0])
+    if (paraHeadingGrown[1]?.type === 'heading') {
+      expect(paraHeadingGrown[1].nodes).toEqual([{ type: 'text', text: '标题更长' }])
+    }
+    const indentPre = parseCheapProseBlocks('    const x = 1')
+    const indentGrown = continueCheapProseBlocks('    const x = 1', indentPre, '    const x = 12')
+    if (indentPre[0]?.type === 'pre' && indentGrown[0]?.type === 'pre') {
+      expect(indentGrown[0].text).toBe('const x = 12')
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {
