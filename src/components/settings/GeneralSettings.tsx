@@ -16,6 +16,7 @@ import {
   type ReviewDelivery
 } from '../../../shared/review-prompt'
 import { parseFileOpener } from '../../../shared/file-opener'
+import { parseShowContextWindowUsage } from '../../../shared/context-usage-indicator'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -116,6 +117,19 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
+          <SettingsRow
+            title="显示上下文用量"
+            description="对标 Codex Show context window usage：输入框模型旁画用量环。官方默认关。悬停看具体数字。"
+            last
+          >
+            <SettingsToggle
+              checked={parseShowContextWindowUsage(draft.showContextWindowUsage)}
+              onChange={(showContextWindowUsage) => {
+                scheduleSave({ ...draftRef.current, showContextWindowUsage })
+              }}
+              label="显示上下文用量"
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
       <SettingsSection title="代码审查">

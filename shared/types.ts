@@ -158,6 +158,11 @@ export interface AppSettings {
    */
   fileOpener?: import('./file-opener').FileOpener
   /**
+   * 输入框旁上下文用量环（对标 Codex Settings → General → Composer → Show context window usage）。
+   * 官方默认关。
+   */
+  showContextWindowUsage?: boolean
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -434,6 +439,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitBranchPrefix: '',
   toolOutputDisplay: 'standard',
   fileOpener: 'none',
+  showContextWindowUsage: false,
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

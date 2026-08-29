@@ -32,6 +32,11 @@ describe('workspace settings', () => {
     expect(normalizeSettings({ fileOpener: 'cursor' }, '/home/u').fileOpener).toBe('cursor')
     expect(normalizeSettings({ fileOpener: 'zed' as never }, '/home/u').fileOpener).toBe('none')
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').fileOpener).toBe('none')
+    expect(normalizeSettings({}, '/home/u').showContextWindowUsage).toBe(false)
+    expect(normalizeSettings({ showContextWindowUsage: true }, '/home/u').showContextWindowUsage).toBe(
+      true
+    )
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').showContextWindowUsage).toBe(false)
   })
 })
 

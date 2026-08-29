@@ -1,7 +1,7 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
  * 输入框下方有沙箱 / 完整权限芯片（对标 Codex permissions control beneath the composer）。
- * 模型旁有思考档位条与 Fast 芯片（对标 Codex composer gauge / `/fast`）。
+ * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
  * @see src/components/ARCH.md
  */
 import {
@@ -101,6 +101,7 @@ import {
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import { GoalProgressRow } from './GoalProgressRow'
+import { ContextUsageDonut } from './ContextUsageDonut'
 import './ChatView.css'
 
 type MentionOption = { kind: 'file' | 'chat' | 'skill'; name: string; value: string; detail: string }
@@ -224,6 +225,8 @@ export interface ComposerDockProps {
   onPermissionModeChange?: (mode: PermissionMode) => void
   /** 停止当前回合和弦（默认 Esc，设置可改绑；IME 不触发） */
   keyboardShortcuts?: KeymapOverrides
+  /** 输入框旁上下文用量环（对标 Codex Show context window usage；官方默认关） */
+  showContextWindowUsage?: boolean
 }
 
 export const ComposerDock = memo(
@@ -273,7 +276,8 @@ export const ComposerDock = memo(
       onPlanModeChange,
       permissionMode = 'sandbox',
       onPermissionModeChange,
-      keyboardShortcuts
+      keyboardShortcuts,
+      showContextWindowUsage = false
     },
     ref
   ) {
@@ -2019,6 +2023,14 @@ export const ComposerDock = memo(
               onThinkingLevelChange={onThinkingLevelChange}
               openSignal={modelOpenSignal}
             />
+            {showContextWindowUsage ? (
+              <ContextUsageDonut
+                messages={messages}
+                draft={input}
+                providers={providers}
+                activeProviderId={activeProviderId}
+              />
+            ) : null}
             {thinkingOpts.length > 1 && onThinkingLevelChange && activeProvider ? (
               <ReasoningGauge
                 options={thinkingOpts}

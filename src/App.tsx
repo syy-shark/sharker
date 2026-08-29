@@ -2032,6 +2032,7 @@ export default function App() {
           gitBranchPrefix: updated.gitBranchPrefix,
           toolOutputDisplay: updated.toolOutputDisplay,
           fileOpener: updated.fileOpener,
+          showContextWindowUsage: updated.showContextWindowUsage,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -2108,6 +2109,7 @@ export default function App() {
       gitBranchPrefix: draft.gitBranchPrefix,
       toolOutputDisplay: draft.toolOutputDisplay,
       fileOpener: draft.fileOpener,
+      showContextWindowUsage: draft.showContextWindowUsage,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -4072,6 +4074,7 @@ export default function App() {
       gitBranchPrefix: next.gitBranchPrefix,
       toolOutputDisplay: next.toolOutputDisplay,
       fileOpener: next.fileOpener,
+      showContextWindowUsage: next.showContextWindowUsage,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -8164,6 +8167,7 @@ export default function App() {
               onOpenSubAgent={handleOpenSubAgent}
               onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
               toolOutputDisplay={settings.toolOutputDisplay}
+              showContextWindowUsage={settings.showContextWindowUsage}
               onAskInSideChat={handleAskInSideChat}
               onInsertComposer={handleInsertComposer}
               copyPicker={copyPicker}

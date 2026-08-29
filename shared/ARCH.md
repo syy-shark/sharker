@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / `reviewProviderId`（对标 Codex `review_model`）/ Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener`（对标 Codex `file_opener`）、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / `reviewProviderId`（对标 Codex `review_model`）/ Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener`（对标 Codex `file_opener`）/ `showContextWindowUsage`（对标 Codex Show context window usage，官方默认关）、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `showContextWindowUsage` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
 | `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
@@ -38,6 +38,8 @@
 | `stream-reconnect.ts` | 供应商短暂中断时同一请求最多重连 5 次；直播 status「正在重新连接… n/5」（对标 Codex #37337）；已吐出正文 / 思考 / 工具参数后不重开 |
 | `stream-reconnect.test.ts` | 429/502 与首包超时可重试；401 / Stop / 已有 delta 不重试；重连 status 文案 1/5 |
 | `token-estimate.ts` | 上下文 token 粗估 |
+| `context-usage-indicator.ts` | 输入框用量环：官方默认关、历史基数 + 直播增量、≥85% 高用量、悬停文案与 `/status` 同数字 |
+| `context-usage-indicator.test.ts` | 默认关、环几何、高用量阈值 |
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |

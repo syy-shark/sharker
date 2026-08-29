@@ -370,6 +370,8 @@ interface Props {
   onPermissionModeChange?: (mode: PermissionMode) => void
   /** 对话里命令输出展示量（对标 Codex command output） */
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
+  /** 输入框旁上下文用量环（对标 Codex Show context window usage） */
+  showContextWindowUsage?: boolean
   /** 划选正文后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
   /** 划选正文插入当前输入框（对标 Codex send selection to composer） */
@@ -459,7 +461,8 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   onPlanModeChange,
   permissionMode,
   onPermissionModeChange,
-  keyboardShortcuts
+  keyboardShortcuts,
+  showContextWindowUsage
 }: {
   pendingSteers: QueuedPrompt[]
   queuedPrompts: QueuedPrompt[]
@@ -514,6 +517,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   permissionMode: PermissionMode
   onPermissionModeChange?: (mode: PermissionMode) => void
   keyboardShortcuts?: KeymapOverrides
+  showContextWindowUsage?: boolean
 }) {
   return (
     <>
@@ -575,6 +579,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
         permissionMode={permissionMode}
         onPermissionModeChange={onPermissionModeChange}
         keyboardShortcuts={keyboardShortcuts}
+        showContextWindowUsage={showContextWindowUsage}
       />
     </>
   )
@@ -825,6 +830,7 @@ export const ChatView = memo(function ChatView({
   permissionMode = 'sandbox',
   onPermissionModeChange,
   toolOutputDisplay = 'standard',
+  showContextWindowUsage = false,
   onAskInSideChat,
   onInsertComposer,
   copyPicker = null,
@@ -2376,6 +2382,7 @@ export const ChatView = memo(function ChatView({
             permissionMode={permissionMode}
             onPermissionModeChange={onPermissionModeChange}
             keyboardShortcuts={keyboardShortcuts}
+            showContextWindowUsage={showContextWindowUsage}
           />
         </div>
       </div>
