@@ -15,6 +15,7 @@ import {
   HELP_MENU_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  NEW_WINDOW_LABEL,
   BACK_MENU_LABEL,
   FIND_MENU_LABEL,
   FORWARD_MENU_LABEL,
@@ -50,7 +51,7 @@ export function sendMenuAction(action: string): void {
 }
 
 /** 安装应用菜单 */
-export function installApplicationMenu(): void {
+export function installApplicationMenu(options?: { onNewWindow?: () => void }): void {
   const send = (action: string): MenuItemConstructorOptions => ({
     click: () => sendMenuAction(action)
   })
@@ -89,6 +90,12 @@ export function installApplicationMenu(): void {
           accelerator: 'Command+Alt+O',
           registerAccelerator: false,
           ...send('standalone_conversation')
+        },
+        {
+          label: NEW_WINDOW_LABEL,
+          accelerator: 'Command+Shift+N',
+          registerAccelerator: false,
+          click: () => options?.onNewWindow?.()
         },
         { type: 'separator' },
         {

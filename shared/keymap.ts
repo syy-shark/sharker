@@ -47,6 +47,7 @@ const ACTION_SET = new Set<string>([
   'pin_conversation',
   'mark_unread',
   'standalone_conversation',
+  'new_window',
   'copy_cwd',
   'copy_session_id',
   'copy_conversation_path',

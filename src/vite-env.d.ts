@@ -270,6 +270,7 @@ export interface SharkerApi {
     conversationId: string,
     title?: string
   ) => Promise<{ ok: true } | { ok: false; error: string }>
+  openNewWindow: () => Promise<boolean>
   setWindowAlwaysOnTop: (flag: boolean) => Promise<boolean>
   getWindowAlwaysOnTop: () => Promise<boolean>
   createGitBranch: (

@@ -51,6 +51,9 @@ describe('workbench shortcuts', () => {
     )
     expect(matchWorkbenchShortcut(ev({ key: 'j', metaKey: true }))).toBe('toggle_panel')
     expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true }))).toBe('new_conversation')
+    expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true, shiftKey: true }))).toBe(
+      'new_window'
+    )
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, shiftKey: true }))).toBe(
       'new_conversation'
     )
@@ -208,6 +211,9 @@ describe('workbench shortcuts', () => {
     ).toBe(true)
     expect(
       WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘N / ⌘⇧O' && row.title === 'New chat')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⇧N' && row.title === 'New window')
     ).toBe(true)
     expect(
       WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⌥R' && row.title === 'Rename chat')

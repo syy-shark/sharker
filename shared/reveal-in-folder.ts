@@ -109,6 +109,8 @@ export const WINDOW_MENU_LABEL = 'Window'
 export const HELP_MENU_LABEL = 'Help'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
 export const FILE_CLOSE_LABEL = 'Close'
+/** Official File menu (github.com/openai/codex#12773 / #26890 New Window, ⌘⇧N). */
+export const NEW_WINDOW_LABEL = 'New window'
 export const TOGGLE_FULL_SCREEN_LABEL = 'Toggle Full Screen'
 /** Official Edit menu (github.com/openai/codex#26890 standard Electron role items). */
 export const UNDO_LABEL = 'Undo'

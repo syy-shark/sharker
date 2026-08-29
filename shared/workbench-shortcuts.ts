@@ -27,6 +27,7 @@ import {
   NAVIGATE_FORWARD_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  NEW_WINDOW_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
   NEXT_CHAT_OR_TAB_LABEL,
   OPEN_BROWSER_TAB_LABEL,
@@ -102,6 +103,7 @@ export type WorkbenchShortcutAction =
   | 'pin_conversation'
   | 'mark_unread'
   | 'standalone_conversation'
+  | 'new_window'
   | 'copy_cwd'
   | 'copy_session_id'
   | 'copy_conversation_path'
@@ -204,6 +206,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'o' && event.altKey && event.shiftKey) return 'open_project_picker'
   if (key === 'o' && event.altKey && !event.shiftKey) return 'standalone_conversation'
   if (key === 'n' && event.altKey && !event.shiftKey) return 'standalone_conversation'
+  if (key === 'n' && event.shiftKey && !event.altKey) return 'new_window'
   if (key === 'r' && event.altKey && !event.shiftKey) return 'rename_conversation'
   if (key === 'p' && event.altKey && !event.shiftKey) return 'pin_conversation'
   if (key === 'u' && event.shiftKey && !event.altKey) return 'mark_unread'
@@ -363,6 +366,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧B', title: TOGGLE_BROWSER_PANEL_LABEL },
   { keys: '⌘K', title: OPEN_COMMAND_MENU_LABEL },
   { keys: '⌘N / ⌘⇧O', title: NEW_CHAT_LABEL },
+  { keys: '⌘⇧N', title: NEW_WINDOW_LABEL },
   { keys: '⌘⌥O / ⌘⌥N', title: NEW_STANDALONE_CHAT_LABEL },
   { keys: '⌘⌥⇧O', title: OPEN_PROJECT_PICKER_LABEL },
   { keys: '⌘⌥R', title: RENAME_CHAT_LABEL },
@@ -489,6 +493,12 @@ export const SHORTCUT_CATALOG: Array<{
     defaultChord: 'mod+alt+shift+u'
   },
   { action: 'new_conversation', title: NEW_CHAT_LABEL, defaultKeys: '⌘N', defaultChord: ['mod+n', 'mod+shift+o'] },
+  {
+    action: 'new_window',
+    title: NEW_WINDOW_LABEL,
+    defaultKeys: '⌘⇧N',
+    defaultChord: 'mod+shift+n'
+  },
   {
     action: 'standalone_conversation',
     title: NEW_STANDALONE_CHAT_LABEL,

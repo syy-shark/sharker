@@ -23,6 +23,7 @@ import {
   NAVIGATE_FORWARD_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  NEW_WINDOW_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
   OPEN_BROWSER_TAB_LABEL,
   OPEN_FOLDER_LABEL,
@@ -559,6 +560,13 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘⌥O / ⌘⌥N',
     keywords: 'standalone new window quick chat 独立 新对话',
     action: 'standalone_conversation'
+  },
+  {
+    id: 'new-window',
+    title: NEW_WINDOW_LABEL,
+    shortcut: '⌘⇧N',
+    keywords: 'new window File 新窗口',
+    action: 'new_window'
   },
   {
     id: 'project-picker',

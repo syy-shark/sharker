@@ -557,13 +557,49 @@ function lockWindowZoom(win: BrowserWindow): void {
   }
 }
 
-/** 创建主窗口并加载渲染进程（开发 URL 或打包 HTML）。 */
+function isThreadPopout(win: BrowserWindow): boolean {
+  for (const existing of threadWindows.values()) {
+    if (existing === win) return true
+  }
+  return false
+}
+
+function appWindows(): BrowserWindow[] {
+  return BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed() && !isThreadPopout(win))
+}
+
+function rememberAppWindow(win: BrowserWindow): void {
+  mainWindow = win
+  win.on('focus', () => {
+    if (!win.isDestroyed()) mainWindow = win
+  })
+  win.on('closed', () => {
+    if (mainWindow !== win) return
+    mainWindow = appWindows().find((other) => other !== win) ?? null
+  })
+}
+
+function applyAppearanceToAllWindows(next: AppSettings): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) applyWindowAppearance(win, next)
+  }
+}
+
+function dialogParent(event?: Electron.IpcMainInvokeEvent): BrowserWindow | undefined {
+  const fromEvent = event ? windowFromEvent(event) : null
+  if (fromEvent && !fromEvent.isDestroyed()) return fromEvent
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow
+  return undefined
+}
+
+/** 创建全尺寸应用窗（对标 Codex File → New window）。不覆盖其它已开窗。 */
 function createWindow(): void {
   const icon = resolveAppIcon()
   const dark = settings?.uiTheme === 'dark'
   const useGlass = !dark
+  const firstAppWindow = appWindows().length === 0
 
-  mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 1180,
     height: 780,
     minWidth: 900,
@@ -588,20 +624,21 @@ function createWindow(): void {
       webviewTag: true
     }
   })
+  rememberAppWindow(win)
 
   if (process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+    void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+    void win.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
-  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
     console.error('[window] did-fail-load', code, desc, url)
   })
-  mainWindow.webContents.on('did-finish-load', () => {
-    console.log('[window] did-finish-load', mainWindow?.webContents.getURL())
+  win.webContents.on('did-finish-load', () => {
+    console.log('[window] did-finish-load', win.webContents.getURL())
   })
-  mainWindow.webContents.on('console-message', (event) => {
+  win.webContents.on('console-message', (event) => {
     // Electron 新事件对象；兼容旧签名字段
     const level = (event as any).level ?? 0
     const message = String((event as any).message ?? '')
@@ -610,20 +647,20 @@ function createWindow(): void {
     if (level >= 2) console.warn('[renderer]', message, `${sourceId}:${line}`)
   })
 
-  mainWindow.setMenuBarVisibility(false)
-  lockWindowZoom(mainWindow)
-  applyWindowAppearance(mainWindow, settings)
+  win.setMenuBarVisibility(false)
+  lockWindowZoom(win)
+  applyWindowAppearance(win, settings)
 
   if (icon) {
-    mainWindow.setIcon(icon)
+    win.setIcon(icon)
   }
 
-  mainWindow.once('ready-to-show', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return
-    mainWindow.show()
-    mainWindow.focus()
+  win.once('ready-to-show', () => {
+    if (win.isDestroyed()) return
+    win.show()
+    win.focus()
     if (process.platform === 'darwin') app.dock?.show()
-    if (pendingDeeplink) broadcastDeeplink(pendingDeeplink)
+    if (firstAppWindow && pendingDeeplink) broadcastDeeplink(pendingDeeplink)
   })
 
   /** 禁止聊天内链接在应用窗口内跳转（否则会顶掉 UI、窗口变透明） */
@@ -631,12 +668,12 @@ function createWindow(): void {
     ? new URL(process.env.ELECTRON_RENDERER_URL).origin
     : null
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  win.webContents.setWindowOpenHandler(({ url }) => {
     if (isSafeExternalUrl(url)) void shell.openExternal(url)
     return { action: 'deny' }
   })
 
-  mainWindow.webContents.on('will-navigate', (event, url) => {
+  win.webContents.on('will-navigate', (event, url) => {
     if (rendererOrigin && url.startsWith(rendererOrigin)) return
     if (url.startsWith('file://')) return
     event.preventDefault()
@@ -781,12 +818,8 @@ function registerIpc(): void {
     })
     settings = normalizeSettings({ ...next, providers: mergedProviders }, app.getPath('home'))
     await saveSettings(settings)
-    if (
-      mainWindow &&
-      !mainWindow.isDestroyed() &&
-      (prev.uiGlass !== settings.uiGlass || prev.uiTheme !== settings.uiTheme)
-    ) {
-      applyWindowAppearance(mainWindow, settings)
+    if (prev.uiGlass !== settings.uiGlass || prev.uiTheme !== settings.uiTheme) {
+      applyAppearanceToAllWindows(settings)
     }
     void onSettingsChanged(settings).catch((e) => console.warn('[memory] workspace sync', e))
     const workspace = getActiveWorkspacePath(settings) ?? ''
@@ -961,12 +994,10 @@ function registerIpc(): void {
       }
 
       // 先把 user_code 推给渲染进程展示
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send(IPC.XAI_DEVICE_CODE, {
-          userCode: started.userCode,
-          verificationUri: started.verificationUri
-        })
-      }
+      broadcastToRenderers(IPC.XAI_DEVICE_CODE, {
+        userCode: started.userCode,
+        verificationUri: started.verificationUri
+      })
 
       // 打开 https://accounts.x.ai/oauth2/device?user_code=XXXX
       try {
@@ -1006,18 +1037,20 @@ function registerIpc(): void {
     }
   )
 
-  ipcMain.handle(IPC.SELECT_WORKSPACE, async () => {
-    const result = await dialog.showOpenDialog(mainWindow!, {
-      properties: ['openDirectory']
-    })
+  ipcMain.handle(IPC.SELECT_WORKSPACE, async (e) => {
+    const parent = dialogParent(e)
+    const result = parent
+      ? await dialog.showOpenDialog(parent, { properties: ['openDirectory'] })
+      : await dialog.showOpenDialog({ properties: ['openDirectory'] })
     if (result.canceled || !result.filePaths[0]) return null
     return result.filePaths[0]
   })
 
-  ipcMain.handle(IPC.PICK_WORKSPACE_FOLDER, async () => {
-    const result = await dialog.showOpenDialog(mainWindow!, {
-      properties: ['openDirectory']
-    })
+  ipcMain.handle(IPC.PICK_WORKSPACE_FOLDER, async (e) => {
+    const parent = dialogParent(e)
+    const result = parent
+      ? await dialog.showOpenDialog(parent, { properties: ['openDirectory'] })
+      : await dialog.showOpenDialog({ properties: ['openDirectory'] })
     if (result.canceled || !result.filePaths[0]) return null
     return result.filePaths[0]
   })
@@ -1362,6 +1395,10 @@ function registerIpc(): void {
       return { ok: true as const }
     }
   )
+  ipcMain.handle(IPC.NEW_WINDOW, () => {
+    createWindow()
+    return true
+  })
 
   ipcMain.handle(IPC.OPEN_EXTERNAL, async (_e, url: string) => {
     if (!isSafeExternalUrl(url)) return false
@@ -1556,9 +1593,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.RUN_AUTOMATION, async (_e, jobId: string) => {
     const job = await triggerAutomationRun(String(jobId || ''))
     if (!job) return false
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('automation:run', job)
-    }
+    broadcastToRenderers('automation:run', job)
     return true
   })
 
@@ -2174,7 +2209,7 @@ app.whenReady().then(async () => {
     return
   }
 
-  installApplicationMenu()
+  installApplicationMenu({ onNewWindow: () => createWindow() })
   const icon = resolveAppIcon()
   if (icon) applyAppIcon(icon)
 
@@ -2214,8 +2249,7 @@ app.whenReady().then(async () => {
   }
 
   startAutomationScheduler(async (job) => {
-    if (!mainWindow || mainWindow.isDestroyed()) return
-    mainWindow.webContents.send('automation:run', job)
+    broadcastToRenderers('automation:run', job)
   })
 
   app.on('before-quit', () => {

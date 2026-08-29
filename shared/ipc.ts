@@ -75,6 +75,8 @@ export const IPC = {
   WINDOW_CLOSE: 'window:close',
   /** 弹出独立线程窗（对标 Codex Open in Popup Window） */
   OPEN_THREAD_WINDOW: 'window:open-thread',
+  /** 新开全尺寸应用窗（对标 Codex File → New window / ⌘⇧N） */
+  NEW_WINDOW: 'window:new',
   /** 当前窗 Always on top（对标 Codex 弹出对话置顶） */
   SET_WINDOW_ALWAYS_ON_TOP: 'window:set-always-on-top',
   GET_WINDOW_ALWAYS_ON_TOP: 'window:get-always-on-top',

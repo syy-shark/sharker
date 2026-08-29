@@ -6692,6 +6692,10 @@ export default function App() {
         void handleStandaloneConversation()
         return
       }
+      if (cmd.action === 'new_window') {
+        void window.sharker.openNewWindow?.()
+        return
+      }
       if (cmd.action === 'run_environment_action') {
         handleRunEnvironmentAction()
         return
@@ -7089,6 +7093,10 @@ export default function App() {
       }
       if (action === 'standalone_conversation') {
         void handleStandaloneConversation()
+        return
+      }
+      if (action === 'new_window') {
+        void window.sharker.openNewWindow?.()
         return
       }
       if (action === 'copy_cwd') {
