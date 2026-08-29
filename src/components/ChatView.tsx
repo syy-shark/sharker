@@ -22,6 +22,7 @@ import type {
   ApprovalRequest,
   ChatAttachment,
   ChatMessage,
+  PermissionMode,
   ProviderConfig,
   WorkspaceItem
 } from '../../shared/types'
@@ -364,6 +365,9 @@ interface Props {
   /** 计划模式芯片（对标 Codex /plan） */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
+  /** 输入框下方权限控件（对标 Codex permissions control beneath the composer） */
+  permissionMode?: PermissionMode
+  onPermissionModeChange?: (mode: PermissionMode) => void
   /** 对话里命令输出展示量（对标 Codex command output） */
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   /** 划选正文后旁路提问（对标 Codex Ask in side chat） */
@@ -453,6 +457,8 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   onApprovalHotkey,
   planMode,
   onPlanModeChange,
+  permissionMode,
+  onPermissionModeChange,
   keyboardShortcuts
 }: {
   pendingSteers: QueuedPrompt[]
@@ -505,6 +511,8 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   ) => void | Promise<void>
   planMode: boolean
   onPlanModeChange?: (enabled: boolean) => void
+  permissionMode: PermissionMode
+  onPermissionModeChange?: (mode: PermissionMode) => void
   keyboardShortcuts?: KeymapOverrides
 }) {
   return (
@@ -564,6 +572,8 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
         onApprovalHotkey={onApprovalHotkey}
         planMode={planMode}
         onPlanModeChange={onPlanModeChange}
+        permissionMode={permissionMode}
+        onPermissionModeChange={onPermissionModeChange}
         keyboardShortcuts={keyboardShortcuts}
       />
     </>
@@ -812,6 +822,8 @@ export const ChatView = memo(function ChatView({
   composerSeed = null,
   planMode = false,
   onPlanModeChange,
+  permissionMode = 'sandbox',
+  onPermissionModeChange,
   toolOutputDisplay = 'standard',
   onAskInSideChat,
   onInsertComposer,
@@ -2361,6 +2373,8 @@ export const ChatView = memo(function ChatView({
             onApprovalHotkey={onApproval}
             planMode={planMode}
             onPlanModeChange={onPlanModeChange}
+            permissionMode={permissionMode}
+            onPermissionModeChange={onPermissionModeChange}
             keyboardShortcuts={keyboardShortcuts}
           />
         </div>

@@ -222,7 +222,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'permissions',
-    description: '切换沙箱 / 完整权限',
+    description: '切换沙箱 / 完整权限（输入框下方也可切）',
     scope: 'ui',
     action: 'set_permissions',
     argsHint: '[sandbox|full]',

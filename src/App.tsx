@@ -31,9 +31,15 @@ import type {
   AssistantMeta,
   ChatAttachment,
   ChatMessage,
+  PermissionMode,
   TurnSegment,
   WorkspaceItem
 } from '../shared/types'
+import {
+  formatPermissionChanged,
+  formatPermissionStatus,
+  parsePermissionMode
+} from '../shared/permission-mode'
 import {
   extractBrowsedPaths,
   extractChangedRelPaths,
@@ -2818,6 +2824,14 @@ export default function App() {
     if (activeConversationIdRef.current === id) setPlanMode(on)
   }, [])
 
+  const handlePermissionModeChange = useCallback(
+    async (mode: PermissionMode) => {
+      if (settingsRef.current.permissionMode === mode) return
+      await persistSettings({ ...settingsRef.current, permissionMode: mode })
+    },
+    [persistSettings]
+  )
+
   const handleThreadModeChange = useCallback(async (mode: ThreadMode) => {
     const prev = threadRuntimeRef.current
     if (mode === prev.mode) return
@@ -5456,13 +5470,13 @@ export default function App() {
           break
         }
         case 'set_permissions': {
-          const token = args.trim().toLowerCase().split(/\s+/)[0] || ''
+          const token = parsePermissionMode(args)
           const current = settingsRef.current.permissionMode
-          if (token !== 'sandbox' && token !== 'full') {
+          if (!token) {
             const note = {
               id: crypto.randomUUID(),
               role: 'assistant' as const,
-              content: `当前权限：${current === 'full' ? '完整（整机）' : '沙箱（仅工作区）'}。用法：\`/permissions sandbox|full\``
+              content: formatPermissionStatus(current)
             }
             setMessages((msgs) => {
               const nextMsgs = [...msgs, note]
@@ -5472,14 +5486,14 @@ export default function App() {
             })
             break
           }
-          const merged = { ...settingsRef.current, permissionMode: token as 'sandbox' | 'full' }
+          const merged = { ...settingsRef.current, permissionMode: token }
           await persistSettings(merged)
           setSettings(merged)
           setSettingsDraft(merged)
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
-            content: `权限已切换为${token === 'full' ? '完整（整机）' : '沙箱（仅工作区）'}。`
+            content: formatPermissionChanged(token)
           }
           setMessages((msgs) => {
             const nextMsgs = [...msgs, note]
@@ -8062,6 +8076,8 @@ export default function App() {
               onThreadModeChange={handleThreadModeChange}
               planMode={planMode}
               onPlanModeChange={handlePlanModeChange}
+              permissionMode={settings.permissionMode}
+              onPermissionModeChange={handlePermissionModeChange}
               worktreeBaseRef={worktreeBaseRef}
               onWorktreeBaseRefChange={handleWorktreeBaseRefChange}
               fileSearchRoot={fileSearchRoot}

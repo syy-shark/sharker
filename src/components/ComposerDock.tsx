@@ -1,5 +1,6 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
+ * 输入框下方有沙箱 / 完整权限芯片（对标 Codex permissions control beneath the composer）。
  * @see src/components/ARCH.md
  */
 import {
@@ -13,7 +14,18 @@ import {
   useState
 } from 'react'
 import { ArrowUp, FileText, Folder, Mic } from 'lucide-react'
-import type { ChatAttachment, ChatMessage, ProviderConfig, WorkspaceItem } from '../../shared/types'
+import type {
+  ChatAttachment,
+  ChatMessage,
+  PermissionMode,
+  ProviderConfig,
+  WorkspaceItem
+} from '../../shared/types'
+import {
+  PERMISSION_MODES,
+  permissionModeChipLabel,
+  permissionModeChipTitle
+} from '../../shared/permission-mode'
 import {
   interruptTurnChordLabel,
   shouldInterruptTurn,
@@ -205,6 +217,9 @@ export interface ComposerDockProps {
   /** 计划模式芯片（对标 Codex /plan）；不跟直播 token 变 */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
+  /** 输入框下方权限控件（对标 Codex permissions control beneath the composer） */
+  permissionMode?: PermissionMode
+  onPermissionModeChange?: (mode: PermissionMode) => void
   /** 停止当前回合和弦（默认 Esc，设置可改绑；IME 不触发） */
   keyboardShortcuts?: KeymapOverrides
 }
@@ -254,6 +269,8 @@ export const ComposerDock = memo(
       onApprovalHotkey,
       planMode = false,
       onPlanModeChange,
+      permissionMode = 'sandbox',
+      onPermissionModeChange,
       keyboardShortcuts
     },
     ref
@@ -1896,6 +1913,22 @@ export const ComposerDock = memo(
                   {activeWorkspace.label || activeWorkspace.path}
                 </span>
               </span>
+            ) : null}
+            {onPermissionModeChange ? (
+              <div className="composer-thread-mode" role="group" aria-label="权限">
+                {PERMISSION_MODES.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`composer-thread-chip${permissionMode === mode ? ' is-active' : ''}`}
+                    aria-pressed={permissionMode === mode}
+                    onClick={() => onPermissionModeChange(mode)}
+                    title={permissionModeChipTitle(mode)}
+                  >
+                    {permissionModeChipLabel(mode)}
+                  </button>
+                ))}
+              </div>
             ) : null}
             {onPlanModeChange ? (
               <button

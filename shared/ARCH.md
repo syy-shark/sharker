@@ -189,7 +189,8 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
+| `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或插入当前输入框：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat / send selection to composer） |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
@@ -211,7 +212,7 @@
 | `mcp-http.ts` | Streamable HTTP 请求头与 SSE 解析 |
 | `feedback-bundle.ts` | `/feedback` 本地诊断包（分类 / 说明 / 可否附带会话；不外发） |
 | `feedback-bundle.test.ts` | 含状态、分类/说明、可省略会话诊断，且声明不外发 |
-| `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话 |
+| `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析 |
 | `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
 | `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、自定义关注拼进提示 |

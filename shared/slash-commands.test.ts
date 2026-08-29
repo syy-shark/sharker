@@ -6,6 +6,12 @@ import {
   slashItemsWithSkills,
   SLASH_COMMANDS
 } from './slash-commands'
+import {
+  formatPermissionChanged,
+  formatPermissionStatus,
+  parsePermissionMode,
+  permissionModeChipLabel
+} from './permission-mode'
 
 describe('slash commands', () => {
   it('lists changes as a panel command and review as a working-tree review', () => {
@@ -61,6 +67,15 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.argsHint).toContain('问题')
     expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.action).toBe('init_agents')
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.action).toBe('set_permissions')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.description).toContain('输入框下方')
+    expect(parsePermissionMode('')).toBeNull()
+    expect(parsePermissionMode('ask')).toBeNull()
+    expect(parsePermissionMode('sandbox')).toBe('sandbox')
+    expect(parsePermissionMode('FULL extra')).toBe('full')
+    expect(permissionModeChipLabel('sandbox')).toBe('沙箱')
+    expect(permissionModeChipLabel('full')).toBe('完整')
+    expect(formatPermissionStatus('sandbox')).toContain('沙箱（仅工作区）')
+    expect(formatPermissionChanged('full')).toContain('完整（整机）')
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.action).toBe('archive_thread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.action).toBe('side_conversation')
     expect(SLASH_COMMANDS.find((c) => c.name === 'btw')?.action).toBe('side_conversation')
