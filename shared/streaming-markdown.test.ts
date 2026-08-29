@@ -1717,6 +1717,25 @@ describe('splitStreamingMarkdown', () => {
     const atxThenPara = continueCheapProseBlocks('## 标题', headingOnly, '## 标题\n见 foo')
     expect(atxThenPara[0]).toBe(headingOnly[0])
     expect(atxThenPara.map((block) => block.type)).toEqual(['heading', 'p'])
+    const setextOnly = parseCheapProseBlocks('Title\n===')
+    const setextThenAfter = continueCheapProseBlocks('Title\n===', setextOnly, 'Title\n===\nafter')
+    expect(setextThenAfter[0]).toBe(setextOnly[0])
+    expect(setextThenAfter.map((block) => block.type)).toEqual(['heading', 'p'])
+    const setextDash = parseCheapProseBlocks('Title\n---')
+    const setextDashThenAfter = continueCheapProseBlocks('Title\n---', setextDash, 'Title\n---\nafter')
+    expect(setextDashThenAfter[0]).toBe(setextDash[0])
+    expect(setextDashThenAfter.map((block) => block.type)).toEqual(['heading', 'p'])
+    const quoteSetextSrc = '> Title\n> ==='
+    const quoteSetext = parseCheapProseBlocks(quoteSetextSrc)
+    const quoteSetextGrown = continueCheapProseBlocks(
+      quoteSetextSrc,
+      quoteSetext,
+      `${quoteSetextSrc}\n> after`
+    )
+    if (quoteSetext[0]?.type === 'quote' && quoteSetextGrown[0]?.type === 'quote') {
+      expect(quoteSetextGrown[0].blocks[0]).toBe(quoteSetext[0].blocks[0])
+      expect(quoteSetextGrown[0].blocks.map((block) => block.type)).toEqual(['heading', 'p'])
+    }
     const paraOnly = parseCheapProseBlocks('见 foo')
     const paraThenList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n- 一项')
     expect(paraThenList[0]).toBe(paraOnly[0])
