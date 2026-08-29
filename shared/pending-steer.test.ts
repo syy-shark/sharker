@@ -11,6 +11,7 @@ import {
   leftoverSteerDisposition,
   placeMessageBeforeIds,
   queuedChipPrimaryAction,
+  resolveBusyFollowUp,
   listPendingSteers,
   shouldDrainPendingSteers,
   updatePendingSteerText
@@ -61,5 +62,19 @@ describe('pending steer mailbox', () => {
     expect(placed.map((m) => m.id)).toEqual(['s-a', 'a1', 's-late'])
     expect(queuedChipPrimaryAction(true)).toBe('steer')
     expect(queuedChipPrimaryAction(false)).toBe('send')
+    expect(resolveBusyFollowUp({ intent: 'queue' })).toBe('queue')
+    expect(resolveBusyFollowUp({ intent: 'steer', accepted: { ok: true, id: 's1' } })).toBe(
+      'pending'
+    )
+    expect(resolveBusyFollowUp({ intent: 'steer', accepted: null })).toBe('queue')
+    expect(
+      resolveBusyFollowUp({ intent: 'steer', accepted: { ok: false, reason: 'no_active_turn' } })
+    ).toBe('send')
+    expect(
+      resolveBusyFollowUp({ intent: 'steer', accepted: { ok: false, reason: 'empty' } })
+    ).toBe('ignore')
+    expect(
+      resolveBusyFollowUp({ intent: 'steer', accepted: { ok: false, reason: 'no_conversation' } })
+    ).toBe('queue')
   })
 })

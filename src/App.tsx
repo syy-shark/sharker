@@ -220,7 +220,9 @@ import {
   historyWithoutSteerIds,
   joinLeftoverSteerPrompt,
   queuedChipPrimaryAction,
+  resolveBusyFollowUp,
   placeMessageBeforeIds,
+  type SteerAcceptResult,
   listPendingSteers,
   cancelPendingSteer,
   updatePendingSteerText,
@@ -2979,31 +2981,40 @@ export default function App() {
           attachments.length ? attachments : undefined
         )
         if (mode === 'jump') {
-          // 对标 Codex Steer：加入当前回合，不中止直播。无进行中回合才回退中止重开。
+          // 对标 Codex Steer：加入当前回合，不中止直播。注入失败改排队；没有进行中回合才新开。
+          let accepted: SteerAcceptResult | null = null
           if (window.sharker.steerChat) {
             try {
-              const accepted = await window.sharker.steerChat(
+              accepted = await window.sharker.steerChat(
                 convId,
                 trimmed,
                 attachments.length ? attachments : undefined
               )
-              if (accepted.ok) {
-                const steer = createPendingSteer(
-                  convId,
-                  trimmed,
-                  attachments.length ? attachments : undefined,
-                  accepted.id
-                )
-                syncPendingSteerUi(
-                  enqueuePendingSteer(pendingSteersRef.current, convId, steer),
-                  convId
-                )
-                return
-              }
             } catch (e) {
               console.error('steer failed', e)
+              accepted = null
             }
           }
+          const follow = resolveBusyFollowUp({ intent: 'steer', accepted })
+          if (follow === 'pending' && accepted?.ok) {
+            const steer = createPendingSteer(
+              convId,
+              trimmed,
+              attachments.length ? attachments : undefined,
+              accepted.id
+            )
+            syncPendingSteerUi(
+              enqueuePendingSteer(pendingSteersRef.current, convId, steer),
+              convId
+            )
+            return
+          }
+          if (follow === 'queue') {
+            const queues = enqueueForConversation(sessionQueuesRef.current, convId, item, 'append')
+            syncActiveQueueUi(queues, convId)
+            return
+          }
+          if (follow === 'ignore') return
           turnGenRef.current += 1
           if (sendInFlightRef.current || loading) {
             doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, convId)

@@ -22,6 +22,25 @@ export type SteerAcceptResult =
   | { ok: true; id: string }
   | { ok: false; reason: 'no_active_turn' | 'empty' | 'no_conversation' }
 
+/** 忙时注入失败后的去向：不得为了「注入」中止直播 */
+export type BusyFollowUpAction = 'pending' | 'queue' | 'send' | 'ignore'
+
+/**
+ * 忙时后续：Steer 成功进当前回合；没有进行中回合才新开一轮；
+ * 其它失败改排队（对标 Codex queued chip Steer，不 abort）。
+ */
+export function resolveBusyFollowUp(input: {
+  intent: 'steer' | 'queue'
+  accepted?: SteerAcceptResult | null
+}): BusyFollowUpAction {
+  if (input.intent === 'queue') return 'queue'
+  if (!input.accepted) return 'queue'
+  if (input.accepted.ok) return 'pending'
+  if (input.accepted.reason === 'empty') return 'ignore'
+  if (input.accepted.reason === 'no_active_turn') return 'send'
+  return 'queue'
+}
+
 /** 创建注入项（强制绑定 conversationId） */
 export function createPendingSteer(
   conversationId: string,
