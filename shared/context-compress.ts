@@ -6,6 +6,9 @@ import type { AppSettings, ChatMessage } from './types'
 import { resolveContextLimit } from './context-limit'
 import { estimateContextUsage } from './token-estimate'
 
+/** 开轮自动压缩时直播状态（对标 Codex Automatically compacting context） */
+export const AUTO_COMPACT_LIVE_STATUS = '正在自动压缩上下文…'
+
 /** 占用率达此比例且消息足够多时触发压缩 */
 export const CONTEXT_COMPRESS_THRESHOLD = 0.85
 /** 压缩后期望回落到的占用比例（供 UI 参考） */

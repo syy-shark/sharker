@@ -9,6 +9,7 @@ import {
   COMPACT_LIVE_STATUS,
   liveCompactStatusSegment
 } from './live-stream-ui'
+import { AUTO_COMPACT_LIVE_STATUS } from './context-compress'
 import {
   nextLiveAnswerActions,
   nextLiveAnswerView,
@@ -229,5 +230,13 @@ describe('live stream ui snapshot', () => {
     )
     expect(compactSnap.liveSegments[0]?.content).toBe('正在压缩上下文…')
     expect(nextLiveProcessView(null, compactSnap).processForFlow[0]?.kind).toBe('status')
+    const autoCompact = liveStreamPatchFromSegments(
+      [{ id: 'auto', kind: 'status', content: AUTO_COMPACT_LIVE_STATUS, status: 'active', startedAt: 3 }],
+      { streaming: '', activeTool: null, turnStartedAt: 3 }
+    )
+    expect(autoCompact.liveSegments?.[0]?.content).toBe('正在自动压缩上下文…')
+    expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, autoCompact)).processForFlow[0]?.kind).toBe(
+      'status'
+    )
   })
 })

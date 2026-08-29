@@ -95,6 +95,27 @@ describe('turn segment event state machine', () => {
     segments = applyStreamChunk(segments, { type: 'think', content: '分析', timestamp: 2 })
     expect(segments[0].status).toBe('done')
     expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)
+    let compacting = applyStreamChunk([], { type: 'turn_start', timestamp: 1 })
+    compacting = applyStreamChunk(compacting, {
+      type: 'status',
+      content: '正在自动压缩上下文…',
+      timestamp: 2
+    })
+    expect(compacting[0]?.content).toBe('正在自动压缩上下文…')
+    expect(compacting[0]?.status).toBe('active')
+    compacting = applyStreamChunk(compacting, {
+      type: 'context_compress',
+      timestamp: 3,
+      contextCompress: {
+        removedCount: 4,
+        beforeTokens: 9000,
+        afterTokens: 4000,
+        limit: 10000,
+        messages: []
+      }
+    })
+    expect(compacting[0]?.status).toBe('done')
+    expect(compacting.some((s) => s.toolName === 'compress' && s.status === 'done')).toBe(true)
   })
 
   it('does not mutate previous segment objects when appending tokens', () => {

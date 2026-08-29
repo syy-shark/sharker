@@ -16,7 +16,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `pipeline.ts` | 用户输入入口与多会话 turn 队列；入槽后可 `chat:steer`；成功收束把未排空注入在 `done` 前写成 `steer_consumed`（对标 Codex leftover pending input at task finish），中止/失败或未采样（`!` 本地命令）才 `steer_restored`；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd；可选 `threadGoal` 注入 system；可选 `providerId` / `thinkingLevel` 只覆盖本轮（对标 Codex scheduled model）；`/plan` 空参不走模型，`harness_mode` 同步芯片 |
+| `pipeline.ts` | 用户输入入口与多会话 turn 队列；入槽后可 `chat:steer`；成功收束把未排空注入在 `done` 前写成 `steer_consumed`（对标 Codex leftover pending input at task finish），中止/失败或未采样（`!` 本地命令）才 `steer_restored`；新输入会清掉该会话 `cancelledBeforeStart`；可选 `worktreePath` 按会话覆盖工具 cwd；可选 `threadGoal` 注入 system；可选 `providerId` / `thinkingLevel` 只覆盖本轮（对标 Codex scheduled model）；`/plan` 空参不走模型，`harness_mode` 同步芯片；达阈值自动压缩前先发「正在自动压缩上下文…」status（对标 Codex Automatically compacting context），不把准备中卡到摘要结束 |
 | `pending-steer-mailbox.ts` | 主进程当前回合注入信箱：`acceptTurnSteer` / 边界排空 / 出槽交还（成功收成用户气泡，中止还原排队） |
 | `commands.ts` | 斜杠命令注册表（本地处理，不走模型；空 `/plan` 切换计划模式，带参开一轮规划） |
 | `commands.test.ts` | `/plan-mode` 与 `/plan` 同义；空参切换按会话隔离 |

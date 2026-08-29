@@ -266,7 +266,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 文本 XML 工具解析 | 弱模型输出的 `<tool_call>` / `<function=name>` 自动转 tool_calls |
 | 工作区快照 | 干活前注入 README、package.json、顶层目录 |
 | 网络模式 | open / local_only / disabled |
-| 上下文压缩 | 用量超 85% 自动摘要 |
+| 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示「正在自动压缩上下文…」（对标 Codex Automatically compacting context），摘要完成再挂压缩步骤 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |
 | 续跑提醒 | 对可执行任务，若模型停在启动服务器/打开/检查等中间话术但没有工具调用，会继续 nudging 直到完成或遇到真实阻塞 |

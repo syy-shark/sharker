@@ -1,5 +1,6 @@
 /**
  * 将流式 chunk 归并为有序 TurnSegment[]，供直播式过程流渲染。
+ * 自动压缩 status 在 `context_compress` 时收成 done，避免准备中卡到摘要结束。
  * @see shared/ARCH.md
  */
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
@@ -676,6 +677,15 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
 
   if (chunk.type === 'context_compress' && chunk.contextCompress) {
     const { removedCount, beforeTokens, afterTokens } = chunk.contextCompress
+    const activeStatus = findLastSegmentIndex(
+      next,
+      (s) => s.kind === 'status' && s.status === 'active'
+    )
+    if (activeStatus >= 0) {
+      const written = writeSegmentAt(next, activeStatus)
+      written.status = 'done'
+      written.endedAt = timestamp
+    }
     next.push({
       id: `compress-${crypto.randomUUID()}`,
       kind: 'tool',

@@ -5,7 +5,7 @@
 import type { AppSettings, ChatAttachment, ChatMessage, StreamChunk } from '../shared/types'
 import { needsToolCalling } from '../shared/needs-tools'
 import { getActiveWorkspacePath } from '../shared/workspace'
-import { compressContextIfNeeded } from '../shared/context-compress'
+import { AUTO_COMPACT_LIVE_STATUS, compressContextIfNeeded, shouldCompressContext } from '../shared/context-compress'
 import { estimateContextUsage } from '../shared/token-estimate'
 import { recordTokenUsage } from '../shared/token-usage-store'
 import { validateActiveProvider } from '../shared/provider-validate'
@@ -186,6 +186,13 @@ async function* onQuery(
   }
 
   let historyForAgent = history
+  if (shouldCompressContext(settings, history, userText).needed) {
+    send({
+      type: 'status',
+      content: AUTO_COMPACT_LIVE_STATUS,
+      conversationId: ctx.conversationId
+    })
+  }
   const compressed = await compressContextIfNeeded(
     settings,
     history,
