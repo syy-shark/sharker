@@ -127,6 +127,7 @@ describe('turn segment event state machine', () => {
       status: 'active',
       content: TURN_START_LIVE_STATUS
     })
+    expect(applyStreamChunk(segments, { type: 'turn_start', timestamp: 4 })).toBe(segments)
     segments = applyStreamChunk(segments, { type: 'think', content: '分析', timestamp: 2 })
     expect(segments[0].status).toBe('done')
     expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)
@@ -513,6 +514,7 @@ describe('turn segment event state machine', () => {
       content: '执行中… 2s',
       timestamp: 5
     })
+    expect(afterHeartbeat).toBe(segments)
     expect(afterHeartbeat[0]).toBe(tool)
     const afterPreview = applyStreamChunk(afterHeartbeat, {
       type: 'tool_preview',
@@ -527,9 +529,27 @@ describe('turn segment event state machine', () => {
       content: '执行中… 3s',
       timestamp: 7
     })
+    expect(afterWriteBeat).toBe(afterPreview)
     expect(afterWriteBeat[0]).toBe(tool)
-    expect(afterWriteBeat[afterWriteBeat.length - 1]).not.toBe(afterPreview[afterPreview.length - 1])
-    const finalized = finalizeSegments(afterWriteBeat, 8)
+    expect(afterWriteBeat[afterWriteBeat.length - 1]).toBe(afterPreview[afterPreview.length - 1])
+    const afterRealDetail = applyStreamChunk(afterWriteBeat, {
+      type: 'status',
+      toolName: 'write_file',
+      content: 'a.ts',
+      timestamp: 8
+    })
+    expect(afterRealDetail).not.toBe(afterWriteBeat)
+    expect(afterRealDetail[0]).toBe(tool)
+    expect(afterRealDetail[afterRealDetail.length - 1]).not.toBe(afterWriteBeat[afterWriteBeat.length - 1])
+    expect(afterRealDetail[afterRealDetail.length - 1].toolDetail).toBe('a.ts')
+    const afterSameDetail = applyStreamChunk(afterRealDetail, {
+      type: 'status',
+      toolName: 'write_file',
+      content: 'a.ts',
+      timestamp: 9
+    })
+    expect(afterSameDetail).toBe(afterRealDetail)
+    const finalized = finalizeSegments(afterSameDetail, 10)
     expect(finalized[0]).toBe(tool)
   })
 })

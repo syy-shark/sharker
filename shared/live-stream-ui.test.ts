@@ -433,6 +433,8 @@ describe('live stream ui snapshot', () => {
     expect(appSrc.includes('setActiveTool(')).toBe(false)
     expect(appSrc).toContain('publishLiveStreamUi')
     expect(appSrc).toContain('shouldSkipLiveStreamDerivation')
+    expect(appSrc).toContain('segments === prevSnap.liveSegments')
+    expect(appSrc).toContain('segmentsRef.current !== prevLiveSegments')
     expect(appSrc).toContain('shouldDeferLastTurnUi')
     expect(appSrc.includes('refreshOpenPreviewRef')).toBe(false)
     expect(appSrc).toContain('bumpChangesSoon')

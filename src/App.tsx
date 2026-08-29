@@ -1542,9 +1542,11 @@ export default function App() {
     const paint = () => {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
-      lastStreamRenderAt.current = performance.now()
       const segments = segmentsRef.current
       const prevSnap = getLiveStreamUi()
+      // 心跳 / plan_ready / done 仍是同一数组：不扫也不发（对标 Codex #19260 / #22860）
+      if (segments === prevSnap.liveSegments) return
+      lastStreamRenderAt.current = performance.now()
       const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
       // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
       if (skip === 'think' || skip === 'status') {
@@ -2687,6 +2689,7 @@ export default function App() {
         if (chunk.type === 'token' && chunk.content) {
           streamingRef.current += chunk.content
         }
+        const prevLiveSegments = segmentsRef.current
         segmentsRef.current = applyStreamChunk(segmentsRef.current, chunk)
         // 同步 turnMeta 供侧栏/旧逻辑
         if (
@@ -2802,7 +2805,7 @@ export default function App() {
         if (chunk.type === 'turn_cancelled') {
           turnOutcomeRef.current = 'aborted'
         }
-        flushSegmentsToUI()
+        if (segmentsRef.current !== prevLiveSegments) flushSegmentsToUI()
         return
       }
       if (chunk.type === 'plan_ready' && chunk.planDocument) {

@@ -1,6 +1,7 @@
 /**
  * 将流式 chunk 归并为有序 TurnSegment[]，供直播式过程流渲染。
  * 末段已是增长中的思考 / 正文时只续尾，不扫「准备中」status（对标 Codex #22860）。
+ * 进度心跳 / 相同详情退回同一数组，避免每秒打穿过程切片（对标 Codex #19260）。
  * 自动压缩 status 在 `context_compress` 时收成 done，避免准备中卡到摘要结束。
  * @see shared/ARCH.md
  */
@@ -12,6 +13,7 @@ import {
   TURN_START_LIVE_STATUS
 } from './live-display'
 import { toolTitle } from './process-steps'
+import { isToolProgressSummary } from './tool-output-display'
 import { formatToolActivity } from './turn-meta'
 import { REQUEST_USER_INPUT_TOOL, summarizeUserInputRequest } from './user-input'
 
@@ -342,6 +344,33 @@ function applyTokenChunk(segments: TurnSegment[], content: string, timestamp: nu
   return next
 }
 
+/** 秒表心跳或源码首行：不换工具对象，也不新开 status（对标 Codex #19260） */
+function isLiveToolHeartbeat(content: string): boolean {
+  const clean = content.trim()
+  if (!clean) return true
+  if (/^(L\d+:|[{}\[\]]|```)/.test(clean)) return true
+  return isToolProgressSummary(clean)
+}
+
+/** 唯一进行中工具下标；多个活动工具或没有则 -1。有 toolName 时取该名最后一条。 */
+function findSoleActiveToolIndex(segments: readonly TurnSegment[], toolName?: string): number {
+  if (toolName) {
+    return findLastSegmentIndex(
+      segments,
+      (s) => s.kind === 'tool' && s.status === 'active' && s.toolName === toolName
+    )
+  }
+  let found = -1
+  for (let i = 0; i < segments.length; i++) {
+    const s = segments[i]
+    if (s.kind === 'tool' && s.status === 'active') {
+      if (found >= 0) return -1
+      found = i
+    }
+  }
+  return found
+}
+
 export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): TurnSegment[] {
   const timestamp = chunk.timestamp ?? Date.now()
   if (chunk.type === 'think' && chunk.content) {
@@ -378,40 +407,23 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
         status: 'active',
         startedAt: timestamp
       })
+      return next
     }
-    return next
+    return segments
   }
 
   if (chunk.type === 'status' && chunk.content) {
-    // 工具进行中的状态：写回 active tool 详情，直播步骤不会看起来“卡住不动”
-    const activeToolIndex = chunk.toolName
-      ? findLastSegmentIndex(
-          next,
-          (s) => s.kind === 'tool' && s.status === 'active' && s.toolName === chunk.toolName
-        )
-      : (() => {
-          const activeTools = next
-            .map((s, i) => (s.kind === 'tool' && s.status === 'active' ? i : -1))
-            .filter((i) => i >= 0)
-          return activeTools.length === 1 ? activeTools[0]! : -1
-        })()
+    // 进度心跳不换工具对象，避免每秒打穿过程切片（对标 Codex #19260 / #22860）
+    if (isLiveToolHeartbeat(chunk.content)) return segments
+    const activeToolIndex = findSoleActiveToolIndex(next, chunk.toolName)
     if (activeToolIndex >= 0) {
       const clean = chunk.content.trim()
       if (clean) {
+        const current = next[activeToolIndex]!
+        const detail = clean.length > 120 ? `${clean.slice(0, 119)}…` : clean
+        if (current.toolDetail === detail) return segments
         const activeTool = writeSegmentAt(next, activeToolIndex)
-        // 源码/JSON 首行不适合当工具详情
-        const codeLike = /^(L\d+:|[{}\[\]]|```)/.test(clean)
-        // 进度心跳（执行中… / 已启动…）只写 resultSummary，避免冲掉 path/command 标题摘要
-        const progressLike =
-          /^(已启动|执行中|运行中|处理中)/.test(clean) ||
-          /执行中…\s*\d+s/.test(clean) ||
-          /·\s*\d+s$/.test(clean)
-        if (!codeLike && !progressLike) {
-          // 真正的路径/命令细节才更新 toolDetail
-          activeTool.toolDetail = clean.length > 120 ? `${clean.slice(0, 119)}…` : clean
-        }
-        // 轻量结果/进度预览，供直播 detail 显示；完成后会被正式 resultSummary 覆盖
-        activeTool.resultSummary = clean.length > 160 ? `${clean.slice(0, 159)}…` : clean
+        activeTool.toolDetail = detail
       }
       return next
     }
