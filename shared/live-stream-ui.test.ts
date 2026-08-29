@@ -696,6 +696,29 @@ describe('live stream ui snapshot', () => {
     expect(isLiveAnswerAppendChange([running], [ran, firstReply])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([running], [ran, firstReply])).toBe('text')
     expect(isLiveAnswerAppendChange([thinking], [thinkingDone, firstReply])).toBe(true)
+    expect(isLiveAnswerAppendChange([thinking], [thinkingGrownDone, firstReply])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([thinking], [thinkingGrownDone, firstReply])).toBe('text')
+    expect(nextLiveThinkText('Hmm', [thinking], [thinkingGrownDone, firstReply])).toBe('Hmm next')
+    const processThinkForAnswer = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinking]
+    })
+    const processThinkGrownAnswer = nextLiveProcessView(processThinkForAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinkingGrownDone, firstReply]
+    })
+    expect(processThinkGrownAnswer.thinkText).toBe(processThinkForAnswer.thinkText + ' next')
+    expect(processThinkGrownAnswer.answerStreaming).toBe(true)
+    const answerThinkOnly = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinking]
+    })
+    const answerAfterThinkGrow = nextLiveAnswerView(answerThinkOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinkingGrownDone, firstReply]
+    })
+    expect(answerAfterThinkGrow.tail?.content).toBe('Hi')
+    expect(isLiveDemoFenceAppendChange([thinking], [thinkingGrownDone, demoStart])).toBe(true)
     expect(isLiveAnswerAppendChange([ran], [ran, demoStart])).toBe(false)
     expect(isLiveDemoFenceAppendChange([ran], [ran, demoStart])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([ran], [ran, demoStart])).toBe('text')

@@ -649,7 +649,7 @@ export function appendProcessPhaseStepOnToolStart(
   return [...remapped, ...built]
 }
 
-/** 前缀没变或只收束思考/status、末尾新开思考/散文/演示，或演示 HTML 增长，或写盘收束同时新开思考/散文/```demo/错误/present_inline_demo：时间线 remap 写盘步、不追加该步（旁白 / 回答 / 演示槽另订） */
+/** 前缀没变或只收束思考/status（旁白可在同一 16ms 先加长再标 done）、末尾新开思考/散文/演示，或演示 HTML 增长，或写盘收束同时新开思考/散文/```demo/错误/present_inline_demo：时间线 remap 写盘步、不追加该步（旁白 / 回答 / 演示槽另订） */
 export function remapProcessPhaseStepsOnThinkAppend(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,

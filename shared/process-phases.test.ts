@@ -621,6 +621,15 @@ describe('process phases privacy', () => {
     expect(firstFromThinkGrow).not.toBeNull()
     expect(firstFromThinkGrow!.at(-1)?.segment).toBe(cmdNext)
     expect(firstFromThinkGrow![0]?.segment).toBe(thinkGrown)
+    const thinkGrownAnswer = remapProcessPhaseStepsOnThinkAppend(
+      thinkSteps,
+      [thinkOpen],
+      [thinkGrown, firstReply],
+      true
+    )
+    expect(thinkGrownAnswer).not.toBeNull()
+    expect(thinkGrownAnswer).toHaveLength(thinkSteps.length)
+    expect(thinkGrownAnswer![0]?.segment).toBe(thinkGrown)
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',
