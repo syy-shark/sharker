@@ -56,8 +56,8 @@ describe('splitStreamingMarkdown', () => {
       '| Key | Value |\n| --- | --- |\n| alpha | beta |\n| gamma | delta |'
     )
     if (tableFirst[0]?.type === 'table' && tableGrown[0]?.type === 'table') {
-      expect(tableGrown[0].header[0]).toBe(tableFirst[0].header[0])
-      expect(tableGrown[0].rows[0]?.[0]).toBe(tableFirst[0].rows[0]?.[0])
+      expect(tableGrown[0].header).toBe(tableFirst[0].header)
+      expect(tableGrown[0].rows[0]).toBe(tableFirst[0].rows[0])
       expect(tableGrown[0].rows).toHaveLength(2)
     }
   })
@@ -1129,6 +1129,8 @@ describe('splitStreamingMarkdown', () => {
       expect(manyTableGrown[0].rows[7]?.[1]).not.toBe(manyTable[0].rows[7]?.[1])
     }
     if (manyTable[0]?.type === 'table' && manyTableNew[0]?.type === 'table') {
+      expect(manyTableNew[0].header).toBe(manyTable[0].header)
+      expect(manyTableNew[0].rows.slice(0, 8).every((row, i) => row === manyTable[0].rows[i])).toBe(true)
       expect(manyTableNew[0].rows.slice(0, 8).every((row, i) => row[0] === manyTable[0].rows[i]?.[0])).toBe(true)
       expect(manyTableNew[0].rows).toHaveLength(9)
     }
