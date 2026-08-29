@@ -3,6 +3,8 @@ import {
   DEFAULT_CONVERSATION_TITLE,
   applyCustomTitle,
   buildForkedConversation,
+  canForkThroughMessage,
+  messagesThroughInclusive,
   parseForkDestination,
   createEmptyConversation,
   chatSearchMatchHint,
@@ -99,6 +101,8 @@ describe('conversation search', () => {
   it('copies messages into a new conversation without sharing objects', () => {
     const created = createEmptyConversation('ws')
     const sourceMsg = { id: 'm1', role: 'user' as const, content: '先改滚动' }
+    const later = { id: 'm2', role: 'assistant' as const, content: '已贴底' }
+    const extra = { id: 'm3', role: 'user' as const, content: '再改一版' }
     const forked = buildForkedConversation(created, {
       title: '修好滚动',
       messages: [sourceMsg]
@@ -107,6 +111,26 @@ describe('conversation search', () => {
     expect(forked.title).toBe('修好滚动（分叉）')
     expect(forked.messages[0]).toEqual(sourceMsg)
     expect(forked.messages[0]).not.toBe(sourceMsg)
+    const throughUser = messagesThroughInclusive([sourceMsg, later, extra], 'm1')
+    expect(throughUser.map((m) => m.id)).toEqual(['m1'])
+    expect(throughUser[0]).not.toBe(sourceMsg)
+    expect(messagesThroughInclusive([sourceMsg, later, extra], 'm2').map((m) => m.id)).toEqual([
+      'm1',
+      'm2'
+    ])
+    expect(messagesThroughInclusive([sourceMsg, later], null).map((m) => m.id)).toEqual(['m1', 'm2'])
+    expect(messagesThroughInclusive([sourceMsg, later], 'missing').map((m) => m.id)).toEqual([
+      'm1',
+      'm2'
+    ])
+    expect(canForkThroughMessage({ lastMessageId: 'm1' })).toBe(true)
+    expect(canForkThroughMessage({ lastMessageId: '' })).toBe(false)
+    expect(
+      canForkThroughMessage({ lastMessageId: 'live', liveAssistantId: 'live', streaming: true })
+    ).toBe(false)
+    expect(
+      canForkThroughMessage({ lastMessageId: 'm1', liveAssistantId: 'live', streaming: true })
+    ).toBe(true)
   })
 
   it('cycles the next live conversation needing attention', () => {

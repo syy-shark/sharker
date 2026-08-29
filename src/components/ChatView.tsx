@@ -167,7 +167,8 @@ const UserMessageRow = memo(function UserMessageRow({
   intrinsicHeight,
   editRequested,
   onEditRequestHandled,
-  onEdit
+  onEdit,
+  onFork
 }: {
   id: string
   content: string
@@ -179,6 +180,7 @@ const UserMessageRow = memo(function UserMessageRow({
   editRequested?: boolean
   onEditRequestHandled?: () => void
   onEdit?: (text: string) => void
+  onFork?: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(content)
@@ -259,6 +261,7 @@ const UserMessageRow = memo(function UserMessageRow({
           <MessageActions
             content={content}
             messageId={id}
+            onFork={onFork}
             onEdit={
               onEdit
                 ? () => {
@@ -316,6 +319,8 @@ interface Props {
   onPickConversation?: (id: string) => void
   onRetry?: (userMessageId: string) => void
   onEditUserMessage?: (userMessageId: string, text: string) => void
+  /** 从此条分叉到新线程（对标 Codex fork from an earlier message / lastTurnId） */
+  onForkFromMessage?: (messageId: string) => void
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
@@ -426,6 +431,7 @@ export function ChatView({
   onPickConversation,
   onRetry,
   onEditUserMessage,
+  onForkFromMessage,
   approval,
   approvalResponding,
   onApproval,
@@ -1681,6 +1687,7 @@ export function ChatView({
             editRequested={editUserMessageId === m.id}
             onEditRequestHandled={handleEditRequestHandled}
             onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
+            onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
           />
         ) : (
           <div
@@ -1711,6 +1718,7 @@ export function ChatView({
               onOpenChangedFiles={onOpenChangedFiles}
               toolOutputDisplay={toolOutputDisplay}
               onNeedFullMessage={onNeedFullMessage}
+              onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
               onRetry={
                 index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
                   ? () => onRetry(m.meta!.retryOfUserMessageId!)
@@ -1735,6 +1743,7 @@ export function ChatView({
       onOpenChangedFiles,
       onRetry,
       onEditUserMessage,
+      onForkFromMessage,
       onNeedFullMessage,
       toolOutputDisplay
     ]

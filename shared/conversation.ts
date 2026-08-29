@@ -141,6 +141,34 @@ export function forkConversationTitle(title: string): string {
   return `${base}（分叉）`
 }
 
+/**
+ * 拷贝到指定消息（含该条），省略其后回合。
+ * 对标 Codex `thread/fork` 的 `lastTurnId`（含该回合、丢掉更晚的）。
+ * 未指定或找不到 id 时拷贝全部（`/fork` 默认）。
+ */
+export function messagesThroughInclusive(
+  messages: ChatMessage[],
+  lastMessageId?: string | null
+): ChatMessage[] {
+  const id = String(lastMessageId || '').trim()
+  if (!id) return messages.map((m) => ({ ...m }))
+  const idx = messages.findIndex((m) => m.id === id)
+  if (idx < 0) return messages.map((m) => ({ ...m }))
+  return messages.slice(0, idx + 1).map((m) => ({ ...m }))
+}
+
+/** 直播中的未完成助手行不能当分叉终点（对标 Codex 拒绝 in-progress lastTurnId） */
+export function canForkThroughMessage(opts: {
+  lastMessageId?: string | null
+  liveAssistantId?: string | null
+  streaming?: boolean
+}): boolean {
+  const id = String(opts.lastMessageId || '').trim()
+  if (!id) return false
+  if (opts.streaming && opts.liveAssistantId && id === opts.liveAssistantId) return false
+  return true
+}
+
 /** 用已创建的空对话装入源线程消息；不拷 worktreePath */
 export function buildForkedConversation(
   created: Conversation,

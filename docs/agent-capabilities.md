@@ -33,7 +33,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
 | `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
-| `/fork` | 分叉到新本地线程（拷贝消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree） |
+| `/fork` | 分叉到新本地线程（拷贝全部消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree）。历史气泡悬停「从此条分叉」只拷到该条（含），省略其后回合（对标 Codex fork from an earlier message / `thread/fork` `lastTurnId`）；直播未完成行不分叉 |
 | `/side` `/btw` `[问题]` | 旁路新线程并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史正文、文件预览或集成终端输出可「插入输入框」把引用块接到当前草稿，或「旁路提问」把摘录交给旁路（对标 Codex send selection to composer、`/side [question]` 与 Ask in side chat） |
 | `/status` | 显示对话 ID、模型、权限、线程模式、分支、上下文占用与本机今日用量 |
 | `/diff` | 打开右侧变更审查看本地 diff |

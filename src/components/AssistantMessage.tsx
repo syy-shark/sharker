@@ -50,6 +50,8 @@ interface Props {
   liveStartedAt?: number
   isStreaming?: boolean
   onRetry?: () => void
+  /** 从此条分叉；直播行不传（对标 Codex 拒绝 in-progress lastTurnId） */
+  onFork?: () => void
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: ApprovalDecision) => void | Promise<void>
@@ -105,6 +107,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   liveStartedAt,
   isStreaming,
   onRetry,
+  onFork,
   approval,
   approvalResponding,
   onApproval,
@@ -595,6 +598,7 @@ export const AssistantMessage = memo(function AssistantMessage({
           content={copyableContent}
           messageId={messageId}
           reserved={reserveActions}
+          onFork={reserveActions ? undefined : onFork}
         />
       ) : null}
     </article>

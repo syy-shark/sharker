@@ -3,11 +3,13 @@
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ConversationSummary } from '../shared/conversation'
+import type { ConversationSummary, ForkDestination } from '../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
   applyCustomTitle,
   buildForkedConversation,
+  canForkThroughMessage,
+  messagesThroughInclusive,
   parseForkDestination,
   conversationIdsToArchiveForProject,
   conversationPreview,
@@ -4991,6 +4993,63 @@ export default function App() {
     setPage('chat')
   }, [])
 
+  /** `/fork` 或气泡「从此条分叉」：拷贝到 lastMessageId（含），对标 Codex lastTurnId */
+  const handleForkConversation = useCallback(
+    async (dest: ForkDestination, lastMessageId?: string) => {
+      const ws = settingsRef.current.activeWorkspaceId
+      if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) return
+      if (
+        lastMessageId &&
+        !canForkThroughMessage({
+          lastMessageId,
+          liveAssistantId: liveAssistantIdRef.current,
+          streaming: loadingLiveRef.current
+        })
+      ) {
+        return
+      }
+      const sourceId = activeConversationIdRef.current
+      const sourceMessages = sourceId
+        ? await historyForModelTurn(
+            ws,
+            sourceId,
+            messagesRef.current,
+            historyStartSeqRef.current
+          )
+        : messagesRef.current
+      const created = await window.sharker.createConversation(ws)
+      const forked = buildForkedConversation(created, {
+        title:
+          conversationListRef.current.find((c) => c.id === sourceId)?.title ||
+          DEFAULT_CONVERSATION_TITLE,
+        messages: messagesThroughInclusive(sourceMessages, lastMessageId)
+      })
+      await window.sharker.saveConversation(ws, forked)
+      const baseRef = threadRuntimeRef.current.baseRef
+      let forkNote = ''
+      if (dest === 'worktree') {
+        const cwd = getActiveWorkspacePath(settingsRef.current)
+        let worktreePath: string | undefined
+        if (cwd && window.sharker.prepareWorktree) {
+          const prepared = await window.sharker.prepareWorktree(cwd, forked.id, {
+            baseRef,
+            keep: settingsRef.current.worktreeKeepCount
+          })
+          if (prepared.ok) worktreePath = prepared.path
+          else forkNote = `**分叉隔离失败**：${prepared.error}`
+        }
+        saveThreadRuntime(forked.id, { mode: 'worktree', worktreePath, baseRef })
+      } else {
+        saveThreadRuntime(forked.id, { mode: 'local', baseRef })
+      }
+      const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
+      if (sourceGoal) saveThreadGoal(forked.id, sourceGoal)
+      await handleSelectConversation(ws, forked.id)
+      if (forkNote) appendLocalNote(forkNote)
+    },
+    [appendLocalNote, handleSelectConversation, historyForModelTurn]
+  )
+
   /** UI 斜杠命令（不经过模型） */
   const handleSlashAction = useCallback(
     async (cmd: SlashCommandMeta, args: string) => {
@@ -5008,47 +5067,7 @@ export default function App() {
           setShowHistoryPicker(true)
           break
         case 'fork_conversation': {
-          const ws = settingsRef.current.activeWorkspaceId
-          if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) break
-          const sourceId = activeConversationIdRef.current
-          const sourceMessages =
-            sourceId
-              ? await historyForModelTurn(
-                  ws,
-                  sourceId,
-                  messagesRef.current,
-                  historyStartSeqRef.current
-                )
-              : messagesRef.current
-          const dest = parseForkDestination(args)
-          const created = await window.sharker.createConversation(ws)
-          const forked = buildForkedConversation(created, {
-            title:
-              conversationList.find((c) => c.id === sourceId)?.title || DEFAULT_CONVERSATION_TITLE,
-            messages: sourceMessages
-          })
-          await window.sharker.saveConversation(ws, forked)
-          const baseRef = threadRuntimeRef.current.baseRef
-          let forkNote = ''
-          if (dest === 'worktree') {
-            const cwd = getActiveWorkspacePath(settingsRef.current)
-            let worktreePath: string | undefined
-            if (cwd && window.sharker.prepareWorktree) {
-              const prepared = await window.sharker.prepareWorktree(cwd, forked.id, {
-                baseRef,
-                keep: settingsRef.current.worktreeKeepCount
-              })
-              if (prepared.ok) worktreePath = prepared.path
-              else forkNote = `**分叉隔离失败**：${prepared.error}`
-            }
-            saveThreadRuntime(forked.id, { mode: 'worktree', worktreePath, baseRef })
-          } else {
-            saveThreadRuntime(forked.id, { mode: 'local', baseRef })
-          }
-          const sourceGoal = sourceId ? loadThreadGoal(sourceId) : threadGoalRef.current
-          if (sourceGoal) saveThreadGoal(forked.id, sourceGoal)
-          await handleSelectConversation(ws, forked.id)
-          if (forkNote) appendLocalNote(forkNote)
+          await handleForkConversation(parseForkDestination(args))
           break
         }
         case 'side_conversation': {
@@ -5809,6 +5828,7 @@ export default function App() {
       copyPlainText,
       handleCreateBranchHere,
       handleDeleteConversation,
+      handleForkConversation,
       handleNavigate,
       handleNativeOrAppUndo,
       handleMarkUnread,
@@ -7643,6 +7663,9 @@ export default function App() {
               onRestoreWorktree={handleRestoreWorktreeClick}
               onRetry={handleRetryMessage}
               onEditUserMessage={handleEditUserMessage}
+              onForkFromMessage={(messageId) => {
+                void handleForkConversation('local', messageId)
+              }}
               composerSeed={composerSeed}
               approval={approval}
               approvalResponding={approvalResponding}
