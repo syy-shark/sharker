@@ -36,6 +36,9 @@ import {
   isLiveWriteStatStatusAnswerAppendChange,
   isLiveWriteStatThinkAppendChange,
   isLiveWriteStatThinkAnswerAppendChange,
+  isLiveStatusThinkAppendChange,
+  isLiveStatusAnswerAppendChange,
+  isLiveThinkAnswerAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1018,6 +1021,69 @@ describe('live stream ui snapshot', () => {
     expect(
       nextLiveThinkText('Hmm', [hello, running], [hello, ranDiff, reconnectStatus, nextThink])
     ).toBe('HmmNext')
+    expect(
+      isLiveStatusThinkAppendChange([hello, running], [hello, ran, reconnectStatus, nextThink])
+    ).toBe(true)
+    expect(
+      isLiveThinkAnswerAppendChange([hello, running], [hello, ran, nextThink, firstReply])
+    ).toBe(true)
+    expect(
+      isLiveStatusAnswerAppendChange([hello, running], [hello, ran, reconnectStatus, firstReply])
+    ).toBe(true)
+    expect(isLiveWriteStatStatusThinkAppendChange([hello, running], [hello, ran, reconnectStatus, nextThink])).toBe(
+      false
+    )
+    expect(
+      shouldSkipLiveStreamDerivation([hello, running], [hello, ran, reconnectStatus, nextThink])
+    ).toBe('think')
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextThink, firstReply])).toBe(
+      'text'
+    )
+    expect(
+      shouldSkipLiveStreamDerivation([hello, running], [hello, ran, reconnectStatus, firstReply])
+    ).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello, running], [hello, ran, reconnectStatus, nextThink])).toBe(
+      'HmmNext'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, reconnectStatus, nextThink]
+      })
+    ).toBe(true)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, nextThink, firstReply]
+      })
+    ).toBe(false)
+    expect(
+      isLiveStatusThinkAppendChange(
+        [hello, running, nextCmd],
+        [hello, ran, nextCmdDone, reconnectStatus, nextThink]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running, nextCmd],
+        [hello, ran, nextCmdDone, reconnectStatus, nextThink]
+      )
+    ).toBe('think')
+    const reconnectStatusDone: TurnSegment = { ...reconnectStatus, status: 'done' }
+    expect(
+      isLiveThinkAnswerAppendChange(
+        [hello, ran, reconnectStatus],
+        [hello, ran, reconnectStatusDone, nextThink, firstReply]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, ran, reconnectStatus],
+        [hello, ran, reconnectStatusDone, nextThink, firstReply]
+      )
+    ).toBe('text')
     const processReadyForWritePair = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
@@ -1046,6 +1112,32 @@ describe('live stream ui snapshot', () => {
       answerAfterWriteStatThinkAnswer.parts.find((part) => part.type === 'text' && part.id === hello.id)
     ).toBe(helloWritePairPart)
     expect(answerAfterWriteStatThinkAnswer.tail?.content).toBe('Hi')
+    const processReadyForSettlePair = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterSettleStatusThink = nextLiveProcessView(processReadyForSettlePair, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, reconnectStatus, nextThink]
+    })
+    expect(processAfterSettleStatusThink.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(
+      processAfterSettleStatusThink.processForFlow.some((segment) => segment === reconnectStatus)
+    ).toBe(true)
+    expect(processAfterSettleStatusThink.thinkText).toBe(processReadyForSettlePair.thinkText + 'Next')
+    const answerReadyForSettlePair = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloSettlePairPart = answerReadyForSettlePair.parts.find((part) => part.type === 'text')
+    const answerAfterSettleThinkAnswer = nextLiveAnswerView(answerReadyForSettlePair, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextThink, firstReply]
+    })
+    expect(
+      answerAfterSettleThinkAnswer.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloSettlePairPart)
+    expect(answerAfterSettleThinkAnswer.tail?.content).toBe('Hi')
     expect(isLiveWriteStatDemoFenceAppendChange([hello, running], [hello, ranDiff, demoStart])).toBe(true)
     expect(isLiveThinkAppendChange([hello, running], [hello, ranDiff, nextThink])).toBe(false)
     expect(isLiveAnswerAppendChange([hello, running], [hello, ranDiff, firstReply])).toBe(false)
