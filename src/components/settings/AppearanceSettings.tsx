@@ -19,7 +19,7 @@ import {
 import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
 import { parseReduceMotion, REDUCE_MOTION_LABEL } from '../../../shared/reduce-motion'
 import {
-  ALWAYS_ON_TOP_DESCRIPTION,
+  KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO,
   ALWAYS_ON_TOP_LABEL,
   DECREASE_FONT_SIZE_LABEL,
   INCREASE_FONT_SIZE_LABEL,
@@ -280,7 +280,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
       </SettingsSection>
       <SettingsSection title={KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL}>
         <SettingsCard>
-          <SettingsRow title={ALWAYS_ON_TOP_LABEL} description={ALWAYS_ON_TOP_DESCRIPTION} last>
+          <SettingsRow title={ALWAYS_ON_TOP_LABEL} description={KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO} last>
             <SettingsToggle
               checked={draft.popoutAlwaysOnTop === true}
               onChange={(popoutAlwaysOnTop) => {

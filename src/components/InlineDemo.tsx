@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切，信估高、range/body 底边与 postMessage。
+ * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -10,6 +10,7 @@ import {
   liveInlineDemoPaintDelay,
   seedInlineDemoHeight,
   shouldMeasureInlineDemoInParent,
+  shouldMountInlineDemoFrame,
   shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
@@ -1365,13 +1366,10 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
   }, [])
 
   const paintable = isInlineDemoPaintable(paintHtml)
-  const showFrame = paintable || streaming
+  const showFrame = shouldMountInlineDemoFrame({ paintable })
   const srcDoc = useMemo(
-    () =>
-      paintable
-        ? buildSrcDoc(paintHtml, theme, demoId, streaming)
-        : '<!DOCTYPE html><html><body></body></html>',
-    [paintHtml, theme, demoId, paintable, streaming]
+    () => (showFrame ? buildSrcDoc(paintHtml, theme, demoId, streaming) : ''),
+    [paintHtml, theme, demoId, showFrame, streaming]
   )
 
   useEffect(() => {
@@ -1462,7 +1460,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         className="inline-demo-body"
         hidden={!expanded}
         aria-hidden={!expanded}
-        style={expanded && showFrame ? { minHeight: frameH } : undefined}
+        style={expanded && (showFrame || streaming) ? { minHeight: frameH } : undefined}
       >
         {showFrame ? (
           <iframe

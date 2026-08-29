@@ -43,6 +43,7 @@ import {
   WORKTREE_LABEL,
   CREATE_BRANCH_HERE_LABEL,
   ALWAYS_ON_TOP_LABEL,
+  KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO,
   KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   APPROVE_REQUEST_LABEL,
@@ -206,6 +207,8 @@ describe('reveal in folder', () => {
     expect(OPEN_IN_POPUP_WINDOW_LABEL).toBe('Open in Popup Window')
     expect(ALWAYS_ON_TOP_LABEL).toBe('Always on top')
     expect(KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL).toBe('Keep a chat near your work')
+    expect(KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO).toMatch(/pop out an active chat/)
+    expect(KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO).toMatch(/Always on top/)
     expect(APPROVE_REQUEST_LABEL).toBe('Approve request')
     expect(DECLINE_REQUEST_LABEL).toBe('Decline request')
     expect(EDIT_PROJECT_LABEL).toBe('Edit project')

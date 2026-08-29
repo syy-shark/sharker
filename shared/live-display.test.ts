@@ -25,6 +25,7 @@ import {
   LIVE_INLINE_DEMO_GROW_PAINT_MS,
   LIVE_INLINE_DEMO_IDLE_PAINT_MS,
   shouldMeasureInlineDemoInParent,
+  shouldMountInlineDemoFrame,
   shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
@@ -220,6 +221,8 @@ describe('inline demo paintability', () => {
     expect(shouldWalkInlineDemoTree({ streaming: true })).toBe(false)
     expect(shouldWalkInlineDemoTree({ streaming: false })).toBe(true)
     expect(shouldWalkInlineDemoTree({})).toBe(true)
+    expect(shouldMountInlineDemoFrame({ paintable: false })).toBe(false)
+    expect(shouldMountInlineDemoFrame({ paintable: true })).toBe(true)
     expect(liveInlineDemoPaintDelay({ lastPaintLen: 0, htmlLen: 20 })).toBe(
       LIVE_INLINE_DEMO_FIRST_PAINT_MS
     )

@@ -183,6 +183,11 @@ export function shouldMeasureInlineDemoInParent(options: {
   return options.paintable && !options.streaming
 }
 
+/** 未可绘不挂空 iframe，直播先骨架，可绘再 srcDoc（对标 Codex #22860 / #39120） */
+export function shouldMountInlineDemoFrame(options: { paintable: boolean }): boolean {
+  return options.paintable
+}
+
 /**
  * iframe 内全树 getBoundingClientRect / getComputedStyle。
  * 直播中只用量 range + body 底边，避免 srcDoc 每 40–200ms 扫整棵（对标 Codex #22860 / #39120）。

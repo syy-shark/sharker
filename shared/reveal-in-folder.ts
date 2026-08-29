@@ -263,6 +263,9 @@ export const CREATE_BRANCH_HERE_LABEL = 'Create branch here'
 export const OPEN_IN_POPUP_WINDOW_LABEL = 'Open in Popup Window'
 /** 官方 Settings 小节与弹出窗开关（对标 learn.chatgpt.com/docs/reference/settings） */
 export const KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL = 'Keep a chat near your work'
+/** Official Settings → Keep a chat near your work (learn.chatgpt.com/docs/reference/settings). */
+export const KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO =
+  'In the ChatGPT desktop app, pop out an active chat into a separate window and place it next to your browser, editor, or design preview. Turn on Always on top when you want the chat to remain visible while you work in another app.'
 export const ALWAYS_ON_TOP_LABEL = 'Always on top'
 export const ALWAYS_ON_TOP_DESCRIPTION =
   'Turn on Always on top when you want the chat to remain visible while you work in another app.'
