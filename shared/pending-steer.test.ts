@@ -6,6 +6,10 @@ import {
   drainPendingSteers,
   enqueuePendingSteer,
   formatSteerForModel,
+  historyWithoutSteerIds,
+  joinLeftoverSteerPrompt,
+  leftoverSteerDisposition,
+  placeMessageBeforeIds,
   listPendingSteers,
   shouldDrainPendingSteers,
   updatePendingSteerText
@@ -41,5 +45,18 @@ describe('pending steer mailbox', () => {
     const msgs = appendConsumedSteerMessage([], { id: 's-a', text: '改用测试' })
     expect(appendConsumedSteerMessage(msgs, { id: 's-a', text: '改用测试' })).toBe(msgs)
     expect(msgs[0]).toMatchObject({ id: 's-a', role: 'user', content: '改用测试' })
+    expect(leftoverSteerDisposition({ outcome: 'success', sampled: true })).toBe('consume')
+    expect(leftoverSteerDisposition({ outcome: 'success', sampled: false })).toBe('restore')
+    expect(leftoverSteerDisposition({ outcome: 'aborted', sampled: true })).toBe('restore')
+    expect(leftoverSteerDisposition({ outcome: 'error', sampled: true })).toBe('restore')
+    expect(joinLeftoverSteerPrompt([{ text: '先测' }, { text: '再改' }])).toBe('先测\n\n再改')
+    expect(historyWithoutSteerIds(msgs, ['s-a'])).toEqual([])
+    expect(historyWithoutSteerIds(msgs, ['other'])).toBe(msgs)
+    const placed = placeMessageBeforeIds(
+      [...msgs, { id: 's-late', role: 'user', content: '残留' } as (typeof msgs)[0]],
+      { id: 'a1', role: 'assistant', content: '答' } as (typeof msgs)[0],
+      ['s-late']
+    )
+    expect(placed.map((m) => m.id)).toEqual(['s-a', 'a1', 's-late'])
   })
 })

@@ -16,6 +16,7 @@ import { expandFileReferences } from './file-refs'
 import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
+import { leftoverSteerDisposition } from '../shared/pending-steer'
 import {
   markTurnSteerable,
   releaseTurnSteer,
@@ -310,13 +311,55 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
     })
     const baseSend = (chunk: StreamChunk) => ctx.send(stamp(chunk))
     const turnCtx = { ...ctx, settings, send: baseSend }
+    let outcome: 'success' | 'aborted' | 'error' = 'success'
+    let sampled = false
+    let leftoverFlushed = false
+
+    const flushLeftoverSteers = (disposition: 'consume' | 'restore') => {
+      if (!conversationId || leftoverFlushed) return
+      leftoverFlushed = true
+      const leftover = releaseTurnSteer(conversationId)
+      for (const item of leftover) {
+        turnCtx.send({
+          type: disposition === 'consume' ? 'steer_consumed' : 'steer_restored',
+          content: item.text,
+          steerId: item.id,
+          conversationId,
+          ...(disposition === 'consume' ? { steerFinish: true } : {})
+        })
+      }
+    }
+
+    const turnEvents: TurnEventInput[] = []
+    let assistantText = ''
+    const sendChunk = (chunk: StreamChunk) => {
+      if (chunk.type === 'done' && conversationId && outcome === 'success') {
+        flushLeftoverSteers(leftoverSteerDisposition({ outcome, sampled }))
+      }
+      if (chunk.type === 'tool_start') {
+        turnEvents.push({
+          kind: 'tool_start',
+          toolName: chunk.toolName,
+          payload: { args: chunk.toolArgs }
+        })
+      } else if (chunk.type === 'tool_done') {
+        turnEvents.push({ kind: 'tool_done', toolName: chunk.toolName })
+      } else if (chunk.type === 'error') {
+        turnEvents.push({ kind: 'tool_error', payload: { error: chunk.error } })
+      } else if (chunk.type === 'token' && chunk.content) {
+        assistantText += chunk.content
+      }
+      turnCtx.send(stamp(chunk))
+    }
+    const turnCtxWithCapture = { ...turnCtx, send: sendChunk }
 
     try {
       // Stop 在排队阶段已点过：本会话直接取消，不影响其他会话并行 turn
       if (conversationId && cancelledBeforeStart.has(conversationId)) {
         cancelledBeforeStart.delete(conversationId)
-        turnCtx.send({ type: 'turn_cancelled', conversationId })
-        turnCtx.send({ type: 'done', conversationId })
+        outcome = 'aborted'
+        sendChunk({ type: 'turn_cancelled', conversationId })
+        sendChunk({ type: 'done', conversationId })
         return
       }
 
@@ -325,40 +368,22 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
 
       const processed = processUserInput(ctx.userText, conversationId)
 
-      const turnEvents: TurnEventInput[] = []
-      let assistantText = ''
-      const captureSend = (chunk: StreamChunk) => {
-        const stamped = stamp(chunk)
-        if (chunk.type === 'tool_start') {
-          turnEvents.push({
-            kind: 'tool_start',
-            toolName: chunk.toolName,
-            payload: { args: chunk.toolArgs }
-          })
-        } else if (chunk.type === 'tool_done') {
-          turnEvents.push({ kind: 'tool_done', toolName: chunk.toolName })
-        } else if (chunk.type === 'error') {
-          turnEvents.push({ kind: 'tool_error', payload: { error: chunk.error } })
-        } else if (chunk.type === 'token' && chunk.content) {
-          assistantText += chunk.content
-        }
-        turnCtx.send(stamped)
-      }
-      const turnCtxWithCapture = { ...turnCtx, send: captureSend }
-
       if (!processed.shouldQuery) {
+        sampled = false
         for await (const chunk of runLocalCommand(processed)) {
           if (signal.aborted) {
-            turnCtx.send({ type: 'done', conversationId })
+            outcome = 'aborted'
+            sendChunk({ type: 'done', conversationId })
             return
           }
-          captureSend(chunk)
+          sendChunk(chunk)
         }
         return
       }
 
+      sampled = true
       for await (const chunk of onQuery(turnCtxWithCapture, processed, signal)) {
-        captureSend(chunk)
+        sendChunk(chunk)
       }
       const tokens = estimateContextUsage(ctx.history, processed.userText, '').total
       void recordTokenUsage(tokens)
@@ -381,23 +406,17 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
         raw.includes('aborted')
       if (aborted) {
         // Stop / 超时：统一 cancelled，避免再挂 error 文案干扰直播收尾
-        turnCtx.send({ type: 'turn_cancelled', conversationId })
-        turnCtx.send({ type: 'done', conversationId })
+        outcome = 'aborted'
+        sendChunk({ type: 'turn_cancelled', conversationId })
+        sendChunk({ type: 'done', conversationId })
       } else {
-        turnCtx.send({ type: 'error', error: raw, conversationId })
-        turnCtx.send({ type: 'done', conversationId })
+        outcome = 'error'
+        sendChunk({ type: 'error', error: raw, conversationId })
+        sendChunk({ type: 'done', conversationId })
       }
     } finally {
-      if (conversationId) {
-        const leftover = releaseTurnSteer(conversationId)
-        for (const item of leftover) {
-          turnCtx.send({
-            type: 'steer_restored',
-            content: item.text,
-            steerId: item.id,
-            conversationId
-          })
-        }
+      if (conversationId && !leftoverFlushed) {
+        flushLeftoverSteers('restore')
       }
       slot.release()
     }

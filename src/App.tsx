@@ -203,6 +203,9 @@ import {
   appendConsumedSteerMessage,
   createPendingSteer,
   enqueuePendingSteer,
+  historyWithoutSteerIds,
+  joinLeftoverSteerPrompt,
+  placeMessageBeforeIds,
   listPendingSteers,
   cancelPendingSteer,
   updatePendingSteerText,
@@ -446,8 +449,17 @@ export default function App() {
   /** conversationId → 已派发但尚未收到 turn_start 的 turn 代数；期间忽略旧 abort 的 done */
   const awaitingTurnStartByConvRef = useRef<Record<string, number>>({})
   const dispatchTurnRef = useRef<
-    (text: string, attachments?: ChatAttachment[], conversationId?: string) => Promise<void>
+    (
+      text: string,
+      attachments?: ChatAttachment[],
+      conversationId?: string,
+      options?: { skipUserMessage?: boolean; excludeMessageIds?: string[] }
+    ) => Promise<void>
   >(async () => {})
+  /** 收束前写入的残留注入：done 后开下一轮，不再加一条用户气泡 */
+  const leftoverFinishByConvRef = useRef(
+    new Map<string, Array<{ id: string; text: string; attachments?: ChatAttachment[] }>>()
+  )
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
@@ -486,6 +498,19 @@ export default function App() {
   const syncPendingSteerUi = useCallback((boxes: PendingSteerMap, convId: string | null) => {
     pendingSteersRef.current = boxes
     setPendingSteers(listPendingSteers(boxes, convId))
+  }, [])
+
+  const continueLeftoverSteersAfterTurn = useCallback((convId: string): boolean => {
+    const leftover = leftoverFinishByConvRef.current.get(convId)
+    leftoverFinishByConvRef.current.delete(convId)
+    if (!leftover?.length) return false
+    const text = joinLeftoverSteerPrompt(leftover)
+    if (!text) return false
+    void dispatchTurnRef.current(text, leftover.flatMap((item) => item.attachments ?? []), convId, {
+      skipUserMessage: true,
+      excludeMessageIds: leftover.map((item) => item.id)
+    })
+    return true
   }, [])
 
   const applyBufferToUi = useCallback((buf: SessionLiveBuffer) => {
@@ -1019,7 +1044,12 @@ export default function App() {
         content: text,
         meta
       }
-      const next = upsertAssistantMessage(sourceMessages, assistant)
+      const leftoverIds = targetId
+        ? (leftoverFinishByConvRef.current.get(targetId) ?? []).map((item) => item.id)
+        : []
+      const next = leftoverIds.length
+        ? placeMessageBeforeIds(sourceMessages, assistant, leftoverIds)
+        : upsertAssistantMessage(sourceMessages, assistant)
 
       if (targetId) {
         doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, targetId)
@@ -1563,11 +1593,16 @@ export default function App() {
         )
         syncPendingSteerUi(cancelPendingSteer(pendingSteersRef.current, ownerId, chunk.steerId), activeId)
         const targetMsgs = applyToUi ? messagesRef.current : ensureBuffer(ownerId).messages
-        const nextMsgs = appendConsumedSteerMessage(targetMsgs, {
+        const consumed = {
           id: chunk.steerId,
           text: chunk.content || pending?.text || '',
           attachments: pending?.attachments
-        })
+        }
+        const nextMsgs = appendConsumedSteerMessage(targetMsgs, consumed)
+        if (chunk.steerFinish && consumed.text.trim()) {
+          const prev = leftoverFinishByConvRef.current.get(ownerId) ?? []
+          leftoverFinishByConvRef.current.set(ownerId, [...prev, consumed])
+        }
         if (applyToUi) {
           messagesRef.current = nextMsgs
           setMessages(nextMsgs)
@@ -1681,7 +1716,10 @@ export default function App() {
               outcome: buf.turnOutcome
             }
           }
-          buf.messages = upsertAssistantMessage(buf.messages, assistant)
+          const leftoverIds = (leftoverFinishByConvRef.current.get(ownerId) ?? []).map((item) => item.id)
+          buf.messages = leftoverIds.length
+            ? placeMessageBeforeIds(buf.messages, assistant, leftoverIds)
+            : upsertAssistantMessage(buf.messages, assistant)
           buf.streaming = ''
           buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
           buf.changedRelPaths = []
@@ -1692,6 +1730,9 @@ export default function App() {
           if (streamOwnerRef.current === ownerId) streamOwnerRef.current = null
           const wsId = settingsRef.current.activeWorkspaceId
           if (wsId) void refreshConversationList(wsId)
+          if (continueLeftoverSteersAfterTurn(ownerId)) {
+            return
+          }
           const held = Boolean(ownerId && queueHeldByConvRef.current.has(ownerId))
           const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, ownerId, {
             held
@@ -1917,7 +1958,12 @@ export default function App() {
                 outcome: buf.turnOutcome
               }
             }
-            buf.messages = upsertAssistantMessage(buf.messages, assistant)
+            const leftoverIds = (leftoverFinishByConvRef.current.get(completedId!) ?? []).map(
+              (item) => item.id
+            )
+            buf.messages = leftoverIds.length
+              ? placeMessageBeforeIds(buf.messages, assistant, leftoverIds)
+              : upsertAssistantMessage(buf.messages, assistant)
             buf.streaming = ''
             buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
             buf.changedRelPaths = []
@@ -1965,6 +2011,9 @@ export default function App() {
         const wsId = settingsRef.current.activeWorkspaceId
         if (wsId) void refreshConversationList(wsId)
         if (completedId) {
+          if (continueLeftoverSteersAfterTurn(completedId)) {
+            return
+          }
           const held = queueHeldByConvRef.current.has(completedId)
           const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, completedId, {
             held
@@ -2004,6 +2053,7 @@ export default function App() {
     persistActiveConversation,
     syncActiveQueueUi,
     syncPendingSteerUi,
+    continueLeftoverSteersAfterTurn,
     bumpChangesSoon,
     bumpSessionLive,
     notifyApprovalIfNeeded
@@ -2165,8 +2215,15 @@ export default function App() {
 
   /** 派发单条 turn：立刻展示用户消息，再触发 IPC（绑定 conversationId） */
   const dispatchTurn = useCallback(
-    async (text: string, attachments: ChatAttachment[] = [], conversationId?: string) => {
+    async (
+      text: string,
+      attachments: ChatAttachment[] = [],
+      conversationId?: string,
+      options?: { skipUserMessage?: boolean; excludeMessageIds?: string[] }
+    ) => {
       let convId = conversationId ?? activeConversationIdRef.current
+      const skipUserMessage = Boolean(options?.skipUserMessage)
+      const excludeIds = options?.excludeMessageIds ?? []
 
       // 后台会话续跑：只更新该会话 buffer，不污染当前可见会话
       if (convId && convId !== activeConversationIdRef.current) {
@@ -2195,8 +2252,10 @@ export default function App() {
           content: text,
           attachments: attachments.length ? attachments : undefined
         }
-        const history = buf.messages
-        buf.messages = [...history, userMsg]
+        const history = skipUserMessage
+          ? historyWithoutSteerIds(buf.messages, excludeIds)
+          : buf.messages
+        if (!skipUserMessage) buf.messages = [...history, userMsg]
         buf.loading = true
         buf.sendInFlight = true
         buf.doneCommitted = false
@@ -2240,9 +2299,11 @@ export default function App() {
         content: text,
         attachments: attachments.length ? attachments : undefined
       }
-      activeUserMessageIdRef.current = userMsg.id
-      const history = messagesRef.current
-      const nextMessages = [...history, userMsg]
+      const history = skipUserMessage
+        ? historyWithoutSteerIds(messagesRef.current, excludeIds)
+        : messagesRef.current
+      const nextMessages = skipUserMessage ? messagesRef.current : [...history, userMsg]
+      if (!skipUserMessage) activeUserMessageIdRef.current = userMsg.id
 
       // 先落屏：避免 createConversation / 鉴权等待时「输入消失却没反应」
       setMessages(nextMessages)
@@ -2261,7 +2322,9 @@ export default function App() {
         const buf = sessionBuffersRef.current.get(convId)
         if (buf) buf.liveAssistantId = liveAssistantIdRef.current
       }
-      activeUserMessageIdRef.current = userMsg.id
+      activeUserMessageIdRef.current = skipUserMessage
+        ? excludeIds[excludeIds.length - 1] ?? activeUserMessageIdRef.current
+        : userMsg.id
       streamingRef.current = ''
       turnThinkingRef.current = ''
       // 立刻放一个“准备中”片段：即便主进程还没回 turn_start，直播区也有呼吸与步骤

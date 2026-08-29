@@ -69,3 +69,33 @@ describe('abortActiveTurn conversation ownership', () => {
     expect(chunks[0]).not.toBe('turn_cancelled')
     expect(chunks.includes('turn_start') || chunks.includes('status') || chunks.includes('error')).toBe(true)
   })
+
+  it('emits leftover steers before done on a local command that never sampled', async () => {
+    markTurnSteerable('conv-local')
+    expect(acceptTurnSteer('conv-local', '接着跑测试').ok).toBe(true)
+    const chunks: { type: string; content?: string }[] = []
+    const { executeUserInput } = await import('./pipeline')
+    await executeUserInput({
+      userText: '/help',
+      history: [],
+      conversationId: 'conv-local',
+      send: (c) => chunks.push({ type: c.type, content: c.content }),
+      reloadSettings: async () =>
+        ({
+          activeWorkspaceId: 'ws',
+          providers: [],
+          activeProviderId: '',
+          permissionMode: 'workspace',
+          networkMode: 'open',
+          workspaces: [],
+          workspacePath: process.cwd()
+        }) as any
+    } as any)
+    const types = chunks.map((c) => c.type)
+    const restored = types.indexOf('steer_restored')
+    const done = types.indexOf('done')
+    expect(restored).toBeGreaterThanOrEqual(0)
+    expect(done).toBeGreaterThan(restored)
+    expect(chunks[restored]?.content).toBe('接着跑测试')
+    expect(peekSteersForTurn('conv-local')).toEqual([])
+  })

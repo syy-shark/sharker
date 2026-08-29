@@ -24,7 +24,7 @@ export function markTurnSteerable(conversationId: string): void {
   if (id) steerable.add(id)
 }
 
-/** 回合出槽：剩余注入交还渲染层（中止还原 / 收束转排队） */
+/** 回合出槽：剩余注入交还渲染层（成功收成用户气泡 / 中止还原排队） */
 export function releaseTurnSteer(conversationId: string): PendingSteerItem[] {
   const id = conversationId.trim()
   steerable.delete(id)

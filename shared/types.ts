@@ -345,6 +345,8 @@ export interface StreamChunk {
   content?: string
   /** chat:steer 条目 id */
   steerId?: string
+  /** 收束时才写入的残留注入（对标 Codex leftover pending input at task finish） */
+  steerFinish?: boolean
   toolName?: string
   toolArgs?: Record<string, unknown>
   toolCallId?: string

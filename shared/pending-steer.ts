@@ -139,3 +139,48 @@ export function appendConsumedSteerMessage(
     }
   ]
 }
+
+/**
+ * 回合结束仍未排空的注入：对标 Codex core `on_task_finished` + TUI #18290 / #15842。
+ * 成功且已采样 → 收成 UserMessage（#12868）；中止/失败或从未采样（如 `!` 本地命令）→ 还回排队并作为下一轮。
+ */
+export function leftoverSteerDisposition(options: {
+  outcome: 'success' | 'aborted' | 'error'
+  sampled: boolean
+}): 'consume' | 'restore' {
+  if (options.outcome !== 'success') return 'restore'
+  if (!options.sampled) return 'restore'
+  return 'consume'
+}
+
+/** 收束后未排空的多条注入合成下一轮提示（对标连续 steer 合并） */
+export function joinLeftoverSteerPrompt(items: Array<{ text: string }>): string {
+  return items
+    .map((item) => String(item.text || '').trim())
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+/** 续跑时从发给模型的 history 去掉已写入气泡的注入，避免同一段进两次 */
+export function historyWithoutSteerIds<T extends { id: string }>(
+  messages: T[],
+  ids: Iterable<string>
+): T[] {
+  const skip = new Set(ids)
+  if (skip.size === 0) return messages
+  const next = messages.filter((row) => !skip.has(row.id))
+  return next.length === messages.length ? messages : next
+}
+
+/** 收束助手行插在残留注入气泡之前（对标 leftover UserMessage 出现在本轮回答之后） */
+export function placeMessageBeforeIds<T extends { id: string }>(
+  messages: T[],
+  message: T,
+  beforeIds: Iterable<string>
+): T[] {
+  const skip = new Set(beforeIds)
+  const without = messages.filter((row) => row.id !== message.id)
+  let cut = without.length
+  while (cut > 0 && skip.has(without[cut - 1]!.id)) cut--
+  return [...without.slice(0, cut), message, ...without.slice(cut)]
+}
