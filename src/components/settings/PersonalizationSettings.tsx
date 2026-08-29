@@ -12,8 +12,11 @@ import {
   parsePersonality
 } from '../../../shared/personality'
 import {
+  ENABLE_MEMORIES_DESCRIPTION,
   ENABLE_MEMORIES_LABEL,
+  GENERATE_MEMORIES_DESCRIPTION,
   GENERATE_MEMORIES_LABEL,
+  USE_MEMORIES_DESCRIPTION,
   USE_MEMORIES_LABEL
 } from '../../../shared/memory-command'
 import {
@@ -78,7 +81,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
         <SettingsCard>
           <SettingsRow
             title={ENABLE_MEMORIES_LABEL}
-            description="对标 Codex Settings → Personalization Enable memories：本地记忆默认关闭。打开后新对话才按下面两项 Use / Generate。单对话用 /memories 覆盖，不改这里。"
+            description={ENABLE_MEMORIES_DESCRIPTION}
           >
             <SettingsToggle
               checked={draft.memoriesEnabled === true}
@@ -90,7 +93,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title={USE_MEMORIES_LABEL}
-            description="对标 Codex memories.use_memories：新对话默认把检索到的长期记忆写入 system。"
+            description={USE_MEMORIES_DESCRIPTION}
           >
             <SettingsToggle
               checked={draft.memoryInjection !== false}
@@ -103,7 +106,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title={GENERATE_MEMORIES_LABEL}
-            description="对标 Codex memories.generate_memories：新对话默认在回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
+            description={GENERATE_MEMORIES_DESCRIPTION}
             last
           >
             <SettingsToggle

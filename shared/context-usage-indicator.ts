@@ -25,6 +25,24 @@ export function contextUsageLiveExtra(streaming: string, draft: string): number 
   return estimateTextTokens(streaming) + estimateTextTokens(draft)
 }
 
+/**
+ * 直播增量按整百分桶复用同一数字，避免每 token 抬用量环（对标 Codex #22860）。
+ * 草稿仍由调用方另加，不进本函数。
+ */
+export function nextContextUsageLiveExtra(
+  prev: number | null,
+  streaming: string,
+  base: number,
+  limit: number
+): number {
+  const extra = contextUsageLiveExtra(streaming, '')
+  if (prev == null) return extra
+  const nextPercent = contextUsageRing(base + extra, limit).percent
+  const prevPercent = contextUsageRing(base + prev, limit).percent
+  if (nextPercent === prevPercent) return prev
+  return extra
+}
+
 /** 环上的用量；limit<=0 时比例为 0 */
 export function contextUsageRing(used: number, limit: number, radius = 7): {
   used: number

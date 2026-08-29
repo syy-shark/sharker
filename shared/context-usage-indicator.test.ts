@@ -3,6 +3,7 @@ import {
   contextUsageBaseTokens,
   contextUsageHoverLabel,
   contextUsageLiveExtra,
+  nextContextUsageLiveExtra,
   contextUsageRing,
   parseShowContextWindowUsage,
   shouldPaintContextUsageHigh
@@ -15,6 +16,10 @@ describe('context usage indicator', () => {
     expect(parseShowContextWindowUsage('true')).toBe(false)
     expect(contextUsageBaseTokens([])).toBeGreaterThan(0)
     expect(contextUsageLiveExtra('hello world', '')).toBeGreaterThan(0)
+    expect(nextContextUsageLiveExtra(null, 'hello world', 1000, 128000)).toBeGreaterThan(0)
+    expect(
+      nextContextUsageLiveExtra(12, 'hello world extra tokens', 1000, 128000)
+    ).toBe(12)
     expect(contextUsageHoverLabel(1200, 128000)).toBe('1200 / 128000（1%）')
     const ring = contextUsageRing(85_000, 100_000)
     expect(ring.percent).toBe(85)

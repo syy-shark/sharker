@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ENABLE_MEMORIES_DESCRIPTION,
   ENABLE_MEMORIES_LABEL,
+  GENERATE_MEMORIES_DESCRIPTION,
   GENERATE_MEMORIES_LABEL,
+  USE_MEMORIES_DESCRIPTION,
   USE_MEMORIES_LABEL,
   formatMemoryStatus,
   memoryFlagsForPick,
@@ -58,6 +61,9 @@ describe('memory command', () => {
     expect(ENABLE_MEMORIES_LABEL).toBe('Enable memories')
     expect(USE_MEMORIES_LABEL).toBe('Use memories')
     expect(GENERATE_MEMORIES_LABEL).toBe('Generate memories')
+    expect(ENABLE_MEMORIES_DESCRIPTION).toMatch(/off by default/)
+    expect(USE_MEMORIES_DESCRIPTION).toMatch(/injecting existing memories/)
+    expect(GENERATE_MEMORIES_DESCRIPTION).toMatch(/memory-generation inputs/)
     expect(
       formatMemoryStatus({ injection: true, generation: false, items: [] })
     ).toContain(`${GENERATE_MEMORIES_LABEL}：off`)

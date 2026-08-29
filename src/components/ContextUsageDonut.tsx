@@ -1,5 +1,5 @@
 /**
- * 输入框旁上下文用量环。只订直播 `streaming` 字符串，不抬 ComposerDock / ChatView。
+ * 输入框旁上下文用量环。直播增量按整百分桶订阅，不跟每枚 token 重绘。
  * 对标 Codex composer context-window usage donut。
  * @see src/components/ARCH.md
  */
@@ -10,6 +10,7 @@ import {
   contextUsageBaseTokens,
   contextUsageHoverLabel,
   contextUsageLiveExtra,
+  nextContextUsageLiveExtra,
   contextUsageRing,
   shouldPaintContextUsageHigh
 } from '../../shared/context-usage-indicator'
@@ -30,11 +31,13 @@ export function ContextUsageDonut({
   providers: ProviderConfig[]
   activeProviderId: string
 }) {
-  const streaming = useLiveStreamUiSelectWhen(true, (snap) => snap.streaming)
   const base = useMemo(() => contextUsageBaseTokens(messages), [messages])
   const provider = providers.find((p) => p.id === activeProviderId) ?? providers[0]
   const { limit } = resolveContextLimit(provider?.model ?? '', provider?.contextWindow)
-  const used = base + contextUsageLiveExtra(streaming, draft)
+  const liveExtra = useLiveStreamUiSelectWhen(true, (snap, prev) =>
+    nextContextUsageLiveExtra(prev ?? null, snap.streaming, base, limit)
+  )
+  const used = base + liveExtra + contextUsageLiveExtra('', draft)
   const ring = contextUsageRing(used, limit, RING_RADIUS)
   const label = contextUsageHoverLabel(used, limit)
   const high = shouldPaintContextUsageHigh(used, limit)

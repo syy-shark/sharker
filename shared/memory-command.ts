@@ -15,6 +15,13 @@ export type MemoryChatPick = 'use' | 'generate' | 'off' | 'inherit'
 export const ENABLE_MEMORIES_LABEL = 'Enable memories'
 export const USE_MEMORIES_LABEL = 'Use memories'
 export const GENERATE_MEMORIES_LABEL = 'Generate memories'
+/** Official Memories copy (learn.chatgpt.com/docs/customization/memories). */
+export const ENABLE_MEMORIES_DESCRIPTION =
+  "Local Codex memories are off by default. Chat-level choices don't change your global memory settings."
+export const USE_MEMORIES_DESCRIPTION =
+  'When off, Codex skips injecting existing memories into future sessions.'
+export const GENERATE_MEMORIES_DESCRIPTION =
+  'When off, newly created chats are not stored as memory-generation inputs.'
 
 export interface MemoryListItem {
   id: string

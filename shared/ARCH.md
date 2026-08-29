@@ -38,8 +38,8 @@
 | `stream-reconnect.ts` | 供应商短暂中断时同一请求最多重连 5 次；直播 status `Reconnecting... n/5`（对标 Codex #37337 / 桌面 #19821）；旧「正在重新连接」回放仍认；已吐出正文 / 思考 / 工具参数后不重开 |
 | `stream-reconnect.test.ts` | 429/502 与首包超时可重试；401 / Stop / 已有 delta 不重试；重连 status `Reconnecting... n/5`；旧中文回放仍认 |
 | `token-estimate.ts` | 上下文 token 粗估 |
-| `context-usage-indicator.ts` | 输入框用量环：官方默认关、历史基数 + 直播增量、≥85% 高用量、悬停文案与 `/status` 同数字 |
-| `context-usage-indicator.test.ts` | 默认关、环几何、高用量阈值 |
+| `context-usage-indicator.ts` | 输入框用量环：官方默认关、历史基数 + 直播增量、`nextContextUsageLiveExtra` 按整百分桶复用增量以免每 token 抬环、≥85% 高用量、悬停文案与 `/status` 同数字 |
+| `context-usage-indicator.test.ts` | 默认关、环几何、高用量阈值、直播增量百分桶复用 |
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
@@ -253,7 +253,7 @@
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 当前目录脚手架（含 Code Review Rules）；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
-| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories |
+| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories 与官方 off by default / inject / memory-generation 说明 |
 | `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先、功能默认关 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案；`shouldOpenMcpSettings` 空配置且非 verbose 时打开设置 → MCP（对标 Codex Open MCP status） |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表；空配置打开设置、已有 Server / verbose 不跳 |
