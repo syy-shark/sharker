@@ -281,6 +281,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 网络模式 | open / local_only / disabled |
 | 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示 Automatically compacting context（对标 Codex 桌面），摘要完成后过程行 Context automatically compacted。自动压缩只缩模型上下文，不换可见对话柱（对标 Codex #33285 / #26583）；`/compact` 才收可见历史 |
 | 短暂中断重连 | 首包前 429/502/503/504 与网络抖动最多重连 5 次，直播行显示 `Reconnecting... n/5`（对标 Codex #37337 Turns reconnect / 桌面 #19821）；旧「正在重新连接… n/5」回放仍认。已吐出正文 / 思考 / 工具参数后不重开，以免重复 |
+| 工具准备头 | 参数还在流时直播头用官方 Read / List / Running / Edited / Searching the web，不闪「正在准备…」（对标 Codex 工具格一开始就出标题）。完成后仍当桥接行去掉 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Yes, implement this plan → 全工具 |
 | 续跑提醒 | 对可执行任务，若模型停在启动服务器/打开/检查等中间话术但没有工具调用，会继续 nudging 直到完成或遇到真实阻塞 |

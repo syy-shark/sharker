@@ -273,7 +273,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.title).toBe('正在准备列出目录')
+    expect(active?.title).toBe('List')
   })
 
   it('approval_resolved marks waiting status done with reject/allow text', () => {

@@ -27,6 +27,7 @@ import {
   formatWorkedForLabel,
   AWAITING_APPROVAL_LABEL,
   formatStreamingFallbackLabel,
+  isOfficialActivityHeadTitle,
   THINKING_LABEL,
   liveThoughtBody,
   liveThinkingText,
@@ -151,6 +152,7 @@ function isBridgeStatusStep(step: ProcessPhaseStep): boolean {
   if (title.includes('规划下一步')) return true
   if (title.includes('连接模型并准备')) return true
   if (title.startsWith('正在准备')) return true
+  if (isOfficialActivityHeadTitle(title)) return true
   if (title.includes('已确认') || title.includes('继续执行')) return true
   if (title.includes('已授权') || title.includes('已拒绝该操作，继续')) return true
   if (title === '处理中' || title === '思考中' || title === THINKING_LABEL || title === 'Thought') {
@@ -742,7 +744,8 @@ export const TurnFlow = memo(function TurnFlow({
   )
 
   // 工具/实质步骤完成后、尚未开始正文：官方空档头 Working，不闪「规划下一步」
-  const lastVisibleTitle = (steps.at(-1)?.title || '').trim()
+  const lastVisible = steps.at(-1)
+  const lastVisibleTitle = (lastVisible?.title || '').trim()
   const planningNext = Boolean(
     isStreaming &&
       allProcessDone &&
@@ -751,7 +754,8 @@ export const TurnFlow = memo(function TurnFlow({
         hasToolOrNarration,
         generatingAnswer,
         approvalWaiting,
-        lastStepTitle: lastVisibleTitle
+        lastStepTitle: lastVisibleTitle,
+        lastStepKind: lastVisible?.kind
       })
   )
 

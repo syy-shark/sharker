@@ -4,6 +4,8 @@
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
 
+import { exploreNameFromPath } from './explore-activity'
+
 export type ThinkPreviewSource = {
   kind?: string
   content?: string
@@ -215,8 +217,9 @@ export function buildLiveHead(options: {
       step
     }
   }
+  const raw = step?.title?.trim() || ''
   return {
-    label: step?.title?.trim() || options.fallbackLabel || '处理中',
+    label: resolvePrepareLiveTitle(raw) || raw || options.fallbackLabel || '处理中',
     detail: step?.detail,
     step
   }
@@ -235,9 +238,11 @@ export function shouldSynthesizePlanning(options: {
   generatingAnswer: boolean
   approvalWaiting: boolean
   lastStepTitle?: string
+  lastStepKind?: string
 }): boolean {
   if (options.approvalWaiting || options.generatingAnswer || options.hasActiveWork) return false
   if (!options.hasToolOrNarration) return false
+  if (options.lastStepKind === 'status') return false
   const last = (options.lastStepTitle || '').trim()
   if (/正在准备/.test(last)) return false
   if (last.includes('规划下一步')) return false
@@ -351,6 +356,40 @@ export function formatStreamingFallbackLabel(options: {
 }): string {
   if (options.approvalWaiting) return AWAITING_APPROVAL_LABEL
   return options.hasStartedWork ? WORKING_LABEL : THINKING_LABEL
+}
+
+/**
+ * 工具参数还在流时的「正在准备…」：官方直播头直接用 Read / List / Running 等，
+ * 不发明准备态闪头（对标 Codex 工具格一开始就出标题）。
+ */
+export function resolvePrepareLiveTitle(text: string): string | null {
+  const cleaned = String(text || '').trim()
+  if (!cleaned || !/正在准备|正在生成|正在整理/.test(cleaned)) return null
+  if (/正在准备读取/.test(cleaned)) {
+    const rest = cleaned.replace(/.*正在准备读取\s*/, '').trim()
+    const leaf = rest && rest !== '文件' ? exploreNameFromPath(rest) : undefined
+    return leaf ? `Read ${leaf}` : 'Read'
+  }
+  if (/正在准备列出|正在准备目录|正在准备浏览/.test(cleaned)) {
+    const rest = cleaned.replace(/.*正在准备(?:列出目录|列出|目录|浏览)\s*/, '').trim()
+    const leaf = exploreNameFromPath(rest)
+    return leaf ? `List ${leaf}` : 'List'
+  }
+  if (/正在准备运行|正在准备命令/.test(cleaned)) return 'Running'
+  if (/正在准备写入|正在准备修改|正在整理|正在生成.*写入|正在生成写入/.test(cleaned)) {
+    return 'Edited'
+  }
+  if (/正在准备Searched|正在准备网页|正在准备抓取/.test(cleaned)) return 'Searching the web'
+  if (/正在准备Viewed Image|正在准备查看图片/.test(cleaned)) return 'Viewed Image'
+  return WORKING_LABEL
+}
+
+/** 官方工具格动词：status 桥接行用，避免准备态改成 Read 后留在历史时间线 */
+export const OFFICIAL_ACTIVITY_HEAD_RE =
+  /^(Read|List|Search|Running|Ran|Edited|Deleted|Added|Searching the web|Searched|Working|Calling|Called|Viewed Image)(\b|$)/i
+
+export function isOfficialActivityHeadTitle(text: string): boolean {
+  return OFFICIAL_ACTIVITY_HEAD_RE.test(String(text || '').trim())
 }
 
 /** 官方审批直播头：Awaiting approval（仍认旧「等待确认」） */

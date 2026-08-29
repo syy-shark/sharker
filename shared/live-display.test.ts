@@ -7,6 +7,7 @@ import {
   formatStoppedAfterLabel,
   AWAITING_APPROVAL_LABEL,
   formatStreamingFallbackLabel,
+  resolvePrepareLiveTitle,
   formatThoughtLabel,
   formatWorkedForLabel,
   parseStoppedAfterSeconds,
@@ -80,8 +81,12 @@ describe('live display head', () => {
         { id: '2', title: '正在准备列出目录', detail: 'src', status: 'active' }
       ]
     })
-    expect(head.label).toBe('正在准备列出目录')
+    expect(head.label).toBe('List')
     expect(head.detail).toBe('src')
+    expect(resolvePrepareLiveTitle('正在准备列出目录')).toBe('List')
+    expect(resolvePrepareLiveTitle('正在准备读取 package.json')).toBe('Read package.json')
+    expect(resolvePrepareLiveTitle('正在准备运行命令')).toBe('Running')
+    expect(resolvePrepareLiveTitle('Working')).toBe(null)
     expect(
       buildLiveHead({
         steps: [{ id: 'a', title: '等待确认 · 高危操作', status: 'active' }],
@@ -98,6 +103,16 @@ describe('live display head', () => {
         generatingAnswer: false,
         approvalWaiting: false,
         lastStepTitle: '正在准备列出目录'
+      })
+    ).toBe(false)
+    expect(
+      shouldSynthesizePlanning({
+        hasActiveWork: false,
+        hasToolOrNarration: true,
+        generatingAnswer: false,
+        approvalWaiting: false,
+        lastStepTitle: 'List',
+        lastStepKind: 'status'
       })
     ).toBe(false)
   })

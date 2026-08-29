@@ -15,6 +15,7 @@ import {
   isExploreActivityToolName
 } from './explore-activity'
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
+import { resolvePrepareLiveTitle } from './live-display'
 import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
@@ -261,15 +262,8 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
     // 规划/准备类状态压缩成稳定短标题，方便直播头同步
     if (cleaned && isReconnectLiveStatus(cleaned)) return resolveReconnectLiveStatus(cleaned)
     if (cleaned && /规划下一步|决定下一动作|规划中/.test(cleaned)) return '规划下一步'
-    if (cleaned && /正在准备读取/.test(cleaned)) return '正在准备读取文件'
-    if (cleaned && /正在准备运行|正在准备命令/.test(cleaned)) return '正在准备运行命令'
-    if (cleaned && /正在准备列出|正在准备目录|正在准备浏览/.test(cleaned)) return '正在准备列出目录'
-    if (cleaned && /正在准备写入|正在准备修改|正在整理.*修改|正在生成.*写入/.test(cleaned))
-      return '正在准备修改文件'
-    if (cleaned && /正在准备/.test(cleaned)) {
-      // 其余准备态：保留短文案，避免直播头被长句拖住
-      return cleaned.length > 18 ? `${cleaned.slice(0, 18)}…` : cleaned
-    }
+    const prepared = cleaned ? resolvePrepareLiveTitle(cleaned) : null
+    if (prepared) return prepared
     return cleaned ?? phaseActiveLabel(phase)
   }
   return cleanInlineText(segment.content) ?? '整理阶段结果'
