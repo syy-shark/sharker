@@ -80,6 +80,7 @@ import {
   shouldPublishTurnMetaReset
 } from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
+import { processElapsedSeconds, stoppedAfterFootnote } from '../shared/live-display'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
   TRANSCRIPT_MAX_MOUNTED,
@@ -3513,7 +3514,7 @@ export default function App() {
             )
             commitAssistantReply(
               streamingRef.current,
-              '\n\n_(已停止)_',
+              stoppedAfterFootnote(processElapsedSeconds({ startedAt: turnStartedAtRef.current })),
               'aborted',
               convId
             )
@@ -3870,7 +3871,7 @@ export default function App() {
       )
       commitAssistantReply(
         streamingRef.current,
-        '\n\n_(已停止)_',
+        stoppedAfterFootnote(processElapsedSeconds({ startedAt: turnStartedAtRef.current })),
         'aborted',
         action.commitStopToConversationId
       )
@@ -3894,7 +3895,16 @@ export default function App() {
         buf.turnOutcome = 'aborted'
         sessionBuffersRef.current.set(action.commitStopToConversationId, buf)
       }
-      commitAssistantReply('', '\n\n_(已停止)_', 'aborted', action.commitStopToConversationId)
+      commitAssistantReply(
+        '',
+        stoppedAfterFootnote(
+          processElapsedSeconds({
+            startedAt: sessionBuffersRef.current.get(action.commitStopToConversationId)?.turnStartedAt
+          })
+        ),
+        'aborted',
+        action.commitStopToConversationId
+      )
     }
   }, [commitAssistantReply, loading])
 
@@ -6896,7 +6906,9 @@ export default function App() {
               ? String((message as { message?: unknown }).message ?? '')
               : ''
         const content =
-          `${raw.trim() || '已保留停止前生成的内容'}\n\n_(已停止)_`
+          `${raw.trim() || '已保留停止前生成的内容'}${stoppedAfterFootnote(
+            processElapsedSeconds({ startedAt: turnStartedAtRef.current })
+          )}`
         // 注入停止态前关掉直播层，避免 live 行盖住中止卡片
         sendInFlightRef.current = false
         doneCommittedRef.current = true

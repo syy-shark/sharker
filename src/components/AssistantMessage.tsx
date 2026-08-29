@@ -20,9 +20,12 @@ import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/proces
 import {
   liveThinkingText,
   isInlineDemoPaintable,
+  resolveStoppedAfterLabel,
   sameRefList,
   shouldMountMessageActions,
-  shouldReserveMessageActions
+  shouldReserveMessageActions,
+  stripStoppedAfterFootnote,
+  turnProcessBounds
 } from '../../shared/live-display'
 import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
@@ -187,9 +190,15 @@ export const AssistantMessage = memo(function AssistantMessage({
       ? shouldDisplayFinalBody(finalContentRaw, segments!, { isStreaming })
       : { show: Boolean(finalContentRaw.trim()), content: finalContentRaw }
   const finalContent = finalDecision.show ? finalDecision.content : ''
-  const displayContent = isAborted
-    ? finalContentRaw.replace(/\s*_\((?:已停止|stopped)\)_\s*$/iu, '').trim()
-    : finalContent
+  const displayContent = isAborted ? stripStoppedAfterFootnote(finalContentRaw) : finalContent
+  const abortedBounds = isAborted ? turnProcessBounds(segments ?? []) : undefined
+  const stoppedAfterLabel = isAborted
+    ? resolveStoppedAfterLabel({
+        content: finalContentRaw,
+        startedAt: abortedBounds?.startedAt,
+        endedAt: abortedBounds?.endedAt
+      })
+    : ''
 
   // 文字 + 内联演示按时间顺序交错（可在 demo 上/下）
   const answerPartsRef = useRef<ReturnType<typeof buildAnswerParts>>([])
@@ -483,7 +492,7 @@ export const AssistantMessage = memo(function AssistantMessage({
         <div className="assistant-aborted" role="status">
           <CircleStop size={15} aria-hidden />
           <div>
-            <strong>任务已停止</strong>
+            <strong>{stoppedAfterLabel}</strong>
             <span>{displayContent ? '已保留停止前生成的内容' : '未产生可保留的结果'}</span>
           </div>
         </div>

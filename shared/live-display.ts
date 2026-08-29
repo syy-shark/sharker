@@ -326,6 +326,66 @@ export function formatElapsedClock(seconds: number): string {
   return rem ? `${hours}h ${rem}m` : `${hours}h`
 }
 
+/** 对标 Codex “You stopped after 47m 28s” / “You stopped after 0s”，保留分秒 */
+export function formatStoppedAfterClock(seconds: number): string {
+  const s = Math.max(0, Math.round(Number.isFinite(seconds) ? seconds : 0))
+  if (s < 60) return `${s}s`
+  const minutes = Math.floor(s / 60)
+  const remS = s % 60
+  if (minutes < 60) return remS ? `${minutes}m ${remS}s` : `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remM = minutes % 60
+  if (remM === 0 && remS === 0) return `${hours}h`
+  if (remS === 0) return `${hours}h ${remM}m`
+  if (remM === 0) return `${hours}h ${remS}s`
+  return `${hours}h ${remM}m ${remS}s`
+}
+
+/** 中文直播行：已停止 · 47m 28s */
+export function formatStoppedAfterLabel(seconds: number): string {
+  return `已停止 · ${formatStoppedAfterClock(seconds)}`
+}
+
+export const STOPPED_AFTER_FOOTNOTE_RE =
+  /\s*_\((?:已停止|You stopped after|stopped)(?:\s*[·.]\s*[^)]+)?\)_\s*$/iu
+
+export function stoppedAfterFootnote(seconds: number): string {
+  return `\n\n_(${formatStoppedAfterLabel(seconds)})_`
+}
+
+export function stripStoppedAfterFootnote(content: string): string {
+  return content.replace(STOPPED_AFTER_FOOTNOTE_RE, '').trim()
+}
+
+function parseClockToSeconds(text: string): number | undefined {
+  const h = text.match(/(\d+)\s*h/i)
+  const min = text.match(/(\d+)\s*m/i)
+  const sec = text.match(/(\d+)\s*s/i)
+  if (!h && !min && !sec) return undefined
+  return (h ? Number(h[1]) * 3600 : 0) + (min ? Number(min[1]) * 60 : 0) + (sec ? Number(sec[1]) : 0)
+}
+
+export function parseStoppedAfterSeconds(content: string): number | undefined {
+  const match = content.match(
+    /_\((?:已停止|You stopped after|stopped)(?:\s*[·.]\s*([^)]+))?\)_\s*$/iu
+  )
+  if (!match?.[1]) return undefined
+  return parseClockToSeconds(match[1].trim())
+}
+
+export function resolveStoppedAfterLabel(input: {
+  content?: string
+  startedAt?: number | null
+  endedAt?: number | null
+}): string {
+  const parsed = input.content ? parseStoppedAfterSeconds(input.content) : undefined
+  const seconds =
+    parsed != null
+      ? parsed
+      : processElapsedSeconds({ startedAt: input.startedAt, endedAt: input.endedAt })
+  return formatStoppedAfterLabel(seconds)
+}
+
 /** 直播过程数组：引用没变就复用同一份，避免回答 token 重挂 TurnFlow */
 export function sameRefList<T>(prev: readonly T[] | null | undefined, next: readonly T[]): boolean {
   if (prev === next) return true

@@ -240,7 +240,7 @@ export function resolveStopAction(input: {
 }): {
   /** 传给 abortChat；null 表示不调中止 */
   abortConversationId: string | null
-  /** 写入 _(已停止)_ 的会话；null 表示不写 */
+  /** 写入 _(已停止 · 时长)_ 的会话；null 表示不写 */
   commitStopToConversationId: string | null
 } {
   const { activeConversationId, activeIsBusy } = input
