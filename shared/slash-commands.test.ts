@@ -41,6 +41,7 @@ describe('slash commands', () => {
     expect(names).toContain('usage')
     expect(names).toContain('keymap')
     expect(names).toContain('project')
+    expect(names).toContain('chat')
     expect(names).toContain('reasoning')
     expect(names).toContain('delete')
     expect(names).toContain('theme')
@@ -97,6 +98,8 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'project')?.action).toBe('open_project_picker')
     expect(SLASH_COMMANDS.find((c) => c.name === 'reasoning')?.action).toBe('set_reasoning')
     expect(SLASH_COMMANDS.find((c) => c.name === 'task')?.action).toBe('new_global_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'chat')?.action).toBe('new_global_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'chat')?.description).toContain('Codex /chat')
     expect(SLASH_COMMANDS.find((c) => c.name === 'model')?.action).toBe('pick_model')
   })
 
@@ -104,6 +107,7 @@ describe('slash commands', () => {
     expect(filterSlashCommands('ch').some((c) => c.name === 'changes')).toBe(true)
     expect(filterSlashCommands('审查').some((c) => c.name === 'review')).toBe(true)
     expect(filterSlashCommands('task').some((c) => c.name === 'task')).toBe(true)
+    expect(filterSlashCommands('chat').some((c) => c.name === 'chat')).toBe(true)
   })
 
   it('appends installed skills to the slash list without shadowing builtins', () => {

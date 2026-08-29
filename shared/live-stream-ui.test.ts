@@ -5,7 +5,9 @@ import {
   liveStreamPatchFromSegments,
   nextLiveStreamUi,
   sameLiveStreamUi,
-  shouldPublishTurnMetaReset
+  shouldPublishTurnMetaReset,
+  COMPACT_LIVE_STATUS,
+  liveCompactStatusSegment
 } from './live-stream-ui'
 import {
   nextLiveAnswerActions,
@@ -214,5 +216,18 @@ describe('live stream ui snapshot', () => {
     expect(nextLiveProcessView(null, doneSnap).processForFlow[0]).toBe(doneSegs[0])
     expect(shouldPublishTurnMetaReset('commit')).toBe(false)
     expect(shouldPublishTurnMetaReset('clear')).toBe(true)
+    const compactSeg = liveCompactStatusSegment(11)
+    expect(compactSeg.content).toBe(COMPACT_LIVE_STATUS)
+    expect(compactSeg.status).toBe('active')
+    const compactSnap = nextLiveStreamUi(
+      EMPTY_LIVE_STREAM_UI,
+      liveStreamPatchFromSegments([compactSeg], {
+        streaming: '',
+        activeTool: null,
+        turnStartedAt: 11
+      })
+    )
+    expect(compactSnap.liveSegments[0]?.content).toBe('正在压缩上下文…')
+    expect(nextLiveProcessView(null, compactSnap).processForFlow[0]?.kind).toBe('status')
   })
 })

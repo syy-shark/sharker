@@ -80,6 +80,9 @@ describe('command palette', () => {
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
+    expect(filterPaletteCommands('/chat').some((c) => c.action === 'new_global_conversation')).toBe(
+      true
+    )
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
     expect(filterPaletteCommands('MCP 服务器').some((c) => c.action === 'open_mcp')).toBe(true)
     expect(filterPaletteCommands('个性化').some((c) => c.action === 'open_personalization')).toBe(

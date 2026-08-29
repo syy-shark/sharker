@@ -74,7 +74,11 @@ import {
   stepThinkingLevel
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
-import { liveStreamPatchFromSegments, shouldPublishTurnMetaReset } from '../shared/live-stream-ui'
+import {
+  liveCompactStatusSegment,
+  liveStreamPatchFromSegments,
+  shouldPublishTurnMetaReset
+} from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
@@ -622,6 +626,8 @@ export default function App() {
   const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
   const activeUserMessageIdRef = useRef<string | undefined>(undefined)
   const liveAssistantIdRef = useRef<string | null>(null)
+  /** `/compact` 只占直播行，不是模型回合；Stop 不得写成「已停止」 */
+  const compactingRef = useRef(false)
 
   const syncActiveQueueUi = useCallback((queues: SessionQueueMap, convId: string | null) => {
     sessionQueuesRef.current = queues
@@ -3789,6 +3795,7 @@ export default function App() {
    * 不全局 abort 其他会话的 activeSlot；不给其他会话写「已停止」。
    */
   const handleAbort = useCallback(async () => {
+    if (compactingRef.current && !sendInFlightRef.current) return
     const activeId = activeConversationIdRef.current
     const busy = sendInFlightRef.current || loading
     const action = resolveStopAction({
@@ -5667,27 +5674,54 @@ export default function App() {
             appendLocalNote('当前环境不能压缩上下文。')
             break
           }
-          const workspaceId = settingsRef.current.activeWorkspaceId
-          const convId = activeConversationIdRef.current
-          const source =
-            workspaceId && convId
-              ? await historyForModelTurn(
-                  workspaceId,
-                  convId,
-                  messagesRef.current,
-                  historyStartSeqRef.current
-                )
-              : messagesRef.current
-          const result = await window.sharker.compressContext(source)
-          if (!result.compressed) {
-            appendLocalNote('上下文还不需要压缩。')
+          if (sendInFlightRef.current || compactingRef.current) {
+            appendLocalNote('当前回合还在进行，压缩已跳过。')
             break
           }
-          applyConversationMessages(result.messages, 0)
-          await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
-          appendLocalNote(
-            `已压缩 ${result.removedCount} 条 · ${result.beforeTokens}→${result.afterTokens} tokens`
+          const workspaceId = settingsRef.current.activeWorkspaceId
+          const convId = activeConversationIdRef.current
+          const seedAt = Date.now()
+          compactingRef.current = true
+          ensureLiveAssistantId()
+          segmentsRef.current = [liveCompactStatusSegment(seedAt)]
+          setLiveSegments(cloneSegments(segmentsRef.current))
+          setLoading(true)
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segmentsRef.current, {
+              streaming: '',
+              activeTool: null,
+              turnStartedAt: seedAt,
+              liveTurnMeta: liveTurnMetaRef.current,
+              turnHadThinking: false
+            })
           )
+          try {
+            const source =
+              workspaceId && convId
+                ? await historyForModelTurn(
+                    workspaceId,
+                    convId,
+                    messagesRef.current,
+                    historyStartSeqRef.current
+                  )
+                : messagesRef.current
+            const result = await window.sharker.compressContext(source)
+            if (!result.compressed) {
+              appendLocalNote('上下文还不需要压缩。')
+              break
+            }
+            applyConversationMessages(result.messages, 0)
+            await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
+            appendLocalNote(
+              `已压缩 ${result.removedCount} 条 · ${result.beforeTokens}→${result.afterTokens} tokens`
+            )
+          } finally {
+            compactingRef.current = false
+            segmentsRef.current = []
+            setLiveSegments([])
+            setLoading(false)
+            resetLiveStreamUi()
+          }
           break
         }
         case 'pick_model': {
@@ -6005,6 +6039,7 @@ export default function App() {
       applyConversationMessages,
       conversationList,
       copyPlainText,
+      ensureLiveAssistantId,
       handleCreateBranchHere,
       handleDeleteConversation,
       handleForkConversation,

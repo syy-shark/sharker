@@ -25,7 +25,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'task',
     title: '无项目新对话',
-    keywords: 'task global no project 无项目 全局 /task',
+    keywords: 'task chat global no project 无项目 全局 /task /chat',
     action: 'new_global_conversation'
   },
   {

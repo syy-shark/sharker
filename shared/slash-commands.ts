@@ -104,7 +104,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'task',
-    description: '在全局工作区开新对话（不绑定项目，对标 Codex /task）',
+    description: '在全局工作区开新对话（不绑定项目；/chat 同义）',
+    scope: 'ui',
+    action: 'new_global_conversation',
+    category: 'session'
+  },
+  {
+    name: 'chat',
+    description: '不绑定项目开新对话（对标 Codex /chat）',
     scope: 'ui',
     action: 'new_global_conversation',
     category: 'session'

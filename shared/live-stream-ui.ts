@@ -32,6 +32,20 @@ export function shouldPublishTurnMetaReset(phase: 'commit' | 'clear'): boolean {
   return phase !== 'commit'
 }
 
+/** 官方桌面 compact 在对话里出现的压缩进度（对标 contextCompaction） */
+export const COMPACT_LIVE_STATUS = '正在压缩上下文…'
+
+/** `/compact` 开轮：一条进行中状态，写入直播 store */
+export function liveCompactStatusSegment(at: number): TurnSegment {
+  return {
+    id: `status-compact-${at}`,
+    kind: 'status',
+    content: COMPACT_LIVE_STATUS,
+    status: 'active',
+    startedAt: at
+  }
+}
+
 /** 空闲快照：收束 / 切走对话后写回 */
 export const EMPTY_LIVE_STREAM_UI: LiveStreamUiSnapshot = {
   streaming: '',
