@@ -163,6 +163,13 @@ export interface AppSettings {
    */
   showContextWindowUsage?: boolean
   /**
+   * 内置浏览器下载目录（对标 Codex Settings → Browser downloads）。
+   * 空则系统 Downloads。
+   */
+  browserDownloadPath?: string
+  /** 每次下载先弹另存为（对标 Codex Ask where to save downloads）。官方默认关 */
+  browserAskWhereToSave?: boolean
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -440,6 +447,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   toolOutputDisplay: 'standard',
   fileOpener: 'none',
   showContextWindowUsage: false,
+  browserDownloadPath: '',
+  browserAskWhereToSave: false,
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

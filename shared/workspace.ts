@@ -15,6 +15,7 @@ import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
 import { parseFileOpener } from './file-opener'
 import { parseShowContextWindowUsage } from './context-usage-indicator'
+import { parseBrowserAskWhereToSave, parseBrowserDownloadPath } from './browser-downloads'
 import { parseComposerEnterBehavior } from './composer-submit'
 import { parseReviewDelivery, parseReviewProviderId } from './review-prompt'
 import { normalizeExtraFolderPaths } from './workspace-folders'
@@ -167,6 +168,8 @@ export function normalizeSettings(
     toolOutputDisplay: parseToolOutputDisplay(raw.toolOutputDisplay),
     fileOpener: parseFileOpener(raw.fileOpener),
     showContextWindowUsage: parseShowContextWindowUsage(raw.showContextWindowUsage),
+    browserDownloadPath: parseBrowserDownloadPath(raw.browserDownloadPath),
+    browserAskWhereToSave: parseBrowserAskWhereToSave(raw.browserAskWhereToSave),
     turnNotifyMode:
       raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
         ? raw.turnNotifyMode

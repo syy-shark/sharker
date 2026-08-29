@@ -24,6 +24,12 @@ import { canExportChatImage, suggestedImageFilename, type ChatImageExportInput }
 import { classifyPastedAttachment } from '../../shared/composer-paste'
 import { parseGitRefNames } from '../../shared/git-branch-list'
 import { BROWSER_SESSION_PARTITION } from '../../shared/browser-history'
+import {
+  parseBrowserAskWhereToSave,
+  resolveBrowserDownloadDir,
+  sanitizeBrowserDownloadName,
+  uniqueBrowserDownloadPath
+} from '../../shared/browser-downloads'
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
@@ -704,6 +710,30 @@ const approvalHandler: ApprovalHandler = (req) => {
   })
 }
 
+/** 内置浏览器下载：系统 Downloads / 自选目录 / 每次询问（对标 Codex Settings → Browser） */
+function attachBrowserDownloadHandler(): void {
+  const ses = session.fromPartition(BROWSER_SESSION_PARTITION)
+  ses.on('will-download', (_event, item) => {
+    const filename = sanitizeBrowserDownloadName(item.getFilename() || 'download')
+    const systemDownloads = app.getPath('downloads')
+    const destDir = resolveBrowserDownloadDir(settings.browserDownloadPath, systemDownloads)
+    if (parseBrowserAskWhereToSave(settings.browserAskWhereToSave)) {
+      item.setSaveDialogOptions({
+        defaultPath: path.join(destDir, filename)
+      })
+      return
+    }
+    let dir = destDir
+    try {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+    } catch {
+      dir = systemDownloads
+    }
+    if (!fs.existsSync(dir)) dir = systemDownloads
+    item.setSavePath(uniqueBrowserDownloadPath(dir, filename, (abs) => fs.existsSync(abs)))
+  })
+}
+
 /** 注册全部 IPC handler（设置、对话、窗口、聊天等）。 */
 function registerIpc(): void {
   setSubAgentListener((snapshot) => {
@@ -1076,6 +1106,8 @@ function registerIpc(): void {
       return { ok: true }
     }
   )
+
+  attachBrowserDownloadHandler()
 
   ipcMain.handle(
     IPC.SET_ACTIVE_CONVERSATION,

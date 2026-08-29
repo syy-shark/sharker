@@ -39,7 +39,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   browser: {
     title: '浏览器',
-    desc: '内置浏览器自己的历史：搜索、重新打开、删除，或按时间清除历史 / Cookie / 缓存。对标 Codex Settings → Browser。不接系统 Chrome，不发明 @Browser。'
+    desc: '内置浏览器自己的历史与下载：搜索、重新打开、删除，按时间清除历史 / Cookie / 缓存，以及下载目录与每次询问保存。对标 Codex Settings → Browser。不接系统 Chrome，不发明 @Browser。'
   },
   appearance: {
     title: '外观',
@@ -104,7 +104,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave, workspacePath = '' 
           {tab === 'general' && (
             <GeneralSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
-          {tab === 'browser' && <BrowserSettings />}
+          {tab === 'browser' && (
+            <BrowserSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
           {tab === 'appearance' && (
             <AppearanceSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}

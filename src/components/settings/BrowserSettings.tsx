@@ -1,10 +1,15 @@
 /**
- * 设置 → 浏览器：本机内置浏览历史、重新打开、删除、清除数据。
+ * 设置 → 浏览器：本机内置浏览历史、重新打开、删除、清除数据、下载目录。
  * 对标 Codex Settings → Browser。不发明 @Browser / Computer Use / 导入系统配置。
  * @see src/components/settings/ARCH.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Globe, Trash2 } from 'lucide-react'
+import type { AppSettings } from '../../../shared/types'
+import {
+  parseBrowserAskWhereToSave,
+  parseBrowserDownloadPath
+} from '../../../shared/browser-downloads'
 import {
   BROWSER_HISTORY_CHANGED_EVENT,
   browserHistoryLabel,
@@ -19,8 +24,20 @@ import {
   loadBrowserHistory,
   saveBrowserHistory
 } from '../../lib/browser-history-store'
-import { SettingsCard, SettingsRow, SettingsSection } from './SettingsPrimitives'
+import {
+  SettingsCard,
+  SettingsPillButton,
+  SettingsRow,
+  SettingsSection,
+  SettingsToggle
+} from './SettingsPrimitives'
 import './BrowserSettings.css'
+
+interface Props {
+  draft: AppSettings
+  setDraft: React.Dispatch<React.SetStateAction<AppSettings>>
+  onSave: (next: AppSettings) => Promise<void>
+}
 
 const RANGES: Array<{ id: BrowserHistoryClearRange; label: string }> = [
   { id: 'hour', label: '过去 1 小时' },
@@ -43,8 +60,10 @@ function formatVisited(ts: number): string {
   }
 }
 
-/** 内置浏览器资料：历史与清除 */
-export function BrowserSettings() {
+/** 内置浏览器资料：历史、清除与下载 */
+export function BrowserSettings({ draft, setDraft, onSave }: Props) {
+  const draftRef = useRef(draft)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [entries, setEntries] = useState<BrowserHistoryEntry[]>(() => loadBrowserHistory())
   const [query, setQuery] = useState('')
   const [range, setRange] = useState<BrowserHistoryClearRange>('day')
@@ -52,6 +71,28 @@ export function BrowserSettings() {
   const [clearCookies, setClearCookies] = useState(false)
   const [clearCache, setClearCache] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+    }
+  }, [])
+
+  const scheduleSave = useCallback(
+    (next: AppSettings) => {
+      setDraft(next)
+      draftRef.current = next
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => {
+        void onSave(next)
+      }, 180)
+    },
+    [onSave, setDraft]
+  )
 
   const refresh = useCallback(() => {
     setEntries(loadBrowserHistory())
@@ -89,8 +130,56 @@ export function BrowserSettings() {
     }
   }
 
+  const downloadPath = parseBrowserDownloadPath(draft.browserDownloadPath)
+  const askWhere = parseBrowserAskWhereToSave(draft.browserAskWhereToSave)
+
+  const handlePickDownloadDir = async () => {
+    const picked = await window.sharker?.pickWorkspaceFolder?.()
+    if (!picked) return
+    const browserDownloadPath = parseBrowserDownloadPath(picked)
+    if (!browserDownloadPath) return
+    scheduleSave({ ...draftRef.current, browserDownloadPath })
+  }
+
   return (
     <>
+      <SettingsSection title="下载">
+        <SettingsCard>
+          <SettingsRow
+            title="下载位置"
+            description={
+              downloadPath
+                ? downloadPath
+                : '默认保存到系统下载文件夹。可选其它目录，或恢复默认。'
+            }
+          >
+            <div className="browser-settings-actions">
+              <SettingsPillButton onClick={() => void handlePickDownloadDir()}>
+                选择位置
+              </SettingsPillButton>
+              <SettingsPillButton
+                onClick={() => scheduleSave({ ...draftRef.current, browserDownloadPath: '' })}
+              >
+                恢复默认
+              </SettingsPillButton>
+            </div>
+          </SettingsRow>
+          <SettingsRow
+            title="每次询问保存位置"
+            description="下载前弹出另存为。关闭则直接写入上面的目录。"
+            last
+          >
+            <SettingsToggle
+              checked={askWhere}
+              label="每次询问保存位置"
+              onChange={(browserAskWhereToSave) => {
+                scheduleSave({ ...draftRef.current, browserAskWhereToSave })
+              }}
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection title="浏览历史">
         <SettingsCard>
           <SettingsRow

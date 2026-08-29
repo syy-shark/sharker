@@ -37,6 +37,18 @@ describe('workspace settings', () => {
       true
     )
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').showContextWindowUsage).toBe(false)
+    expect(normalizeSettings({}, '/home/u').browserDownloadPath).toBe('')
+    expect(normalizeSettings({ browserDownloadPath: ' /tmp/dl ' }, '/home/u').browserDownloadPath).toBe(
+      '/tmp/dl'
+    )
+    expect(normalizeSettings({ browserDownloadPath: '/tmp/../etc' }, '/home/u').browserDownloadPath).toBe(
+      ''
+    )
+    expect(normalizeSettings({}, '/home/u').browserAskWhereToSave).toBe(false)
+    expect(normalizeSettings({ browserAskWhereToSave: true }, '/home/u').browserAskWhereToSave).toBe(
+      true
+    )
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').browserAskWhereToSave).toBe(false)
   })
 })
 

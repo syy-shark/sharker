@@ -63,6 +63,7 @@
 | `workspace:prepare-worktree` / `create-permanent-worktree` / `remove-worktree` | 主进程读设置里的 `worktreeRoot` / 保留数，不信任渲染进程传入的根路径；新建时跑 `[setup] script`，删除托管 worktree 前跑 `[cleanup] script` |
 | `workspace:inspect-worktree` | 隔离目录是否存在、有无快照 |
 | `terminal:kill-all` | `/stop` 关掉全部集成终端 |
+| `browser:clear-data` | 清内置浏览器 Cookie / 缓存；同配置 `will-download` 写系统 Downloads 或设置里的目录 |
 
 ## 数据流
 
