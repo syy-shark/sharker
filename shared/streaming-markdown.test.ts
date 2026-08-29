@@ -1736,6 +1736,26 @@ describe('splitStreamingMarkdown', () => {
       expect(quoteSetextGrown[0].blocks[0]).toBe(quoteSetext[0].blocks[0])
       expect(quoteSetextGrown[0].blocks.map((block) => block.type)).toEqual(['heading', 'p'])
     }
+    const listThenSetextSrc = '- x\n\nTitle\n==='
+    const listThenSetext = parseCheapProseBlocks(listThenSetextSrc)
+    const listThenSetextGrown = continueCheapProseBlocks(
+      listThenSetextSrc,
+      listThenSetext,
+      `${listThenSetextSrc}\nafter`
+    )
+    expect(listThenSetextGrown[0]).toBe(listThenSetext[0])
+    expect(listThenSetextGrown[1]).toBe(listThenSetext[1])
+    expect(listThenSetextGrown.map((block) => block.type)).toEqual(['list', 'heading', 'p'])
+    const tableThenSetextSrc = '| A |\n| --- |\n| 1 |\nTitle\n==='
+    const tableThenSetext = parseCheapProseBlocks(tableThenSetextSrc)
+    const tableThenSetextGrown = continueCheapProseBlocks(
+      tableThenSetextSrc,
+      tableThenSetext,
+      `${tableThenSetextSrc}\nafter`
+    )
+    expect(tableThenSetextGrown[0]).toBe(tableThenSetext[0])
+    expect(tableThenSetextGrown[1]).toBe(tableThenSetext[1])
+    expect(tableThenSetextGrown.map((block) => block.type)).toEqual(['table', 'heading', 'p'])
     const paraOnly = parseCheapProseBlocks('见 foo')
     const paraThenList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n- 一项')
     expect(paraThenList[0]).toBe(paraOnly[0])
