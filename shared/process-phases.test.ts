@@ -202,6 +202,17 @@ describe('process phases privacy', () => {
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
     ).toBe(appended)
+    const settleAndThink = remapProcessPhaseStepsOnThinkAppend(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, nextThink],
+      true
+    )
+    expect(settleAndThink).not.toBeNull()
+    expect(settleAndThink).toHaveLength(1)
+    expect(settleAndThink![0].id).toBe(cmdSteps[0].id)
+    expect(settleAndThink![0].segment).toBe(cmdDone)
+    expect(settleAndThink![0].status).toBe('done')
     const firstReply: TurnSegment = {
       id: 'reply-1',
       kind: 'text',
@@ -647,6 +658,35 @@ describe('process phases privacy', () => {
       }
     ])
     expect(compacted[0]?.title).toBe('Context automatically compacted')
+    const compactStatus: TurnSegment = {
+      id: 'cp-st',
+      kind: 'status',
+      status: 'active',
+      content: 'Automatically compacting context',
+      startedAt: 27.5
+    }
+    const compactStatusSteps = deriveChronologicalSteps([compactStatus], { isStreaming: true })
+    const compactStatusDone: TurnSegment = { ...compactStatus, status: 'done', endedAt: 27.6 }
+    const compressDoneSeg: TurnSegment = {
+      id: 'cp-live',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Automatically compacting context',
+      status: 'done',
+      startedAt: 27.7,
+      endedAt: 27.8
+    }
+    const afterCompress = appendProcessPhaseStepOnToolStart(
+      compactStatusSteps,
+      [compactStatus],
+      [compactStatusDone, compressDoneSeg],
+      true
+    )
+    expect(afterCompress).not.toBeNull()
+    expect(afterCompress).toHaveLength(2)
+    expect(afterCompress![0].segment).toBe(compactStatusDone)
+    expect(afterCompress![0].status).toBe('done')
+    expect(afterCompress!.at(-1)?.segment).toBe(compressDoneSeg)
     const asking = deriveChronologicalSteps([
       {
         id: 'ask1',

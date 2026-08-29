@@ -32,6 +32,7 @@ import {
   isLiveToolWriteStatAppendChange,
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
+  isLiveCompressAppendChange,
   isLiveDemoAppendChange,
   isLiveDemoFenceAppendChange,
   findLiveDemoFenceChange,
@@ -568,6 +569,19 @@ describe('live stream ui snapshot', () => {
       status: 'active'
     }
     expect(isLiveThinkAppendChange([hello, ran], [hello, ran, nextThink])).toBe(true)
+    expect(isLiveThinkAppendChange([hello, running], [hello, ran, nextThink])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextThink])).toBe('think')
+    const processReadyForSettleThink = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterSettleThink = nextLiveProcessView(processReadyForSettleThink, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextThink]
+    })
+    expect(processAfterSettleThink.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processAfterSettleThink.processForFlow.some((segment) => segment === running)).toBe(false)
+    expect(processAfterSettleThink.thinkText).toBe(processReadyForSettleThink.thinkText + 'Next')
     expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, nextThink])).toBe('think')
     expect(
       shouldSkipLiveAnswerIdentity({
@@ -599,6 +613,8 @@ describe('live stream ui snapshot', () => {
       content: '```demo\n<div>'
     }
     expect(isLiveAnswerAppendChange([ran], [ran, firstReply])).toBe(true)
+    expect(isLiveAnswerAppendChange([running], [ran, firstReply])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([running], [ran, firstReply])).toBe('text')
     expect(isLiveAnswerAppendChange([thinking], [thinkingDone, firstReply])).toBe(true)
     expect(isLiveAnswerAppendChange([ran], [ran, demoStart])).toBe(false)
     expect(isLiveDemoFenceAppendChange([ran], [ran, demoStart])).toBe(true)
@@ -835,6 +851,40 @@ describe('live stream ui snapshot', () => {
       content: 'Automatically compacting context'
     }
     expect(isLiveStatusAppendChange([ran], [ran, compactStatus])).toBe(true)
+    const compactStatusDone: TurnSegment = { ...compactStatus, status: 'done' }
+    const compressTool: TurnSegment = {
+      id: 'cp-live',
+      kind: 'tool',
+      toolName: 'compress',
+      toolTitle: 'Context automatically compacted',
+      status: 'done'
+    }
+    expect(isLiveCompressAppendChange([ran, compactStatus], [ran, compactStatusDone, compressTool])).toBe(
+      true
+    )
+    expect(isLiveCompressAppendChange([ran], [ran, compressTool])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([ran, compactStatus], [ran, compactStatusDone, compressTool])).toBe(
+      'tool'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [ran, compactStatus],
+        segments: [ran, compactStatusDone, compressTool]
+      })
+    ).toBe(true)
+    const processReadyForCompress = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, compactStatus]
+    })
+    const processAfterCompressTool = nextLiveProcessView(processReadyForCompress, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, compactStatusDone, compressTool]
+    })
+    expect(processAfterCompressTool.processForFlow.some((segment) => segment === compactStatusDone)).toBe(
+      true
+    )
+    expect(processAfterCompressTool.processForFlow.some((segment) => segment === compressTool)).toBe(true)
     const processReadyForCompact = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [ran]
