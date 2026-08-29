@@ -25,7 +25,9 @@ import {
   NEW_STANDALONE_CHAT_LABEL,
   NEW_WINDOW_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
+  FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
   OPEN_BROWSER_TAB_LABEL,
+  RELOAD_BROWSER_PAGE_MENU_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
@@ -519,6 +521,20 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     shortcut: '⌘T',
     keywords: 'browser tab 浏览器 标签',
     action: 'open_browser'
+  },
+  {
+    id: 'focus-browser-address',
+    title: FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
+    shortcut: '⌘L',
+    keywords: 'focus browser address bar omnibox 地址栏',
+    action: 'focus_browser_address'
+  },
+  {
+    id: 'reload-browser-page',
+    title: RELOAD_BROWSER_PAGE_MENU_LABEL,
+    shortcut: '⌘R',
+    keywords: 'reload browser page refresh 刷新',
+    action: 'reload_browser_page'
   },
   {
     id: 'next-attention',

@@ -56,6 +56,8 @@ import {
   HELP_MENU_LABEL,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
+  FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
+  RELOAD_BROWSER_PAGE_MENU_LABEL,
   FIND_MENU_LABEL,
   PREVIOUS_CHAT_MENU_LABEL,
   NEXT_CHAT_MENU_LABEL,
@@ -178,6 +180,8 @@ describe('reveal in folder', () => {
     expect(HELP_MENU_LABEL).toBe('Help')
     expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
     expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
+    expect(FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL).toBe('Focus Browser Address Bar')
+    expect(RELOAD_BROWSER_PAGE_MENU_LABEL).toBe('Reload Browser Page')
     expect(FIND_MENU_LABEL).toBe('Find')
     expect(PREVIOUS_CHAT_MENU_LABEL).toBe('Previous Chat')
     expect(NEXT_CHAT_MENU_LABEL).toBe('Next Chat')

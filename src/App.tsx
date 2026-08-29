@@ -124,7 +124,7 @@ import {
   type ThreadCopyAction
 } from '../shared/reveal-in-folder'
 import { PlanBuildBar } from './components/PlanBuildBar'
-import { RightPanel, type RightPanelTab } from './components/RightPanel'
+import { RightPanel, type BrowserMenuCommand, type RightPanelTab } from './components/RightPanel'
 import { AutomationsPage } from './pages/AutomationsPage'
 import { SkillsPage } from './pages/SkillsPage'
 import { Sidebar } from './components/Sidebar'
@@ -474,6 +474,7 @@ export default function App() {
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
   const [browserOpenUrl, setBrowserOpenUrl] = useState('')
   const [browserOpenNonce, setBrowserOpenNonce] = useState(0)
+  const [browserMenuCommand, setBrowserMenuCommand] = useState<BrowserMenuCommand | null>(null)
   const rightPanelOpenRef = useRef(false)
   const rightPanelTabRef = useRef<RightPanelTab>('files')
   const inAppBrowserUrlRef = useRef('')
@@ -5144,6 +5145,16 @@ export default function App() {
     setRightPanelOpen(true)
   }, [])
 
+  const handleFocusBrowserAddress = useCallback(() => {
+    handleOpenBrowserTab()
+    setBrowserMenuCommand((prev) => ({ kind: 'focus-address', token: (prev?.token ?? 0) + 1 }))
+  }, [handleOpenBrowserTab])
+
+  const handleReloadBrowserPage = useCallback(() => {
+    handleOpenBrowserTab()
+    setBrowserMenuCommand((prev) => ({ kind: 'reload', token: (prev?.token ?? 0) + 1 }))
+  }, [handleOpenBrowserTab])
+
   const handleToggleActivity = useCallback(() => {
     setPage('chat')
     localStorage.setItem('sharker-sidebar-collapsed', '0')
@@ -6672,6 +6683,14 @@ export default function App() {
         handleOpenBrowserTab()
         return
       }
+      if (cmd.action === 'focus_browser_address') {
+        handleFocusBrowserAddress()
+        return
+      }
+      if (cmd.action === 'reload_browser_page') {
+        handleReloadBrowserPage()
+        return
+      }
       if (cmd.action === 'next_attention') {
         handleNextAttention()
         return
@@ -6730,7 +6749,9 @@ export default function App() {
       handleClearUnread,
       handleNavStep,
       handleNextAttention,
+      handleFocusBrowserAddress,
       handleOpenBrowserTab,
+      handleReloadBrowserPage,
       handleRunEnvironmentAction,
       handleStandaloneConversation,
       handleToggleActivity,
@@ -7215,6 +7236,14 @@ export default function App() {
         handleOpenBrowserTab()
         return
       }
+      if (action === 'focus_browser_address') {
+        handleFocusBrowserAddress()
+        return
+      }
+      if (action === 'reload_browser_page') {
+        handleReloadBrowserPage()
+        return
+      }
       if (action === 'find_in_thread') {
         setPage('chat')
         setComposerIntent('find')
@@ -7259,7 +7288,9 @@ export default function App() {
     handleNavigate,
     handleNavStep,
     handleNewConversation,
+    handleFocusBrowserAddress,
     handleOpenBrowserTab,
+    handleReloadBrowserPage,
     handleSelectConversation,
     openShareThread,
     copyConversationMarkdown,
@@ -8659,6 +8690,7 @@ export default function App() {
           onSendReviewComments={handleSendReviewComments}
           browserOpenUrl={browserOpenUrl}
           browserOpenNonce={browserOpenNonce}
+          browserMenuCommand={browserMenuCommand}
           onBrowserAmbientUrl={handleBrowserAmbientUrl}
         />
         )}

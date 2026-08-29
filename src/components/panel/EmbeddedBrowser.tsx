@@ -37,10 +37,18 @@ import { PAGE_GLASS_INJECT_CSS, shouldInjectGlass } from './browser-glass-css'
 import type { SideChatSource } from '../../../shared/side-chat-quote'
 import './EmbeddedBrowser.css'
 
+/** View 菜单 Focus Browser Address Bar / Reload Browser Page（对标 Codex #30659） */
+export type BrowserMenuCommand = {
+  kind: 'focus-address' | 'reload'
+  token: number
+}
+
 interface Props {
   initialUrl?: string
   /** 设置页重新打开时递增，迫使已挂载的 webview 导航 */
   openNonce?: number
+  /** 应用菜单 / 命令面板：先开浏览器再选中地址栏或刷新 */
+  menuCommand?: BrowserMenuCommand | null
   /** 批注保存进 composer Selection 芯片 */
   onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
   /** 当前页 URL 交给开轮 ambient（起始页报空） */
@@ -66,6 +74,7 @@ function displayUrlForBar(raw: string): string {
 export function EmbeddedBrowser({
   initialUrl,
   openNonce = 0,
+  menuCommand = null,
   onInsertComposer,
   onAmbientUrlChange
 }: Props) {
@@ -138,6 +147,29 @@ export function EmbeddedBrowser({
     setInput(displayUrlForBar(target))
     safeCall(() => webviewRef.current?.loadURL(target))
   }, [initialUrl, openNonce])
+
+  useEffect(() => {
+    if (!menuCommand?.token) return
+    if (menuCommand.kind === 'focus-address') {
+      const focus = () => {
+        urlInputRef.current?.focus()
+        urlInputRef.current?.select()
+      }
+      focus()
+      const id = requestAnimationFrame(focus)
+      return () => cancelAnimationFrame(id)
+    }
+    const run = () =>
+      safeCall(() => {
+        const wv = webviewRef.current
+        if (!wv) return
+        if (wv.isLoading?.()) wv.stop()
+        else wv.reload()
+      })
+    run()
+    const id = requestAnimationFrame(run)
+    return () => cancelAnimationFrame(id)
+  }, [menuCommand])
 
   const recordVisit = useCallback(() => {
     const wv = webviewRef.current

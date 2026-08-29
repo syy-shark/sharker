@@ -112,6 +112,16 @@ describe('command palette', () => {
     expect(ids).toContain('clear-terminal')
     expect(ids).toContain('clear-unread')
     expect(ids).toContain('search-files')
+    expect(ids).toContain('open-browser')
+    expect(ids).toContain('focus-browser-address')
+    expect(ids).toContain('reload-browser-page')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'open-browser')?.title).toBe('Open browser tab')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'focus-browser-address')?.title).toBe(
+      'Focus Browser Address Bar'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'reload-browser-page')?.title).toBe(
+      'Reload Browser Page'
+    )
     expect(ids).toContain('next-attention')
     expect(ids).toContain('approve')
     expect(ids).toContain('rename')
@@ -134,6 +144,14 @@ describe('command palette', () => {
   it('filters by title and keywords', () => {
     expect(filterPaletteCommands('审查').some((c) => c.id === 'review')).toBe(true)
     expect(filterPaletteCommands('terminal').some((c) => c.action === 'toggle_terminal')).toBe(true)
+    expect(
+      filterPaletteCommands('Focus Browser Address Bar').some(
+        (c) => c.action === 'focus_browser_address'
+      )
+    ).toBe(true)
+    expect(
+      filterPaletteCommands('Reload Browser Page').some((c) => c.action === 'reload_browser_page')
+    ).toBe(true)
     expect(
       filterPaletteCommands('环境').some((c) => c.action === 'run_environment_action')
     ).toBe(true)

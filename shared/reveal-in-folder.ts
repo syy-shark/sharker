@@ -118,8 +118,10 @@ export const REDO_LABEL = 'Redo'
 export const CUT_LABEL = 'Cut'
 export const PASTE_LABEL = 'Paste'
 export const SELECT_ALL_LABEL = 'Select All'
-/** 官方 View 菜单（对标 Codex #30659 Open Browser Tab / Find / Previous Chat / Next Chat / Back / Forward） */
+/** 官方 View 菜单（对标 Codex #30659 Open Browser Tab / Focus Browser Address Bar / Reload Browser Page / Find / Previous Chat / Next Chat / Back / Forward） */
 export const OPEN_BROWSER_TAB_MENU_LABEL = 'Open Browser Tab'
+export const FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL = 'Focus Browser Address Bar'
+export const RELOAD_BROWSER_PAGE_MENU_LABEL = 'Reload Browser Page'
 export const FIND_MENU_LABEL = 'Find'
 export const PREVIOUS_CHAT_MENU_LABEL = 'Previous Chat'
 export const NEXT_CHAT_MENU_LABEL = 'Next Chat'

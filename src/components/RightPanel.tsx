@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } fr
 import { Expand, Minimize2, X } from 'lucide-react'
 import { FileTree } from './panel/FileTree'
 import { ThreadTerminalBank } from './panel/EmbeddedTerminal'
-import { EmbeddedBrowser } from './panel/EmbeddedBrowser'
+import { EmbeddedBrowser, type BrowserMenuCommand } from './panel/EmbeddedBrowser'
 import { ChangesPanel } from './panel/ChangesPanel'
 import { AgentsPanel } from './panel/AgentsPanel'
 import './RightPanel.css'
@@ -74,9 +74,13 @@ interface Props {
   /** 设置页重新打开历史页 */
   browserOpenUrl?: string
   browserOpenNonce?: number
+  /** View 菜单 Focus Browser Address Bar / Reload Browser Page */
+  browserMenuCommand?: BrowserMenuCommand | null
   /** 内置浏览器当前 URL → 开轮 ambient */
   onBrowserAmbientUrl?: (url: string) => void
 }
+
+export type { BrowserMenuCommand }
 
 /** Codex 风格右侧面板 */
 export const RightPanel = memo(function RightPanel({
@@ -104,6 +108,7 @@ export const RightPanel = memo(function RightPanel({
   onInsertComposer,
   browserOpenUrl,
   browserOpenNonce = 0,
+  browserMenuCommand = null,
   onBrowserAmbientUrl
 }: Props) {
   const viewportWidth = () => (typeof window === 'undefined' ? 1440 : window.innerWidth || 1440)
@@ -438,6 +443,7 @@ export const RightPanel = memo(function RightPanel({
           <EmbeddedBrowser
             initialUrl={browserOpenUrl}
             openNonce={browserOpenNonce}
+            menuCommand={browserMenuCommand}
             onInsertComposer={onInsertComposer}
             onAmbientUrlChange={onBrowserAmbientUrl}
           />

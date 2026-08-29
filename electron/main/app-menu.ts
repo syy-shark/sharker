@@ -21,6 +21,8 @@ import {
   FORWARD_MENU_LABEL,
   NEXT_CHAT_MENU_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
+  FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
+  RELOAD_BROWSER_PAGE_MENU_LABEL,
   PASTE_LABEL,
   PREVIOUS_CHAT_MENU_LABEL,
   REDO_LABEL,
@@ -184,6 +186,18 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
           accelerator: 'Command+T',
           registerAccelerator: false,
           ...send('open_browser')
+        },
+        {
+          label: FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
+          accelerator: 'Command+L',
+          registerAccelerator: false,
+          ...send('focus_browser_address')
+        },
+        {
+          label: RELOAD_BROWSER_PAGE_MENU_LABEL,
+          accelerator: 'Command+R',
+          registerAccelerator: false,
+          ...send('reload_browser_page')
         },
         {
           label: FIND_MENU_LABEL,
