@@ -69,6 +69,7 @@ import {
   liveProgressKey,
   liveStickNeedsFollow,
   liveStickScrollTop,
+  clampLockedScrollTop,
   shouldClearUnseenLive,
   shouldMarkUnseenLive,
   shouldFocusTranscriptScroller,
@@ -1878,6 +1879,14 @@ export const ChatView = memo(function ChatView({
     const ro = new ResizeObserver(() => {
       if (programmaticScrollRef.current) return
       if (stickToBottomRef.current && !userScrollLockRef.current) return
+      if (userScrollLockRef.current) {
+        const nextTop = clampLockedScrollTop(el.scrollTop, el.scrollHeight, el.clientHeight)
+        if (nextTop !== el.scrollTop) {
+          programmaticScrollRef.current = true
+          el.scrollTop = nextTop
+          programmaticScrollRef.current = false
+        }
+      }
       syncScrollFlags()
     })
     ro.observe(el)
@@ -1983,9 +1992,20 @@ export const ChatView = memo(function ChatView({
         applyTranscriptRestore(scroller, pending)
         if (pendingRestoreRef.current) return
       }
-      if (!stickToBottomRef.current || userScrollLockRef.current || viewingHeadRef.current) return
       const h = scroller.scrollHeight
       const client = scroller.clientHeight
+      if (userScrollLockRef.current || viewingHeadRef.current) {
+        const nextTop = clampLockedScrollTop(scroller.scrollTop, h, client)
+        if (nextTop !== scroller.scrollTop) {
+          programmaticScrollRef.current = true
+          scroller.scrollTop = nextTop
+          programmaticScrollRef.current = false
+        }
+        lastHeight = h
+        lastClient = client
+        return
+      }
+      if (!stickToBottomRef.current) return
       if (
         !liveStickNeedsFollow(
           { scrollHeight: lastHeight, clientHeight: lastClient },

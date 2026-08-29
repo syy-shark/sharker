@@ -203,8 +203,8 @@ function visibleSteps(steps: ProcessPhaseStep[], isStreaming: boolean): ProcessP
       // 直播中已完成的桥接 status（连接模型/规划/准备）不要残留在时间线，避免像“回跳准备”
       if (isBridgeStatusStep(step) && step.status !== 'active') return false
       if (isGenericMetaStep(step)) return false
-      // 有实质步骤后，active 桥接也只保留「规划下一步」一类当前头，不重复挂旧准备态
-      if (hasSubstance && isBridgeStatusStep(step) && !step.title.includes('规划下一步')) {
+      // 有实质步骤后，active 桥接（含规划下一步）也不进时间线，头停在最后一条工具
+      if (hasSubstance && isBridgeStatusStep(step)) {
         return false
       }
       return true

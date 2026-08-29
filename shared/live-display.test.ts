@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
+  clampLockedScrollTop,
   ELAPSED_CLOCK_RESERVE_CH,
   formatElapsedClock,
   formatStoppedAfterClock,
@@ -71,7 +72,13 @@ describe('live display head', () => {
       { id: '1', title: '读取文件', status: 'done' },
       { id: '2', title: '规划下一步', status: 'done' }
     ])
-    expect(step?.title).toBe('规划下一步')
+    expect(step?.title).toBe('读取文件')
+    expect(
+      selectLiveHeadStep([
+        { id: '1', title: 'Read a.ts', status: 'done' },
+        { id: '2', title: '规划下一步', status: 'active' }
+      ])?.title
+    ).toBe('Read a.ts')
   })
 
   it('buildLiveHead label matches active title', () => {
@@ -94,6 +101,18 @@ describe('live display head', () => {
         approvalWaiting: true
       }).label
     ).toBe(AWAITING_APPROVAL_LABEL)
+    expect(
+      buildLiveHead({
+        steps: [
+          { id: '1', title: 'Read a.ts', status: 'done' },
+          { id: '2', title: '规划下一步', status: 'active' }
+        ],
+        fallbackLabel: 'Working'
+      }).label
+    ).toBe('Read a.ts')
+    expect(clampLockedScrollTop(900, 1000, 200)).toBe(800)
+    expect(clampLockedScrollTop(100, 1000, 200)).toBe(100)
+    expect(clampLockedScrollTop(-4, 1000, 200)).toBe(0)
   })
 
   it('does not synthesize planning while preparing next tool', () => {

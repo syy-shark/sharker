@@ -195,13 +195,20 @@ export type LiveHead = {
   step: LiveDisplayStep | null
 }
 
-/** 当前头步骤：优先最后一个 active，否则最后一项 */
+/** 工具间隙规划桥接：不当直播头（对标 Codex flashing thinking summaries） */
+export function isPlanningNextLiveTitle(title: string): boolean {
+  return String(title || '').includes('规划下一步')
+}
+
+/** 当前头步骤：优先最后一个 active，否则最后一项。跳过规划桥接以免闪头。 */
 export function selectLiveHeadStep(steps: LiveDisplayStep[]): LiveDisplayStep | null {
   if (!steps.length) return null
-  for (let i = steps.length - 1; i >= 0; i--) {
-    if (steps[i]?.status === 'active') return steps[i]
+  const usable = steps.filter((step) => !isPlanningNextLiveTitle(step.title || ''))
+  const pool = usable.length ? usable : steps
+  for (let i = pool.length - 1; i >= 0; i--) {
+    if (pool[i]?.status === 'active') return pool[i]
   }
-  return steps[steps.length - 1] || null
+  return pool[pool.length - 1] || null
 }
 
 export function buildLiveHead(options: {
@@ -558,6 +565,20 @@ export function liveStickNeedsFollow(
   next: { scrollHeight: number; clientHeight: number }
 ): boolean {
   return prev.scrollHeight !== next.scrollHeight || prev.clientHeight !== next.clientHeight
+}
+
+/**
+ * 读历史时查找条 / 新消息芯片挤矮视口：只夹到新的最大 scrollTop，
+ * 不跟贴底、不改阅读锚点（对标 Codex #38220 / #40788 不拽读者）。
+ */
+export function clampLockedScrollTop(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number
+): number {
+  const maxTop = Math.max(0, scrollHeight - clientHeight)
+  if (!Number.isFinite(scrollTop) || scrollTop < 0) return 0
+  return scrollTop > maxTop ? maxTop : scrollTop
 }
 
 /**
