@@ -122,7 +122,14 @@ import {
 } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
-import { SEARCH_CHATS_LABEL, START_DICTATION_LABEL, START_VOICE_CHAT_LABEL } from '../../shared/reveal-in-folder'
+import {
+  HAND_OFF_LABEL,
+  LOCAL_LABEL,
+  SEARCH_CHATS_LABEL,
+  START_DICTATION_LABEL,
+  START_VOICE_CHAT_LABEL,
+  WORKTREE_LABEL
+} from '../../shared/reveal-in-folder'
 import { GoalProgressRow } from './GoalProgressRow'
 import { ContextUsageDonut } from './ContextUsageDonut'
 import './ChatView.css'
@@ -2276,18 +2283,18 @@ export const ComposerDock = memo(
                   className={`composer-thread-chip${threadMode === 'local' ? ' is-active' : ''}`}
                   aria-pressed={threadMode === 'local'}
                   onClick={() => onThreadModeChange('local')}
-                  title="交接回本地工作区（把隔离变更带过来）"
+                  title={HAND_OFF_LABEL}
                 >
-                  本地
+                  {LOCAL_LABEL}
                 </button>
                 <button
                   type="button"
                   className={`composer-thread-chip${threadMode === 'worktree' ? ' is-active' : ''}`}
                   aria-pressed={threadMode === 'worktree'}
                   onClick={() => onThreadModeChange('worktree')}
-                  title="交接进隔离 worktree（把当前未提交变更带过去）"
+                  title={HAND_OFF_LABEL}
                 >
-                  隔离
+                  {WORKTREE_LABEL}
                 </button>
               </div>
             ) : null}

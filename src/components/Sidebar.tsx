@@ -59,7 +59,8 @@ import {
   revealInFolderLabel,
   threadMenuItems,
   threadRevealFolderPath,
-  UNPIN_LABEL
+  UNPIN_LABEL,
+  WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
@@ -654,8 +655,8 @@ export const Sidebar = memo(function Sidebar({
             ) : null}
             <span className="sidebar-row-text">{convTitle(c)}</span>
             {isolated ? (
-              <span className="sidebar-worktree-badge" title="隔离 Worktree 线程">
-                隔离
+              <span className="sidebar-worktree-badge" title={WORKTREE_LABEL}>
+                {WORKTREE_LABEL}
               </span>
             ) : null}
             <span className="sidebar-row-status">

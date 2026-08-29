@@ -14,6 +14,10 @@ import {
   RESUME_LABEL,
   EDIT_LABEL,
   CLEAR_LABEL,
+  HAND_OFF_LABEL,
+  LOCAL_LABEL,
+  WORKTREE_LABEL,
+  CREATE_BRANCH_HERE_LABEL,
   ALWAYS_ON_TOP_LABEL,
   KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -129,5 +133,9 @@ describe('reveal in folder', () => {
     expect(RESUME_LABEL).toBe('Resume')
     expect(EDIT_LABEL).toBe('Edit')
     expect(CLEAR_LABEL).toBe('Clear')
+    expect(HAND_OFF_LABEL).toBe('Hand off')
+    expect(LOCAL_LABEL).toBe('Local')
+    expect(WORKTREE_LABEL).toBe('Worktree')
+    expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')
   })
 })

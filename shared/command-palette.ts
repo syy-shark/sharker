@@ -9,12 +9,14 @@ import {
   CLEAR_ALL_UNREAD_INDICATORS_LABEL,
   CLEAR_TERMINAL_LABEL,
   COPY_AS_MARKDOWN_LABEL,
+  CREATE_BRANCH_HERE_LABEL,
   COPY_CHAT_DEEP_LINK_LABEL,
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
   COPY_WORKING_DIRECTORY_LABEL,
   DECREASE_FONT_SIZE_LABEL,
   FIND_IN_CHAT_LABEL,
+  LOCAL_LABEL,
   INCREASE_FONT_SIZE_LABEL,
   MARK_CHAT_AS_UNREAD_LABEL,
   NAVIGATE_BACK_LABEL,
@@ -52,7 +54,8 @@ import {
   TOGGLE_FILE_TREE_LABEL,
   TOGGLE_SIDEBAR_LABEL,
   TOGGLE_TERMINAL_LABEL,
-  UNDO_LAST_APP_ACTION_LABEL
+  UNDO_LAST_APP_ACTION_LABEL,
+  WORKTREE_LABEL
 } from './reveal-in-folder'
 
 /** 命令面板条目 */
@@ -246,7 +249,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'create-branch',
-    title: '在此创建分支',
+    title: CREATE_BRANCH_HERE_LABEL,
     keywords: 'create branch here 分支',
     action: 'create_branch_here'
   },
@@ -295,14 +298,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'local',
-    title: '交接回本地',
-    keywords: 'local handoff 本地 交接',
+    title: LOCAL_LABEL,
+    keywords: 'local handoff 本地 交接 Hand off',
     action: 'set_thread_local'
   },
   {
     id: 'worktree',
-    title: '交接进隔离 worktree',
-    keywords: 'worktree isolate 隔离',
+    title: WORKTREE_LABEL,
+    keywords: 'worktree isolate 隔离 Hand off',
     action: 'set_thread_worktree'
   },
   {

@@ -28,6 +28,11 @@ describe('command palette', () => {
       '在文件管理器中显示项目'
     )
     expect(ids).toContain('create-branch')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'create-branch')?.title).toBe(
+      'Create branch here'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'local')?.title).toBe('Local')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'worktree')?.title).toBe('Worktree')
     expect(ids).toContain('mcp')
     expect(ids).toContain('mcp-servers')
     expect(ids).toContain('feedback')

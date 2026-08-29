@@ -163,6 +163,11 @@ export const PAUSE_LABEL = 'Pause'
 export const RESUME_LABEL = 'Resume'
 export const EDIT_LABEL = 'Edit'
 export const CLEAR_LABEL = 'Clear'
+/** 官方顶栏交接与 composer 芯片（对标 learn.chatgpt.com/docs/environments/git-worktrees） */
+export const HAND_OFF_LABEL = 'Hand off'
+export const LOCAL_LABEL = 'Local'
+export const WORKTREE_LABEL = 'Worktree'
+export const CREATE_BRANCH_HERE_LABEL = 'Create branch here'
 /** 官方顶栏弹出对话（对标 Codex #15162 Open in Popup Window） */
 export const OPEN_IN_POPUP_WINDOW_LABEL = 'Open in Popup Window'
 /** 官方 Settings 小节与弹出窗开关（对标 learn.chatgpt.com/docs/reference/settings） */

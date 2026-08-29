@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / 隔离 worktree / Local environment Actions / PR / Copy 子菜单 / 右侧面板；中间空白拖窗
+ * - 右：Hand off / Worktree / Local environment Actions / PR / Copy 子菜单 / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -28,7 +28,9 @@ import type { LocalEnvironmentAction } from '../../shared/local-environment'
 import {
   ALWAYS_ON_TOP_LABEL,
   COPY_LABEL,
+  CREATE_BRANCH_HERE_LABEL,
   FORK_LABEL,
+  HAND_OFF_LABEL,
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   SHARE_LABEL,
@@ -61,7 +63,7 @@ interface Props {
   /** 当前分支若已有 PR，顶栏显示芯片并打开审查 */
   prLabel?: string | null
   onOpenPullRequest?: () => void
-  /** 隔离 worktree：打开目录 / 在此创建分支（对标 Codex header） */
+  /** 隔离 worktree：打开目录 / Create branch here（对标 Codex header） */
   worktreePath?: string | null
   onOpenWorktree?: () => void
   /** 当前线程项目目录（对标 Codex Open in Finder from thread menus） */
@@ -284,14 +286,10 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onThreadModeChange(threadMode === 'worktree' ? 'local' : 'worktree')
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title={
-                threadMode === 'worktree'
-                  ? '交接回本地工作区（对标 Codex Hand off）'
-                  : '交接进隔离 worktree（对标 Codex Hand off）'
-              }
-              aria-label={threadMode === 'worktree' ? '交接到本地' : '交接到隔离'}
+              title={HAND_OFF_LABEL}
+              aria-label={HAND_OFF_LABEL}
             >
-              {threadMode === 'worktree' ? '交接到本地' : '交接到隔离'}
+              {HAND_OFF_LABEL}
             </button>
           ) : null}
           {(threadFolderPath || worktreePath) && (onRevealThreadFolder || onOpenWorktree) && !popout ? (
@@ -320,8 +318,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onCreateBranchHere()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="在此创建分支"
-              aria-label="在隔离 worktree 上创建分支"
+              title={CREATE_BRANCH_HERE_LABEL}
+              aria-label={CREATE_BRANCH_HERE_LABEL}
             >
               <GitBranch size={18} strokeWidth={1.75} aria-hidden />
             </button>
