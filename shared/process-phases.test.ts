@@ -211,6 +211,58 @@ describe('process phases privacy', () => {
     expect(afterReconnect).toHaveLength(3)
     expect(afterReconnect!.at(-1)?.segment).toBe(reconnectStatus)
     expect(afterReconnect!.at(-1)?.title).toBe('Reconnecting... 1/5')
+    const runningCmd: TurnSegment = {
+      id: 'run-appr',
+      kind: 'tool',
+      toolName: 'run_terminal_cmd',
+      toolArgs: { command: 'rm -rf /tmp/x' },
+      status: 'active',
+      startedAt: 15
+    }
+    const cmdSteps = deriveChronologicalSteps([runningCmd], { isStreaming: true })
+    const approvalReq = {
+      id: 'appr-1',
+      title: '执行命令',
+      description: 'rm -rf /tmp/x',
+      toolName: 'run_terminal_cmd',
+      args: { command: 'rm -rf /tmp/x' }
+    }
+    const cmdAwaiting: TurnSegment = { ...runningCmd, approval: approvalReq }
+    const awaitingStatus: TurnSegment = {
+      id: 'st-appr',
+      kind: 'status',
+      status: 'active',
+      content: 'Awaiting approval · 执行命令',
+      toolName: 'run_terminal_cmd',
+      startedAt: 16
+    }
+    const afterApproval = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [runningCmd],
+      [cmdAwaiting, awaitingStatus],
+      true
+    )
+    expect(afterApproval).not.toBeNull()
+    expect(afterApproval).toHaveLength(2)
+    expect(afterApproval![0].segment).toBe(cmdAwaiting)
+    expect(afterApproval!.at(-1)?.segment).toBe(awaitingStatus)
+    expect(afterApproval!.at(-1)?.title).toMatch(/Awaiting approval/)
+    const awaitingDone: TurnSegment = {
+      ...awaitingStatus,
+      status: 'done',
+      content: '已确认，继续执行',
+      endedAt: 17
+    }
+    const afterResolved = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [runningCmd, awaitingDone],
+      true
+    )
+    expect(afterResolved).not.toBeNull()
+    expect(afterResolved).toHaveLength(2)
+    expect(afterResolved!.at(-1)?.segment).toBe(awaitingDone)
+    expect(afterResolved!.at(-1)?.status).toBe('done')
     const demoFence: TurnSegment = {
       id: 'demo-fence-1',
       kind: 'text',

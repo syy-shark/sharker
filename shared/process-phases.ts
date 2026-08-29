@@ -27,6 +27,8 @@ import {
   isLiveAnswerAppendChange,
   isLiveDemoAppendChange,
   isLiveDemoFenceAppendChange,
+  isLiveApprovalNeededChange,
+  isLiveApprovalResolvedChange,
   isLiveStatusAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange,
@@ -579,7 +581,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文、末尾新开工具或 status：只追加一步（对标 Codex exec_cell add_call / Reconnecting... n/5） */
+/** 前缀没变或只收束思考/status/散文、末尾新开工具或 status：只追加一步；审批挂上/收束只换工具步与 Awaiting 行（对标 Codex exec_cell add_call / Reconnecting... n/5 / Awaiting approval） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -588,12 +590,13 @@ export function appendProcessPhaseStepOnToolStart(
 ): ProcessPhaseStep[] | null {
   if (
     !isLiveToolAppendChange(prevSegments, segments) &&
-    !isLiveStatusAppendChange(prevSegments, segments)
+    !isLiveStatusAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedChange(prevSegments, segments)
   ) {
     return null
   }
-  const added = segments[segments.length - 1]
-  if (!added) return prevSteps
+  const grew = Boolean(prevSegments && segments.length === prevSegments.length + 1)
   const remapped = prevSteps.map((step) => {
     const index = prevSegments!.indexOf(step.segment)
     if (index < 0) return step
@@ -610,6 +613,14 @@ export function appendProcessPhaseStepOnToolStart(
     }
     return { ...rebuilt, id: step.id, phase: step.phase }
   })
+  if (!grew) {
+    for (let i = 0; i < remapped.length; i++) {
+      if (remapped[i] !== prevSteps[i]) return remapped
+    }
+    return prevSteps
+  }
+  const added = segments[segments.length - 1]
+  if (!added) return remapped
   const built = buildStepsFromSource([added], isStreaming)[0]
   if (!built) return remapped
   return [...remapped, built]

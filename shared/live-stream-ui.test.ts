@@ -36,6 +36,8 @@ import {
   findLiveDemoFenceChange,
   isLiveDemoHtmlChange,
   isLiveStatusAppendChange,
+  isLiveApprovalNeededChange,
+  isLiveApprovalResolvedChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
   isLiveToolSettleChange,
@@ -760,6 +762,75 @@ describe('live stream ui snapshot', () => {
       liveSegments: [ran, compactStatus]
     })
     expect(processAfterCompact.processForFlow.some((segment) => segment === compactStatus)).toBe(true)
+    const runningCmd: TurnSegment = {
+      id: 'run-appr',
+      kind: 'tool',
+      toolName: 'run_terminal_cmd',
+      status: 'active',
+      toolArgs: { command: 'rm -rf /tmp/x' }
+    }
+    const approvalReq = {
+      id: 'appr-1',
+      title: '执行命令',
+      description: 'rm -rf /tmp/x',
+      toolName: 'run_terminal_cmd',
+      args: { command: 'rm -rf /tmp/x' }
+    }
+    const cmdAwaiting: TurnSegment = { ...runningCmd, approval: approvalReq }
+    const awaitingStatus: TurnSegment = {
+      id: 'st-appr',
+      kind: 'status',
+      status: 'active',
+      content: 'Awaiting approval · 执行命令',
+      toolName: 'run_terminal_cmd'
+    }
+    expect(isLiveApprovalNeededChange([runningCmd], [cmdAwaiting, awaitingStatus])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([runningCmd], [cmdAwaiting, awaitingStatus])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [runningCmd],
+        segments: [cmdAwaiting, awaitingStatus]
+      })
+    ).toBe(true)
+    const processReadyForApproval = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [runningCmd]
+    })
+    const processAfterApproval = nextLiveProcessView(processReadyForApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAwaiting, awaitingStatus]
+    })
+    expect(processAfterApproval.processForFlow.some((segment) => segment === cmdAwaiting)).toBe(true)
+    expect(processAfterApproval.processForFlow.some((segment) => segment === awaitingStatus)).toBe(true)
+    const answerReadyForApproval = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [runningCmd]
+    })
+    expect(
+      nextLiveAnswerView(answerReadyForApproval, {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: [cmdAwaiting, awaitingStatus]
+      })
+    ).toBe(answerReadyForApproval)
+    const awaitingDone: TurnSegment = {
+      ...awaitingStatus,
+      status: 'done',
+      content: '已确认，继续执行'
+    }
+    const cmdApproved: TurnSegment = { ...runningCmd }
+    expect(isLiveApprovalResolvedChange([cmdAwaiting, awaitingStatus], [cmdApproved, awaitingDone])).toBe(
+      true
+    )
+    expect(
+      shouldSkipLiveStreamDerivation([cmdAwaiting, awaitingStatus], [cmdApproved, awaitingDone])
+    ).toBe('tool')
+    const processAfterResolved = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdApproved, awaitingDone]
+    })
+    expect(processAfterResolved.processForFlow.some((segment) => segment === cmdApproved)).toBe(true)
+    expect(processAfterResolved.processForFlow.some((segment) => segment === awaitingDone)).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

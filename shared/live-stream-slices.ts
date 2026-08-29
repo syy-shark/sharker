@@ -1,9 +1,10 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、审批挂上或收束只换工具步与 Awaiting approval 行、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
+  isAwaitingApprovalText,
   isInlineDemoPaintable,
   liveThinkingText,
   sameRefList
@@ -253,6 +254,101 @@ export function isLiveDemoFenceAppendChange(
 }
 
 /** 同一段散文刚出现或加长 ```demo：只换该槽，不重拆过程 / 全文 buildAnswerParts */
+function sameLiveToolCore(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'tool' || next.kind !== 'tool') return false
+  if (prev.id !== next.id || prev.toolName !== next.toolName || prev.status !== next.status) {
+    return false
+  }
+  return (
+    prev.toolArgs === next.toolArgs &&
+    prev.fileDiff === next.fileDiff &&
+    prev.fileDiffs === next.fileDiffs &&
+    prev.editPreview === next.editPreview
+  )
+}
+
+function isLiveApprovalAttach(prev: TurnSegment, next: TurnSegment): boolean {
+  return sameLiveToolCore(prev, next) && !prev.approval && Boolean(next.approval)
+}
+
+function isLiveApprovalDetach(prev: TurnSegment, next: TurnSegment): boolean {
+  return sameLiveToolCore(prev, next) && Boolean(prev.approval) && !next.approval
+}
+
+function isLiveAwaitingStatusRetarget(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'status' || next.kind !== 'status' || prev.id !== next.id) return false
+  if (prev.status !== 'active' || next.status !== 'active') return false
+  return isAwaitingApprovalText(next.content ?? '')
+}
+
+function isLiveAwaitingStatusResolve(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'status' || next.kind !== 'status' || prev.id !== next.id) return false
+  if (prev.status !== 'active' || next.status !== 'done') return false
+  return isAwaitingApprovalText(prev.content ?? '')
+}
+
+/** 工具挂上 approval，并新开或改写 Awaiting approval 行：只换这两步（对标 Codex Awaiting approval） */
+export function isLiveApprovalNeededChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || (next.length !== prev.length && next.length !== prev.length + 1)) return false
+  let attached = 0
+  let statusRetarget = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (isLiveApprovalAttach(before, after)) {
+      attached += 1
+      continue
+    }
+    if (next.length === prev.length && isLiveAwaitingStatusRetarget(before, after)) {
+      statusRetarget += 1
+      continue
+    }
+    return false
+  }
+  if (attached !== 1) return false
+  if (next.length === prev.length + 1) {
+    const added = next[next.length - 1]
+    return Boolean(
+      added &&
+        added.kind === 'status' &&
+        added.status === 'active' &&
+        isAwaitingApprovalText(added.content ?? '')
+    )
+  }
+  return statusRetarget === 1
+}
+
+/** 审批收束：Awaiting 行标 done，可选摘掉工具 approval，不重拆回答 */
+export function isLiveApprovalResolvedChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || prev.length !== next.length) return false
+  let detached = 0
+  let resolved = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (isLiveApprovalDetach(before, after)) {
+      detached += 1
+      continue
+    }
+    if (isLiveAwaitingStatusResolve(before, after)) {
+      resolved += 1
+      continue
+    }
+    return false
+  }
+  return resolved === 1 && detached <= 1
+}
+
 export function findLiveDemoFenceChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -427,6 +523,8 @@ export function shouldSkipLiveStreamDerivation(
   if (findLiveDemoFenceChange(prevSegments, segments)) return 'text'
   if (isLiveDemoAppendChange(prevSegments, segments)) return 'tool'
   if (findLiveDemoHtmlChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalNeededChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedChange(prevSegments, segments)) return 'tool'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (findLiveToolWriteStatChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
@@ -468,6 +566,8 @@ export function nextLiveThinkText(
   if (findLiveDemoFenceChange(prevSegments, segments)) return prev
   if (isLiveDemoAppendChange(prevSegments, segments)) return prev
   if (findLiveDemoHtmlChange(prevSegments, segments)) return prev
+  if (isLiveApprovalNeededChange(prevSegments, segments)) return prev
+  if (isLiveApprovalResolvedChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -889,6 +989,25 @@ export function nextLiveProcessView(
   if (
     prev &&
     processHold?.view === prev &&
+    (isLiveApprovalNeededChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedChange(processHold.segments, segments))
+  ) {
+    const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
+    const grew = segments.length === processHold.segments.length + 1
+    const processForFlow = grew ? [...remapped, segments[segments.length - 1]!] : remapped
+    const view =
+      processForFlow === prev.processForFlow ? prev : { ...prev, processForFlow }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
     shouldRetargetLiveProcessOnToolMeta({
       prev,
       prevSegments: processHold.segments,
@@ -1008,6 +1127,8 @@ export function shouldSkipLiveAnswerIdentity(input: {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
   if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveApprovalNeededChange(input.prevSegments, input.segments)) return true
+  if (isLiveApprovalResolvedChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1
