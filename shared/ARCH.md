@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
 | `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
@@ -63,7 +63,7 @@
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
 | `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑；`shouldInterruptTurn` 默认裸 Esc（可改绑 / 解绑；IME 选词与 keyCode 229 不触发）；F1–F24 可单独成键（对标 Codex `interrupt_turn = "f12"`） |
 | `keymap.test.ts` | 改绑后默认失效 |
-| `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key） |
+| `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key；记忆行含功能总开关） |
 | `debug-config.test.ts` | 密钥打码 |
 | `panel-width.ts` | 右侧面板宽度按窗口比例记忆（对标 Codex percentage-based file tree resizing）；旧像素值仍能读 |
 | `panel-width.test.ts` | 夹取、比例还原、兼容旧像素 |
@@ -197,8 +197,8 @@
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 脚手架；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
-| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局） |
-| `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先 |
+| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不注入不写入） |
+| `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先、功能默认关 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案 |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表 |
 | `feedback-bundle.ts` | `/feedback` 本地诊断包（分类 / 说明 / 可否附带会话；不外发） |

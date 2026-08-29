@@ -25,5 +25,13 @@ describe('debug-config', () => {
     expect(text).not.toContain('sk-secret')
     expect(text).toContain('快捷键覆盖：1 项')
     expect(text).toContain('代码字号 1')
+    expect(text).toContain('功能 关')
+    expect(
+      formatDebugConfig({
+        ...DEFAULT_SETTINGS,
+        memoriesEnabled: true,
+        memoryInjection: false
+      })
+    ).toContain('功能 开 · 注入 关')
   })
 })

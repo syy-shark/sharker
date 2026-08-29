@@ -20,7 +20,9 @@ export interface AssembleInput {
 
 /** 组装 memory context block */
 export async function assembleMemoryContext(input: AssembleInput): Promise<AssembledMemoryContext | null> {
-  if (input.settings.memoryInjection === false) return null
+  if (input.settings.memoriesEnabled !== true || input.settings.memoryInjection === false) {
+    return null
+  }
   const ctx: RetrieveContext = {
     workspaceId: input.workspaceId,
     projectId: input.projectId,

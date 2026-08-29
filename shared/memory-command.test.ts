@@ -44,12 +44,25 @@ describe('memory command', () => {
     ).toBe(false)
     expect(resolveChatMemoryFlags({}, { memoryInjection: false }).injection).toBe(false)
     expect(resolveChatMemoryFlags({}, {}).injectionInherited).toBe(true)
+    expect(resolveChatMemoryFlags({}, {}).injection).toBe(false)
+    expect(resolveChatMemoryFlags({}, { memoriesEnabled: true }).injection).toBe(true)
+    expect(
+      resolveChatMemoryFlags({ memoryInjection: true }, { memoriesEnabled: false }).injection
+    ).toBe(false)
   })
 
   it('formats empty and listed memories', () => {
     expect(
       formatMemoryStatus({ injection: true, generation: false, items: [] })
     ).toContain('写入：关')
+    expect(
+      formatMemoryStatus({
+        injection: false,
+        generation: false,
+        featureEnabled: false,
+        items: []
+      })
+    ).toContain('启用记忆')
     const text = formatMemoryStatus({
       injection: true,
       generation: true,

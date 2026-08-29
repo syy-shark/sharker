@@ -1,5 +1,5 @@
 /**
- * 个性化：默认人格与个人 AGENTS.md（对标 Codex Settings → Personalization）。
+ * 个性化：启用记忆（官方默认关）、人格与个人 AGENTS.md（对标 Codex Settings → Personalization）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -67,11 +67,24 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
       <SettingsSection title="记忆">
         <SettingsCard>
           <SettingsRow
+            title="启用记忆"
+            description="对标 Codex Settings → Personalization Enable memories：本地记忆默认关闭。打开后新对话才按下面两项注入或写入。单对话用 /memories 覆盖，不改这里。"
+          >
+            <SettingsToggle
+              checked={draft.memoriesEnabled === true}
+              onChange={(memoriesEnabled) => {
+                scheduleSave({ ...draftRef.current, memoriesEnabled })
+              }}
+              label="启用记忆"
+            />
+          </SettingsRow>
+          <SettingsRow
             title="注入记忆"
-            description="对标 Codex Settings → Personalization：新对话默认把检索到的长期记忆写入 system。单对话用 /memories 覆盖。"
+            description="对标 Codex memories.use_memories：新对话默认把检索到的长期记忆写入 system。"
           >
             <SettingsToggle
               checked={draft.memoryInjection !== false}
+              disabled={draft.memoriesEnabled !== true}
               onChange={(memoryInjection) => {
                 scheduleSave({ ...draftRef.current, memoryInjection })
               }}
@@ -80,11 +93,12 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title="写入记忆"
-            description="新对话默认在回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
+            description="对标 Codex memories.generate_memories：新对话默认在回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
             last
           >
             <SettingsToggle
               checked={draft.memoryGeneration !== false}
+              disabled={draft.memoriesEnabled !== true}
               onChange={(memoryGeneration) => {
                 scheduleSave({ ...draftRef.current, memoryGeneration })
               }}

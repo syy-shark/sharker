@@ -1936,6 +1936,7 @@ export default function App() {
           personality: updated.personality,
           worktreeKeepCount: updated.worktreeKeepCount,
           worktreeRoot: updated.worktreeRoot,
+          memoriesEnabled: updated.memoriesEnabled,
           memoryInjection: updated.memoryInjection,
           memoryGeneration: updated.memoryGeneration,
           uiFontScale: updated.uiFontScale,
@@ -2009,6 +2010,7 @@ export default function App() {
       personality: draft.personality,
       worktreeKeepCount: draft.worktreeKeepCount,
       worktreeRoot: draft.worktreeRoot,
+      memoriesEnabled: draft.memoriesEnabled,
       memoryInjection: draft.memoryInjection,
       memoryGeneration: draft.memoryGeneration,
       uiFontScale: draft.uiFontScale,
@@ -3817,6 +3819,7 @@ export default function App() {
       personality: next.personality,
       worktreeKeepCount: next.worktreeKeepCount,
       worktreeRoot: next.worktreeRoot,
+      memoriesEnabled: next.memoriesEnabled,
       memoryInjection: next.memoryInjection,
       memoryGeneration: next.memoryGeneration,
       uiFontScale: next.uiFontScale,
@@ -5371,6 +5374,7 @@ export default function App() {
               generation: flags.generation,
               injectionInherited: flags.injectionInherited,
               generationInherited: flags.generationInherited,
+              featureEnabled: settingsNow.memoriesEnabled === true,
               items
             })
           }

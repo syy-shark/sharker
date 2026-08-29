@@ -101,9 +101,14 @@ export interface AppSettings {
    * 绝对路径；空则 `~/.sharker/worktrees`。改了不搬旧目录。
    */
   worktreeRoot?: string
-  /** 是否把检索到的记忆注入 system（对标 Codex /memories inject） */
+  /**
+   * 是否启用本地记忆（对标 Codex Settings → Personalization Enable memories /
+   * `features.memories`）。官方默认关；打开后才走注入 / 写入。
+   */
+  memoriesEnabled?: boolean
+  /** 是否把检索到的记忆注入 system（对标 Codex `memories.use_memories`） */
   memoryInjection?: boolean
-  /** 是否在回合结束提炼并写入记忆（对标 Codex /memories generate） */
+  /** 是否在回合结束提炼并写入记忆（对标 Codex `memories.generate_memories`） */
   memoryGeneration?: boolean
   /** 快捷键覆盖（对标 Codex Settings → Keyboard Shortcuts） */
   keyboardShortcuts?: import('./keymap').KeymapOverrides
@@ -403,6 +408,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   personality: 'pragmatic',
   worktreeKeepCount: 15,
   worktreeRoot: '',
+  memoriesEnabled: false,
   memoryInjection: true,
   memoryGeneration: true,
   keyboardShortcuts: {},

@@ -136,7 +136,7 @@ export async function writeMemoriesFromTurn(input: WriterInput): Promise<void> {
     ])
   }
 
-  if (input.settings.memoryGeneration === false) return
+  if (input.settings.memoriesEnabled !== true || input.settings.memoryGeneration === false) return
 
   const heuristic = heuristicCandidates(input)
   const llm =

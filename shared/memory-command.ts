@@ -29,16 +29,21 @@ export function memoryNeedsChatPicker(args: string): boolean {
  */
 export function resolveChatMemoryFlags(
   chat: { memoryInjection?: boolean | null; memoryGeneration?: boolean | null },
-  global: { memoryInjection?: boolean; memoryGeneration?: boolean }
+  global: {
+    memoriesEnabled?: boolean
+    memoryInjection?: boolean
+    memoryGeneration?: boolean
+  }
 ): {
   injection: boolean
   generation: boolean
   injectionInherited: boolean
   generationInherited: boolean
 } {
+  const enabled = global.memoriesEnabled === true
   return {
-    injection: chat.memoryInjection ?? global.memoryInjection !== false,
-    generation: chat.memoryGeneration ?? global.memoryGeneration !== false,
+    injection: enabled && (chat.memoryInjection ?? global.memoryInjection !== false),
+    generation: enabled && (chat.memoryGeneration ?? global.memoryGeneration !== false),
     injectionInherited: chat.memoryInjection == null,
     generationInherited: chat.memoryGeneration == null
   }
@@ -79,19 +84,28 @@ export function formatMemoryStatus(opts: {
   generation: boolean
   injectionInherited?: boolean
   generationInherited?: boolean
+  featureEnabled?: boolean
   items: MemoryListItem[]
 }): string {
   const inheritNote = (inherited?: boolean) =>
     inherited == null ? '' : inherited ? '（跟随全局）' : '（本对话）'
   const lines = [
     '**记忆**（对标 Codex `/memories`：本对话开关，不改全局）',
-    '',
+    ''
+  ]
+  if (opts.featureEnabled === false) {
+    lines.push(
+      '全局记忆功能已关闭。到设置 → 个性化打开「启用记忆」后才会注入或写入。',
+      ''
+    )
+  }
+  lines.push(
     `- 注入：${opts.injection ? '开' : '关'}${inheritNote(opts.injectionInherited)}`,
     `- 写入：${opts.generation ? '开' : '关'}${inheritNote(opts.generationInherited)}`,
     '',
     '用法：空命令先选本对话；`/memories on|off|use|inherit` · `/memories inject on|off` · `/memories generate on|off`',
     ''
-  ]
+  )
   if (opts.items.length === 0) {
     lines.push('当前没有可展示的记忆条目。')
     return lines.join('\n')

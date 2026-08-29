@@ -148,6 +148,7 @@ export function normalizeSettings(
     personality: parsePersonality(raw.personality),
     worktreeKeepCount: clampWorktreeKeepCount(raw.worktreeKeepCount),
     worktreeRoot: clampWorktreeRoot(raw.worktreeRoot),
+    memoriesEnabled: raw.memoriesEnabled === true,
     memoryInjection: raw.memoryInjection !== false,
     memoryGeneration: raw.memoryGeneration !== false,
     keyboardShortcuts: normalizeKeymap(raw.keyboardShortcuts),

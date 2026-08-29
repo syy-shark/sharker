@@ -23,7 +23,7 @@ export function formatDebugConfig(settings: AppSettings): string {
     `- 网络：${settings.networkMode || 'open'}`,
     `- 主题：${settings.uiTheme || 'light'} · 字号 ${settings.uiFontScale ?? 1} · 代码字号 ${settings.codeFontScale ?? 1} · 代码字体 ${settings.codeFont || 'system'}`,
     `- 人格：${settings.personality || 'pragmatic'}`,
-    `- 记忆：注入 ${settings.memoryInjection === false ? '关' : '开'} · 写入 ${settings.memoryGeneration === false ? '关' : '开'}`,
+    `- 记忆：功能 ${settings.memoriesEnabled === true ? '开' : '关'} · 注入 ${settings.memoryInjection === false ? '关' : '开'} · 写入 ${settings.memoryGeneration === false ? '关' : '开'}`,
     `- 托管 worktree 保留：${settings.worktreeKeepCount ?? 15}`,
     `- Worktree 根：${settings.worktreeRoot?.trim() || '~/.sharker/worktrees'}`,
     `- 快捷键覆盖：${keymap} 项`,

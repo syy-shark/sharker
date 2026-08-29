@@ -47,7 +47,7 @@ export function MemoryChatDialog({ open, onClose, onPick }: Props) {
           <h2 id="memory-chat-title">本对话记忆</h2>
           <p>
             对标 Codex <code>/memories</code>
-            ：只改当前对话，不改设置 → 个性化里的全局默认。
+            ：只改当前对话，不改设置 → 个性化的「启用记忆」。功能关闭时本对话选择会记下，打开后才注入或写入。
           </p>
         </div>
         <div className="memory-chat-choices">

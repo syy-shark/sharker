@@ -25,8 +25,8 @@
 | `workspaces-sync.ts` | 与 `AppSettings.workspaces` 同步 PG |
 | `embeddings.ts` | OpenAI 兼容 `/v1/embeddings` |
 | `retriever.ts` | 精确 + 关键词 + 语义（余弦）检索 |
-| `assembler.ts` | 检索结果 → 预算内 prompt block；`memoryInjection === false` 时跳过 |
-| `writer.ts` | Turn 结束自动提炼并写入 memories + events；`memoryGeneration === false` 时只记事件 |
+| `assembler.ts` | 检索结果 → 预算内 prompt block；`memoriesEnabled !== true` 或 `memoryInjection === false` 时跳过 |
+| `writer.ts` | Turn 结束自动提炼并写入 memories + events；`memoriesEnabled !== true` 或 `memoryGeneration === false` 时只记事件 |
 | `ARCH.md` | 本层架构说明 |
 
 ## 四段架构

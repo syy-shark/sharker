@@ -41,7 +41,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   personalization: {
     title: '个性化',
-    desc: '默认人格、记忆开关与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
+    desc: '启用记忆（官方默认关）、人格与个人 AGENTS.md。对标 Codex Settings → Personalization。单对话用 /memories。'
   },
   suggested: {
     title: '建议提示',
