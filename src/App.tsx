@@ -77,7 +77,7 @@ import {
   nextHistoryStartSeq,
   prependHistoryPage
 } from '../shared/transcript-window'
-import { mergeHydratedMessage } from '../shared/transcript-hydrate'
+import { mergeHydratedMessage, shouldReloadUnslimmedHistory } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
@@ -721,8 +721,12 @@ export default function App() {
       if (!workspaceId || !convId) return
       const existing = await window.sharker.loadConversation(workspaceId, convId, { tail: 1 })
       if (!existing) return
-      const fromSeq = options?.replaceAll ? 0 : historyStartSeqRef.current
-      if (options?.replaceAll) {
+      const fromSeq = options?.replaceAll
+        ? 0
+        : convId === activeConversationIdRef.current
+          ? historyStartSeqRef.current
+          : sessionBuffersRef.current.get(convId)?.historyStartSeq ?? 0
+      if (options?.replaceAll && convId === activeConversationIdRef.current) {
         historyStartSeqRef.current = 0
         setHistoryStartSeq(0)
       }
@@ -740,6 +744,32 @@ export default function App() {
     [refreshConversationList]
   )
 
+  /** 从库取未瘦身全文，只给模型 / 压缩 / 分叉，不灌进 React */
+  const loadUnslimmedHistoryMessages = useCallback(
+    async (workspaceId: string, convId: string, current: ChatMessage[]) => {
+      const conv = await window.sharker.loadConversation(workspaceId, convId)
+      if (!conv) return current
+      return mergeConversationHistory(conv.messages, current)
+    },
+    []
+  )
+
+  const historyForModelTurn = useCallback(
+    async (
+      workspaceId: string,
+      convId: string,
+      current: ChatMessage[],
+      startSeq: number
+    ) => {
+      if (!shouldReloadUnslimmedHistory({ historyStartSeq: startSeq, messages: current })) {
+        return current
+      }
+      return loadUnslimmedHistoryMessages(workspaceId, convId, current)
+    },
+    [loadUnslimmedHistoryMessages]
+  )
+
+  /** ⌘↑：揭开已瘦身的全线程，不把命令输出原文灌进 DOM */
   const ensureConversationHistory = useCallback(async (workspaceId: string, convId: string) => {
     const isActive = convId === activeConversationIdRef.current
     const start = isActive
@@ -747,7 +777,7 @@ export default function App() {
       : sessionBuffersRef.current.get(convId)?.historyStartSeq ?? 0
     if (start <= 0) return
     const gen = historyLoadGenRef.current
-    const conv = await window.sharker.loadConversation(workspaceId, convId)
+    const conv = await window.sharker.loadConversation(workspaceId, convId, { slim: true })
     if (!conv || historyLoadGenRef.current !== gen) return
     if (isActive) {
       if (activeConversationIdRef.current !== convId) return
@@ -2042,8 +2072,17 @@ export default function App() {
         void (async () => {
           const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
           const convId = ownerId || activeConversationIdRef.current
-          if (workspaceId && convId) await ensureConversationHistory(workspaceId, convId)
-          const result = await window.sharker.compressContext(messagesRef.current)
+          const current = messagesRef.current
+          const source =
+            workspaceId && convId
+              ? await historyForModelTurn(
+                  workspaceId,
+                  convId,
+                  current,
+                  historyStartSeqRef.current
+                )
+              : current
+          const result = await window.sharker.compressContext(source)
           if (!result.compressed) return
           applyConversationMessages(result.messages, 0)
           await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
@@ -2194,6 +2233,7 @@ export default function App() {
     syncLiveTurnMeta,
     refreshConversationList,
     persistActiveConversation,
+    historyForModelTurn,
     syncActiveQueueUi,
     syncPendingSteerUi,
     continueLeftoverSteersAfterTurn,
@@ -2369,11 +2409,8 @@ export default function App() {
       const excludeIds = options?.excludeMessageIds ?? []
 
       // 后台会话续跑：只更新该会话 buffer，不污染当前可见会话
-      if (convId) {
-        const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
-        if (workspaceId) await ensureConversationHistory(workspaceId, convId)
-      }
       if (convId && convId !== activeConversationIdRef.current) {
+        const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
         let buf = sessionBuffersRef.current.get(convId)
         if (!buf) {
           buf = {
@@ -2399,10 +2436,19 @@ export default function App() {
           content: text,
           attachments: attachments.length ? attachments : undefined
         }
-        const history = skipUserMessage
+        const uiHistory = skipUserMessage
           ? historyWithoutSteerIds(buf.messages, excludeIds)
           : buf.messages
-        if (!skipUserMessage) buf.messages = [...history, userMsg]
+        const history =
+          workspaceId
+            ? await historyForModelTurn(
+                workspaceId,
+                convId,
+                uiHistory,
+                buf.historyStartSeq ?? 0
+              )
+            : uiHistory
+        if (!skipUserMessage) buf.messages = [...uiHistory, userMsg]
         buf.loading = true
         buf.sendInFlight = true
         buf.doneCommitted = false
@@ -2446,10 +2492,21 @@ export default function App() {
         content: text,
         attachments: attachments.length ? attachments : undefined
       }
-      const history = skipUserMessage
+      const uiHistory = skipUserMessage
         ? historyWithoutSteerIds(messagesRef.current, excludeIds)
         : messagesRef.current
-      const nextMessages = skipUserMessage ? messagesRef.current : [...history, userMsg]
+      const nextMessages = skipUserMessage ? messagesRef.current : [...uiHistory, userMsg]
+      const workspaceIdForHistory =
+        popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+      const modelHistoryP =
+        convId && workspaceIdForHistory
+          ? historyForModelTurn(
+              workspaceIdForHistory,
+              convId,
+              uiHistory,
+              historyStartSeqRef.current
+            )
+          : Promise.resolve(uiHistory)
       if (!skipUserMessage) activeUserMessageIdRef.current = userMsg.id
 
       // 先落屏：避免 createConversation / 鉴权等待时「输入消失却没反应」
@@ -2533,7 +2590,9 @@ export default function App() {
             doneCommitted: false,
             turnOutcome: 'success',
             activeUserMessageId: userMsg.id,
-            turnMeta: { browsedFiles: [], activities: [] }
+            turnMeta: { browsedFiles: [], activities: [] },
+            historyStartSeq: historyStartSeqRef.current,
+            liveAssistantId: liveAssistantIdRef.current
           })
         }
 
@@ -2553,6 +2612,7 @@ export default function App() {
           ]
           setLiveSegments(cloneSegments(segmentsRef.current))
         }
+        const history = await modelHistoryP
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
           worktreePath,
           goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current)
@@ -2601,7 +2661,7 @@ export default function App() {
       beginTurnMeta,
       commitAssistantReply,
       ensureActiveConversation,
-      ensureConversationHistory,
+      historyForModelTurn,
       ensureWorktreeForTurn,
       persistActiveConversation,
       withTimeout
@@ -4231,13 +4291,21 @@ export default function App() {
           const ws = settingsRef.current.activeWorkspaceId
           if (!ws || !window.sharker.createConversation || !window.sharker.saveConversation) break
           const sourceId = activeConversationIdRef.current
-          if (sourceId) await ensureConversationHistory(ws, sourceId)
+          const sourceMessages =
+            sourceId
+              ? await historyForModelTurn(
+                  ws,
+                  sourceId,
+                  messagesRef.current,
+                  historyStartSeqRef.current
+                )
+              : messagesRef.current
           const dest = parseForkDestination(args)
           const created = await window.sharker.createConversation(ws)
           const forked = buildForkedConversation(created, {
             title:
               conversationList.find((c) => c.id === sourceId)?.title || DEFAULT_CONVERSATION_TITLE,
-            messages: messagesRef.current
+            messages: sourceMessages
           })
           await window.sharker.saveConversation(ws, forked)
           const baseRef = threadRuntimeRef.current.baseRef
@@ -4672,14 +4740,24 @@ export default function App() {
             appendLocalNote('当前环境不能压缩上下文。')
             break
           }
-          const result = await window.sharker.compressContext(messagesRef.current)
+          const workspaceId = settingsRef.current.activeWorkspaceId
+          const convId = activeConversationIdRef.current
+          const source =
+            workspaceId && convId
+              ? await historyForModelTurn(
+                  workspaceId,
+                  convId,
+                  messagesRef.current,
+                  historyStartSeqRef.current
+                )
+              : messagesRef.current
+          const result = await window.sharker.compressContext(source)
           if (!result.compressed) {
             appendLocalNote('上下文还不需要压缩。')
             break
           }
-          setMessages(result.messages)
-          messagesRef.current = result.messages
-          await persistActiveConversation(result.messages)
+          applyConversationMessages(result.messages, 0)
+          await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
           appendLocalNote(
             `已压缩 ${result.removedCount} 条 · ${result.beforeTokens}→${result.afterTokens} tokens`
           )
@@ -4961,6 +5039,7 @@ export default function App() {
     },
     [
       appendLocalNote,
+      applyConversationMessages,
       conversationList,
       copyPlainText,
       handleCreateBranchHere,
@@ -4977,6 +5056,7 @@ export default function App() {
       handleSelectConversation,
       handleToggleActivity,
       handleTogglePanel,
+      historyForModelTurn,
       persistActiveConversation,
       persistSettings,
       threadMode,

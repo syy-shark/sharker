@@ -47,6 +47,7 @@ export const IPC = {
   SELECT_WORKSPACE: 'workspace:select',
   PICK_WORKSPACE_FOLDER: 'workspace:pick',
   LIST_CONVERSATIONS: 'conversations:list',
+  /** `tail` 尾页；`slim` 揭开已瘦身全线程；都不传则全文给模型 */
   LOAD_CONVERSATION: 'conversations:load',
   /** 上滑取更早一页（对标 Codex thread/turns/list） */
   LOAD_OLDER_CONVERSATION: 'conversations:load-older',

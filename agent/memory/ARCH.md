@@ -18,7 +18,7 @@
 | `db.ts` | PGlite 单例连接与数据目录 |
 | `schema.ts` | 表结构与迁移（v2：sessions.pinned / unread） |
 | `types.ts` | Memory 域类型（scope/kind、检索上下文等） |
-| `conversations.ts` | 会话与消息 CRUD；列表带最近用户/助手正文 `preview` 供 Search chats；`loadConversation({ tail })` 只取最近一段并按约 50KiB 预算瘦身（对标 Codex #38653）、`loadOlderConversationMessages` 上滑再取一页、`loadConversationMessage` 点开再取完整消息、`searchConversationOccurrences` 只扫用户/助手正文（对标 Codex #33907，不回放整段）、`loadConversationMessageRange` 查找跳到未加载命中时揭开一段并瘦身；落盘跳过仍是占位的消息、不删其 id，以免空壳盖掉库里的全文；`historyStartSeq` 落盘只改该 seq 起的消息以免删掉未加载的更早页；`patchConversationMeta` 只改标题/置顶/未读；旁路/独立窗可 `activate: false` |
+| `conversations.ts` | 会话与消息 CRUD；列表带最近用户/助手正文 `preview` 供 Search chats；`loadConversation({ tail })` 只取最近一段并按约 50KiB 预算瘦身（对标 Codex #38653）、`{ slim: true }` 揭开已瘦身的全线程（⌘↑，不灌原文）、不传 options 则全文给模型/落盘、`loadOlderConversationMessages` 上滑再取一页、`loadConversationMessage` 点开再取完整消息、`searchConversationOccurrences` 只扫用户/助手正文（对标 Codex #33907，不回放整段）、`loadConversationMessageRange` 查找跳到未加载命中时揭开一段并瘦身；落盘跳过仍是占位的消息、不删其 id，以免空壳盖掉库里的全文；`historyStartSeq` 落盘只改该 seq 起的消息以免删掉未加载的更早页；`patchConversationMeta` 只改标题/置顶/未读；旁路/独立窗可 `activate: false` |
 | `memories.ts` | 长期记忆 CRUD、hash、embedding 候选 |
 | `events.ts` | Agent 执行事件落库 |
 | `projects.ts` | 代码项目识别与 upsert（git 根 / package.json） |

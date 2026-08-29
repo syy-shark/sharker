@@ -58,7 +58,7 @@ export interface SharkerApi {
   loadConversation: (
     workspaceId: string,
     conversationId: string,
-    options?: { tail?: number }
+    options?: { tail?: number; slim?: boolean }
   ) => Promise<Conversation | null>
   loadOlderConversation: (
     workspaceId: string,

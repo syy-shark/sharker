@@ -12,6 +12,7 @@ import {
   messageHasDeferredThinking,
   mergeHydratedMessage,
   segmentHasDeferredOutput,
+  shouldReloadUnslimmedHistory,
   slimMessagesForUi,
   utf8ByteLength
 } from './transcript-hydrate'
@@ -216,5 +217,8 @@ describe('transcript scroll restore', () => {
     const kept = slimMessagesForUi([compact])[0]
     expect(kept).toBe(compact)
     expect(messageHasDeferredHydration(kept)).toBe(false)
+    expect(shouldReloadUnslimmedHistory({ historyStartSeq: 40, messages: [kept] })).toBe(true)
+    expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [kept] })).toBe(false)
+    expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [slimed] })).toBe(true)
   })
 })

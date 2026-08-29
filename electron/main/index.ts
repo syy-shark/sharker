@@ -972,7 +972,7 @@ function registerIpc(): void {
       _e,
       workspaceId: string,
       conversationId: string,
-      options?: { tail?: number }
+      options?: { tail?: number; slim?: boolean }
     ) => {
       const p = workspacePathById(workspaceId)
       return loadConversation(p, workspaceId, conversationId, options)

@@ -127,3 +127,15 @@ export function messageHasDeferredThinking(message: ChatMessage): boolean {
     )
   )
 }
+
+/**
+ * 模型 / 压缩 / 分叉要不要回库取未瘦身全文。
+ * UI 尾页或 ⌘↑ 瘦身全线程后，React 里可能仍是占位，不能当模型历史。
+ */
+export function shouldReloadUnslimmedHistory(input: {
+  historyStartSeq: number
+  messages: readonly ChatMessage[]
+}): boolean {
+  if (input.historyStartSeq > 0) return true
+  return input.messages.some(messageHasDeferredHydration)
+}

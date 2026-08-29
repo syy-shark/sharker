@@ -60,7 +60,7 @@ contextBridge.exposeInMainWorld('sharker', {
   loadConversation: (
     workspaceId: string,
     conversationId: string,
-    options?: { tail?: number }
+    options?: { tail?: number; slim?: boolean }
   ) => ipcRenderer.invoke(IPC.LOAD_CONVERSATION, workspaceId, conversationId, options),
   loadOlderConversation: (
     workspaceId: string,

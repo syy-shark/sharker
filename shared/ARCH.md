@@ -15,7 +15,7 @@
 | 文件 | 说明 |
 |------|------|
 | `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、记忆注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
-| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 揭开命中前的一段） |
+| `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态 / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 揭开命中前的一段） |
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
@@ -138,7 +138,7 @@
 | `transcript-scroll.ts` | 对话柱滚动快照：贴底跟到底、读历史钉 scrollTop、内容未画高先按距底占位（对标 Codex 26.406 按会话记住位置；窗口内、不落盘）；快照可带 `transcriptWindowStart` |
 | `transcript-scroll.test.ts` | 贴底 / 中段 / 内容变高 / 未画完推迟恢复；长线程尾窗起点与上滑揭示；启动窗瘦身与点开补水 |
 | `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；盘页合并 / 钉窗下标后移 / 到顶再 `load-older`（对标 Codex older history fetched as needed；不预拉全量、无「加载更早」按钮） |
-| `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；落盘必须跳过占位消息以免写成空壳 |
+| `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；`shouldReloadUnslimmedHistory` 判断模型/压缩/分叉要不要回库取原文（UI 尾页或瘦身占位不能当模型历史）；落盘必须跳过占位消息以免写成空壳 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；直播行预留助手 id / 收束 upsert；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |

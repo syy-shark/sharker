@@ -135,9 +135,10 @@ export async function loadOlderMessages(
   return res.rows.map(rowToMessage).reverse()
 }
 
-/** UI 打开长线程时只取最近一段 */
+/** UI 打开长线程时只取最近一段；`slim` 给 ⌘↑ 揭开已瘦身的全线程，不灌原文 */
 export type ConversationLoadOptions = {
   tail?: number
+  slim?: boolean
 }
 
 function normalizeConversation(raw: Conversation, workspaceId: string): Conversation {
@@ -237,7 +238,7 @@ export async function listWorkspaceConversations(
   return { conversations, activeConversationId: activeId }
 }
 
-/** 加载单条对话。`tail` 只取最近一段（对标 Codex initialTurnsPage）；不传则全量给模型/落盘。 */
+/** 加载单条对话。`tail` 只取最近一段（对标 Codex initialTurnsPage）；`slim` 或带 `tail` 时按预算瘦身；都不传则全文给模型/落盘，不灌 UI。 */
 export async function loadConversation(
   workspacePath: string,
   workspaceId: string,
@@ -269,7 +270,8 @@ export async function loadConversation(
   const startSeq =
     tail != null && tail > 0 && total > tail ? total - Math.floor(tail) : 0
   const rawMessages = startSeq > 0 ? await loadMessagesFromSeq(id, startSeq) : await loadMessages(id)
-  const messages = options?.tail != null ? slimMessagesForUi(rawMessages) : rawMessages
+  const slim = Boolean(options?.slim) || options?.tail != null
+  const messages = slim ? slimMessagesForUi(rawMessages) : rawMessages
   const conv = normalizeConversation(
     {
       id: s.id,
