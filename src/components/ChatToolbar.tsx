@@ -14,6 +14,7 @@ import {
   SquarePen,
   AppWindow,
   Share2,
+  GitFork,
   FolderOpen,
   GitBranch,
   Pin
@@ -32,6 +33,8 @@ interface Props {
   onPopOut?: () => void
   /** 分享只读快照（对标 Codex Share / `/share`） */
   onShare?: () => void
+  /** 分叉当前对话（对标 Codex 顶栏 Fork / `/fork`） */
+  onFork?: () => void
   popout?: boolean
   /** 弹出窗 Always on top（对标 Codex） */
   alwaysOnTop?: boolean
@@ -62,6 +65,7 @@ export function ChatToolbar({
   onNewConversation,
   onPopOut,
   onShare,
+  onFork,
   popout = false,
   alwaysOnTop = false,
   onToggleAlwaysOnTop,
@@ -204,6 +208,22 @@ export function ChatToolbar({
               aria-label={`打开 ${prLabel}`}
             >
               {prLabel}
+            </button>
+          ) : null}
+          {onFork && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onFork()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="分叉到新对话"
+              aria-label="分叉到新对话"
+            >
+              <GitFork size={18} strokeWidth={1.75} aria-hidden />
             </button>
           ) : null}
           {onShare && !popout ? (

@@ -5058,6 +5058,11 @@ export default function App() {
     [handleForkConversation]
   )
 
+  /** 顶栏分叉整段（对标 Codex conversation fork） */
+  const handleForkCurrentThread = useCallback(() => {
+    void handleForkConversation('local')
+  }, [handleForkConversation])
+
   /** UI 斜杠命令（不经过模型） */
   const handleSlashAction = useCallback(
     async (cmd: SlashCommandMeta, args: string) => {
@@ -7579,6 +7584,7 @@ export default function App() {
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
               onShare={openShareThread}
+              onFork={activeConversationId ? handleForkCurrentThread : undefined}
               onPopOut={() => {
                 const ws = settingsRef.current.activeWorkspaceId
                 const id = activeConversationIdRef.current
