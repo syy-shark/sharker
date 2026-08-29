@@ -1,10 +1,12 @@
 /**
  * 直播过程展示头：从可见步骤推导当前头标签/详情。
+ * 头详情只挂短路径，不挂命令末行（对标 Codex #19260）。
  * 与 TurnFlow 渲染共用，保证“头 = 当前步骤”。
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
 
 import { exploreNameFromPath } from './explore-activity'
+import { isToolProgressSummary } from './tool-output-display'
 
 export type ThinkPreviewSource = {
   kind?: string
@@ -242,6 +244,15 @@ export function isPlanningNextLiveTitle(title: string): boolean {
   return String(title || '').includes('规划下一步')
 }
 
+/** 直播头只挂短路径/叶名，不挂命令末行以免每条输出顶贴底（对标 Codex #19260） */
+export function shouldMountLiveHeadDetail(detail: string | undefined): boolean {
+  const value = String(detail || '').trim()
+  if (!value) return false
+  if (isToolProgressSummary(value)) return false
+  if (/\s/.test(value)) return false
+  return value.length <= 48
+}
+
 /** 当前头步骤：优先最后一个 active，否则最后一项。跳过规划桥接以免闪头。 */
 export function selectLiveHeadStep(steps: LiveDisplayStep[]): LiveDisplayStep | null {
   if (!steps.length) return null
@@ -267,9 +278,10 @@ export function buildLiveHead(options: {
     }
   }
   const raw = step?.title?.trim() || ''
+  const detail = step?.detail
   return {
     label: resolvePrepareLiveTitle(raw) || raw || options.fallbackLabel || THINKING_LABEL,
-    detail: step?.detail,
+    detail: shouldMountLiveHeadDetail(detail) ? detail : undefined,
     step
   }
 }

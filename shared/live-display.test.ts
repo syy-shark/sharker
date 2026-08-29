@@ -100,6 +100,18 @@ describe('live display head', () => {
     })
     expect(head.label).toBe('List')
     expect(head.detail).toBe('src')
+    expect(
+      buildLiveHead({
+        steps: [
+          { id: 'cmd', title: 'Running npm test', detail: 'PASS src/a.test.ts', status: 'active' }
+        ]
+      }).detail
+    ).toBeUndefined()
+    expect(
+      buildLiveHead({
+        steps: [{ id: 'cmd2', title: 'Running', detail: '执行中… 3s', status: 'active' }]
+      }).detail
+    ).toBeUndefined()
     expect(resolvePrepareLiveTitle('正在准备列出目录')).toBe('List')
     expect(resolvePrepareLiveTitle('正在准备读取 package.json')).toBe('Read package.json')
     expect(resolvePrepareLiveTitle('正在准备运行命令')).toBe('Running')

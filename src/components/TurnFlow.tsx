@@ -4,7 +4,7 @@
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
- * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
+ * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail / 命令末行直播头；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
  * - 同一工具只改详情时只换该步，不重扫整条时间线（对标 Codex #22860）
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
@@ -870,13 +870,7 @@ export const TurnFlow = memo(function TurnFlow({
 
   let liveDetail: string | undefined
   if (isStreaming) {
-    if (approvalWaiting) {
-      liveDetail = liveHead.detail
-    } else if (headStep?.kind === 'tool' && headStep.detail?.trim()) {
-      liveDetail = headStep.detail
-    } else if (headStep?.kind === 'narration' && headStep.detail?.trim()) {
-      liveDetail = headStep.detail
-    }
+    liveDetail = liveHead.detail
   }
   if (liveDetail && isNoisyLiveDetail(liveLabel, liveDetail)) {
     liveDetail = undefined
