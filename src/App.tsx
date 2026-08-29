@@ -122,6 +122,7 @@ import {
   unreadQueueCount
 } from '../shared/automation-queue'
 import type { AutomationQueueItem, QueueTriageAction } from '../shared/automation-queue'
+import { resolveAutomationRunPlan, type AutomationJob } from '../shared/automation'
 import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
@@ -1521,10 +1522,80 @@ export default function App() {
   }, [threadMode, threadWorktreePath])
 
   useEffect(() => {
+    const conversationIsBusy = (convId: string): boolean => {
+      if (convId === activeConversationIdRef.current) return Boolean(sendInFlightRef.current)
+      const buf = sessionBuffersRef.current.get(convId)
+      return Boolean(buf?.loading || buf?.sendInFlight)
+    }
+    const findConversationWorkspaceId = async (conversationId: string): Promise<string | null> => {
+      const listed = conversationListRef.current.find((c) => c.id === conversationId)
+      if (listed) return listed.workspaceId
+      if (!window.sharker.listConversations) return null
+      for (const ws of settingsRef.current.workspaces) {
+        try {
+          const state = await window.sharker.listConversations(ws.id)
+          if (state.conversations.some((c) => c.id === conversationId)) return ws.id
+        } catch {
+          // keep looking
+        }
+      }
+      return null
+    }
     const off = window.sharker?.onAutomationRun?.((job) => {
       void (async () => {
-        const j = job as { id?: string; title?: string; prompt?: string }
+        const j = job as AutomationJob
         if (!j.prompt) return
+        const text = `[自动化] ${j.title ? `${j.title}\n\n` : ''}${j.prompt}`
+        const boundId = String(j.conversationId || '').trim()
+        const threadWorkspaceId = boundId ? await findConversationWorkspaceId(boundId) : null
+        const plan = resolveAutomationRunPlan({
+          destination: j.destination,
+          conversationId: boundId,
+          conversationExists: Boolean(threadWorkspaceId),
+          conversationBusy: Boolean(boundId && conversationIsBusy(boundId))
+        })
+        const recordInbox = async (
+          convId: string,
+          workspaceId?: string,
+          workspacePath?: string
+        ) => {
+          if (!window.sharker.listAutomationQueue || !window.sharker.saveAutomationQueue) return
+          const prev = await window.sharker.listAutomationQueue()
+          const item = enqueueAutomationRun(
+            { id: String(j.id || convId), title: String(j.title || '自动化'), prompt: j.prompt },
+            convId,
+            new Date(),
+            { workspaceId, workspacePath }
+          )
+          await window.sharker.saveAutomationQueue([item, ...prev])
+          setQueueUnread(unreadQueueCount([item, ...prev]))
+        }
+
+        if (plan.mode === 'queue' && plan.conversationId) {
+          const convId = plan.conversationId
+          const item = createQueuedPrompt(convId, text)
+          const queues = enqueueForConversation(sessionQueuesRef.current, convId, item, 'append')
+          if (convId === activeConversationIdRef.current) syncActiveQueueUi(queues, convId)
+          else sessionQueuesRef.current = queues
+          const cwd = getActiveWorkspacePath(settingsRef.current)
+          await recordInbox(convId, threadWorkspaceId || undefined, cwd || undefined)
+          return
+        }
+
+        if (plan.mode === 'thread' && plan.conversationId) {
+          const convId = plan.conversationId
+          const runtime = loadThreadRuntime(convId)
+          const cwd = getActiveWorkspacePath(settingsRef.current)
+          await recordInbox(
+            convId,
+            threadWorkspaceId || undefined,
+            runtime.worktreePath || cwd || undefined
+          )
+          if (threadWorkspaceId) void refreshConversationList(threadWorkspaceId)
+          void dispatchTurnRef.current(text, [], convId)
+          return
+        }
+
         const wsId = settingsRef.current.activeWorkspaceId
         if (!wsId || !window.sharker.createConversation) {
           void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
@@ -1546,26 +1617,13 @@ export default function App() {
             console.warn('[automation] worktree fallback', prepared.error)
           }
         }
-        if (window.sharker.listAutomationQueue && window.sharker.saveAutomationQueue) {
-          const prev = await window.sharker.listAutomationQueue()
-          const item = enqueueAutomationRun(
-            { id: String(j.id || conv.id), title: String(j.title || '自动化'), prompt: j.prompt },
-            conv.id,
-            new Date(),
-            {
-              workspaceId: wsId,
-              workspacePath
-            }
-          )
-          await window.sharker.saveAutomationQueue([item, ...prev])
-          setQueueUnread(unreadQueueCount([item, ...prev]))
-        }
+        await recordInbox(conv.id, wsId, workspacePath)
         void refreshConversationList(wsId)
-        void dispatchTurnRef.current(`[自动化] ${j.title ? `${j.title}\n\n` : ''}${j.prompt}`, [], conv.id)
+        void dispatchTurnRef.current(text, [], conv.id)
       })()
     })
     return () => off?.()
-  }, [refreshConversationList])
+  }, [refreshConversationList, syncActiveQueueUi])
 
   useEffect(() => {
     if (!window.sharker?.listAutomationQueue) return
@@ -7049,6 +7107,8 @@ export default function App() {
               <AutomationsPage
                 queueRevision={queueRevision}
                 openCreateNonce={automationsCreateNonce}
+                conversations={conversationList}
+                activeConversationId={activeConversationId}
                 onBack={() => setPage('chat')}
                 onOpenConversation={(conversationId) => {
                   const wsId = settingsRef.current.activeWorkspaceId

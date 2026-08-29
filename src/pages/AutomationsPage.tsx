@@ -2,7 +2,12 @@
  * 自动化任务管理页。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AutomationJob } from '../../shared/automation'
+import type { ConversationSummary } from '../../shared/conversation'
+import {
+  defaultAutomationThreadId,
+  parseAutomationDestination,
+  type AutomationJob
+} from '../../shared/automation'
 import {
   applyQueueTriageAction,
   sortAutomationQueue,
@@ -21,6 +26,8 @@ interface Props {
   queueRevision?: number
   /** 深链 `sharker://automations`：打开创建流（对标 Codex Scheduled create） */
   openCreateNonce?: number
+  conversations?: ConversationSummary[]
+  activeConversationId?: string | null
 }
 
 /** 自动化列表与编辑 */
@@ -29,7 +36,9 @@ export function AutomationsPage({
   onOpenConversation,
   onTriage,
   queueRevision = 0,
-  openCreateNonce = 0
+  openCreateNonce = 0,
+  conversations = [],
+  activeConversationId = null
 }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
@@ -81,7 +90,8 @@ export function AutomationsPage({
       title: '新任务',
       prompt: '每天总结工作区变更',
       cron: '0 9 * * *',
-      enabled: true
+      enabled: true,
+      destination: 'new'
     }
     await save([...jobsRef.current, job])
     return job.id
@@ -112,7 +122,10 @@ export function AutomationsPage({
             ← 返回
           </button>
           <h1>自动化</h1>
-          <p>定时任务在隔离 worktree 后台跑，结果进审查队列，不打断当前对话</p>
+          <p>
+            默认可新建对话并在隔离 worktree 后台跑；也可回到指定对话沿用上下文（对标 Codex
+            Scheduled）。结果进审查队列，不打断正在看的直播。
+          </p>
         </header>
 
         <section className="automations-queue" aria-label="审查队列">
@@ -236,6 +249,52 @@ export function AutomationsPage({
                     onBlur={persistCurrent}
                   />
                 </label>
+
+                <label className="automation-field">
+                  <span>目标</span>
+                  <select
+                    value={parseAutomationDestination(j.destination)}
+                    onChange={(e) => {
+                      const destination = parseAutomationDestination(e.target.value)
+                      updateJob(j.id, {
+                        destination,
+                        conversationId:
+                          destination === 'thread'
+                            ? defaultAutomationThreadId(activeConversationId, conversations)
+                            : undefined
+                      })
+                      persistCurrent()
+                    }}
+                    aria-label="任务目标"
+                  >
+                    <option value="new">每次新对话</option>
+                    <option value="thread">回到指定对话</option>
+                  </select>
+                </label>
+
+                {parseAutomationDestination(j.destination) === 'thread' ? (
+                  <label className="automation-field">
+                    <span>对话</span>
+                    <select
+                      value={j.conversationId || ''}
+                      onChange={(e) => {
+                        updateJob(j.id, { conversationId: e.target.value || undefined })
+                        persistCurrent()
+                      }}
+                      aria-label="绑定对话"
+                    >
+                      {conversations.length === 0 ? (
+                        <option value="">当前项目还没有对话</option>
+                      ) : (
+                        conversations.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.title}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </label>
+                ) : null}
 
                 <div className="automation-card-footer">
                   <button

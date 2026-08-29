@@ -180,7 +180,8 @@ html.theme-dark .automation-card {
 }
 
 .automation-field input,
-.automation-field textarea {
+.automation-field textarea,
+.automation-field select {
   font-size: 13px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -198,8 +199,10 @@ html.theme-dark .automation-card {
 
 .automation-field input:focus,
 .automation-field textarea:focus,
+.automation-field select:focus,
 .automation-field input:focus-visible,
-.automation-field textarea:focus-visible {
+.automation-field textarea:focus-visible,
+.automation-field select:focus-visible {
   outline: none;
   border-color: var(--accent-ring);
   background: var(--glass-fill-raised);
@@ -207,7 +210,8 @@ html.theme-dark .automation-card {
 }
 
 html.theme-dark .automation-field input,
-html.theme-dark .automation-field textarea {
+html.theme-dark .automation-field textarea,
+html.theme-dark .automation-field select {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

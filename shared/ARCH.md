@@ -168,7 +168,8 @@
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
-| `automation.ts` | 自动化任务类型 |
+| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话（对标 Codex Scheduled）；目标对话正直播则只排队 |
+| `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队 |
 | `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc |
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |

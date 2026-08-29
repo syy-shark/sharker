@@ -5,7 +5,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 
-import type { AutomationJob } from '../../shared/automation'
+import { normalizeAutomationJobs, type AutomationJob } from '../../shared/automation'
 import type { AutomationQueueItem } from '../../shared/automation-queue'
 
 interface AutomationStore {
@@ -22,7 +22,7 @@ async function readStore(): Promise<AutomationStore> {
     const raw = await fs.readFile(storePath(), 'utf8')
     const parsed = JSON.parse(raw) as AutomationStore
     return {
-      jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
+      jobs: normalizeAutomationJobs(parsed.jobs),
       queue: Array.isArray(parsed.queue) ? parsed.queue : []
     }
   } catch {
@@ -44,7 +44,7 @@ export async function listAutomations(): Promise<AutomationJob[]> {
 /** 保存任务列表（保留审查队列） */
 export async function saveAutomations(jobs: AutomationJob[]): Promise<void> {
   const store = await readStore()
-  await writeStore({ ...store, jobs })
+  await writeStore({ ...store, jobs: normalizeAutomationJobs(jobs) })
 }
 
 /** 读取自动化审查队列 */
