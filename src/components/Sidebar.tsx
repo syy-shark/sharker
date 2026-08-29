@@ -63,6 +63,7 @@ import {
   UNPIN_LABEL,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
+import { SCHEDULED_LABEL } from '../../shared/automation'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
@@ -942,7 +943,7 @@ export const Sidebar = memo(function Sidebar({
             onClick={() => onNavigate('automations')}
           >
             <Inbox size={18} className="sidebar-nav-ico" aria-hidden />
-            <span>审查队列</span>
+            <span>{SCHEDULED_LABEL}</span>
             {queueUnread > 0 ? (
               <span className="sidebar-nav-badge" aria-label={`${queueUnread} 条未读`}>
                 {queueUnread}

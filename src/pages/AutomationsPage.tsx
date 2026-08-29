@@ -12,6 +12,9 @@ import {
   parseAutomationJobFilter,
   parseAutomationRunIn,
   parseOptionalAutomationId,
+  RUN_NOW_LABEL,
+  SCHEDULED_JOB_FILTERS,
+  SCHEDULED_LABEL,
   type AutomationJob,
   type AutomationJobFilter
 } from '../../shared/automation'
@@ -158,10 +161,10 @@ export function AutomationsPage({
           <button type="button" className="automations-back" onClick={onBack}>
             ← 返回
           </button>
-          <h1>自动化</h1>
+          <h1>{SCHEDULED_LABEL}</h1>
           <p>
             默认可新建对话并在隔离 worktree 后台跑；也可回到指定对话沿用上下文（对标 Codex
-            Scheduled）。结果进审查队列，不打断正在看的直播。可用全部 / 进行中 / 已暂停筛选，或立刻跑一次。
+            Scheduled）。结果进审查队列，不打断正在看的直播。可用 All / Active / Paused 筛选，或 Run now。
           </p>
         </header>
 
@@ -271,13 +274,7 @@ export function AutomationsPage({
         </section>
 
         <div className="automations-filters" role="tablist" aria-label="任务筛选">
-          {(
-            [
-              ['all', '全部'],
-              ['active', '进行中'],
-              ['paused', '已暂停']
-            ] as const
-          ).map(([id, label]) => (
+          {SCHEDULED_JOB_FILTERS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
@@ -538,7 +535,7 @@ export function AutomationsPage({
                     disabled={busy || runningId === j.id}
                     onClick={() => void runNow(j.id)}
                   >
-                    {runningId === j.id ? '正在跑…' : '立刻跑'}
+                    {RUN_NOW_LABEL}
                   </button>
                 </div>
               </div>

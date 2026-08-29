@@ -221,8 +221,8 @@
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
-| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前）；可选 `rrule` 与 `workspaceIds`（对标 Codex RRULE / 同一任务多个项目）；`filterAutomationJobs` 对标 Scheduled All / Active / Paused；`scheduledActivityConversationIds` 给 Activity「定时」；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
-| `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队、本地/隔离、对话内创建、RRULE / 多项目 |
+| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前）；可选 `rrule` 与 `workspaceIds`（对标 Codex RRULE / 同一任务多个项目）；用户可见 `Scheduled` / `All` / `Active` / `Paused` / `Run now`；`filterAutomationJobs` 对标 Scheduled All / Active / Paused；`scheduledActivityConversationIds` 给 Activity「定时」；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
+| `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队、本地/隔离、对话内创建、RRULE / 多项目、Scheduled All / Active / Paused / Run now 文案 |
 | `automation-schedule.ts` | 五字段 cron 与 RFC 5545 RRULE 分钟匹配（官方例 `FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0`）；有 RRULE 优先 |
 | `automation-schedule.test.ts` | cron 通配 / 步进、官方 RRULE、UNTIL、日程回退 |
 | `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc 与 Scheduled 页「全部标为已读」；`archiveEligibleQueueRuns` 归档已处理运行（对标 Codex archive eligible scheduled runs） |

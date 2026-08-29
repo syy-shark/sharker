@@ -178,8 +178,24 @@ export function defaultAutomationThreadId(
 
 export type AutomationRunMode = 'new' | 'thread' | 'queue'
 
+/** Official desktop Scheduled page / sidebar / filters / Run now (learn.chatgpt.com / #20076). */
+export const SCHEDULED_LABEL = 'Scheduled'
+export const SCHEDULED_ALL_LABEL = 'All'
+export const SCHEDULED_ACTIVE_LABEL = 'Active'
+export const SCHEDULED_PAUSED_LABEL = 'Paused'
+export const RUN_NOW_LABEL = 'Run now'
+
 /** 官方 Scheduled 页：All / Active / Paused */
 export type AutomationJobFilter = 'all' | 'active' | 'paused'
+
+export const SCHEDULED_JOB_FILTERS: ReadonlyArray<{
+  id: AutomationJobFilter
+  label: string
+}> = [
+  { id: 'all', label: SCHEDULED_ALL_LABEL },
+  { id: 'active', label: SCHEDULED_ACTIVE_LABEL },
+  { id: 'paused', label: SCHEDULED_PAUSED_LABEL }
+]
 
 export function parseAutomationJobFilter(raw: unknown): AutomationJobFilter {
   return raw === 'active' || raw === 'paused' ? raw : 'all'

@@ -9,6 +9,12 @@ import {
   parseAutomationRunIn,
   filterAutomationJobs,
   parseAutomationJobFilter,
+  RUN_NOW_LABEL,
+  SCHEDULED_ACTIVE_LABEL,
+  SCHEDULED_ALL_LABEL,
+  SCHEDULED_JOB_FILTERS,
+  SCHEDULED_LABEL,
+  SCHEDULED_PAUSED_LABEL,
   parseAutomationWorkspaceIds,
   parseOptionalAutomationId,
   resolveAutomationRunPlan,
@@ -186,6 +192,16 @@ describe('automation destination', () => {
     expect(filterAutomationJobs(mixed, 'active')).toHaveLength(1)
     expect(filterAutomationJobs(mixed, 'paused').map((row) => row.id)).toEqual(['off'])
     expect(filterAutomationJobs(mixed, 'all')).toHaveLength(2)
+    expect(SCHEDULED_JOB_FILTERS.map((row) => row.label)).toEqual([
+      SCHEDULED_ALL_LABEL,
+      SCHEDULED_ACTIVE_LABEL,
+      SCHEDULED_PAUSED_LABEL
+    ])
+    expect(SCHEDULED_LABEL).toBe('Scheduled')
+    expect(SCHEDULED_ALL_LABEL).toBe('All')
+    expect(SCHEDULED_ACTIVE_LABEL).toBe('Active')
+    expect(SCHEDULED_PAUSED_LABEL).toBe('Paused')
+    expect(RUN_NOW_LABEL).toBe('Run now')
     expect(
       applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
     ).toBe(false)
