@@ -571,6 +571,25 @@ html.theme-dark .turn-flow-live-head {
   width: 100%;
 }
 
+.turn-flow-image-view {
+  margin-top: 8px;
+  max-width: min(100%, 360px);
+  overflow: hidden;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--glass-fill-nested);
+}
+
+.turn-flow-image-view .chat-image,
+.turn-flow-image-view .chat-image img,
+.turn-flow-image-view .chat-image-slot {
+  max-height: 220px;
+}
+
+.turn-flow-image-view .chat-image img {
+  width: auto;
+  object-fit: contain;
+}
+
 /* 正文已上屏：收起命令输出，避免过程区在回答上方突然长高 */
 .turn-flow--answer-out .turn-flow-step-output {
   display: none;

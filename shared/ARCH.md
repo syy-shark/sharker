@@ -157,8 +157,8 @@
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
 | `user-input.ts` | Codex 桌面 `request_user_input`：解析 1–3 题、剥掉模型 Other、序列化 `{ answers: { [id]: { answers } } }`；Stop 用 AbortError 解开等待。不发明选项备注或分页问卷 |
-| `view-image.ts` | 官方 `view_image`：别名、`original` detail、短结果与 `path:` 解析；像素回灌不进直播 base64（对标 Codex #36966）。不发明 ImageGen 或关闭开关 |
-| `view-image.test.ts` | 官方名 / 别名、detail、MIME、短结果往返（含空格路径） |
+| `view-image.ts` | 官方 `view_image`：别名、`original` detail、短结果与 `path:` 解析；像素回灌不进直播 base64（对标 Codex #36966）。`viewedImagePathFromTool` 给过程区 ImageView 卡。不发明 ImageGen 或关闭开关 |
+| `view-image.test.ts` | 官方名 / 别名、detail、MIME、短结果往返（含空格路径）、ImageView 路径 |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition / 收束后再写入、无会话 id 暂存与冲进 retry |

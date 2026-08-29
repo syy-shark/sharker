@@ -85,3 +85,9 @@ export function parseViewImageToolOutput(output: string): {
 export function viewImageApiDetail(detail: ViewImageDetail): 'low' | 'high' {
   return detail === 'original' ? 'high' : 'low'
 }
+
+/** 官方 ImageView：工具完成后从短结果取路径，过程区画图而不是灌 base64 */
+export function viewedImagePathFromTool(toolName: string, output: string): string | null {
+  if (!isViewImageTool(toolName)) return null
+  return parseViewImageToolOutput(output)?.path ?? null
+}

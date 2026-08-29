@@ -10,6 +10,7 @@ import {
   mimeForViewImagePath,
   parseViewImageDetail,
   parseViewImageToolOutput,
+  viewedImagePathFromTool,
   viewImageApiDetail
 } from './view-image'
 
@@ -61,6 +62,8 @@ describe('view-image', () => {
         })
       )
     ).toEqual({ path: '/tmp/ui.png', detail: 'original' })
+    expect(viewedImagePathFromTool('view_image', output)).toBe('/tmp/shot.png')
+    expect(viewedImagePathFromTool('read_file', output)).toBeNull()
     expect(parseViewImageToolOutput('no path here')).toBeNull()
     expect(
       parseViewImageToolOutput(

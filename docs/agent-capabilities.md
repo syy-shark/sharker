@@ -297,7 +297,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | Browser Use | **partial** | builtin browser_*（Playwright）；可选 native host |
 | Computer Use macOS | **partial** | screencapture/cliclick `desktop_*` |
 | 视觉截图回灌 | **done** | agent/vision-feedback.ts + Provider vision 开关 |
-| `view_image` | **done** | 官方读本地图（#36966）：短结果 + 视觉回灌；相对路径接工作区 cwd（#29526）。不发明 ImageGen / 关闭开关 |
+| `view_image` | **done** | 官方读本地图（#36966）：短结果 + 视觉回灌；相对路径接工作区 cwd（#29526）；过程区 ImageView 卡（#7468）。不发明 ImageGen / 关闭开关 |
 | Accessibility 窗口树 | **partial** | `desktop_get_ui_tree` / `desktop_list_windows` |
 | Agent Workspace 隔离 | **partial** | networkMode MVP |
 | Voice STT/TTS | **partial** | voice_* 本地 say；无 conversation-mode STT 循环 |

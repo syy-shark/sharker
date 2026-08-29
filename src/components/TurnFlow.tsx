@@ -31,6 +31,9 @@ import {
   turnProcessBounds
 } from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
+import { ChatImage } from './ChatImage'
+import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
+import { viewedImagePathFromTool } from '../../shared/view-image'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
 import {
   clipToolOutput,
@@ -456,6 +459,12 @@ const ProcessStepRow = memo(function ProcessStepRow({
   const segment = step.source?.segment
   const isDemo =
     Boolean(segment?.toolName === 'present_inline_demo' && segment?.content?.trim())
+  const viewedImagePath =
+    step.status === 'done' && segment?.toolName
+      ? viewedImagePathFromTool(segment.toolName, segment.resultOutput || '')
+      : null
+  const viewedImageSrc =
+    viewedImagePath && isWorkspaceChatImageSrc(viewedImagePath) ? viewedImagePath : null
   const title = step.title
   const subAgentId = subAgentIdFromTool(
     segment?.toolName,
@@ -538,10 +547,21 @@ const ProcessStepRow = memo(function ProcessStepRow({
         {step.status === 'error' ? (
           <span className="turn-flow-step-error">{segment?.errorMessage || '操作失败'}</span>
         ) : null}
+        {viewedImageSrc ? (
+          <div className="turn-flow-image-view">
+            <ChatImage
+              src={viewedImageSrc}
+              alt="Viewed image"
+              filePath={viewedImageSrc}
+              name={viewedImageSrc.replace(/\\/g, '/').split('/').pop()}
+            />
+          </div>
+        ) : null}
         {shouldMountToolOutputDetails({
           mode: outputMode,
           hasDistinctOutput: Boolean(
             !isDemo &&
+              !viewedImageSrc &&
               ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
                 (segment && segmentHasDeferredOutput(segment)))
           ),
