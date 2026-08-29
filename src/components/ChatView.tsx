@@ -3,7 +3,7 @@
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
- * 直播 token 走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments。
+ * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -18,7 +18,6 @@ import {
   type Ref
 } from 'react'
 import type {
-  AssistantMeta,
   ApprovalRequest,
   ChatAttachment,
   ChatMessage,
@@ -312,9 +311,6 @@ interface Props {
   /** 已接受、下一工具/采样后写入当前回合（对标 Codex pending steer） */
   pendingSteers?: QueuedPrompt[]
   loading: boolean
-  liveTurnMeta: AssistantMeta | null
-  turnStartedAt: number | null
-  turnHadThinking: boolean
   onSend: (text: string, mode?: PromptSubmitMode, attachments?: ChatAttachment[]) => void
   onCancelQueued: (id: string) => void
   onEditQueued?: (id: string, text: string) => void
@@ -717,10 +713,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   historyHasReserved,
   findHit,
   findCurrent,
-  liveTurnMeta,
   modelLabel: _modelLabel,
-  turnHadThinking: _turnHadThinking,
-  turnStartedAt,
   approval,
   approvalResponding,
   onApproval,
@@ -733,10 +726,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   historyHasReserved: boolean
   findHit: boolean
   findCurrent: boolean
-  liveTurnMeta: AssistantMeta | null
   modelLabel?: string
-  turnHadThinking: boolean
-  turnStartedAt: number | null
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
@@ -744,6 +734,8 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
 }) {
+  const liveTurnMeta = useLiveStreamUiSelect((snap) => snap.liveTurnMeta)
+  const turnStartedAt = useLiveStreamUiSelect((snap) => snap.turnStartedAt)
   const liveBody = useLiveStreamUiSelect((snap) =>
     liveHasAssistantBody(snap, Boolean(approval))
   )
@@ -793,9 +785,6 @@ export const ChatView = memo(function ChatView({
   queuedPrompts,
   pendingSteers = [],
   loading,
-  liveTurnMeta,
-  turnStartedAt,
-  turnHadThinking,
   onSend,
   onCancelQueued,
   onEditQueued,
@@ -2229,10 +2218,7 @@ export const ChatView = memo(function ChatView({
                 historyHasReserved={historyHasReserved}
                 findHit={liveMemoryFindHits.length > 0}
                 findCurrent={currentFindMessageId === liveRowId}
-                liveTurnMeta={liveTurnMeta}
                 modelLabel={modelLabel}
-                turnHadThinking={turnHadThinking}
-                turnStartedAt={turnStartedAt}
                 approval={approval}
                 approvalResponding={approvalResponding}
                 onApproval={onApproval}

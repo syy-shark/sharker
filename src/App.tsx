@@ -401,9 +401,6 @@ export default function App() {
   const [streaming, setStreaming] = useState('')
   const [turnThinking, setTurnThinking] = useState('')
   const [activeTool, setActiveTool] = useState<string | null>(null)
-  const [liveTurnMeta, setLiveTurnMeta] = useState<AssistantMeta | null>(null)
-  const [turnStartedAt, setTurnStartedAt] = useState<number | null>(null)
-  const [turnHadThinking, setTurnHadThinking] = useState(false)
   const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
@@ -618,6 +615,7 @@ export default function App() {
     }
   }
   const turnStartedAtRef = useRef(0)
+  const liveTurnMetaRef = useRef<AssistantMeta | null>(null)
   const turnMetaRef = useRef<AssistantMeta>({ browsedFiles: [], activities: [] })
   const turnHadThinkingRef = useRef(false)
   const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
@@ -839,15 +837,8 @@ export default function App() {
     setTurnThinking(buf.turnThinking)
     setLoading(buf.loading || buf.sendInFlight)
     setActiveTool(buf.activeTool)
-    publishLiveStreamUi({
-      streaming: buf.streaming,
-      liveSegments: segmentsRef.current,
-      turnThinking: buf.turnThinking,
-      activeTool: buf.activeTool
-    })
     setApproval(buf.approval)
     setApprovalResponding(false)
-    setTurnHadThinking(buf.turnHadThinking)
     turnHadThinkingRef.current = buf.turnHadThinking
     turnOutcomeRef.current = buf.turnOutcome
     activeUserMessageIdRef.current = buf.activeUserMessageId
@@ -855,15 +846,22 @@ export default function App() {
       browsedFiles: [...buf.turnMeta.browsedFiles],
       activities: [...buf.turnMeta.activities]
     }
-    setLiveTurnMeta(
-      liveAssistantMeta(
-        buf.liveTurnMeta?.browsedFiles ?? buf.turnMeta.browsedFiles,
-        buf.liveTurnMeta?.activities ?? buf.turnMeta.activities,
-        buf.liveTurnMeta?.changedFiles ?? buf.changedRelPaths ?? []
-      )
+    const restoredMeta = liveAssistantMeta(
+      buf.liveTurnMeta?.browsedFiles ?? buf.turnMeta.browsedFiles,
+      buf.liveTurnMeta?.activities ?? buf.turnMeta.activities,
+      buf.liveTurnMeta?.changedFiles ?? buf.changedRelPaths ?? []
     )
-    setTurnStartedAt(buf.turnStartedAt)
-    if (buf.turnStartedAt) turnStartedAtRef.current = buf.turnStartedAt
+    liveTurnMetaRef.current = restoredMeta
+    turnStartedAtRef.current = buf.turnStartedAt ?? 0
+    publishLiveStreamUi({
+      streaming: buf.streaming,
+      liveSegments: segmentsRef.current,
+      turnThinking: buf.turnThinking,
+      activeTool: buf.activeTool,
+      liveTurnMeta: restoredMeta,
+      turnStartedAt: buf.turnStartedAt,
+      turnHadThinking: buf.turnHadThinking
+    })
     liveAssistantIdRef.current = buf.liveAssistantId ?? null
     setLiveAssistantId(buf.liveAssistantId ?? null)
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
@@ -1236,19 +1234,22 @@ export default function App() {
     if (buf) buf.messages = next
   }, [applyConversationMessages, applyHistoryHead])
 
-  /** 将 ref 中的回合元信息同步到 React state */
+  /** 将 ref 中的回合元信息写进直播 store；路径/活动没变则不通知 */
   const syncLiveTurnMeta = useCallback(() => {
     const m = turnMetaRef.current
     const next = liveAssistantMeta(m.browsedFiles, m.activities, turnChangedPathsRef.current)
-    setLiveTurnMeta((prev) => reuseLiveAssistantMeta(prev, next))
+    const reused = reuseLiveAssistantMeta(liveTurnMetaRef.current, next)
+    if (reused === liveTurnMetaRef.current) return
+    liveTurnMetaRef.current = reused
+    publishLiveStreamUi({ liveTurnMeta: reused })
   }, [])
 
   /** 清空本轮助手元信息 */
   const resetTurnMeta = useCallback(() => {
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     turnChangedPathsRef.current = []
-    setLiveTurnMeta(null)
-    setTurnStartedAt(null)
+    liveTurnMetaRef.current = null
+    publishLiveStreamUi({ liveTurnMeta: null, turnStartedAt: null })
   }, [])
 
   /** 发送前初始化回合计时与活动列表 */
@@ -1260,11 +1261,15 @@ export default function App() {
     activeUserMessageIdRef.current = undefined
     setApproval(null)
     setApprovalResponding(false)
-    setTurnHadThinking(false)
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     turnChangedPathsRef.current = []
-    setTurnStartedAt(now)
-    setLiveTurnMeta(liveAssistantMeta([], []))
+    const meta = liveAssistantMeta([], [])
+    liveTurnMetaRef.current = meta
+    publishLiveStreamUi({
+      liveTurnMeta: meta,
+      turnStartedAt: now,
+      turnHadThinking: false
+    })
     const reservedId = crypto.randomUUID()
     liveAssistantIdRef.current = reservedId
     setLiveAssistantId(reservedId)
@@ -2449,7 +2454,7 @@ export default function App() {
           turnThinkingRef.current += chunk.content
           if (!turnHadThinkingRef.current) {
             turnHadThinkingRef.current = true
-            setTurnHadThinking(true)
+            publishLiveStreamUi({ turnHadThinking: true })
           }
         }
         if (chunk.type === 'error') turnOutcomeRef.current = 'error'
@@ -3700,8 +3705,8 @@ export default function App() {
       ]
       setLiveSegments(cloneSegments(segmentsRef.current))
       setLoading(true)
-      setTurnStartedAt(seedAt)
       turnStartedAtRef.current = seedAt
+      publishLiveStreamUi({ turnStartedAt: seedAt })
       const history = current.slice(0, index)
       setMessages(history)
       messagesRef.current = history
@@ -6649,8 +6654,10 @@ export default function App() {
         ]
         segmentsRef.current = segs
         setLiveSegments(cloneSegments(segs))
-        setTurnStartedAt((prev) => prev ?? now)
-        turnStartedAtRef.current = turnStartedAtRef.current || now
+        if (!turnStartedAtRef.current) {
+          turnStartedAtRef.current = now
+          publishLiveStreamUi({ turnStartedAt: now })
+        }
         return req
       },
       clearApproval: () => {
@@ -6734,8 +6741,8 @@ export default function App() {
         setTurnThinking('')
         turnThinkingRef.current = ''
         setActiveTool(null)
-        setTurnStartedAt(null)
         turnStartedAtRef.current = 0
+        publishLiveStreamUi({ turnStartedAt: null })
         return assistant
       },
       injectAborted: (message) => {
@@ -6808,8 +6815,8 @@ export default function App() {
         setTurnThinking('')
         turnThinkingRef.current = ''
         setActiveTool(null)
-        setTurnStartedAt(null)
         turnStartedAtRef.current = 0
+        publishLiveStreamUi({ turnStartedAt: null })
         return assistant
       },
       seedLiveProcess: (mode = 'preparing') => {
@@ -6953,8 +6960,8 @@ export default function App() {
           )
         }
         // 强制刷新计时起点，避免沿用上一条回合的 elapsed 造成“卡住感”
-        setTurnStartedAt(now - 3000)
         turnStartedAtRef.current = now - 3000
+        publishLiveStreamUi({ turnStartedAt: now - 3000 })
         setActiveTool(
           mode === 'tool'
             ? 'read_file'
@@ -6983,8 +6990,8 @@ export default function App() {
         setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
-        setTurnStartedAt(null)
         turnStartedAtRef.current = 0
+        publishLiveStreamUi({ turnStartedAt: null })
       },
       playLiveSequence: async () => {
         const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -7028,8 +7035,10 @@ export default function App() {
             activeTool: opts?.activeTool ?? null
           })
           const now = Date.now()
-          setTurnStartedAt((prev) => prev ?? now - 1200)
-          turnStartedAtRef.current = turnStartedAtRef.current || now - 1200
+          if (!turnStartedAtRef.current) {
+            turnStartedAtRef.current = now - 1200
+            publishLiveStreamUi({ turnStartedAt: now - 1200 })
+          }
         }
 
         const t0 = Date.now()
@@ -7193,8 +7202,8 @@ export default function App() {
         setActiveTool(null)
         setApproval(null)
         approvalRef.current = null
-        setTurnStartedAt(null)
         turnStartedAtRef.current = 0
+        publishLiveStreamUi({ turnStartedAt: null })
         const cid = activeConversationIdRef.current
         if (cid) {
           const buf = sessionBuffersRef.current.get(cid)
@@ -7839,9 +7848,6 @@ export default function App() {
               messages={messages}
               liveAssistantId={liveAssistantId}
               loading={loading}
-              liveTurnMeta={liveTurnMeta}
-              turnStartedAt={turnStartedAt}
-              turnHadThinking={turnHadThinking}
               queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}
               onSend={handlePromptSubmit}
