@@ -592,6 +592,20 @@ describe('splitStreamingMarkdown', () => {
       '见注[^1]。\n[^1]: 说明\n    续行'
     )
     expect(noteContLive[0]).toBe(notes[0])
+    if (notes[1]?.type === 'footnotes' && noteContLive[1]?.type === 'footnotes') {
+      expect(noteContLive[1].items[0]?.paragraphs).toHaveLength(1)
+      expect(
+        noteContLive[1].items[0]?.paragraphs[0]?.some((n) => n.type === 'text' && n.text.includes('续行'))
+      ).toBe(true)
+    }
+    const noteParaLive = continueCheapProseBlocks(
+      '见注[^1]。\n[^1]: 第一段',
+      parseCheapProseBlocks('见注[^1]。\n[^1]: 第一段'),
+      '见注[^1]。\n[^1]: 第一段\n\n    第二段'
+    )
+    if (noteParaLive[1]?.type === 'footnotes') {
+      expect(noteParaLive[1].items[0]?.paragraphs).toHaveLength(2)
+    }
     const twoNotes = parseCheapProseBlocks('见注[^1][^2]。\n[^1]: 一\n[^2]: 二')
     const twoGrown = continueCheapProseBlocks(
       '见注[^1][^2]。\n[^1]: 一\n[^2]: 二',
@@ -1054,6 +1068,12 @@ describe('splitStreamingMarkdown', () => {
       expect(manyNew[0].items.slice(0, 12).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
       expect(manyNew[0].items).toHaveLength(13)
     }
+    const manyNl = continueCheapProseBlocks(manyItems, manyFirst, `${manyItems}\n`)
+    const manyAfterNl = continueCheapProseBlocks(`${manyItems}\n`, manyNl, `${manyItems}\n- item-12`)
+    if (manyFirst[0]?.type === 'list' && manyAfterNl[0]?.type === 'list') {
+      expect(manyAfterNl[0].items.slice(0, 12).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
+      expect(manyAfterNl[0].items).toHaveLength(13)
+    }
     const pendingSetext = parseCheapProseBlocks('- Title\n  ==')
     const setextLive = continueCheapProseBlocks('- Title\n  ==', pendingSetext, '- Title\n  ===')
     if (setextLive[0]?.type === 'list') {
@@ -1167,6 +1187,65 @@ describe('splitStreamingMarkdown', () => {
       '见注[^1]。\n[^1]: 说明更'
     )
     expect(liveNotesGrown[0]).toBe(liveNotes[0])
+    const paraQuoteList = parseCheapProseBlocks('先说一句\n> - 一项')
+    expect(paraQuoteList.map((b) => b.type)).toEqual(['p', 'quote'])
+    const paraQuoteListGrown = continueCheapProseBlocks(
+      '先说一句\n> - 一项',
+      paraQuoteList,
+      '先说一句\n> - 一项\n> - 二项'
+    )
+    expect(paraQuoteListGrown[0]).toBe(paraQuoteList[0])
+    if (paraQuoteList[1]?.type === 'quote' && paraQuoteListGrown[1]?.type === 'quote') {
+      const prevList = paraQuoteList[1].blocks[0]
+      const nextList = paraQuoteListGrown[1].blocks[0]
+      if (prevList?.type === 'list' && nextList?.type === 'list') {
+        expect(nextList.items[0]).toBe(prevList.items[0])
+        expect(nextList.items).toHaveLength(2)
+      }
+    }
+    const paraQuoteNl = continueCheapProseBlocks(
+      '先说一句\n> - 一项',
+      paraQuoteList,
+      '先说一句\n> - 一项\n'
+    )
+    const paraQuoteAfterNl = continueCheapProseBlocks(
+      '先说一句\n> - 一项\n',
+      paraQuoteNl,
+      '先说一句\n> - 一项\n> - 二项'
+    )
+    expect(paraQuoteAfterNl[0]).toBe(paraQuoteList[0])
+    if (paraQuoteList[1]?.type === 'quote' && paraQuoteAfterNl[1]?.type === 'quote') {
+      const prevList = paraQuoteList[1].blocks[0]
+      const nextList = paraQuoteAfterNl[1].blocks[0]
+      if (prevList?.type === 'list' && nextList?.type === 'list') {
+        expect(nextList.items[0]).toBe(prevList.items[0])
+        expect(nextList.items).toHaveLength(2)
+      }
+    }
+    const quoteHeadingNewItem = continueCheapProseBlocks(
+      '> # 标题\n> - 一项',
+      quoteHeadingList,
+      '> # 标题\n> - 一项\n> - 二项'
+    )
+    if (quoteHeadingList[0]?.type === 'quote' && quoteHeadingNewItem[0]?.type === 'quote') {
+      expect(quoteHeadingNewItem[0].blocks[0]).toBe(quoteHeadingList[0].blocks[0])
+      if (quoteHeadingNewItem[0].blocks[1]?.type === 'list') {
+        expect(quoteHeadingNewItem[0].blocks[1].items).toHaveLength(2)
+      }
+    }
+    const quoteThenList = continueCheapProseBlocks('> foo', parseCheapProseBlocks('> foo'), '> foo\n- bar')
+    expect(quoteThenList.map((b) => b.type)).toEqual(['quote', 'list'])
+    const manyQuote = Array.from({ length: 12 }, (_, i) => `> - q-${i}`).join('\n')
+    const manyQuoteFirst = parseCheapProseBlocks(manyQuote)
+    const manyQuoteGrown = continueCheapProseBlocks(manyQuote, manyQuoteFirst, `${manyQuote}\n> - q-12`)
+    if (manyQuoteFirst[0]?.type === 'quote' && manyQuoteGrown[0]?.type === 'quote') {
+      const firstList = manyQuoteFirst[0].blocks[0]
+      const grownList = manyQuoteGrown[0].blocks[0]
+      if (firstList?.type === 'list' && grownList?.type === 'list') {
+        expect(grownList.items.slice(0, 12).every((item, index) => item === firstList.items[index])).toBe(true)
+        expect(grownList.items).toHaveLength(13)
+      }
+    }
   })
 
   it('reuses closed inline nodes when the prose tail grows', () => {

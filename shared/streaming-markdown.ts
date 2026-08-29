@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；引用内最后一块与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 缩进代码 / 脚注只重解析最后一块；引用内换行后的列表项、脚注缩进续行与段落后新起的列表或标题不整尾重扫（对标 Codex #39061 / #34045）。
  * @see shared/ARCH.md
  */
 import { matchFileCitationAt, parseFileCitation } from './file-citation'
@@ -2779,7 +2779,7 @@ function continueLastListBlock(
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
-  if (!suffix.includes('\n') && !suffix.includes(']:')) {
+  if (!suffix.includes('\n') && !suffix.includes(']:') && !prevNorm.endsWith('\n')) {
     const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
     if (!lastLineNeedsFullProseParse(lastLine) && prev.items.length) {
       const lastItem = prev.items[prev.items.length - 1]!
@@ -2922,7 +2922,36 @@ function stripOuterQuotePrefixes(text: string): string {
     .join('\n')
 }
 
-/** 引用里最后一块无换行增长：前面的引用子块保持同一引用 */
+/** 新行仍在引用内（`>` / 懒续行）；空行后的非引用行或顶层列表 / 标题留给全量解析 */
+function quoteGrowthStaysInside(nextText: string): boolean {
+  let sawBlank = false
+  for (const line of nextText.split('\n')) {
+    if (parseQuoteLine(line) !== null) {
+      sawBlank = false
+      continue
+    }
+    if (line.trim() === '') {
+      sawBlank = true
+      continue
+    }
+    if (sawBlank) return false
+    if (
+      parseListLine(line) ||
+      parseHeadingLine(line) ||
+      parseFenceLine(line) ||
+      parseHrLine(line) ||
+      isIndentCodeLine(line) ||
+      parseFootnoteDefinitionLine(line) ||
+      isGfmTableRow(line) ||
+      looksLikeGfmTableCells(line)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+/** 引用里最后一块增长（含换行后新列表项）：前面的引用子块保持同一引用 */
 function continueLastQuoteBlock(
   prev: Extract<CheapProseBlock, { type: 'quote' }>,
   prevNorm: string,
@@ -2930,12 +2959,13 @@ function continueLastQuoteBlock(
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
-  if (!suffix || suffix.includes('\n') || suffix.includes(']:') || prevNorm.endsWith('\n')) return null
+  if (!suffix || suffix.includes(']:')) return null
+  if (!quoteGrowthStaysInside(nextText)) return null
   const last = prev.blocks[prev.blocks.length - 1]
   if (!last) return null
-  const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
-  const innerLast = lastLine.replace(/^ {0,3}> ?/, '')
-  if (last.type === 'p') {
+  if (!suffix.includes('\n') && !prevNorm.endsWith('\n') && last.type === 'p') {
+    const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+    const innerLast = lastLine.replace(/^ {0,3}> ?/, '')
     if (lastLineNeedsFullProseParse(innerLast)) return null
     const prevSrc = cheapInlineSourceAll(last.nodes)
     const nodes = continueCheapInlineMarkdown(prevSrc, last.nodes, prevSrc + suffix, defs)
@@ -2952,12 +2982,40 @@ function continueLastQuoteBlock(
     start != null && start > 0
       ? continueLastBlockOfType(last, innerPrev.slice(start), innerNext.slice(start), defs)
       : continueLastBlockOfType(last, innerPrev, innerNext, defs)
-  if (!grown || grown.length !== 1) return null
-  if (grown[0] === last) return [prev]
-  return [{ type: 'quote', blocks: [...closed, grown[0]!] }]
+  if (grown?.length === 1) {
+    if (grown[0] === last) return [prev]
+    return [{ type: 'quote', blocks: [...closed, grown[0]!] }]
+  }
+  const parsed = parseCheapProseBlocks(innerNext, defs)
+  if (!parsed.length) return null
+  const out = parsed.map((block, index) => {
+    const prevBlock = prev.blocks[index]
+    return prevBlock ? reuseCheapProseBlock(prevBlock, block) ?? block : block
+  })
+  const same =
+    out.length === prev.blocks.length && out.every((block, index) => block === prev.blocks[index])
+  return same ? [prev] : [{ type: 'quote', blocks: out }]
 }
 
-/** 无换行续脚注末项末段：已画项 / 前段保持同一引用（对标 Codex #34045） */
+/** 脚注窗口最后一项的正文（定义行 + 缩进续行）；窗口里有杂行则放弃 */
+function lastFootnoteItemBody(text: string): { id: string; body: string } | null {
+  const lines = text.split('\n')
+  let last: { id: string; body: string } | null = null
+  let i = 0
+  while (i < lines.length) {
+    const def = parseFootnoteDefinitionLine(lines[i]!)
+    if (!def) {
+      if (lines[i]!.trim() === '' && i === lines.length - 1) break
+      return null
+    }
+    const { body, end } = consumeFootnoteRegion(lines, i, def.text)
+    last = { id: def.id, body }
+    i = end
+  }
+  return last
+}
+
+/** 续脚注末项（含缩进续行 / 新段）：已画项 / 前段保持同一引用（对标 Codex #34045） */
 function continueLastFootnotesBlock(
   prev: Extract<CheapProseBlock, { type: 'footnotes' }>,
   prevNorm: string,
@@ -2965,23 +3023,36 @@ function continueLastFootnotesBlock(
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
-  if (!suffix || suffix.includes('\n') || suffix.includes(']:') || prevNorm.endsWith('\n')) return null
-  if (!prev.items.length) return null
+  if (!suffix || suffix.includes(']:') || !prev.items.length) return null
   const lastItem = prev.items[prev.items.length - 1]!
-  const lastPara = lastItem.paragraphs[lastItem.paragraphs.length - 1]
-  const prevSrc = lastPara ? cheapInlineSourceAll(lastPara) : ''
-  const nodes = continueCheapInlineMarkdown(prevSrc, lastPara ?? [], prevSrc + suffix, defs)
-  if (lastPara && nodes === lastPara) return [prev]
+  const prevLast = lastFootnoteItemBody(prevNorm)
+  const nextLast = lastFootnoteItemBody(nextText)
+  if (!prevLast || !nextLast || nextLast.id !== lastItem.id || prevLast.id !== lastItem.id) return null
+  if (!nextLast.body.startsWith(prevLast.body)) return null
+  const prevParts = prevLast.body ? prevLast.body.split(/\n\n/) : ['']
+  const nextParts = nextLast.body ? nextLast.body.split(/\n\n/) : ['']
+  const prevParas = lastItem.paragraphs.length ? lastItem.paragraphs : [[]]
+  if (nextParts.length < prevParas.length || prevParts.length !== prevParas.length) return null
+  const lastIdx = prevParas.length - 1
+  const grownLast = continueCheapInlineMarkdown(
+    prevParts[lastIdx] ?? '',
+    prevParas[lastIdx] ?? [],
+    nextParts[lastIdx] ?? '',
+    defs
+  )
+  const extra = nextParts
+    .slice(prevParas.length)
+    .map((part) => parseCheapInlineMarkdown(part, defs))
+  const paragraphs = [...prevParas.slice(0, -1), grownLast, ...extra]
+  const same =
+    extra.length === 0 &&
+    paragraphs.length === lastItem.paragraphs.length &&
+    paragraphs.every((para, index) => para === lastItem.paragraphs[index])
+  if (same) return [prev]
   return [
     {
       type: 'footnotes',
-      items: [
-        ...prev.items.slice(0, -1),
-        {
-          id: lastItem.id,
-          paragraphs: lastPara ? [...lastItem.paragraphs.slice(0, -1), nodes] : [nodes]
-        }
-      ]
+      items: [...prev.items.slice(0, -1), { id: lastItem.id, paragraphs }]
     }
   ]
 }
@@ -3096,7 +3167,7 @@ function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]):
 
 /**
  * 增长列表 / 表格 / 段落 / 引用 / 标题 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
- * 多块尾跳过已收前缀（单行标题 / HR，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注）。定义行或前缀对不上时退回全量解析。
+ * 引用内换行后新列表项、脚注缩进续行也走增长段。多块尾跳过已收前缀（单行标题 / HR，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注）。定义行或前缀对不上时退回全量解析。
  */
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
@@ -3122,7 +3193,7 @@ function tryContinueLastCheapProseBlock(
 
 /**
  * 直播散文尾增量：已闭合块 / 列表项 / 表格行保持同一对象，只重解析增长段。
- * 最后一块（含缩进代码 / 脚注 / 引用内子块）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
+ * 最后一块（含缩进代码 / 脚注续行 / 引用内换行后的子块）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
 export function continueCheapProseBlocks(
