@@ -45,7 +45,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变 |
 | `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义） |
-| `/compact` | 本地压缩当前对话上下文；进行中在直播行显示「正在压缩上下文…」（对标 Codex contextCompaction），Stop 不写成「已停止」 |
+| `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示「正在压缩上下文…」（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
 | `/title` | `/rename` 别名 |
 | `/agent` | `/agents` 别名 |
@@ -270,7 +270,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | 文本 XML 工具解析 | 弱模型输出的 `<tool_call>` / `<function=name>` 自动转 tool_calls |
 | 工作区快照 | 干活前注入 README、package.json、顶层目录 |
 | 网络模式 | open / local_only / disabled |
-| 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示「正在自动压缩上下文…」（对标 Codex Automatically compacting context），摘要完成再挂压缩步骤 |
+| 上下文压缩 | 用量超 85% 自动摘要；开轮达阈值先在直播行显示「正在自动压缩上下文…」（对标 Codex Automatically compacting context），摘要完成再挂压缩步骤。自动压缩只缩模型上下文，不换可见对话柱（对标 Codex #33285 / #26583）；`/compact` 才收可见历史 |
 | 短暂中断重连 | 首包前 429/502/503/504 与网络抖动最多重连 5 次，直播行显示「正在重新连接… n/5」（对标 Codex #37337 Turns reconnect）；已吐出正文 / 思考 / 工具参数后不重开，以免重复 |
 | 自动验证 | 改代码后自动 test/build/lint |
 | Plan/Build | enter_plan_mode → Build 按钮 → 全工具 |

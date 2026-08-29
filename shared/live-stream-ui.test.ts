@@ -12,7 +12,7 @@ import {
   COMPACT_LIVE_STATUS,
   liveCompactStatusSegment
 } from './live-stream-ui'
-import { AUTO_COMPACT_LIVE_STATUS } from './context-compress'
+import { AUTO_COMPACT_LIVE_STATUS, shouldRewriteVisibleTranscript } from './context-compress'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import {
@@ -243,12 +243,15 @@ describe('live stream ui snapshot', () => {
     expect(nextLiveProcessView(null, nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, autoCompact)).processForFlow[0]?.kind).toBe(
       'status'
     )
+    expect(shouldRewriteVisibleTranscript('auto')).toBe(false)
+    expect(shouldRewriteVisibleTranscript('slash')).toBe(true)
     const reconnectPatch = liveStreamPatchFromSegments(
       [{ id: 're', kind: 'status', content: streamReconnectLiveStatus(2), status: 'active', startedAt: 4 }],
       { streaming: '', activeTool: null, turnStartedAt: 4 }
     )
     expect(reconnectPatch.liveSegments?.[0]?.content).toBe('正在重新连接… 2/5')
     const appSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'), 'utf8')
+    expect(appSrc).toContain('shouldRewriteVisibleTranscript')
     expect(appSrc.includes('setLiveSegments')).toBe(false)
     expect(appSrc.includes('setStreaming(')).toBe(false)
     expect(appSrc.includes('setTurnThinking(')).toBe(false)

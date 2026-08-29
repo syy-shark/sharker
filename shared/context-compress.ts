@@ -9,6 +9,14 @@ import { estimateContextUsage } from './token-estimate'
 /** 开轮自动压缩时直播状态（对标 Codex Automatically compacting context） */
 export const AUTO_COMPACT_LIVE_STATUS = '正在自动压缩上下文…'
 
+/**
+ * 可见对话柱要不要换成压缩后的历史。
+ * 开轮自动压缩只改模型上下文；`/compact` 才收可见历史（对标 Codex #33285 / #26583）。
+ */
+export function shouldRewriteVisibleTranscript(reason: 'auto' | 'slash'): boolean {
+  return reason === 'slash'
+}
+
 /** 占用率达此比例且消息足够多时触发压缩 */
 export const CONTEXT_COMPRESS_THRESHOLD = 0.85
 /** 压缩后期望回落到的占用比例（供 UI 参考） */

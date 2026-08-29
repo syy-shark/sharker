@@ -2,6 +2,7 @@
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
  * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state（对标 Codex #22860）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
+ * 开轮自动压缩不重写可见对话柱，只在直播行标「正在自动压缩上下文…」。
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -88,6 +89,7 @@ import {
 } from '../shared/live-stream-ui'
 import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
+import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import { processElapsedSeconds, stoppedAfterFootnote } from '../shared/live-display'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
@@ -2255,7 +2257,11 @@ export default function App() {
       if (chunk.type === 'approval_resolved') {
         buf.approval = null
       }
-      if (chunk.type === 'context_compress' && chunk.contextCompress) {
+      if (
+        chunk.type === 'context_compress' &&
+        chunk.contextCompress &&
+        shouldRewriteVisibleTranscript('auto')
+      ) {
         const { messages: compressed } = chunk.contextCompress
         const last = buf.messages[buf.messages.length - 1]
         buf.messages =
@@ -2547,14 +2553,16 @@ export default function App() {
         if (chunk.type === 'context_compress' && chunk.contextCompress) {
           const { messages: compressed, removedCount, beforeTokens, afterTokens } =
             chunk.contextCompress
-          setMessages((msgs) => {
-            const last = msgs[msgs.length - 1]
-            const next =
-              last?.role === 'user' ? [...compressed, last] : [...compressed]
-            messagesRef.current = next
-            void persistActiveConversation(next, ownerId ?? undefined)
-            return next
-          })
+          if (shouldRewriteVisibleTranscript('auto')) {
+            setMessages((msgs) => {
+              const last = msgs[msgs.length - 1]
+              const next =
+                last?.role === 'user' ? [...compressed, last] : [...compressed]
+              messagesRef.current = next
+              void persistActiveConversation(next, ownerId ?? undefined)
+              return next
+            })
+          }
           turnMetaRef.current.activities.push({
             kind: 'compress',
             label: `compress · ${removedCount} 条 → ${beforeTokens}→${afterTokens} tokens`
@@ -2626,8 +2634,10 @@ export default function App() {
               : current
           const result = await window.sharker.compressContext(source)
           if (!result.compressed) return
-          applyConversationMessages(result.messages, 0)
-          await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
+          if (shouldRewriteVisibleTranscript('slash')) {
+            applyConversationMessages(result.messages, 0)
+            await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
+          }
         })()
       }
       if (chunk.type === 'done') {
@@ -5775,8 +5785,10 @@ export default function App() {
               appendLocalNote('上下文还不需要压缩。')
               break
             }
-            applyConversationMessages(result.messages, 0)
-            await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
+            if (shouldRewriteVisibleTranscript('slash')) {
+              applyConversationMessages(result.messages, 0)
+              await persistActiveConversation(result.messages, convId ?? undefined, { replaceAll: true })
+            }
             appendLocalNote(
               `已压缩 ${result.removedCount} 条 · ${result.beforeTokens}→${result.afterTokens} tokens`
             )

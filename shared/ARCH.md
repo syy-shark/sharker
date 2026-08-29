@@ -32,7 +32,7 @@
 | `worktree-root.test.ts` | 绝对路径保留、相对/`..`/`/` 丢弃 |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |
 | `context-limit.ts` | 各模型 context 上限与格式化 |
-| `context-compress.ts` | 85% 阈值自动压缩历史；`AUTO_COMPACT_LIVE_STATUS` 给开轮自动压缩直播状态（对标 Codex Automatically compacting context） |
+| `context-compress.ts` | 85% 阈值自动压缩历史；`AUTO_COMPACT_LIVE_STATUS` 给开轮自动压缩直播状态（对标 Codex Automatically compacting context）；`shouldRewriteVisibleTranscript`：`slash` 才收可见对话柱，`auto` 只缩模型上下文（对标 Codex #33285 / #26583） |
 | `stream-reconnect.ts` | 供应商短暂中断时同一请求最多重连 5 次；直播 status「正在重新连接… n/5」（对标 Codex #37337）；已吐出正文 / 思考 / 工具参数后不重开 |
 | `stream-reconnect.test.ts` | 429/502 与首包超时可重试；401 / Stop / 已有 delta 不重试；重连 status 文案 1/5 |
 | `token-estimate.ts` | 上下文 token 粗估 |
