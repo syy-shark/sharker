@@ -6,6 +6,7 @@ import {
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
+  NEW_STANDALONE_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SHARE_LABEL,
@@ -103,6 +104,7 @@ describe('reveal in folder', () => {
     expect(threadMenuItems({ platform: 'darwin' })[0]?.title).toBe('Open in Finder')
     expect(OPEN_COMMAND_MENU_LABEL).toBe('Open command menu')
     expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
+    expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')

@@ -8,8 +8,10 @@ import { IPC } from '../../shared/ipc'
 import {
   COPY_AS_MARKDOWN_LABEL,
   NEW_CHAT_LABEL,
+  NEW_STANDALONE_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   OPEN_FOLDER_LABEL,
+  OPEN_SETTINGS_LABEL,
   SHARE_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_REVIEW_TAB_LABEL,
@@ -41,7 +43,7 @@ export function installApplicationMenu(): void {
         { role: 'about', label: '关于 Sharker' },
         { type: 'separator' },
         {
-          label: '设置…',
+          label: OPEN_SETTINGS_LABEL,
           accelerator: 'Command+,',
           registerAccelerator: false,
           ...send('open_settings')
@@ -64,7 +66,7 @@ export function installApplicationMenu(): void {
           ...send('new_conversation')
         },
         {
-          label: '独立新对话',
+          label: NEW_STANDALONE_CHAT_LABEL,
           accelerator: 'Command+Alt+O',
           registerAccelerator: false,
           ...send('standalone_conversation')
