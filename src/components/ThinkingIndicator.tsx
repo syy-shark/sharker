@@ -1,7 +1,8 @@
 /**
- * 思考中 · 与 TurnFlow 直播头同几何，避免切换跳动
+ * Thinking · 与 TurnFlow 直播头同几何，避免切换跳动
  * @see src/ARCH.md
  */
+import { THINKING_LABEL } from '../../shared/live-display'
 import './ThinkingIndicator.css'
 
 interface Props {
@@ -14,8 +15,8 @@ export function ThinkingIndicator({ text = '', elapsed }: Props) {
   const preview = text.trim()
 
   return (
-    <div className="thinking-indicator" aria-live="polite" aria-label="思考中">
-      <span className="thinking-indicator-label live-text-shimmer">思考中</span>
+    <div className="thinking-indicator" aria-live="polite" aria-label={THINKING_LABEL}>
+      <span className="thinking-indicator-label live-text-shimmer">{THINKING_LABEL}</span>
       <span className="thinking-indicator-time">{elapsed ?? '0s'}</span>
       {preview ? <pre className="thinking-indicator-text">{preview}</pre> : null}
     </div>

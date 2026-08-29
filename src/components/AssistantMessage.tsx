@@ -20,6 +20,7 @@ import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/proces
 import {
   liveThinkingText,
   isInlineDemoPaintable,
+  formatThoughtLabel,
   resolveStoppedAfterLabel,
   sameRefList,
   shouldMountMessageActions,
@@ -311,9 +312,9 @@ export const AssistantMessage = memo(function AssistantMessage({
   const legacyProcessLabel = isStreaming
     ? activeTool
       ? 'Working'
-      : '思考中'
+      : formatThoughtLabel(true)
     : hadThinking
-      ? '已思考并完成'
+      ? formatThoughtLabel(false)
       : '已处理'
 
   return (
@@ -427,9 +428,8 @@ export const AssistantMessage = memo(function AssistantMessage({
             setThoughtOpen(next)
             if (next && deferredThinking) requestFullMessage()
           }}
-          label={
-            shownDuration != null ? `已思考 · ${formatDuration(shownDuration)}` : '已思考'
-          }
+          label={formatThoughtLabel(false)}
+          elapsed={shownDuration != null ? formatDuration(shownDuration) : undefined}
           deferred={deferredThinking}
           loading={deferredThinking && thoughtOpen}
         />

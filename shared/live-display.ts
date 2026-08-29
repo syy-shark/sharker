@@ -37,7 +37,7 @@ export function isCodeyThinkLine(line: string): boolean {
 
 /**
  * 思考正文：保留叙事尾部，丢掉末尾 CSS/HTML 草稿。
- * 大半都是源码时返回空，UI 只留「思考中 / 已思考」折叠条。
+ * 大半都是源码时返回空，UI 只留 Thinking / Thought 折叠条。
  */
 export function liveThoughtBody(
   text: string,
@@ -332,6 +332,14 @@ export const WORKED_FOR_LABEL = 'Worked for'
 
 export function formatWorkedForLabel(streaming: boolean): string {
   return streaming ? WORKING_LABEL : WORKED_FOR_LABEL
+}
+
+/** 官方直播思考折叠：进行中 Thinking，完成后 Thought（秒表仍走预留宽时钟） */
+export const THINKING_LABEL = 'Thinking'
+export const THOUGHT_LABEL = 'Thought'
+
+export function formatThoughtLabel(streaming: boolean): string {
+  return streaming ? THINKING_LABEL : THOUGHT_LABEL
 }
 
 /** 对标 Codex “You stopped after 47m 28s” / “You stopped after 0s”，保留分秒 */

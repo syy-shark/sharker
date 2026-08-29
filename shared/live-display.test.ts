@@ -5,6 +5,7 @@ import {
   formatElapsedClock,
   formatStoppedAfterClock,
   formatStoppedAfterLabel,
+  formatThoughtLabel,
   formatWorkedForLabel,
   parseStoppedAfterSeconds,
   resolveStoppedAfterLabel,
@@ -339,6 +340,8 @@ describe('elapsed clock', () => {
     expect(formatStoppedAfterClock(2848)).toBe('47m 28s')
     expect(formatWorkedForLabel(true)).toBe('Working')
     expect(formatWorkedForLabel(false)).toBe('Worked for')
+    expect(formatThoughtLabel(true)).toBe('Thinking')
+    expect(formatThoughtLabel(false)).toBe('Thought')
     expect(formatStoppedAfterLabel(0)).toBe('You stopped after 0s')
     expect(stoppedAfterFootnote(2848)).toContain('You stopped after 47m 28s')
     expect(parseStoppedAfterSeconds('hello\n\n_(已停止 · 47m 28s)_')).toBe(2848)

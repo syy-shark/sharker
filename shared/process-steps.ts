@@ -3,6 +3,7 @@
  * 详见 shared/ARCH.md
  */
 import { formatMcpInvocation, parseMcpInvocation } from './mcp-activity'
+import { THINKING_LABEL, THOUGHT_LABEL } from './live-display'
 import type { TurnActivity } from './types'
 import { isSubAgentInspectTool, parseSubAgentId, subAgentIdFromTool } from './subagent'
 
@@ -129,7 +130,7 @@ export function buildProcessSteps(options: {
     steps.push({
       id: 'think',
       kind: 'think',
-      title: thinkActive ? '思考中' : '已思考',
+      title: thinkActive ? THINKING_LABEL : THOUGHT_LABEL,
       detail: thinkActive ? '梳理下一步' : undefined,
       status: thinkActive ? 'active' : 'done'
     })
@@ -137,7 +138,7 @@ export function buildProcessSteps(options: {
     steps.push({
       id: 'think-waiting',
       kind: 'think',
-      title: '思考中',
+      title: THINKING_LABEL,
       status: 'active'
     })
   }

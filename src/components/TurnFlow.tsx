@@ -1,6 +1,6 @@
 /**
  * 一回合过程时间线（安静直播）：
- * - 思考：默认折叠成「思考中」（对标 Codex），点开才看旁白，避免顶着回答长高
+ * - 思考：默认折叠成 Thinking（对标 Codex），点开才看旁白，避免顶着回答长高
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
@@ -23,7 +23,9 @@ import {
 import {
   buildLiveHead,
   formatElapsedClock,
+  formatThoughtLabel,
   formatWorkedForLabel,
+  THINKING_LABEL,
   liveThoughtBody,
   liveThinkingText,
   processElapsedSeconds,
@@ -93,7 +95,9 @@ const PHASE_ECHO = new Set([
   '工作中',
   'Working',
   'Worked for',
-  '思考中'
+  '思考中',
+  'Thinking',
+  'Thought'
 ])
 
 type DisplayStep = {
@@ -112,7 +116,7 @@ function isNoisyLiveDetail(label: string, detail?: string): boolean {
   if (d === l) return true
   if (l.includes(d) || d.includes(l)) return true
   if (isToolProgressSummary(d)) return true
-  return /分析任务|规划下一步|正在推进|连接模型|整理结果|处理中|思考中/.test(d)
+  return /分析任务|规划下一步|正在推进|连接模型|整理结果|处理中|思考中|Thinking/.test(d)
 }
 
 function isGenericMetaStep(step: ProcessPhaseStep): boolean {
@@ -147,7 +151,9 @@ function isBridgeStatusStep(step: ProcessPhaseStep): boolean {
   if (title.startsWith('正在准备')) return true
   if (title.includes('已确认') || title.includes('继续执行')) return true
   if (title.includes('已授权') || title.includes('已拒绝该操作，继续')) return true
-  if (title === '处理中' || title === '思考中') return true
+  if (title === '处理中' || title === '思考中' || title === THINKING_LABEL || title === 'Thought') {
+    return true
+  }
   return false
 }
 
@@ -665,7 +671,7 @@ export const TurnFlow = memo(function TurnFlow({
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
   const [stickyLive, setStickyLive] = useState<{ label: string; detail?: string }>({
-    label: '思考中'
+    label: THINKING_LABEL
   })
   const stickyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSwapAtRef = useRef(0)
@@ -749,7 +755,7 @@ export const TurnFlow = memo(function TurnFlow({
       })
   )
 
-  // 还没有任何实质步骤时：顶部仍要有“思考中”占位，不能空白
+  // 还没有任何实质步骤时：顶部仍要有 Thinking 占位，不能空白
   const showThinkingPlaceholder = Boolean(
     isStreaming &&
       !approvalWaiting &&
@@ -773,7 +779,7 @@ export const TurnFlow = memo(function TurnFlow({
       !contentStreaming &&
       !planningNext
   )
-  // 对标 Codex：思考默认折叠成一条「思考中」，不把增长正文顶在回答上面造成贴底跳动。
+  // 对标 Codex：思考默认折叠成一条 Thinking，不把增长正文顶在回答上面造成贴底跳动。
   const thoughtExpanded = userThoughtRef.current ? thoughtOpen : false
 
   const displayStepsRef = useRef<DisplayStep[]>([])
@@ -801,7 +807,7 @@ export const TurnFlow = memo(function TurnFlow({
           ? '生成演示'
           : planningNext
             ? '规划下一步'
-            : '思考中'
+            : THINKING_LABEL
   })
   const headStep = liveHead.step
 
@@ -827,8 +833,8 @@ export const TurnFlow = memo(function TurnFlow({
   // hooks 必须在任何 early return 之前调用；layout 阶段同步，避免首帧先闪「处理中」
   useLayoutEffect(() => {
     if (!isStreaming) {
-      if (stickyLive.label !== '思考中' || stickyLive.detail) {
-        setStickyLive({ label: '思考中' })
+      if (stickyLive.label !== THINKING_LABEL || stickyLive.detail) {
+        setStickyLive({ label: THINKING_LABEL })
       }
       lastSwapAtRef.current = 0
       if (stickyTimerRef.current) {
@@ -932,7 +938,7 @@ export const TurnFlow = memo(function TurnFlow({
             userThoughtRef.current = true
             setThoughtOpen(!thoughtExpanded)
           }}
-          label={thoughtAsLiveHead ? '思考中' : '已思考'}
+          label={formatThoughtLabel(thoughtAsLiveHead)}
           elapsed={thoughtAsLiveHead ? liveClock : undefined}
           streaming={thoughtAsLiveHead}
         />

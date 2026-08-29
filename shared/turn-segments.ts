@@ -908,7 +908,9 @@ function isBridgeLikeStatus(segment: TurnSegment): boolean {
   if (text.startsWith('正在准备')) return true
   if (text.includes('已确认') || text.includes('继续执行')) return true
   if (text.includes('已授权') || text.includes('已拒绝该操作')) return true
-  if (text === '处理中' || text === '思考中') return true
+  if (text === '处理中' || text === '思考中' || text === 'Thinking' || text === 'Thought') {
+    return true
+  }
   return false
 }
 
@@ -938,7 +940,7 @@ export function processSegments(
 
   const hasTool = filtered.some((s) => s.kind === 'tool')
   filtered = filtered.filter((s) => {
-    // thinking 永不进入过程时间线（直播时由 TurnFlow 合成「思考中」）
+    // thinking 永不进入过程时间线（直播时由 TurnFlow 合成 Thinking）
     if (s.kind === 'thinking') return isStreaming && !hasTool && s.status === 'active'
     if (!isStreaming) {
       if (isBridgeLikeStatus(s)) return false
