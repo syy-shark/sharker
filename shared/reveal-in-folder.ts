@@ -48,15 +48,16 @@ export function reviewFileRevealPath(filePath: string, repoRoot: string): string
   return `${root}/${file.replace(/^\/+/, '')}`
 }
 
-export type ThreadMenuAction = 'reveal' | 'rename' | 'pin' | 'archive'
+export type ThreadMenuAction = 'reveal' | 'copy-markdown' | 'rename' | 'pin' | 'archive'
 
-/** 侧栏线程右键（对标 Codex thread menus） */
+/** 侧栏线程右键（对标 Codex thread menus / Copy as Markdown） */
 export function threadMenuItems(input: {
   pinned?: boolean
   platform?: RevealFolderPlatform
 }): Array<{ action: ThreadMenuAction; title: string }> {
   return [
     { action: 'reveal', title: revealInFolderLabel(input.platform) },
+    { action: 'copy-markdown', title: '复制为 Markdown' },
     { action: 'rename', title: '重命名' },
     { action: 'pin', title: input.pinned ? '取消置顶' : '置顶' },
     { action: 'archive', title: '归档' }

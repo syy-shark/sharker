@@ -1,7 +1,8 @@
 /**
- * 只读线程快照（对标 Codex 桌面 Share / `/share`）。
+ * 只读线程快照（对标 Codex 桌面 Share / `/share` 与 Copy as Markdown）。
  * 收录用户可见消息、思考摘要、改文件 diff；不含工具调用 / shell / 工具 I/O。
- * 复制前走已知密钥脱敏；不上传。
+ * 复制前走已知密钥脱敏；内联 `data:image` 换成占位（对标 Codex #22894）。
+ * 不上传。
  * @see shared/ARCH.md
  */
 import { redactKnownSecrets } from './secret-redact'
@@ -24,6 +25,13 @@ export interface ThreadSnapshotResult {
   markdown: string
   redactedCount: number
   messageCount: number
+}
+
+const INLINE_IMAGE_DATA_RE = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi
+
+/** Copy as Markdown 不内嵌截图 base64，避免贴到别处卡死（对标 Codex #22894） */
+export function replaceInlineImageDataUris(text: string): string {
+  return String(text ?? '').replace(INLINE_IMAGE_DATA_RE, '[Image]')
 }
 
 /** 从过程段抽出改文件 diff（只要路径与行，不要命令输出） */
@@ -175,7 +183,7 @@ export function formatThreadSnapshot(input: ThreadSnapshotInput): ThreadSnapshot
     messageCount += 1
   }
 
-  const raw = blocks.join('\n').trim() + '\n'
+  const raw = replaceInlineImageDataUris(blocks.join('\n').trim() + '\n')
   const { text, redactedCount } = redactKnownSecrets(raw)
   return { markdown: text, redactedCount, messageCount }
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { formatThreadSnapshot, snapshotFileDiffs } from './thread-snapshot'
+import {
+  formatThreadSnapshot,
+  replaceInlineImageDataUris,
+  snapshotFileDiffs
+} from './thread-snapshot'
 import type { ChatMessage, TurnSegment } from './types'
 
 describe('thread snapshot', () => {
@@ -8,7 +12,8 @@ describe('thread snapshot', () => {
       {
         id: 'u1',
         role: 'user',
-        content: 'fix login, key sk-abcdefghijklmnopqrstuvwxyz012345',
+        content:
+          'fix login, key sk-abcdefghijklmnopqrstuvwxyz012345\n\n![](data:image/png;base64,AAAA)',
         attachments: [{ id: 'a', name: 'shot.png', mimeType: 'image/png', path: '/tmp/shot.png', size: 12, kind: 'image' }]
       },
       {
@@ -70,5 +75,10 @@ describe('thread snapshot', () => {
     expect(snap.markdown).not.toContain('SECRET SHELL OUTPUT')
     expect(snap.markdown).not.toContain('cat ~/.ssh/id_rsa')
     expect(snap.markdown).not.toContain('raw hidden chain-of-thought')
+    expect(snap.markdown).not.toContain('data:image/png;base64')
+    expect(snap.markdown).toContain('[Image]')
+    expect(replaceInlineImageDataUris('see data:image/jpeg;base64,/9j/4AA= done')).toBe(
+      'see [Image] done'
+    )
   })
 })

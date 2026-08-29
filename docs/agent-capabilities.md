@@ -43,7 +43,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
 | `/mcp [verbose]` | 打开 MCP 状态（对标 Codex Open MCP status）：列出已配置 Server；空配置打开设置 → MCP 服务器；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
-| `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变 |
+| `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变。文件菜单、命令面板与侧栏线程右键另有 **复制为 Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894） |
 | `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义） |
 | `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示「正在压缩上下文…」（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |

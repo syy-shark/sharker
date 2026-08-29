@@ -88,6 +88,8 @@ interface Props {
   onClearUnread?: () => void
   /** 侧栏铃铛：开关 Activity（对标 Codex 铃铛 / ⌘⌥U） */
   onToggleActivity?: () => void
+  /** 线程右键复制为 Markdown（对标 Codex Copy as Markdown / #25646） */
+  onCopyConversationMarkdown?: (workspaceId: string, conversationId: string) => void
   /** 自动化审查队列未读数（Codex Triage） */
   queueUnread?: number
   /** 受控收起态（与主区顶栏同步） */
@@ -183,6 +185,7 @@ export const Sidebar = memo(function Sidebar({
   onNavigate,
   onClearUnread,
   onToggleActivity,
+  onCopyConversationMarkdown,
   queueUnread = 0,
   collapsed: collapsedProp,
   onCollapsedChange,
@@ -1118,6 +1121,10 @@ export const Sidebar = memo(function Sidebar({
                   if (menu.folderPath && window.sharker?.showItemInFolder) {
                     void window.sharker.showItemInFolder(menu.folderPath)
                   }
+                  return
+                }
+                if (item.action === 'copy-markdown') {
+                  onCopyConversationMarkdown?.(menu.workspaceId, menu.conversationId)
                   return
                 }
                 if (item.action === 'rename') {

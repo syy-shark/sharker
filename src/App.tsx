@@ -5319,6 +5319,49 @@ export default function App() {
     setPage('chat')
   }, [])
 
+  /**
+   * 静默复制当前或指定线程为 Markdown（对标 Codex Copy as Markdown）。
+   * 从库取未瘦身全文，不灌进 React；侧栏右键可拷非当前对话。
+   */
+  const copyConversationMarkdown = useCallback(
+    async (workspaceId?: string, conversationId?: string) => {
+      const ws =
+        workspaceId || popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+      const id = conversationId || activeConversationIdRef.current || ''
+      if (!ws || !id) {
+        if (!conversationId) appendLocalNote('没有当前会话。')
+        return
+      }
+      const activeWs = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+      const isActive = id === activeConversationIdRef.current && ws === activeWs
+      let messages: ChatMessage[]
+      let liveSegments: TurnSegment[] | undefined
+      if (isActive) {
+        messages = await historyForModelTurn(ws, id, messagesRef.current, historyStartSeqRef.current)
+        liveSegments = loadingLiveRef.current ? segmentsRef.current : undefined
+      } else if (window.sharker.loadConversation) {
+        const conv = await window.sharker.loadConversation(ws, id)
+        if (!conv) return
+        messages = conv.messages
+      } else {
+        return
+      }
+      const title = conversationListRef.current.find((c) => c.id === id)?.title
+      const snap = formatThreadSnapshot({
+        title,
+        conversationId: id,
+        messages,
+        liveSegments,
+        truncatedBefore: false
+      })
+      const ok = await copyPlainText(snap.markdown)
+      if (isActive) {
+        appendLocalNote(ok && snap.markdown ? '已复制对话为 Markdown。' : '无法复制对话为 Markdown。')
+      }
+    },
+    [appendLocalNote, copyPlainText, historyForModelTurn, popoutRoute?.workspaceId]
+  )
+
   /** `/fork` 或气泡「从此条分叉」：拷贝到 lastMessageId（含），对标 Codex lastTurnId */
   const handleForkConversation = useCallback(
     async (dest: ForkDestination, lastMessageId?: string) => {
@@ -5813,6 +5856,9 @@ export default function App() {
         case 'share_thread':
           openShareThread()
           break
+        case 'copy_conversation_markdown':
+          await copyConversationMarkdown()
+          break
         case 'show_feedback': {
           setFeedbackOpen(true)
           setFeedbackInfo(null)
@@ -6266,6 +6312,7 @@ export default function App() {
       persistActiveConversation,
       persistSettings,
       openShareThread,
+      copyConversationMarkdown,
       popoutRoute?.workspaceId,
       threadMode,
       threadWorktreePath
@@ -6888,6 +6935,10 @@ export default function App() {
         openShareThread()
         return
       }
+      if (action === 'copy_conversation_markdown') {
+        void copyConversationMarkdown()
+        return
+      }
       if (action === 'open_settings') {
         void handleNavigate('settings', 'models')
         return
@@ -6934,6 +6985,7 @@ export default function App() {
     handleNavigate,
     handleNewConversation,
     openShareThread,
+    copyConversationMarkdown,
     handleShortcutPanel,
     handleStandaloneConversation,
     handleTogglePanel,
@@ -8099,6 +8151,7 @@ export default function App() {
           onNavigate={handleNavigateUi}
           onClearUnread={handleMarkConversationsRead}
           onToggleActivity={handleToggleActivity}
+          onCopyConversationMarkdown={copyConversationMarkdown}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           onPeekChange={setSidebarPeeking}

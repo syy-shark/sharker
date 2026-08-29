@@ -236,6 +236,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'share_thread'
   },
   {
+    id: 'copy-markdown',
+    title: '复制为 Markdown',
+    keywords: 'copy as markdown conversation export 复制 对话 markdown',
+    action: 'copy_conversation_markdown'
+  },
+  {
     id: 'local',
     title: '交接回本地',
     keywords: 'local handoff 本地 交接',

@@ -132,11 +132,11 @@
 | `files-changed-card.test.ts` | 标题 vs 展开、平台揭示文案、路径去重 |
 | `review-file-click.ts` | 审查文件名走 `file_opener`、行背景展开/收起、⌘单击行跳预览；右键「打开预览 / 在访达中显示 / 展开 diff」（对标 Codex review Open in Finder / file tree open menu） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项含揭示与菜单位置夹取 |
-| `reveal-in-folder.ts` | 官方 Open in Finder / Explorer / File Manager：平台文案、线程项目目录、审查文件绝对路径、侧栏线程菜单项。不接自定义 Open with |
+| `reveal-in-folder.ts` | 官方 Open in Finder / Explorer / File Manager：平台文案、线程项目目录、审查文件绝对路径、侧栏线程菜单项（含复制为 Markdown，对标 Codex #25646）。不接自定义 Open with |
 | `reveal-in-folder.test.ts` | 平台文案、本地/隔离目录、相对审查路径接到仓根、线程菜单顺序 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链 / 复制为 Markdown、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
@@ -169,8 +169,8 @@
 | `pending-preview.test.ts` | 短文不截、多行与超长加省略号、CRLF 归一 |
 | `secret-redact.ts` | 已知 API Key / token / PEM / Bearer 形态换成 `[REDACTED:…]`（对标 Codex Share redacts known secret patterns） |
 | `secret-redact.test.ts` | 常见令牌脱敏、普通路径留下 |
-| `thread-snapshot.ts` | `/share` 只读快照：用户可见消息、思考摘要、改文件 diff；不含工具 I/O；打开时拍一帧；脱敏后复制，不上传 |
-| `thread-snapshot.test.ts` | 收录用户/回答/diff/直播可见段，丢掉 shell 输出，脱敏 Key |
+| `thread-snapshot.ts` | `/share` 与 Copy as Markdown：用户可见消息、思考摘要、改文件 diff；不含工具 I/O；脱敏后复制，不上传；内联 `data:image` 换成 `[Image]`（对标 Codex #22894） |
+| `thread-snapshot.test.ts` | 收录用户/回答/diff/直播可见段，丢掉 shell 输出，脱敏 Key，去掉内联 base64 图 |
 | `suggested-prompts.ts` | 空对话建议：先恢复进行中 / 未读 / 最近更新的对话，再审查 / 目标（对标 Codex Settings → Suggested prompts；不对创建时间排队） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
 | `composer-paste.ts` | 粘贴决策：Finder/Explorer 文件条目先收附件（对标 Codex non-image file pasting）；其余 text/plain（及 HTML 剥标签）优先于 Office 图片层；CRLF 归一；超长收成 `Pasted text.txt`；只有官方粘贴名才折进空输入 / 空参斜杠 |

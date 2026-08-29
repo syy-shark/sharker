@@ -67,6 +67,11 @@ export function installApplicationMenu(): void {
           registerAccelerator: false,
           ...send('share_thread')
         },
+        {
+          label: '复制为 Markdown',
+          registerAccelerator: false,
+          ...send('copy_conversation_markdown')
+        },
         { type: 'separator' },
         { role: 'close', label: '关闭窗口' }
       ]

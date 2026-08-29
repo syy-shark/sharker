@@ -35,11 +35,13 @@ describe('reveal in folder', () => {
     expect(reviewFileRevealPath('', '/proj')).toBe('')
     expect(threadMenuItems({ platform: 'darwin' }).map((item) => item.action)).toEqual([
       'reveal',
+      'copy-markdown',
       'rename',
       'pin',
       'archive'
     ])
-    expect(threadMenuItems({ pinned: true, platform: 'win32' })[2]?.title).toBe('取消置顶')
+    expect(threadMenuItems({ platform: 'darwin' })[1]?.title).toBe('复制为 Markdown')
+    expect(threadMenuItems({ pinned: true, platform: 'win32' })[3]?.title).toBe('取消置顶')
     expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('在文件管理器中显示')
   })
 })
