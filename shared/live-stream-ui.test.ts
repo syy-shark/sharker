@@ -31,6 +31,7 @@ import {
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
+  isLiveSettledToolAppendChange,
   findLiveToolInPlaceChange,
   isLiveToolWriteStatAppendChange,
   isLiveWriteStatStatusAppendChange,
@@ -1314,6 +1315,62 @@ describe('live stream ui snapshot', () => {
     expect(isLiveStatusToolAppendChange([hello, running], nextRound)).toBe(true)
     expect(isLiveToolAppendChange(afterPlanStatus, nextRound)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello, running], nextRound)).toBe('tool')
+    const settledRound = applyStreamChunk(nextRound, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      resultSummary: 'ok',
+      timestamp: 20.5
+    })
+    expect(isLiveToolAppendChange(afterPlanStatus, settledRound)).toBe(false)
+    expect(isLiveSettledToolAppendChange(afterPlanStatus, settledRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, settledRound)).toBe('tool')
+    const answerReadyForSettledTool = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: afterPlanStatus
+    })
+    const helloSettledPart = answerReadyForSettledTool.parts.find(
+      (part) => part.type === 'text' && part.id === hello.id
+    )
+    const answerAfterSettledTool = nextLiveAnswerView(answerReadyForSettledTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: settledRound
+    })
+    expect(
+      answerAfterSettledTool.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloSettledPart)
+    const blockedRound = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      toolCallId: 'blocked-1',
+      timestamp: 20.6
+    })
+    const blockedDone = applyStreamChunk(blockedRound, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolCallId: 'blocked-1',
+      toolStatus: 'error',
+      error: 'blocked',
+      timestamp: 20.7
+    })
+    expect(isLiveSettledToolAppendChange(afterPlanStatus, blockedDone)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, blockedDone)).toBe('tool')
+    const helloOnlySettled = applyStreamChunk(
+      applyStreamChunk([hello], {
+        type: 'tool_start',
+        toolName: 'read_file',
+        toolCallId: 'fast-1',
+        timestamp: 20.8
+      }),
+      {
+        type: 'tool_done',
+        toolName: 'read_file',
+        toolCallId: 'fast-1',
+        resultSummary: 'ok',
+        timestamp: 20.9
+      }
+    )
+    expect(isLiveSettledToolAppendChange([hello], helloOnlySettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], helloOnlySettled)).toBe('tool')
     let thinkThenTool = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 21 })
     thinkThenTool = applyStreamChunk(thinkThenTool, {
       type: 'tool_start',
@@ -1343,6 +1400,15 @@ describe('live stream ui snapshot', () => {
       false
     )
     expect(processAfterPlanTool.processForFlow.some((segment) => segment.kind === 'text')).toBe(false)
+    const processAfterSettledTool = nextLiveProcessView(processReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: settledRound
+    })
+    expect(
+      processAfterSettledTool.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === 'read_file' && segment.status === 'done'
+      )
+    ).toBe(true)
     const processAfterThinkTool = nextLiveProcessView(processReadyForPlanTool, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: thinkThenTool

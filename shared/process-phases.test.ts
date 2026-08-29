@@ -181,6 +181,23 @@ describe('process phases privacy', () => {
     expect(settleAndAppend![0].segment).toBe(cmdDone)
     expect(settleAndAppend![0].status).toBe('done')
     expect(settleAndAppend![1].segment).toBe(cmdNext)
+    const cmdNextSettled: TurnSegment = {
+      ...cmdNext,
+      status: 'done',
+      resultSummary: 'ok',
+      endedAt: 9.2
+    }
+    const settledAppend = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, cmdNextSettled],
+      true
+    )
+    expect(settledAppend).not.toBeNull()
+    expect(settledAppend).toHaveLength(2)
+    expect(settledAppend![0]).toBe(doneRetargeted![0])
+    expect(settledAppend![1].segment).toBe(cmdNextSettled)
+    expect(settledAppend![1].status).toBe('done')
     const writeAndAppend = appendProcessPhaseStepOnToolStart(
       cmdSteps,
       [cmdRunning],
