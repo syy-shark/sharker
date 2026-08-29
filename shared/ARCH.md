@@ -208,8 +208,8 @@
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览 / 浏览器批注 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
-| `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注（对标 Codex Annotation mode / Toggle browser browse or comment mode）。不发明 @Browser / Adjust |
-| `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
+| `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注；Shift+点选区域、⌘/Ctrl+点立刻写入芯片（对标 Codex Annotation mode / hold Shift and click / Hold Cmd while clicking）。不发明 @Browser / Adjust |
+| `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位、Shift 区域 / ⌘ 立刻提交 |
 | `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除；地址栏回车认 `file://` HTML 预览（对标 Codex file-backed previews / #36552）；`_blank` / window.open 只回同一视口可开的 http(s)/file（对标 Codex Settings → Browser / 单页内置浏览器 #26863）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史或多标签 |
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `browser-downloads.ts` | 内置浏览器下载目录与文件名：默认系统 Downloads、自选目录、每次询问、重名 `(N)`（对标 Codex Settings → Browser downloads）。不发明下载列表 / @Browser |

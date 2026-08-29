@@ -11,6 +11,8 @@ import {
   isBrowserAnnotateToggleChord,
   parseBrowserCommentMessage,
   placeBrowserCommentPopover,
+  browserCommentPickKind,
+  shouldSubmitBrowserCommentImmediately,
   shouldToggleBrowserAnnotate
 } from './browser-comment'
 
@@ -78,11 +80,35 @@ describe('browser comment', () => {
     expect(shouldToggleBrowserAnnotate('https://localhost:3000', false)).toBe(true)
     expect(shouldToggleBrowserAnnotate('about:blank', false)).toBe(false)
     expect(shouldToggleBrowserAnnotate('about:blank', true)).toBe(true)
+    expect(browserCommentPickKind({}, false)).toBe('element')
+    expect(browserCommentPickKind({ shiftKey: true }, false)).toBe('area')
+    expect(browserCommentPickKind({}, true)).toBe('area')
+    expect(shouldSubmitBrowserCommentImmediately({ metaKey: true })).toBe(true)
+    expect(shouldSubmitBrowserCommentImmediately({ ctrlKey: true })).toBe(true)
+    expect(shouldSubmitBrowserCommentImmediately({})).toBe(false)
+    expect(
+      parseBrowserCommentMessage(
+        `${BROWSER_COMMENT_PREFIX}${JSON.stringify({
+          type: 'pick',
+          kind: 'element',
+          url: 'https://example.com',
+          selector: '#ok',
+          text: 'Save',
+          immediate: true,
+          rect: { x: 1, y: 2, width: 3, height: 4 },
+          viewport: { width: 100, height: 50 }
+        })}`
+      )
+    ).toMatchObject({ immediate: true, selector: '#ok' })
+    const script = browserCommentAnnotateScript()
+    expect(script).toContain('shiftKey')
+    expect(script).toContain('immediate')
     const browserSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedBrowser.tsx'),
       'utf8'
     )
     expect(browserSrc).toContain('isBrowserAnnotateToggleChord')
     expect(browserSrc).toContain('toggleAnnotate')
+    expect(browserSrc).toContain('parsed.immediate')
   })
 })

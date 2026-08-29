@@ -16,6 +16,24 @@ export type BrowserCommentPick = {
   text: string
   rect: { x: number; y: number; width: number; height: number }
   viewport: { width: number; height: number }
+  /** ⌘/Ctrl+点：立刻写入芯片，不弹备注框（对标 Codex Hold Cmd while clicking） */
+  immediate?: boolean
+}
+
+/** Shift+点或拖选 → 区域；普通点击 → 元素（对标 Codex hold Shift and click to select an area） */
+export function browserCommentPickKind(
+  event: { shiftKey?: boolean },
+  dragged: boolean
+): BrowserCommentKind {
+  return event.shiftKey || dragged ? 'area' : 'element'
+}
+
+/** ⌘/Ctrl+点立刻提交批注 */
+export function shouldSubmitBrowserCommentImmediately(event: {
+  metaKey?: boolean
+  ctrlKey?: boolean
+}): boolean {
+  return Boolean(event.metaKey || event.ctrlKey)
 }
 
 /** http(s) / file 页可批注；起始 data URL 与 about: 不行 */
@@ -64,6 +82,10 @@ export function parseBrowserCommentMessage(message: string): BrowserCommentPick 
   const url = String(rec.url || '').trim()
   const selector = String(rec.selector || '').trim()
   const text = String(rec.text || '').replace(/\s+/g, ' ').trim()
+  const immediate = shouldSubmitBrowserCommentImmediately({
+    metaKey: Boolean(rec.immediate || rec.metaKey),
+    ctrlKey: Boolean(rec.ctrlKey)
+  })
   const rect = rec.rect && typeof rec.rect === 'object' ? (rec.rect as Record<string, unknown>) : {}
   const viewport =
     rec.viewport && typeof rec.viewport === 'object' ? (rec.viewport as Record<string, unknown>) : {}
@@ -82,7 +104,8 @@ export function parseBrowserCommentMessage(message: string): BrowserCommentPick 
     viewport: {
       width: Math.max(1, Number(viewport.width) || 1),
       height: Math.max(1, Number(viewport.height) || 1)
-    }
+    },
+    ...(immediate ? { immediate: true } : {})
   }
 }
 
@@ -209,7 +232,7 @@ export function browserCommentAnnotateScript(): string {
     if (e.target && e.target.closest && e.target.closest('[data-sharker-ann-box]')) return;
     e.preventDefault();
     e.stopPropagation();
-    state.drag = { x: e.clientX, y: e.clientY, t: e.target };
+    state.drag = { x: e.clientX, y: e.clientY, t: e.target, shift: !!e.shiftKey, meta: !!(e.metaKey || e.ctrlKey) };
   }, true);
   document.addEventListener('mouseup', function(e){
     if (!state.on || !state.drag) return;
@@ -219,13 +242,21 @@ export function browserCommentAnnotateScript(): string {
     state.drag = null;
     var dx = e.clientX - start.x;
     var dy = e.clientY - start.y;
+    var dragged = Math.hypot(dx, dy) >= 6;
+    var kind = (start.shift || e.shiftKey || dragged) ? 'area' : 'element';
+    var immediate = !!(start.meta || e.metaKey || e.ctrlKey);
     clear();
-    if (Math.hypot(dx, dy) < 6) emit(pick(start.t, 'element'));
-    else {
+    var payload;
+    if (kind === 'element') payload = pick(start.t, 'element');
+    else if (dragged) {
       var x = Math.min(start.x, e.clientX);
       var y = Math.min(start.y, e.clientY);
-      emit(pick(null, 'area', { x: x, y: y, width: Math.abs(dx), height: Math.abs(dy) }));
+      payload = pick(null, 'area', { x: x, y: y, width: Math.abs(dx), height: Math.abs(dy) });
+    } else {
+      payload = pick(start.t, 'area');
     }
+    if (immediate) payload.immediate = true;
+    emit(payload);
   }, true);
   document.addEventListener('click', function(e){
     if (!state.on) return;

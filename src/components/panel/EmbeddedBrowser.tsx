@@ -292,6 +292,12 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
         setAnnotating(false)
         return
       }
+      if (parsed.immediate) {
+        onInsertRef.current?.(formatBrowserCommentExcerpt(parsed), 'browser', '')
+        setDraft(null)
+        setDraftComment('')
+        return
+      }
       const host = viewportRef.current?.getBoundingClientRect()
       const pos = placeBrowserCommentPopover(
         parsed.rect,
@@ -597,7 +603,7 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
             canAnnotateBrowserUrl(url)
               ? annotating
                 ? '关闭批注 ⌘.'
-                : '批注：点元素或拖选区域 ⌘.'
+                : '批注：点元素或拖选区域 · Shift+点选区域 · ⌘/Ctrl+点立刻加入 ⌘.'
               : '打开网页后再批注'
           }
           onClick={toggleAnnotate}
