@@ -43,7 +43,7 @@ export const SLASH_COMMAND_CATEGORIES: Record<
 export const SLASH_COMMANDS: SlashCommandMeta[] = [
   {
     name: 'plan',
-    description: '切换计划模式；带说明则开始规划',
+    description: 'Toggle plan mode for multi-step planning.',
     scope: 'agent',
     argsHint: '[说明]',
     category: 'mode'
@@ -57,7 +57,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'goal',
-    description: '设定目标并开始首轮；空参查看，edit 改写，pause / resume / clear 管理',
+    description: 'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.',
     scope: 'ui',
     action: 'set_goal',
     argsHint: '[文本|edit|pause|resume|clear]',
@@ -65,7 +65,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'status',
-    description: '显示对话 ID、模型、权限、Fast、可写根、上下文与本机用量',
+    description: 'Show the chat ID, context usage, and rate limits.',
     scope: 'ui',
     action: 'show_status',
     category: 'session'
@@ -85,7 +85,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'compact',
-    description: '压缩当前对话上下文（摘要旧消息）',
+    description: "Compact the current chat's context.",
     scope: 'ui',
     action: 'compact_context',
     category: 'session'
@@ -105,7 +105,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'task',
-    description: '在全局工作区开新对话（不绑定项目；/chat 同义）',
+    description: 'Start a chat without a project.',
     scope: 'ui',
     action: 'new_global_conversation',
     category: 'session'
@@ -148,7 +148,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'fork',
-    description: 'Fork into a new local thread; /fork worktree creates an isolated worktree',
+    description: 'Copy a local chat into a new local chat or worktree.',
     scope: 'ui',
     action: 'fork_conversation',
     argsHint: '[local|worktree]',
@@ -156,7 +156,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'side',
-    description: 'Open side chat',
+    description: 'Start a temporary side chat without interrupting the main chat.',
     scope: 'ui',
     action: 'side_conversation',
     argsHint: '[问题]',
@@ -164,7 +164,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'btw',
-    description: 'Open side chat',
+    description: 'Start a temporary side chat without interrupting the main chat.',
     scope: 'ui',
     action: 'side_conversation',
     argsHint: '[问题]',
@@ -172,7 +172,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'project',
-    description: '打开项目选择器（对标 Codex /project）',
+    description: 'Choose a project for new chats.',
     scope: 'ui',
     action: 'open_project_picker',
     category: 'workspace'
@@ -216,7 +216,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'init',
-    description: '在当前目录创建 AGENTS.md 项目说明',
+    description: 'Generate an AGENTS.md scaffold for the current project.',
     scope: 'ui',
     action: 'init_agents',
     category: 'workspace'
@@ -231,7 +231,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'memories',
-    description: '本对话记忆：使用 / 写入 / 关闭（不改全局）',
+    description: 'Configure whether the chat can use or generate memories, when Memories is available.',
     scope: 'ui',
     action: 'show_memories',
     argsHint: '[on|off|use|inherit]',
@@ -246,14 +246,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'worktree',
-    description: '交接进隔离 worktree',
+    description: 'Run the chat in a new Git worktree.',
     scope: 'ui',
     action: 'set_thread_worktree',
     category: 'mode'
   },
   {
     name: 'mcp',
-    description: '打开 MCP 状态（Settings → MCP servers）',
+    description: 'Open MCP status to view connected servers.',
     scope: 'ui',
     action: 'show_mcp',
     argsHint: '[verbose]',
@@ -275,7 +275,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'model',
-    description: '切换对话模型',
+    description: 'Choose the model for the current chat.',
     scope: 'ui',
     action: 'pick_model',
     argsHint: '[模型名]',
@@ -311,7 +311,8 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'review',
-    description: '审查变更（先选未提交 / 基线 / 指定 commit，可加关注点，只读）',
+    description:
+      'Start code review mode to review uncommitted changes or compare against a base branch.',
     scope: 'ui',
     action: 'review_working_tree',
     argsHint: '[uncommitted|branch|commit] [here|detached] [关注点]',
@@ -319,7 +320,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'personality',
-    description: '切换人格（务实 / 友好 / 关闭）',
+    description: 'Choose how Codex responds, when the current model supports personalities.',
     scope: 'ui',
     action: 'set_personality',
     argsHint: '[pragmatic|friendly|none]',
@@ -377,7 +378,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'reasoning',
-    description: '查看或设定思考档（对标 Codex /reasoning）',
+    description: 'Choose the reasoning effort for the current chat.',
     scope: 'ui',
     action: 'set_reasoning',
     argsHint: '[档位]',
@@ -421,7 +422,8 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'approve',
-    description: '批准重试最近一次被拒的高危操作',
+    description:
+      'Approve one retry of a recent automatic-review denial, when automatic review is active.',
     scope: 'ui',
     action: 'approve_denied',
     category: 'mode'

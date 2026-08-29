@@ -4,6 +4,7 @@
  * @see src/components/ARCH.md
  */
 import { useEffect, useState } from 'react'
+import { SHARE_LABEL } from '../../shared/reveal-in-folder'
 import './ShareDialog.css'
 
 interface Props {
@@ -64,9 +65,9 @@ export function ShareDialog({
       <button type="button" className="share-dialog-backdrop" aria-label="关闭分享" onClick={onClose} />
       <div className="share-dialog glass-popover popover-enter" role="dialog" aria-labelledby="share-dialog-title">
         <div className="share-dialog-head">
-          <h2 id="share-dialog-title">分享只读快照</h2>
+          <h2 id="share-dialog-title">{SHARE_LABEL}</h2>
           <p>
-            对标 Codex 桌面 <code>/share</code>。收录用户可见消息、思考摘要和改文件
+            对标 Codex 桌面 Share / <code>/share</code>：只读快照，不含项目或本机访问。收录用户可见消息、思考摘要和改文件
             diff，不含工具调用或命令输出。只复制到剪贴板，不会上传。
           </p>
         </div>

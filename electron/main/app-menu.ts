@@ -10,6 +10,7 @@ import {
   NEW_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   OPEN_FOLDER_LABEL,
+  SHARE_LABEL,
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_REVIEW_TAB_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
@@ -76,7 +77,7 @@ export function installApplicationMenu(): void {
           ...send('open_folder')
         },
         {
-          label: '分享只读快照…',
+          label: SHARE_LABEL,
           registerAccelerator: false,
           ...send('share_thread')
         },

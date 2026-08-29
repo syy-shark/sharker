@@ -3,6 +3,11 @@
  * @see src/components/ARCH.md
  */
 import { useEffect } from 'react'
+import {
+  ADD_FOLDER_LABEL,
+  EDIT_PROJECT_LABEL,
+  MAKE_PRIMARY_LABEL
+} from '../../shared/reveal-in-folder'
 import type { WorkspaceItem } from '../../shared/types'
 import './ProjectFoldersDialog.css'
 
@@ -48,7 +53,7 @@ export function ProjectFoldersDialog({
         aria-labelledby="project-folders-title"
       >
         <div className="project-folders-head">
-          <h2 id="project-folders-title">编辑项目</h2>
+          <h2 id="project-folders-title">{EDIT_PROJECT_LABEL}</h2>
           <p>新对话、Git、AGENTS.md 与 Skill 用主文件夹。附加文件夹可供搜索与读写，也可设为主文件夹。</p>
         </div>
         <div className="project-folders-block">
@@ -73,7 +78,7 @@ export function ProjectFoldersDialog({
                   <code title={folder}>{folder}</code>
                   {workspace.isHome ? null : (
                     <button type="button" onClick={() => onPromoteExtra(workspace.id, folder)}>
-                      设为主文件夹
+                      {MAKE_PRIMARY_LABEL}
                     </button>
                   )}
                   <button type="button" onClick={() => onRemoveExtra(workspace.id, folder)}>
@@ -84,7 +89,7 @@ export function ProjectFoldersDialog({
             </ul>
           )}
           <button type="button" className="project-folders-add" onClick={() => onAddExtra(workspace.id)}>
-            添加文件夹
+            {ADD_FOLDER_LABEL}
           </button>
         </div>
         <div className="project-folders-actions">

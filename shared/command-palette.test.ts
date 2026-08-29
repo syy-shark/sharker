@@ -40,6 +40,8 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'copy-conversation-path')?.title).toBe(
       'Copy conversation path'
     )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'share')?.title).toBe('Share')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'archive-project-chats')?.title).toBe('Archive chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'new')?.title).toBe('New chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'side')?.title).toBe('Open side chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'archive')?.title).toBe('Archive chat')
@@ -148,6 +150,11 @@ describe('command palette', () => {
     expect(filterPaletteCommands('归档项目').some((c) => c.action === 'archive_project_chats')).toBe(
       true
     )
+    expect(filterPaletteCommands('Archive chats').some((c) => c.action === 'archive_project_chats')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('Share').some((c) => c.id === 'share')).toBe(true)
+    expect(filterPaletteCommands('分享只读快照').some((c) => c.id === 'share')).toBe(true)
     expect(filterPaletteCommands('访达').some((c) => c.action === 'open_worktree')).toBe(true)
     expect(filterPaletteCommands('Copy as Markdown').some((c) => c.id === 'copy-markdown')).toBe(
       true

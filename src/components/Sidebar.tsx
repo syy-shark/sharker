@@ -40,8 +40,10 @@ import {
 } from '../../shared/conversation'
 import {
   APPEARANCE_SETTINGS_LABEL,
+  ARCHIVE_CHATS_ACTION_LABEL,
   ARCHIVE_LABEL,
   ARCHIVED_CHATS_LABEL,
+  EDIT_PROJECT_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
@@ -791,7 +793,7 @@ export const Sidebar = memo(function Sidebar({
                     onRenameWorkspace(ws.id, label)
                   }}
                 >
-                  重命名
+                  {RENAME_LABEL}
                 </button>
                 {onEditProjectFolders && !ws.isHome ? (
                   <button
@@ -803,7 +805,7 @@ export const Sidebar = memo(function Sidebar({
                       onEditProjectFolders(ws.id)
                     }}
                   >
-                    编辑项目
+                    {EDIT_PROJECT_LABEL}
                   </button>
                 ) : null}
                 <button
@@ -816,7 +818,7 @@ export const Sidebar = memo(function Sidebar({
                   }}
                 >
                   <Pin size={13} aria-hidden />
-                  {ws.pinned ? '取消置顶' : '置顶项目'}
+                  {ws.pinned ? UNPIN_LABEL : PIN_LABEL}
                 </button>
                 {onCreatePermanentWorktree && !ws.isHome ? (
                   <button
@@ -841,7 +843,7 @@ export const Sidebar = memo(function Sidebar({
                       onArchiveProjectChats(ws.id)
                     }}
                   >
-                    归档对话
+                    {ARCHIVE_CHATS_ACTION_LABEL}
                   </button>
                 ) : null}
                 <button

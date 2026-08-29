@@ -43,7 +43,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
 | `/mcp [verbose]` | 打开 MCP 状态（对标 Codex Open MCP status）：列出已配置 Server；空配置打开 Settings → MCP servers；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
-| `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
+| `/share` | 打开只读快照（对标 Codex 桌面 Share / `/share`）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏 / 文件菜单 / 命令面板 / 对话框标题都是 **Share**。打开时拍一帧，之后不跟直播 token 变。不发明官方 Who has access / Copy link 上传。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
 | `/chat` `/task` | 不绑定项目开新对话（对标 Codex `/chat` Don’t work in a project；`/task` 同义） |
 | `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示 Compacting context（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
@@ -119,7 +119,7 @@ Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（�
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）
 - 设置 → 权限 → **项目与终端 / 命令输出**：简要 / 标准 / 详细（对标 Codex how much command output appears in chats）；标准只画输出尾部，详细完成后才默认展开，直播中不挂「查看输出」、退出码、「执行中… Ns」摘要和过程行/直播头秒表心跳，以免工具一完成或秒表跳动就顶过程区（对标 Codex command output behind expand / #19260）
 - 设置 → 权限 → Worktree **根目录**（对标 Codex Worktree root）：托管与永久 worktree 建在此绝对路径下，空则 `~/.sharker/worktrees`；`sharker://settings/worktrees` 打开该页。改了不搬旧目录
-- 项目三点菜单 **编辑项目**（对标 Codex Edit project）：主文件夹负责新对话 / 默认 Git / AGENTS.md / Skill；附加文件夹可供右侧文件树浏览、`@` 搜索、文件引用跳转与沙箱读写，并可 **设为主文件夹**（旧主路径留在附加列表，对标 Codex Make primary）；其中不同 Git 仓库会出现在审查选择器（同仓子目录不另开一项）
+- 项目三点菜单 **Edit project** / **Archive chats** / **Pin** / **Unpin** / **Rename**（对标 Codex Edit project / Archive chats）：主文件夹负责新对话 / 默认 Git / AGENTS.md / Skill；附加文件夹可供右侧文件树浏览、`@` 搜索、文件引用跳转与沙箱读写，并可 **Make primary**（旧主路径留在附加列表）；**Add folder** 追加路径。其中不同 Git 仓库会出现在审查选择器（同仓子目录不另开一项）
 - Settings → Appearance → **代码字体 / 代码字号**（对标 Codex Code font / Code font size）：审查、终端与对话代码共用 `--mono` 与 `--code-font-scale`；`sharker://settings/code-font` 打开该页。只换等宽栈与代码字号，不改主题色，不跟 ⌘+ / ⌘- 界面字号走
 - Settings → Notifications：回合完成 **从不 / 后台 / 始终**、**批准通知**、**系统通知权限**。`sharker://settings/notifications` 打开该页
 - Settings → Appearance → **Reduce Motion**（对标 Codex #16857）：关掉直播思考扫光，减轻 GPU；进度圈仍转（对标 #22787）。不跟系统辅助功能绑定。窗口在后台或直播行滚出视口时同样停扫光（对标 #16857 屏外指示器仍占 GPU / #40531），回到前台或滚回视口再开

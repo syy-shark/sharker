@@ -4,6 +4,8 @@
  */
 import {
   ARCHIVE_CHAT_LABEL,
+  ARCHIVE_CHATS_ACTION_LABEL,
+  SHARE_LABEL,
   CLEAR_ALL_UNREAD_INDICATORS_LABEL,
   CLEAR_TERMINAL_LABEL,
   COPY_AS_MARKDOWN_LABEL,
@@ -129,8 +131,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'archive-project-chats',
-    title: '归档当前项目对话',
-    keywords: 'archive chats project 归档 项目 对话 归档项目',
+    title: ARCHIVE_CHATS_ACTION_LABEL,
+    keywords: 'archive chats project 归档当前项目对话 归档 项目 对话 归档项目',
     action: 'archive_project_chats'
   },
   {
@@ -281,8 +283,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'share',
-    title: '分享只读快照',
-    keywords: 'share snapshot thread 分享 快照 只读 /share',
+    title: SHARE_LABEL,
+    keywords: 'share snapshot thread 分享只读快照 分享 快照 只读 /share',
     action: 'share_thread'
   },
   {

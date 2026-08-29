@@ -72,12 +72,12 @@ const COMMANDS: SlashCommand[] = [
   },
   {
     name: 'compact',
-    description: '压缩当前对话上下文',
+    description: "Compact the current chat's context.",
     run: () => ({ command: 'compact' })
   },
   {
     name: 'plan',
-    description: '切换计划模式；带说明则开始规划',
+    description: 'Toggle plan mode for multi-step planning.',
     run: runPlanMode
   },
   {

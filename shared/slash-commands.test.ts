@@ -28,7 +28,9 @@ describe('slash commands', () => {
     expect(names).toContain('goal')
     expect(names).toContain('plan')
     expect(names).toContain('plan-mode')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'plan')?.description).toContain('切换计划模式')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'plan')?.description).toBe(
+      'Toggle plan mode for multi-step planning.'
+    )
     expect(names).toContain('init')
     expect(names).toContain('permissions')
     expect(names).toContain('archive')
@@ -61,6 +63,18 @@ describe('slash commands', () => {
     expect(names).toContain('title')
     expect(names).toContain('agent')
     expect(SLASH_COMMANDS.find((c) => c.name === 'compact')?.action).toBe('compact_context')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'compact')?.description).toBe(
+      "Compact the current chat's context."
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'approve')?.description).toContain(
+      'Approve one retry of a recent automatic-review denial'
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'task')?.description).toBe(
+      'Start a chat without a project.'
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'worktree')?.description).toBe(
+      'Run the chat in a new Git worktree.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'title')?.action).toBe('rename_conversation')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.action).toBe('copy_last_output')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.description).toContain('先选目标')
@@ -72,7 +86,9 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.argsHint).toContain('worktree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.argsHint).toContain('问题')
     expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.action).toBe('init_agents')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.description).toContain('当前目录')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.description).toBe(
+      'Generate an AGENTS.md scaffold for the current project.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.action).toBe('set_permissions')
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.description).toContain('输入框下方')
     expect(parsePermissionMode('')).toBeNull()
@@ -86,7 +102,9 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.action).toBe('archive_thread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'archive')?.description).toBe('Archive chat')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.action).toBe('side_conversation')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.description).toBe('Open side chat')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.description).toBe(
+      'Start a temporary side chat without interrupting the main chat.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'new')?.description).toBe('New chat')
     expect(SLASH_COMMANDS.find((c) => c.name === 'rename')?.description).toBe('Rename chat')
     expect(SLASH_COMMANDS.find((c) => c.name === 'pin')?.description).toBe('Pin or unpin chat')
@@ -97,8 +115,9 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'diff')?.action).toBe('show_diff')
     expect(SLASH_COMMANDS.find((c) => c.name === 'goal')?.action).toBe('set_goal')
     expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.action).toBe('show_mcp')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toContain('MCP 状态')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toContain('MCP servers')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'mcp')?.description).toBe(
+      'Open MCP status to view connected servers.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'feedback')?.action).toBe('show_feedback')
     expect(SLASH_COMMANDS.find((c) => c.name === 'share')?.action).toBe('share_thread')
     expect(SLASH_COMMANDS.find((c) => c.name === 'local')?.action).toBe('set_thread_local')
@@ -133,7 +152,8 @@ describe('slash commands', () => {
 
   it('filters by prefix and description', () => {
     expect(filterSlashCommands('ch').some((c) => c.name === 'changes')).toBe(true)
-    expect(filterSlashCommands('审查').some((c) => c.name === 'review')).toBe(true)
+    expect(filterSlashCommands('review').some((c) => c.name === 'review')).toBe(true)
+    expect(filterSlashCommands('code review').some((c) => c.name === 'review')).toBe(true)
     expect(filterSlashCommands('task').some((c) => c.name === 'task')).toBe(true)
     expect(filterSlashCommands('chat').some((c) => c.name === 'chat')).toBe(true)
   })

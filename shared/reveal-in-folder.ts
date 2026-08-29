@@ -79,6 +79,11 @@ export const ARCHIVE_LABEL = 'Archive'
 export const PINNED_LABEL = 'Pinned'
 /** 官方设置 Archived chats（对标 Codex #13018） */
 export const ARCHIVED_CHATS_LABEL = 'Archived chats'
+/** 官方项目菜单（对标 learn.chatgpt.com/docs/projects） */
+export const EDIT_PROJECT_LABEL = 'Edit project'
+export const ARCHIVE_CHATS_ACTION_LABEL = 'Archive chats'
+export const ADD_FOLDER_LABEL = 'Add folder'
+export const MAKE_PRIMARY_LABEL = 'Make primary'
 
 /** 官方快捷键 / 命令面板（对标 learn.chatgpt.com Commands） */
 export const NEW_CHAT_LABEL = 'New chat'

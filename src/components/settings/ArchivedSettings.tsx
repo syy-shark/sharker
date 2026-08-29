@@ -75,7 +75,7 @@ export function ArchivedSettings() {
   if (items.length === 0) {
     return (
       <p className="archived-empty">
-        暂无已归档对话。在侧栏对话上悬停并点归档图标，或从项目菜单选「归档对话」，可将对话移到此处。
+        暂无已归档对话。在侧栏对话上悬停并点归档图标，或从项目菜单选 Archive chats，可将对话移到此处。
       </p>
     )
   }

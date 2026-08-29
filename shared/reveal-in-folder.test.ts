@@ -14,6 +14,10 @@ import {
   OPEN_IN_POPUP_WINDOW_LABEL,
   APPROVE_REQUEST_LABEL,
   DECLINE_REQUEST_LABEL,
+  EDIT_PROJECT_LABEL,
+  ARCHIVE_CHATS_ACTION_LABEL,
+  ADD_FOLDER_LABEL,
+  MAKE_PRIMARY_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -111,5 +115,9 @@ describe('reveal in folder', () => {
     expect(KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL).toBe('Keep a chat near your work')
     expect(APPROVE_REQUEST_LABEL).toBe('Approve request')
     expect(DECLINE_REQUEST_LABEL).toBe('Decline request')
+    expect(EDIT_PROJECT_LABEL).toBe('Edit project')
+    expect(ARCHIVE_CHATS_ACTION_LABEL).toBe('Archive chats')
+    expect(ADD_FOLDER_LABEL).toBe('Add folder')
+    expect(MAKE_PRIMARY_LABEL).toBe('Make primary')
   })
 })
