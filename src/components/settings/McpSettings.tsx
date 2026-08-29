@@ -12,6 +12,7 @@ import {
   mcpServerKind,
   mcpServerLaunchLabel
 } from '../../../shared/mcp-config'
+import { ADD_SERVER_LABEL } from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -179,7 +180,7 @@ export function McpSettings({ workspacePath }: Props) {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="添加 Server">
+      <SettingsSection title={ADD_SERVER_LABEL}>
         <SettingsCard>
           <div className="st-card--stack mcp-form">
             <SettingsChoiceGroup

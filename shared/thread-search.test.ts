@@ -14,9 +14,12 @@ import {
   findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
+  liveFindSuffixMayAddHit,
   locateFlatRange,
   mergeThreadSearchHits,
+  nextLiveFindHits,
   sameThreadSearchHits,
+  shouldRepaintLiveFindHighlight,
   resolveFindHitIndex,
   seedFindQuery
 } from './thread-search'
@@ -105,6 +108,31 @@ describe('thread search', () => {
     expect(sameThreadSearchHits(liveHit, findInThread([{ id: 'live', content: 'review now more', seq: 41 }], 'review'))).toBe(
       true
     )
+    expect(liveFindSuffixMayAddHit('review now more tokens here', 10, 'review')).toBe(false)
+    expect(liveFindSuffixMayAddHit('review now review', 10, 'review')).toBe(true)
+    const first = nextLiveFindHits({
+      prev: null,
+      prevContentLen: 0,
+      content: 'review now',
+      messageId: 'live',
+      seq: 41,
+      query: 'review'
+    })
+    const reused = nextLiveFindHits({
+      prev: first.hits,
+      prevContentLen: first.contentLen,
+      content: 'review now more tokens here',
+      messageId: 'live',
+      seq: 41,
+      query: 'review'
+    })
+    expect(reused.hits).toBe(first.hits)
+    expect(
+      shouldRepaintLiveFindHighlight({ prevLen: 10, nextLen: 24, matchStart: 0, matchEnd: 6 })
+    ).toBe(false)
+    expect(
+      shouldRepaintLiveFindHighlight({ prevLen: 3, nextLen: 10, matchStart: 0, matchEnd: 6 })
+    ).toBe(true)
     expect(sameThreadSearchHits(liveHit, findInThread([{ id: 'live', content: 'review now review', seq: 41 }], 'review'))).toBe(
       false
     )

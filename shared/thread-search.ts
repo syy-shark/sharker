@@ -93,6 +93,63 @@ export function findInThread(
   return hits
 }
 
+/**
+ * 只追加且后缀（含 query 重叠）没有新命中时，不必重扫整段直播正文。
+ */
+export function liveFindSuffixMayAddHit(content: string, prevLen: number, query: string): boolean {
+  const q = String(query ?? '').trim().toLowerCase()
+  if (!q) return false
+  if (content.length < prevLen) return true
+  const overlap = Math.max(0, prevLen - Math.max(0, q.length - 1))
+  return content.slice(overlap).toLowerCase().includes(q)
+}
+
+/** 直播查找：追加且无新命中时退回 prev（对标 Codex #33907 / #22860） */
+export function nextLiveFindHits(options: {
+  prev: readonly ThreadSearchHit[] | null
+  prevContentLen: number
+  content: string
+  messageId: string
+  seq: number
+  query: string
+}): { hits: ThreadSearchHit[]; contentLen: number } {
+  const contentLen = options.content.length
+  const q = options.query.trim()
+  if (!q || !options.content.trim()) {
+    return { hits: [], contentLen }
+  }
+  if (
+    options.prev &&
+    options.prevContentLen > 0 &&
+    contentLen >= options.prevContentLen &&
+    !liveFindSuffixMayAddHit(options.content, options.prevContentLen, q)
+  ) {
+    return { hits: options.prev as ThreadSearchHit[], contentLen }
+  }
+  const hits = findInThread(
+    [{ id: options.messageId, content: options.content, seq: options.seq }],
+    q
+  )
+  if (options.prev && sameThreadSearchHits(options.prev, hits)) {
+    return { hits: options.prev as ThreadSearchHit[], contentLen }
+  }
+  return { hits, contentLen }
+}
+
+/**
+ * 当前命中已画完且正文只在命中之后增长时，不必重扫直播行 DOM。
+ */
+export function shouldRepaintLiveFindHighlight(options: {
+  prevLen: number
+  nextLen: number
+  matchStart: number
+  matchEnd: number
+}): boolean {
+  if (options.prevLen <= 0 || options.nextLen < options.prevLen) return true
+  if (options.matchStart < 0 || options.matchEnd <= options.matchStart) return true
+  return options.matchEnd > options.prevLen
+}
+
 /** 命中列表没变则退回同一引用，避免直播 token 抬对话柱（对标 Codex #33907 / #22860） */
 export function sameThreadSearchHits(
   left: readonly ThreadSearchHit[],

@@ -126,7 +126,7 @@
 | `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 detail |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
-| `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；分页线程盘上命中与内存/直播命中合并（对标 Codex #33907，不回放整段）；`sameThreadSearchHits` 在命中偏移没变时退回同一数组；`appendLiveFindHits` 把直播命中接在历史后面且空直播不换历史数组；`findHitMessageIds` 给历史行高亮；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮；`escapeLikePattern` 给 ILIKE |
+| `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；分页线程盘上命中与内存/直播命中合并（对标 Codex #33907，不回放整段）；`sameThreadSearchHits` 在命中偏移没变时退回同一数组；`nextLiveFindHits` / `shouldRepaintLiveFindHighlight` 直播追加且无新命中时不重扫正文 / 不重画 DOM；`appendLiveFindHits` 把直播命中接在历史后面且空直播不换历史数组；`findHitMessageIds` 给历史行高亮；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮；`escapeLikePattern` 给 ILIKE |
 | `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断；审查 diff 查找命中 / 空查询 / 高亮切片；盘上命中与内存合并、ILIKE 转义；`sameThreadSearchHits` 在偏移没变时为真、新出现才为假 |
 | `review-diff-search.ts` | 审查 diff 跨文件查找：`findInReviewDiffs` 按 `FileDiff.lines` 偏移命中；审查聚焦时 ⌘F / ⌘G 走审查而不是线程（对标 Codex review search / Cmd+F starts with selection）；`splitFindHighlights` 给行内高亮 |
 | `terminal-tabs.ts` | 集成终端按线程分标签：标题、上限 8、关最后一张不准、最近 6 条线程缓存；pending 窗格可收成对话 id |

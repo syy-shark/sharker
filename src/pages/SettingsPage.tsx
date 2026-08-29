@@ -28,6 +28,7 @@ import {
   PROFILE_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
+  MCP_SERVERS_INTRO,
   MCP_SERVERS_LABEL,
   NOTIFICATIONS_SETTINGS_INTRO,
   NOTIFICATIONS_SETTINGS_LABEL,
@@ -49,7 +50,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   mcp: {
     title: MCP_SERVERS_LABEL,
-    desc: '添加 STDIO 或 Streamable HTTP Server，开关后 Restart。对标 Codex Settings → MCP servers。OAuth 登录未接。对话里 /mcp 打开 MCP 状态；未配置时打开本页。'
+    desc: MCP_SERVERS_INTRO
   },
   general: {
     title: GENERAL_SETTINGS_LABEL,

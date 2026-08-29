@@ -276,6 +276,8 @@ describe('live stream ui snapshot', () => {
       'utf8'
     )
     expect(chatSrc).toContain('shouldObserveRowIntrinsicHeight')
+    expect(chatSrc).toContain('nextLiveFindHits')
+    expect(chatSrc).toContain('shouldRepaintLiveFindHighlight')
     expect(chatSrc).toContain('mutation.addedNodes')
     const fenceSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeArtifactBlock.tsx'),

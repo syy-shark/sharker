@@ -114,7 +114,10 @@ import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import {
   appendLiveFindHits,
+  findAllOccurrences,
+  nextLiveFindHits,
   sameThreadSearchHits,
+  shouldRepaintLiveFindHighlight,
   findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
@@ -651,7 +654,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
 
 /**
  * 查找开着才订阅直播正文，且只订 `streaming`。关闭或思考 / 过程增长时不跟 token。
- * 命中列表没变不抬对话柱；当前命中在直播行时就地重标，不写 ChatView state。
+ * 命中列表没变不抬对话柱；当前命中已画完且只追加时不重扫 DOM（对标 Codex #33907 / #22860）。
  */
 function LiveFindSync({
   enabled,
@@ -667,9 +670,24 @@ function LiveFindSync({
   onHits: (hits: ThreadSearchHit[]) => void
 }) {
   const streaming = useLiveStreamUiSelectWhen(enabled, (snap) => snap.streaming)
+  const cacheRef = useRef({ hits: EMPTY_FIND_HITS, contentLen: 0, query: '', id: '' })
   const hits = useMemo(() => {
-    if (!enabled || !query.trim() || !streaming.trim()) return EMPTY_FIND_HITS
-    return findInThread([{ id: liveRowId, content: streaming, seq }], query)
+    if (!enabled || !query.trim() || !streaming.trim()) {
+      cacheRef.current = { hits: EMPTY_FIND_HITS, contentLen: 0, query, id: liveRowId }
+      return EMPTY_FIND_HITS
+    }
+    const cached = cacheRef.current
+    const sameKey = cached.query === query && cached.id === liveRowId
+    const next = nextLiveFindHits({
+      prev: sameKey ? cached.hits : null,
+      prevContentLen: sameKey ? cached.contentLen : 0,
+      content: streaming,
+      messageId: liveRowId,
+      seq,
+      query
+    })
+    cacheRef.current = { hits: next.hits, contentLen: next.contentLen, query, id: liveRowId }
+    return next.hits
   }, [enabled, streaming, liveRowId, query, seq])
   useEffect(() => {
     onHits(hits)
@@ -690,16 +708,37 @@ function LiveFindHighlight({
   occurrence: number
 }) {
   const streaming = useLiveStreamUiSelectWhen(enabled, (snap) => snap.streaming)
+  const prevLenRef = useRef(0)
   useEffect(() => {
-    if (!enabled || !query.trim()) return
+    if (!enabled || !query.trim()) {
+      prevLenRef.current = 0
+      return
+    }
     const el = document.getElementById(`msg-${liveRowId}`)
     if (!el) {
       clearFindHighlight()
       return
     }
+    const match = findAllOccurrences(streaming, query)[occurrence]
+    const prevLen = prevLenRef.current
+    prevLenRef.current = streaming.length
+    if (!match) {
+      clearFindHighlight()
+      return
+    }
+    if (
+      !shouldRepaintLiveFindHighlight({
+        prevLen,
+        nextLen: streaming.length,
+        matchStart: match.start,
+        matchEnd: match.end
+      })
+    ) {
+      return
+    }
     paintFindHighlight(el, query, occurrence)
-    return () => clearFindHighlight()
   }, [enabled, liveRowId, occurrence, query, streaming])
+  useEffect(() => () => clearFindHighlight(), [enabled, liveRowId, query, occurrence])
   return null
 }
 

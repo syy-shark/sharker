@@ -221,6 +221,10 @@ export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
 export const MCP_SERVERS_LABEL = 'MCP servers'
+/** Official Settings → MCP servers (learn.chatgpt.com/docs/extend/mcp). No OAuth Authenticate. */
+export const ADD_SERVER_LABEL = 'Add server'
+export const MCP_SERVERS_INTRO =
+  'Select Add server. Enter a name, choose STDIO or Streamable HTTP, and provide the server’s command or URL. Save the server, then select Restart. In the composer, type /mcp to view connected servers.'
 /** Official slash / command palette (learn.chatgpt.com / Codex Open MCP status). */
 export const OPEN_MCP_STATUS_LABEL = 'Open MCP status'
 /** Official Settings → Profile (learn.chatgpt.com/docs/reference/settings). No longest-task. */
