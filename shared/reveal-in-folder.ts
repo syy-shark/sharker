@@ -154,6 +154,10 @@ export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
 export const MCP_SERVERS_LABEL = 'MCP servers'
+/** Official Settings → Profile (learn.chatgpt.com/docs/reference/settings). No longest-task. */
+export const PROFILE_SETTINGS_LABEL = 'Profile'
+/** Official Archived chats restore (Use Unarchive to restore a chat). */
+export const UNARCHIVE_LABEL = 'Unarchive'
 /** 官方 Settings → General（对标 learn.chatgpt.com/docs/reference/settings） */
 export const SHOW_CONTEXT_WINDOW_USAGE_LABEL = 'Show context window usage'
 export const PREVENT_SLEEP_WHILE_RUNNING_LABEL = 'Prevent sleep while running'

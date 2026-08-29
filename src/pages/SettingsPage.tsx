@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / MCP servers / General / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Archived chats / 用量
+ * 设置页壳：权限 / 模型 / MCP servers / General / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Archived chats / Profile
  * Computer Use / Browser Use 入口暂隐藏；`BrowserSettings` 对标 Codex Settings → Browser
  * @see src/ARCH.md
  */
@@ -23,6 +23,7 @@ import {
   ARCHIVED_CHATS_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
+  PROFILE_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
@@ -77,8 +78,8 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
     desc: '已归档的对话。可回档到侧栏列表，或彻底删除。'
   },
   usage: {
-    title: '用量',
-    desc: '本机 Token、峰值日与连续活跃。对标 Codex Profile，不假装供应商额度或最长任务。'
+    title: PROFILE_SETTINGS_LABEL,
+    desc: '本机 Token、峰值日与连续活跃。对标 Codex Settings → Profile，不假装供应商额度或最长任务。'
   }
 }
 

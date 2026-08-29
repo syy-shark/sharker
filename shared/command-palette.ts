@@ -43,6 +43,7 @@ import {
   START_DICTATION_LABEL,
   APPEARANCE_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
+  PROFILE_SETTINGS_LABEL,
   MCP_SERVERS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
@@ -568,7 +569,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'usage',
-    title: '打开用量',
+    title: PROFILE_SETTINGS_LABEL,
     keywords: 'usage tokens profile streak 用量 画像 token 统计',
     action: 'open_usage'
   },

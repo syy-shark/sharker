@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArchiveRestore, Trash2 } from 'lucide-react'
 import { DEFAULT_CONVERSATION_TITLE, type ConversationSummary } from '../../../shared/conversation'
+import { UNARCHIVE_LABEL } from '../../../shared/reveal-in-folder'
 import './ArchivedSettings.css'
 
 function titleOf(c: ConversationSummary): string {
@@ -99,11 +100,11 @@ export function ArchivedSettings() {
                 type="button"
                 className="archived-btn archived-btn--restore"
                 disabled={busy}
-                title="回档到对话列表"
+                title={UNARCHIVE_LABEL}
                 onClick={() => void handleRestore(c)}
               >
                 <ArchiveRestore size={15} aria-hidden />
-                回档
+                {UNARCHIVE_LABEL}
               </button>
               <button
                 type="button"

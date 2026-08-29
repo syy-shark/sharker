@@ -3,6 +3,8 @@ import {
   applyGoalCommand,
   formatGoalChip,
   formatGoalProgressLabel,
+  GOAL_ACTIVE_LABEL,
+  GOAL_PAUSED_LABEL,
   goalPromptBlock,
   parseGoalCommand,
   shouldStartGoalTurn
@@ -48,10 +50,12 @@ describe('thread goal', () => {
 
   it('formats a composer chip', () => {
     expect(formatGoalChip(null)).toBeNull()
-    expect(formatGoalChip({ text: '短', status: 'active' })).toBe('目标 · 短')
-    expect(formatGoalChip({ text: '短', status: 'paused' })).toBe('目标已暂停 · 短')
-    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'active' })).toBe('进行中')
-    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'paused' })).toBe('已暂停')
+    expect(formatGoalChip({ text: '短', status: 'active' })).toBe('Active · 短')
+    expect(formatGoalChip({ text: '短', status: 'paused' })).toBe('Paused · 短')
+    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'active' })).toBe('Active')
+    expect(formatGoalProgressLabel({ text: '修好滚动', status: 'paused' })).toBe('Paused')
     expect(formatGoalProgressLabel(null)).toBeNull()
+    expect(GOAL_ACTIVE_LABEL).toBe('Active')
+    expect(GOAL_PAUSED_LABEL).toBe('Paused')
   })
 })

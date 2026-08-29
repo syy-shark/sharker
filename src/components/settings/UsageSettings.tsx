@@ -1,5 +1,5 @@
 /**
- * 设置 → 用量：对标 Codex Profile 的本机洞察。
+ * 设置 → Profile：对标 Codex Settings → Profile 的本机洞察。
  * 只展示日 Token / 回合能推导的字段，不假装最长任务或供应商额度。
  * @see src/components/settings/ARCH.md
  */

@@ -47,6 +47,7 @@ import {
   EDIT_PROJECT_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
+  PROFILE_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
   NEW_CHAT_LABEL,
@@ -155,7 +156,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'suggested', label: SUGGESTED_PROMPTS_SETTINGS_LABEL, icon: Lightbulb },
   { id: 'shortcuts', label: KEYBOARD_SHORTCUTS_LABEL, icon: Keyboard },
   { id: 'archived', label: ARCHIVED_CHATS_LABEL, icon: Archive },
-  { id: 'usage', label: '用量', icon: ChartNoAxesColumn }
+  { id: 'usage', label: PROFILE_SETTINGS_LABEL, icon: ChartNoAxesColumn }
 ]
 
 function readSidebarWidth(): number {

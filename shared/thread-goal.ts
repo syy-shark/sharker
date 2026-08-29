@@ -6,6 +6,10 @@
 /** 目标是否仍在推进 */
 export type ThreadGoalStatus = 'active' | 'paused'
 
+/** Official Goal states (desktop progress row / cookbook active · paused). */
+export const GOAL_ACTIVE_LABEL = 'Active'
+export const GOAL_PAUSED_LABEL = 'Paused'
+
 /** 一条对话上的持久目标 */
 export interface ThreadGoal {
   text: string
@@ -58,7 +62,7 @@ export function applyGoalCommand(
         note: '当前线程没有目标。用法：`/goal 文本` 设定，`/goal edit` 改写，`/goal pause` 暂停，`/goal resume` 继续，`/goal clear` 清除。'
       }
     }
-    const state = current.status === 'paused' ? '已暂停' : '进行中'
+    const state = current.status === 'paused' ? GOAL_PAUSED_LABEL : GOAL_ACTIVE_LABEL
     return { goal: current, note: `**线程目标**（${state}）\n\n${current.text}` }
   }
   if (command.type === 'clear') {
@@ -122,14 +126,14 @@ export function shouldStartGoalTurn(command: GoalCommand): boolean {
 export function formatGoalChip(goal: ThreadGoal | null | undefined): string | null {
   const text = goal?.text?.trim()
   if (!text) return null
-  const prefix = goal.status === 'paused' ? '目标已暂停' : '目标'
+  const prefix = goal.status === 'paused' ? GOAL_PAUSED_LABEL : GOAL_ACTIVE_LABEL
   const short = text.length > 24 ? `${text.slice(0, 23)}…` : text
   return `${prefix} · ${short}`
 }
 
-/** 进度条状态字（对标 Codex Goal 进度行） */
+/** 进度条状态字（对标 Codex Goal 进度行 Active / Paused） */
 export function formatGoalProgressLabel(goal: ThreadGoal | null | undefined): string | null {
   const text = goal?.text?.trim()
   if (!text) return null
-  return goal.status === 'paused' ? '已暂停' : '进行中'
+  return goal.status === 'paused' ? GOAL_PAUSED_LABEL : GOAL_ACTIVE_LABEL
 }

@@ -141,6 +141,7 @@ describe('command palette', () => {
       true
     )
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
+    expect(filterPaletteCommands('Profile').some((c) => c.action === 'open_usage')).toBe(true)
     expect(filterPaletteCommands('MCP 服务器').some((c) => c.action === 'open_mcp')).toBe(true)
     expect(filterPaletteCommands('MCP servers').some((c) => c.action === 'open_mcp')).toBe(true)
     expect(filterPaletteCommands('General').some((c) => c.id === 'general')).toBe(true)
