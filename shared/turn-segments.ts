@@ -1,5 +1,6 @@
 /**
  * 将流式 chunk 归并为有序 TurnSegment[]，供直播式过程流渲染。
+ * 末段已是增长中的思考 / 正文时只续尾，不扫「准备中」status（对标 Codex #22860）。
  * 自动压缩 status 在 `context_compress` 时收成 done，避免准备中卡到摘要结束。
  * @see shared/ARCH.md
  */
@@ -279,6 +280,12 @@ function makeToolSegment(
 /** 将单个 StreamChunk 增量应用到片段列表，返回新数组 */
 /** 只换数组和改过的段，已完成工具对象保持引用，避免每 token 打穿 memo */
 function applyThinkChunk(segments: TurnSegment[], content: string, timestamp: number): TurnSegment[] {
+  const last = segments[segments.length - 1]
+  if (last?.kind === 'thinking' && last.status === 'active') {
+    const next = segments.slice()
+    next[next.length - 1] = { ...last, content: (last.content ?? '') + content }
+    return next
+  }
   const next = segments.slice()
   for (let i = 0; i < next.length; i++) {
     const s = next[i]
@@ -307,6 +314,12 @@ function applyThinkChunk(segments: TurnSegment[], content: string, timestamp: nu
 }
 
 function applyTokenChunk(segments: TurnSegment[], content: string, timestamp: number): TurnSegment[] {
+  const last = segments[segments.length - 1]
+  if (last?.kind === 'text' && last.status !== 'done') {
+    const next = segments.slice()
+    next[next.length - 1] = { ...last, content: (last.content ?? '') + content }
+    return next
+  }
   const next = segments.slice()
   for (let i = next.length - 1; i >= 0; i--) {
     if ((next[i].kind === 'thinking' || next[i].kind === 'status') && next[i].status === 'active') {
@@ -314,9 +327,9 @@ function applyTokenChunk(segments: TurnSegment[], content: string, timestamp: nu
       break
     }
   }
-  const last = next[next.length - 1]
-  if (last?.kind === 'text' && last.status !== 'done') {
-    next[next.length - 1] = { ...last, content: (last.content ?? '') + content }
+  const tail = next[next.length - 1]
+  if (tail?.kind === 'text' && tail.status !== 'done') {
+    next[next.length - 1] = { ...tail, content: (tail.content ?? '') + content }
     return next
   }
   next.push({

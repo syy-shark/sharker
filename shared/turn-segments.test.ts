@@ -130,6 +130,12 @@ describe('turn segment event state machine', () => {
     segments = applyStreamChunk(segments, { type: 'think', content: '分析', timestamp: 2 })
     expect(segments[0].status).toBe('done')
     expect(segments.some((s) => s.kind === 'thinking' && s.status === 'active')).toBe(true)
+    const closedPrepare = segments[0]
+    const firstThink = segments.find((s) => s.kind === 'thinking')
+    segments = applyStreamChunk(segments, { type: 'think', content: '下一步', timestamp: 3 })
+    expect(segments[0]).toBe(closedPrepare)
+    expect(segments.find((s) => s.kind === 'thinking')?.content).toBe('分析下一步')
+    expect(segments.find((s) => s.kind === 'thinking')).not.toBe(firstThink)
     let compacting = applyStreamChunk([], { type: 'turn_start', timestamp: 1 })
     compacting = applyStreamChunk(compacting, {
       type: 'status',
@@ -177,6 +183,11 @@ describe('turn segment event state machine', () => {
     expect(first.content).toBe(snapshot)
     expect(first).not.toBe(segments[0])
     expect(segments[0].content).toBe('你好世界')
+    const grownText = segments[0]
+    segments = applyStreamChunk(segments, { type: 'token', content: '！', timestamp: 2 })
+    expect(grownText).not.toBe(segments[0])
+    expect(segments[0].content).toBe('你好世界！')
+    expect(segments).toHaveLength(1)
     segments = applyStreamChunk(segments, {
       type: 'tool_start',
       toolName: 'write_file',
