@@ -3,6 +3,7 @@
  * @see shared/edit-activity.ts
  */
 import { describe, expect, it } from 'vitest'
+import { buildProcessSteps } from './process-steps'
 import {
   formatEditActivity,
   formatEditFileActivity,
@@ -31,5 +32,12 @@ describe('edit-activity', () => {
       'Edited 3 files'
     )
     expect(formatEditActivity('read_file', { path: 'a.ts' })).toBeNull()
+    const replay = buildProcessSteps({
+      activities: [
+        { kind: 'tool', label: '写入文件 · src/a.ts' },
+        { kind: 'tool', label: '删除路径 · src/gone.ts' }
+      ]
+    })
+    expect(replay.map((s) => s.title)).toEqual(['Edited a.ts', 'Deleted gone.ts'])
   })
 })

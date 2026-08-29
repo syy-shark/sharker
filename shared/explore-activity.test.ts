@@ -3,6 +3,7 @@
  * @see shared/explore-activity.ts
  */
 import { describe, expect, it } from 'vitest'
+import { buildProcessSteps } from './process-steps'
 import {
   exploreNameFromPath,
   formatExploreActivity,
@@ -24,5 +25,14 @@ describe('explore-activity', () => {
     expect(formatExploreSearch('foo', 'lib')).toBe('Search foo in lib')
     expect(formatExploreActivity('run_terminal_cmd', { command: 'ls' })).toBeNull()
     expect(formatExploreActivity('read_file', {})).toBe('Read')
+    const replay = buildProcessSteps({
+      activities: [
+        { kind: 'tool', label: '读取文件 · src/App.tsx' },
+        { kind: 'tool', label: '列出目录 · src' },
+        { kind: 'tool', label: '搜索内容 · LiveHead' }
+      ]
+    })
+    expect(replay.map((s) => s.title)).toEqual(['Read App.tsx', 'List src', 'Search LiveHead'])
+    expect(replay.every((s) => s.detail === undefined)).toBe(true)
   })
 })

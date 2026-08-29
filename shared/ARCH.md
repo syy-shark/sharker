@@ -43,7 +43,7 @@
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
-| `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id）；动态 MCP 标题用 `server.tool` |
+| `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id）；探索/写盘/命令回放成官方 Read / List / Search / Edited / Deleted / Ran（仍认中文旧 label）；`toolTitle()` 保持中文以免打断「正在准备…」直播映射；动态 MCP 标题用 `server.tool` |
 | `last-turn-flush.ts` | 直播写盘时审查「本轮」路径推迟 400ms 再抬 React（收束 / 切会话立刻刷，对标 Codex #22860） |
 | `live-stream-ui.ts` | 直播 token / 回合元信息快照：`nextLiveStreamUi` 字段没变则复用对象，给 ChatView 外部 store（对标 Codex #22860，16ms flush 与工具心跳不抬历史列；token 增长保住 meta 引用）；`liveStreamPatchFromSegments` 给 DEV seed / 开轮准备中 / 收束与中止一次写齐片段、最终正文与秒表；`shouldPublishTurnMetaReset` 让 commit 先留秒表，等 loading 关再清空（对标 Codex #37849）；`liveCompactStatusSegment` 给 `/compact` 写 Compacting context 直播状态（对标 contextCompaction） |
 | `live-stream-slices.ts` | 直播过程/回答切片：正文增长且工具引用没变时过程视图退回 prev；回答拆闭合块与增长尾；操作条只订布尔（对标 Codex #22860） |

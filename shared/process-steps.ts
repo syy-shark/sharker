@@ -2,10 +2,14 @@
  * 将一轮工具活动转为过程时间线步骤。
  * 详见 shared/ARCH.md
  */
+import { formatEditActivity, isEditActivityToolName } from './edit-activity'
+import { formatExecActivity } from './exec-activity'
+import { formatExploreActivity, isExploreActivityToolName } from './explore-activity'
 import { formatMcpInvocation, parseMcpInvocation } from './mcp-activity'
 import { THINKING_LABEL, THOUGHT_LABEL } from './live-display'
 import type { TurnActivity } from './types'
 import { isSubAgentInspectTool, parseSubAgentId, subAgentIdFromTool } from './subagent'
+import { formatViewImageActivity, isViewImageTool } from './view-image'
 
 /** UI 过程时间线标题（渲染进程用，与 tools/builtins 各模块 title 保持同步） */
 const TOOL_TITLES: Record<string, string> = {
@@ -90,18 +94,59 @@ function toolNameFromLabel(label: string): string {
   return dot === -1 ? label : label.slice(0, dot)
 }
 
+/** 中文旧标题或英文工具名 → 规范 toolName，供官方回放标题用 */
+function resolveCanonicalToolName(head: string): string {
+  if (TOOL_TITLES[head]) return head
+  for (const [name, title] of Object.entries(TOOL_TITLES)) {
+    if (title === head) return name
+  }
+  return head
+}
+
+/**
+ * 旧 ProcessTimeline 回放：Read / List / Search / Edited / Deleted / Ran。
+ * 不改 `toolTitle()`：provider 仍发「正在准备列出目录」，直播头靠 resolvePrepareLiveTitle。
+ */
+function officialReplayStep(
+  toolName: string,
+  detail: string | undefined,
+  status: ProcessStepStatus
+): { title: string; detail?: string } | null {
+  if (isExploreActivityToolName(toolName)) {
+    const title = formatExploreActivity(toolName, undefined, detail)
+    return title ? { title } : null
+  }
+  if (isEditActivityToolName(toolName)) {
+    const title = formatEditActivity(toolName, undefined, detail, status)
+    return title ? { title } : null
+  }
+  if (toolName === 'run_terminal_cmd') {
+    return { title: formatExecActivity(detail, status) }
+  }
+  if (isViewImageTool(toolName)) {
+    return { title: formatViewImageActivity(), detail }
+  }
+  return null
+}
+
 /** 解析工具活动 label 为标题与详情 */
-function parseToolLabel(label: string): { title: string; detail?: string; toolName: string } {
-  const toolName = toolNameFromLabel(label)
+function parseToolLabel(
+  label: string,
+  status: ProcessStepStatus
+): { title: string; detail?: string; toolName: string } {
+  const head = toolNameFromLabel(label)
+  const toolName = resolveCanonicalToolName(head)
   const dot = label.indexOf(' · ')
+  const detail = dot === -1 ? undefined : label.slice(dot + 3) || undefined
+  const official = officialReplayStep(toolName, detail, status)
+  if (official) return { toolName, ...official }
   if (dot === -1) {
     return { toolName, title: TOOL_TITLES[toolName] ?? toolName }
   }
-  const detail = label.slice(dot + 3)
   return {
     toolName,
     title: TOOL_TITLES[toolName] ?? toolName,
-    detail: detail || undefined
+    detail
   }
 }
 
@@ -156,15 +201,17 @@ export function buildProcessSteps(options: {
       continue
     }
 
-    const { title, detail, toolName } = parseToolLabel(a.label)
+    const isLast = i === options.activities.length - 1
+    const isActive = Boolean(
+      options.isStreaming &&
+        isLast &&
+        options.activeTool &&
+        resolveCanonicalToolName(toolNameFromLabel(a.label)) === options.activeTool
+    )
+    const { title, detail, toolName } = parseToolLabel(a.label, isActive ? 'active' : 'done')
     if (steps.length > 0 && isSameToolStep(steps[steps.length - 1], title, detail)) {
       continue
     }
-
-    const isLast = i === options.activities.length - 1
-    const isActive = Boolean(
-      options.isStreaming && isLast && options.activeTool && toolName === options.activeTool
-    )
 
     steps.push({
       id: `tool-${i}-${a.label}`,
@@ -187,7 +234,7 @@ export function canExpandProcess(steps: ProcessStep[]): boolean {
   return steps.length > 0
 }
 
-/** 工具英文名 → 中文步骤标题；动态 MCP 用官方 `server.tool` */
+/** 工具英文名 → 内部步骤标题（provider 准备态仍用中文）；动态 MCP 用官方 `server.tool` */
 export function toolTitle(toolName: string): string {
   const invocation = parseMcpInvocation(toolName)
   if (invocation) return formatMcpInvocation(invocation)
