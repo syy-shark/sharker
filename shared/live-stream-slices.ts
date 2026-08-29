@@ -346,6 +346,32 @@ export function liveAnswerGrowState(
  * 前缀引用没变且尾仍是同一段正文：只换 tail，不重跑 buildAnswerParts。
  * 就地比 all-but-last，不 `slice`（对标 Codex #22860）。
  */
+/**
+ * 末段仍是同一段增长中的思考 / 状态：回答槽没变，不必 `buildAnswerParts`。
+ * 工具末段不跳（预览可补 diff）。对标 Codex #22860。
+ */
+export function shouldSkipLiveAnswerIdentity(input: {
+  prev: LiveAnswerView | null
+  prevSegments: readonly TurnSegment[] | null
+  segments: readonly TurnSegment[]
+}): boolean {
+  if (!input.prev || !input.prevSegments) return false
+  if (input.prevSegments.length !== input.segments.length) return false
+  const last = input.segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (input.prevSegments[i] !== input.segments[i]) return false
+  }
+  const prevTail = input.prevSegments[last]
+  const nextTail = input.segments[last]
+  if (!prevTail || !nextTail) return false
+  if (prevTail === nextTail) return true
+  if (prevTail.id !== nextTail.id || prevTail.kind !== nextTail.kind) return false
+  if (nextTail.kind === 'thinking' || nextTail.kind === 'status') {
+    return prevTail.status === nextTail.status
+  }
+  return false
+}
+
 export function shouldGrowLiveAnswerTail(input: {
   prev: LiveAnswerView | null
   prevSegments: readonly TurnSegment[] | null
@@ -401,6 +427,10 @@ export function nextLiveAnswerView(
       : undefined
   )
   const prevSegments = answerGrowHold?.view === prev ? answerGrowHold.segments : null
+  if (prev && shouldSkipLiveAnswerIdentity({ prev, prevSegments, segments })) {
+    answerGrowHold = { view: prev, segments, tailPlain: Boolean(grow.tail) }
+    return prev
+  }
   if (prev && shouldGrowLiveAnswerTail({ prev, prevSegments, segments, tail: grow.tail })) {
     const view = growLiveAnswerView(prev, grow.tail!)
     answerGrowHold = { view, segments, tailPlain: true }

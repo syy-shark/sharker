@@ -27,6 +27,7 @@ import {
   nextLiveProcessView,
   shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView,
+  shouldSkipLiveAnswerIdentity,
   shouldSkipLiveProcessIdentity
 } from './live-stream-slices'
 
@@ -171,6 +172,39 @@ describe('live stream ui snapshot', () => {
     ).toBe(true)
     expect(liveProcessIdentity([think('Hmm')])).toBe(liveProcessIdentity([think('Hmm more')]))
     expect(nextLiveThinkText('Hmm', [think('Hmm')], [think('Hmm more')])).toBe('Hmm more')
+    const answerWhileThink = nextLiveAnswerView(null, thinkSnap1)
+    expect(nextLiveAnswerView(answerWhileThink, thinkSnap2)).toBe(answerWhileThink)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileThink,
+        prevSegments: [think('Hmm')],
+        segments: [think('Hmm more')]
+      })
+    ).toBe(true)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileThink,
+        prevSegments: [think('Hmm')],
+        segments: [tool]
+      })
+    ).toBe(false)
+    const statusGrow = (body: string): TurnSegment => ({
+      id: 'st1',
+      kind: 'status',
+      status: 'active',
+      content: body
+    })
+    const statusSnap1 = { ...EMPTY_LIVE_STREAM_UI, liveSegments: [statusGrow('Preparing')] }
+    const statusSnap2 = { ...EMPTY_LIVE_STREAM_UI, liveSegments: [statusGrow('Preparing…')] }
+    const answerWhileStatus = nextLiveAnswerView(null, statusSnap1)
+    expect(nextLiveAnswerView(answerWhileStatus, statusSnap2)).toBe(answerWhileStatus)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileStatus,
+        prevSegments: [statusGrow('Preparing')],
+        segments: [statusGrow('Preparing…')]
+      })
+    ).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
