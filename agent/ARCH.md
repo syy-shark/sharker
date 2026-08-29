@@ -22,7 +22,7 @@
 | `commands.test.ts` | `/plan-mode` 与 `/plan` 同义；空参切换按会话隔离 |
 | `pipeline-plan.test.ts` | `processUserInput` 空 `/plan` 不查询、带参规划、Build 关芯片 |
 | `pipeline-abort.test.ts` | 按会话 abort 归属单测 |
-| `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表 + 拒绝记录供 `/approve`）↔ verify；首轮采样后再排空 `chat:steer`（对标 Codex pending input，不中止直播）；工具批次后发「规划下一步」status 保直播连续性；把 provider `status`（含正在重新连接… n/5）原样推到直播行；计划阶段按 conversationId 过滤工具；`present_inline_demo` 与写入/补丁 `tool_status` 转 `tool_preview` |
+| `query-loop.ts` | 核心循环：流式问模型 ↔ 工具（只读可并行）↔ 审批（once/session/deny + 会话授权表 + 拒绝记录供 `/approve`）↔ Ask User（`request_user_input` 拦截后等用户，不与其它工具并行，Stop 解开等待）↔ verify；首轮采样后再排空 `chat:steer`（对标 Codex pending input，不中止直播）；工具批次后发「规划下一步」status 保直播连续性；把 provider `status`（含正在重新连接… n/5）原样推到直播行；计划阶段按 conversationId 过滤工具；`present_inline_demo` 与写入/补丁 `tool_status` 转 `tool_preview` |
 | `loop.ts` | `buildSystemPrompt`（含人格语气、Git commit/PR 文案模板、AGENTS.md 链、本会话计划模式约束）、`generateTitle`；含内联演示规范摘要（全文见 `docs/inline-demo-spec.md`） |
 | `agents-md.ts` | 加载全局 `~/.sharker` + 仓库根到 cwd 的 AGENTS.md；`/init` 写当前目录脚手架（含 Code Review Rules）；设置页读写个人 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | 全局 override、init 只写一次、个人说明不碰 override |
@@ -38,7 +38,7 @@
 | `vision-feedback.ts` | Computer Use 截图视觉回灌（多模态 user 消息） |
 | `coordinator.ts` | 子 Agent：spawn、转向、停止、按父线程快照；直播 token 节流广播；`~/.sharker/subagents.json` 重启恢复（进行中标中断） |
 | `coordinator.test.ts` | 父线程归组、停止、落盘与重启中断 |
-| `approval-bridge.ts` | 父 turn 审批桥，供子 Agent 工具调用复用 |
+| `approval-bridge.ts` | 父 turn 审批 / Ask User 桥，供子 Agent 工具调用复用 |
 | `ARCH.md` | 本层架构说明 |
 
 ## Turn 管线（一次用户消息）

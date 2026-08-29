@@ -2,7 +2,7 @@
  * Agent system prompt 与标题生成；Turn 主循环见 pipeline.ts / query-loop.ts。
  * @see agent/ARCH.md
  */
-import type { AppSettings, ApprovalRequest, ChatMessage } from '../shared/types'
+import type { AppSettings, ApprovalRequest, ChatMessage, UserInputRequest, UserInputResponse } from '../shared/types'
 import { getActiveWorkspacePath } from '../shared/workspace'
 import { gatherComputerUseStatus } from '../shared/computer-use-status'
 import { gatherBrowserUseStatus } from '../shared/browser-use-status'
@@ -187,6 +187,9 @@ export async function buildSystemPrompt(
 export type ApprovalHandler = (
   req: ApprovalRequest
 ) => Promise<import('../shared/approval-session').ApprovalDecision | boolean>
+
+/** Ask User：等用户提交结构化答案（对标 Codex request_user_input） */
+export type UserInputHandler = (req: UserInputRequest) => Promise<UserInputResponse>
 
 /** 根据对话前几轮内容生成简短中文标题，失败时回退到首条用户消息 */
 export async function generateTitle(settings: AppSettings, messages: ChatMessage[]): Promise<string> {

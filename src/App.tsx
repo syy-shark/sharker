@@ -31,6 +31,8 @@ import { formatUsageReport, parseUsageScope, usageHistoryDays } from '../shared/
 import type {
   AppSettings,
   ApprovalRequest,
+  UserInputRequest,
+  UserInputResponse,
   AssistantMeta,
   ChatAttachment,
   ChatMessage,
@@ -316,6 +318,7 @@ interface SessionLiveBuffer {
   streaming: string
   turnThinking: string
   approval: ApprovalRequest | null
+  userInput: UserInputRequest | null
   liveTurnMeta: AssistantMeta | null
   turnStartedAt: number | null
   turnHadThinking: boolean
@@ -374,6 +377,7 @@ export interface SharkerDevDebugApi {
     liveSegmentCount: number
     streamingLen: number
     approval: boolean
+    userInput: boolean
   }>
   /** 读取某会话 buffer 消息摘要（内存优先） */
   peekSession: (conversationId: string) => {
@@ -437,6 +441,9 @@ export default function App() {
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
+  const [userInput, setUserInput] = useState<UserInputRequest | null>(null)
+  const [userInputResponding, setUserInputResponding] = useState(false)
+  const userInputBusyRef = useRef(false)
   const [pendingPlan, setPendingPlan] = useState<{ document: string; filePath?: string } | null>(
     null
   )
@@ -875,6 +882,9 @@ export default function App() {
     setLoading(buf.loading || buf.sendInFlight)
     setApproval(buf.approval)
     setApprovalResponding(false)
+    setUserInput(buf.userInput ?? null)
+    userInputRef.current = buf.userInput ?? null
+    setUserInputResponding(false)
     turnHadThinkingRef.current = buf.turnHadThinking
     turnOutcomeRef.current = buf.turnOutcome
     activeUserMessageIdRef.current = buf.activeUserMessageId
@@ -987,6 +997,10 @@ export default function App() {
   useEffect(() => {
     approvalRef.current = approval
   }, [approval])
+  const userInputRef = useRef<UserInputRequest | null>(null)
+  useEffect(() => {
+    userInputRef.current = userInput
+  }, [userInput])
 
   /** 刷新指定工作区的侧栏对话列表 */
   const refreshConversationList = useCallback(async (workspaceId: string) => {
@@ -1335,6 +1349,9 @@ export default function App() {
     activeUserMessageIdRef.current = undefined
     setApproval(null)
     setApprovalResponding(false)
+    setUserInput(null)
+    setUserInputResponding(false)
+    userInputRef.current = null
     turnMetaRef.current = { browsedFiles: [], activities: [] }
     turnChangedPathsRef.current = []
     const meta = liveAssistantMeta([], [])
@@ -1372,6 +1389,7 @@ export default function App() {
       streaming: streamingRef.current,
       turnThinking: turnThinkingRef.current,
       approval: approvalRef.current,
+      userInput: userInputRef.current,
       liveTurnMeta: liveAssistantMeta(
         turnMetaRef.current.browsedFiles,
         turnMetaRef.current.activities,
@@ -1492,6 +1510,7 @@ export default function App() {
               streaming: '',
               turnThinking: '',
               approval: null,
+              userInput: null,
               liveTurnMeta: null,
               turnStartedAt: turnStartedAtRef.current || Date.now(),
               turnHadThinking: turnHadThinkingRef.current,
@@ -1511,6 +1530,7 @@ export default function App() {
           buf.loading = true
           buf.sendInFlight = sendInFlightRef.current || buf.loading
           buf.approval = approvalRef.current
+          buf.userInput = userInputRef.current
           buf.liveTurnMeta = liveAssistantMeta(
             turnMetaRef.current.browsedFiles,
             turnMetaRef.current.activities,
@@ -1698,6 +1718,7 @@ export default function App() {
           buf.sendInFlight = false
           buf.doneCommitted = true
           buf.approval = null
+          buf.userInput = null
           buf.activeTool = null
           sessionBuffersRef.current.set(targetId, buf)
         }
@@ -2178,6 +2199,7 @@ export default function App() {
           streaming: '',
           turnThinking: '',
           approval: null,
+          userInput: null,
           liveTurnMeta: null,
           turnStartedAt: Date.now(),
           turnHadThinking: false,
@@ -2320,6 +2342,12 @@ export default function App() {
       if (chunk.type === 'approval_resolved') {
         buf.approval = null
       }
+      if (chunk.type === 'user_input_needed' && chunk.userInput) {
+        buf.userInput = chunk.userInput
+      }
+      if (chunk.type === 'user_input_resolved') {
+        buf.userInput = null
+      }
       if (
         chunk.type === 'context_compress' &&
         chunk.contextCompress &&
@@ -2405,6 +2433,8 @@ export default function App() {
           chunk.type === 'context_compress' ||
           chunk.type === 'approval_needed' ||
           chunk.type === 'approval_resolved' ||
+          chunk.type === 'user_input_needed' ||
+          chunk.type === 'user_input_resolved' ||
           chunk.type === 'turn_cancelled' ||
           chunk.type === 'error'
         ) {
@@ -2421,7 +2451,12 @@ export default function App() {
           }
           applyChunkToBuffer(buf, chunk)
         }
-        if (chunk.type === 'approval_needed' || chunk.type === 'approval_resolved') {
+        if (
+          chunk.type === 'approval_needed' ||
+          chunk.type === 'approval_resolved' ||
+          chunk.type === 'user_input_needed' ||
+          chunk.type === 'user_input_resolved'
+        ) {
           bumpSessionLive()
         }
         if (chunk.type === 'turn_start' && ownerId) {
@@ -2456,6 +2491,7 @@ export default function App() {
           buf.sendInFlight = false
           buf.activeTool = null
           buf.approval = null
+          buf.userInput = null
           buf.segments = finalizeSegments(buf.segments)
           const text = extractFinalContent(buf.segments) || buf.streaming
           const durationSec = Math.max(
@@ -2530,6 +2566,8 @@ export default function App() {
         chunk.type === 'context_compress' ||
         chunk.type === 'approval_needed' ||
         chunk.type === 'approval_resolved' ||
+        chunk.type === 'user_input_needed' ||
+        chunk.type === 'user_input_resolved' ||
         chunk.type === 'turn_cancelled' ||
         chunk.type === 'error'
       ) {
@@ -2649,6 +2687,22 @@ export default function App() {
             if (parked) parked.approval = null
           }
         }
+        if (chunk.type === 'user_input_needed' && chunk.userInput) {
+          if (!chunk.userInput.conversationId || chunk.userInput.conversationId === activeId) {
+            setUserInput(chunk.userInput)
+            userInputRef.current = chunk.userInput
+          }
+        }
+        if (chunk.type === 'user_input_resolved') {
+          setUserInput(null)
+          userInputRef.current = null
+          setUserInputResponding(false)
+          const waitingId = ownerId || activeId
+          if (waitingId) {
+            const parked = sessionBuffersRef.current.get(waitingId)
+            if (parked) parked.userInput = null
+          }
+        }
         if (chunk.type === 'turn_start' && ownerId) {
           streamOwnerRef.current = ownerId
           if (ownerId && streamTurnGenByConvRef.current[ownerId] == null) {
@@ -2733,6 +2787,7 @@ export default function App() {
             buf.sendInFlight = false
             buf.activeTool = null
             buf.approval = null
+            buf.userInput = null
             buf.segments = finalizeSegments(buf.segments)
             const text = extractFinalContent(buf.segments) || buf.streaming
             const durationSec = Math.max(
@@ -2852,9 +2907,21 @@ export default function App() {
       approvalRef.current = req
       notifyApprovalIfNeeded(req)
     })
+    const offUserInput = window.sharker.onUserInput?.((req) => {
+      const activeId = activeConversationIdRef.current
+      if (req.conversationId && activeId && req.conversationId !== activeId) {
+        const buf = sessionBuffersRef.current.get(req.conversationId)
+        if (buf) buf.userInput = req
+        bumpSessionLive()
+        return
+      }
+      setUserInput(req)
+      userInputRef.current = req
+    })
     return () => {
       offStream()
       offApproval()
+      offUserInput?.()
       if (streamRafRef.current != null) cancelAnimationFrame(streamRafRef.current)
       if (streamFlushTimerRef.current != null) clearTimeout(streamFlushTimerRef.current)
       if (thinkRafRef.current != null) cancelAnimationFrame(thinkRafRef.current)
@@ -3072,6 +3139,7 @@ export default function App() {
             streaming: '',
             turnThinking: '',
             approval: null,
+            userInput: null,
             liveTurnMeta: null,
             turnStartedAt: Date.now(),
             turnHadThinking: false,
@@ -3119,6 +3187,7 @@ export default function App() {
         buf.streaming = ''
         buf.turnThinking = ''
         buf.approval = null
+        buf.userInput = null
         buf.turnStartedAt = seedAt
         buf.turnMeta = { browsedFiles: [], activities: [] }
         sessionBuffersRef.current.set(convId, buf)
@@ -3255,6 +3324,7 @@ export default function App() {
             streaming: '',
             turnThinking: '',
             approval: null,
+            userInput: null,
             liveTurnMeta: null,
             turnStartedAt: turnStartedAtRef.current || Date.now(),
             turnHadThinking: false,
@@ -3727,6 +3797,9 @@ export default function App() {
           turnThinkingRef.current = ''
           setApproval(null)
           approvalRef.current = null
+          setUserInput(null)
+          userInputRef.current = null
+          setUserInputResponding(false)
           sendInFlightRef.current = false
           setLoading(false)
           if (streamOwnerRef.current === convId) streamOwnerRef.current = null
@@ -3944,6 +4017,9 @@ export default function App() {
       }
       setApproval(null)
       approvalRef.current = null
+      setUserInput(null)
+      userInputRef.current = null
+      setUserInputResponding(false)
       streamingRef.current = ''
       turnThinkingRef.current = ''
       const seedAt = Date.now()
@@ -4053,6 +4129,9 @@ export default function App() {
       doneCommittedRef.current = true
       setApproval(null)
       setApprovalResponding(false)
+      setUserInput(null)
+      setUserInputResponding(false)
+      userInputRef.current = null
       turnOutcomeRef.current = 'aborted'
       // 再次收口，防止 abort 回调间隙又写入 active 工具
       segmentsRef.current = applyStreamChunk(segmentsRef.current, {
@@ -4274,6 +4353,9 @@ export default function App() {
         setLoading(false)
         setApproval(null)
         setApprovalResponding(false)
+        setUserInput(null)
+        setUserInputResponding(false)
+        userInputRef.current = null
         resetTurnMeta()
         // 已提交的缓冲可以释放，防止无限堆积
         sessionBuffersRef.current.delete(conversationId)
@@ -4297,6 +4379,9 @@ export default function App() {
     setLoading(false)
     setApproval(null)
     setApprovalResponding(false)
+    setUserInput(null)
+    setUserInputResponding(false)
+    userInputRef.current = null
     resetTurnMeta()
     const summary = conversationListRef.current.find((c) => c.id === conversationId)
     if ((conv?.unread || summary?.unread) && window.sharker.patchConversationMeta) {
@@ -5043,16 +5128,21 @@ export default function App() {
         liveIds.push(c.id)
         seen.add(c.id)
       }
-      if (buf?.approval) waitingIds.add(c.id)
+      if (buf?.approval || buf?.userInput) waitingIds.add(c.id)
     }
     for (const [id, buf] of sessionBuffersRef.current.entries()) {
-      if (buf.approval) waitingIds.add(id)
+      if (buf.approval || buf.userInput) waitingIds.add(id)
       if (seen.has(id)) continue
       if (buf.loading || buf.sendInFlight) liveIds.push(id)
     }
     const pending = approvalRef.current
     if (pending) {
       const waitingId = pending.conversationId || activeConversationIdRef.current
+      if (waitingId) waitingIds.add(waitingId)
+    }
+    const pendingInput = userInputRef.current
+    if (pendingInput) {
+      const waitingId = pendingInput.conversationId || activeConversationIdRef.current
       if (waitingId) waitingIds.add(waitingId)
     }
     const attentionIds = collectAttentionConversationIds({
@@ -5131,6 +5221,25 @@ export default function App() {
     } finally {
       approvalBusyRef.current = false
       setApprovalResponding(false)
+    }
+  }
+
+  const handleUserInput = async (response: UserInputResponse) => {
+    if (!userInput || userInputResponding || userInputBusyRef.current) return
+    userInputBusyRef.current = true
+    setUserInputResponding(true)
+    try {
+      await window.sharker.respondUserInput(userInput.id, response)
+      setUserInput(null)
+      userInputRef.current = null
+      const waitingId = userInput.conversationId || activeConversationIdRef.current
+      if (waitingId) {
+        const buf = sessionBuffersRef.current.get(waitingId)
+        if (buf) buf.userInput = null
+      }
+    } finally {
+      userInputBusyRef.current = false
+      setUserInputResponding(false)
     }
   }
 
@@ -7637,6 +7746,9 @@ export default function App() {
         sendInFlightRef.current = false
         setApproval(null)
         approvalRef.current = null
+        setUserInput(null)
+        userInputRef.current = null
+        setUserInputResponding(false)
         turnStartedAtRef.current = 0
         liveTurnMetaRef.current = null
         resetLiveStreamUi()
@@ -7650,6 +7762,7 @@ export default function App() {
             buf.loading = false
             buf.sendInFlight = false
             buf.approval = null
+            buf.userInput = null
           }
         }
       },
@@ -7753,7 +7866,8 @@ export default function App() {
           messageCount: buf.messages.length,
           liveSegmentCount: buf.segments.length,
           streamingLen: buf.streaming.length,
-          approval: Boolean(buf.approval)
+          approval: Boolean(buf.approval),
+          userInput: Boolean(buf.userInput)
         }))
       },
       peekSession: (conversationId) => {
@@ -8186,14 +8300,18 @@ export default function App() {
   const waitingConversationIds = useMemo(() => {
     const ids = new Set<string>()
     for (const [id, buf] of sessionBuffersRef.current.entries()) {
-      if (buf.approval) ids.add(id)
+      if (buf.approval || buf.userInput) ids.add(id)
     }
     if (approval) {
       const id = approval.conversationId || activeConversationId
       if (id) ids.add(id)
     }
+    if (userInput) {
+      const id = userInput.conversationId || activeConversationId
+      if (id) ids.add(id)
+    }
     return ids
-  }, [sessionLiveVersion, loading, activeConversationId, approval])
+  }, [sessionLiveVersion, loading, activeConversationId, approval, userInput])
 
   return (
     <div className={`app-shell${popoutRoute ? ' app-shell--popout' : ''}`}>
@@ -8332,6 +8450,9 @@ export default function App() {
               approval={approval}
               approvalResponding={approvalResponding}
               onApproval={handleApproval}
+              userInput={userInput}
+              userInputResponding={userInputResponding}
+              onUserInput={handleUserInput}
               onOpenSubAgent={handleOpenSubAgent}
               onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
               toolOutputDisplay={settings.toolOutputDisplay}

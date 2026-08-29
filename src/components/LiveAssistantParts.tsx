@@ -4,7 +4,7 @@
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'
-import type { ApprovalRequest, AssistantMeta } from '../../shared/types'
+import type { ApprovalRequest, AssistantMeta, UserInputRequest, UserInputResponse } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { shouldMountMessageActions } from '../../shared/live-display'
 import {
@@ -20,6 +20,7 @@ import {
 } from '../../shared/live-stream-slices'
 import { getLiveStreamUi, useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { InlineApproval } from './InlineApproval'
+import { InlineUserInput } from './InlineUserInput'
 import { InlineDemo } from './InlineDemo'
 import { MessageActions } from './MessageActions'
 import { StreamingMarkdown } from './StreamingMarkdown'
@@ -156,6 +157,9 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   approval,
   approvalResponding,
   onApproval,
+  userInput,
+  userInputResponding,
+  onUserInput,
   onOpenSubAgent,
   onOpenChangedFiles,
   toolOutputDisplay,
@@ -167,6 +171,9 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: ApprovalDecision) => void | Promise<void>
+  userInput?: UserInputRequest | null
+  userInputResponding?: boolean
+  onUserInput?: (response: UserInputResponse) => void | Promise<void>
   onOpenSubAgent?: (id: string | null) => void
   onOpenChangedFiles?: (paths: string[]) => void
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
@@ -177,7 +184,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
     <article className="assistant-message">
       <LiveStoreProcess
         liveStartedAt={liveStartedAt}
-        approvalWaiting={Boolean(approval)}
+        approvalWaiting={Boolean(approval) || Boolean(userInput)}
         onOpenSubAgent={onOpenSubAgent}
         toolOutputDisplay={toolOutputDisplay}
         messageId={messageId}
@@ -189,6 +196,13 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
           request={approval}
           responding={approvalResponding}
           onRespond={onApproval}
+        />
+      ) : null}
+      {userInput && onUserInput ? (
+        <InlineUserInput
+          request={userInput}
+          responding={userInputResponding}
+          onRespond={onUserInput}
         />
       ) : null}
       {changedFiles.length > 0 ? (

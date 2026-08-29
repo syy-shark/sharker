@@ -42,6 +42,8 @@ export const IPC = {
   STEER_CHAT_CANCEL: 'chat:steer-cancel',
   STEER_CHAT_UPDATE: 'chat:steer-update',
   APPROVAL_RESPONSE: 'approval:response',
+  /** Ask User：用户提交结构化答案 */
+  USER_INPUT_RESPONSE: 'user-input:response',
   /** `/approve`：最近一次拒绝排队一次重试 */
   APPROVE_DENIED_RETRY: 'approval:approve-denied',
   SELECT_WORKSPACE: 'workspace:select',

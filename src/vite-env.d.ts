@@ -17,7 +17,9 @@ import type {
   ApprovalRequest,
   ChatAttachment,
   ChatMessage,
-  StreamChunk
+  StreamChunk,
+  UserInputRequest,
+  UserInputResponse
 } from '../shared/types'
 
 /** preload 暴露的 window.sharker IPC API */
@@ -160,8 +162,10 @@ export interface SharkerApi {
     id: string,
     decision: import('../shared/approval-session').ApprovalDecision | boolean
   ) => Promise<void>
+  respondUserInput: (id: string, response: UserInputResponse) => Promise<void>
   onStream: (cb: (chunk: StreamChunk) => void) => () => void
   onApproval: (cb: (req: ApprovalRequest) => void) => () => void
+  onUserInput: (cb: (req: UserInputRequest) => void) => () => void
   approveDeniedRetry: (conversationId?: string | null) => Promise<{
     ok: boolean
     denial: { toolName: string; description: string } | null

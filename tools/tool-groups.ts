@@ -22,6 +22,7 @@ export const PLAN_MODE_TOOL_NAMES = new Set([
   'web_search',
   'open_url',
   'present_inline_demo',
+  'request_user_input',
   'task_list',
   'task_get',
   'task_output',

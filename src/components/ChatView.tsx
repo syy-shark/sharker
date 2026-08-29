@@ -20,6 +20,8 @@ import {
 } from 'react'
 import type {
   ApprovalRequest,
+  UserInputRequest,
+  UserInputResponse,
   ChatAttachment,
   ChatMessage,
   PermissionMode,
@@ -386,6 +388,9 @@ interface Props {
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
+  userInput?: UserInputRequest | null
+  userInputResponding?: boolean
+  onUserInput?: (response: UserInputResponse) => void | Promise<void>
   /** 主线程活动点开子 Agent */
   onOpenSubAgent?: (id: string | null) => void
   /** 完成后改文件芯片打开审查 */
@@ -507,6 +512,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   approvalOpen,
   approvalResponding,
   onApprovalHotkey,
+  userInputOpen,
   planMode,
   onPlanModeChange,
   permissionMode,
@@ -562,6 +568,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   onApprovalHotkey?: (
     decision: import('../../shared/approval-session').ApprovalDecision
   ) => void | Promise<void>
+  userInputOpen?: boolean
   planMode: boolean
   onPlanModeChange?: (enabled: boolean) => void
   permissionMode: PermissionMode
@@ -624,6 +631,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
         approvalOpen={approvalOpen}
         approvalResponding={approvalResponding}
         onApprovalHotkey={onApprovalHotkey}
+        userInputOpen={userInputOpen}
         planMode={planMode}
         onPlanModeChange={onPlanModeChange}
         permissionMode={permissionMode}
@@ -768,6 +776,9 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   approval,
   approvalResponding,
   onApproval,
+  userInput,
+  userInputResponding,
+  onUserInput,
   onOpenSubAgent,
   toolOutputDisplay,
   onNeedFullMessage
@@ -781,6 +792,9 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
+  userInput?: UserInputRequest | null
+  userInputResponding?: boolean
+  onUserInput?: (response: UserInputResponse) => void | Promise<void>
   onOpenSubAgent?: (id: string | null) => void
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
@@ -788,7 +802,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   const liveTurnMeta = useLiveStreamUiSelect((snap) => snap.liveTurnMeta)
   const turnStartedAt = useLiveStreamUiSelect((snap) => snap.turnStartedAt)
   const liveBody = useLiveStreamUiSelect((snap) =>
-    liveHasAssistantBody(snap, Boolean(approval))
+    liveHasAssistantBody(snap, Boolean(approval) || Boolean(userInput))
   )
   if (
     !shouldRenderLiveAssistantRow({
@@ -814,6 +828,9 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         approval={approval}
         approvalResponding={approvalResponding}
         onApproval={onApproval}
+        userInput={userInput}
+        userInputResponding={userInputResponding}
+        onUserInput={onUserInput}
         onOpenSubAgent={onOpenSubAgent}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
@@ -857,6 +874,9 @@ export const ChatView = memo(function ChatView({
   approval,
   approvalResponding,
   onApproval,
+  userInput,
+  userInputResponding,
+  onUserInput,
   onOpenSubAgent,
   onOpenChangedFiles,
   threadMode = 'local',
@@ -1046,6 +1066,7 @@ export const ChatView = memo(function ChatView({
   const lastScrollTopRef = useRef(0)
   const touchStartYRef = useRef<number | null>(null)
   const shownApprovalIdRef = useRef<string | null>(null)
+  const shownUserInputIdRef = useRef<string | null>(null)
 
   const stickToBottomRef = useRef(stickToBottom)
   stickToBottomRef.current = stickToBottom
@@ -1925,6 +1946,28 @@ export const ChatView = memo(function ChatView({
     return () => window.cancelAnimationFrame(frame)
   }, [approval])
 
+  useEffect(() => {
+    if (!userInput || shownUserInputIdRef.current === userInput.id) return
+    shownUserInputIdRef.current = userInput.id
+    if (
+      !shouldFollowApprovalIntoView({
+        userLocked: userScrollLockRef.current,
+        stickToBottom: stickToBottomRef.current
+      })
+    ) {
+      return
+    }
+    const frame = window.requestAnimationFrame(() => {
+      const el = messagesRef.current
+      if (!el) return
+      if (userScrollLockRef.current) return
+      programmaticScrollRef.current = true
+      el.scrollTop = liveStickScrollTop(el.scrollHeight, el.clientHeight)
+      programmaticScrollRef.current = false
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [userInput])
+
   /** 内容增高时贴底：ResizeObserver 在布局后、绘制前写 scrollTop，避免多等一帧 */
   useEffect(() => {
     if (isEmpty) return
@@ -2066,7 +2109,7 @@ export const ChatView = memo(function ChatView({
     liveAssistantId && windowedMessages.some((m) => m.id === liveAssistantId)
   )
   const liveBody = useLiveStreamUiSelectWhen(loading && reservedInHistory, (snap) =>
-    liveHasAssistantBody(snap, Boolean(approval))
+    liveHasAssistantBody(snap, Boolean(approval) || Boolean(userInput))
   )
   const hideReservedLive = shouldHideReservedDuringLive({
     isLive: loading,
@@ -2284,6 +2327,9 @@ export const ChatView = memo(function ChatView({
                 approval={approval}
                 approvalResponding={approvalResponding}
                 onApproval={onApproval}
+                userInput={userInput}
+                userInputResponding={userInputResponding}
+                onUserInput={onUserInput}
                 onOpenSubAgent={onOpenSubAgent}
                 toolOutputDisplay={toolOutputDisplay}
                 onNeedFullMessage={onNeedFullMessage}
@@ -2427,6 +2473,7 @@ export const ChatView = memo(function ChatView({
             approvalOpen={Boolean(approval)}
             approvalResponding={approvalResponding}
             onApprovalHotkey={onApproval}
+            userInputOpen={Boolean(userInput)}
             planMode={planMode}
             onPlanModeChange={onPlanModeChange}
             permissionMode={permissionMode}

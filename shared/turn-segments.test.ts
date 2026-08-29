@@ -56,6 +56,32 @@ describe('turn segment event state machine', () => {
     })
     expect(segments[0].approval).toBeUndefined()
     segments = applyStreamChunk(segments, {
+      type: 'user_input_needed',
+      timestamp: 13,
+      toolName: 'request_user_input',
+      userInput: {
+        id: 'u1',
+        questions: [
+          {
+            id: 'api_style',
+            header: 'API style',
+            question: 'How should the public API look?',
+            options: [
+              { label: 'REST (Recommended)', description: 'Familiar HTTP resources.' },
+              { label: 'gRPC', description: 'Typed streaming.' }
+            ]
+          }
+        ]
+      }
+    })
+    expect(segments.some((s) => (s.content ?? '').includes('等待选择 · API style'))).toBe(true)
+    segments = applyStreamChunk(segments, {
+      type: 'user_input_resolved',
+      toolName: 'request_user_input',
+      timestamp: 14
+    })
+    expect(segments.some((s) => s.content === '已回答，继续')).toBe(true)
+    segments = applyStreamChunk(segments, {
       type: 'tool_done', toolName: 'write_file', toolCallId: 'write-1',
       toolStatus: 'error', error: '磁盘只读', timestamp: 20
     })

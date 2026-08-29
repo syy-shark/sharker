@@ -17,6 +17,7 @@ import { listDirTool } from './builtins/list-dir'
 import { movePathTool } from './builtins/move-path'
 import { openUrlTool } from './builtins/open-url'
 import { presentInlineDemoTool } from './builtins/present-inline-demo'
+import { requestUserInputTool } from './builtins/request-user-input'
 import { uninstallApplicationTool } from './builtins/uninstall-application'
 import { verifyRemovalTool } from './builtins/verify-removal'
 import { enterPlanModeTool, exitPlanModeTool } from './builtins/mode/plan'
@@ -81,6 +82,7 @@ function getAllToolHandlers(): ToolHandler[] {
     ...webTools,
     openUrlTool,
     presentInlineDemoTool,
+    requestUserInputTool,
     ...browserTools,
     ...voiceTools,
     ...skillDiscoveryTools,

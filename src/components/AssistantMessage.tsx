@@ -5,7 +5,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleStop, RotateCcw } from 'lucide-react'
 import { MarkdownBody } from './MarkdownBody'
-import type { ApprovalRequest, AssistantMeta, FileDiff, TurnSegment } from '../../shared/types'
+import type { ApprovalRequest, AssistantMeta, FileDiff, TurnSegment, UserInputRequest, UserInputResponse } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { buildProcessSteps, canExpandProcess } from '../../shared/process-steps'
 import {
@@ -35,6 +35,7 @@ import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
 import { messageHasDeferredThinking } from '../../shared/transcript-hydrate'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
+import { InlineUserInput } from './InlineUserInput'
 import { StreamingMarkdown } from './StreamingMarkdown'
 import { CodeDiffBlock } from './CodeDiffBlock'
 import { dispatchOpenWorkspaceFile } from '../lib/open-workspace-file'
@@ -60,6 +61,9 @@ interface Props {
   approval?: ApprovalRequest | null
   approvalResponding?: boolean
   onApproval?: (decision: ApprovalDecision) => void | Promise<void>
+  userInput?: UserInputRequest | null
+  userInputResponding?: boolean
+  onUserInput?: (response: UserInputResponse) => void | Promise<void>
   /** 主线程活动点开子 Agent */
   onOpenSubAgent?: (id: string | null) => void
   /** 完成后「已改 N 个文件」打开审查（对标 Codex 变更摘要） */
@@ -116,6 +120,9 @@ export const AssistantMessage = memo(function AssistantMessage({
   approval,
   approvalResponding,
   onApproval,
+  userInput,
+  userInputResponding,
+  onUserInput,
   onOpenSubAgent,
   onOpenChangedFiles,
   toolOutputDisplay = 'standard',
@@ -381,7 +388,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 segments={processForFlow}
                 isStreaming
                 liveStartedAt={liveStartedAt}
-                approvalWaiting={Boolean(approval)}
+                approvalWaiting={Boolean(approval) || Boolean(userInput)}
                 thinkText={liveThinkText}
                 contentStreaming={hasLiveProse || hasPaintableDemo}
                 generatingDemo={generatingDemo}
@@ -398,7 +405,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 segments={[]}
                 isStreaming
                 liveStartedAt={liveStartedAt}
-                approvalWaiting={Boolean(approval)}
+                approvalWaiting={Boolean(approval) || Boolean(userInput)}
                 thinkText={liveThinkText}
                 contentStreaming={Boolean(finalContentRaw.trim())}
                 generatingDemo={false}
@@ -567,6 +574,13 @@ export const AssistantMessage = memo(function AssistantMessage({
           request={approval}
           responding={approvalResponding}
           onRespond={onApproval}
+        />
+      ) : null}
+      {userInput && onUserInput ? (
+        <InlineUserInput
+          request={userInput}
+          responding={userInputResponding}
+          onRespond={onUserInput}
         />
       ) : null}
 

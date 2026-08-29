@@ -10,7 +10,9 @@ import type {
   ApprovalRequest,
   ChatAttachment,
   ChatMessage,
-  StreamChunk
+  StreamChunk,
+  UserInputRequest,
+  UserInputResponse
 } from '../../shared/types'
 
 /** 向渲染进程暴露类型安全的 IPC 桥接 API。 */
@@ -184,6 +186,8 @@ contextBridge.exposeInMainWorld('sharker', {
     id: string,
     decision: import('../../shared/approval-session').ApprovalDecision | boolean
   ): Promise<void> => ipcRenderer.invoke(IPC.APPROVAL_RESPONSE, id, decision),
+  respondUserInput: (id: string, response: UserInputResponse): Promise<void> =>
+    ipcRenderer.invoke(IPC.USER_INPUT_RESPONSE, id, response),
   approveDeniedRetry: (conversationId?: string | null) =>
     ipcRenderer.invoke(IPC.APPROVE_DENIED_RETRY, conversationId),
   onStream: (cb: (chunk: StreamChunk) => void): (() => void) => {
@@ -195,6 +199,11 @@ contextBridge.exposeInMainWorld('sharker', {
     const handler = (_: unknown, req: ApprovalRequest): void => cb(req)
     ipcRenderer.on('chat:approval', handler)
     return () => ipcRenderer.removeListener('chat:approval', handler)
+  },
+  onUserInput: (cb: (req: UserInputRequest) => void): (() => void) => {
+    const handler = (_: unknown, req: UserInputRequest): void => cb(req)
+    ipcRenderer.on('chat:user-input', handler)
+    return () => ipcRenderer.removeListener('chat:user-input', handler)
   },
   windowMinimize: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_MINIMIZE),
   windowMaximize: (): Promise<void> => ipcRenderer.invoke(IPC.WINDOW_MAXIMIZE),

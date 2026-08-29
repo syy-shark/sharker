@@ -239,6 +239,8 @@ export interface ComposerDockProps {
   approvalOpen?: boolean
   approvalResponding?: boolean
   onApprovalHotkey?: (decision: 'once' | 'deny') => void
+  /** Ask User 打开时禁用输入框（对标 Codex Answer the questions to continue） */
+  userInputOpen?: boolean
   /** 计划模式芯片（对标 Codex /plan）；不跟直播 token 变 */
   planMode?: boolean
   onPlanModeChange?: (enabled: boolean) => void
@@ -294,6 +296,7 @@ export const ComposerDock = memo(
       approvalOpen = false,
       approvalResponding = false,
       onApprovalHotkey,
+      userInputOpen = false,
       planMode = false,
       onPlanModeChange,
       permissionMode = 'sandbox',
@@ -1267,6 +1270,7 @@ export const ComposerDock = memo(
     }
 
     const submit = (mode: PromptSubmitMode = loading ? 'queue' : 'send') => {
+      if (userInputOpen) return
       const resolved = materializeComposerInput(input, pendingAttachments)
       const t = resolved.text.trim()
       const attachments = resolved.attachments
@@ -1982,6 +1986,10 @@ export const ComposerDock = memo(
                 return
               }
             }
+            if (userInputOpen) {
+              if (e.key === 'Enter' && !e.shiftKey) e.preventDefault()
+              return
+            }
             const mode = resolveComposerSubmit({
               key: e.key,
               shiftKey: e.shiftKey,
@@ -2037,19 +2045,22 @@ export const ComposerDock = memo(
               e.preventDefault()
             }
           }}
+          disabled={userInputOpen}
           placeholder={
-            dictating
-              ? '正在听写… Ctrl⇧D 结束'
-              : loading
-                ? followUpBehavior === 'steer'
-                  ? `Enter 注入 · ⌘⇧Enter 排队 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
-                  : `Enter 排队 · ⌘⇧Enter 注入 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
-                : composerEnterBehavior === 'cmdAlways' ||
-                    (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
-                  ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
-                  : composerEnterBehavior === 'cmdIfMultiline'
-                    ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
-                    : '输入消息，/ 命令，! shell，@ 文件/对话/Skill，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
+            userInputOpen
+              ? '请先回答问题后再继续。'
+              : dictating
+                ? '正在听写… Ctrl⇧D 结束'
+                : loading
+                  ? followUpBehavior === 'steer'
+                    ? `Enter 注入 · ⌘⇧Enter 排队 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
+                    : `Enter 排队 · ⌘⇧Enter 注入 · Tab 排队${interruptLabel ? ` · ${interruptLabel} 停止…` : '…'}`
+                  : composerEnterBehavior === 'cmdAlways' ||
+                      (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
+                    ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
+                    : composerEnterBehavior === 'cmdIfMultiline'
+                      ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
+                      : '输入消息，/ 命令，! shell，@ 文件/对话/Skill，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
           }
           rows={1}
         />
@@ -2409,7 +2420,7 @@ export const ComposerDock = memo(
                 type="button"
                 className={`composer-send composer-send--submit ${canSend ? 'composer-send--active' : ''} ${!loading ? 'composer-send--visible' : ''}`}
                 onClick={() => submit('send')}
-                disabled={!canSend || loading}
+                disabled={!canSend || loading || userInputOpen}
                 title="发送 (Enter)"
                 aria-label="发送"
                 aria-hidden={loading}

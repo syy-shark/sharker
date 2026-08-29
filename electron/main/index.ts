@@ -39,9 +39,11 @@ import type {
   ApprovalRequest,
   ChatAttachment,
   ChatMessage,
-  StreamChunk
+  StreamChunk,
+  UserInputRequest,
+  UserInputResponse
 } from '../../shared/types'
-import { generateTitle, type ApprovalHandler } from '../../agent/loop'
+import { generateTitle, type ApprovalHandler, type UserInputHandler } from '../../agent/loop'
 import {
   hydrateSubAgents,
   listSubAgentSnapshots,
@@ -226,8 +228,26 @@ const pendingApprovals = new Map<
   string,
   { resolve: (v: ApprovalDecision) => void; reject: (e: Error) => void }
 >()
+const pendingUserInputs = new Map<
+  string,
+  {
+    conversationId?: string
+    resolve: (v: UserInputResponse) => void
+    reject: (e: Error) => void
+  }
+>()
 /** 按会话隔离的「允许本会话」授权表 */
 const approvalRegistry = new ConversationApprovalRegistry()
+
+function rejectPendingUserInputs(conversationId?: string): void {
+  for (const [id, pending] of pendingUserInputs) {
+    if (conversationId && pending.conversationId && pending.conversationId !== conversationId) {
+      continue
+    }
+    pendingUserInputs.delete(id)
+    pending.reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }))
+  }
+}
 
 let cachedAppIcon: Electron.NativeImage | undefined
 
@@ -710,6 +730,14 @@ const approvalHandler: ApprovalHandler = (req) => {
   })
 }
 
+/** Ask User：向渲染进程推送问题并等待结构化答案。 */
+const userInputHandler: UserInputHandler = (req) => {
+  return new Promise((resolve, reject) => {
+    pendingUserInputs.set(req.id, { conversationId: req.conversationId, resolve, reject })
+    broadcastToRenderers('chat:user-input', req)
+  })
+}
+
 /** 内置浏览器下载：系统 Downloads / 自选目录 / 每次询问（对标 Codex Settings → Browser） */
 function attachBrowserDownloadHandler(): void {
   const ses = session.fromPartition(BROWSER_SESSION_PARTITION)
@@ -1169,11 +1197,23 @@ function registerIpc(): void {
     }
   )
 
+  ipcMain.handle(
+    IPC.USER_INPUT_RESPONSE,
+    async (_e, id: string, response: UserInputResponse) => {
+      const pending = pendingUserInputs.get(id)
+      if (pending) {
+        pendingUserInputs.delete(id)
+        pending.resolve(response)
+      }
+    }
+  )
+
   ipcMain.handle(IPC.APPROVE_DENIED_RETRY, async (_e, conversationId?: string) => {
     return approvalRegistry.approveLastDenial(conversationId)
   })
 
   ipcMain.handle(IPC.ABORT_CHAT, async (_e, conversationId?: string) => {
+    rejectPendingUserInputs(conversationId)
     abortActiveTurn(conversationId)
   })
 
@@ -1587,6 +1627,7 @@ function registerIpc(): void {
           thinkingLevel: options?.thinkingLevel,
           sessionApprovals,
           onApproval: approvalHandler,
+          onUserInput: userInputHandler,
           send,
           reloadSettings: async () => {
             let next = normalizeSettings(await loadSettings(), app.getPath('home'))

@@ -16,8 +16,8 @@ import {
 } from '../shared/subagent'
 import { buildSystemPrompt } from './loop'
 import { queryLoop } from './query-loop'
-import type { ApprovalHandler } from './loop'
-import { getParentApprovalHandler } from './approval-bridge'
+import type { ApprovalHandler, UserInputHandler } from './loop'
+import { getParentApprovalHandler, getParentUserInputHandler } from './approval-bridge'
 import type { ChatCompletionMessage } from '../providers/openai'
 import { createPlaceholderTask, updateTask } from '../tools/services/task-manager'
 
@@ -193,7 +193,8 @@ async function runSubAgentLoop(
       userText: prompt,
       history: [],
       maxIterations: 8,
-      conversationId: session.parentConversationId || undefined
+      conversationId: session.parentConversationId || undefined,
+      onUserInput: getParentUserInputHandler() ?? undefined
     })) {
       if (session.generation !== generation) return
       if (chunk.type === 'token' && chunk.content) {

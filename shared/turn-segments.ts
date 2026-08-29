@@ -587,6 +587,46 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     return next
   }
 
+  if (chunk.type === 'user_input_needed' && chunk.userInput) {
+    const lastIndex = next.length - 1
+    const last = next[lastIndex]
+    const summary = chunk.userInput.questions[0]?.header || chunk.toolName || 'request_user_input'
+    if (last?.kind === 'status' && last.status === 'active') {
+      const written = writeSegmentAt(next, lastIndex)
+      written.content = `等待选择 · ${summary}`
+      written.toolName = chunk.toolName
+      written.toolTitle = chunk.toolName ? toolTitle(chunk.toolName) : written.toolTitle
+    } else {
+      next.push({
+        id: `status-user-input-${timestamp}`,
+        kind: 'status',
+        content: `等待选择 · ${summary}`,
+        toolName: chunk.toolName,
+        toolTitle: chunk.toolName ? toolTitle(chunk.toolName) : undefined,
+        status: 'active',
+        startedAt: timestamp
+      })
+    }
+    return next
+  }
+
+  if (chunk.type === 'user_input_resolved') {
+    for (let i = 0; i < next.length; i++) {
+      const s = next[i]!
+      if (
+        s.kind === 'status' &&
+        s.status === 'active' &&
+        (s.content ?? '').includes('等待选择')
+      ) {
+        const written = writeSegmentAt(next, i)
+        written.status = 'done'
+        written.endedAt = timestamp
+        written.content = '已回答，继续'
+      }
+    }
+    return next
+  }
+
   if (chunk.type === 'approval_needed' && chunk.approval) {
     const activeIndex = findLastSegmentIndex(
       next,

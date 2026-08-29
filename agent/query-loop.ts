@@ -4,6 +4,13 @@
  */
 import { randomUUID } from 'crypto'
 import type { AppSettings, ApprovalRequest, ChatMessage, StreamChunk } from '../shared/types'
+import {
+  parseRequestUserInput,
+  raceWithAbort,
+  REQUEST_USER_INPUT_TOOL,
+  serializeUserInputResponse,
+  summarizeUserInputRequest
+} from '../shared/user-input'
 import { needsToolCalling } from '../shared/needs-tools'
 import { getActiveWorkspace, getActiveWorkspacePath } from '../shared/workspace'
 import { streamChat, type ChatCompletionMessage } from '../providers/openai'
@@ -20,8 +27,8 @@ import {
   providerSupportsVision
 } from './vision-feedback'
 import { isWritePreviewTool } from '../shared/turn-segments'
-import type { ApprovalHandler } from './loop'
-import { setParentApprovalHandler } from './approval-bridge'
+import type { ApprovalHandler, UserInputHandler } from './loop'
+import { setParentApprovalHandler, setParentUserInputHandler } from './approval-bridge'
 import {
   isApprovalGranted,
   normalizeApprovalDecision,
@@ -295,6 +302,8 @@ export interface QueryLoopOptions {
   sessionApprovals?: SessionApprovalStore
   /** 流式 chunk 归属会话（多会话隔离） */
   conversationId?: string
+  /** Ask User：等用户回答结构化问题 */
+  onUserInput?: UserInputHandler
 }
 
 /** 判断工具是否修改了文件内容 */
@@ -379,8 +388,10 @@ export async function* queryLoop(
     history,
     maxIterations = DEFAULT_MAX_ITERATIONS,
     sessionApprovals,
-    conversationId
+    conversationId,
+    onUserInput
   } = opts
+  setParentUserInputHandler(onUserInput ?? null)
   const workspace = getWorktreePath(conversationId) || getActiveWorkspacePath(settings)
   const extraRoots = getActiveWorkspace(settings)?.extraPaths ?? []
   let iterations = 0
@@ -801,6 +812,90 @@ export async function* queryLoop(
           const err = e instanceof Error ? e.message : String(e)
           messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${err}` })
           yield { type: 'tool_done', toolName, toolCallId: tc.id, toolStatus: 'error', error: err }
+          continue
+        }
+
+        if (toolName === REQUEST_USER_INPUT_TOOL) {
+          const parsed = parseRequestUserInput(args)
+          if (!parsed.ok) {
+            messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${parsed.error}` })
+            yield {
+              type: 'tool_done',
+              toolName,
+              toolCallId: tc.id,
+              toolStatus: 'error',
+              error: parsed.error,
+              conversationId
+            }
+            continue
+          }
+          if (!onUserInput) {
+            const err = 'request_user_input is unavailable in this session'
+            messages.push({ role: 'tool', tool_call_id: tc.id, content: `Error: ${err}` })
+            yield {
+              type: 'tool_done',
+              toolName,
+              toolCallId: tc.id,
+              toolStatus: 'error',
+              error: err,
+              conversationId
+            }
+            continue
+          }
+          const req = {
+            id: randomUUID(),
+            questions: parsed.questions,
+            toolCallId: tc.id,
+            conversationId
+          }
+          yield { type: 'user_input_needed', userInput: req, toolName, toolCallId: tc.id, conversationId }
+          try {
+            const response = await raceWithAbort(onUserInput(req), signal)
+            const output = serializeUserInputResponse(response)
+            messages.push({ role: 'tool', tool_call_id: tc.id, content: output })
+            yield {
+              type: 'user_input_resolved',
+              toolName,
+              toolCallId: tc.id,
+              conversationId
+            }
+            yield {
+              type: 'tool_done',
+              toolName,
+              toolCallId: tc.id,
+              resultSummary: summarizeUserInputRequest(parsed.questions),
+              resultOutput: output,
+              toolStatus: 'done',
+              conversationId
+            }
+          } catch (e) {
+            const aborted = signal?.aborted || (e instanceof Error && e.name === 'AbortError')
+            const err = aborted
+              ? 'User cancelled'
+              : e instanceof Error
+                ? e.message
+                : String(e)
+            messages.push({ role: 'tool', tool_call_id: tc.id, content: aborted ? 'User cancelled' : `Error: ${err}` })
+            yield {
+              type: 'user_input_resolved',
+              toolName,
+              toolCallId: tc.id,
+              conversationId
+            }
+            yield {
+              type: 'tool_done',
+              toolName,
+              toolCallId: tc.id,
+              toolStatus: 'error',
+              error: aborted ? '用户取消了提问' : err,
+              conversationId
+            }
+            if (aborted) {
+              yield { type: 'turn_cancelled', conversationId }
+              yield { type: 'done', conversationId }
+              return
+            }
+          }
           continue
         }
 

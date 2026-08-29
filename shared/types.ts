@@ -342,6 +342,43 @@ export interface ApprovalRequest {
   conversationId?: string
 }
 
+/** Ask User 单个互斥选项（对标 Codex request_user_input） */
+export interface UserInputOption {
+  label: string
+  description: string
+}
+
+/** Ask User 一题：模型给 2–3 选项，客户端另补 Other */
+export interface UserInputQuestion {
+  id: string
+  header: string
+  question: string
+  options: UserInputOption[]
+}
+
+/** 主进程 → 渲染进程：等待用户回答结构化问题 */
+export interface UserInputRequest {
+  id: string
+  questions: UserInputQuestion[]
+  toolCallId?: string
+  conversationId?: string
+}
+
+/** 一题的本地选择：固定选项或自由 Other */
+export type UserInputAnswerPick =
+  | { kind: 'option'; label: string }
+  | { kind: 'other'; other: string }
+
+/** 官方协议：每题 `answers` 为选中的 label 或 Other 文本 */
+export interface UserInputAnswer {
+  answers: string[]
+}
+
+/** 官方 `RequestUserInputResponse` */
+export interface UserInputResponse {
+  answers: Record<string, UserInputAnswer>
+}
+
 /** 上下文自动压缩结果摘要 */
 export interface ContextCompressInfo {
   removedCount: number
@@ -366,6 +403,8 @@ export interface StreamChunk {
     | 'error'
     | 'approval_needed'
     | 'approval_resolved'
+    | 'user_input_needed'
+    | 'user_input_resolved'
     | 'turn_cancelled'
     | 'context_compress'
     | 'command'
@@ -394,6 +433,8 @@ export interface StreamChunk {
   approved?: boolean
   error?: string
   approval?: ApprovalRequest
+  /** Ask User 结构化提问（对标 Codex request_user_input） */
+  userInput?: UserInputRequest
   contextCompress?: ContextCompressInfo
   /** 本地命令：如 clear 清空当前对话 */
   command?: string

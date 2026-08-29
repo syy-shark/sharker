@@ -12,13 +12,13 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
   → onQuery：@file 展开 + 压缩上下文 + system + 工作区快照 + 历史
   → queryLoop：
       模型流式回复
-      → 若有 tool_calls：审批 → 执行（只读可并行）→ 结果塞回 messages → 再调模型（默认最多 40 轮）
+      → 若有 tool_calls：审批 / Ask User → 执行（只读可并行；`request_user_input` 单独等用户）→ 结果塞回 messages → 再调模型（默认最多 40 轮）
       → 若本轮改过代码：自动 npm run test/build（一次）
       → 纯文本则结束
   → UI 展示思考 / 工具时间线
 ```
 
-权限：`sandbox` 仅限工作区；`full` 可访问整机。输入框下方可切（对标 Codex permissions control beneath the composer）；`/permissions sandbox|full` 同一条路径。不发明 Ask / Auto / 命名 profile。网络：`open` / `local_only` / `disabled`。高危操作弹窗确认。
+权限：`sandbox` 仅限工作区；`full` 可访问整机。输入框下方可切（对标 Codex permissions control beneath the composer）；`/permissions sandbox|full` 同一条路径。不发明 Ask / Auto / 命名 profile。网络：`open` / `local_only` / `disabled`。高危操作弹窗确认。模型可用 `request_user_input` 弹出 Ask User（选项 + Other），输入框先停用。
 
 ### 斜杠命令（不走模型）
 
@@ -202,6 +202,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `web_search` | DuckDuckGo Instant Answer |
 | `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
 | `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；工具一开始就占演示槽（未可绘先 96px 骨架叠在同一 iframe 上，可绘只换 srcDoc）；正文 ```demo 围栏未写完 `dem` / `viz` 就占同一 `demo-stream` 槽（不先当散文再跳；不认 ```diff / ```html / ```vim），开闭都挂 `InlineDemo`；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
+| `request_user_input` | 结构化提问（对标 Codex 桌面 Ask User / #41350）：1–3 题、每题 2–3 个互斥选项，客户端补 Other；输出 `{ answers: { [id]: { answers } } }`。Default 与计划模式都可用。输入框禁用并提示先回答。不发明选项备注（#37365）或分页问卷（#9926）。Stop 解开等待 |
 
 ### 内联可视化规范（强制）
 

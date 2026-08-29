@@ -11,7 +11,7 @@ import { recordTokenUsage } from '../shared/token-usage-store'
 import { validateActiveProvider } from '../shared/provider-validate'
 import { simpleCompletion, type ChatCompletionMessage } from '../providers/openai'
 import { matchSlashCommand } from './commands'
-import { buildSystemPrompt, type ApprovalHandler } from './loop'
+import { buildSystemPrompt, type ApprovalHandler, type UserInputHandler } from './loop'
 import { expandFileReferences } from './file-refs'
 import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
@@ -64,6 +64,7 @@ export interface ExecuteUserInputContext {
   userText: string
   attachments?: ChatAttachment[]
   onApproval: ApprovalHandler
+  onUserInput?: UserInputHandler
   send: (chunk: StreamChunk) => void
   reloadSettings: () => Promise<AppSettings>
   /** 多会话隔离：本轮流式事件归属 */
@@ -283,7 +284,8 @@ async function* onQuery(
     userText,
     history: historyForAgent,
     sessionApprovals: ctx.sessionApprovals,
-    conversationId: ctx.conversationId
+    conversationId: ctx.conversationId,
+    onUserInput: ctx.onUserInput
   })
 }
 

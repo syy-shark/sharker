@@ -42,6 +42,7 @@
 | `run-skill-script.ts` | 执行 Skill 目录脚本 |
 | `uninstall-application.ts` | macOS 应用卸载流水线 |
 | `verify-removal.ts` | 检查卸载/路径残留 |
+| `request-user-input.ts` | `request_user_input` 兜底 handler；真实等待在 query-loop（对标 Codex Ask User） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 注册

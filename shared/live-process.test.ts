@@ -53,6 +53,26 @@ describe('live process seed', () => {
     expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('等待确认'))).toBe(true)
     const model = deriveProcessPhases(segments, { isStreaming: true })
     expect(model.groups.some((g) => g.state === 'active')).toBe(true)
+    segments = applyStreamChunk(segments, {
+      type: 'user_input_needed',
+      timestamp: 3,
+      toolName: 'request_user_input',
+      userInput: {
+        id: 'u1',
+        questions: [
+          {
+            id: 'scope',
+            header: 'Scope',
+            question: 'What should we change?',
+            options: [
+              { label: 'Minimal (Recommended)', description: 'Smallest fix.' },
+              { label: 'Rewrite', description: 'Replace the module.' }
+            ]
+          }
+        ]
+      }
+    })
+    expect(segments.some((s) => s.kind === 'status' && s.status === 'active' && (s.content ?? '').includes('等待选择'))).toBe(true)
   })
 
 
