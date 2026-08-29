@@ -147,7 +147,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'fork',
-    description: '分叉到新本地线程；/fork worktree 另建隔离 worktree（不复用源路径）',
+    description: 'Fork into a new local thread; /fork worktree creates an isolated worktree',
     scope: 'ui',
     action: 'fork_conversation',
     argsHint: '[local|worktree]',

@@ -67,8 +67,8 @@ export function MessageActions({
         <button
           type="button"
           className="message-actions-btn"
-          title="从此条分叉"
-          aria-label="从此条分叉"
+          title="Fork"
+          aria-label="Fork from this message"
           onClick={onFork}
         >
           <GitFork size={16} aria-hidden />

@@ -26,9 +26,9 @@ export const SIDE_CHAT_TRANSCRIPT_SEL =
 export const FILE_PREVIEW_SEL =
   '.file-tree-viewer-body, .file-tree-viewer-line, .file-tree-viewer-text, .file-md-preview'
 
-/** 官方划选条：Add to chat / Ask in side chat */
-export const ADD_TO_CHAT_LABEL = '加入对话'
-export const ASK_IN_SIDE_CHAT_LABEL = '旁路提问'
+/** 官方划选条：Add to chat / Ask in side chat（对标 Codex desktop / #37560） */
+export const ADD_TO_CHAT_LABEL = 'Add to chat'
+export const ASK_IN_SIDE_CHAT_LABEL = 'Ask in side chat'
 
 /** 用 closest 判定：输入框 / 查找栏不要条；历史与直播已出现正文都要（对标 Codex #37560） */
 export function shouldOfferSideChat(closest: (selector: string) => unknown): boolean {

@@ -722,8 +722,13 @@ export function shouldClearUnseenLive(options: {
   return options.stickToBottom && !options.userLocked
 }
 
+/** Official #38220: non-disruptive “new message” affordance while reading history. */
+export const NEW_MESSAGE_LABEL = 'New message'
+/** Official desktop jump-to-bottom control when the live tail is already seen. */
+export const JUMP_TO_BOTTOM_LABEL = 'Jump to bottom'
+
 /**
- * 「回到底部」在有未读直播时改成「新消息」，仍不抢镜头。
+ * Jump-to-bottom becomes New message when unseen live content grows.
  * ChatView 把芯片放进 composer-stage 流里占位，不得 absolute 盖直播尾
  * （对标 Codex #38220 non-disruptive new message / #40788 reserve space）。
  */
@@ -733,7 +738,7 @@ export function jumpToBottomAffordance(hasUnseenLive: boolean): {
   emphasize: boolean
 } {
   if (hasUnseenLive) {
-    return { label: '新消息', ariaLabel: '有新消息，回到底部', emphasize: true }
+    return { label: NEW_MESSAGE_LABEL, ariaLabel: 'New message, jump to bottom', emphasize: true }
   }
-  return { label: '回到底部', ariaLabel: '回到底部', emphasize: false }
+  return { label: JUMP_TO_BOTTOM_LABEL, ariaLabel: JUMP_TO_BOTTOM_LABEL, emphasize: false }
 }

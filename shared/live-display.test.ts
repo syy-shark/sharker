@@ -343,11 +343,11 @@ describe('near-live message rows', () => {
     expect(shouldClearUnseenLive({ stickToBottom: true, userLocked: false })).toBe(true)
     expect(shouldClearUnseenLive({ stickToBottom: false, userLocked: true })).toBe(false)
     expect(jumpToBottomAffordance(true)).toEqual({
-      label: '新消息',
-      ariaLabel: '有新消息，回到底部',
+      label: 'New message',
+      ariaLabel: 'New message, jump to bottom',
       emphasize: true
     })
-    expect(jumpToBottomAffordance(false).label).toBe('回到底部')
+    expect(jumpToBottomAffordance(false).label).toBe('Jump to bottom')
   })
 })
 
