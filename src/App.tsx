@@ -144,6 +144,7 @@ import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { FeedbackDialog } from './components/FeedbackDialog'
 import { ShareDialog } from './components/ShareDialog'
 import { ReviewScopeDialog } from './components/ReviewScopeDialog'
+import { MemoryChatDialog } from './components/MemoryChatDialog'
 import { ProjectFoldersDialog } from './components/ProjectFoldersDialog'
 import { formatThreadSnapshot } from '../shared/thread-snapshot'
 import type { PaletteCommand } from '../shared/command-palette'
@@ -172,7 +173,12 @@ import { formatMcpStatus } from '../shared/mcp-status'
 import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts, pickResumeSuggestions } from '../shared/suggested-prompts'
-import { formatMemoryStatus, parseMemoryCommand } from '../shared/memory-command'
+import {
+  formatMemoryStatus,
+  parseMemoryCommand,
+  resolveChatMemoryFlags,
+  type MemoryChatPick
+} from '../shared/memory-command'
 import {
   lastCompletedAssistantText,
   listCopyOutputTargets,
@@ -460,6 +466,7 @@ export default function App() {
   const [feedbackInfo, setFeedbackInfo] = useState<FeedbackBundleInfo | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [reviewScopePick, setReviewScopePick] = useState<string | null>(null)
+  const [memoryChatPick, setMemoryChatPick] = useState(false)
   const [shareBundle, setShareBundle] = useState<{
     title: string
     markdown: string
@@ -571,6 +578,19 @@ export default function App() {
   const settingsRef = useRef(settings)
   const messagesRef = useRef<ChatMessage[]>([])
   const activeConversationIdRef = useRef<string | null>(null)
+  const chatMemoryRef = useRef<{
+    memoryInjection: boolean | null
+    memoryGeneration: boolean | null
+  }>({ memoryInjection: null, memoryGeneration: null })
+  const rememberChatMemory = (conv: {
+    memoryInjection?: boolean | null
+    memoryGeneration?: boolean | null
+  } | null) => {
+    chatMemoryRef.current = {
+      memoryInjection: conv?.memoryInjection ?? null,
+      memoryGeneration: conv?.memoryGeneration ?? null
+    }
+  }
   const turnStartedAtRef = useRef(0)
   const turnMetaRef = useRef<AssistantMeta>({ browsedFiles: [], activities: [] })
   const turnHadThinkingRef = useRef(false)
@@ -949,6 +969,7 @@ export default function App() {
 
         setActiveConversationId(conv.id)
         activeConversationIdRef.current = conv.id
+        rememberChatMemory(conv)
         historyLoadGenRef.current += 1
         applyConversationMessages(conv.messages, conv.historyStartSeq ?? 0)
       } catch (e) {
@@ -3898,6 +3919,7 @@ export default function App() {
     const conv = await loadConversationForUi(workspaceId, conversationId)
     await setActiveP
     if (activeConversationIdRef.current !== conversationId) return
+    rememberChatMemory(conv)
     historyLoadGenRef.current += 1
     applyConversationMessages(conv?.messages ?? [], conv?.historyStartSeq ?? 0)
     sendInFlightRef.current = false
@@ -5240,18 +5262,26 @@ export default function App() {
         }
         case 'show_memories': {
           const parsed = parseMemoryCommand(args)
-          let settingsNow = settingsRef.current
-          if (parsed.kind === 'set') {
-            const merged = {
-              ...settingsNow,
-              memoryInjection: parsed.injection ?? settingsNow.memoryInjection !== false,
-              memoryGeneration: parsed.generation ?? settingsNow.memoryGeneration !== false
-            }
-            await persistSettings(merged)
-            setSettings(merged)
-            setSettingsDraft(merged)
-            settingsNow = merged
+          if (parsed.kind === 'pick') {
+            setMemoryChatPick(true)
+            break
           }
+          const settingsNow = settingsRef.current
+          const ws = settingsNow.activeWorkspaceId
+          const id = activeConversationIdRef.current
+          if (parsed.kind === 'set') {
+            const nextFlags = parsed.inherit
+              ? { memoryInjection: null, memoryGeneration: null }
+              : {
+                  memoryInjection: parsed.injection ?? chatMemoryRef.current.memoryInjection,
+                  memoryGeneration: parsed.generation ?? chatMemoryRef.current.memoryGeneration
+                }
+            if (ws && id && window.sharker.patchConversationMeta) {
+              await window.sharker.patchConversationMeta(ws, id, nextFlags)
+            }
+            rememberChatMemory(nextFlags)
+          }
+          const flags = resolveChatMemoryFlags(chatMemoryRef.current, settingsNow)
           const items = window.sharker.listMemories
             ? await window.sharker.listMemories(settingsNow.activeWorkspaceId)
             : []
@@ -5259,8 +5289,10 @@ export default function App() {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
             content: formatMemoryStatus({
-              injection: settingsNow.memoryInjection !== false,
-              generation: settingsNow.memoryGeneration !== false,
+              injection: flags.injection,
+              generation: flags.generation,
+              injectionInherited: flags.injectionInherited,
+              generationInherited: flags.generationInherited,
               items
             })
           }
@@ -5636,6 +5668,9 @@ export default function App() {
           break
         case 'open_personalization':
           void handleNavigate('settings', 'personalization')
+          break
+        case 'open_general':
+          void handleNavigate('settings', 'general')
           break
         case 'open_usage':
           void handleNavigate('settings', 'usage')
@@ -7763,6 +7798,31 @@ export default function App() {
           onClose={() => {
             setFeedbackOpen(false)
             setFeedbackInfo(null)
+          }}
+        />
+        <MemoryChatDialog
+          open={memoryChatPick}
+          onClose={() => setMemoryChatPick(false)}
+          onPick={(pick: MemoryChatPick) => {
+            setMemoryChatPick(false)
+            const args =
+              pick === 'inherit'
+                ? 'inherit'
+                : pick === 'off'
+                  ? 'off'
+                  : pick === 'use'
+                    ? 'use'
+                    : 'generate'
+            void handleSlashActionRef.current(
+              {
+                name: 'memories',
+                description: '记忆',
+                scope: 'ui',
+                action: 'show_memories',
+                category: 'settings'
+              },
+              args
+            )
           }}
         />
         <ReviewScopeDialog

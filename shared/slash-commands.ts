@@ -223,10 +223,10 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'memories',
-    description: '查看 / 开关长期记忆注入与写入',
+    description: '本对话记忆：使用 / 写入 / 关闭（不改全局）',
     scope: 'ui',
     action: 'show_memories',
-    argsHint: '[on|off|inject on|generate off]',
+    argsHint: '[on|off|use|inherit]',
     category: 'session'
   },
   {

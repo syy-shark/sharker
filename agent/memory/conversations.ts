@@ -152,7 +152,9 @@ function normalizeConversation(raw: Conversation, workspaceId: string): Conversa
     createdAt: raw.createdAt ?? Date.now(),
     updatedAt: raw.updatedAt ?? Date.now(),
     pinned: Boolean(raw.pinned),
-    unread: Boolean(raw.unread)
+    unread: Boolean(raw.unread),
+    memoryInjection: raw.memoryInjection ?? null,
+    memoryGeneration: raw.memoryGeneration ?? null
   }
   return { ...base, title: resolveConversationTitle(base) }
 }
@@ -255,10 +257,13 @@ export async function loadConversation(
     updated_at: number
     pinned: boolean | null
     unread: boolean | null
+    memory_injection: boolean | null
+    memory_generation: boolean | null
   }>(
     `SELECT id, title, custom_title, created_at, updated_at,
             COALESCE(pinned, false) AS pinned,
-            COALESCE(unread, false) AS unread
+            COALESCE(unread, false) AS unread,
+            memory_injection, memory_generation
      FROM sessions WHERE id = $1 AND workspace_id = $2`,
     [id, workspaceId]
   )
@@ -282,7 +287,9 @@ export async function loadConversation(
       createdAt: Number(s.created_at),
       updatedAt: Number(s.updated_at),
       pinned: Boolean(s.pinned),
-      unread: Boolean(s.unread)
+      unread: Boolean(s.unread),
+      memoryInjection: s.memory_injection ?? null,
+      memoryGeneration: s.memory_generation ?? null
     },
     workspaceId
   )
@@ -537,7 +544,7 @@ export async function saveConversation(
   return next
 }
 
-/** 只改标题 / 置顶 / 未读，不重写消息、不抢活跃会话 */
+/** 只改标题 / 置顶 / 未读 / 本对话记忆，不重写消息、不抢活跃会话 */
 export async function patchConversationMeta(
   workspacePath: string,
   workspaceId: string,
@@ -554,24 +561,50 @@ export async function patchConversationMeta(
         ? patch.customTitle?.trim() || undefined
         : existing.customTitle,
     pinned: patch.pinned ?? existing.pinned,
-    unread: patch.unread ?? existing.unread
+    unread: patch.unread ?? existing.unread,
+    memoryInjection:
+      'memoryInjection' in patch ? patch.memoryInjection ?? null : existing.memoryInjection,
+    memoryGeneration:
+      'memoryGeneration' in patch ? patch.memoryGeneration ?? null : existing.memoryGeneration
   }
   next.title = next.customTitle || deriveConversationTitle(existing.messages)
   const db = await getMemoryDb()
   await db.query(
     `UPDATE sessions
-     SET custom_title = $1, pinned = $2, unread = $3, title = $4
-     WHERE id = $5 AND workspace_id = $6`,
+     SET custom_title = $1, pinned = $2, unread = $3, title = $4,
+         memory_injection = $5, memory_generation = $6
+     WHERE id = $7 AND workspace_id = $8`,
     [
       next.customTitle ?? null,
       Boolean(next.pinned),
       Boolean(next.unread),
       next.title,
+      next.memoryInjection,
+      next.memoryGeneration,
       id,
       workspaceId
     ]
   )
   return toConversationSummary(next)
+}
+
+/** 本对话记忆覆盖；列为空则跟随全局（对标 Codex chat-level /memories） */
+export async function loadSessionMemoryPolicy(sessionId: string): Promise<{
+  memoryInjection: boolean | null
+  memoryGeneration: boolean | null
+}> {
+  const id = String(sessionId || '').trim()
+  if (!id) return { memoryInjection: null, memoryGeneration: null }
+  const db = await getMemoryDb()
+  const row = await db.query<{
+    memory_injection: boolean | null
+    memory_generation: boolean | null
+  }>('SELECT memory_injection, memory_generation FROM sessions WHERE id = $1', [id])
+  const s = row.rows[0]
+  return {
+    memoryInjection: s?.memory_injection ?? null,
+    memoryGeneration: s?.memory_generation ?? null
+  }
 }
 
 /** 清掉工作区下全部对话未读（对标 Codex ⇧Esc） */

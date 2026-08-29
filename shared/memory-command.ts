@@ -4,8 +4,12 @@
  */
 
 export type MemoryCommand =
+  | { kind: 'pick' }
   | { kind: 'status' }
-  | { kind: 'set'; injection?: boolean; generation?: boolean }
+  | { kind: 'set'; injection?: boolean; generation?: boolean; inherit?: boolean }
+
+/** 官方空 `/memories`：为本对话选使用 / 写入 / 关闭 */
+export type MemoryChatPick = 'use' | 'generate' | 'off' | 'inherit'
 
 export interface MemoryListItem {
   id: string
@@ -14,12 +18,54 @@ export interface MemoryListItem {
   content: string
 }
 
+/** 空命令先出本对话选择器（对标 Codex choose use / generate / disabled） */
+export function memoryNeedsChatPicker(args: string): boolean {
+  return parseMemoryCommand(args).kind === 'pick'
+}
+
+/**
+ * 本对话覆盖优先，未设则跟随全局。
+ * 对标 Codex：Chat-level choices don't change your global memory settings.
+ */
+export function resolveChatMemoryFlags(
+  chat: { memoryInjection?: boolean | null; memoryGeneration?: boolean | null },
+  global: { memoryInjection?: boolean; memoryGeneration?: boolean }
+): {
+  injection: boolean
+  generation: boolean
+  injectionInherited: boolean
+  generationInherited: boolean
+} {
+  return {
+    injection: chat.memoryInjection ?? global.memoryInjection !== false,
+    generation: chat.memoryGeneration ?? global.memoryGeneration !== false,
+    injectionInherited: chat.memoryInjection == null,
+    generationInherited: chat.memoryGeneration == null
+  }
+}
+
+/** 选择器结果写成会话覆盖；`inherit` 清掉覆盖 */
+export function memoryFlagsForPick(pick: MemoryChatPick): {
+  memoryInjection: boolean | null
+  memoryGeneration: boolean | null
+} {
+  if (pick === 'inherit') return { memoryInjection: null, memoryGeneration: null }
+  if (pick === 'off') return { memoryInjection: false, memoryGeneration: false }
+  if (pick === 'use') return { memoryInjection: true, memoryGeneration: false }
+  return { memoryInjection: true, memoryGeneration: true }
+}
+
 /** 解析 `/memories` 参数 */
 export function parseMemoryCommand(args: string): MemoryCommand {
   const t = args.trim().toLowerCase().replace(/\s+/g, ' ')
-  if (!t || t === 'status' || t === 'list') return { kind: 'status' }
-  if (t === 'on' || t === 'enable') return { kind: 'set', injection: true, generation: true }
+  if (!t) return { kind: 'pick' }
+  if (t === 'status' || t === 'list') return { kind: 'status' }
+  if (t === 'inherit' || t === 'default' || t === 'global') return { kind: 'set', inherit: true }
+  if (t === 'on' || t === 'enable' || t === 'generate' || t === 'both') {
+    return { kind: 'set', injection: true, generation: true }
+  }
   if (t === 'off' || t === 'disable') return { kind: 'set', injection: false, generation: false }
+  if (t === 'use') return { kind: 'set', injection: true, generation: false }
   if (t === 'inject on' || t === 'injection on') return { kind: 'set', injection: true }
   if (t === 'inject off' || t === 'injection off') return { kind: 'set', injection: false }
   if (t === 'generate on' || t === 'generation on') return { kind: 'set', generation: true }
@@ -31,15 +77,19 @@ export function parseMemoryCommand(args: string): MemoryCommand {
 export function formatMemoryStatus(opts: {
   injection: boolean
   generation: boolean
+  injectionInherited?: boolean
+  generationInherited?: boolean
   items: MemoryListItem[]
 }): string {
+  const inheritNote = (inherited?: boolean) =>
+    inherited == null ? '' : inherited ? '（跟随全局）' : '（本对话）'
   const lines = [
-    '**记忆**（对标 Codex `/memories`）',
+    '**记忆**（对标 Codex `/memories`：本对话开关，不改全局）',
     '',
-    `- 注入：${opts.injection ? '开' : '关'}`,
-    `- 写入：${opts.generation ? '开' : '关'}`,
+    `- 注入：${opts.injection ? '开' : '关'}${inheritNote(opts.injectionInherited)}`,
+    `- 写入：${opts.generation ? '开' : '关'}${inheritNote(opts.generationInherited)}`,
     '',
-    '用法：`/memories on|off` · `/memories inject on|off` · `/memories generate on|off`',
+    '用法：空命令先选本对话；`/memories on|off|use|inherit` · `/memories inject on|off` · `/memories generate on|off`',
     ''
   ]
   if (opts.items.length === 0) {

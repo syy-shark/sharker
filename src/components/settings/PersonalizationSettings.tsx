@@ -10,7 +10,8 @@ import {
   SettingsCard,
   SettingsChoiceGroup,
   SettingsRow,
-  SettingsSection
+  SettingsSection,
+  SettingsToggle
 } from './SettingsPrimitives'
 import './PersonalizationSettings.css'
 
@@ -63,6 +64,35 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
+      <SettingsSection title="记忆">
+        <SettingsCard>
+          <SettingsRow
+            title="注入记忆"
+            description="对标 Codex Settings → Personalization：新对话默认把检索到的长期记忆写入 system。单对话用 /memories 覆盖。"
+          >
+            <SettingsToggle
+              checked={draft.memoryInjection !== false}
+              onChange={(memoryInjection) => {
+                scheduleSave({ ...draftRef.current, memoryInjection })
+              }}
+              label="注入记忆"
+            />
+          </SettingsRow>
+          <SettingsRow
+            title="写入记忆"
+            description="新对话默认在回合结束后提炼偏好与事实。关闭后仍记录会话事件。"
+            last
+          >
+            <SettingsToggle
+              checked={draft.memoryGeneration !== false}
+              onChange={(memoryGeneration) => {
+                scheduleSave({ ...draftRef.current, memoryGeneration })
+              }}
+              label="写入记忆"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
       <SettingsSection title="人格">
         <SettingsCard>
           <SettingsChoiceGroup

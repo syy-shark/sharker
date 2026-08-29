@@ -27,7 +27,9 @@ import { killAllShellChildren } from '../tools/shell-runner'
 import { enterBuildMode, setWorktreePath } from '../tools/harness-state'
 import { assembleMemoryContext } from './memory/assembler'
 import { writeMemoriesFromTurn } from './memory/writer'
+import { loadSessionMemoryPolicy } from './memory/conversations'
 import { getActiveSessionId, getWorkspaceProjectId } from './memory/workspaces-sync'
+import { resolveChatMemoryFlags } from '../shared/memory-command'
 import type { TurnEventInput } from './memory/types'
 
 const BUILD_PLAN_PREFIX = '__SHARKER_BUILD__\n'
@@ -222,11 +224,21 @@ async function* onQuery(
       conversationId: ctx.conversationId
     })
   ])
+  const memorySessionId = ctx.conversationId || sessionId
+  const chatMemory = memorySessionId
+    ? await loadSessionMemoryPolicy(memorySessionId)
+    : { memoryInjection: null, memoryGeneration: null }
+  const memoryFlags = resolveChatMemoryFlags(chatMemory, settings)
+  const memorySettings = {
+    ...settings,
+    memoryInjection: memoryFlags.injection,
+    memoryGeneration: memoryFlags.generation
+  }
   const memoryPromise = assembleMemoryContext({
-    settings,
+    settings: memorySettings,
     workspaceId: settings.activeWorkspaceId,
     projectId,
-    sessionId,
+    sessionId: memorySessionId,
     userMessage: userText,
     recentMessages: historyForAgent.slice(-4).map((m) => m.content)
   })
@@ -395,10 +407,20 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
       const tokens = estimateContextUsage(ctx.history, processed.userText, '').total
       void recordTokenUsage(tokens)
 
+      const writeSessionId =
+        turnCtx.conversationId || (await getActiveSessionId(turnCtx.settings.activeWorkspaceId))
+      const writePolicy = writeSessionId
+        ? await loadSessionMemoryPolicy(writeSessionId)
+        : { memoryInjection: null, memoryGeneration: null }
+      const writeFlags = resolveChatMemoryFlags(writePolicy, turnCtx.settings)
       void writeMemoriesFromTurn({
-        settings: turnCtx.settings,
+        settings: {
+          ...turnCtx.settings,
+          memoryInjection: writeFlags.injection,
+          memoryGeneration: writeFlags.generation
+        },
         workspaceId: turnCtx.settings.activeWorkspaceId,
-        sessionId: await getActiveSessionId(turnCtx.settings.activeWorkspaceId),
+        sessionId: writeSessionId,
         projectId: await getWorkspaceProjectId(turnCtx.settings.activeWorkspaceId),
         userText: processed.userText,
         assistantText,

@@ -29,6 +29,10 @@ export interface Conversation {
   pinned?: boolean
   /** 未读（对标 Codex ⌘⇧U） */
   unread?: boolean
+  /** 本对话是否注入已有记忆；`null`/缺省跟随全局（对标 Codex chat-level /memories） */
+  memoryInjection?: boolean | null
+  /** 本对话是否写入新记忆；`null`/缺省跟随全局 */
+  memoryGeneration?: boolean | null
   /** 最近一条用户/助手正文摘要（Search chats 扩匹配） */
   preview?: string
   /** 关联 git 分支 / worktree 名（Search chats 扩匹配） */
@@ -59,11 +63,13 @@ export interface ConversationSummary {
   gitBranch?: string
 }
 
-/** 只改标题 / 置顶 / 未读，不重写消息、不抢活跃会话 */
+/** 只改标题 / 置顶 / 未读 / 本对话记忆，不重写消息、不抢活跃会话 */
 export interface ConversationMetaPatch {
   customTitle?: string | null
   pinned?: boolean
   unread?: boolean
+  memoryInjection?: boolean | null
+  memoryGeneration?: boolean | null
 }
 
 /** 侧栏顺序：置顶在前，同组里上面是老对话、下面是新对话 */

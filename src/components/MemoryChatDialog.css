@@ -1,0 +1,87 @@
+.memory-chat-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+}
+
+.memory-chat-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, #000 28%, transparent);
+  cursor: default;
+}
+
+.memory-chat-dialog {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 16px 16px 12px;
+  border-radius: 18px;
+}
+
+.memory-chat-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.memory-chat-head p {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.memory-chat-head code {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.memory-chat-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.memory-chat-choices button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 12px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.memory-chat-choices button strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.memory-chat-choices button span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.memory-chat-choices button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+html.theme-dark .memory-chat-dialog {
+  background: var(--metal-fill, var(--glass-fill-raised));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

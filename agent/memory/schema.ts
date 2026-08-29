@@ -117,6 +117,11 @@ ALTER TABLE sessions ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT fa
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS unread BOOLEAN NOT NULL DEFAULT false;
 `
 
+const MIGRATION_V3 = `
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS memory_injection BOOLEAN;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS memory_generation BOOLEAN;
+`
+
 export async function runMigrations(db: PGlite): Promise<void> {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -136,5 +141,10 @@ export async function runMigrations(db: PGlite): Promise<void> {
   if (current < 2) {
     await db.exec(MIGRATION_V2)
     await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [2])
+    current = 2
+  }
+  if (current < 3) {
+    await db.exec(MIGRATION_V3)
+    await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [3])
   }
 }
