@@ -66,6 +66,11 @@ export interface SharkerApi {
     beforeSeq: number,
     limit: number
   ) => Promise<import('../shared/types').ChatMessage[]>
+  loadConversationMessage: (
+    workspaceId: string,
+    conversationId: string,
+    messageId: string
+  ) => Promise<import('../shared/types').ChatMessage | null>
   saveConversation: (workspaceId: string, conversation: Conversation) => Promise<Conversation>
   createConversation: (
     workspaceId: string,

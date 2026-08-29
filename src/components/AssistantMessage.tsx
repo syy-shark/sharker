@@ -27,6 +27,7 @@ import { formatChangedFilesLabel } from '../../shared/turn-notify'
 import { MessageActions } from './MessageActions'
 import { ProcessTimeline } from './ProcessTimeline'
 import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
+import { messageHasDeferredThinking } from '../../shared/transcript-hydrate'
 import { InlineDemo } from './InlineDemo'
 import { InlineApproval } from './InlineApproval'
 import { StreamingMarkdown } from './StreamingMarkdown'
@@ -58,6 +59,8 @@ interface Props {
   onOpenChangedFiles?: (paths: string[]) => void
   /** 对话里命令输出展示量 */
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
+  /** 点开瘦身后的命令输出 / 思考时取完整消息 */
+  onNeedFullMessage?: (messageId: string) => void
   children?: React.ReactNode
 }
 
@@ -108,6 +111,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   onOpenSubAgent,
   onOpenChangedFiles,
   toolOutputDisplay = 'standard',
+  onNeedFullMessage,
   children
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
@@ -226,6 +230,15 @@ export const AssistantMessage = memo(function AssistantMessage({
   )
   const generatingDemo = Boolean(isStreaming && hasLiveDemo && !hasPaintableDemo)
   const liveThinkText = useSegmentFlow ? liveThinkingText(segments!) : ''
+  const deferredThinking = messageHasDeferredThinking({
+    id: messageId,
+    role: 'assistant',
+    content,
+    meta
+  })
+  const requestFullMessage = () => {
+    onNeedFullMessage?.(messageId)
+  }
   const showFinalBody =
     Boolean(children) ||
     (isStreaming ? hasLiveProse || hasLiveDemo || hasLiveDiffs : hasAnswerStream) ||
@@ -355,6 +368,8 @@ export const AssistantMessage = memo(function AssistantMessage({
                 answerStreaming={Boolean(finalContentRaw.trim() || hasLiveProse)}
                 onOpenSubAgent={onOpenSubAgent}
                 toolOutputDisplay={toolOutputDisplay}
+                messageId={messageId}
+                onNeedFullMessage={onNeedFullMessage}
               />
             </div>
           ) : (
@@ -370,18 +385,26 @@ export const AssistantMessage = memo(function AssistantMessage({
                 answerStreaming={Boolean(finalContentRaw.trim())}
                 onOpenSubAgent={onOpenSubAgent}
                 toolOutputDisplay={toolOutputDisplay}
+                messageId={messageId}
+                onNeedFullMessage={onNeedFullMessage}
               />
             </div>
           )}
         </div>
-      ) : liveThinkText.trim() ? (
+      ) : liveThinkText.trim() || deferredThinking ? (
         <ThoughtDisclosure
           text={liveThinkText}
           open={thoughtOpen}
-          onToggle={() => setThoughtOpen((o) => !o)}
+          onToggle={() => {
+            const next = !thoughtOpen
+            setThoughtOpen(next)
+            if (next && deferredThinking) requestFullMessage()
+          }}
           label={
             shownDuration != null ? `已思考 · ${formatDuration(shownDuration)}` : '已思考'
           }
+          deferred={deferredThinking}
+          loading={deferredThinking && thoughtOpen}
         />
       ) : null}
 
@@ -422,6 +445,8 @@ export const AssistantMessage = memo(function AssistantMessage({
                   isStreaming={false}
                   onOpenSubAgent={onOpenSubAgent}
                   toolOutputDisplay={toolOutputDisplay}
+                  messageId={messageId}
+                  onNeedFullMessage={onNeedFullMessage}
                 />
               </div>
             </div>

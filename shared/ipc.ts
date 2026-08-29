@@ -50,6 +50,8 @@ export const IPC = {
   LOAD_CONVERSATION: 'conversations:load',
   /** 上滑取更早一页（对标 Codex thread/turns/list） */
   LOAD_OLDER_CONVERSATION: 'conversations:load-older',
+  /** 点开瘦身后的命令输出 / 思考，取一条完整消息 */
+  LOAD_CONVERSATION_MESSAGE: 'conversations:load-message',
   SAVE_CONVERSATION: 'conversations:save',
   DELETE_CONVERSATION: 'conversations:delete',
   ARCHIVE_CONVERSATION: 'conversations:archive',

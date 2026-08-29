@@ -591,6 +591,12 @@ html.theme-dark .turn-flow-live-head {
   color: var(--text-secondary);
 }
 
+.turn-flow-output-deferred {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
 .turn-flow-step-output pre {
   max-height: 180px;
   margin: 6px 0 0;

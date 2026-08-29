@@ -4,6 +4,17 @@ import {
   resolveRestoredScrollTop,
   shouldDeferScrollRestore
 } from './transcript-scroll'
+import type { ChatMessage } from './types'
+import {
+  DEFER_THINKING_CHARS,
+  DEFER_TOOL_OUTPUT_CHARS,
+  messageHasDeferredHydration,
+  messageHasDeferredThinking,
+  mergeHydratedMessage,
+  segmentHasDeferredOutput,
+  slimMessagesForUi,
+  utf8ByteLength
+} from './transcript-hydrate'
 import {
   effectiveTranscriptWindowStart,
   mergeConversationHistory,
@@ -141,5 +152,69 @@ describe('transcript scroll restore', () => {
     expect(shiftPinnedStartAfterPrepend(null, 30)).toBeNull()
     expect(nextHistoryStartSeq(160, 30)).toBe(130)
     expect(nextHistoryStartSeq(10, 30)).toBe(0)
+
+    const hugeOutput = 'x'.repeat(DEFER_TOOL_OUTPUT_CHARS + 80)
+    const hugeThink = '想'.repeat(DEFER_THINKING_CHARS + 20)
+    const fat: ChatMessage = {
+      id: 'a1',
+      role: 'assistant',
+      content: '回答正文应走快路径',
+      meta: {
+        browsedFiles: [],
+        activities: [],
+        thinkingPreview: hugeThink,
+        segments: [
+          { id: 'th', kind: 'thinking', content: hugeThink, status: 'done' },
+          {
+            id: 'cmd',
+            kind: 'tool',
+            toolName: 'run_command',
+            resultSummary: 'ok',
+            resultOutput: hugeOutput,
+            status: 'done'
+          }
+        ]
+      }
+    }
+    const slimed = slimMessagesForUi([fat])[0]
+    expect(slimed.content).toBe('回答正文应走快路径')
+    expect(slimed.meta?.thinkingPreview).toBeUndefined()
+    expect(slimed.meta?.thinkingPreviewDeferred).toBe(utf8ByteLength(hugeThink))
+    expect(slimed.meta?.segments?.[0].content).toBe('')
+    expect(slimed.meta?.segments?.[0].contentDeferred).toBe(utf8ByteLength(hugeThink))
+    expect(slimed.meta?.segments?.[1].resultOutput).toBe('')
+    expect(slimed.meta?.segments?.[1].resultOutputDeferred).toBe(utf8ByteLength(hugeOutput))
+    expect(messageHasDeferredHydration(slimed)).toBe(true)
+    expect(messageHasDeferredThinking(slimed)).toBe(true)
+    expect(segmentHasDeferredOutput(slimed.meta!.segments![1])).toBe(true)
+    expect(messageHasDeferredHydration(fat)).toBe(false)
+    const hydrated = mergeHydratedMessage(slimed, fat)
+    expect(hydrated.meta?.segments?.[1].resultOutput).toBe(hugeOutput)
+    expect(hydrated.meta?.thinkingPreview).toBe(hugeThink)
+    expect(messageHasDeferredHydration(hydrated)).toBe(false)
+
+    const compact: ChatMessage = {
+      id: 'a2',
+      role: 'assistant',
+      content: '短',
+      meta: {
+        browsedFiles: [],
+        activities: [],
+        thinkingPreview: '短想',
+        segments: [
+          { id: 'th2', kind: 'thinking', content: '短想', status: 'done' },
+          {
+            id: 'cmd2',
+            kind: 'tool',
+            resultSummary: 'ok',
+            resultOutput: 'ls\n',
+            status: 'done'
+          }
+        ]
+      }
+    }
+    const kept = slimMessagesForUi([compact])[0]
+    expect(kept).toBe(compact)
+    expect(messageHasDeferredHydration(kept)).toBe(false)
   })
 })

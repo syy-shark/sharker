@@ -16,6 +16,7 @@ import {
   toConversationSummary
 } from '../../shared/conversation'
 import type { ChatMessage } from '../../shared/types'
+import { messageHasDeferredHydration, slimMessagesForUi } from '../../shared/transcript-hydrate'
 import { getMemoryDb } from './db'
 import { ensureProject } from './projects'
 
@@ -266,7 +267,8 @@ export async function loadConversation(
   const tail = options?.tail
   const startSeq =
     tail != null && tail > 0 && total > tail ? total - Math.floor(tail) : 0
-  const messages = startSeq > 0 ? await loadMessagesFromSeq(id, startSeq) : await loadMessages(id)
+  const rawMessages = startSeq > 0 ? await loadMessagesFromSeq(id, startSeq) : await loadMessages(id)
+  const messages = options?.tail != null ? slimMessagesForUi(rawMessages) : rawMessages
   const conv = normalizeConversation(
     {
       id: s.id,
@@ -299,7 +301,37 @@ export async function loadOlderConversationMessages(
     [id, workspaceId]
   )
   if (!row.rows[0]) return []
-  return loadOlderMessages(id, beforeSeq, limit)
+  return slimMessagesForUi(await loadOlderMessages(id, beforeSeq, limit))
+}
+
+/** 取一条完整消息（点开被瘦身的输出/思考时用，不走启动窗预算） */
+export async function loadConversationMessage(
+  workspacePath: string,
+  workspaceId: string,
+  conversationId: string,
+  messageId: string
+): Promise<ChatMessage | null> {
+  await ensureWorkspaceRow(workspaceId, workspacePath)
+  const db = await getMemoryDb()
+  const owned = await db.query<{ id: string }>(
+    'SELECT id FROM sessions WHERE id = $1 AND workspace_id = $2',
+    [conversationId, workspaceId]
+  )
+  if (!owned.rows[0]) return null
+  const row = await db.query<{
+    id: string
+    role: string
+    content: string
+    tool_call_id: string | null
+    tool_name: string | null
+    meta: unknown
+  }>(
+    `SELECT id, role, content, tool_call_id, tool_name, meta
+     FROM session_messages WHERE id = $1 AND session_id = $2`,
+    [messageId, conversationId]
+  )
+  const found = row.rows[0]
+  return found ? rowToMessage(found) : null
 }
 
 /** 保存对话。`fromSeq` / `historyStartSeq` > 0 时只改该 seq 起的消息，不删更早页。 */
@@ -316,15 +348,18 @@ export async function saveConversation(
   )
 
   let touchUpdatedAt = true
-  if (fromSeq > 0) {
+  const dirty = conversation.messages.filter((m) => !messageHasDeferredHydration(m))
+  if (dirty.length === 0) {
+    touchUpdatedAt = false
+  } else if (fromSeq > 0) {
     const existingTail = await loadMessagesFromSeq(conversation.id, fromSeq)
-    touchUpdatedAt =
-      messagesFingerprint(existingTail) !== messagesFingerprint(conversation.messages)
+    const existingDirty = existingTail.filter((m) => dirty.some((d) => d.id === m.id))
+    touchUpdatedAt = messagesFingerprint(existingDirty) !== messagesFingerprint(dirty)
   } else {
     const existing = await loadConversation(workspacePath, conversation.workspaceId, conversation.id)
     if (existing) {
-      touchUpdatedAt =
-        messagesFingerprint(existing.messages) !== messagesFingerprint(conversation.messages)
+      const existingDirty = existing.messages.filter((m) => dirty.some((d) => d.id === m.id))
+      touchUpdatedAt = messagesFingerprint(existingDirty) !== messagesFingerprint(dirty)
     }
   }
 
@@ -363,20 +398,47 @@ export async function saveConversation(
     ]
   )
 
+  const keepIds = next.messages.map((m) => m.id)
   if (fromSeq > 0) {
-    await db.query('DELETE FROM session_messages WHERE session_id = $1 AND seq >= $2', [
-      next.id,
-      fromSeq
-    ])
+    if (keepIds.length) {
+      const holes = keepIds.map((_, i) => `$${i + 3}`).join(', ')
+      await db.query(
+        `DELETE FROM session_messages WHERE session_id = $1 AND seq >= $2 AND id NOT IN (${holes})`,
+        [next.id, fromSeq, ...keepIds]
+      )
+    } else {
+      await db.query('DELETE FROM session_messages WHERE session_id = $1 AND seq >= $2', [
+        next.id,
+        fromSeq
+      ])
+    }
   } else {
-    await db.query('DELETE FROM session_messages WHERE session_id = $1', [next.id])
+    const deferredIds = next.messages.filter((m) => messageHasDeferredHydration(m)).map((m) => m.id)
+    if (deferredIds.length) {
+      const holes = deferredIds.map((_, i) => `$${i + 2}`).join(', ')
+      await db.query(
+        `DELETE FROM session_messages WHERE session_id = $1 AND id NOT IN (${holes})`,
+        [next.id, ...deferredIds]
+      )
+    } else {
+      await db.query('DELETE FROM session_messages WHERE session_id = $1', [next.id])
+    }
   }
   for (let i = 0; i < next.messages.length; i++) {
     const m = next.messages[i]
+    if (messageHasDeferredHydration(m)) continue
     const seq = fromSeq + i
     await db.query(
       `INSERT INTO session_messages (id, session_id, role, content, tool_call_id, tool_name, meta, seq)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (id) DO UPDATE SET
+         session_id = EXCLUDED.session_id,
+         role = EXCLUDED.role,
+         content = EXCLUDED.content,
+         tool_call_id = EXCLUDED.tool_call_id,
+         tool_name = EXCLUDED.tool_name,
+         meta = EXCLUDED.meta,
+         seq = EXCLUDED.seq`,
       [
         m.id,
         next.id,

@@ -250,6 +250,10 @@ export interface TurnSegment {
   resultSummary?: string
   /** 按需展开的截断工具输出。 */
   resultOutput?: string
+  /** 打开线程时抽掉的输出字节数；点开「查看输出」再取全文 */
+  resultOutputDeferred?: number
+  /** 打开线程时抽掉的思考原文字节数 */
+  contentDeferred?: number
   errorMessage?: string
   exitCode?: number
   isVerification?: boolean
@@ -279,6 +283,8 @@ export interface AssistantMeta {
   hadThinking?: boolean
   /** 思考内容摘要（完成后可展开查看） */
   thinkingPreview?: string
+  /** 打开线程时抽掉的思考摘要字节数 */
+  thinkingPreviewDeferred?: number
   /** 回复所用模型 ID */
   model?: string
   /** 有序过程流（持久化，历史可重看） */

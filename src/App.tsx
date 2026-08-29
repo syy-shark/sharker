@@ -77,6 +77,7 @@ import {
   nextHistoryStartSeq,
   prependHistoryPage
 } from '../shared/transcript-window'
+import { mergeHydratedMessage } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
 import { PlanBuildBar } from './components/PlanBuildBar'
 import { RightPanel, type RightPanelTab } from './components/RightPanel'
@@ -789,6 +790,21 @@ export default function App() {
     if (!workspaceId || !convId) return
     await ensureConversationHistory(workspaceId, convId)
   }, [ensureConversationHistory])
+
+  const handleNeedFullMessage = useCallback(async (messageId: string) => {
+    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+    const convId = activeConversationIdRef.current
+    if (!workspaceId || !convId || !messageId || !window.sharker.loadConversationMessage) return
+    const gen = historyLoadGenRef.current
+    const full = await window.sharker.loadConversationMessage(workspaceId, convId, messageId)
+    if (!full || historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) {
+      return
+    }
+    const next = messagesRef.current.map((m) => mergeHydratedMessage(m, full))
+    applyConversationMessages(next, historyStartSeqRef.current)
+    const buf = sessionBuffersRef.current.get(convId)
+    if (buf) buf.messages = next
+  }, [applyConversationMessages])
 
   /** 将 ref 中的回合元信息同步到 React state */
   const syncLiveTurnMeta = useCallback(() => {
@@ -6717,6 +6733,7 @@ export default function App() {
               hasOlderHistory={historyStartSeq > 0}
               onLoadOlderHistory={handleLoadOlderHistory}
               onNeedFullHistory={handleNeedFullHistory}
+              onNeedFullMessage={handleNeedFullMessage}
             />
             </div>
           ) : page === 'automations' ? (

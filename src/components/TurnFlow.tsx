@@ -5,6 +5,7 @@
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成「工作中 / 工作了」（对标 Codex Worked for）；回答刚上屏时收回已展开的 Thought / Worked for
  * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
+ * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
  * @see src/ARCH.md · docs/ui-style.md
  */
@@ -42,6 +43,7 @@ import {
   isToolProgressSummary,
   type ToolOutputDisplay
 } from '../../shared/tool-output-display'
+import { segmentHasDeferredOutput } from '../../shared/transcript-hydrate'
 import './TurnFlow.css'
 
 interface Props {
@@ -67,6 +69,9 @@ interface Props {
   onOpenSubAgent?: (id: string | null) => void
   /** 对话里命令输出展示量 */
   toolOutputDisplay?: ToolOutputDisplay
+  /** 点开瘦身后的命令输出时取完整消息 */
+  messageId?: string
+  onNeedFullMessage?: (messageId: string) => void
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -275,7 +280,9 @@ export function ThoughtDisclosure({
   onToggle,
   label,
   elapsed,
-  streaming = false
+  streaming = false,
+  deferred = false,
+  loading = false
 }: {
   text: string
   open: boolean
@@ -283,6 +290,8 @@ export function ThoughtDisclosure({
   label: string
   elapsed?: ReactNode
   streaming?: boolean
+  deferred?: boolean
+  loading?: boolean
 }) {
   const bodyRef = useRef<HTMLDivElement>(null)
   const body = liveThoughtBody(text)
@@ -292,7 +301,7 @@ export function ThoughtDisclosure({
     if (el) el.scrollTop = el.scrollHeight
   }, [open, streaming, body])
 
-  if (!text.trim() && !streaming) return null
+  if (!text.trim() && !streaming && !deferred) return null
 
   return (
     <div
@@ -324,12 +333,69 @@ export function ThoughtDisclosure({
         </span>
         {elapsed ? <span className="turn-flow-thought-time">{elapsed}</span> : null}
       </button>
-      {open && body ? (
+      {open && (body || loading) ? (
         <div ref={bodyRef} className="turn-flow-thought-body" aria-label="思考过程">
-          <div className="turn-flow-thought-text">{body}</div>
+          {loading && !body ? (
+            <p className="turn-flow-output-deferred">正在载入思考…</p>
+          ) : (
+            <div className="turn-flow-thought-text">{body}</div>
+          )}
         </div>
       ) : null}
     </div>
+  )
+}
+
+function toolOutputSummaryLabel(clipped: boolean, deferred: boolean): string {
+  if (deferred) return '查看输出'
+  return clipped ? '查看输出（已截断）' : '查看输出'
+}
+
+function ToolOutputDetails({
+  segment,
+  outputMode,
+  status,
+  isStreaming = false,
+  messageId,
+  onNeedFullMessage
+}: {
+  segment: TurnSegment
+  outputMode: ToolOutputDisplay
+  status: string
+  isStreaming?: boolean
+  messageId?: string
+  onNeedFullMessage?: (messageId: string) => void
+}) {
+  const deferred = segmentHasDeferredOutput(segment)
+  const clip = clipToolOutput(segment.resultOutput || '', outputMode)
+  const [open, setOpen] = useState(() =>
+    shouldExpandToolOutput(outputMode, status, { isStreaming })
+  )
+  const requestedRef = useRef(false)
+
+  useEffect(() => {
+    if (!open || !deferred || !messageId || !onNeedFullMessage || requestedRef.current) return
+    requestedRef.current = true
+    onNeedFullMessage(messageId)
+  }, [open, deferred, messageId, onNeedFullMessage])
+
+  return (
+    <details
+      className="turn-flow-step-output"
+      open={open}
+      onToggle={(event) => {
+        setOpen(event.currentTarget.open)
+      }}
+    >
+      <summary>{toolOutputSummaryLabel(clip.clipped, deferred)}</summary>
+      {open ? (
+        deferred && !segment.resultOutput ? (
+          <p className="turn-flow-output-deferred">正在载入完整输出…</p>
+        ) : (
+          <pre>{clip.text}</pre>
+        )
+      ) : null}
+    </details>
   )
 }
 
@@ -375,13 +441,17 @@ const ProcessStepRow = memo(function ProcessStepRow({
   isLast,
   onOpenSubAgent,
   outputMode,
-  isStreaming = false
+  isStreaming = false,
+  messageId,
+  onNeedFullMessage
 }: {
   step: DisplayStep
   isLast: boolean
   onOpenSubAgent?: (id: string | null) => void
   outputMode: ToolOutputDisplay
   isStreaming?: boolean
+  messageId?: string
+  onNeedFullMessage?: (messageId: string) => void
 }) {
   const segment = step.source?.segment
   const isDemo =
@@ -397,7 +467,6 @@ const ProcessStepRow = memo(function ProcessStepRow({
     step.detail
   )
   const openable = Boolean(onOpenSubAgent && isSubAgentInspectTool(segment?.toolName))
-  const clip = clipToolOutput(segment?.resultOutput || '', outputMode)
 
   return (
     <li
@@ -472,17 +541,20 @@ const ProcessStepRow = memo(function ProcessStepRow({
         {shouldMountToolOutputDetails({
           mode: outputMode,
           hasDistinctOutput: Boolean(
-            !isDemo && segment?.resultOutput && segment.resultOutput !== segment.resultSummary
+            !isDemo &&
+              ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
+                (segment && segmentHasDeferredOutput(segment)))
           ),
           isStreaming
-        }) ? (
-          <details
-            className="turn-flow-step-output"
-            defaultOpen={shouldExpandToolOutput(outputMode, step.status, { isStreaming })}
-          >
-            <summary>{clip.clipped ? '查看输出（已截尾）' : '查看输出'}</summary>
-            <pre>{clip.text}</pre>
-          </details>
+        }) && segment ? (
+          <ToolOutputDetails
+            segment={segment}
+            outputMode={outputMode}
+            status={step.status}
+            isStreaming={isStreaming}
+            messageId={messageId}
+            onNeedFullMessage={onNeedFullMessage}
+          />
         ) : null}
       </div>
     </li>
@@ -501,7 +573,9 @@ export const TurnFlow = memo(function TurnFlow({
   contentStreaming = false,
   generatingDemo = false,
   onOpenSubAgent,
-  toolOutputDisplay
+  toolOutputDisplay,
+  messageId,
+  onNeedFullMessage
 }: Props) {
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -829,6 +903,8 @@ export const TurnFlow = memo(function TurnFlow({
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
               isStreaming={isStreaming}
+              messageId={messageId}
+              onNeedFullMessage={onNeedFullMessage}
             />
           ))}
         </ol>
@@ -843,6 +919,8 @@ export const TurnFlow = memo(function TurnFlow({
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
               isStreaming={isStreaming}
+              messageId={messageId}
+              onNeedFullMessage={onNeedFullMessage}
             />
           ))}
         </ol>

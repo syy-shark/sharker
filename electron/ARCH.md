@@ -36,7 +36,7 @@
 | `app:deeplink` / `app:deeplink-take` | `sharker://` 深链投递与启动队列 |
 | `app:menu-action` | 应用菜单点击（不注册加速键） |
 | `settings:*` | 读写设置 |
-| `conversations:*` | 对话 CRUD |
+| `conversations:*` | 对话 CRUD（含 `load-older` 上滑分页、`load-message` 点开补水） |
 | `approval:response` | 高危操作确认 |
 | `git:review-action` | 审查面板暂存 / 取消暂存 / 还原 |
 | `git:hunk-action` | 审查面板单个 hunk 暂存 / 取消暂存 / 还原 |

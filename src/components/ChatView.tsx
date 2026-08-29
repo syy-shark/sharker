@@ -345,6 +345,8 @@ interface Props {
   onLoadOlderHistory?: () => void | Promise<void>
   /** 查找 / 跳到对话顶需要全量时再拉 */
   onNeedFullHistory?: () => void | Promise<void>
+  /** 点开瘦身后的命令输出 / 思考时取一条完整消息 */
+  onNeedFullMessage?: (messageId: string) => void
 }
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
@@ -420,7 +422,8 @@ export function ChatView({
   keyboardShortcuts,
   hasOlderHistory = false,
   onLoadOlderHistory,
-  onNeedFullHistory
+  onNeedFullHistory,
+  onNeedFullMessage
 }: Props) {
   const composerRef = useRef<ComposerDockHandle>(null)
   const [stickToBottom, setStickToBottom] = useState(true)
@@ -1318,6 +1321,7 @@ export function ChatView({
               onOpenSubAgent={onOpenSubAgent}
               onOpenChangedFiles={onOpenChangedFiles}
               toolOutputDisplay={toolOutputDisplay}
+              onNeedFullMessage={onNeedFullMessage}
               onRetry={
                 index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
                   ? () => onRetry(m.meta!.retryOfUserMessageId!)
@@ -1342,6 +1346,7 @@ export function ChatView({
       onOpenChangedFiles,
       onRetry,
       onEditUserMessage,
+      onNeedFullMessage,
       toolOutputDisplay
     ]
   )
@@ -1482,6 +1487,7 @@ export function ChatView({
                   onApproval={onApproval}
                   onOpenSubAgent={onOpenSubAgent}
                   toolOutputDisplay={toolOutputDisplay}
+                  onNeedFullMessage={onNeedFullMessage}
                 />
               </div>
             )}
