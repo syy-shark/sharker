@@ -27,7 +27,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
-| `/review` | 只读评审；默认按设置 → 权限 → Git **审查交付**（独立线程 / 当前对话，对标 Codex Review delivery）；`/review here` 或 `detached` 单次覆盖；`/review branch` 相对基线；`/review commit [sha]` 指定提交（对标 Codex Review a commit）；剩余文字作自定义关注（对标 Codex `/review Focus on edge cases and security issues`） |
+| `/review` | 只读评审；官方默认当前对话（对标 Codex Reviews run in the current chat）；设置 → 权限 → Git **审查交付** 可改独立线程；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；`/review branch` 相对基线；`/review commit [sha]` 指定提交；剩余文字作自定义关注（对标 Codex `/review Focus on …`） |
 | `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
@@ -107,7 +107,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **⌘⇧Enter** 对单条消息使用另一种行为；**Tab** 始终排队
 - 设置 → 外观 → **Enter 发送**（对标 Codex `chatgpt.composerEnterBehavior`）：**回车发送** / **多行需 ⌘Enter** / **始终 ⌘Enter**；旧「用 ⌘Enter 发送」读成始终 ⌘Enter
 - 可打开 **建议提示**（空对话先给出进行中 / 未读 / 最近更新的对话，再审查 / 设定目标，对标 Codex Settings → Suggested prompts）
-- 设置 → 权限 → Git **审查交付**：`/review` 默认独立线程或当前对话（对标 Codex Review delivery）
+- 设置 → 权限 → Git **审查交付**：`/review` 默认当前对话（官方 Inline）；Detached 才新开审查线程。直播中排队或注入，不中止当前回合
 - 设置 → 权限 → Git **Commit / PR 文案模板**：写入 system 与 `git-commit` skill（对标 Codex Git commit/PR prompts）
 - 设置 → 权限 → Git **始终 force-with-lease 推送**（默认关）：审查面板 `git push --force-with-lease`，从不 `--force`（对标 Codex Always force push）
 - 设置 → 权限 → Git **分支名前缀**：审查面板与 agent 新建分支时自动加上（对标 Codex Git branch naming）

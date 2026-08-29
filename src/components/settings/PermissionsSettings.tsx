@@ -131,7 +131,7 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
               {
                 value: 'inline',
                 title: '当前对话',
-                description: '对标 Codex Inline：能在当前对话跑 /review 就在当前对话。',
+                description: '官方默认：能在当前对话跑 /review 就在当前对话。直播中排队或注入，不中止。',
                 icon: <span aria-hidden>内</span>
               },
               {

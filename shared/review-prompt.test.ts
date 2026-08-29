@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatReviewPrompt,
+  parseReviewDelivery,
   parseReviewRequest,
   parseReviewScope,
+  reviewSubmitMode,
   withReviewInstructions
 } from './review-prompt'
 
@@ -25,12 +27,21 @@ describe('review scope', () => {
     expect(formatReviewPrompt(parseReviewRequest('Focus on edge cases'))).toContain('额外关注：Focus on edge cases')
   })
 
-  it('defaults to a detached review thread unless here is passed', () => {
-    expect(parseReviewRequest('').detached).toBe(true)
-    expect(parseReviewRequest('branch').detached).toBe(true)
+  it('defaults to the current chat unless detached is passed', () => {
+    expect(parseReviewDelivery(undefined)).toBe('inline')
+    expect(parseReviewDelivery('inline')).toBe('inline')
+    expect(parseReviewDelivery('detached')).toBe('detached')
+    expect(parseReviewRequest('').detached).toBe(false)
+    expect(parseReviewRequest('branch').detached).toBe(false)
     expect(parseReviewRequest('here').detached).toBe(false)
     expect(parseReviewRequest('branch here').detached).toBe(false)
     expect(parseReviewRequest('branch here').scope).toBe('branch')
+    expect(parseReviewRequest('detached').detached).toBe(true)
+    expect(parseReviewRequest('new').detached).toBe(true)
+    expect(reviewSubmitMode({ detached: false, busy: false })).toBe('send')
+    expect(reviewSubmitMode({ detached: false, busy: true })).toBe('queue')
+    expect(reviewSubmitMode({ detached: false, busy: true, followUp: 'steer' })).toBe('jump')
+    expect(reviewSubmitMode({ detached: true, busy: true, followUp: 'queue' })).toBe('detach')
   })
 
   it('uses Review delivery and allows here/detached overrides', () => {

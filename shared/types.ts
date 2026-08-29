@@ -123,7 +123,7 @@ export interface AppSettings {
   suggestedPrompts?: boolean
   /**
    * `/review` 默认交付（对标 Codex Settings → Git → Review delivery）。
-   * detached（默认）：新开审查线程；inline：能在当前对话跑就在当前对话。
+   * inline（默认，官方）：能在当前对话跑就在当前对话；detached：新开审查线程。
    */
   reviewDelivery?: 'inline' | 'detached'
   /** 生成 commit message 时使用的用户模板（对标 Codex Git commit prompt） */
@@ -410,7 +410,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   composerEnterBehavior: 'enter',
   requireModEnter: false,
   suggestedPrompts: true,
-  reviewDelivery: 'detached',
+  reviewDelivery: 'inline',
   gitCommitPrompt: '',
   gitPrPrompt: '',
   gitForceWithLease: false,

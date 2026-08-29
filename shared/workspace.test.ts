@@ -17,6 +17,11 @@ describe('workspace settings', () => {
     ).toBe(false)
     expect(normalizeSettings({}, '/home/u').composerEnterBehavior).toBe('enter')
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').composerEnterBehavior).toBe('enter')
+    expect(normalizeSettings({}, '/home/u').reviewDelivery).toBe('inline')
+    expect(normalizeSettings({ reviewDelivery: 'detached' }, '/home/u').reviewDelivery).toBe(
+      'detached'
+    )
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').reviewDelivery).toBe('inline')
   })
 })
 

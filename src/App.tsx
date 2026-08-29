@@ -107,7 +107,7 @@ import {
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
 import { OPEN_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
-import { formatReviewPrompt, parseReviewRequest } from '../shared/review-prompt'
+import { formatReviewPrompt, parseReviewRequest, reviewSubmitMode } from '../shared/review-prompt'
 import {
   nextPersonality,
   parsePersonality,
@@ -5442,7 +5442,7 @@ export default function App() {
           break
         }
         case 'git_branch':
-          await dispatchTurnRef.current('请用 git 工具查看当前分支与工作区状态，并简要汇报。')
+          await handlePromptSubmit('请用 git 工具查看当前分支与工作区状态，并简要汇报。')
           break
         case 'toggle_panel':
           handleToggleRightPanel()
@@ -5468,14 +5468,31 @@ export default function App() {
           })
           const prompt = formatReviewPrompt(review)
           const wsId = settingsRef.current.activeWorkspaceId
-          if (review.detached && wsId && window.sharker.createConversation) {
+          const busy = Boolean(loadingLiveRef.current || sendInFlightRef.current)
+          const submit = reviewSubmitMode({
+            detached: review.detached,
+            busy,
+            followUp: settingsRef.current.followUpBehavior
+          })
+          if (submit === 'detach' && wsId && window.sharker.createConversation) {
             const conv = await window.sharker.createConversation(wsId)
             saveThreadRuntime(conv.id, threadRuntimeRef.current)
             await handleSelectConversation(wsId, conv.id)
             await dispatchTurnRef.current(prompt, [], conv.id)
             break
           }
-          await dispatchTurnRef.current(prompt)
+          const inlineMode =
+            submit === 'jump' || submit === 'queue'
+              ? submit
+              : reviewSubmitMode({
+                  detached: false,
+                  busy,
+                  followUp: settingsRef.current.followUpBehavior
+                })
+          await handlePromptSubmit(
+            prompt,
+            inlineMode === 'jump' || inlineMode === 'queue' ? inlineMode : 'send'
+          )
           break
         }
         case 'set_personality': {
@@ -5518,7 +5535,7 @@ export default function App() {
             const lastUser = [...messagesRef.current]
               .reverse()
               .find((m) => m.role === 'user' && m.content.trim())
-            if (lastUser && !sendInFlightRef.current) {
+            if (lastUser && !sendInFlightRef.current && !loadingLiveRef.current) {
               void dispatchTurnRef.current(lastUser.content, lastUser.attachments, convId ?? undefined)
             }
           }
@@ -7649,7 +7666,7 @@ export default function App() {
           onInsertComposer={(text) => seedComposer(text, 'append')}
           onSendReviewComments={(prompt) => {
             setPage('chat')
-            void dispatchTurnRef.current(prompt)
+            void handlePromptSubmit(prompt)
           }}
         />
         )}

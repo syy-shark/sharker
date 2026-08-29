@@ -21,11 +21,26 @@ export function reviewCommitPrompt(sha?: string): string {
   return `请审查 git commit ${target} 的变更（git show ${target}）。只做只读审查：指出问题、风险、遗漏测试与可改进处。不要修改文件，不要 commit。先看 name-status 与关键 diff，再给出结构化评审。\n\n${REVIEW_FINDINGS_TAIL}`
 }
 
-/** Settings → Git → Review delivery（对标 Codex：Inline 当前对话 / Detached 新线程） */
+/** Settings → Git → Review delivery（对标 Codex：默认 Inline 当前对话 / Detached 新线程） */
 export type ReviewDelivery = 'inline' | 'detached'
 
+/** 未写或未知值按官方默认 Inline（当前对话） */
 export function parseReviewDelivery(raw: unknown): ReviewDelivery {
-  return raw === 'inline' ? 'inline' : 'detached'
+  return raw === 'detached' ? 'detached' : 'inline'
+}
+
+/**
+ * `/review` 怎么开下一轮：官方默认当前对话；直播中不 abort。
+ * Detached（设置或 `/review detached`）才新开审查线程。
+ */
+export function reviewSubmitMode(options: {
+  detached: boolean
+  busy: boolean
+  followUp?: unknown
+}): 'detach' | 'send' | 'queue' | 'jump' {
+  if (options.detached) return 'detach'
+  if (!options.busy) return 'send'
+  return options.followUp === 'steer' ? 'jump' : 'queue'
 }
 
 const REVIEW_INLINE_TOKENS = new Set(['here', 'inline'])
