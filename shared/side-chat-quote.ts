@@ -60,11 +60,12 @@ export function isFilePreviewSelectionRange(range: AbstractRange, root: ParentNo
   return shouldOfferFilePreviewSelection((selector) => el.closest(selector))
 }
 
-export type SideChatSource = 'transcript' | 'terminal' | 'file'
+export type SideChatSource = 'transcript' | 'terminal' | 'file' | 'browser'
 
 function excerptLabel(source: SideChatSource): string {
   if (source === 'terminal') return '终端输出'
   if (source === 'file') return '文件摘录'
+  if (source === 'browser') return '浏览器批注'
   return '对话摘录'
 }
 

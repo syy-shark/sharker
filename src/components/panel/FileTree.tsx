@@ -39,7 +39,7 @@ interface Props {
   /** 划选预览正文后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
   /** 划选预览正文进 composer Selection 芯片（对标 Codex selected-text previews） */
-  onInsertComposer?: (text: string, source?: SideChatSource) => void
+  onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
   /** 工具写盘后递增：静默重拉树，不清预览、不折叠已展开目录 */
   revision?: number
 }

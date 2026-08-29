@@ -7996,8 +7996,12 @@ export default function App() {
     )
   }, [])
 
-  const handleInsertComposer = useCallback((text: string, source?: 'transcript' | 'file' | 'terminal') => {
-    const preview = createSelectedTextPreview(text, source ?? 'transcript')
+  const handleInsertComposer = useCallback((
+    text: string,
+    source?: 'transcript' | 'file' | 'terminal' | 'browser',
+    comment?: string
+  ) => {
+    const preview = createSelectedTextPreview(text, source ?? 'transcript', undefined, comment)
     if (!preview) return
     const nonce = composerSeedNonceRef.current + 1
     composerSeedNonceRef.current = nonce

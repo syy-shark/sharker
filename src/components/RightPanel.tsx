@@ -66,7 +66,11 @@ interface Props {
   /** 终端 / 文件预览划选 → 旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
   /** 终端 / 文件预览划选 → composer Selection 芯片 */
-  onInsertComposer?: (text: string, source?: import('../../shared/side-chat-quote').SideChatSource) => void
+  onInsertComposer?: (
+    text: string,
+    source?: import('../../shared/side-chat-quote').SideChatSource,
+    comment?: string
+  ) => void
 }
 
 /** Codex 风格右侧面板 */
@@ -422,7 +426,7 @@ export const RightPanel = memo(function RightPanel({
             extraRoots={extraRoots}
           />
         )}
-        {tab === 'browser' && <EmbeddedBrowser />}
+        {tab === 'browser' && <EmbeddedBrowser onInsertComposer={onInsertComposer} />}
         {tab === 'agents' && (
           <AgentsPanel conversationId={conversationId} focusId={focusSubAgentId} />
         )}

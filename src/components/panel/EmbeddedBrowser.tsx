@@ -1,21 +1,32 @@
 /**
  * 内置浏览器：Chrome 式工具栏 + 本地新标签 + 外站玻璃注入。
- * 默认不打开 google.com 营销页；搜索/网址走 omnibox。
+ * 批注模式点元素或拖选区域，写成 composer Selection 芯片（对标 Codex Annotation mode）。
  * @see ./ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react'
+import { ArrowLeft, ArrowRight, PenLine, RotateCw } from 'lucide-react'
 import {
   BROWSER_START_PAGE_VERSION,
   browserStartPageDataUrl,
   resolveBrowserStartTheme,
   type BrowserStartTheme
 } from './browser-start-page'
+import {
+  browserCommentSetScript,
+  canAnnotateBrowserUrl,
+  formatBrowserCommentExcerpt,
+  parseBrowserCommentMessage,
+  placeBrowserCommentPopover,
+  type BrowserCommentPick
+} from '../../../shared/browser-comment'
 import { PAGE_GLASS_INJECT_CSS, shouldInjectGlass } from './browser-glass-css'
+import type { SideChatSource } from '../../../shared/side-chat-quote'
 import './EmbeddedBrowser.css'
 
 interface Props {
   initialUrl?: string
+  /** 批注保存进 composer Selection 芯片 */
+  onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
 }
 
 function safeCall(fn: () => void) {
@@ -46,7 +57,7 @@ function resolveNavigateTarget(raw: string, startUrl: string): string {
 }
 
 /** webview 浏览器面板 */
-export function EmbeddedBrowser({ initialUrl }: Props) {
+export function EmbeddedBrowser({ initialUrl, onInsertComposer }: Props) {
   const [startTheme, setStartTheme] = useState<BrowserStartTheme>(() => resolveBrowserStartTheme())
   /** 每次渲染取新 data URL，HMR / 版本变更后不会粘住旧快捷方式页 */
   const startSrc = initialUrl?.trim() || browserStartPageDataUrl(startTheme)
@@ -55,15 +66,45 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
   const [loading, setLoading] = useState(false)
   const [canBack, setCanBack] = useState(false)
   const [canForward, setCanForward] = useState(false)
+  const [annotating, setAnnotating] = useState(false)
+  const [draft, setDraft] = useState<{ pick: BrowserCommentPick; top: number; left: number } | null>(
+    null
+  )
+  const [draftComment, setDraftComment] = useState('')
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
   const shellRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const urlInputRef = useRef<HTMLInputElement>(null)
   const urlRef = useRef(url)
   const glassCssKeyRef = useRef<string | null>(null)
+  const annotatingRef = useRef(false)
+  const onInsertRef = useRef(onInsertComposer)
+  onInsertRef.current = onInsertComposer
+
+  const applyAnnotate = useCallback((on: boolean) => {
+    const wv = webviewRef.current
+    if (!wv) return
+    safeCall(() => {
+      void wv.executeJavaScript(browserCommentSetScript(on)).catch(() => undefined)
+    })
+  }, [])
 
   useEffect(() => {
     urlRef.current = url
   }, [url])
+
+  useEffect(() => {
+    annotatingRef.current = annotating
+    applyAnnotate(annotating)
+    if (!annotating) {
+      setDraft(null)
+      setDraftComment('')
+    }
+  }, [annotating, applyAnnotate])
+
+  useEffect(() => {
+    if (annotating && !canAnnotateBrowserUrl(url)) setAnnotating(false)
+  }, [url, annotating])
 
   /** 跟随 App 主题切换起始页（不是系统 prefers-color-scheme） */
   useEffect(() => {
@@ -178,6 +219,26 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
         wv.setZoomFactor(1)
       })
       void applyPageGlass()
+      if (annotatingRef.current) applyAnnotate(true)
+    }
+    const onConsole = (event: Event) => {
+      const message = (event as Event & { message?: string }).message
+      const parsed = parseBrowserCommentMessage(String(message || ''))
+      if (!parsed) return
+      if (parsed === 'cancel') {
+        setDraft(null)
+        setDraftComment('')
+        setAnnotating(false)
+        return
+      }
+      const host = viewportRef.current?.getBoundingClientRect()
+      const pos = placeBrowserCommentPopover(
+        parsed.rect,
+        parsed.viewport,
+        { width: host?.width ?? 400, height: host?.height ?? 300 }
+      )
+      setDraft({ pick: parsed, top: pos.top, left: pos.left })
+      setDraftComment('')
     }
 
     wv.addEventListener('did-start-loading', onStart)
@@ -186,6 +247,7 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
     wv.addEventListener('did-navigate', onNav)
     wv.addEventListener('did-navigate-in-page', onNav)
     wv.addEventListener('dom-ready', onDomReady)
+    wv.addEventListener('console-message', onConsole)
 
     return () => {
       wv.removeEventListener('did-start-loading', onStart)
@@ -194,9 +256,10 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
       wv.removeEventListener('did-navigate', onNav)
       wv.removeEventListener('did-navigate-in-page', onNav)
       wv.removeEventListener('dom-ready', onDomReady)
+      wv.removeEventListener('console-message', onConsole)
       glassCssKeyRef.current = null
     }
-  }, [syncNav, applyPageGlass])
+  }, [syncNav, applyPageGlass, applyAnnotate])
 
   const navigate = () => {
     const home = browserStartPageDataUrl(startTheme)
@@ -244,6 +307,17 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing) return
+      if (e.key === 'Escape' && !e.metaKey && !e.ctrlKey && !e.altKey && (annotating || draft)) {
+        e.preventDefault()
+        e.stopPropagation()
+        if (draft) {
+          setDraft(null)
+          setDraftComment('')
+          return
+        }
+        setAnnotating(false)
+        return
+      }
       const mod = e.metaKey || e.ctrlKey
       if (!mod || e.altKey) return
       if (!inBrowser(document.activeElement) && !inBrowser(e.target)) return
@@ -304,7 +378,7 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
       window.removeEventListener('mouseup', onMouse, true)
       window.removeEventListener('auxclick', onMouse, true)
     }
-  }, [loading])
+  }, [loading, annotating, draft])
 
   return (
     <div className="embedded-browser" ref={shellRef}>
@@ -377,9 +451,29 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
         >
           主页
         </button>
+        <button
+          type="button"
+          className={`embedded-browser-annotate-btn${annotating ? ' is-on' : ''}`}
+          aria-pressed={annotating}
+          aria-label={annotating ? '关闭批注' : '批注页面'}
+          title={
+            canAnnotateBrowserUrl(url)
+              ? annotating
+                ? '关闭批注'
+                : '批注：点元素或拖选区域'
+              : '打开网页后再批注'
+          }
+          onClick={() => {
+            if (!canAnnotateBrowserUrl(url) && !annotating) return
+            setAnnotating((on) => !on)
+          }}
+        >
+          <PenLine size={14} strokeWidth={2} aria-hidden />
+          批注
+        </button>
       </div>
 
-      <div className="embedded-browser-viewport">
+      <div className="embedded-browser-viewport" ref={viewportRef}>
         {/* key 随版本变，强制重建 webview，甩掉缓存的旧 data URL */}
         {/* @ts-expect-error webview is Electron-only */}
         <webview
@@ -390,6 +484,46 @@ export function EmbeddedBrowser({ initialUrl }: Props) {
           allowpopups="true"
           webpreferences="contextIsolation=yes, nativeWindowOpen=yes"
         />
+        {draft ? (
+          <form
+            className="embedded-browser-comment glass-popover"
+            style={{ top: draft.top, left: draft.left }}
+            onSubmit={(event) => {
+              event.preventDefault()
+              const note = draftComment.trim()
+              if (!note) return
+              const excerpt = formatBrowserCommentExcerpt(draft.pick)
+              onInsertRef.current?.(excerpt, 'browser', note)
+              setDraft(null)
+              setDraftComment('')
+            }}
+          >
+            <p className="embedded-browser-comment-excerpt">{formatBrowserCommentExcerpt(draft.pick)}</p>
+            <textarea
+              className="embedded-browser-comment-input"
+              value={draftComment}
+              onChange={(event) => setDraftComment(event.target.value)}
+              placeholder="写出问题和期望结果"
+              rows={3}
+              autoFocus
+            />
+            <div className="embedded-browser-comment-actions">
+              <button
+                type="button"
+                className="embedded-browser-comment-cancel"
+                onClick={() => {
+                  setDraft(null)
+                  setDraftComment('')
+                }}
+              >
+                取消
+              </button>
+              <button type="submit" className="embedded-browser-comment-save" disabled={!draftComment.trim()}>
+                保存
+              </button>
+            </div>
+          </form>
+        ) : null}
       </div>
     </div>
   )

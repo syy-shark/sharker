@@ -139,7 +139,9 @@ export function normalizeSelectedTextDraft(
     const rec = item as Partial<SelectedTextPreview>
     const preview = createSelectedTextPreview(
       String(rec.text || ''),
-      rec.source === 'terminal' || rec.source === 'file' ? rec.source : 'transcript',
+      rec.source === 'terminal' || rec.source === 'file' || rec.source === 'browser'
+        ? rec.source
+        : 'transcript',
       typeof rec.id === 'string' && rec.id.trim() ? rec.id : undefined,
       typeof rec.comment === 'string' ? rec.comment : undefined
     )

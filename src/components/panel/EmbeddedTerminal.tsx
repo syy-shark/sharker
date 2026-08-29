@@ -41,7 +41,7 @@ interface Props {
   /** 划选终端输出后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
   /** 划选终端输出进 composer Selection 芯片（对标 Codex selected-text previews） */
-  onInsertComposer?: (text: string, source?: SideChatSource) => void
+  onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
 }
 
 /**
@@ -164,7 +164,7 @@ function TerminalSession({
   onPendingCommandSent?: () => void
   clearTick?: number
   onAskInSideChat?: (prompt: string) => void
-  onInsertComposer?: (text: string, source?: SideChatSource) => void
+  onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
   themeTick: number
 }) {
   const hostRef = useRef<HTMLDivElement>(null)

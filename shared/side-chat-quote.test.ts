@@ -69,6 +69,12 @@ describe('side chat quote', () => {
     expect(formatComposerInsert('  const n = 1  ', 'file')).toBe(
       ['文件摘录：', '', '> const n = 1'].join('\n')
     )
+    expect(formatComposerInsert('button.cta', 'browser')).toBe(
+      ['浏览器批注：', '', '> button.cta'].join('\n')
+    )
+    expect(formatSideChatPrompt('Buy now', '按钮溢出', 'browser')).toBe(
+      ['按钮溢出', '', '浏览器批注：', '', '> Buy now'].join('\n')
+    )
     expect(formatComposerInsert('   \n')).toBe('')
     expect(mergeComposerInsert('', '对话摘录：\n\n> a')).toBe('对话摘录：\n\n> a')
     expect(mergeComposerInsert('请看这里', '对话摘录：\n\n> a')).toBe(

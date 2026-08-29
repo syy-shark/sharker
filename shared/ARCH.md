@@ -161,7 +161,7 @@
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；busy 但对话尚未落库时 `commitStopToActiveUi` 仍收口（对标 Codex #34839 / #38896）；`shouldAbandonInFlightTurn` 让 ensure 后不再 sendMessage；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；排队项可带定时任务的 `providerId` / `thinkingLevel`；直播行预留助手 id / 收束 upsert；`shouldHideReservedDuringLive` 仅在历史列真有预留行时才藏（首枚 token 不重建历史 JSX，对标 Codex #22860）；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
 | `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿；划选预览跟草稿一起恢复（对标 Codex restore unsent prompts / selected-text previews） |
 | `composer-draft.test.ts` | 键、空草稿删除、附件、划选芯片、最旧淘汰 |
-| `selected-text-preview.ts` | Composer 划选芯片：`Selection N` 标题、一行摘录、可选备注、发送收成官方 `# Selected text:` / `## My request for Codex:`（对标 Codex selected-text previews / #22670 / #33763）；对话柱只露请求（对标 Codex #20294 transcript strip）；最多 8 条；不进 `ChatAttachment`；不发明 #22677 划选跟帖气泡 |
+| `selected-text-preview.ts` | Composer 划选芯片：`Selection N` 标题、一行摘录、可选备注、发送收成官方 `# Selected text:` / `## My request for Codex:`（对标 Codex selected-text previews / #22670 / #33763）；浏览器批注也走同一芯片（source `browser`）；对话柱只露请求（对标 Codex #20294 transcript strip）；最多 8 条；不进 `ChatAttachment`；不发明 #22677 划选跟帖气泡 |
 | `selected-text-preview.test.ts` | 芯片截断、空划选、官方 submit 块、备注、解析 / 对话柱可见请求、草稿最多 8 条 |
 | `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置）；`shouldQueueComposerSlash` 让忙时 `/` 与 `!` 先排队、收束后再解析（对标 Codex Tab queue slash） |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编、只有 send 贴底 |
@@ -206,8 +206,10 @@
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
-| `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
-| `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
+| `side-chat-quote.ts` | 对话 / 终端 / 文件预览 / 浏览器批注 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
+| `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
+| `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本（对标 Codex Annotation mode / Comment on the page）。不发明 @Browser / Adjust |
+| `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |

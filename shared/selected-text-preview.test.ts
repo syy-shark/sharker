@@ -95,5 +95,8 @@ describe('selected-text-preview', () => {
     expect(normalizeSelectedTextDraft([{ text: 'keep', source: 'file', comment: '  note  ' }])).toEqual([
       expect.objectContaining({ text: 'keep', source: 'file', comment: 'note' })
     ])
+    expect(
+      normalizeSelectedTextDraft([{ text: 'Buy now', source: 'browser', comment: '  wrap  ' }])
+    ).toEqual([expect.objectContaining({ text: 'Buy now', source: 'browser', comment: 'wrap' })])
   })
 })

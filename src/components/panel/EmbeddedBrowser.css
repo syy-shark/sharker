@@ -152,6 +152,101 @@
   transform: scale(0.98);
 }
 
+.embedded-browser-annotate-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-soft),
+    background var(--motion-duration-fast) var(--motion-ease-soft);
+}
+
+.embedded-browser-annotate-btn:hover {
+  color: var(--text);
+  background: var(--glass-fill-nested);
+}
+
+.embedded-browser-annotate-btn.is-on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.embedded-browser-comment {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  width: min(240px, calc(100% - 16px));
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.embedded-browser-comment-excerpt {
+  margin: 0;
+  max-height: 4.2em;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.embedded-browser-comment-input {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.embedded-browser-comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.embedded-browser-comment-cancel,
+.embedded-browser-comment-save {
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.embedded-browser-comment-cancel {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.embedded-browser-comment-save {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.embedded-browser-comment-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /*
  * 网页区：Electron <webview> 对 height:100% 支持差，
  * 必须 absolute 铺满，否则会出现裁切 / 页面「悬空」半截。
