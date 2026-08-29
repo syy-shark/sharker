@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -236,6 +236,39 @@ export function shouldSkipLiveProcessIdentity(input: {
   )
 }
 
+/** 同一工具只改详情：换时间线末步引用，不重跑 buildAnswerParts / extractFinalContent */
+export function shouldRetargetLiveProcessOnToolMeta(input: {
+  prev: LiveProcessView | null
+  prevSegments: readonly TurnSegment[] | null
+  segments: readonly TurnSegment[]
+}): boolean {
+  if (!input.prev || !input.prevSegments) return false
+  if (input.prev.generatingDemo) return false
+  if (input.prevSegments.length !== input.segments.length) return false
+  const last = input.segments.length - 1
+  for (let i = 0; i < last; i++) {
+    if (input.prevSegments[i] !== input.segments[i]) return false
+  }
+  const prevTail = input.prevSegments[last]
+  const nextTail = input.segments[last]
+  if (!prevTail || !nextTail) return false
+  return isLiveToolMetaOnlyChange(prevTail, nextTail)
+}
+
+function retargetProcessFlow(
+  prevFlow: TurnSegment[],
+  prevTail: TurnSegment,
+  nextTail: TurnSegment
+): TurnSegment[] {
+  let found = false
+  const next = prevFlow.map((segment) => {
+    if (segment !== prevTail) return segment
+    found = true
+    return nextTail
+  })
+  return found ? next : prevFlow
+}
+
 function splitClosedTail(parts: AnswerPart[]): { closed: AnswerPart[]; tail: AnswerPart | null } {
   if (!parts.length) return { closed: [], tail: null }
   if (parts.length === 1) return { closed: [], tail: parts[0]! }
@@ -283,7 +316,7 @@ function timelineFromProcessView(view: LiveProcessView): LiveProcessTimeline {
   }
 }
 
-/** 过程切片：正文增长且工具引用没变时退回 prev，不重跑 buildAnswerParts */
+/** 过程切片：正文增长且工具引用没变时退回 prev；工具详情只换末步，不重跑 buildAnswerParts */
 export function nextLiveProcessView(
   prev: LiveProcessView | null,
   snap: LiveStreamUiSnapshot
@@ -309,6 +342,28 @@ export function nextLiveProcessView(
       identity: processHold.identity,
       segments,
       answerTailPlain: liveAnswerTailIsPlain(segments)
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
+    shouldRetargetLiveProcessOnToolMeta({
+      prev,
+      prevSegments: processHold.segments,
+      segments
+    })
+  ) {
+    const prevTail = processHold.segments[processHold.segments.length - 1]!
+    const nextTail = segments[segments.length - 1]!
+    const processForFlow = retargetProcessFlow(prev.processForFlow, prevTail, nextTail)
+    const view =
+      processForFlow === prev.processForFlow ? prev : { ...prev, processForFlow }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
     }
     return view
   }
