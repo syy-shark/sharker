@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数只换该步、回答仍重拆 diff（对标 ~0.5s 逐文件，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -229,11 +229,17 @@ export function findLiveToolInPlaceChange(
   return found
 }
 
-/** 同一工具只改写盘 +/- / 参数：就地换该步，回答仍重拆 diff（对标 Codex ~0.5s 逐文件，不复制 #38695） */
+function isLiveToolStatusHoldOrSettle(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.status === next.status) return true
+  if (prev.status !== 'active') return false
+  return next.status === 'done' || next.status === 'error' || next.status === 'cancelled'
+}
+
+/** 同一工具只改写盘 +/- / 参数，或收束时带上核实 diff：就地换该步，回答仍重拆（对标 Codex Edited 格 / ~0.5s，不复制 #38695） */
 export function isLiveToolWriteStatChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev.kind !== 'tool' || next.kind !== 'tool') return false
   if (prev.id !== next.id || prev.toolName !== next.toolName) return false
-  if (prev.status !== next.status) return false
+  if (!isLiveToolStatusHoldOrSettle(prev, next)) return false
   return (
     prev.toolArgs !== next.toolArgs ||
     prev.fileDiff !== next.fileDiff ||

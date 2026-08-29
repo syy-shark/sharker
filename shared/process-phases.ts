@@ -630,7 +630,7 @@ export function remapProcessPhaseStepsOnThinkAppend(
   return prevSteps
 }
 
-/** 同一工具只改短路径详情、写盘 +/- 或收束：只换该步（不必是末步）；命令末行退回原数组（对标 Codex #22860 / #19260 / complete_call / ~0.5s 逐文件） */
+/** 同一工具只改短路径详情、写盘 +/-、收束或收束带核实 diff：只换该步（不必是末步）；命令末行退回原数组（对标 Codex #22860 / #19260 / complete_call / Edited 格） */
 export function retargetProcessPhaseStepsOnToolMeta(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,

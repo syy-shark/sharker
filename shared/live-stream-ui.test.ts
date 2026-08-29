@@ -326,7 +326,31 @@ describe('live stream ui snapshot', () => {
     expect(isLiveToolSettleChange(running, ran)).toBe(true)
     expect(isLiveToolSettleChange(running, ranDiff)).toBe(false)
     expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran])).toBe('tool')
-    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff])).toBe(null)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff]
+      })
+    ).toBe(false)
+    expect(
+      shouldRetargetLiveProcessOnToolMeta({
+        prev: processWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff]
+      })
+    ).toBe(true)
+    const processWhileWriteHold = nextLiveProcessView(processWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processWhileRanDiff = nextLiveProcessView(processWhileWriteHold, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff]
+    })
+    expect(processWhileRanDiff.processForFlow.some((segment) => segment === ranDiff)).toBe(true)
+    expect(processWhileRanDiff.processForFlow.some((segment) => segment === running)).toBe(false)
     expect(
       shouldSkipLiveAnswerIdentity({
         prev: answerWhileTool,

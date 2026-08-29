@@ -116,6 +116,20 @@ describe('process phases privacy', () => {
     expect(doneRetargeted![0].status).toBe('done')
     expect(doneRetargeted![0].segment).toBe(cmdDone)
     expect(doneRetargeted![0].id).toBe(cmdSteps[0].id)
+    const cmdDoneDiff: TurnSegment = {
+      ...cmdDone,
+      fileDiff: { path: 'a.ts', lines: [], stats: { added: 1, removed: 0 } }
+    }
+    const doneDiffRetargeted = retargetProcessPhaseStepsOnToolMeta(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff],
+      true
+    )
+    expect(doneDiffRetargeted).not.toBeNull()
+    expect(doneDiffRetargeted![0].status).toBe('done')
+    expect(doneDiffRetargeted![0].segment).toBe(cmdDoneDiff)
+    expect(doneDiffRetargeted![0].id).toBe(cmdSteps[0].id)
     const cmdNext: TurnSegment = {
       id: 'read1',
       kind: 'tool',
