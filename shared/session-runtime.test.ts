@@ -21,6 +21,7 @@ import {
   nextFollowUpAfterTurn,
   resolveCommitConversationId,
   resolveStopAction,
+  shouldAbandonInFlightTurn,
   shouldAcceptDoneEvent,
   shouldApplyStreamToActive,
   shouldCommitToActiveUi,
@@ -156,10 +157,25 @@ describe('stop / done ownership (Stop while other session queued)', () => {
     })
     expect(onB.abortConversationId).toBe('conv-b')
     expect(onB.commitStopToConversationId).toBe('conv-b')
+    expect(onB.commitStopToActiveUi).toBe(true)
+    expect(
+      resolveStopAction({ activeConversationId: null, activeIsBusy: true })
+    ).toEqual({
+      abortConversationId: null,
+      commitStopToConversationId: null,
+      commitStopToActiveUi: true
+    })
+    expect(shouldAbandonInFlightTurn({ turnGen: 2, myTurn: 1, doneCommitted: false })).toBe(true)
+    expect(shouldAbandonInFlightTurn({ turnGen: 1, myTurn: 1, doneCommitted: true })).toBe(true)
+    expect(shouldAbandonInFlightTurn({ turnGen: 1, myTurn: 1, doneCommitted: false })).toBe(false)
     // 不 busy 时不 abort（不能误杀 A）
     expect(
       resolveStopAction({ activeConversationId: 'conv-b', activeIsBusy: false })
-    ).toEqual({ abortConversationId: null, commitStopToConversationId: null })
+    ).toEqual({
+      abortConversationId: null,
+      commitStopToConversationId: null,
+      commitStopToActiveUi: false
+    })
   })
 
   it('doneCommitted on B does not drop A’s done (and B real done is still gated)', () => {

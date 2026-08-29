@@ -238,19 +238,35 @@ export function resolveStopAction(input: {
   activeConversationId: string | null
   activeIsBusy: boolean
 }): {
-  /** 传给 abortChat；null 表示不调中止 */
+  /** 传给 abortChat；null 表示对话尚未落库，只收口 UI */
   abortConversationId: string | null
-  /** 写入 _(已停止 · 时长)_ 的会话；null 表示不写 */
+  /** 写入 _(已停止 · 时长)_ 的会话；null 表示写当前可见列 */
   commitStopToConversationId: string | null
+  /** 首轮尚未落库也要收口直播并保留用户气泡（对标 Codex #34839 / #38896） */
+  commitStopToActiveUi: boolean
 } {
   const { activeConversationId, activeIsBusy } = input
-  if (!activeConversationId || !activeIsBusy) {
-    return { abortConversationId: null, commitStopToConversationId: null }
+  if (!activeIsBusy) {
+    return {
+      abortConversationId: null,
+      commitStopToConversationId: null,
+      commitStopToActiveUi: false
+    }
   }
   return {
     abortConversationId: activeConversationId,
-    commitStopToConversationId: activeConversationId
+    commitStopToConversationId: activeConversationId,
+    commitStopToActiveUi: true
   }
+}
+
+/** ensure / worktree 之后若已 Stop，不得再 sendMessage */
+export function shouldAbandonInFlightTurn(input: {
+  turnGen: number
+  myTurn: number
+  doneCommitted: boolean
+}): boolean {
+  return input.doneCommitted || input.turnGen !== input.myTurn
 }
 
 /**

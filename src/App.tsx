@@ -242,6 +242,7 @@ import {
   nextFollowUpAfterTurn,
   resolveCommitConversationId,
   resolveStopAction,
+  shouldAbandonInFlightTurn,
   shouldAcceptDoneEvent,
   shouldApplyStreamToActive,
   shouldCommitToActiveUi,
@@ -3116,6 +3117,16 @@ export default function App() {
         // 确保有 conversationId 再发（新建会话时 ensure 会写入 active）
         await ensureP
         convId = activeConversationIdRef.current ?? convId
+        if (
+          shouldAbandonInFlightTurn({
+            turnGen: turnGenRef.current,
+            myTurn,
+            doneCommitted: doneCommittedRef.current
+          })
+        ) {
+          if (convId) void persistActiveConversation(messagesRef.current, convId)
+          return
+        }
         if (convId && heldBusyFollowUpsRef.current.length) {
           void flushHeldBusyFollowUpsRef.current(convId, 'starting')
         }
@@ -3174,6 +3185,16 @@ export default function App() {
           )
         }
         const history = await modelHistoryP
+        if (
+          shouldAbandonInFlightTurn({
+            turnGen: turnGenRef.current,
+            myTurn,
+            doneCommitted: doneCommittedRef.current
+          })
+        ) {
+          if (convId) void persistActiveConversation(messagesRef.current, convId)
+          return
+        }
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
           worktreePath,
           goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current),
@@ -3803,14 +3824,18 @@ export default function App() {
       activeConversationId: activeId,
       activeIsBusy: busy
     })
-    if (!action.abortConversationId) return
+    if (!action.commitStopToActiveUi && !action.abortConversationId) return
 
+    // 抬 turnGen，让还在 ensure / worktree 的本轮不要再 sendMessage
+    turnGenRef.current += 1
     // 先关门闩 + 同步把未完成工具标 cancelled，再 abort：
     // 避免 abort 等待期间 tool_done 抢先把命令标成 done，摘要误显示“运行 1 个命令”
-    doneCommittedMapRef.current = markDoneCommitted(
-      doneCommittedMapRef.current,
-      action.abortConversationId
-    )
+    if (action.abortConversationId) {
+      doneCommittedMapRef.current = markDoneCommitted(
+        doneCommittedMapRef.current,
+        action.abortConversationId
+      )
+    }
     if (action.commitStopToConversationId === activeConversationIdRef.current) {
       doneCommittedRef.current = true
       turnOutcomeRef.current = 'aborted'
@@ -3843,7 +3868,9 @@ export default function App() {
         sessionBuffersRef.current.set(action.commitStopToConversationId, buf)
       }
     }
-    await window.sharker.abortChat(action.abortConversationId)
+    if (action.abortConversationId) {
+      await window.sharker.abortChat(action.abortConversationId)
+    }
 
     if (action.commitStopToConversationId === activeConversationIdRef.current) {
       sendInFlightRef.current = false
