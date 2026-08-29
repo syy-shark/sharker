@@ -125,7 +125,7 @@ Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（�
 - Settings → Appearance → **Reduce Motion**（对标 Codex #16857）：关掉直播思考扫光，减轻 GPU；进度圈仍转（对标 #22787）。不跟系统辅助功能绑定。窗口在后台或直播行滚出视口时同样停扫光（对标 #16857 屏外指示器仍占 GPU / #40531），回到前台或滚回视口再开
 - Settings → Appearance → **Keep a chat near your work** / **Always on top**（对标 Codex Settings；新弹出对话窗默认浮在其它应用之上）。顶栏 **Open in Popup Window** 弹出当前对话（对标 Codex #15162）；弹出窗内开关仍是 **Always on top**。不复制官方单例弹出窗 / IME 挡候选框（#15162 / #15487）
 - 审批打开时 **Enter** Approve request（Allow once）、**Esc** Decline request（Deny）（对标 Codex Commands；不把 `/approve` 重试改成这两条）
-- Settings → General → **运行时防止休眠**（对标 Codex Prevent sleep while running）
+- Settings → General → **Prevent sleep while running**（对标 Codex Prevent sleep while running）
 - Settings → Personalization → **Enable memories**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设 **Use memories** / **Generate memories**（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选 Use / Generate / Disabled / Inherit，不改全局）
 - Settings → Personalization → **人格** 与 **自定义说明**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - `sharker://settings/general` 打开通用；`sharker://settings/browser` / `sharker://settings/history` 打开浏览器历史（对标 Codex Settings → Browser）；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化

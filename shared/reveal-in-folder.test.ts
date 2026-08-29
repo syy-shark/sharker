@@ -5,6 +5,9 @@ import {
   GENERAL_SETTINGS_LABEL,
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
+  SHOW_CONTEXT_WINDOW_USAGE_LABEL,
+  PREVENT_SLEEP_WHILE_RUNNING_LABEL,
+  PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION,
   NOTIFICATIONS_SETTINGS_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
@@ -120,6 +123,9 @@ describe('reveal in folder', () => {
     expect(SUGGESTED_PROMPTS_SETTINGS_LABEL).toBe('Suggested prompts')
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
+    expect(SHOW_CONTEXT_WINDOW_USAGE_LABEL).toBe('Show context window usage')
+    expect(PREVENT_SLEEP_WHILE_RUNNING_LABEL).toBe('Prevent sleep while running')
+    expect(PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION).toMatch(/local chats can continue/)
     expect(SHARE_LABEL).toBe('Share')
     expect(OPEN_IN_POPUP_WINDOW_LABEL).toBe('Open in Popup Window')
     expect(ALWAYS_ON_TOP_LABEL).toBe('Always on top')

@@ -154,6 +154,11 @@ export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
 export const MCP_SERVERS_LABEL = 'MCP servers'
+/** 官方 Settings → General（对标 learn.chatgpt.com/docs/reference/settings） */
+export const SHOW_CONTEXT_WINDOW_USAGE_LABEL = 'Show context window usage'
+export const PREVENT_SLEEP_WHILE_RUNNING_LABEL = 'Prevent sleep while running'
+export const PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION =
+  'Turn on Prevent sleep while running so local chats can continue while you step away.'
 /** 官方顶栏 Share（对标 Codex #40832） */
 export const SHARE_LABEL = 'Share'
 /** 官方顶栏 / 气泡 Fork（对标 Codex conversation fork / `/fork`） */

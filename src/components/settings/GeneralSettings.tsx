@@ -1,5 +1,5 @@
 /**
- * 通用：后续行为、Enter 发送、审查交付、运行防休眠。
+ * 通用：后续行为、Enter 发送、审查交付、Prevent sleep while running。
  * 对标 Codex Settings → General（Follow-up / Cmd+Enter / file_opener / Prevent sleep / Code review / review_model）。
  * 建议提示在 SuggestedPromptSettings（官方 Settings → Suggested prompts）。
  * @see src/components/settings/ARCH.md
@@ -20,6 +20,11 @@ import {
 } from '../../../shared/review-prompt'
 import { parseFileOpener } from '../../../shared/file-opener'
 import { parseShowContextWindowUsage } from '../../../shared/context-usage-indicator'
+import {
+  PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION,
+  PREVENT_SLEEP_WHILE_RUNNING_LABEL,
+  SHOW_CONTEXT_WINDOW_USAGE_LABEL
+} from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -121,8 +126,8 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
             ]}
           />
           <SettingsRow
-            title="显示上下文用量"
-            description="对标 Codex Show context window usage：输入框模型旁画用量环。官方默认关。悬停看具体数字。"
+            title={SHOW_CONTEXT_WINDOW_USAGE_LABEL}
+            description="输入框模型旁画用量环。官方默认关。悬停看具体数字。"
             last
           >
             <SettingsToggle
@@ -130,7 +135,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               onChange={(showContextWindowUsage) => {
                 scheduleSave({ ...draftRef.current, showContextWindowUsage })
               }}
-              label="显示上下文用量"
+              label={SHOW_CONTEXT_WINDOW_USAGE_LABEL}
             />
           </SettingsRow>
         </SettingsCard>
@@ -206,8 +211,8 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
       <SettingsSection title="窗口">
         <SettingsCard>
           <SettingsRow
-            title="运行时防止休眠"
-            description="对标 Codex Prevent sleep while running：有回合在跑时阻止系统休眠。"
+            title={PREVENT_SLEEP_WHILE_RUNNING_LABEL}
+            description={PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION}
             last
           >
             <SettingsToggle
@@ -215,7 +220,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               onChange={(preventSleepWhileRunning) => {
                 scheduleSave({ ...draftRef.current, preventSleepWhileRunning })
               }}
-              label="运行时防止休眠"
+              label={PREVENT_SLEEP_WHILE_RUNNING_LABEL}
             />
           </SettingsRow>
         </SettingsCard>
