@@ -84,6 +84,9 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')
     expect(SLASH_COMMANDS.find((c) => c.name === 'stop')?.action).toBe('stop_terminals')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.action).toBe('fork_conversation')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.description).toBe(
+      'Copy a local chat into a new local chat or worktree.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.argsHint).toContain('worktree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.argsHint).toContain('问题')
     expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.action).toBe('init_agents')

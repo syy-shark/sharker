@@ -58,6 +58,11 @@ import {
   VIEW_MENU_LABEL,
   WINDOW_MENU_LABEL,
   HELP_MENU_LABEL,
+  aboutAppLabel,
+  hideAppLabel,
+  HIDE_OTHERS_LABEL,
+  SHOW_ALL_LABEL,
+  quitAppLabel,
   CODEX_DOCUMENTATION_LABEL,
   CODEX_DOCUMENTATION_URL,
   SEND_FEEDBACK_LABEL,
@@ -187,6 +192,12 @@ describe('reveal in folder', () => {
     expect(VIEW_MENU_LABEL).toBe('View')
     expect(WINDOW_MENU_LABEL).toBe('Window')
     expect(HELP_MENU_LABEL).toBe('Help')
+    expect(aboutAppLabel('Sharker')).toBe('About Sharker')
+    expect(aboutAppLabel('Codex')).toBe('About Codex')
+    expect(hideAppLabel('Sharker')).toBe('Hide Sharker')
+    expect(HIDE_OTHERS_LABEL).toBe('Hide Others')
+    expect(SHOW_ALL_LABEL).toBe('Show All')
+    expect(quitAppLabel('Sharker')).toBe('Quit Sharker')
     expect(CODEX_DOCUMENTATION_LABEL).toBe('Codex Documentation')
     expect(CODEX_DOCUMENTATION_URL).toBe('https://developers.openai.com/codex')
     expect(SEND_FEEDBACK_LABEL).toBe('Send Feedback')
@@ -208,6 +219,13 @@ describe('reveal in folder', () => {
     expect(SELECT_ALL_LABEL).toBe('Select All')
     const root = dirname(fileURLToPath(import.meta.url))
     const menuSrc = readFileSync(join(root, '../electron/main/app-menu.ts'), 'utf8')
+    expect(menuSrc).toContain('aboutAppLabel')
+    expect(menuSrc).toContain('hideAppLabel')
+    expect(menuSrc).toContain('quitAppLabel')
+    expect(menuSrc).toContain('HIDE_OTHERS_LABEL')
+    expect(menuSrc).toContain('SHOW_ALL_LABEL')
+    expect(menuSrc).not.toContain('关于 Sharker')
+    expect(menuSrc).not.toContain('退出 Sharker')
     expect(menuSrc).toContain('CODEX_DOCUMENTATION_LABEL')
     expect(menuSrc).toContain('CODEX_DOCUMENTATION_URL')
     expect(menuSrc).toContain('SEND_FEEDBACK_LABEL')

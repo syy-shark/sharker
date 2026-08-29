@@ -4,6 +4,7 @@
  */
 import {
   SLASH_APPROVE_DESCRIPTION,
+  SLASH_FORK_DESCRIPTION,
   SLASH_COMPACT_DESCRIPTION,
   SLASH_GOAL_DESCRIPTION,
   SLASH_INIT_DESCRIPTION,
@@ -132,8 +133,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'fork',
-    title: 'Fork conversation',
-    keywords: 'fork thread 分叉 对话 local',
+    title: SLASH_FORK_DESCRIPTION,
+    keywords: 'fork conversation thread 分叉 对话 local',
     action: 'fork_conversation'
   },
   {

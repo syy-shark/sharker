@@ -107,6 +107,18 @@ export const EDIT_MENU_LABEL = 'Edit'
 export const VIEW_MENU_LABEL = 'View'
 export const WINDOW_MENU_LABEL = 'Window'
 export const HELP_MENU_LABEL = 'Help'
+/** Official macOS app menu (github.com/openai/codex#28543 About Codex; Hide/Quit follow About X). */
+export function aboutAppLabel(appName: string): string {
+  return `About ${String(appName || 'Sharker').trim() || 'Sharker'}`
+}
+export function hideAppLabel(appName: string): string {
+  return `Hide ${String(appName || 'Sharker').trim() || 'Sharker'}`
+}
+export const HIDE_OTHERS_LABEL = 'Hide Others'
+export const SHOW_ALL_LABEL = 'Show All'
+export function quitAppLabel(appName: string): string {
+  return `Quit ${String(appName || 'Sharker').trim() || 'Sharker'}`
+}
 /** Official Help menu (github.com/openai/codex#26890 Codex Documentation / Send Feedback). */
 export const CODEX_DOCUMENTATION_LABEL = 'Codex Documentation'
 export const SEND_FEEDBACK_LABEL = 'Send Feedback'

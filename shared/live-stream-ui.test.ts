@@ -289,5 +289,7 @@ describe('live stream ui snapshot', () => {
       'utf8'
     )
     expect(demoSrc).toContain('shouldMeasureInlineDemoInParent')
+    expect(demoSrc).toContain('shouldWalkInlineDemoTree')
+    expect(demoSrc).toContain('var walkTree')
   })
 })

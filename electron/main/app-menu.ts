@@ -6,6 +6,7 @@
 import { BrowserWindow, Menu, app, shell, type MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../../shared/ipc'
 import {
+  aboutAppLabel,
   COPY_AS_MARKDOWN_LABEL,
   COPY_LABEL,
   CUT_LABEL,
@@ -13,9 +14,13 @@ import {
   FILE_CLOSE_LABEL,
   FILE_MENU_LABEL,
   HELP_MENU_LABEL,
+  hideAppLabel,
+  HIDE_OTHERS_LABEL,
   CODEX_DOCUMENTATION_LABEL,
   CODEX_DOCUMENTATION_URL,
   SEND_FEEDBACK_LABEL,
+  SHOW_ALL_LABEL,
+  quitAppLabel,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   NEW_WINDOW_LABEL,
@@ -61,11 +66,12 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
     click: () => sendMenuAction(action)
   })
 
+  const appName = app.name || 'Sharker'
   const template: MenuItemConstructorOptions[] = [
     {
-      label: app.name || 'Sharker',
+      label: appName,
       submenu: [
-        { role: 'about', label: '关于 Sharker' },
+        { role: 'about', label: aboutAppLabel(appName) },
         { type: 'separator' },
         {
           label: OPEN_SETTINGS_LABEL,
@@ -74,11 +80,11 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
           ...send('open_settings')
         },
         { type: 'separator' },
-        { role: 'hide', label: '隐藏 Sharker' },
-        { role: 'hideOthers', label: '隐藏其它' },
-        { role: 'unhide', label: '全部显示' },
+        { role: 'hide', label: hideAppLabel(appName) },
+        { role: 'hideOthers', label: HIDE_OTHERS_LABEL },
+        { role: 'unhide', label: SHOW_ALL_LABEL },
         { type: 'separator' },
-        { role: 'quit', label: '退出 Sharker' }
+        { role: 'quit', label: quitAppLabel(appName) }
       ]
     },
     {

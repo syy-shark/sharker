@@ -21,6 +21,7 @@ import {
   readCachedInlineDemoHeight,
   seedInlineDemoHeight,
   shouldMeasureInlineDemoInParent,
+  shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
@@ -212,6 +213,9 @@ describe('inline demo paintability', () => {
     expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: true })).toBe(false)
     expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: false })).toBe(true)
     expect(shouldMeasureInlineDemoInParent({ paintable: false, streaming: false })).toBe(false)
+    expect(shouldWalkInlineDemoTree({ streaming: true })).toBe(false)
+    expect(shouldWalkInlineDemoTree({ streaming: false })).toBe(true)
+    expect(shouldWalkInlineDemoTree({})).toBe(true)
     expect(estimateInlineDemoHeight('')).toBe(48)
     expect(estimateInlineDemoHeight(scene)).toBeGreaterThanOrEqual(96)
     expect(estimateInlineDemoHeight('<div class="card" style="height: 240px"></div>')).toBe(256)

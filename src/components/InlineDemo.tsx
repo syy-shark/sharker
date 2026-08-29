@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，只信估高与 iframe postMessage。
+ * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵，只信估高、range/body 底边与 postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -9,6 +9,7 @@ import {
   isInlineDemoPaintable,
   seedInlineDemoHeight,
   shouldMeasureInlineDemoInParent,
+  shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
 import './InlineDemo.css'
@@ -54,7 +55,12 @@ function readHostTheme(): ThemeVars {
 }
 
 /** 把演示 HTML 打成透明 srcDoc：注入主题、解开根裁切、按内容底边 postMessage 高度。 */
-function buildSrcDoc(html: string, theme: ThemeVars, demoId: string): string {
+function buildSrcDoc(
+  html: string,
+  theme: ThemeVars,
+  demoId: string,
+  streaming = false
+): string {
   const isDark = theme.isDark === '1'
 
   /**
@@ -352,6 +358,7 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
 <script>
 (function () {
   var id = ${JSON.stringify(demoId)};
+  var walkTree = ${shouldWalkInlineDemoTree({ streaming }) ? 'true' : 'false'};
   var isDark = ${isDark ? 'true' : 'false'};
 
   function parseRgb(color) {
@@ -932,16 +939,18 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
     } catch (e) {}
     considerRect(body.getBoundingClientRect(), 0);
     if (html) considerRect(html.getBoundingClientRect(), 0);
-    var nodes = body.querySelectorAll('*');
-    for (var n = 0; n < nodes.length; n++) {
-      var el = nodes[n];
-      if (el.getAttribute && el.getAttribute('data-sharker-ignore-height')) continue;
-      if (/^(SCRIPT|STYLE|LINK|META)$/i.test(el.tagName)) continue;
-      var r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) continue;
-      var mb = 0;
-      try { mb = parseFloat(window.getComputedStyle(el).marginBottom) || 0; } catch (e2) {}
-      considerRect(r, mb);
+    if (walkTree) {
+      var nodes = body.querySelectorAll('*');
+      for (var n = 0; n < nodes.length; n++) {
+        var el = nodes[n];
+        if (el.getAttribute && el.getAttribute('data-sharker-ignore-height')) continue;
+        if (/^(SCRIPT|STYLE|LINK|META)$/i.test(el.tagName)) continue;
+        var r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        var mb = 0;
+        try { mb = parseFloat(window.getComputedStyle(el).marginBottom) || 0; } catch (e2) {}
+        considerRect(r, mb);
+      }
     }
     var kids = body.children;
     for (var k = 0; k < kids.length; k++) {
@@ -1083,6 +1092,10 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   var enhancing = false;
   var historyFixed = false;
   function enhance(opts) {
+    if (!walkTree) {
+      reportSoon();
+      return;
+    }
     if (enhancing) return;
     enhancing = true;
     var onlyNew = opts && opts.onlyNew;
@@ -1143,7 +1156,14 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
     var moTimer = null;
     new MutationObserver(function () {
       if (moTimer) clearTimeout(moTimer);
-      moTimer = setTimeout(function () { watchImages(); enhance({ onlyNew: true }); }, 80);
+      moTimer = setTimeout(function () {
+        if (walkTree) {
+          watchImages();
+          enhance({ onlyNew: true });
+        } else {
+          reportSoon();
+        }
+      }, 80);
     }).observe(document.body, { childList: true, subtree: true });
   } catch (e) {}
   setTimeout(function () { enhance(); }, 0);
@@ -1254,9 +1274,9 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
   const srcDoc = useMemo(
     () =>
       paintable
-        ? buildSrcDoc(paintHtml, theme, demoId)
+        ? buildSrcDoc(paintHtml, theme, demoId, streaming)
         : '<!DOCTYPE html><html><body></body></html>',
-    [paintHtml, theme, demoId, paintable]
+    [paintHtml, theme, demoId, paintable, streaming]
   )
 
   useEffect(() => {

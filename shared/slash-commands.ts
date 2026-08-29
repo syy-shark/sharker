@@ -22,6 +22,7 @@ export const SLASH_PERSONALITY_DESCRIPTION =
 export const SLASH_REASONING_DESCRIPTION = 'Choose the reasoning effort for the current chat.'
 export const SLASH_APPROVE_DESCRIPTION =
   'Approve one retry of a recent automatic-review denial, when automatic review is active.'
+export const SLASH_FORK_DESCRIPTION = 'Copy a local chat into a new local chat or worktree.'
 
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
@@ -167,7 +168,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'fork',
-    description: 'Copy a local chat into a new local chat or worktree.',
+    description: SLASH_FORK_DESCRIPTION,
     scope: 'ui',
     action: 'fork_conversation',
     argsHint: '[local|worktree]',

@@ -23,6 +23,9 @@ describe('command palette', () => {
     expect(ids).toContain('shortcuts')
     expect(ids).toContain('fork')
     expect(ids).toContain('fork-worktree')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'fork')?.title).toBe(
+      'Copy a local chat into a new local chat or worktree.'
+    )
     expect(ids).toContain('status')
     expect(ids).toContain('goal')
     expect(ids).toContain('diff')
@@ -216,6 +219,7 @@ describe('command palette', () => {
     expect(filterPaletteCommands('切换人格').some((c) => c.id === 'personality')).toBe(true)
     expect(filterPaletteCommands('批准重试').some((c) => c.id === 'approve')).toBe(true)
     expect(filterPaletteCommands('Toggle plan mode').some((c) => c.id === 'plan')).toBe(true)
+    expect(filterPaletteCommands('Copy a local chat').some((c) => c.id === 'fork')).toBe(true)
     expect(filterPaletteCommands('/chat').some((c) => c.action === 'new_global_conversation')).toBe(
       true
     )
