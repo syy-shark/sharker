@@ -17,11 +17,13 @@ import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import { TURN_START_LIVE_STATUS } from './live-display'
 import {
+  liveAnswerGrowState,
   liveAnswerViewFromSnap,
   liveProcessIdentity,
   nextLiveAnswerActions,
   nextLiveAnswerView,
   nextLiveProcessView,
+  shouldGrowLiveAnswerTail,
   shouldReuseLiveProcessView
 } from './live-stream-slices'
 
@@ -138,7 +140,33 @@ describe('live stream ui snapshot', () => {
     expect(a2).not.toBe(a1)
     expect(a2.copyable).toBe('Hello world')
     expect(a2.closed).toEqual([])
+    expect(a2.closed).toBe(a1.closed)
     expect(a2.tail?.type).toBe('text')
+    const grownPrefix = [tool]
+    const grownTail = text('Hello world')
+    expect(liveAnswerGrowState([...grownPrefix, grownTail]).tail?.id).toBe('a1')
+    expect(
+      shouldGrowLiveAnswerTail({
+        prev: a1,
+        prevPrefix: grownPrefix,
+        prefix: grownPrefix,
+        tail: grownTail
+      })
+    ).toBe(true)
+    expect(
+      shouldGrowLiveAnswerTail({
+        prev: a1,
+        prevPrefix: grownPrefix,
+        prefix: grownPrefix,
+        tail: {
+          id: 'a1',
+          kind: 'text',
+          role: 'final',
+          status: 'active',
+          content: 'Hello\n```demo\n<div>'
+        }
+      })
+    ).toBe(false)
     const sealed: TurnSegment = {
       id: 'd1',
       kind: 'tool',

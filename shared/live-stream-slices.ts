@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文加长不重跑过程 buildAnswerParts。
+ * 直播行过程 / 回答切片：token 只换回答；正文加长不重跑过程 / 回答 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -13,6 +13,7 @@ import type { TurnSegment } from './types'
 import {
   buildAnswerParts,
   extractFinalContent,
+  hasStreamingDemoFence,
   processSegments,
   reuseAnswerParts,
   type AnswerPart
@@ -45,15 +46,12 @@ export interface LiveAnswerActions {
 }
 
 let answerCache: { snap: LiveStreamUiSnapshot; view: LiveAnswerView } | null = null
+let answerGrowHold: { view: LiveAnswerView; prefix: readonly TurnSegment[] } | null = null
 let processHold: {
   view: LiveProcessView
   identity: string
   segments: readonly TurnSegment[]
 } | null = null
-
-/** 正文里的演示围栏会改过程头，必须进指纹 */
-const LIVE_PROCESS_DEMO_FENCE_RE =
-  /```(?:demo|demo-html|html-demo|visualization|viz|inline-demo)\b/i
 
 function isLiveAnswerText(segment: TurnSegment): boolean {
   return segment.kind === 'text' && (segment.role === 'final' || segment.status === 'active')
@@ -66,7 +64,7 @@ function isLiveAnswerText(segment: TurnSegment): boolean {
 export function liveProcessIdentity(segments: readonly TurnSegment[]): string {
   let out = ''
   for (const segment of segments) {
-    if (isLiveAnswerText(segment) && !LIVE_PROCESS_DEMO_FENCE_RE.test(segment.content ?? '')) {
+    if (isLiveAnswerText(segment) && !hasStreamingDemoFence(segment.content ?? '')) {
       out += `a:${segment.id};`
       continue
     }
@@ -150,23 +148,81 @@ export function nextLiveProcessView(
   return view
 }
 
-/** 回答切片：闭合块走 reuseAnswerParts，closed 数组能复用就复用 */
-export function nextLiveAnswerView(
-  prev: LiveAnswerView | null,
-  snap: LiveStreamUiSnapshot
-): LiveAnswerView {
-  const parts = reuseAnswerParts(
-    prev?.parts ?? [],
-    buildAnswerParts(snap.liveSegments, { isStreaming: true })
-  )
-  const split = splitClosedTail(parts)
-  const closed =
-    prev && sameRefList(prev.closed, split.closed) ? prev.closed : split.closed
-  const copyable = parts
+/** 末段是增长中的回答正文时，前面的片段是可复用前缀 */
+export function liveAnswerGrowState(segments: readonly TurnSegment[]): {
+  prefix: readonly TurnSegment[]
+  tail: TurnSegment | null
+} {
+  const tail = segments[segments.length - 1]
+  if (!tail || tail.kind !== 'text' || !tail.content?.trim()) {
+    return { prefix: segments, tail: null }
+  }
+  if (hasStreamingDemoFence(tail.content)) return { prefix: segments, tail: null }
+  return { prefix: segments.slice(0, -1), tail }
+}
+
+/**
+ * 前缀引用没变且尾仍是同一段正文：只换 tail，不重跑 buildAnswerParts。
+ * 出现 ```demo 或新工具时走全量拆栏（对标 Codex #22860）。
+ */
+export function shouldGrowLiveAnswerTail(input: {
+  prev: LiveAnswerView | null
+  prevPrefix: readonly TurnSegment[] | null
+  prefix: readonly TurnSegment[]
+  tail: TurnSegment | null
+}): boolean {
+  if (!input.prev?.tail || input.prev.tail.type !== 'text' || !input.tail) return false
+  if (input.tail.kind !== 'text' || input.tail.id !== input.prev.tail.id) return false
+  if (hasStreamingDemoFence(input.tail.content ?? '')) return false
+  if (!input.prevPrefix || input.prevPrefix.length !== input.prefix.length) return false
+  return input.prevPrefix.every((segment, index) => segment === input.prefix[index])
+}
+
+function copyableFromAnswerParts(parts: readonly AnswerPart[]): string {
+  return parts
     .filter((part): part is Extract<AnswerPart, { type: 'text' }> => part.type === 'text')
     .map((part) => part.content)
     .join('\n\n')
     .trim()
+}
+
+function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
+  const content = tail.content ?? ''
+  if (prev.tail?.type === 'text' && prev.tail.content === content) return prev
+  const tailPart: AnswerPart = { type: 'text', id: tail.id, content }
+  const parts = prev.closed.length ? [...prev.closed, tailPart] : [tailPart]
+  const copyable = copyableFromAnswerParts(parts)
+  return {
+    parts,
+    closed: prev.closed,
+    tail: tailPart,
+    show: true,
+    copyable,
+    hasCopyable: Boolean(copyable)
+  }
+}
+
+/** 回答切片：正文只加长时续尾；否则闭合块走 reuseAnswerParts */
+export function nextLiveAnswerView(
+  prev: LiveAnswerView | null,
+  snap: LiveStreamUiSnapshot
+): LiveAnswerView {
+  const segments = snap.liveSegments
+  const grow = liveAnswerGrowState(segments)
+  const prevPrefix = answerGrowHold?.view === prev ? answerGrowHold.prefix : null
+  if (prev && shouldGrowLiveAnswerTail({ prev, prevPrefix, prefix: grow.prefix, tail: grow.tail })) {
+    const view = growLiveAnswerView(prev, grow.tail!)
+    answerGrowHold = { view, prefix: grow.prefix }
+    return view
+  }
+  const parts = reuseAnswerParts(
+    prev?.parts ?? [],
+    buildAnswerParts(segments, { isStreaming: true })
+  )
+  const split = splitClosedTail(parts)
+  const closed =
+    prev && sameRefList(prev.closed, split.closed) ? prev.closed : split.closed
+  const copyable = copyableFromAnswerParts(parts)
   const next: LiveAnswerView = {
     parts,
     closed,
@@ -175,7 +231,7 @@ export function nextLiveAnswerView(
     copyable,
     hasCopyable: Boolean(copyable)
   }
-  if (
+  const view =
     prev &&
     prev.parts === next.parts &&
     prev.closed === next.closed &&
@@ -183,10 +239,10 @@ export function nextLiveAnswerView(
     prev.show === next.show &&
     prev.copyable === next.copyable &&
     prev.hasCopyable === next.hasCopyable
-  ) {
-    return prev
-  }
-  return next
+      ? prev
+      : next
+  answerGrowHold = { view, prefix: grow.tail ? grow.prefix : segments }
+  return view
 }
 
 /** 同一帧快照只派生一次回答视图；片段引用没变则不重拆（过程/闭合/尾/操作条共用） */

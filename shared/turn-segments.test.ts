@@ -6,6 +6,7 @@ import {
   extractFinalContent,
   finalizeSegments,
   hasProcessFlow,
+  hasStreamingDemoFence,
   isDemoFenceLangPrefix,
   processSegments,
   reuseAnswerParts
@@ -466,6 +467,10 @@ describe('turn segment event state machine', () => {
       timestamp: 50
     })
     expect(buildAnswerParts(diffFence, { isStreaming: true }).every((part) => part.type === 'text')).toBe(true)
+    expect(hasStreamingDemoFence('See this.\n```dem')).toBe(true)
+    expect(hasStreamingDemoFence('```demo\n<div>')).toBe(true)
+    expect(hasStreamingDemoFence('Hello world')).toBe(false)
+    expect(hasStreamingDemoFence('```diff\n+ok')).toBe(false)
   })
 
   it('keeps finished tool segment identity across token appends', () => {

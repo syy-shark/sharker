@@ -1,6 +1,6 @@
 /**
  * 直播助手行：过程与回答分开订 store 切片。
- * token 只重绘回答；正文加长不重跑过程 buildAnswerParts，过程对象能复用就不抬 TurnFlow（对标 Codex #22860）。
+ * token 只重绘回答尾；正文加长不重跑过程 / 回答 buildAnswerParts，过程对象能复用就不抬 TurnFlow（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'

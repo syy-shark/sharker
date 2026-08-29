@@ -999,7 +999,19 @@ const DEMO_FENCE_LANGS = [
 ] as const
 const DEMO_FENCE_LANG_RE = DEMO_FENCE_LANGS.join('|')
 const DEMO_FENCE_RE = new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})\\b`, 'i')
+const STREAMING_DEMO_OPEN_RE = new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})([^\\n]*)\\n`, 'i')
 const TABLE_RE = /\|.+\|[\r\n]+\|[-:\s|]+\|/
+
+/** 正文是否已出现 ```demo 围栏（含未写完的 `dem` / `viz`）；没有就不跑拆栏 */
+export function hasStreamingDemoFence(text: string): boolean {
+  const value = String(text || '')
+  if (DEMO_FENCE_RE.test(value)) return true
+  const lastNl = value.lastIndexOf('\n')
+  const line = value.slice(lastNl === -1 ? 0 : lastNl + 1)
+  const open = /^( {0,3})(```+)([^\n`]*)$/.exec(line)
+  if (!open) return false
+  return isDemoFenceLangPrefix(demoLangFromInfo((open[3] ?? '').trim()))
+}
 
 function demoLangFromInfo(info: string): string {
   return (info.trim().split(/[\s{]/)[0] ?? '').toLowerCase()
@@ -1100,8 +1112,7 @@ function extractStreamingDemoFence(text: string): {
   caption?: string
   closed: boolean
 } | null {
-  const re = new RegExp(`\`\`\`(?:${DEMO_FENCE_LANG_RE})([^\\n]*)\\n`, 'i')
-  const m = text.match(re)
+  const m = STREAMING_DEMO_OPEN_RE.exec(text)
   if (m && m.index != null) {
     const afterOpen = text.slice(m.index + m[0].length)
     const info = (m[1] ?? '').trim()
@@ -1187,7 +1198,7 @@ export function buildAnswerParts(
     if (s.kind !== 'text' || !s.content?.trim()) continue
 
     // ```demo 开闭都拆成稳定槽：前文保持 s.id，演示保持 s.id-demo-stream，收束不搬回 Markdown
-    const demo = extractStreamingDemoFence(s.content)
+    const demo = hasStreamingDemoFence(s.content) ? extractStreamingDemoFence(s.content) : null
     if (demo && (demo.html.trim() || (isStreaming && !demo.closed))) {
       if (demo.before.trim()) {
         const normBefore = normalizeForCompare(demo.before)
