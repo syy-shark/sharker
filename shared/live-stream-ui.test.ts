@@ -38,6 +38,8 @@ import {
   isLiveStatusAppendChange,
   isLiveApprovalNeededChange,
   isLiveApprovalResolvedChange,
+  isLiveUserInputNeededChange,
+  isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
   isLiveToolSettleChange,
@@ -831,6 +833,60 @@ describe('live stream ui snapshot', () => {
     })
     expect(processAfterResolved.processForFlow.some((segment) => segment === cmdApproved)).toBe(true)
     expect(processAfterResolved.processForFlow.some((segment) => segment === awaitingDone)).toBe(true)
+    const askTool: TurnSegment = {
+      id: 'ask-1',
+      kind: 'tool',
+      toolName: 'request_user_input',
+      status: 'active',
+      toolTitle: 'Question requested'
+    }
+    const askReady: TurnSegment = { ...askTool, toolTitle: 'Scope', toolDetail: 'Scope' }
+    const askStatus: TurnSegment = {
+      id: 'st-ask',
+      kind: 'status',
+      status: 'active',
+      content: 'Scope',
+      toolName: 'request_user_input'
+    }
+    expect(isLiveUserInputNeededChange([askTool], [askReady, askStatus])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([askTool], [askReady, askStatus])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [askTool],
+        segments: [askReady, askStatus]
+      })
+    ).toBe(true)
+    const processReadyForAsk = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [askTool]
+    })
+    const processAfterAsk = nextLiveProcessView(processReadyForAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [askReady, askStatus]
+    })
+    expect(processAfterAsk.processForFlow.some((segment) => segment === askReady)).toBe(true)
+    expect(processAfterAsk.processForFlow.some((segment) => segment === askStatus)).toBe(true)
+    const answerReadyForAsk = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [askTool]
+    })
+    expect(
+      nextLiveAnswerView(answerReadyForAsk, {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: [askReady, askStatus]
+      })
+    ).toBe(answerReadyForAsk)
+    const askStatusDone: TurnSegment = { ...askStatus, status: 'done' }
+    expect(isLiveStatusSettleChange([askReady, askStatus], [askReady, askStatusDone])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([askReady, askStatus], [askReady, askStatusDone])).toBe(
+      'status'
+    )
+    const processAfterAskDone = nextLiveProcessView(processAfterAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [askReady, askStatusDone]
+    })
+    expect(processAfterAskDone.processForFlow.some((segment) => segment === askStatusDone)).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

@@ -263,6 +263,45 @@ describe('process phases privacy', () => {
     expect(afterResolved).toHaveLength(2)
     expect(afterResolved!.at(-1)?.segment).toBe(awaitingDone)
     expect(afterResolved!.at(-1)?.status).toBe('done')
+    const askTool: TurnSegment = {
+      id: 'ask-1',
+      kind: 'tool',
+      toolName: 'request_user_input',
+      status: 'active',
+      toolTitle: 'Question requested',
+      startedAt: 18
+    }
+    const askSteps = deriveChronologicalSteps([askTool], { isStreaming: true })
+    const askReady: TurnSegment = { ...askTool, toolTitle: 'Scope', toolDetail: 'Scope' }
+    const askStatus: TurnSegment = {
+      id: 'st-ask',
+      kind: 'status',
+      status: 'active',
+      content: 'Scope',
+      toolName: 'request_user_input',
+      startedAt: 19
+    }
+    const afterAsk = appendProcessPhaseStepOnToolStart(
+      askSteps,
+      [askTool],
+      [askReady, askStatus],
+      true
+    )
+    expect(afterAsk).not.toBeNull()
+    expect(afterAsk).toHaveLength(2)
+    expect(afterAsk![0].segment).toBe(askReady)
+    expect(afterAsk!.at(-1)?.segment).toBe(askStatus)
+    const askStatusDone: TurnSegment = { ...askStatus, status: 'done', endedAt: 20 }
+    const afterAskDone = appendProcessPhaseStepOnToolStart(
+      afterAsk!,
+      [askReady, askStatus],
+      [askReady, askStatusDone],
+      true
+    )
+    expect(afterAskDone).not.toBeNull()
+    expect(afterAskDone).toHaveLength(2)
+    expect(afterAskDone!.at(-1)?.segment).toBe(askStatusDone)
+    expect(afterAskDone!.at(-1)?.status).toBe('done')
     const demoFence: TurnSegment = {
       id: 'demo-fence-1',
       kind: 'text',

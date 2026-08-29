@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、审批挂上或收束只换工具步与 Awaiting approval 行、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步、回答仍重拆（对标 ~0.5s / Edited 格，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -10,6 +10,7 @@ import {
   sameRefList
 } from './live-display'
 import { isLiveStableToolDetail } from './tool-output-display'
+import { REQUEST_USER_INPUT_TOOL } from './user-input'
 import { hasLiveAssistantBody } from './session-runtime'
 import type { TurnSegment } from './types'
 import {
@@ -349,6 +350,74 @@ export function isLiveApprovalResolvedChange(
   return resolved === 1 && detached <= 1
 }
 
+function isLiveUserInputToolRetarget(prev: TurnSegment, next: TurnSegment): boolean {
+  if (!sameLiveToolCore(prev, next) || prev.toolName !== REQUEST_USER_INPUT_TOOL) return false
+  return (prev.toolTitle ?? '') !== (next.toolTitle ?? '') || (prev.toolDetail ?? '') !== (next.toolDetail ?? '')
+}
+
+function isLiveStatusContentHold(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'status' || next.kind !== 'status' || prev.id !== next.id) return false
+  return prev.status === 'active' && next.status === 'active'
+}
+
+/** Ask User 挂上：工具标题换成 Question requested / header，并新开或改写 status 行 */
+export function isLiveUserInputNeededChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || (next.length !== prev.length && next.length !== prev.length + 1)) return false
+  let toolRetarget = 0
+  let statusRetarget = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (isLiveUserInputToolRetarget(before, after)) {
+      toolRetarget += 1
+      continue
+    }
+    if (next.length === prev.length && isLiveStatusContentHold(before, after)) {
+      statusRetarget += 1
+      continue
+    }
+    return false
+  }
+  if (toolRetarget !== 1) return false
+  if (next.length === prev.length + 1) {
+    const added = next[next.length - 1]
+    return Boolean(added && added.kind === 'status' && added.status === 'active')
+  }
+  return statusRetarget === 1
+}
+
+/** 同一条 status 从 active 收成 done：只换该行（Ask User / compact / reconnect 收束） */
+export function isLiveStatusSettleChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || prev.length !== next.length) return false
+  let settled = 0
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (
+      before.kind === 'status' &&
+      after.kind === 'status' &&
+      before.id === after.id &&
+      before.status === 'active' &&
+      after.status === 'done'
+    ) {
+      settled += 1
+      continue
+    }
+    return false
+  }
+  return settled === 1
+}
+
 export function findLiveDemoFenceChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -525,6 +594,8 @@ export function shouldSkipLiveStreamDerivation(
   if (findLiveDemoHtmlChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalNeededChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return 'tool'
+  if (isLiveUserInputNeededChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusSettleChange(prevSegments, segments)) return 'status'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (findLiveToolWriteStatChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
@@ -568,6 +639,8 @@ export function nextLiveThinkText(
   if (findLiveDemoHtmlChange(prevSegments, segments)) return prev
   if (isLiveApprovalNeededChange(prevSegments, segments)) return prev
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return prev
+  if (isLiveUserInputNeededChange(prevSegments, segments)) return prev
+  if (isLiveStatusSettleChange(prevSegments, segments)) return prev
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -990,7 +1063,9 @@ export function nextLiveProcessView(
     prev &&
     processHold?.view === prev &&
     (isLiveApprovalNeededChange(processHold.segments, segments) ||
-      isLiveApprovalResolvedChange(processHold.segments, segments))
+      isLiveApprovalResolvedChange(processHold.segments, segments) ||
+      isLiveUserInputNeededChange(processHold.segments, segments) ||
+      isLiveStatusSettleChange(processHold.segments, segments))
   ) {
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
     const grew = segments.length === processHold.segments.length + 1
@@ -1129,6 +1204,8 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
   if (isLiveApprovalNeededChange(input.prevSegments, input.segments)) return true
   if (isLiveApprovalResolvedChange(input.prevSegments, input.segments)) return true
+  if (isLiveUserInputNeededChange(input.prevSegments, input.segments)) return true
+  if (isLiveStatusSettleChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1
