@@ -1,5 +1,6 @@
 /**
  * 直播 token 外部 store：16ms flush 只通知订阅者，不抬 ChatView。
+ * `useLiveStreamUiSelectWhen` 给查找只订 `streaming`，思考 / 过程不重跑命中（对标 Codex #22860 / #33907）。
  * 对标 Codex #22860：已画历史列不应跟每枚 token 重绘。
  * @see src/hooks/ARCH.md
  */
@@ -89,4 +90,43 @@ export function useLiveStreamUiWhen(enabled: boolean): LiveStreamUiSnapshot {
     [enabled]
   )
   return useSyncExternalStore(subscribe, getLiveStreamUi, getLiveStreamUi)
+}
+
+/**
+ * 启用时只订切片。查找开着也不要跟思考 / 过程片段抬对话柱（对标 Codex #22860 / #33907）。
+ */
+export function useLiveStreamUiSelectWhen<T>(
+  enabled: boolean,
+  select: (snap: LiveStreamUiSnapshot, prev: T | undefined) => T,
+  isEqual: (left: T, right: T) => boolean = Object.is
+): T {
+  const selectRef = useRef(select)
+  const equalRef = useRef(isEqual)
+  selectRef.current = select
+  equalRef.current = isEqual
+  const cache = useRef<{ enabled: boolean; snap: LiveStreamUiSnapshot; value: T } | null>(null)
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (!enabled) return () => {}
+      return subscribeLiveStreamUi(onStoreChange)
+    },
+    [enabled]
+  )
+
+  const getSelected = () => {
+    const snap = enabled ? getLiveStreamUi() : EMPTY_LIVE_STREAM_UI
+    const hit = cache.current
+    if (hit && hit.enabled === enabled && hit.snap === snap) return hit.value
+    const prev = hit && hit.enabled === enabled ? hit.value : undefined
+    const next = selectRef.current(snap, prev)
+    if (hit && hit.enabled === enabled && equalRef.current(hit.value, next)) {
+      cache.current = { enabled, snap, value: hit.value }
+      return hit.value
+    }
+    cache.current = { enabled, snap, value: next }
+    return next
+  }
+
+  return useSyncExternalStore(subscribe, getSelected, getSelected)
 }
