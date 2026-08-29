@@ -4,8 +4,10 @@ import {
   defaultAutomationThreadId,
   normalizeAutomationJob,
   normalizeAutomationJobs,
+  applyScheduledTurnSettings,
   parseAutomationDestination,
   parseAutomationRunIn,
+  parseOptionalAutomationId,
   resolveAutomationRunPlan,
   shouldPrepareAutomationWorktree
 } from './automation'
@@ -86,6 +88,39 @@ describe('automation destination', () => {
       conversationId: 'conv-1',
       runIn: 'local'
     })
+    expect(parseOptionalAutomationId('  ')).toBeUndefined()
+    expect(parseOptionalAutomationId('grok')).toBe('grok')
+    const withModel = applyScheduledTaskAction([], {
+      op: 'create',
+      id: 'job-2',
+      title: '深想',
+      prompt: '审查',
+      cron: '0 9 * * 1',
+      model: 'openai-chatgpt',
+      reasoning: 'high'
+    })
+    expect(withModel.jobs[0]).toMatchObject({
+      providerId: 'openai-chatgpt',
+      thinkingLevel: 'high'
+    })
+    const settings = {
+      activeProviderId: 'xai-grok',
+      providers: [
+        { id: 'xai-grok', thinkingLevel: 'low' },
+        { id: 'openai-chatgpt', thinkingLevel: 'medium' }
+      ]
+    }
+    expect(applyScheduledTurnSettings(settings)).toBe(settings)
+    expect(
+      applyScheduledTurnSettings(settings, { providerId: 'openai-chatgpt', thinkingLevel: 'high' })
+    ).toMatchObject({
+      activeProviderId: 'openai-chatgpt',
+      providers: [
+        { id: 'xai-grok', thinkingLevel: 'low' },
+        { id: 'openai-chatgpt', thinkingLevel: 'high' }
+      ]
+    })
+    expect(applyScheduledTurnSettings(settings, { providerId: 'missing' })).toBe(settings)
     expect(
       applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
     ).toBe(false)

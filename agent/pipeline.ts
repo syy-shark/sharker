@@ -17,6 +17,7 @@ import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { leftoverSteerDisposition } from '../shared/pending-steer'
+import { applyScheduledTurnSettings } from '../shared/automation'
 import {
   markTurnSteerable,
   releaseTurnSteer,
@@ -71,6 +72,9 @@ export interface ExecuteUserInputContext {
   worktreePath?: string | null
   /** 进行中的线程目标，注入 system（对标 Codex /goal） */
   threadGoal?: string | null
+  /** 本轮覆盖模型 / 思考档位；空则用当前设置（对标 Codex scheduled model） */
+  providerId?: string | null
+  thinkingLevel?: string | null
 }
 
 type TurnSlot = {
@@ -290,7 +294,10 @@ export async function executeUserInput(ctx: ExecuteUserInputContext): Promise<vo
   // 否则 abort 后立即 dispatch 的新 turn 会被 runTurn 入口直接短路取消。
   if (conversationId) cancelledBeforeStart.delete(conversationId)
   const runTurn = async () => {
-    const settings = await ctx.reloadSettings()
+    const settings = applyScheduledTurnSettings(await ctx.reloadSettings(), {
+      providerId: ctx.providerId,
+      thinkingLevel: ctx.thinkingLevel
+    })
     const key = chainKey(conversationId)
     const slot: TurnSlot = {
       conversationId,

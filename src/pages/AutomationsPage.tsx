@@ -3,10 +3,13 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConversationSummary } from '../../shared/conversation'
+import type { ProviderConfig } from '../../shared/types'
+import { resolveThinkingOptions } from '../../shared/thinking-levels'
 import {
   defaultAutomationThreadId,
   parseAutomationDestination,
   parseAutomationRunIn,
+  parseOptionalAutomationId,
   type AutomationJob
 } from '../../shared/automation'
 import {
@@ -29,6 +32,8 @@ interface Props {
   openCreateNonce?: number
   conversations?: ConversationSummary[]
   activeConversationId?: string | null
+  providers?: ProviderConfig[]
+  activeProviderId?: string
 }
 
 /** 自动化列表与编辑 */
@@ -39,7 +44,9 @@ export function AutomationsPage({
   queueRevision = 0,
   openCreateNonce = 0,
   conversations = [],
-  activeConversationId = null
+  activeConversationId = null,
+  providers = [],
+  activeProviderId = ''
 }: Props) {
   const [jobs, setJobs] = useState<AutomationJob[]>([])
   const [queue, setQueue] = useState<AutomationQueueItem[]>([])
@@ -290,6 +297,64 @@ export function AutomationsPage({
                     </select>
                   </label>
                 ) : null}
+
+                <label className="automation-field">
+                  <span>模型</span>
+                  <select
+                    value={j.providerId || ''}
+                    onChange={(e) => {
+                      const providerId = parseOptionalAutomationId(e.target.value)
+                      const provider = providers.find((p) => p.id === providerId)
+                      const opts = provider ? resolveThinkingOptions(provider) : []
+                      updateJob(j.id, {
+                        providerId,
+                        thinkingLevel:
+                          j.thinkingLevel && opts.some((opt) => opt.id === j.thinkingLevel)
+                            ? j.thinkingLevel
+                            : undefined
+                      })
+                      persistCurrent()
+                    }}
+                    aria-label="任务模型"
+                  >
+                    <option value="">跟随当前</option>
+                    {providers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name || p.model || p.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {(() => {
+                  const provider =
+                    providers.find((p) => p.id === (j.providerId || activeProviderId)) ??
+                    providers[0]
+                  const opts = provider ? resolveThinkingOptions(provider) : []
+                  if (opts.length === 0) return null
+                  return (
+                    <label className="automation-field">
+                      <span>思考</span>
+                      <select
+                        value={j.thinkingLevel || ''}
+                        onChange={(e) => {
+                          updateJob(j.id, {
+                            thinkingLevel: parseOptionalAutomationId(e.target.value)
+                          })
+                          persistCurrent()
+                        }}
+                        aria-label="任务思考档位"
+                      >
+                        <option value="">跟随当前</option>
+                        {opts.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )
+                })()}
 
                 {parseAutomationDestination(j.destination) === 'thread' ? (
                   <label className="automation-field">

@@ -500,8 +500,13 @@ export default function App() {
       text: string,
       attachments?: ChatAttachment[],
       conversationId?: string,
-      options?: { skipUserMessage?: boolean; excludeMessageIds?: string[] }
-    ) => Promise<void>
+      options?: {
+        skipUserMessage?: boolean
+        excludeMessageIds?: string[]
+        providerId?: string
+        thinkingLevel?: string
+      }
+    ) => Promise<void>)
   >(async () => {})
   /** 收束前写入的残留注入：done 后开下一轮，不再加一条用户气泡 */
   const leftoverFinishByConvRef = useRef(
@@ -662,7 +667,11 @@ export default function App() {
           void dispatchTurnRef.current(
             follow.next.text,
             follow.next.attachments,
-            conversationId
+            conversationId,
+            {
+              providerId: follow.next.providerId,
+              thinkingLevel: follow.next.thinkingLevel
+            }
           )
         }
       }
@@ -1721,7 +1730,10 @@ export default function App() {
 
         if (plan.mode === 'queue' && plan.conversationId) {
           const convId = plan.conversationId
-          const item = createQueuedPrompt(convId, text)
+          const item = createQueuedPrompt(convId, text, undefined, undefined, {
+            providerId: j.providerId,
+            thinkingLevel: j.thinkingLevel
+          })
           const queues = enqueueForConversation(sessionQueuesRef.current, convId, item, 'append')
           if (convId === activeConversationIdRef.current) syncActiveQueueUi(queues, convId)
           else sessionQueuesRef.current = queues
@@ -1740,13 +1752,19 @@ export default function App() {
             runtime.worktreePath || cwd || undefined
           )
           if (threadWorkspaceId) void refreshConversationList(threadWorkspaceId)
-          void dispatchTurnRef.current(text, [], convId)
+          void dispatchTurnRef.current(text, [], convId, {
+            providerId: j.providerId,
+            thinkingLevel: j.thinkingLevel
+          })
           return
         }
 
         const wsId = settingsRef.current.activeWorkspaceId
         if (!wsId || !window.sharker.createConversation) {
-          void dispatchTurnRef.current(`[自动化] ${j.prompt}`)
+          void dispatchTurnRef.current(`[自动化] ${j.prompt}`, [], undefined, {
+            providerId: j.providerId,
+            thinkingLevel: j.thinkingLevel
+          })
           return
         }
         const conv = await window.sharker.createConversation(wsId)
@@ -1773,7 +1791,10 @@ export default function App() {
         }
         await recordInbox(conv.id, wsId, workspacePath)
         void refreshConversationList(wsId)
-        void dispatchTurnRef.current(text, [], conv.id)
+        void dispatchTurnRef.current(text, [], conv.id, {
+          providerId: j.providerId,
+          thinkingLevel: j.thinkingLevel
+        })
       })()
     })
     return () => off?.()
@@ -2240,7 +2261,10 @@ export default function App() {
             syncActiveQueueUi(queues, ownerId)
           }
           if (next) {
-            void dispatchTurnRef.current(next.text, next.attachments, ownerId)
+            void dispatchTurnRef.current(next.text, next.attachments, ownerId, {
+              providerId: next.providerId,
+              thinkingLevel: next.thinkingLevel
+            })
           } else {
             sessionBuffersRef.current.set(ownerId, buf)
           }
@@ -2531,7 +2555,10 @@ export default function App() {
           })
           syncActiveQueueUi(queues, activeConversationIdRef.current)
           if (next) {
-            void dispatchTurnRef.current(next.text, next.attachments, next.conversationId)
+            void dispatchTurnRef.current(next.text, next.attachments, next.conversationId, {
+              providerId: next.providerId,
+              thinkingLevel: next.thinkingLevel
+            })
           }
         }
       }
@@ -2731,11 +2758,18 @@ export default function App() {
       text: string,
       attachments: ChatAttachment[] = [],
       conversationId?: string,
-      options?: { skipUserMessage?: boolean; excludeMessageIds?: string[] }
+      options?: {
+        skipUserMessage?: boolean
+        excludeMessageIds?: string[]
+        providerId?: string
+        thinkingLevel?: string
+      }
     ) => {
       let convId = conversationId ?? activeConversationIdRef.current
       const skipUserMessage = Boolean(options?.skipUserMessage)
       const excludeIds = options?.excludeMessageIds ?? []
+      const providerId = String(options?.providerId || '').trim() || undefined
+      const thinkingLevel = String(options?.thinkingLevel || '').trim() || undefined
 
       // 后台会话续跑：只更新该会话 buffer，不污染当前可见会话
       if (convId && convId !== activeConversationIdRef.current) {
@@ -2804,7 +2838,9 @@ export default function App() {
           const worktreePath = await ensureWorktreeForTurn(convId)
           await window.sharker.sendMessage(text, history, attachments, convId, {
             worktreePath,
-            goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current)
+            goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current),
+            providerId,
+            thinkingLevel
           })
           void persistActiveConversation(buf.messages, convId)
         } catch (e) {
@@ -2947,7 +2983,9 @@ export default function App() {
         const history = await modelHistoryP
         await window.sharker.sendMessage(text, history, attachments, convId ?? undefined, {
           worktreePath,
-          goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current)
+          goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current),
+          providerId,
+          thinkingLevel
         })
       } catch (e) {
         console.error('发送失败', e)
@@ -3315,7 +3353,12 @@ export default function App() {
       if (held || sendInFlightRef.current) return
       const { next, queues } = nextFollowUpAfterTurn(sessionQueuesRef.current, convId)
       syncActiveQueueUi(queues, convId)
-      if (next) void dispatchTurnRef.current(next.text, next.attachments, convId)
+      if (next) {
+        void dispatchTurnRef.current(next.text, next.attachments, convId, {
+          providerId: next.providerId,
+          thinkingLevel: next.thinkingLevel
+        })
+      }
     },
     [syncActiveQueueUi]
   )
@@ -7315,6 +7358,8 @@ export default function App() {
                 openCreateNonce={automationsCreateNonce}
                 conversations={conversationList}
                 activeConversationId={activeConversationId}
+                providers={settings.providers}
+                activeProviderId={settings.activeProviderId}
                 onBack={() => setPage('chat')}
                 onOpenConversation={(conversationId) => {
                   const wsId = settingsRef.current.activeWorkspaceId

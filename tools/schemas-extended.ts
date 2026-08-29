@@ -244,7 +244,7 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     function: {
       name: 'manage_scheduled_task',
       description:
-        'Create, update, list, pause, resume, or delete a desktop scheduled task. Use when the user asks to schedule recurring work, return to this chat on a cadence, or change an existing scheduled task. Cron is 5 fields (min hour day month weekday). destination=thread returns to the current or named chat; destination=new starts a new chat. run_in=worktree isolates Git changes; run_in=local edits the project checkout.',
+        'Create, update, list, pause, resume, or delete a desktop scheduled task. Use when the user asks to schedule recurring work, return to this chat on a cadence, or change an existing scheduled task. Cron is 5 fields (min hour day month weekday). destination=thread returns to the current or named chat; destination=new starts a new chat. run_in=worktree isolates Git changes; run_in=local edits the project checkout. Leave model and reasoning empty to use the current defaults, or set providerId/model and thinkingLevel/reasoning to pin them.',
       parameters: {
         type: 'object',
         properties: {
@@ -259,7 +259,14 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
           destination: { type: 'string', enum: ['new', 'thread'] },
           conversationId: { type: 'string' },
           run_in: { type: 'string', enum: ['worktree', 'local'] },
-          enabled: { type: 'boolean' }
+          enabled: { type: 'boolean' },
+          providerId: { type: 'string', description: 'Provider id; empty follows the current model' },
+          model: { type: 'string', description: 'Alias of providerId' },
+          thinkingLevel: {
+            type: 'string',
+            description: 'Reasoning effort id; empty follows the current setting'
+          },
+          reasoning: { type: 'string', description: 'Alias of thinkingLevel' }
         },
         required: ['op']
       }

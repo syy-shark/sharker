@@ -121,7 +121,12 @@ contextBridge.exposeInMainWorld('sharker', {
     history: ChatMessage[],
     attachments?: ChatAttachment[],
     conversationId?: string,
-    options?: { worktreePath?: string | null; goal?: string | null }
+    options?: {
+      worktreePath?: string | null
+      goal?: string | null
+      providerId?: string | null
+      thinkingLevel?: string | null
+    }
   ): Promise<void> =>
     ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments, conversationId, options),
   saveAttachment: (input: {

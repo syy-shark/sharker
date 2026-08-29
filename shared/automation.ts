@@ -25,6 +25,10 @@ export interface AutomationJob {
   conversationId?: string
   /** 仅 `destination === 'new'`：隔离 worktree 或本地项目 */
   runIn?: AutomationRunIn
+  /** 空则用当时活动模型（对标 Codex leave model on default） */
+  providerId?: string
+  /** 空则用当时思考档位（对标 Codex leave reasoning effort on default） */
+  thinkingLevel?: string
 }
 
 export function parseAutomationDestination(raw: unknown): AutomationDestination {
@@ -33,6 +37,41 @@ export function parseAutomationDestination(raw: unknown): AutomationDestination 
 
 export function parseAutomationRunIn(raw: unknown): AutomationRunIn {
   return raw === 'local' ? 'local' : 'worktree'
+}
+
+/** 空字符串视为「跟随当前」 */
+export function parseOptionalAutomationId(raw: unknown): string | undefined {
+  const id = String(raw ?? '').trim()
+  return id || undefined
+}
+
+/**
+ * 定时任务本轮覆盖模型 / 思考档位；都空则原样返回（对标 Codex leave on default）。
+ * 指定的 providerId 不在列表里时不改，避免跑到未知服务。
+ */
+export function applyScheduledTurnSettings<
+  T extends {
+    activeProviderId: string
+    providers: Array<{ id: string; thinkingLevel?: string }>
+  }
+>(
+  settings: T,
+  override?: { providerId?: unknown; thinkingLevel?: unknown }
+): T {
+  const providerId = parseOptionalAutomationId(override?.providerId)
+  const thinkingLevel = parseOptionalAutomationId(override?.thinkingLevel)
+  if (!providerId && !thinkingLevel) return settings
+  const nextId = providerId || settings.activeProviderId
+  if (!settings.providers.some((row) => row.id === nextId)) return settings
+  return {
+    ...settings,
+    activeProviderId: nextId,
+    providers: settings.providers.map((row) =>
+      row.id === nextId
+        ? { ...row, thinkingLevel: thinkingLevel || row.thinkingLevel }
+        : row
+    )
+  }
 }
 
 export function isAutomationCron(expr: unknown): boolean {
@@ -55,7 +94,9 @@ export function normalizeAutomationJob(
     lastRunAt: raw.lastRunAt ? String(raw.lastRunAt) : undefined,
     destination,
     conversationId,
-    runIn: parseAutomationRunIn(raw.runIn)
+    runIn: parseAutomationRunIn(raw.runIn),
+    providerId: parseOptionalAutomationId(raw.providerId),
+    thinkingLevel: parseOptionalAutomationId(raw.thinkingLevel)
   }
 }
 
@@ -108,6 +149,10 @@ export function applyScheduledTaskAction(
     runIn?: unknown
     run_in?: unknown
     enabled?: unknown
+    providerId?: unknown
+    model?: unknown
+    thinkingLevel?: unknown
+    reasoning?: unknown
   },
   options?: { currentConversationId?: string }
 ): { jobs: AutomationJob[]; message: string; changed: boolean } {
@@ -119,7 +164,9 @@ export function applyScheduledTaskAction(
           .map((job) => {
             const dest = parseAutomationDestination(job.destination)
             const env = parseAutomationRunIn(job.runIn)
-            return `- ${job.id} ${job.enabled ? 'on' : 'off'} ${dest} ${env} ${job.cron} ${job.title}`
+            const model = job.providerId || 'default'
+            const effort = job.thinkingLevel || 'default'
+            return `- ${job.id} ${job.enabled ? 'on' : 'off'} ${dest} ${env} ${model}/${effort} ${job.cron} ${job.title}`
           })
           .join('\n')
 
@@ -145,7 +192,9 @@ export function applyScheduledTaskAction(
       enabled: action.enabled === false ? false : true,
       destination,
       conversationId,
-      runIn: parseAutomationRunIn(action.runIn ?? action.run_in)
+      runIn: parseAutomationRunIn(action.runIn ?? action.run_in),
+      providerId: parseOptionalAutomationId(action.providerId ?? action.model),
+      thinkingLevel: parseOptionalAutomationId(action.thinkingLevel ?? action.reasoning)
     })
     return {
       jobs: [...jobs, job],
@@ -198,7 +247,15 @@ export function applyScheduledTaskAction(
       runIn:
         action.runIn != null || action.run_in != null
           ? parseAutomationRunIn(action.runIn ?? action.run_in)
-          : prev.runIn
+          : prev.runIn,
+      providerId:
+        action.providerId != null || action.model != null
+          ? parseOptionalAutomationId(action.providerId ?? action.model)
+          : prev.providerId,
+      thinkingLevel:
+        action.thinkingLevel != null || action.reasoning != null
+          ? parseOptionalAutomationId(action.thinkingLevel ?? action.reasoning)
+          : prev.thinkingLevel
     })
     return {
       jobs: jobs.map((job) => (job.id === id ? updated : job)),

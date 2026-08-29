@@ -1473,7 +1473,12 @@ function registerIpc(): void {
       history: ChatMessage[],
       attachments: ChatAttachment[] = [],
       conversationId?: string,
-      options?: { worktreePath?: string | null; goal?: string | null }
+      options?: {
+        worktreePath?: string | null
+        goal?: string | null
+        providerId?: string | null
+        thinkingLevel?: string | null
+      }
     ) => {
       const send = (chunk: StreamChunk) => {
         broadcastToRenderers('chat:stream', {
@@ -1505,6 +1510,8 @@ function registerIpc(): void {
           conversationId,
           worktreePath: options?.worktreePath,
           threadGoal: options?.goal,
+          providerId: options?.providerId,
+          thinkingLevel: options?.thinkingLevel,
           sessionApprovals,
           onApproval: approvalHandler,
           send,

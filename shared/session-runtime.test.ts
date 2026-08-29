@@ -30,8 +30,15 @@ import type { ChatMessage } from './types'
 describe('session / queue isolation', () => {
   it('follow-up queued under A never dispatches under B after a switch', () => {
     let queues = {}
-    const itemA = createQueuedPrompt('conv-a', 'follow-up for A', undefined, 'qa1')
+    const itemA = createQueuedPrompt('conv-a', 'follow-up for A', undefined, 'qa1', {
+      providerId: 'openai-chatgpt',
+      thinkingLevel: 'high'
+    })
     queues = enqueueForConversation(queues, 'conv-a', itemA)
+    expect(listQueuedForConversation(queues, 'conv-a')[0]).toMatchObject({
+      providerId: 'openai-chatgpt',
+      thinkingLevel: 'high'
+    })
 
     // 用户切到 B：A 的队列仍在 A 下
     expect(listQueuedForConversation(queues, 'conv-b')).toEqual([])

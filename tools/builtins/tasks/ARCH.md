@@ -14,7 +14,7 @@
 | 文件 | 说明 |
 |------|------|
 | `index.ts` | 任务相关 ToolHandler 组 |
-| `scheduled.ts` | `manage_scheduled_task`：创建 / 改 / 列 / 暂停定时任务 |
+| `scheduled.ts` | `manage_scheduled_task`：创建 / 改 / 列 / 暂停定时任务（含目标、环境、可选模型 / 思考档位） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 依赖

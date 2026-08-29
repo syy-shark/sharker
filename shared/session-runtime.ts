@@ -12,6 +12,9 @@ export interface SessionQueuedPrompt {
   text: string
   conversationId: string
   attachments?: ChatAttachment[]
+  /** 定时任务排队后仍用任务指定的模型（对标 Codex scheduled model） */
+  providerId?: string
+  thinkingLevel?: string
 }
 
 /** conversationId → 该会话的排队列表 */
@@ -22,13 +25,18 @@ export function createQueuedPrompt(
   conversationId: string,
   text: string,
   attachments?: ChatAttachment[],
-  id?: string
+  id?: string,
+  extras?: { providerId?: string; thinkingLevel?: string }
 ): SessionQueuedPrompt {
+  const providerId = extras?.providerId?.trim() || undefined
+  const thinkingLevel = extras?.thinkingLevel?.trim() || undefined
   return {
     id: id ?? `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     text,
     conversationId,
-    attachments: attachments?.length ? attachments : undefined
+    attachments: attachments?.length ? attachments : undefined,
+    providerId,
+    thinkingLevel
   }
 }
 
