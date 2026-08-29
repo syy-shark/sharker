@@ -1591,6 +1591,7 @@ function registerIpc(): void {
         goal?: string | null
         providerId?: string | null
         thinkingLevel?: string | null
+        inAppBrowserUrl?: string | null
       }
     ) => {
       const send = (chunk: StreamChunk) => {
@@ -1625,6 +1626,7 @@ function registerIpc(): void {
           threadGoal: options?.goal,
           providerId: options?.providerId,
           thinkingLevel: options?.thinkingLevel,
+          inAppBrowserUrl: options?.inAppBrowserUrl,
           sessionApprovals,
           onApproval: approvalHandler,
           onUserInput: userInputHandler,

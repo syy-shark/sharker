@@ -217,6 +217,8 @@
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注；Shift+点选区域、⌘/Ctrl+点立刻写入芯片（对标 Codex Annotation mode / hold Shift and click / Hold Cmd while clicking）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位、Shift 区域 / ⌘ 立刻提交 |
 | `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除；地址栏回车认 `file://` HTML 预览（对标 Codex file-backed previews / #36552）；`_blank` / window.open 只回同一视口可开的 http(s)/file（对标 Codex Settings → Browser / 单页内置浏览器 #26863）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史或多标签 |
+| `in-app-browser-ambient.ts` | 官方桌面 `# In app browser:` 本轮 system 块（对标 Codex #39562）：仅当前可见对话、聊天页、右侧浏览器打开且已导航 http(s)/file 时写入 1 tab + Current URL。不发明 @Browser / Browser Use 控制 / 多标签 |
+| `in-app-browser-ambient.test.ts` | 官方英文块、起始页拒绝、后台会话 / 非浏览器 Tab 不注入 |
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `browser-downloads.ts` | 内置浏览器下载目录与文件名：默认系统 Downloads、自选目录、每次询问、重名 `(N)`（对标 Codex Settings → Browser downloads）。不发明下载列表 / @Browser |
 | `browser-downloads.test.ts` | 穿越路径拒绝、默认目录、重名、App 三处落盘与主进程 will-download |

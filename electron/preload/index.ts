@@ -128,6 +128,7 @@ contextBridge.exposeInMainWorld('sharker', {
       goal?: string | null
       providerId?: string | null
       thinkingLevel?: string | null
+      inAppBrowserUrl?: string | null
     }
   ): Promise<void> =>
     ipcRenderer.invoke(IPC.SEND_MESSAGE, text, history, attachments, conversationId, options),

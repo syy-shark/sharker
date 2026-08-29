@@ -43,6 +43,8 @@ interface Props {
   openNonce?: number
   /** 批注保存进 composer Selection 芯片 */
   onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
+  /** 当前页 URL 交给开轮 ambient（起始页报空） */
+  onAmbientUrlChange?: (url: string) => void
 }
 
 function safeCall(fn: () => void) {
@@ -61,7 +63,12 @@ function displayUrlForBar(raw: string): string {
 }
 
 /** webview 浏览器面板 */
-export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }: Props) {
+export function EmbeddedBrowser({
+  initialUrl,
+  openNonce = 0,
+  onInsertComposer,
+  onAmbientUrlChange
+}: Props) {
   const [startTheme, setStartTheme] = useState<BrowserStartTheme>(() => resolveBrowserStartTheme())
   /** 每次渲染取新 data URL，HMR / 版本变更后不会粘住旧快捷方式页 */
   const startSrc = initialUrl?.trim() || browserStartPageDataUrl(startTheme)
@@ -99,6 +106,11 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
   useEffect(() => {
     urlRef.current = url
   }, [url])
+
+  useEffect(() => {
+    onAmbientUrlChange?.(displayUrlForBar(url))
+    return () => onAmbientUrlChange?.('')
+  }, [url, onAmbientUrlChange])
 
   useEffect(() => {
     annotatingRef.current = annotating

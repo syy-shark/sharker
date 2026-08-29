@@ -17,6 +17,7 @@ import { expandChatReferences, workspaceChatLoader } from './chat-refs'
 import { mapHistoryMessageToApi, userMessageContentWithAttachments } from './message-attachments'
 import { queryLoop } from './query-loop'
 import { leftoverSteerDisposition } from '../shared/pending-steer'
+import { appendInAppBrowserAmbient } from '../shared/in-app-browser-ambient'
 import { applyScheduledTurnSettings } from '../shared/automation'
 import {
   markTurnSteerable,
@@ -78,6 +79,8 @@ export interface ExecuteUserInputContext {
   /** 本轮覆盖模型 / 思考档位；空则用当前设置（对标 Codex scheduled model） */
   providerId?: string | null
   thinkingLevel?: string | null
+  /** 当前可见内置浏览器 URL（对标 Codex #39562 In app browser ambient） */
+  inAppBrowserUrl?: string | null
 }
 
 type TurnSlot = {
@@ -261,6 +264,7 @@ async function* onQuery(
   if (ctx.threadGoal?.trim()) {
     systemContent += `\n\n${ctx.threadGoal.trim()}`
   }
+  systemContent = appendInAppBrowserAmbient(systemContent, ctx.inAppBrowserUrl)
 
   try {
     const memoryCtx = await memoryPromise

@@ -212,6 +212,10 @@ import {
 } from '../shared/thread-goal'
 import { formatThreadStatus } from '../shared/thread-status'
 import { formatMcpStatus, shouldOpenMcpSettings } from '../shared/mcp-status'
+import {
+  isInAppBrowserAmbientUrl,
+  resolveInAppBrowserAmbient
+} from '../shared/in-app-browser-ambient'
 import type { FeedbackBundleInfo } from '../shared/feedback-bundle'
 import { parseComposerEnterBehavior, resolveApprovalHotkey } from '../shared/composer-submit'
 import { buildSuggestedPrompts, pickResumeSuggestions } from '../shared/suggested-prompts'
@@ -454,6 +458,9 @@ export default function App() {
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('files')
   const [browserOpenUrl, setBrowserOpenUrl] = useState('')
   const [browserOpenNonce, setBrowserOpenNonce] = useState(0)
+  const rightPanelOpenRef = useRef(false)
+  const rightPanelTabRef = useRef<RightPanelTab>('files')
+  const inAppBrowserUrlRef = useRef('')
   const [focusSubAgentId, setFocusSubAgentId] = useState<string | null>(null)
   const [prChipLabel, setPrChipLabel] = useState<string | null>(null)
   const [changesRevision, setChangesRevision] = useState(0)
@@ -988,6 +995,27 @@ export default function App() {
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId
   }, [activeConversationId])
+
+  useEffect(() => {
+    rightPanelOpenRef.current = rightPanelOpen
+  }, [rightPanelOpen])
+
+  useEffect(() => {
+    rightPanelTabRef.current = rightPanelTab
+  }, [rightPanelTab])
+
+  const handleBrowserAmbientUrl = useCallback((url: string) => {
+    inAppBrowserUrlRef.current = isInAppBrowserAmbientUrl(url) ? url.trim() : ''
+  }, [])
+
+  const inAppBrowserUrlForTurn = (convId?: string | null) =>
+    resolveInAppBrowserAmbient({
+      page: pageRef.current,
+      panelOpen: rightPanelOpenRef.current,
+      tab: rightPanelTabRef.current,
+      url: inAppBrowserUrlRef.current,
+      forActiveConversation: !convId || convId === activeConversationIdRef.current
+    })?.url
 
   useEffect(() => {
     queuedPromptsRef.current = queuedPrompts
@@ -3198,7 +3226,8 @@ export default function App() {
             worktreePath,
             goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current),
             providerId,
-            thinkingLevel
+            thinkingLevel,
+            inAppBrowserUrl: inAppBrowserUrlForTurn(convId)
           })
           void persistActiveConversation(buf.messages, convId)
         } catch (e) {
@@ -3376,7 +3405,8 @@ export default function App() {
           worktreePath,
           goal: goalTextForConversation(convId, activeConversationIdRef.current, threadGoalRef.current),
           providerId,
-          thinkingLevel
+          thinkingLevel,
+          inAppBrowserUrl: inAppBrowserUrlForTurn(convId)
         })
       } catch (e) {
         console.error('发送失败', e)
@@ -3517,6 +3547,7 @@ export default function App() {
         const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
         const htmlUrl = resolveWorkspaceHtmlFileUrl(detail.path, cwd, extra)
         if (htmlUrl) {
+          inAppBrowserUrlRef.current = isInAppBrowserAmbientUrl(htmlUrl) ? htmlUrl : ''
           setBrowserOpenUrl(htmlUrl)
           setBrowserOpenNonce((n) => n + 1)
           setRightPanelTab('browser')
@@ -3555,6 +3586,7 @@ export default function App() {
     const onOpenBrowser = (event: Event) => {
       const next = (event as CustomEvent<{ url?: string }>).detail?.url
       if (!next || popoutRoute) return
+      inAppBrowserUrlRef.current = isInAppBrowserAmbientUrl(next) ? next : ''
       setBrowserOpenUrl(next)
       setBrowserOpenNonce((n) => n + 1)
       setRightPanelTab('browser')
@@ -8566,6 +8598,7 @@ export default function App() {
           onSendReviewComments={handleSendReviewComments}
           browserOpenUrl={browserOpenUrl}
           browserOpenNonce={browserOpenNonce}
+          onBrowserAmbientUrl={handleBrowserAmbientUrl}
         />
         )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />

@@ -118,6 +118,7 @@ export interface SharkerApi {
       goal?: string | null
       providerId?: string | null
       thinkingLevel?: string | null
+      inAppBrowserUrl?: string | null
     }
   ) => Promise<void>
   saveAttachment: (input: {

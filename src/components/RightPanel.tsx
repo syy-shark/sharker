@@ -74,6 +74,8 @@ interface Props {
   /** 设置页重新打开历史页 */
   browserOpenUrl?: string
   browserOpenNonce?: number
+  /** 内置浏览器当前 URL → 开轮 ambient */
+  onBrowserAmbientUrl?: (url: string) => void
 }
 
 /** Codex 风格右侧面板 */
@@ -101,7 +103,8 @@ export const RightPanel = memo(function RightPanel({
   onAskInSideChat,
   onInsertComposer,
   browserOpenUrl,
-  browserOpenNonce = 0
+  browserOpenNonce = 0,
+  onBrowserAmbientUrl
 }: Props) {
   const viewportWidth = () => (typeof window === 'undefined' ? 1440 : window.innerWidth || 1440)
   const [width, setWidth] = useState(() =>
@@ -436,6 +439,7 @@ export const RightPanel = memo(function RightPanel({
             initialUrl={browserOpenUrl}
             openNonce={browserOpenNonce}
             onInsertComposer={onInsertComposer}
+            onAmbientUrlChange={onBrowserAmbientUrl}
           />
         )}
         {tab === 'agents' && (
