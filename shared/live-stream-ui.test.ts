@@ -585,6 +585,53 @@ describe('live stream ui snapshot', () => {
     expect(isLiveToolAppendChange([thinking], [thinkingDone, firstTool])).toBe(true)
     expect(isLiveToolAppendChange([thinking], [thinking, firstTool])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([thinking], [thinkingDone, firstTool])).toBe('tool')
+    const helloGrownDone: TurnSegment = { ...hello, status: 'done', content: 'Hello world' }
+    expect(isLiveTextClose(hello, helloGrownDone)).toBe(false)
+    expect(isLiveToolAppendChange([hello], [helloGrownDone, firstTool])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], [helloGrownDone, firstTool])).toBe('tool')
+    const answerWhileHelloOnly = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileHelloOnly,
+        prevSegments: [hello],
+        segments: [helloGrownDone, firstTool]
+      })
+    ).toBe(false)
+    const answerAfterGrowClose = nextLiveAnswerView(answerWhileHelloOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [helloGrownDone, firstTool]
+    })
+    expect(answerAfterGrowClose.tail).toBeNull()
+    expect(
+      answerAfterGrowClose.closed.some((part) => part.id === hello.id && part.content === 'Hello world')
+    ).toBe(true)
+    const processWhileHelloOnly = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const processAfterGrowClose = nextLiveProcessView(processWhileHelloOnly, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [helloGrownDone, firstTool]
+    })
+    expect(processAfterGrowClose.processForFlow.some((segment) => segment === firstTool)).toBe(true)
+    const thinkingGrownDone: TurnSegment = { ...thinking, status: 'done', content: 'Hmm next' }
+    expect(isLiveThinkOrStatusClose(thinking, thinkingGrownDone)).toBe(false)
+    expect(isLiveToolAppendChange([thinking], [thinkingGrownDone, firstTool])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([thinking], [thinkingGrownDone, firstTool])).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [thinking], [thinkingGrownDone, firstTool])).toBe('Hmm next')
+    const processWhileThinkForGrow = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinking]
+    })
+    const processAfterThinkGrow = nextLiveProcessView(processWhileThinkForGrow, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinkingGrownDone, firstTool]
+    })
+    expect(processAfterThinkGrow.thinkText).toBe(processWhileThinkForGrow.thinkText + ' next')
+    expect(processAfterThinkGrow.processForFlow.some((segment) => segment === firstTool)).toBe(true)
     const processWhileThink = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [thinking]

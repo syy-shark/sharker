@@ -574,6 +574,15 @@ describe('process phases privacy', () => {
     )
     expect(afterAnswerTool).not.toBeNull()
     expect(afterAnswerTool!.at(-1)?.segment).toBe(cmdNext)
+    const liveTextGrownDone: TurnSegment = { ...liveText, status: 'done', content: 'Hi there' }
+    const afterAnswerGrow = appendProcessPhaseStepOnToolStart(
+      fromAnswer,
+      [liveText],
+      [liveTextGrownDone, cmdNext],
+      true
+    )
+    expect(afterAnswerGrow).not.toBeNull()
+    expect(afterAnswerGrow!.at(-1)?.segment).toBe(cmdNext)
     const twoActive = deriveChronologicalSteps([cmdRunning, cmdNext], { isStreaming: true })
     const earlierSettled = retargetProcessPhaseStepsOnToolMeta(
       twoActive,
@@ -602,6 +611,16 @@ describe('process phases privacy', () => {
     )
     expect(firstFromThink).not.toBeNull()
     expect(firstFromThink!.at(-1)?.segment).toBe(cmdNext)
+    const thinkGrown: TurnSegment = { ...thinkOpen, status: 'done', content: 'Hmm next', endedAt: 2 }
+    const firstFromThinkGrow = appendProcessPhaseStepOnToolStart(
+      thinkSteps,
+      [thinkOpen],
+      [thinkGrown, cmdNext],
+      true
+    )
+    expect(firstFromThinkGrow).not.toBeNull()
+    expect(firstFromThinkGrow!.at(-1)?.segment).toBe(cmdNext)
+    expect(firstFromThinkGrow![0]?.segment).toBe(thinkGrown)
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',

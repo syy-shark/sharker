@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答只换 diff 槽以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），回答只换 diff 槽以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -136,6 +136,20 @@ export function isLiveTextClose(prev: TurnSegment, next: TurnSegment): boolean {
   return (prev.content ?? '') === (next.content ?? '')
 }
 
+/** 散文收束：正文可在同一 16ms 里先加长再标 done（token 尾 + tool_start） */
+export function isLiveTextGrowClose(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.id !== next.id || prev.kind !== 'text' || next.kind !== 'text') return false
+  if (prev.status !== 'active' || next.status !== 'done') return false
+  return (next.content ?? '').startsWith(prev.content ?? '')
+}
+
+/** 思考收束：旁白可在同一 16ms 里先加长再标 done（think 尾 + tool_start） */
+export function isLiveThinkGrowClose(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.id !== next.id || prev.kind !== 'thinking' || next.kind !== 'thinking') return false
+  if (prev.status !== 'active' || next.status !== 'done') return false
+  return (next.content ?? '').startsWith(prev.content ?? '')
+}
+
 function isLivePrefixClose(prev: TurnSegment, next: TurnSegment): boolean {
   return (
     isLiveThinkOrStatusClose(prev, next) ||
@@ -159,12 +173,12 @@ export function findLiveClosedAnswerText(
   for (let i = 0; i < n; i++) {
     const before = prev[i]
     const after = next[i]
-    if (before && after && isLiveTextClose(before, after)) return after
+    if (before && after && isLiveTextGrowClose(before, after)) return after
   }
   return null
 }
 
-/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：只追加这些步（对标 Codex exec_cell complete_call + add_call / Awaiting approval；只读并行一次 yield 多个 tool_start，不发明 Exploring 分组格） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具（正文/思考可在同一 16ms 先加长再标 done）、末尾新开一或多个工具，可带一条 Awaiting / Question requested 行：只追加这些步（对标 Codex exec_cell complete_call + add_call / Awaiting approval；token 尾 + tool_start、只读并行一次 yield 多个 tool_start，不发明 Exploring 分组格） */
 function isLiveAddedToolsWithOptionalStatus(
   prevLen: number,
   next: readonly TurnSegment[]
@@ -205,7 +219,14 @@ export function isLiveToolAppendChange(
     const after = next[i]
     if (!before || !after) return false
     if (before === after) continue
-    if (!isLivePrefixClose(before, after)) return false
+    if (
+      isLivePrefixClose(before, after) ||
+      isLiveTextGrowClose(before, after) ||
+      isLiveThinkGrowClose(before, after)
+    ) {
+      continue
+    }
+    return false
   }
   return true
 }
@@ -891,6 +912,9 @@ export function nextLiveThinkText(
   if (isLiveApprovalResolvedChange(prevSegments, segments)) return prev
   if (isLiveUserInputNeededChange(prevSegments, segments)) return prev
   if (isLiveStatusSettleChange(prevSegments, segments)) return prev
+  if (isLiveToolAppendChange(prevSegments, segments) && prevSegments) {
+    return nextLiveThinkTextOnPrefixChange(prev, prevSegments, segments)
+  }
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -912,6 +936,30 @@ export function nextLiveThinkText(
     }
   }
   return liveThinkingText(segments)
+}
+
+function nextLiveThinkTextOnPrefixChange(
+  prev: string,
+  prevSegments: readonly TurnSegment[],
+  segments: readonly TurnSegment[]
+): string {
+  let next = prev
+  const n = Math.min(prevSegments.length, segments.length)
+  for (let i = 0; i < n; i++) {
+    const before = prevSegments[i]
+    const after = segments[i]
+    if (!before || !after || before === after) continue
+    if (!isLiveThinking(before) || !isLiveThinking(after) || before.id !== after.id) continue
+    const prevContent = before.content ?? ''
+    const nextContent = after.content ?? ''
+    if (nextContent === prevContent) continue
+    if (nextContent.startsWith(prevContent) && (next === prevContent || next.endsWith(prevContent))) {
+      next += nextContent.slice(prevContent.length)
+      continue
+    }
+    return liveThinkingText(segments)
+  }
+  return next
 }
 
 function withUpdatedThinkText(prev: LiveProcessView, thinkText: string): LiveProcessView {
@@ -1156,7 +1204,8 @@ export function nextLiveProcessView(
   ) {
     const added = segments.slice(processHold.segments.length)
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
-    const view = { ...prev, processForFlow: [...remapped, ...added] }
+    const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const view = { ...prev, processForFlow: [...remapped, ...added], thinkText }
     processHold = {
       view,
       identity: liveProcessIdentity(segments),
