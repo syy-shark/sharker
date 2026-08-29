@@ -1,5 +1,5 @@
 /**
- * 对话文件引用 → 右侧文件预览（对标 Codex View Code）。
+ * 对话文件引用：默认右侧预览（对标 Codex View Code）；App 按 file_opener 决定是否改走外部 URI。
  * @see src/lib/ARCH.md
  */
 import type { FileCitation } from '../../shared/file-citation'

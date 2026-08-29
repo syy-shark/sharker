@@ -169,6 +169,8 @@ import {
   type AutomationJob
 } from '../shared/automation'
 import { parseReviewFindings } from '../shared/review-comment'
+import { resolveCitationPath } from '../shared/file-citation'
+import { fileOpenerUri, parseFileOpener } from '../shared/file-opener'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { FeedbackDialog } from './components/FeedbackDialog'
@@ -2029,6 +2031,7 @@ export default function App() {
           gitForceWithLease: updated.gitForceWithLease,
           gitBranchPrefix: updated.gitBranchPrefix,
           toolOutputDisplay: updated.toolOutputDisplay,
+          fileOpener: updated.fileOpener,
           turnNotifyMode: updated.turnNotifyMode,
           preventSleepWhileRunning: updated.preventSleepWhileRunning,
           popoutAlwaysOnTop: updated.popoutAlwaysOnTop,
@@ -2104,6 +2107,7 @@ export default function App() {
       gitForceWithLease: draft.gitForceWithLease,
       gitBranchPrefix: draft.gitBranchPrefix,
       toolOutputDisplay: draft.toolOutputDisplay,
+      fileOpener: draft.fileOpener,
       turnNotifyMode: draft.turnNotifyMode,
       preventSleepWhileRunning: draft.preventSleepWhileRunning,
       popoutAlwaysOnTop: draft.popoutAlwaysOnTop,
@@ -3398,8 +3402,25 @@ export default function App() {
 
   useEffect(() => {
     const onCite = (event: Event) => {
-      const detail = (event as CustomEvent<{ path?: string; line?: number }>).detail
+      const detail = (event as CustomEvent<{ path?: string; line?: number; column?: number }>).detail
       if (!detail?.path || popoutRoute) return
+      const opener = parseFileOpener(settingsRef.current.fileOpener)
+      if (opener !== 'none') {
+        const runtime = runtimeForConversation(
+          activeConversationIdRef.current,
+          activeConversationIdRef.current,
+          threadRuntimeRef.current
+        )
+        const cwd = resolveConversationPath({
+          worktreePath: runtime.worktreePath || threadWorktreePathRef.current,
+          workspacePath: getActiveWorkspacePath(settingsRef.current)
+        })
+        const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
+        const abs = resolveCitationPath(detail.path, cwd, extra)
+        const uri = fileOpenerUri(opener, abs, detail.line, detail.column)
+        if (uri) void window.sharker.openExternal?.(uri)
+        return
+      }
       setFilePreview({ path: detail.path, line: detail.line, token: Date.now() })
       setRightPanelTab('files')
       setRightPanelOpen(true)
@@ -4050,6 +4071,7 @@ export default function App() {
       gitForceWithLease: next.gitForceWithLease,
       gitBranchPrefix: next.gitBranchPrefix,
       toolOutputDisplay: next.toolOutputDisplay,
+      fileOpener: next.fileOpener,
       turnNotifyMode: next.turnNotifyMode,
       preventSleepWhileRunning: next.preventSleepWhileRunning,
       popoutAlwaysOnTop: next.popoutAlwaysOnTop,
@@ -5493,7 +5515,15 @@ export default function App() {
           break
         }
         case 'init_agents': {
-          const cwd = getActiveWorkspacePath(settingsRef.current) || ''
+          const runtime = runtimeForConversation(
+            activeConversationIdRef.current,
+            activeConversationIdRef.current,
+            threadRuntimeRef.current
+          )
+          const cwd = resolveConversationPath({
+            worktreePath: runtime.worktreePath || threadWorktreePath,
+            workspacePath: getActiveWorkspacePath(settingsRef.current)
+          })
           if (!cwd || !window.sharker.initAgentsMd) {
             const note = {
               id: crypto.randomUUID(),
@@ -5514,7 +5544,7 @@ export default function App() {
             role: 'assistant' as const,
             content: result.ok
               ? result.created
-                ? `已在仓库根创建 \`AGENTS.md\`：\n\n\`${result.path}\`\n\n下一轮对话会自动注入这些项目说明。`
+                ? `已在当前目录创建 \`AGENTS.md\`：\n\n\`${result.path}\`\n\n下一轮对话会自动注入这些项目说明。`
                 : `已有项目说明文件，未覆盖：\n\n\`${result.path}\``
               : `无法初始化 AGENTS.md：${result.error}`
           }

@@ -29,8 +29,16 @@ describe('agents md io', () => {
     temps.push(repo)
     const first = await initAgentsMdFile(repo)
     expect(first.ok && first.created).toBe(true)
+    if (first.ok) {
+      expect(await readFile(first.path, 'utf8')).toContain('## Code Review Rules')
+    }
     const second = await initAgentsMdFile(repo)
     expect(second.ok && second.created).toBe(false)
+    const nested = path.join(repo, 'services', 'api')
+    await mkdir(nested, { recursive: true })
+    const sub = await initAgentsMdFile(nested)
+    expect(sub.ok && sub.created).toBe(true)
+    if (sub.ok) expect(sub.path).toBe(path.join(nested, 'AGENTS.md'))
   })
 
   it('reads and writes personal AGENTS.md without touching override', async () => {

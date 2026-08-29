@@ -13,6 +13,7 @@ import { normalizeKeymap } from './keymap'
 import { clampGitPrompt } from './git-prompt'
 import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
+import { parseFileOpener } from './file-opener'
 import { parseComposerEnterBehavior } from './composer-submit'
 import { parseReviewDelivery, parseReviewProviderId } from './review-prompt'
 import { normalizeExtraFolderPaths } from './workspace-folders'
@@ -163,6 +164,7 @@ export function normalizeSettings(
     gitForceWithLease: raw.gitForceWithLease === true,
     gitBranchPrefix: normalizeBranchPrefix(raw.gitBranchPrefix),
     toolOutputDisplay: parseToolOutputDisplay(raw.toolOutputDisplay),
+    fileOpener: parseFileOpener(raw.fileOpener),
     turnNotifyMode:
       raw.turnNotifyMode === 'never' || raw.turnNotifyMode === 'always'
         ? raw.turnNotifyMode

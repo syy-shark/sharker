@@ -215,7 +215,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'init',
-    description: '在仓库根创建 AGENTS.md 项目说明',
+    description: '在当前目录创建 AGENTS.md 项目说明',
     scope: 'ui',
     action: 'init_agents',
     category: 'workspace'

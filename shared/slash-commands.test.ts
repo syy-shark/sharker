@@ -67,6 +67,7 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'fork')?.argsHint).toContain('worktree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'side')?.argsHint).toContain('问题')
     expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.action).toBe('init_agents')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'init')?.description).toContain('当前目录')
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.action).toBe('set_permissions')
     expect(SLASH_COMMANDS.find((c) => c.name === 'permissions')?.description).toContain('输入框下方')
     expect(parsePermissionMode('')).toBeNull()

@@ -60,6 +60,7 @@ describe('conversation search', () => {
       '/tmp/wt'
     )
     expect(resolveConversationPath({ workspacePath: '/repo' })).toBe('/repo')
+    expect(resolveConversationPath({ worktreePath: '/tmp/wt' })).toBe('/tmp/wt')
   })
 
   it('parses /rename and formats the note', () => {

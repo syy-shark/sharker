@@ -28,6 +28,10 @@ describe('workspace settings', () => {
     expect(normalizeSettings({}, '/home/u').memoriesEnabled).toBe(false)
     expect(normalizeSettings({ memoriesEnabled: true }, '/home/u').memoriesEnabled).toBe(true)
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').memoriesEnabled).toBe(false)
+    expect(normalizeSettings({}, '/home/u').fileOpener).toBe('none')
+    expect(normalizeSettings({ fileOpener: 'cursor' }, '/home/u').fileOpener).toBe('cursor')
+    expect(normalizeSettings({ fileOpener: 'zed' as never }, '/home/u').fileOpener).toBe('none')
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').fileOpener).toBe('none')
   })
 })
 

@@ -14,7 +14,7 @@ export const AGENTS_DOC_NAMES = [
   '.sharker/AGENTS.md'
 ] as const
 
-/** `/init` 脚手架（仅在仓库还没有任何 AGENTS.md 时写入） */
+/** `/init` 脚手架（仅在当前目录还没有任何 AGENTS.md 时写入） */
 export const AGENTS_MD_SCAFFOLD = `# 项目说明
 
 写给在本仓库工作的 Agent。只写会反复用到的约定，保持简短。
@@ -32,6 +32,11 @@ export const AGENTS_MD_SCAFFOLD = `# 项目说明
 
 - 不要无关重构。
 - 不要编造没跑过的测试结果。
+
+## Code Review Rules
+
+- 只写审查时会反复解释的不变量，并给出安全改法。
+- 仓库级规则放根目录；目录级规则放更近的 \`AGENTS.md\`。
 `
 
 /** 从根走到 cwd 的目录链（含两端）；cwd 不在根下则只返回根 */

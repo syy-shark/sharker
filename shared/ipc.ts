@@ -136,7 +136,7 @@ export const IPC = {
   MCP_REMOVE_SERVER: 'mcp:remove-server',
   MCP_SET_ENABLED: 'mcp:set-enabled',
   MCP_RESTART: 'mcp:restart',
-  /** `/init`：没有说明文件时写入仓库根 AGENTS.md */
+  /** `/init`：没有说明文件时写入当前目录 AGENTS.md */
   INIT_AGENTS_MD: 'workspace:init-agents-md',
   /** 设置 → 自定义说明：读写 `~/.sharker/AGENTS.md` */
   GET_PERSONAL_AGENTS_MD: 'agents-md:get-personal',

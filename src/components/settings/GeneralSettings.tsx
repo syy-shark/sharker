@@ -1,6 +1,6 @@
 /**
  * 通用：后续行为、Enter 发送、审查交付、运行防休眠。
- * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review / review_model）。
+ * 对标 Codex Settings → General（Follow-up / Cmd+Enter / file_opener / Prevent sleep / Code review / review_model）。
  * 建议提示在 SuggestedPromptSettings（官方 Settings → Suggested prompts）。
  * @see src/components/settings/ARCH.md
  */
@@ -15,6 +15,7 @@ import {
   parseReviewProviderId,
   type ReviewDelivery
 } from '../../../shared/review-prompt'
+import { parseFileOpener } from '../../../shared/file-opener'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -156,6 +157,30 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               ]}
               onChange={(reviewProviderId) => {
                 scheduleSave({ ...draftRef.current, reviewProviderId })
+              }}
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title="文件打开">
+        <SettingsCard>
+          <SettingsRow
+            title="默认打开位置"
+            description="对标 Codex file_opener：对话引用点开去哪。none 仍是应用内预览；不接自定义编辑器。"
+            last
+          >
+            <SettingsSelect
+              id="general-file-opener"
+              value={parseFileOpener(draft.fileOpener)}
+              options={[
+                { value: 'none', label: 'Sharker 预览' },
+                { value: 'vscode', label: 'VS Code' },
+                { value: 'vscode-insiders', label: 'VS Code Insiders' },
+                { value: 'cursor', label: 'Cursor' },
+                { value: 'windsurf', label: 'Windsurf' }
+              ]}
+              onChange={(value) => {
+                scheduleSave({ ...draftRef.current, fileOpener: parseFileOpener(value) })
               }}
             />
           </SettingsRow>

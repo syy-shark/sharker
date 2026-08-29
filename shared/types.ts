@@ -153,6 +153,11 @@ export interface AppSettings {
    */
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   /**
+   * 对话文件引用打开目标（对标 Codex `file_opener` / Settings → General where files open）。
+   * none（默认）：应用内预览；vscode / cursor / windsurf / vscode-insiders：官方 URI。
+   */
+  fileOpener?: import('./file-opener').FileOpener
+  /**
    * 回合完成通知（对标 Codex Settings → Notifications）。
    * never / background（默认） / always
    */
@@ -428,6 +433,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitForceWithLease: false,
   gitBranchPrefix: '',
   toolOutputDisplay: 'standard',
+  fileOpener: 'none',
   turnNotifyMode: 'background',
   preventSleepWhileRunning: false,
   popoutAlwaysOnTop: false,

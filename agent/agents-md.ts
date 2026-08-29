@@ -58,7 +58,7 @@ export async function loadAgentsInstructions(
   return mergeAgentsDocs(docs)
 }
 
-/** `/init`：没有说明文件时写入仓库根 AGENTS.md */
+/** `/init`：没有说明文件时写入当前目录 AGENTS.md（对标 Codex current directory） */
 export async function initAgentsMdFile(
   workspace: string
 ): Promise<{ ok: true; path: string; created: boolean } | { ok: false; error: string }> {

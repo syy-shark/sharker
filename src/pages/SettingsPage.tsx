@@ -34,7 +34,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   general: {
     title: '通用',
-    desc: '后续排队或注入、Enter 发送、/review 交付与审查模型、运行防休眠。对标 Codex Settings → General。建议提示在单独一页。'
+    desc: '后续排队或注入、Enter 发送、文件引用打开位置、/review 交付与审查模型、运行防休眠。对标 Codex Settings → General。建议提示在单独一页。'
   },
   appearance: {
     title: '外观',

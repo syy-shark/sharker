@@ -1,5 +1,5 @@
 /**
- * 对话中的可点文件引用：打开右侧预览（对标 Codex 桌面端 file citation）。
+ * 对话中的可点文件引用：默认打开右侧预览；设置 file_opener 后走官方 URI。
  * @see src/components/ARCH.md
  */
 import type { ReactNode } from 'react'

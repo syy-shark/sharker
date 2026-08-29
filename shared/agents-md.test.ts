@@ -43,6 +43,7 @@ describe('agents.md discovery', () => {
 
   it('has a non-empty init scaffold', () => {
     expect(AGENTS_MD_SCAFFOLD).toContain('# 项目说明')
+    expect(AGENTS_MD_SCAFFOLD).toContain('## Code Review Rules')
   })
 
   it('points personal instructions at ~/.sharker/AGENTS.md', () => {
