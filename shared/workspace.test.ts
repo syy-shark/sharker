@@ -22,6 +22,9 @@ describe('workspace settings', () => {
       'detached'
     )
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').reviewDelivery).toBe('inline')
+    expect(normalizeSettings({}, '/home/u').reviewProviderId).toBe('')
+    expect(normalizeSettings({ reviewProviderId: '  p1  ' }, '/home/u').reviewProviderId).toBe('p1')
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').reviewProviderId).toBe('')
     expect(normalizeSettings({}, '/home/u').memoriesEnabled).toBe(false)
     expect(normalizeSettings({ memoriesEnabled: true }, '/home/u').memoriesEnabled).toBe(true)
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').memoriesEnabled).toBe(false)

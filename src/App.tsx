@@ -131,6 +131,7 @@ import {
   composeReviewScopeArgs,
   formatReviewPrompt,
   parseReviewRequest,
+  resolveReviewProviderId,
   reviewNeedsScopePicker,
   reviewSubmitMode
 } from '../shared/review-prompt'
@@ -1978,6 +1979,7 @@ export default function App() {
           requireModEnter: updated.requireModEnter,
           suggestedPrompts: updated.suggestedPrompts,
           reviewDelivery: updated.reviewDelivery,
+          reviewProviderId: updated.reviewProviderId,
           gitCommitPrompt: updated.gitCommitPrompt,
           gitPrPrompt: updated.gitPrPrompt,
           gitForceWithLease: updated.gitForceWithLease,
@@ -2052,6 +2054,7 @@ export default function App() {
       requireModEnter: draft.requireModEnter,
       suggestedPrompts: draft.suggestedPrompts,
       reviewDelivery: draft.reviewDelivery,
+      reviewProviderId: draft.reviewProviderId,
       gitCommitPrompt: draft.gitCommitPrompt,
       gitPrPrompt: draft.gitPrPrompt,
       gitForceWithLease: draft.gitForceWithLease,
@@ -3437,7 +3440,8 @@ export default function App() {
     async (
       text: string,
       mode: PromptSubmitMode = 'send',
-      attachments: ChatAttachment[] = []
+      attachments: ChatAttachment[] = [],
+      extras?: { providerId?: string; thinkingLevel?: string }
     ) => {
       try {
         await flushSettingsDraftIfNeeded()
@@ -3487,7 +3491,9 @@ export default function App() {
         const item = createQueuedPrompt(
           convId,
           trimmed,
-          attachments.length ? attachments : undefined
+          attachments.length ? attachments : undefined,
+          undefined,
+          extras
         )
         if (mode === 'jump') {
           // 对标 Codex Steer：加入当前回合，不中止直播。注入失败改排队；没有进行中回合才新开。
@@ -3574,7 +3580,7 @@ export default function App() {
           const jumpGen = ++turnGenRef.current
           streamTurnGenByConvRef.current[convId] = jumpGen
           awaitingTurnStartByConvRef.current[convId] = jumpGen
-          void dispatchTurn(trimmed, attachments, convId)
+          void dispatchTurn(trimmed, attachments, convId, extras)
           return
         }
         const queues = enqueueForConversation(sessionQueuesRef.current, convId, item, 'append')
@@ -3594,7 +3600,7 @@ export default function App() {
           return
         }
       }
-      await dispatchTurn(trimmed, attachments, convId ?? undefined)
+      await dispatchTurn(trimmed, attachments, convId ?? undefined, extras)
     },
     [
       commitAssistantReply,
@@ -3730,7 +3736,10 @@ export default function App() {
       const taken = takeQueuedPrompt(sessionQueuesRef.current, convId, id)
       syncActiveQueueUi(taken.queues, convId)
       if (!taken.item?.text.trim()) return
-      void handlePromptSubmit(taken.item.text, 'send', taken.item.attachments)
+      void handlePromptSubmit(taken.item.text, 'send', taken.item.attachments, {
+        providerId: taken.item.providerId,
+        thinkingLevel: taken.item.thinkingLevel
+      })
     },
     [
       flushHeldBusyFollowUps,
@@ -3967,6 +3976,7 @@ export default function App() {
       requireModEnter: next.requireModEnter,
       suggestedPrompts: next.suggestedPrompts,
       reviewDelivery: next.reviewDelivery,
+      reviewProviderId: next.reviewProviderId,
       gitCommitPrompt: next.gitCommitPrompt,
       gitPrPrompt: next.gitPrPrompt,
       gitForceWithLease: next.gitForceWithLease,
@@ -5842,6 +5852,11 @@ export default function App() {
           const prompt = formatReviewPrompt(review)
           const wsId = settingsRef.current.activeWorkspaceId
           const busy = Boolean(loadingLiveRef.current || sendInFlightRef.current)
+          const reviewProviderId = resolveReviewProviderId(
+            settingsRef.current.reviewProviderId,
+            settingsRef.current.providers
+          )
+          const reviewExtras = reviewProviderId ? { providerId: reviewProviderId } : undefined
           const submit = reviewSubmitMode({
             detached: review.detached,
             busy,
@@ -5851,7 +5866,7 @@ export default function App() {
             const conv = await window.sharker.createConversation(wsId)
             saveThreadRuntime(conv.id, threadRuntimeRef.current)
             await handleSelectConversation(wsId, conv.id)
-            await dispatchTurnRef.current(prompt, [], conv.id)
+            await dispatchTurnRef.current(prompt, [], conv.id, reviewExtras)
             break
           }
           const inlineMode =
@@ -5864,7 +5879,9 @@ export default function App() {
                 })
           await handlePromptSubmit(
             prompt,
-            inlineMode === 'jump' || inlineMode === 'queue' ? inlineMode : 'send'
+            inlineMode === 'jump' || inlineMode === 'queue' ? inlineMode : 'send',
+            [],
+            reviewExtras
           )
           break
         }

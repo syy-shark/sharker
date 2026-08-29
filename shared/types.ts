@@ -131,6 +131,11 @@ export interface AppSettings {
    * inline（默认，官方）：能在当前对话跑就在当前对话；detached：新开审查线程。
    */
   reviewDelivery?: 'inline' | 'detached'
+  /**
+   * `/review` 模型覆盖（对标 Codex `review_model`）。
+   * 空则用当前会话模型；写已配置 Provider id（或该 Provider 的 model 名）。
+   */
+  reviewProviderId?: string
   /** 生成 commit message 时使用的用户模板（对标 Codex Git commit prompt） */
   gitCommitPrompt?: string
   /** 生成 PR 描述时使用的用户模板（对标 Codex Git pull request prompt） */
@@ -417,6 +422,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   requireModEnter: false,
   suggestedPrompts: true,
   reviewDelivery: 'inline',
+  reviewProviderId: '',
   gitCommitPrompt: '',
   gitPrPrompt: '',
   gitForceWithLease: false,

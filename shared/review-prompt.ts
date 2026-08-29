@@ -29,6 +29,26 @@ export function parseReviewDelivery(raw: unknown): ReviewDelivery {
   return raw === 'detached' ? 'detached' : 'inline'
 }
 
+/** `review_model` 设置：空串表示跟随当前会话 */
+export function parseReviewProviderId(raw: unknown): string {
+  return typeof raw === 'string' ? raw.trim() : ''
+}
+
+/**
+ * `/review` 用哪条已配置 Provider。
+ * 空 / 失效回退当前会话（对标 Codex `review_model` unset → session model）。
+ */
+export function resolveReviewProviderId(
+  reviewProviderId: unknown,
+  providers: readonly { id: string; model?: string }[]
+): string | undefined {
+  const raw = parseReviewProviderId(reviewProviderId)
+  if (!raw) return undefined
+  if (providers.some((p) => p.id === raw)) return raw
+  const byModel = providers.find((p) => (p.model || '').trim() === raw)
+  return byModel?.id
+}
+
 /**
  * `/review` 怎么开下一轮：官方默认当前对话；直播中不 abort。
  * Detached（设置或 `/review detached`）才新开审查线程。

@@ -14,7 +14,7 @@ import { clampGitPrompt } from './git-prompt'
 import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
 import { parseComposerEnterBehavior } from './composer-submit'
-import { parseReviewDelivery } from './review-prompt'
+import { parseReviewDelivery, parseReviewProviderId } from './review-prompt'
 import { normalizeExtraFolderPaths } from './workspace-folders'
 
 /** 全局聊天工作区（不绑定具体项目目录） */
@@ -157,6 +157,7 @@ export function normalizeSettings(
     requireModEnter: composerEnterBehavior === 'cmdAlways',
     suggestedPrompts: raw.suggestedPrompts !== false,
     reviewDelivery: parseReviewDelivery(raw.reviewDelivery),
+    reviewProviderId: parseReviewProviderId(raw.reviewProviderId),
     gitCommitPrompt: clampGitPrompt(raw.gitCommitPrompt),
     gitPrPrompt: clampGitPrompt(raw.gitPrPrompt),
     gitForceWithLease: raw.gitForceWithLease === true,

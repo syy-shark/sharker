@@ -14,9 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
+| `types.ts` | 跨进程核心类型与默认设置（含 `WorkspaceItem.extraPaths` 附加文件夹、`worktreeKeepCount` / `worktreeRoot`、`uiFontScale` / `codeFont` / `codeFontScale`、`keyboardShortcuts`、`followUpBehavior` / `composerEnterBehavior`（旧 `requireModEnter`）/ `suggestedPrompts`、`reviewDelivery` / `reviewProviderId`（对标 Codex `review_model`）/ Git 文案与 force-with-lease / 分支前缀 / `toolOutputDisplay`、`turnNotifyMode` / `approvalNotify` / `preventSleepWhileRunning` / `popoutAlwaysOnTop`、`memoriesEnabled`（官方默认关）与注入/写入开关、`resultOutputDeferred` / `contentDeferred` / `thinkingPreviewDeferred` 启动窗占位） |
 | `ipc.ts` | IPC channel 名称常量（含永久 worktree / 归档清理 / MCP 状态与设置页增删开关 Restart / AGENTS.md 初始化 / 记忆列表 / worktree 探活 / `/approve` 重试 / 对话元数据补丁 / 清未读 / 后台回合通知与 Dock 徽标 / 弹出窗 Always on top / `sharker://` 深链与应用菜单 / 按会话计划模式读写 / 对话渲染图复制与另存 / 集成终端绑定与激活 / `GIT_INIT` 审查建仓 / `chat:steer` 注入当前回合 / `conversations:load` 可 `tail` / `slim` / `conversations:load-older` 上滑取更早页 / `conversations:load-message` 点开再取完整消息 / `conversations:search` 分页查找 / `conversations:load-range` 给 ⌘↑ 头页 / 查找命中揭开有界一段 / `automations:run-now` 立刻跑定时任务） |
-| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
+| `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
 | `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
@@ -79,7 +79,7 @@
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
-| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；Review delivery 默认 inline（官方当前对话）与 here/detached 覆盖；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
+| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；Review delivery 默认 inline（官方当前对话）与 here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -216,7 +216,7 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析 |
 | `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、自定义关注拼进提示 |
+| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 

@@ -1,10 +1,15 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   composeReviewScopeArgs,
   formatReviewPrompt,
   parseReviewDelivery,
+  parseReviewProviderId,
   parseReviewRequest,
   parseReviewScope,
+  resolveReviewProviderId,
   reviewNeedsScopePicker,
   reviewSubmitMode,
   withReviewInstructions
@@ -63,5 +68,20 @@ describe('review scope', () => {
     expect(parseReviewRequest('detached', { delivery: 'inline' }).detached).toBe(true)
     expect(parseReviewRequest('new', { delivery: 'inline' }).detached).toBe(true)
     expect(parseReviewRequest('inline', { delivery: 'detached' }).detached).toBe(false)
+    expect(parseReviewProviderId(undefined)).toBe('')
+    expect(parseReviewProviderId('  p1  ')).toBe('p1')
+    const providers = [
+      { id: 'p1', model: 'gpt-5.6-sol' },
+      { id: 'p2', model: 'gpt-5.6-terra' }
+    ]
+    expect(resolveReviewProviderId('', providers)).toBeUndefined()
+    expect(resolveReviewProviderId('p2', providers)).toBe('p2')
+    expect(resolveReviewProviderId('gpt-5.6-sol', providers)).toBe('p1')
+    expect(resolveReviewProviderId('missing', providers)).toBeUndefined()
+    const appSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'), 'utf8')
+    expect(appSrc).toContain('reviewProviderId: updated.reviewProviderId')
+    expect(appSrc).toContain('reviewProviderId: draft.reviewProviderId')
+    expect(appSrc).toContain('reviewProviderId: next.reviewProviderId')
+    expect(appSrc).toContain('resolveReviewProviderId')
   })
 })

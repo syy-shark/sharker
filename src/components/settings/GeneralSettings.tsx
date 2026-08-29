@@ -1,6 +1,6 @@
 /**
  * 通用：后续行为、Enter 发送、审查交付、运行防休眠。
- * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review）。
+ * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review / review_model）。
  * 建议提示在 SuggestedPromptSettings（官方 Settings → Suggested prompts）。
  * @see src/components/settings/ARCH.md
  */
@@ -10,7 +10,11 @@ import {
   parseComposerEnterBehavior,
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
-import { parseReviewDelivery, type ReviewDelivery } from '../../../shared/review-prompt'
+import {
+  parseReviewDelivery,
+  parseReviewProviderId,
+  type ReviewDelivery
+} from '../../../shared/review-prompt'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -18,6 +22,7 @@ import {
   SettingsSection,
   SettingsToggle
 } from './SettingsPrimitives'
+import { SettingsSelect } from './SettingsSelect'
 
 interface Props {
   draft: AppSettings
@@ -134,6 +139,26 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               }
             ]}
           />
+          <SettingsRow
+            title="审查模型"
+            description="对标 Codex review_model：空则用当前会话模型，不改输入框里的模型。"
+            last
+          >
+            <SettingsSelect
+              id="general-review-model"
+              value={parseReviewProviderId(draft.reviewProviderId)}
+              options={[
+                { value: '', label: '跟随当前会话' },
+                ...(draft.providers ?? []).map((p) => ({
+                  value: p.id,
+                  label: `${p.name || p.id}${p.model ? ` · ${p.model}` : ''}`
+                }))
+              ]}
+              onChange={(reviewProviderId) => {
+                scheduleSave({ ...draftRef.current, reviewProviderId })
+              }}
+            />
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
       <SettingsSection title="窗口">
