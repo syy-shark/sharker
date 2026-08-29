@@ -1,6 +1,6 @@
 /**
  * web_fetch / web_search。
- * web_search 直播用官方 Searching / Searched 文案，来源结构化，不把 Instant Answer 灌进直播头。
+ * web_search 直播用官方 Searching the web / Searched + query detail，来源结构化，不把 Instant Answer 灌进直播头。
  * @see tools/ARCH.md
  */
 import { ok } from '../../context'
@@ -86,7 +86,7 @@ export function parseDuckDuckGoInstantAnswer(json: {
 
 export const webSearchTool: ToolHandler = {
   name: 'web_search',
-  title: '网页搜索',
+  title: 'Searched',
   async execute(args, ctx) {
     const query = String(args.query ?? '')
     assertWebAccessAllowed('https://api.duckduckgo.com/', ctx.settings)

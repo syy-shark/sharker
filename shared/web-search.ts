@@ -6,6 +6,8 @@
 
 export const WEB_SEARCH_TOOL = 'web_search'
 export const WEB_SEARCH_LIVE_STATUS = 'Searching the web'
+/** 官方完成后头：Searched；query 走 detail，避免标题随查询变长挤过程区 */
+export const WEB_SEARCH_DONE_TITLE = 'Searched'
 
 export type WebSearchSource = {
   title: string
@@ -18,10 +20,14 @@ export function formatWebSearchLiveStatus(): string {
   return WEB_SEARCH_LIVE_STATUS
 }
 
-/** 完成后：有 query 用 Searched the web for，否则 Searched the web */
-export function formatWebSearchActivity(query: string): string {
-  const q = String(query || '').trim()
-  return q ? `Searched the web for ${q}` : 'Searched the web'
+/** 完成后头：官方 TUI/桌面 Searched（query 另走 detail） */
+export function formatWebSearchActivity(_query?: string): string {
+  return WEB_SEARCH_DONE_TITLE
+}
+
+/** 官方 web_search 副行：查询本身 */
+export function formatWebSearchDetail(query: string): string {
+  return String(query || '').trim()
 }
 
 export function isWebSearchSourceUrl(url: string): boolean {
@@ -64,7 +70,8 @@ export function formatWebSearchToolOutput(input: {
   sources: WebSearchSource[]
   body: string
 }): string {
-  const lines = [formatWebSearchActivity(input.query)]
+  const detail = formatWebSearchDetail(input.query)
+  const lines = [detail ? `${WEB_SEARCH_DONE_TITLE} ${detail}` : WEB_SEARCH_DONE_TITLE]
   for (const source of input.sources) {
     if (!isWebSearchSourceUrl(source.url)) continue
     lines.push(`source: ${cleanTitle(source.title, source.url)} | ${source.url}`)
@@ -75,7 +82,7 @@ export function formatWebSearchToolOutput(input: {
 }
 
 export function parseWebSearchQuery(output: string): string | null {
-  const match = String(output || '').match(/^Searched the web for (.+)$/m)
+  const match = String(output || '').match(/^Searched(?: the web(?: for)?)? (.+)$/m)
   const query = match?.[1]?.trim() ?? ''
   return query || null
 }

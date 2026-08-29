@@ -27,6 +27,12 @@ import {
   REQUEST_USER_INPUT_TOOL,
   summarizeUserInputRequest
 } from './user-input'
+import {
+  formatWebSearchActivity,
+  formatWebSearchDetail,
+  formatWebSearchLiveStatus,
+  parseWebSearchQuery
+} from './web-search'
 
 function findLast<T>(items: T[], pred: (item: T) => boolean): T | undefined {
   for (let i = items.length - 1; i >= 0; i--) {
@@ -221,10 +227,8 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
       return formatUpdatePlanActivity(segment.toolArgs, segment.status)
     }
     if (tool === 'web_search') {
-      const query =
-        typeof segment.toolArgs?.query === 'string' ? segment.toolArgs.query.trim() : ''
-      if (segment.status === 'active') return 'Searching the web'
-      return query ? `Searched the web for ${query}` : 'Searched the web'
+      if (segment.status === 'active') return formatWebSearchLiveStatus()
+      return formatWebSearchActivity()
     }
     if (isMcpActivityToolName(tool)) {
       return formatMcpActivity(tool, segment.toolArgs, segment.status) ?? base
@@ -471,6 +475,16 @@ function buildStepsFromSource(
       if (leaf && title.includes(leaf)) {
         detail = segment.resultSummary?.trim() === '已停止' ? '已停止' : undefined
       }
+    }
+    if (segment.kind === 'tool' && segment.toolName === 'web_search') {
+      const query =
+        formatWebSearchDetail(
+          typeof segment.toolArgs?.query === 'string' ? segment.toolArgs.query : ''
+        ) ||
+        parseWebSearchQuery(segment.resultSummary || '') ||
+        parseWebSearchQuery(segment.toolDetail || '') ||
+        ''
+      if (query) detail = cleanInlineText(query, 120)
     }
 
     steps.push({

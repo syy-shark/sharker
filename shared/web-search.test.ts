@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatWebSearchActivity,
+  formatWebSearchDetail,
   formatWebSearchLiveStatus,
   formatWebSearchToolOutput,
   normalizeWebSearchSources,
@@ -15,8 +16,10 @@ import {
 describe('web-search', () => {
   it('uses official Searching / Searched copy and keeps sources short', () => {
     expect(formatWebSearchLiveStatus()).toBe('Searching the web')
-    expect(formatWebSearchActivity('')).toBe('Searched the web')
-    expect(formatWebSearchActivity(' rust async ')).toBe('Searched the web for rust async')
+    expect(formatWebSearchActivity('')).toBe('Searched')
+    expect(formatWebSearchActivity(' rust async ')).toBe('Searched')
+    expect(formatWebSearchDetail(' rust async ')).toBe('rust async')
+    expect(parseWebSearchQuery('Searched the web for rust async')).toBe('rust async')
     const output = formatWebSearchToolOutput({
       query: 'codex desktop',
       sources: [
@@ -29,7 +32,7 @@ describe('web-search', () => {
       ],
       body: 'Summary: Desktop app'
     })
-    expect(output.startsWith('Searched the web for codex desktop')).toBe(true)
+    expect(output.startsWith('Searched codex desktop')).toBe(true)
     expect(output).toContain('source: Codex | https://example.com/codex')
     expect(output).not.toMatch(/javascript:/)
     expect(output).toContain('Summary: Desktop app')

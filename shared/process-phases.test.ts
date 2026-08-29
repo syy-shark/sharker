@@ -78,7 +78,9 @@ describe('process phases privacy', () => {
         endedAt: 7
       }
     ])
-    expect(searched[0]?.title).toBe('Searched the web for codex desktop')
+    expect(searched[0]?.title).toBe('Searched')
+    expect(searched[0]?.detail).toBe('codex desktop')
+    expect(search[0]?.detail).toBe('codex desktop')
     const planning = deriveChronologicalSteps([
       {
         id: 'up1',
