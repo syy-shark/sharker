@@ -4,7 +4,7 @@
  * - 右：Hand off / 隔离 worktree / PR / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   PanelLeft,
@@ -57,7 +57,7 @@ function getChromeHost(): HTMLElement | null {
 }
 
 /** 顶栏：左簇始终可点切换侧栏；右为面板 */
-export function ChatToolbar({
+export const ChatToolbar = memo(function ChatToolbar({
   rightPanelOpen,
   sidebarCollapsed = false,
   onToggleSidebar,
@@ -305,4 +305,4 @@ export function ChatToolbar({
       </div>
     </>
   )
-}
+})

@@ -1,12 +1,21 @@
 /**
- * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
+ * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡（对标 Codex #33907）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref
+} from 'react'
 import type {
   AssistantMeta,
   ApprovalRequest,
@@ -396,6 +405,173 @@ interface Props {
   /** 查找跳到未加载的更早命中时揭开命中起的有界一段 */
   onRevealFindHit?: (fromSeq: number) => void | Promise<void>
 }
+
+/** 输入区独立树：不接收 streaming / liveSegments，直播 token 不重绘排队条与 Composer */
+const ChatComposerInputs = memo(function ChatComposerInputs({
+  pendingSteers,
+  queuedPrompts,
+  onEditQueued,
+  onMoveQueued,
+  onSendQueued,
+  onCancelQueued,
+  loading,
+  composerRef,
+  sessionKey,
+  workspaces,
+  activeWorkspaceId,
+  providers,
+  activeProviderId,
+  onSelectProvider,
+  onThinkingLevelChange,
+  messages,
+  onSend,
+  onAbort,
+  onSlashAction,
+  showHistoryPicker,
+  onCloseHistoryPicker,
+  conversationTitles,
+  onPickConversation,
+  onSelectWorkspace,
+  threadMode,
+  threadGoal,
+  goalEditTick,
+  onGoalCommand,
+  onThreadModeChange,
+  worktreeBaseRef,
+  onWorktreeBaseRefChange,
+  fileSearchRoot,
+  fileSearchExtraRoots,
+  composerIntent,
+  onComposerIntentHandled,
+  queueHeld,
+  onQueueHeldChange,
+  speechHint,
+  onSubmitted,
+  composerSeed,
+  onEditLastUser,
+  followUpBehavior,
+  composerEnterBehavior,
+  approvalOpen,
+  approvalResponding,
+  onApprovalHotkey,
+  planMode,
+  onPlanModeChange,
+  keyboardShortcuts
+}: {
+  pendingSteers: QueuedPrompt[]
+  queuedPrompts: QueuedPrompt[]
+  onEditQueued?: (id: string, text: string) => void
+  onMoveQueued?: (id: string, direction: -1 | 1) => void
+  onSendQueued?: (id: string) => void
+  onCancelQueued: (id: string) => void
+  loading: boolean
+  composerRef: Ref<ComposerDockHandle>
+  sessionKey?: string | null
+  workspaces: WorkspaceItem[]
+  activeWorkspaceId: string
+  providers: ProviderConfig[]
+  activeProviderId: string
+  onSelectProvider: (providerId: string, model: string) => void
+  onThinkingLevelChange?: (providerId: string, level: string) => void
+  messages: ChatMessage[]
+  onSend: (text: string, mode?: PromptSubmitMode, attachments?: ChatAttachment[]) => void
+  onAbort: () => void
+  onSlashAction?: (cmd: SlashCommandMeta, args: string) => void
+  showHistoryPicker?: boolean
+  onCloseHistoryPicker?: () => void
+  conversationTitles?: ChatSearchItem[]
+  onPickConversation?: (id: string) => void
+  onSelectWorkspace?: (id: string) => void
+  threadMode: ThreadMode
+  threadGoal: ThreadGoal | null
+  goalEditTick: number
+  onGoalCommand?: (command: GoalCommand) => void
+  onThreadModeChange?: (mode: ThreadMode) => void
+  worktreeBaseRef: string
+  onWorktreeBaseRefChange?: (ref: string) => void
+  fileSearchRoot: string
+  fileSearchExtraRoots: string[]
+  composerIntent: ComposerDockIntent | null
+  onComposerIntentHandled?: () => void
+  queueHeld: boolean
+  onQueueHeldChange?: (held: boolean) => void
+  speechHint: string
+  onSubmitted: (mode: PromptSubmitMode) => void
+  composerSeed?: ComposerSeed | null
+  onEditLastUser: () => void
+  followUpBehavior: 'queue' | 'steer'
+  composerEnterBehavior: ComposerEnterBehavior
+  approvalOpen: boolean
+  approvalResponding?: boolean
+  onApprovalHotkey?: (
+    decision: import('../../shared/approval-session').ApprovalDecision
+  ) => void | Promise<void>
+  planMode: boolean
+  onPlanModeChange?: (enabled: boolean) => void
+  keyboardShortcuts?: KeymapOverrides
+}) {
+  return (
+    <>
+      {onEditQueued && onMoveQueued && onSendQueued ? (
+        <ComposerQueue
+          steers={pendingSteers}
+          items={queuedPrompts}
+          onEdit={onEditQueued}
+          onMove={onMoveQueued}
+          onSend={onSendQueued}
+          onCancel={onCancelQueued}
+          busy={loading}
+        />
+      ) : null}
+      <ComposerDock
+        ref={composerRef}
+        sessionKey={sessionKey}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        providers={providers}
+        activeProviderId={activeProviderId}
+        onSelectProvider={onSelectProvider}
+        onThinkingLevelChange={onThinkingLevelChange}
+        messages={messages}
+        loading={loading}
+        queuedCount={queuedPrompts.length}
+        onSend={onSend}
+        onAbort={onAbort}
+        onSlashAction={onSlashAction}
+        showHistoryPicker={showHistoryPicker}
+        onCloseHistoryPicker={onCloseHistoryPicker}
+        conversationTitles={conversationTitles}
+        onPickConversation={onPickConversation}
+        onSelectWorkspace={onSelectWorkspace}
+        threadMode={threadMode}
+        threadGoal={threadGoal}
+        goalEditTick={goalEditTick}
+        onGoalCommand={onGoalCommand}
+        onThreadModeChange={onThreadModeChange}
+        worktreeBaseRef={worktreeBaseRef}
+        onWorktreeBaseRefChange={onWorktreeBaseRefChange}
+        fileSearchRoot={fileSearchRoot}
+        fileSearchExtraRoots={fileSearchExtraRoots}
+        composerIntent={composerIntent}
+        onComposerIntentHandled={onComposerIntentHandled}
+        queueHeld={queueHeld}
+        onQueueHeldChange={onQueueHeldChange}
+        speechHint={speechHint}
+        onSubmitted={onSubmitted}
+        composerSeed={composerSeed}
+        onEditLastUser={onEditLastUser}
+        followUpBehavior={followUpBehavior}
+        composerEnterBehavior={composerEnterBehavior}
+        approvalOpen={approvalOpen}
+        approvalResponding={approvalResponding}
+        onApprovalHotkey={onApprovalHotkey}
+        planMode={planMode}
+        onPlanModeChange={onPlanModeChange}
+        keyboardShortcuts={keyboardShortcuts}
+      />
+    </>
+  )
+})
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
 export function ChatView({
@@ -2014,19 +2190,15 @@ export function ChatView({
               </div>
             </div>
           ) : null}
-          {onEditQueued && onMoveQueued && onSendQueued ? (
-            <ComposerQueue
-              steers={pendingSteers}
-              items={queuedPrompts}
-              onEdit={onEditQueued}
-              onMove={onMoveQueued}
-              onSend={onSendQueued}
-              onCancel={onCancelQueued}
-              busy={loading}
-            />
-          ) : null}
-          <ComposerDock
-            ref={composerRef}
+          <ChatComposerInputs
+            pendingSteers={pendingSteers}
+            queuedPrompts={queuedPrompts}
+            onEditQueued={onEditQueued}
+            onMoveQueued={onMoveQueued}
+            onSendQueued={onSendQueued}
+            onCancelQueued={onCancelQueued}
+            loading={loading}
+            composerRef={composerRef}
             sessionKey={sessionKey}
             workspaces={workspaces}
             activeWorkspaceId={activeWorkspaceId}
@@ -2035,8 +2207,6 @@ export function ChatView({
             onSelectProvider={onSelectProvider}
             onThinkingLevelChange={onThinkingLevelChange}
             messages={messages}
-            loading={loading}
-            queuedCount={queuedPrompts.length}
             onSend={onSend}
             onAbort={onAbort}
             onSlashAction={onSlashAction}

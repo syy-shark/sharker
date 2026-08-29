@@ -1,7 +1,7 @@
 /**
  * 右侧可展开面板：文件树 / 终端 / 内置浏览器；拖拽调宽按窗口比例记忆（对标 Codex）。
  */
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Expand, Minimize2, X } from 'lucide-react'
 import { FileTree } from './panel/FileTree'
 import { ThreadTerminalBank } from './panel/EmbeddedTerminal'
@@ -70,7 +70,7 @@ interface Props {
 }
 
 /** Codex 风格右侧面板 */
-export function RightPanel({
+export const RightPanel = memo(function RightPanel({
   open,
   tab,
   workspacePath,
@@ -461,4 +461,4 @@ export function RightPanel({
       {panel}
     </>
   )
-}
+})

@@ -4,7 +4,7 @@
  * 收起为图标轨；设置页切换为设置 Tab 列表
  * @see src/ARCH.md
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
@@ -136,7 +136,7 @@ function convTitle(c: ConversationSummary): string {
 }
 
 /** ChatGPT 风格左侧边栏 */
-export function Sidebar({
+export const Sidebar = memo(function Sidebar({
   page,
   settingsTab,
   settings,
@@ -1036,4 +1036,4 @@ export function Sidebar({
       {panel}
     </>
   )
-}
+})

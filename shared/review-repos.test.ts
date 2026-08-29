@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_REPOS_ID,
   fileInLastTurnForRepo,
+  lastTurnPendingRelPath,
+  lastTurnPendingRelPaths,
   formatReviewLineStats,
   resolveReviewRepoId,
   expandAllReviewDiffKeys,
@@ -89,6 +91,14 @@ describe('review repos', () => {
     expect(fileInLastTurnForRepo('lib/b.ts', ['extra/lib/b.ts'], '/extra', '/proj')).toBe(true)
     expect(fileInLastTurnForRepo('src/a.ts', ['/extra/lib/b.ts'], '/proj', '/proj')).toBe(false)
     expect(fileInLastTurnForRepo('lib/b.ts', ['src/a.ts'], '/extra', '/proj')).toBe(false)
+    expect(lastTurnPendingRelPath('src/new.ts', '/proj', '/proj')).toBe('src/new.ts')
+    expect(lastTurnPendingRelPath('/extra/lib/b.ts', '/extra', '/proj')).toBe('lib/b.ts')
+    expect(lastTurnPendingRelPath('extra/lib/b.ts', '/extra', '/proj')).toBe('lib/b.ts')
+    expect(lastTurnPendingRelPath('src/a.ts', '/extra', '/proj')).toBe(null)
+    expect(
+      lastTurnPendingRelPaths(['src/a.ts', 'src/new.ts'], [{ path: 'src/a.ts' }], '/proj', '/proj')
+    ).toEqual(['src/new.ts'])
+    expect(lastTurnPendingRelPaths(['src/a.ts'], [{ path: 'src/a.ts' }], '/proj', '/proj')).toEqual([])
     expect(reviewDiffKey('/proj', 'src/a.ts')).toBe('/proj\0src/a.ts')
     expect(parseReviewDiffKey('/proj\0src/a.ts')).toEqual({ repoRoot: '/proj', path: 'src/a.ts' })
     expect(parseReviewDiffKey('src/a.ts')).toBe(null)

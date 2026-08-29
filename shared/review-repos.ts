@@ -201,6 +201,48 @@ export function reviewFileOpenPath(filePath: string, repoRoot: string, primaryRo
   return label ? `${label}/${file}` : file
 }
 
+/** 本轮预览路径落到该仓的相对路径；还没进 git status 时也能占一行（对标 Codex Last turn） */
+export function lastTurnPendingRelPath(
+  raw: string,
+  repoRoot: string,
+  primaryRoot: string
+): string | null {
+  const p = posixPath(raw)
+  const repo = posixPath(repoRoot)
+  const primary = posixPath(primaryRoot)
+  if (!p || !repo) return null
+  const repoName = reviewRepoLabel(repo)
+  const isPrimary = repo.toLowerCase() === primary.toLowerCase()
+  if (isAbsolutePath(p)) {
+    if (p === repo || !p.startsWith(`${repo}/`)) return null
+    return p.slice(repo.length + 1) || null
+  }
+  if (repoName && (p === repoName || p.startsWith(`${repoName}/`))) {
+    const rel = p === repoName ? '' : p.slice(repoName.length + 1)
+    return rel || null
+  }
+  return isPrimary ? p : null
+}
+
+/** 本轮已点名、git status 还没见到的相对路径（不编造 diff） */
+export function lastTurnPendingRelPaths(
+  lastTurnPaths: string[],
+  presentFiles: readonly { path: string; repoRoot?: string }[],
+  repoRoot: string,
+  primaryRoot: string
+): string[] {
+  const missing: string[] = []
+  for (const raw of lastTurnPaths) {
+    const rel = lastTurnPendingRelPath(raw, repoRoot, primaryRoot)
+    if (!rel) continue
+    const already = presentFiles.some((file) =>
+      fileInLastTurnForRepo(file.path, [raw], file.repoRoot ?? repoRoot, primaryRoot)
+    )
+    if (!already) missing.push(rel)
+  }
+  return missing
+}
+
 /**
  * 本轮路径是否属于该仓库的这条变更。
  * 绝对路径按仓库根切；`目录名/…` 前缀跟附加根；相对路径只算主仓库。

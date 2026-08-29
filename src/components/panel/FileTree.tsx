@@ -3,7 +3,7 @@
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
  * 写盘 revision 静默重拉树，不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
 import {
   filePreviewKind,
@@ -102,7 +102,7 @@ function TreeNodeView({
 }
 
 /** 文件树面板 */
-export function FileTree({
+export const FileTree = memo(function FileTree({
   workspacePath,
   isHome = false,
   previewRequest = null,
@@ -490,4 +490,4 @@ export function FileTree({
       </ul>
     </div>
   )
-}
+})

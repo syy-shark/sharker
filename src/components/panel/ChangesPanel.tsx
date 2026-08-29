@@ -5,7 +5,7 @@
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
  * @see ./ARCH.md
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { FileDiff, GitBranch, RefreshCw, Search } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
@@ -43,6 +43,7 @@ import {
   ALL_REPOS_ID,
   expandAllReviewDiffKeys,
   fileInLastTurnForRepo,
+  lastTurnPendingRelPaths,
   formatReviewLineStats,
   parseReviewDiffKey,
   pruneReviewDiffKeys,
@@ -128,7 +129,7 @@ function sameStringList(left: string[], right: string[]): boolean {
 }
 
 /** Codex 式变更审查：对比范围 + 当前文件 diff + Git 动作 */
-export function ChangesPanel({
+export const ChangesPanel = memo(function ChangesPanel({
   workspacePath,
   revision = 0,
   lastTurnPaths = [],
@@ -234,13 +235,28 @@ export function ChangesPanel({
       .filter((f) => fileInLastTurnForRepo(f.path, lastTurnPaths, repo.root, workspacePath))
       .map((f) => ({ ...f, repoRoot: repo.root }))
   )
+  const lastTurnPresent = isAllRepos ? lastTurnAllFiles : taggedRepoFiles
+  const pendingLastTurnFiles =
+    compare === 'last_turn'
+      ? (isAllRepos ? gitRepos : activeRepo ? [activeRepo] : []).flatMap((repo) =>
+          lastTurnPendingRelPaths(lastTurnPaths, lastTurnPresent, repo.root, workspacePath).map(
+            (path) => ({
+              status: '',
+              path,
+              raw: path,
+              repoRoot: repo.root
+            })
+          )
+        )
+      : []
+  const lastTurnFiles = [...lastTurnPresent, ...pendingLastTurnFiles]
   const sourceFiles =
     compare === 'branch'
       ? branchFiles.map((f) => ({ ...f, repoRoot: reviewCwd }))
       : compare === 'commit'
         ? commitFiles.map((f) => ({ ...f, repoRoot: reviewCwd }))
-        : compare === 'last_turn' && isAllRepos
-          ? lastTurnAllFiles
+        : compare === 'last_turn'
+          ? lastTurnFiles
           : taggedRepoFiles
   const readOnly = compare === 'branch' || compare === 'commit'
   const visible = sortReviewFilesLikeFileTree(
@@ -1565,4 +1581,4 @@ export function ChangesPanel({
       ) : null}
     </div>
   )
-}
+})

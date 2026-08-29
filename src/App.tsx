@@ -549,6 +549,27 @@ export default function App() {
   const handleSlashActionRef = useRef<(cmd: SlashCommandMeta, args: string) => Promise<void>>(
     async () => {}
   )
+  const handleRenameWorkspaceRef = useRef<(id: string, label: string) => Promise<void> | void>(
+    async () => {}
+  )
+  const handleArchiveConversationRef = useRef<
+    (workspaceId: string, conversationId: string) => Promise<void> | void
+  >(async () => {})
+  const handleArchiveProjectChatsRef = useRef<(workspaceId: string) => Promise<void> | void>(
+    async () => {}
+  )
+  const handleNewConversationRef = useRef<(workspaceId: string) => Promise<void> | void>(
+    async () => {}
+  )
+  const handleAddWorkspaceRef = useRef<() => Promise<void> | void>(async () => {})
+  const handleDeleteConversationRef = useRef<
+    (workspaceId: string, conversationId: string) => Promise<void> | void
+  >(async () => {})
+  const handleTogglePinWorkspaceRef = useRef<(id: string) => Promise<void> | void>(async () => {})
+  const handleDeleteWorkspaceRef = useRef<(id: string) => Promise<void> | void>(async () => {})
+  const handleNavigateRef = useRef<(page: AppPage, tab?: SettingsTab) => Promise<void> | void>(
+    async () => {}
+  )
   /** 排队跟进出队：先解析 UI 斜杠 / bang，再开模型回合 */
   const dispatchFollowUpRef = useRef<
     (
@@ -4330,11 +4351,11 @@ export default function App() {
     return newItem.id
   }
 
-  const seedComposer = (text: string, mode: 'replace' | 'append' = 'replace') => {
+  const seedComposer = useCallback((text: string, mode: 'replace' | 'append' = 'replace') => {
     const nonce = composerSeedNonceRef.current + 1
     composerSeedNonceRef.current = nonce
     setComposerSeed({ nonce, text, mode })
-  }
+  }, [])
 
   const applyDeeplink = async (raw: string) => {
     const action = parseDeeplink(raw)
@@ -7524,6 +7545,143 @@ export default function App() {
     [handleRetry]
   )
 
+  handleRenameWorkspaceRef.current = handleRenameWorkspace
+  handleArchiveConversationRef.current = handleArchiveConversation
+  handleArchiveProjectChatsRef.current = handleArchiveProjectChats
+  handleNewConversationRef.current = handleNewConversation
+  handleAddWorkspaceRef.current = handleAddWorkspace
+  handleDeleteConversationRef.current = handleDeleteConversation
+  handleTogglePinWorkspaceRef.current = handleTogglePinWorkspace
+  handleDeleteWorkspaceRef.current = handleDeleteWorkspace
+  handleNavigateRef.current = handleNavigate
+
+  const handleAskInSideChat = useCallback((prompt: string) => {
+    void handleSlashActionRef.current(
+      {
+        name: 'side',
+        description: '旁路新线程',
+        scope: 'ui',
+        action: 'side_conversation',
+        category: 'session'
+      },
+      prompt
+    )
+  }, [])
+
+  const handleInsertComposer = useCallback(
+    (text: string) => {
+      seedComposer(text, 'append')
+    },
+    [seedComposer]
+  )
+
+  const handleSendReviewComments = useCallback(
+    (prompt: string) => {
+      setPage('chat')
+      void handlePromptSubmit(prompt)
+    },
+    [handlePromptSubmit]
+  )
+
+  const handleCloseRightPanel = useCallback(() => {
+    setRightPanelOpen(false)
+  }, [])
+
+  const handlePendingTerminalCommandSent = useCallback(() => {
+    setPendingTerminalCommand(null)
+  }, [])
+
+  const handleRenameWorkspaceUi = useCallback((id: string, label: string) => {
+    void handleRenameWorkspaceRef.current(id, label)
+  }, [])
+
+  const handleEditProjectFolders = useCallback((id: string) => {
+    setEditProjectId(id)
+  }, [])
+
+  const handleCreatePermanentWorktreeUi = useCallback(
+    (id: string) => {
+      void handleCreatePermanentWorktree(id)
+    },
+    [handleCreatePermanentWorktree]
+  )
+
+  const handleArchiveConversationUi = useCallback((ws: string, id: string) => {
+    void handleArchiveConversationRef.current(ws, id)
+  }, [])
+
+  const handleArchiveProjectChatsUi = useCallback((ws: string) => {
+    void handleArchiveProjectChatsRef.current(ws)
+  }, [])
+
+  const handleRenameConversationUi = useCallback(
+    (ws: string, id: string, title: string) => {
+      void handleRenameConversation(ws, id, title)
+    },
+    [handleRenameConversation]
+  )
+
+  const handleTogglePinConversationUi = useCallback(
+    (ws: string, id: string) => {
+      void handleTogglePinConversation(ws, id)
+    },
+    [handleTogglePinConversation]
+  )
+
+  const handleRenameRequestHandled = useCallback(() => {
+    setRenameRequestId(null)
+  }, [])
+
+  const handlePopOut = useCallback(() => {
+    const ws = settingsRef.current.activeWorkspaceId
+    const id = activeConversationIdRef.current
+    if (ws && id) {
+      void window.sharker.openThreadWindow?.(
+        ws,
+        id,
+        conversationListRef.current.find((c) => c.id === id)?.title
+      )
+    }
+  }, [])
+
+  const handleCreateBranchHereUi = useCallback(() => {
+    void handleCreateBranchHere()
+  }, [handleCreateBranchHere])
+
+  const handleToolbarNewConversation = useCallback(() => {
+    const wsId = settingsRef.current.activeWorkspaceId
+    if (wsId) void handleNewConversationRef.current(wsId)
+    else void handleAddWorkspaceRef.current()
+  }, [])
+
+  const handleNewConversationUi = useCallback((workspaceId: string) => {
+    void handleNewConversationRef.current(workspaceId)
+  }, [])
+
+  const handleAddWorkspaceUi = useCallback(() => {
+    void handleAddWorkspaceRef.current()
+  }, [])
+
+  const handleDeleteConversationUi = useCallback((workspaceId: string, conversationId: string) => {
+    void handleDeleteConversationRef.current(workspaceId, conversationId)
+  }, [])
+
+  const handleSelectConversationUi = useCallback((workspaceId: string, conversationId: string) => {
+    void handleSelectConversationRef.current(workspaceId, conversationId)
+  }, [])
+
+  const handleTogglePinWorkspaceUi = useCallback((id: string) => {
+    void handleTogglePinWorkspaceRef.current(id)
+  }, [])
+
+  const handleDeleteWorkspaceUi = useCallback((id: string) => {
+    void handleDeleteWorkspaceRef.current(id)
+  }, [])
+
+  const handleNavigateUi = useCallback((targetPage: AppPage, tab?: SettingsTab) => {
+    void handleNavigateRef.current(targetPage, tab)
+  }, [])
+
   const fileSearchRoot = useMemo(() => {
     if (threadMode === 'worktree' && threadWorktreePath) return threadWorktreePath
     return getActiveWorkspacePath(settings) ?? ''
@@ -7541,18 +7699,16 @@ export default function App() {
     [heldBusyFollowUps, queuedPrompts]
   )
 
-  const liveConversationIds = (() => {
-    void sessionLiveVersion
+  const liveConversationIds = useMemo(() => {
     const ids = new Set<string>()
     for (const [id, buf] of sessionBuffersRef.current.entries()) {
       if (buf.loading || buf.sendInFlight) ids.add(id)
     }
     if (loading && activeConversationId) ids.add(activeConversationId)
     return ids
-  })()
+  }, [sessionLiveVersion, loading, activeConversationId])
 
-  const waitingConversationIds = (() => {
-    void sessionLiveVersion
+  const waitingConversationIds = useMemo(() => {
     const ids = new Set<string>()
     for (const [id, buf] of sessionBuffersRef.current.entries()) {
       if (buf.approval) ids.add(id)
@@ -7562,7 +7718,7 @@ export default function App() {
       if (id) ids.add(id)
     }
     return ids
-  })()
+  }, [sessionLiveVersion, loading, activeConversationId, approval])
 
   return (
     <div className={`app-shell${popoutRoute ? ' app-shell--popout' : ''}`}>
@@ -7581,23 +7737,23 @@ export default function App() {
           scheduledConversationIds={scheduledConversationIds}
           activityToggleNonce={activityToggleNonce}
           onSelectWorkspace={handleSelectWorkspace}
-          onSelectConversation={handleSelectConversation}
-          onAddWorkspace={handleAddWorkspace}
-          onDeleteWorkspace={handleDeleteWorkspace}
-          onTogglePinWorkspace={handleTogglePinWorkspace}
-          onRenameWorkspace={(id, label) => void handleRenameWorkspace(id, label)}
-          onEditProjectFolders={(id) => setEditProjectId(id)}
-          onCreatePermanentWorktree={(id) => void handleCreatePermanentWorktree(id)}
-          onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
-          onArchiveConversation={(ws, id) => void handleArchiveConversation(ws, id)}
-          onArchiveProjectChats={(ws) => void handleArchiveProjectChats(ws)}
-          onRenameConversation={(ws, id, title) => void handleRenameConversation(ws, id, title)}
-          onTogglePinConversation={(ws, id) => void handleTogglePinConversation(ws, id)}
+          onSelectConversation={handleSelectConversationUi}
+          onAddWorkspace={handleAddWorkspaceUi}
+          onDeleteWorkspace={handleDeleteWorkspaceUi}
+          onTogglePinWorkspace={handleTogglePinWorkspaceUi}
+          onRenameWorkspace={handleRenameWorkspaceUi}
+          onEditProjectFolders={handleEditProjectFolders}
+          onCreatePermanentWorktree={handleCreatePermanentWorktreeUi}
+          onNewConversation={handleNewConversationUi}
+          onDeleteConversation={handleDeleteConversationUi}
+          onArchiveConversation={handleArchiveConversationUi}
+          onArchiveProjectChats={handleArchiveProjectChatsUi}
+          onRenameConversation={handleRenameConversationUi}
+          onTogglePinConversation={handleTogglePinConversationUi}
           renameRequestId={renameRequestId}
-          onRenameRequestHandled={() => setRenameRequestId(null)}
-          onNavigate={handleNavigate}
-          onClearUnread={() => void handleMarkConversationsRead()}
+          onRenameRequestHandled={handleRenameRequestHandled}
+          onNavigate={handleNavigateUi}
+          onClearUnread={handleMarkConversationsRead}
           onToggleActivity={handleToggleActivity}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
@@ -7617,29 +7773,15 @@ export default function App() {
               onOpenPullRequest={handleOpenPullRequest}
               worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
               onOpenWorktree={handleOpenWorktree}
-              onCreateBranchHere={() => void handleCreateBranchHere()}
+              onCreateBranchHere={handleCreateBranchHereUi}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
               onShare={openShareThread}
               onFork={activeConversationId ? handleForkCurrentThread : undefined}
-              onPopOut={() => {
-                const ws = settingsRef.current.activeWorkspaceId
-                const id = activeConversationIdRef.current
-                if (ws && id) {
-                  void window.sharker.openThreadWindow?.(
-                    ws,
-                    id,
-                    conversationListRef.current.find((c) => c.id === id)?.title
-                  )
-                }
-              }}
+              onPopOut={handlePopOut}
               onToggleSidebar={toggleSidebar}
               onToggleRightPanel={handleToggleRightPanel}
-              onNewConversation={() => {
-                const wsId = settingsRef.current.activeWorkspaceId
-                if (wsId) void handleNewConversation(wsId)
-                else void handleAddWorkspace()
-              }}
+              onNewConversation={handleToolbarNewConversation}
             />
             {pendingPlan && (
               <PlanBuildBar
@@ -7718,19 +7860,8 @@ export default function App() {
               onOpenSubAgent={handleOpenSubAgent}
               onOpenChangedFiles={popoutRoute ? undefined : handleOpenChangedFiles}
               toolOutputDisplay={settings.toolOutputDisplay}
-              onAskInSideChat={(prompt) => {
-                void handleSlashActionRef.current(
-                  {
-                    name: 'side',
-                    description: '旁路新线程',
-                    scope: 'ui',
-                    action: 'side_conversation',
-                    category: 'session'
-                  },
-                  prompt
-                )
-              }}
-              onInsertComposer={(text) => seedComposer(text, 'append')}
+              onAskInSideChat={handleAskInSideChat}
+              onInsertComposer={handleInsertComposer}
               copyPicker={copyPicker}
               onCopyPick={handleCopyPick}
               onCopyPickerClose={handleCopyPickerClose}
@@ -7818,7 +7949,7 @@ export default function App() {
           }
           isHome={false}
           onTabChange={setRightPanelTab}
-          onClose={() => setRightPanelOpen(false)}
+          onClose={handleCloseRightPanel}
           changesRevision={changesRevision}
           lastTurnPaths={lastTurnPaths}
           reviewFocus={reviewFocus}
@@ -7827,28 +7958,14 @@ export default function App() {
           conversationId={activeConversationId}
           focusSubAgentId={focusSubAgentId}
           pendingTerminalCommand={pendingTerminalCommand}
-          onPendingTerminalCommandSent={() => setPendingTerminalCommand(null)}
+          onPendingTerminalCommandSent={handlePendingTerminalCommandSent}
           terminalClearTick={terminalClearTick}
           gitBranchPrefix={settings.gitBranchPrefix ?? ''}
           filePreview={filePreview}
           extraRoots={fileSearchExtraRoots}
-          onAskInSideChat={(prompt) => {
-            void handleSlashActionRef.current(
-              {
-                name: 'side',
-                description: '旁路新线程',
-                scope: 'ui',
-                action: 'side_conversation',
-                category: 'session'
-              },
-              prompt
-            )
-          }}
-          onInsertComposer={(text) => seedComposer(text, 'append')}
-          onSendReviewComments={(prompt) => {
-            setPage('chat')
-            void handlePromptSubmit(prompt)
-          }}
+          onAskInSideChat={handleAskInSideChat}
+          onInsertComposer={handleInsertComposer}
+          onSendReviewComments={handleSendReviewComments}
         />
         )}
         <ShortcutsHelp open={shortcutsHelpOpen} onClose={() => setShortcutsHelpOpen(false)} />
