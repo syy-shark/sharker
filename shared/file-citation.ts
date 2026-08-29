@@ -1,8 +1,12 @@
 /**
  * 对话里的本地文件引用：对标 Codex TUI / 桌面端 `path:line`、`#L`、`(line N)`。
  * 拒绝尾斜杠目录与 `a\\` 假路径，避免把反斜杠硬换行收成文件芯片。
+ * 百分号路径先解一层再打开 / 揭示 / 复制（对标 Codex #13123）。
+ * 右键：打开预览 / 在访达中显示 / 复制路径；不接自定义 Open with。
  * @see shared/ARCH.md
  */
+
+import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 /** 常见源码扩展名，无斜杠时也认作路径 */
 const CODE_EXT =
@@ -14,6 +18,41 @@ export type FileCitation = {
   line?: number
   endLine?: number
   column?: number
+}
+
+/** 官方 #13123：打开 / 复制前把 `%E4…` / `%20` 解成原生路径，只解一层 */
+export function decodeCitationFilesystemPath(raw: string): string {
+  const text = String(raw || '')
+  if (!/%[0-9A-Fa-f]{2}/.test(text)) return text
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return text
+  }
+}
+
+/** 复制到剪贴板的本机路径；Windows 还原反斜杠 */
+export function formatCitationClipboardPath(
+  abs: string,
+  platform: RevealFolderPlatform = 'linux'
+): string {
+  const path = String(abs || '').trim()
+  if (!path) return ''
+  if (platform === 'win32') return path.replace(/\//g, '\\')
+  return path
+}
+
+export type FileCitationMenuAction = 'open' | 'reveal' | 'copy'
+
+/** 引用右键（对标 Codex file citation Open / Open in Finder / Copy path） */
+export function fileCitationMenuItems(
+  platform: RevealFolderPlatform = 'linux'
+): Array<{ action: FileCitationMenuAction; title: string }> {
+  return [
+    { action: 'open', title: '打开预览' },
+    { action: 'reveal', title: revealInFolderLabel(platform) },
+    { action: 'copy', title: '复制路径' }
+  ]
 }
 
 /** 规范化分隔符，去掉一层包裹反引号 */
@@ -29,7 +68,7 @@ export function normalizeCitationPath(raw: string): string {
       text = text.slice('file://'.length)
     }
   }
-  return text.replace(/\\/g, '/')
+  return decodeCitationFilesystemPath(text).replace(/\\/g, '/')
 }
 
 /** 看起来像本地文件路径，而不是 URL / 时间 / 普通词 */

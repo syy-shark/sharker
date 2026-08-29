@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  decodeCitationFilesystemPath,
+  fileCitationMenuItems,
+  formatCitationClipboardPath,
   looksLikeFilePath,
   matchFileCitationAt,
   parseFileCitation,
@@ -65,5 +68,30 @@ describe('file citations', () => {
     expect(resolveCitationPath('lib/util.ts', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/proj/lib/util.ts')
     expect(resolveCitationPath('extra/util.ts', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/extra/util.ts')
     expect(resolveCitationPath('extra', '/tmp/proj', ['/tmp/extra'])).toBe('/tmp/extra')
+    expect(decodeCitationFilesystemPath('plain/src/a.ts')).toBe('plain/src/a.ts')
+    expect(
+      decodeCitationFilesystemPath(
+        '/Users/me/CodexProjectRoots/%E6%8A%80%E8%83%BD/output/a.ts'
+      )
+    ).toBe('/Users/me/CodexProjectRoots/技能/output/a.ts')
+    expect(
+      parseFileCitation('/tmp/%E6%8A%80%E8%83%BD/a.ts:12')
+    ).toEqual({ path: '/tmp/技能/a.ts', line: 12, column: undefined })
+    expect(decodeCitationFilesystemPath('%E6%8A%80%E8%83%BD')).toBe(
+      decodeCitationFilesystemPath(decodeCitationFilesystemPath('%E6%8A%80%E8%83%BD'))
+    )
+    expect(formatCitationClipboardPath('C:/Users/me/.codex/a.ts', 'win32')).toBe(
+      'C:\\Users\\me\\.codex\\a.ts'
+    )
+    expect(formatCitationClipboardPath('/tmp/proj/src/a.ts', 'darwin')).toBe(
+      '/tmp/proj/src/a.ts'
+    )
+    expect(fileCitationMenuItems('darwin').map((item) => item.action)).toEqual([
+      'open',
+      'reveal',
+      'copy'
+    ])
+    expect(fileCitationMenuItems('darwin')[1]?.title).toBe('在访达中显示')
+    expect(fileCitationMenuItems('win32')[2]?.title).toBe('复制路径')
   })
 })

@@ -137,7 +137,11 @@ import {
   UI_FONT_SCALE_DEFAULT
 } from '../shared/ui-font-scale'
 import { parseThreadWindowHash } from '../shared/thread-window'
-import { OPEN_WORKSPACE_FILE_EVENT, REVEAL_WORKSPACE_FILE_EVENT } from './lib/open-workspace-file'
+import {
+  COPY_WORKSPACE_FILE_PATH_EVENT,
+  OPEN_WORKSPACE_FILE_EVENT,
+  REVEAL_WORKSPACE_FILE_EVENT
+} from './lib/open-workspace-file'
 import {
   composeReviewScopeArgs,
   formatReviewPrompt,
@@ -170,7 +174,7 @@ import {
   type AutomationJob
 } from '../shared/automation'
 import { parseReviewFindings } from '../shared/review-comment'
-import { resolveCitationPath } from '../shared/file-citation'
+import { formatCitationClipboardPath, resolveCitationPath } from '../shared/file-citation'
 import { fileOpenerUri, parseFileOpener } from '../shared/file-opener'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
@@ -3439,11 +3443,22 @@ export default function App() {
       const abs = conversationAbs(path)
       if (abs && window.sharker.showItemInFolder) void window.sharker.showItemInFolder(abs)
     }
+    const onCopyPath = (event: Event) => {
+      const path = (event as CustomEvent<{ path?: string }>).detail?.path
+      if (!path || popoutRoute) return
+      const abs = conversationAbs(path)
+      if (!abs || !navigator.clipboard?.writeText) return
+      void navigator.clipboard.writeText(
+        formatCitationClipboardPath(abs, window.sharker?.platform)
+      )
+    }
     window.addEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
     window.addEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
+    window.addEventListener(COPY_WORKSPACE_FILE_PATH_EVENT, onCopyPath)
     return () => {
       window.removeEventListener(OPEN_WORKSPACE_FILE_EVENT, onCite)
       window.removeEventListener(REVEAL_WORKSPACE_FILE_EVENT, onReveal)
+      window.removeEventListener(COPY_WORKSPACE_FILE_PATH_EVENT, onCopyPath)
     }
   }, [popoutRoute])
 
