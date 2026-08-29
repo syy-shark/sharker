@@ -236,6 +236,44 @@ describe('process phases privacy', () => {
     expect(thinkThenSettled).toHaveLength(2)
     expect(thinkThenSettled![0]).toBe(doneRetargeted![0])
     expect(thinkThenSettled![1].segment).toBe(cmdNextSettled)
+    const firstReplyEarly: TurnSegment = {
+      id: 'reply-settle-1',
+      kind: 'text',
+      status: 'done',
+      content: 'Hi',
+      startedAt: 10.5,
+      endedAt: 10.6
+    }
+    const thinkAnswerSettled = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, nextThink, firstReplyEarly, cmdNextSettled],
+      true
+    )
+    expect(thinkAnswerSettled).not.toBeNull()
+    expect(thinkAnswerSettled).toHaveLength(2)
+    expect(thinkAnswerSettled![0]).toBe(doneRetargeted![0])
+    expect(thinkAnswerSettled![1].segment).toBe(cmdNextSettled)
+    const writeThinkSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, nextThink, cmdNextSettled],
+      true
+    )
+    expect(writeThinkSettled).not.toBeNull()
+    expect(writeThinkSettled).toHaveLength(2)
+    expect(writeThinkSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writeThinkSettled![1].segment).toBe(cmdNextSettled)
+    const writeAnswerSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, firstReplyEarly, cmdNextSettled],
+      true
+    )
+    expect(writeAnswerSettled).not.toBeNull()
+    expect(writeAnswerSettled).toHaveLength(2)
+    expect(writeAnswerSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writeAnswerSettled![1].segment).toBe(cmdNextSettled)
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
     ).toBe(appended)
@@ -952,6 +990,36 @@ describe('process phases privacy', () => {
     expect(settleAndThinkDemo).toHaveLength(2)
     expect(settleAndThinkDemo![0].segment).toBe(cmdDone)
     expect(settleAndThinkDemo![1].segment).toBe(cmdNextDone)
+    const readSettled: TurnSegment = {
+      id: 'read-settle-2',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'done',
+      resultSummary: 'ok',
+      startedAt: 14.5,
+      endedAt: 14.6
+    }
+    const statusThinkAnswerSettled = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatus, nextThinkDone, firstReply, readSettled],
+      true
+    )
+    expect(statusThinkAnswerSettled).not.toBeNull()
+    expect(statusThinkAnswerSettled).toHaveLength(4)
+    expect(statusThinkAnswerSettled![0].segment).toBe(cmdDone)
+    expect(statusThinkAnswerSettled![1].segment).toBe(cmdNextDone)
+    expect(statusThinkAnswerSettled![2].segment).toBe(reconnectStatus)
+    expect(statusThinkAnswerSettled![3].segment).toBe(readSettled)
+    const thinkDemoFenceAppend = appendProcessPhaseStepOnToolStart(
+      doneRetargeted!,
+      [cmdDone],
+      [cmdDone, nextThinkDone, demoFence, inlineDemo],
+      true
+    )
+    expect(thinkDemoFenceAppend).not.toBeNull()
+    expect(thinkDemoFenceAppend).toHaveLength(1)
+    expect(thinkDemoFenceAppend![0]).toBe(doneRetargeted![0])
     const reconnectStatusDone: TurnSegment = { ...reconnectStatus, status: 'done', endedAt: 14 }
     const nextRoundTool: TurnSegment = {
       id: 'read2',

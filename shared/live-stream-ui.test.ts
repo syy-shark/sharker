@@ -37,6 +37,11 @@ import {
   isLiveAnswerSettledToolAppendChange,
   isLiveWriteStatSettledToolAppendChange,
   isLiveAnswerDemoAppendChange,
+  isLiveThinkAnswerSettledToolAppendChange,
+  isLiveStatusThinkAnswerSettledToolAppendChange,
+  isLiveThinkAnswerDemoAppendChange,
+  isLiveWriteStatThinkSettledToolAppendChange,
+  isLiveWriteStatAnswerSettledToolAppendChange,
   findLiveToolInPlaceChange,
   isLiveToolWriteStatAppendChange,
   isLiveWriteStatStatusAppendChange,
@@ -1456,6 +1461,164 @@ describe('live stream ui snapshot', () => {
     })
     expect(isLiveAnswerDemoAppendChange([hello], demoWithFence)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello], demoWithFence)).toBe('tool')
+    let thinkTokenSettled = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 22.3 })
+    thinkTokenSettled = applyStreamChunk(thinkTokenSettled, { type: 'token', content: 'Hi', timestamp: 22.4 })
+    thinkTokenSettled = applyStreamChunk(thinkTokenSettled, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'think-token-settle-1',
+      timestamp: 22.5
+    })
+    thinkTokenSettled = applyStreamChunk(thinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 22.6
+    })
+    expect(isLiveThinkAnswerAppendChange(afterPlanStatus, thinkTokenSettled)).toBe(false)
+    expect(isLiveThinkSettledToolAppendChange(afterPlanStatus, thinkTokenSettled)).toBe(false)
+    expect(isLiveAnswerSettledToolAppendChange(afterPlanStatus, thinkTokenSettled)).toBe(false)
+    expect(isLiveThinkAnswerSettledToolAppendChange(afterPlanStatus, thinkTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, thinkTokenSettled)).toBe('text')
+    expect(nextLiveThinkText('Hmm', afterPlanStatus, thinkTokenSettled)).toBe('HmmNext')
+    const answerAfterThinkTokenSettled = nextLiveAnswerView(answerReadyForSettledTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkTokenSettled
+    })
+    expect(
+      answerAfterThinkTokenSettled.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloSettledPart)
+    expect(answerAfterThinkTokenSettled.parts.some((part) => part.type === 'text' && part.content === 'Hi')).toBe(
+      true
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerReadyForSettledTool,
+        prevSegments: afterPlanStatus,
+        segments: thinkTokenSettled
+      })
+    ).toBe(false)
+    let statusThinkTokenSettled = applyStreamChunk([hello, running], {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'exit 0',
+      timestamp: 22.61
+    })
+    statusThinkTokenSettled = applyStreamChunk(statusThinkTokenSettled, {
+      type: 'status',
+      content: '根据已完成步骤规划下一步…',
+      timestamp: 22.62
+    })
+    statusThinkTokenSettled = applyStreamChunk(statusThinkTokenSettled, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 22.63
+    })
+    statusThinkTokenSettled = applyStreamChunk(statusThinkTokenSettled, {
+      type: 'token',
+      content: 'Hi',
+      timestamp: 22.64
+    })
+    statusThinkTokenSettled = applyStreamChunk(statusThinkTokenSettled, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'status-think-token-settle-1',
+      timestamp: 22.65
+    })
+    statusThinkTokenSettled = applyStreamChunk(statusThinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'status-think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 22.66
+    })
+    expect(isLiveStatusThinkAnswerAppendChange([hello, running], statusThinkTokenSettled)).toBe(false)
+    expect(isLiveStatusThinkAnswerSettledToolAppendChange([hello, running], statusThinkTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], statusThinkTokenSettled)).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello, running], statusThinkTokenSettled)).toBe('HmmNext')
+    let thinkDemoFenceTool = applyStreamChunk(afterPlanStatus, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 22.7
+    })
+    thinkDemoFenceTool = applyStreamChunk(thinkDemoFenceTool, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 22.8
+    })
+    thinkDemoFenceTool = applyStreamChunk(thinkDemoFenceTool, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 22.9
+    })
+    expect(isLiveThinkDemoAppendChange(afterPlanStatus, thinkDemoFenceTool)).toBe(false)
+    expect(isLiveAnswerDemoAppendChange(afterPlanStatus, thinkDemoFenceTool)).toBe(false)
+    expect(isLiveThinkAnswerDemoAppendChange(afterPlanStatus, thinkDemoFenceTool)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, thinkDemoFenceTool)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', afterPlanStatus, thinkDemoFenceTool)).toBe('HmmNext')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerReadyForSettledTool,
+        prevSegments: afterPlanStatus,
+        segments: thinkDemoFenceTool
+      })
+    ).toBe(false)
+    let writeThinkSettled = applyStreamChunk([hello, running], {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      fileDiff: { path: 'a.ts', lines: [{ kind: 'add', content: 'hi' }], stats: { added: 1, removed: 0 } },
+      timestamp: 23.1
+    })
+    writeThinkSettled = applyStreamChunk(writeThinkSettled, { type: 'think', content: 'Next', timestamp: 23.2 })
+    writeThinkSettled = applyStreamChunk(writeThinkSettled, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'write-think-settle-1',
+      timestamp: 23.3
+    })
+    writeThinkSettled = applyStreamChunk(writeThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'write-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 23.4
+    })
+    expect(isLiveWriteStatThinkToolAppendChange([hello, running], writeThinkSettled)).toBe(false)
+    expect(isLiveWriteStatThinkSettledToolAppendChange([hello, running], writeThinkSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], writeThinkSettled)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello, running], writeThinkSettled)).toBe('HmmNext')
+    let writeTokenSettled = applyStreamChunk([hello, running], {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      fileDiff: { path: 'a.ts', lines: [{ kind: 'add', content: 'hi' }], stats: { added: 1, removed: 0 } },
+      timestamp: 23.5
+    })
+    writeTokenSettled = applyStreamChunk(writeTokenSettled, { type: 'token', content: 'Hi', timestamp: 23.6 })
+    writeTokenSettled = applyStreamChunk(writeTokenSettled, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'write-token-settle-1',
+      timestamp: 23.7
+    })
+    writeTokenSettled = applyStreamChunk(writeTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'write-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 23.8
+    })
+    expect(isLiveWriteStatAnswerAppendChange([hello, running], writeTokenSettled)).toBe(false)
+    expect(isLiveWriteStatAnswerSettledToolAppendChange([hello, running], writeTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], writeTokenSettled)).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: writeTokenSettled
+      })
+    ).toBe(false)
     let thinkThenTool = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 21 })
     thinkThenTool = applyStreamChunk(thinkThenTool, {
       type: 'tool_start',
@@ -1507,6 +1670,33 @@ describe('live stream ui snapshot', () => {
       )
     ).toBe(true)
     expect(processAfterThinkSettled.thinkText).toBe(processReadyForPlanTool.thinkText + 'Next')
+    const processAfterThinkTokenSettled = nextLiveProcessView(processReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkTokenSettled
+    })
+    expect(processAfterThinkTokenSettled.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkTokenSettled.processForFlow.some((segment) => segment.kind === 'text')).toBe(false)
+    expect(
+      processAfterThinkTokenSettled.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === 'read_file' && segment.status === 'done'
+      )
+    ).toBe(true)
+    expect(processAfterThinkTokenSettled.thinkText).toBe(processReadyForPlanTool.thinkText + 'Next')
+    const processAfterThinkDemoFence = nextLiveProcessView(processReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkDemoFenceTool
+    })
+    expect(processAfterThinkDemoFence.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(
+      processAfterThinkDemoFence.processForFlow.some(
+        (segment) => segment.toolName === 'present_inline_demo'
+      )
+    ).toBe(false)
+    expect(processAfterThinkDemoFence.thinkText).toBe(processReadyForPlanTool.thinkText + 'Next')
     const processAfterThinkTool = nextLiveProcessView(processReadyForPlanTool, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: thinkThenTool
