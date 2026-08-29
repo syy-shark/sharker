@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
   BROWSER_COMMENT_PREFIX,
@@ -5,8 +8,10 @@ import {
   browserCommentSetScript,
   canAnnotateBrowserUrl,
   formatBrowserCommentExcerpt,
+  isBrowserAnnotateToggleChord,
   parseBrowserCommentMessage,
-  placeBrowserCommentPopover
+  placeBrowserCommentPopover,
+  shouldToggleBrowserAnnotate
 } from './browser-comment'
 
 describe('browser comment', () => {
@@ -65,5 +70,19 @@ describe('browser comment', () => {
     expect(browserCommentAnnotateScript()).toContain(BROWSER_COMMENT_PREFIX)
     expect(browserCommentSetScript(true)).toContain('set(true)')
     expect(browserCommentSetScript(false)).toContain('set(false)')
+    expect(isBrowserAnnotateToggleChord({ key: '.', metaKey: true })).toBe(true)
+    expect(isBrowserAnnotateToggleChord({ key: '.', ctrlKey: true })).toBe(true)
+    expect(isBrowserAnnotateToggleChord({ key: '.', metaKey: true, shiftKey: true })).toBe(false)
+    expect(isBrowserAnnotateToggleChord({ key: '.', metaKey: true, isComposing: true })).toBe(false)
+    expect(isBrowserAnnotateToggleChord({ key: 'l', metaKey: true })).toBe(false)
+    expect(shouldToggleBrowserAnnotate('https://localhost:3000', false)).toBe(true)
+    expect(shouldToggleBrowserAnnotate('about:blank', false)).toBe(false)
+    expect(shouldToggleBrowserAnnotate('about:blank', true)).toBe(true)
+    const browserSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedBrowser.tsx'),
+      'utf8'
+    )
+    expect(browserSrc).toContain('isBrowserAnnotateToggleChord')
+    expect(browserSrc).toContain('toggleAnnotate')
   })
 })

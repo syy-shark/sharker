@@ -15,8 +15,10 @@ import {
   browserCommentSetScript,
   canAnnotateBrowserUrl,
   formatBrowserCommentExcerpt,
+  isBrowserAnnotateToggleChord,
   parseBrowserCommentMessage,
   placeBrowserCommentPopover,
+  shouldToggleBrowserAnnotate,
   type BrowserCommentPick
 } from '../../../shared/browser-comment'
 import {
@@ -351,7 +353,12 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
     void navigator.clipboard.writeText(text)
   }
 
-  /** 浏览器聚焦时：⌘L 地址栏、⌘R 刷新、⌘←/→ 前进后退、⌘⇧C 复制网址、侧键导航 */
+  const toggleAnnotate = () => {
+    if (!shouldToggleBrowserAnnotate(urlRef.current, annotatingRef.current)) return
+    setAnnotating((on) => !on)
+  }
+
+  /** 浏览器聚焦时：⌘L 地址栏、⌘R 刷新、⌘. 批注、⌘←/→ 前进后退、⌘⇧C 复制网址、侧键导航 */
   useEffect(() => {
     const inBrowser = (node: EventTarget | null) => {
       const host = shellRef.current
@@ -409,6 +416,12 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
         e.preventDefault()
         e.stopPropagation()
         copyUrl()
+        return
+      }
+      if (isBrowserAnnotateToggleChord(e)) {
+        e.preventDefault()
+        e.stopPropagation()
+        toggleAnnotate()
       }
     }
     const onMouse = (e: MouseEvent) => {
@@ -565,14 +578,11 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
           title={
             canAnnotateBrowserUrl(url)
               ? annotating
-                ? '关闭批注'
-                : '批注：点元素或拖选区域'
+                ? '关闭批注 ⌘.'
+                : '批注：点元素或拖选区域 ⌘.'
               : '打开网页后再批注'
           }
-          onClick={() => {
-            if (!canAnnotateBrowserUrl(url) && !annotating) return
-            setAnnotating((on) => !on)
-          }}
+          onClick={toggleAnnotate}
         >
           <PenLine size={14} strokeWidth={2} aria-hidden />
           批注

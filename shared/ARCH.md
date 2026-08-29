@@ -69,7 +69,7 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、⌘⇧D 运行环境动作 1（对标 Codex Run environment action 1；Ctrl⇧D 留给听写）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌘⌥B 开关审查面板、⌃⇧G 打开审查（对标 Codex Toggle review panel / Open review tab）、⌃⇧M 打开模型选择（对标 Codex Open model picker，不认 ⌘⇧M）、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；浏览器聚焦 ⌘R / ⌘⇧R 刷新 / 无缓存刷新；终端聚焦 ⌘K 清屏判定） |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、⌘⇧D 运行环境动作 1（对标 Codex Run environment action 1；Ctrl⇧D 留给听写）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌘⌥B 开关审查面板、⌃⇧G 打开审查（对标 Codex Toggle review panel / Open review tab）、⌃⇧M 打开模型选择（对标 Codex Open model picker，不认 ⌘⇧M）、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；浏览器聚焦 ⌘R / ⌘⇧R 刷新 / 无缓存刷新、⌘. 浏览/批注；终端聚焦 ⌘K 清屏判定） |
 | `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌘⌥B 开关审查 / ⌃⇧G 打开审查（⌘⇧G 不打开审查）、⌃⇧M 打开模型选择（⌘⇧M 不打开）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 项目批量归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
@@ -208,7 +208,7 @@
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览 / 浏览器批注 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
-| `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本（对标 Codex Annotation mode / Comment on the page）。不发明 @Browser / Adjust |
+| `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注（对标 Codex Annotation mode / Toggle browser browse or comment mode）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
 | `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除（对标 Codex Settings → Browser / Search from the address bar）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史 |
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |

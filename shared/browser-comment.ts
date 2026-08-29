@@ -26,6 +26,25 @@ export function canAnnotateBrowserUrl(url: string): boolean {
   return /^(https?:|file:)/i.test(raw)
 }
 
+/** 官方 ⌘.：切换浏览 / 批注（仅浏览器聚焦时由宿主判断） */
+export function isBrowserAnnotateToggleChord(event: {
+  key: string
+  metaKey?: boolean
+  ctrlKey?: boolean
+  altKey?: boolean
+  shiftKey?: boolean
+  isComposing?: boolean
+}): boolean {
+  if (event.isComposing) return false
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return false
+  return event.key === '.'
+}
+
+/** 已在批注中可关掉；起始页不打开 */
+export function shouldToggleBrowserAnnotate(url: string, annotating: boolean): boolean {
+  return annotating || canAnnotateBrowserUrl(url)
+}
+
 /** 从 webview console-message 抽出批注点 */
 export function parseBrowserCommentMessage(message: string): BrowserCommentPick | 'cancel' | null {
   const raw = String(message || '')

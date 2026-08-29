@@ -4,7 +4,8 @@ import {
   isEmbeddedTerminalTarget,
   isTerminalClearChord,
   matchDefaultWorkbenchShortcut,
-  shouldOpenReviewPanel
+  shouldOpenReviewPanel,
+  WORKBENCH_SHORTCUT_HELP
 } from './workbench-shortcuts'
 import { matchWorkbenchShortcut } from './keymap'
 
@@ -170,6 +171,9 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'Tab', metaKey: true }))).toBeNull()
     expect(matchWorkbenchShortcut(ev({ key: 'PageDown', ctrlKey: true }))).toBe('next_thread')
     expect(matchWorkbenchShortcut(ev({ key: 'PageUp', ctrlKey: true }))).toBe('prev_thread')
+    expect(WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘.' && row.title.includes('批注'))).toBe(
+      true
+    )
   })
 
   it('cycles conversation ids', () => {
