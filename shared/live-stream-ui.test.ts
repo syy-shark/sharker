@@ -268,7 +268,7 @@ describe('live stream ui snapshot', () => {
         segments: [hello, runningPreview]
       })
     ).toBe(false)
-    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, runningPreview])).toBe(null)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, runningPreview])).toBe('tool')
     const processWhileTool = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
@@ -290,7 +290,15 @@ describe('live stream ui snapshot', () => {
         prevSegments: [hello, running],
         segments: [hello, runningPreview]
       })
-    ).toBe(false)
+    ).toBe(true)
+    const processWhilePreview = nextLiveProcessView(processWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningPreview]
+    })
+    expect(processWhilePreview.processForFlow.some((segment) => segment === runningPreview)).toBe(
+      true
+    )
+    expect(processWhilePreview.processForFlow.some((segment) => segment === running)).toBe(false)
     expect(isLiveLastLineOnlyToolChange(running, runningLine)).toBe(true)
     expect(isLiveLastLineOnlyToolChange(running, runningPreview)).toBe(false)
     expect(shouldSkipLiveStreamPublish([hello, running], [hello, runningLine])).toBe(true)

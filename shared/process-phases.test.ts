@@ -93,9 +93,16 @@ describe('process phases privacy', () => {
       ...cmdRunning,
       editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
     }
-    expect(
-      retargetProcessPhaseStepsOnToolMeta(cmdSteps, [cmdRunning], [cmdPreview], true)
-    ).toBeNull()
+    const previewRetargeted = retargetProcessPhaseStepsOnToolMeta(
+      cmdSteps,
+      [cmdRunning],
+      [cmdPreview],
+      true
+    )
+    expect(previewRetargeted).not.toBeNull()
+    expect(previewRetargeted).not.toBe(cmdSteps)
+    expect(previewRetargeted![0].segment).toBe(cmdPreview)
+    expect(previewRetargeted![0].id).toBe(cmdSteps[0].id)
     const cmdDone: TurnSegment = { ...cmdRunning, status: 'done' }
     const doneRetargeted = retargetProcessPhaseStepsOnToolMeta(
       cmdSteps,

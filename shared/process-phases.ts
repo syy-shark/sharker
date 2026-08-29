@@ -21,7 +21,7 @@ import {
   resolveReconnectLiveStatus
 } from './stream-reconnect'
 import {
-  findLiveToolInPlaceChange,
+  findLiveToolRetargetChange,
   isLiveAnswerAppendChange,
   isLiveThinkAppendChange,
   isLiveToolAppendChange
@@ -629,7 +629,7 @@ export function remapProcessPhaseStepsOnThinkAppend(
   return prevSteps
 }
 
-/** 同一工具只改短路径详情或收束：只换该步（不必是末步）；命令末行退回原数组（对标 Codex #22860 / #19260 / complete_call） */
+/** 同一工具只改短路径详情、写盘 +/- 或收束：只换该步（不必是末步）；命令末行退回原数组（对标 Codex #22860 / #19260 / complete_call / ~0.5s 逐文件） */
 export function retargetProcessPhaseStepsOnToolMeta(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -637,7 +637,7 @@ export function retargetProcessPhaseStepsOnToolMeta(
   isStreaming: boolean
 ): ProcessPhaseStep[] | null {
   if (!prevSteps.length) return null
-  const change = findLiveToolInPlaceChange(prevSegments, segments)
+  const change = findLiveToolRetargetChange(prevSegments, segments)
   if (!change) return null
   const index = prevSteps.findIndex((step) => step.segment === change.from)
   if (index < 0) return prevSteps

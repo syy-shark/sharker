@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步，对标 Codex exec_cell complete_call）；写盘 +/- / 参数只换该步、回答仍重拆 diff（对标 ~0.5s 逐文件，不复制 #38695）；前缀没变或只收束思考/status/散文时新工具只追加末步并封回答尾、新思考只换旁白、新散文只开回答尾；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -229,6 +229,43 @@ export function findLiveToolInPlaceChange(
   return found
 }
 
+/** 同一工具只改写盘 +/- / 参数：就地换该步，回答仍重拆 diff（对标 Codex ~0.5s 逐文件，不复制 #38695） */
+export function isLiveToolWriteStatChange(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'tool' || next.kind !== 'tool') return false
+  if (prev.id !== next.id || prev.toolName !== next.toolName) return false
+  if (prev.status !== next.status) return false
+  return (
+    prev.toolArgs !== next.toolArgs ||
+    prev.fileDiff !== next.fileDiff ||
+    prev.fileDiffs !== next.fileDiffs ||
+    prev.editPreview !== next.editPreview
+  )
+}
+
+export function findLiveToolWriteStatChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): { from: TurnSegment; to: TurnSegment } | null {
+  if (!prev || prev.length !== next.length) return null
+  let found: { from: TurnSegment; to: TurnSegment } | null = null
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (before === after) continue
+    if (!before || !after || !isLiveToolWriteStatChange(before, after)) return null
+    if (found) return null
+    found = { from: before, to: after }
+  }
+  return found
+}
+
+export function findLiveToolRetargetChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): { from: TurnSegment; to: TurnSegment } | null {
+  return findLiveToolInPlaceChange(prev, next) ?? findLiveToolWriteStatChange(prev, next)
+}
+
 /** 同一工具只把详情换成命令末行：过程切片保持原数组，不抬 TurnFlow */
 export function isLiveLastLineOnlyToolChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (!isLiveToolMetaOnlyChange(prev, next)) return false
@@ -258,6 +295,7 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveAnswerAppendChange(prevSegments, segments)) return 'text'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
+  if (findLiveToolWriteStatChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -408,7 +446,7 @@ export function shouldRetargetLiveProcessOnToolMeta(input: {
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
   if (input.prev.generatingDemo) return false
-  return findLiveToolInPlaceChange(input.prevSegments, input.segments) !== null
+  return findLiveToolRetargetChange(input.prevSegments, input.segments) !== null
 }
 
 function remapProcessFlowRefs(
@@ -594,7 +632,7 @@ export function nextLiveProcessView(
       segments
     })
   ) {
-    const change = findLiveToolInPlaceChange(processHold.segments, segments)
+    const change = findLiveToolRetargetChange(processHold.segments, segments)
     if (!change) return prev
     if (isLiveLastLineOnlyToolChange(change.from, change.to)) {
       return prev
