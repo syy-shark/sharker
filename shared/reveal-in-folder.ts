@@ -110,8 +110,13 @@ export const HELP_MENU_LABEL = 'Help'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
 export const FILE_CLOSE_LABEL = 'Close'
 export const TOGGLE_FULL_SCREEN_LABEL = 'Toggle Full Screen'
-/** 官方 View 菜单（对标 Codex #30659 Open Browser Tab） */
+/** 官方 View 菜单（对标 Codex #30659 Open Browser Tab / Find / Previous Chat / Next Chat / Back / Forward） */
 export const OPEN_BROWSER_TAB_MENU_LABEL = 'Open Browser Tab'
+export const FIND_MENU_LABEL = 'Find'
+export const PREVIOUS_CHAT_MENU_LABEL = 'Previous Chat'
+export const NEXT_CHAT_MENU_LABEL = 'Next Chat'
+export const BACK_MENU_LABEL = 'Back'
+export const FORWARD_MENU_LABEL = 'Forward'
 
 /** 官方快捷键 / 命令面板（对标 developers.openai.com/codex/app/commands） */
 export const OPEN_COMMAND_MENU_LABEL = 'Open command menu'

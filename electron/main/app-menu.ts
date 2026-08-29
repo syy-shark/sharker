@@ -13,7 +13,12 @@ import {
   HELP_MENU_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  BACK_MENU_LABEL,
+  FIND_MENU_LABEL,
+  FORWARD_MENU_LABEL,
+  NEXT_CHAT_MENU_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
+  PREVIOUS_CHAT_MENU_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -166,6 +171,36 @@ export function installApplicationMenu(): void {
           accelerator: 'Command+T',
           registerAccelerator: false,
           ...send('open_browser')
+        },
+        {
+          label: FIND_MENU_LABEL,
+          accelerator: 'Command+F',
+          registerAccelerator: false,
+          ...send('find_in_thread')
+        },
+        {
+          label: PREVIOUS_CHAT_MENU_LABEL,
+          accelerator: 'Command+Shift+[',
+          registerAccelerator: false,
+          ...send('prev_thread')
+        },
+        {
+          label: NEXT_CHAT_MENU_LABEL,
+          accelerator: 'Command+Shift+]',
+          registerAccelerator: false,
+          ...send('next_thread')
+        },
+        {
+          label: BACK_MENU_LABEL,
+          accelerator: 'Command+[',
+          registerAccelerator: false,
+          ...send('nav_back')
+        },
+        {
+          label: FORWARD_MENU_LABEL,
+          accelerator: 'Command+]',
+          registerAccelerator: false,
+          ...send('nav_forward')
         },
         { type: 'separator' },
         {

@@ -54,7 +54,12 @@ import {
   WINDOW_MENU_LABEL,
   HELP_MENU_LABEL,
   TOGGLE_FULL_SCREEN_LABEL,
-  OPEN_BROWSER_TAB_MENU_LABEL
+  OPEN_BROWSER_TAB_MENU_LABEL,
+  FIND_MENU_LABEL,
+  PREVIOUS_CHAT_MENU_LABEL,
+  NEXT_CHAT_MENU_LABEL,
+  BACK_MENU_LABEL,
+  FORWARD_MENU_LABEL
 } from './reveal-in-folder'
 
 describe('reveal in folder', () => {
@@ -165,5 +170,10 @@ describe('reveal in folder', () => {
     expect(HELP_MENU_LABEL).toBe('Help')
     expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
     expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
+    expect(FIND_MENU_LABEL).toBe('Find')
+    expect(PREVIOUS_CHAT_MENU_LABEL).toBe('Previous Chat')
+    expect(NEXT_CHAT_MENU_LABEL).toBe('Next Chat')
+    expect(BACK_MENU_LABEL).toBe('Back')
+    expect(FORWARD_MENU_LABEL).toBe('Forward')
   })
 })

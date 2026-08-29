@@ -7207,6 +7207,32 @@ export default function App() {
         handleOpenBrowserTab()
         return
       }
+      if (action === 'find_in_thread') {
+        setPage('chat')
+        setComposerIntent('find')
+        return
+      }
+      if (action === 'prev_thread' || action === 'next_thread') {
+        const wsId = settingsRef.current.activeWorkspaceId
+        const nextId = adjacentConversationId(
+          conversationListRef.current.map((c) => c.id),
+          activeConversationIdRef.current,
+          action === 'next_thread' ? 1 : -1
+        )
+        if (wsId && nextId) {
+          setPage('chat')
+          void handleSelectConversation(wsId, nextId)
+        }
+        return
+      }
+      if (action === 'nav_back') {
+        handleNavStep('back')
+        return
+      }
+      if (action === 'nav_forward') {
+        handleNavStep('forward')
+        return
+      }
       if (action === 'shortcut_help') {
         void handleNavigate('settings', 'shortcuts')
         return
@@ -7223,8 +7249,10 @@ export default function App() {
     handleAddWorkspace,
     handleNativeOrAppUndo,
     handleNavigate,
+    handleNavStep,
     handleNewConversation,
     handleOpenBrowserTab,
+    handleSelectConversation,
     openShareThread,
     copyConversationMarkdown,
     handleShortcutPanel,
