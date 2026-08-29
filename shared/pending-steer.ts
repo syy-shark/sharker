@@ -172,6 +172,14 @@ export function historyWithoutSteerIds<T extends { id: string }>(
   return next.length === messages.length ? messages : next
 }
 
+/**
+ * 排队芯片主操作：直播中只注入当前回合（对标 Codex queued chip Steer），
+ * 空闲才立刻发送。失败必须把条目留在队列，不得中止直播。
+ */
+export function queuedChipPrimaryAction(busy: boolean): 'steer' | 'send' {
+  return busy ? 'steer' : 'send'
+}
+
 /** 收束助手行插在残留注入气泡之前（对标 leftover UserMessage 出现在本轮回答之后） */
 export function placeMessageBeforeIds<T extends { id: string }>(
   messages: T[],

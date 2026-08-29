@@ -10,6 +10,7 @@ import {
   joinLeftoverSteerPrompt,
   leftoverSteerDisposition,
   placeMessageBeforeIds,
+  queuedChipPrimaryAction,
   listPendingSteers,
   shouldDrainPendingSteers,
   updatePendingSteerText
@@ -58,5 +59,7 @@ describe('pending steer mailbox', () => {
       ['s-late']
     )
     expect(placed.map((m) => m.id)).toEqual(['s-a', 'a1', 's-late'])
+    expect(queuedChipPrimaryAction(true)).toBe('steer')
+    expect(queuedChipPrimaryAction(false)).toBe('send')
   })
 })

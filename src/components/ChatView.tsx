@@ -1901,6 +1901,7 @@ export function ChatView({
               onMove={onMoveQueued}
               onSend={onSendQueued}
               onCancel={onCancelQueued}
+              busy={loading}
             />
           ) : null}
           <ComposerDock

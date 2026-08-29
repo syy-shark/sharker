@@ -16,6 +16,8 @@ interface Props {
   onMove: (id: string, direction: -1 | 1) => void
   onSend: (id: string) => void
   onCancel: (id: string) => void
+  /** 直播中排队芯片主操作是注入（对标 Codex Steer），不得中止当前回合 */
+  busy?: boolean
 }
 
 function QueueRow({
@@ -32,7 +34,8 @@ function QueueRow({
   onCancelEdit,
   onMove,
   onSend,
-  onCancel
+  onCancel,
+  sendLabel
 }: {
   item: QueuedPrompt
   index: number
@@ -48,6 +51,7 @@ function QueueRow({
   onMove: (direction: -1 | 1) => void
   onSend: () => void
   onCancel: () => void
+  sendLabel: string
 }) {
   return (
     <div className="composer-queue-item glass-tile" role="listitem">
@@ -110,8 +114,13 @@ function QueueRow({
             >
               ↓
             </button>
-            <button type="button" className="composer-queue-btn composer-queue-btn--primary" onClick={onSend}>
-              发送
+            <button
+              type="button"
+              className="composer-queue-btn composer-queue-btn--primary"
+              onClick={onSend}
+              aria-label={sendLabel === '注入' ? '注入当前回合' : '立即发送'}
+            >
+              {sendLabel}
             </button>
           </>
         ) : null}
@@ -130,7 +139,8 @@ export const ComposerQueue = memo(function ComposerQueue({
   onEdit,
   onMove,
   onSend,
-  onCancel
+  onCancel,
+  busy = false
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -170,6 +180,7 @@ export const ComposerQueue = memo(function ComposerQueue({
             onMove={() => undefined}
             onSend={() => undefined}
             onCancel={() => onCancel(item.id)}
+            sendLabel="发送"
           />
         )
       })}
@@ -198,6 +209,7 @@ export const ComposerQueue = memo(function ComposerQueue({
             onMove={(direction) => onMove(item.id, direction)}
             onSend={() => onSend(item.id)}
             onCancel={() => onCancel(item.id)}
+            sendLabel={busy ? '注入' : '发送'}
           />
         )
       })}

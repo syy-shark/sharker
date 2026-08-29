@@ -219,6 +219,7 @@ import {
   enqueuePendingSteer,
   historyWithoutSteerIds,
   joinLeftoverSteerPrompt,
+  queuedChipPrimaryAction,
   placeMessageBeforeIds,
   listPendingSteers,
   cancelPendingSteer,
@@ -3122,13 +3123,44 @@ export default function App() {
     (id: string) => {
       const convId = activeConversationIdRef.current
       if (!convId) return
-      const { item, queues } = takeQueuedPrompt(sessionQueuesRef.current, convId, id)
-      syncActiveQueueUi(queues, convId)
+      const queued = sessionQueuesRef.current[convId] ?? []
+      const item = queued.find((row) => row.id === id)
       if (!item?.text.trim()) return
       const busy = loading || sendInFlightRef.current
-      void handlePromptSubmit(item.text, busy ? 'jump' : 'send', item.attachments)
+      if (queuedChipPrimaryAction(busy) === 'steer') {
+        void (async () => {
+          if (!window.sharker.steerChat) return
+          try {
+            const accepted = await window.sharker.steerChat(
+              convId,
+              item.text,
+              item.attachments?.length ? item.attachments : undefined
+            )
+            if (!accepted.ok) return
+            const taken = takeQueuedPrompt(sessionQueuesRef.current, convId, id)
+            syncActiveQueueUi(taken.queues, convId)
+            const steer = createPendingSteer(
+              convId,
+              item.text,
+              item.attachments,
+              accepted.id
+            )
+            syncPendingSteerUi(
+              enqueuePendingSteer(pendingSteersRef.current, convId, steer),
+              convId
+            )
+          } catch (e) {
+            console.error('steer queued follow-up failed', e)
+          }
+        })()
+        return
+      }
+      const taken = takeQueuedPrompt(sessionQueuesRef.current, convId, id)
+      syncActiveQueueUi(taken.queues, convId)
+      if (!taken.item?.text.trim()) return
+      void handlePromptSubmit(taken.item.text, 'send', taken.item.attachments)
     },
-    [handlePromptSubmit, loading, syncActiveQueueUi]
+    [handlePromptSubmit, loading, syncActiveQueueUi, syncPendingSteerUi]
   )
 
   /** Replay a user turn without duplicating its bubble; optional edited text. */
