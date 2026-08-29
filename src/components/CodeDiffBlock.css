@@ -290,6 +290,23 @@
   margin-top: 6px;
 }
 
+.diff-find-hit {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--warning, #d4a017) 38%, transparent);
+  color: inherit;
+}
+
+.diff-find-hit--current {
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+  outline: 1px solid var(--accent);
+}
+
+.code-diff-line--find-current {
+  outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: -1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .code-diff-block {
     animation-duration: 0.01ms !important;

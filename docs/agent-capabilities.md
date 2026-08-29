@@ -72,7 +72,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **创建仓库**：项目还不是 Git 仓库时，审查面板提示并一键 `git init`（对标 Codex Review：prompt you to create one）；建在主文件夹，默认 `main`
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
-- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；Agent 写盘后文件树静默刷新、正在预览的同一文件会重读（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
+- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；Agent 写盘后文件树静默刷新、正在预览的同一文件会重读（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；审查聚焦时 **⌘F / ⌘G** 在 diff 内查找（划选预填、跨文件、屏外命中展开并滚入，对标 Codex search in long review files）；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
@@ -82,7 +82,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 划选历史正文、文件预览或集成终端输出会出现「插入输入框」与「旁路提问」（对标 Codex send transcript selections to the composer 与 Ask in side chat）。插入会把引用块接到当前未发送草稿后面，不覆盖输入框。
 
-`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），同一条里每处各算一次，正在直播的回答也算，Enter / ↑↓ / `⌘G` 跳转并高亮当前词。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。`⌘G` / `⌘⇧G` / `F3` / `⇧F3` 始终跳下一条 / 上一条（查找未开时先打开再跳，关闭栏时保留上次词；命中滚动用 `auto` 并锁贴底，以免直播增高把镜头拽回底部）。Search chats 官方默认不绑，走命令面板或设置 → 键盘。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
+`⌘F` 或命令面板「在对话中查找」：在当前线程消息里定位（大小写不敏感），同一条里每处各算一次，正在直播的回答也算，Enter / ↑↓ / `⌘G` 跳转并高亮当前词。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。`⌘G` / `⌘⇧G` / `F3` / `⇧F3` 始终跳下一条 / 上一条（查找未开时先打开再跳，关闭栏时保留上次词；命中滚动用 `auto` 并锁贴底，以免直播增高把镜头拽回底部）。审查面板聚焦时同一组快捷键改搜当前对比的 diff（跨文件、屏外命中展开并滚入视口，对标 Codex search in long review files）；输入框 / 对话柱仍走线程查找。Search chats 官方默认不绑，走命令面板或设置 → 键盘。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与清屏只作用于当前标签。
 
 ### 人格
 

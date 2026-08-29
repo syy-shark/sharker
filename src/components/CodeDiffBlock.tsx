@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
 import { shouldOpenReviewLine } from '../../shared/review-file-click'
+import { splitFindHighlights } from '../../shared/review-diff-search'
 import {
   canOfferDiffPreviewCollapse,
   estimateDiffBodyHeight,
@@ -62,6 +63,12 @@ interface Props {
   /** 直播写入槽：不播进入动画，占位→行只升不降 */
   live?: boolean
   review?: CodeDiffReviewProps
+  /** 审查查找词：高亮所有出现（对标 Codex review diff search highlighting） */
+  findQuery?: string
+  /** 当前命中行（`FileDiff.lines` 下标）；屏外命中展开并滚入视口 */
+  findLineIndex?: number
+  /** 当前命中在该行内的起点，用来标当前词 */
+  findStart?: number
 }
 
 function serializeDiff(lines: FileDiffLine[]): string {
@@ -82,6 +89,29 @@ function commentSide(line: FileDiffLine): 'old' | 'new' {
   return line.kind === 'del' ? 'old' : 'new'
 }
 
+function renderDiffFindText(text: string, query: string | undefined, currentStart?: number) {
+  const raw = text || ' '
+  if (!query?.trim()) return raw
+  const parts = splitFindHighlights(raw, query)
+  if (parts.length === 1 && !parts[0]?.hit) return raw
+  return parts.map((part, i) =>
+    part.hit ? (
+      <mark
+        key={`${part.start}-${i}`}
+        className={
+          currentStart != null && part.start === currentStart
+            ? 'diff-find-hit diff-find-hit--current'
+            : 'diff-find-hit'
+        }
+      >
+        {part.text}
+      </mark>
+    ) : (
+      part.text
+    )
+  )
+}
+
 /** 单行：审查模式下可悬停加点评 */
 function DiffLineRow({
   line,
@@ -89,7 +119,9 @@ function DiffLineRow({
   review,
   commenting,
   onStartComment,
-  onOpenLine
+  onOpenLine,
+  findQuery,
+  findCurrentStart
 }: {
   line: FileDiffLine
   index: number
@@ -97,13 +129,16 @@ function DiffLineRow({
   commenting: boolean
   onStartComment: () => void
   onOpenLine?: (line: number) => void
+  findQuery?: string
+  findCurrentStart?: number
 }) {
   const comments = (review?.comments ?? []).filter(
     (c) => c.line === commentLineNumber(line) && c.side === commentSide(line)
   )
   return (
     <div
-      className={`code-diff-line code-diff-line--${line.kind}${review ? ' code-diff-line--review' : ''}`}
+      className={`code-diff-line code-diff-line--${line.kind}${review ? ' code-diff-line--review' : ''}${findCurrentStart != null ? ' code-diff-line--find-current' : ''}`}
+      data-review-find-line={index}
       title={onOpenLine ? '⌘/Ctrl+单击打开该行预览' : undefined}
       onClick={(e) => {
         if (!onOpenLine || !shouldOpenReviewLine(e)) return
@@ -133,7 +168,7 @@ function DiffLineRow({
         <span className="code-diff-ln">{line.oldLine ?? ''}</span>
         <span className="code-diff-ln">{line.newLine ?? ''}</span>
       </span>
-      <code className="code-diff-text">{line.content || ' '}</code>
+      <code className="code-diff-text">{renderDiffFindText(line.content, findQuery, findCurrentStart)}</code>
       {comments.length > 0 ? (
         <ul className="code-diff-comments">
           {comments.map((c) => (
@@ -157,19 +192,32 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   onOpenLine,
   wrapLines = true,
   live = false,
-  review
+  review,
+  findQuery,
+  findLineIndex = -1,
+  findStart
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [commentingKey, setCommentingKey] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const pendingFloorRef = useRef(0)
+  const bodyRef = useRef<HTMLDivElement | null>(null)
   const displayLines = diff?.lines ?? lines ?? []
   const hunks = useMemo(() => (review ? splitDiffHunks(displayLines) : []), [displayLines, review])
   const stats = diff?.stats ?? statsFromLines(displayLines)
   const filePath = diff?.path ?? path ?? ''
+  const findActiveHere = findLineIndex >= 0
   useEffect(() => {
     if (live) setExpanded(true)
   }, [live])
+  useEffect(() => {
+    if (findActiveHere) setExpanded(true)
+  }, [findActiveHere, findLineIndex])
+  useEffect(() => {
+    if (!findActiveHere) return
+    const el = bodyRef.current?.querySelector(`[data-review-find-line="${findLineIndex}"]`)
+    el?.scrollIntoView({ block: 'center', inline: 'nearest' })
+  }, [findActiveHere, findLineIndex, findStart, findQuery, displayLines.length])
   if (displayLines.length === 0 && !filePath) return null
 
   const label = filePath || 'diff'
@@ -189,13 +237,15 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
     lineCount: displayLines.length,
     previewLimit
   })
-  const needsCollapse = shouldCollapseDiffPreview({
-    live,
-    review: Boolean(review),
-    expanded,
-    lineCount: displayLines.length,
-    previewLimit
-  })
+  const needsCollapse =
+    !findActiveHere &&
+    shouldCollapseDiffPreview({
+      live,
+      review: Boolean(review),
+      expanded,
+      lineCount: displayLines.length,
+      previewLimit
+    })
   const visible = needsCollapse ? displayLines.slice(0, previewLimit) : displayLines
   if (live && pendingRows > 0) {
     pendingFloorRef.current = Math.max(pendingFloorRef.current, estimateDiffBodyHeight(pendingRows))
@@ -222,14 +272,18 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   }
 
   const renderLine = (line: FileDiffLine, index: number) => {
-    const key = lineKey(line, index)
+    const displayIndex = displayLines.indexOf(line)
+    const lineIndex = displayIndex >= 0 ? displayIndex : index
+    const key = lineKey(line, lineIndex)
     return (
       <div key={key}>
         <DiffLineRow
           line={line}
-          index={index}
+          index={lineIndex}
           review={review}
           commenting={commentingKey === key}
+          findQuery={findQuery}
+          findCurrentStart={findLineIndex === lineIndex ? findStart : undefined}
           onOpenLine={onOpenLine}
           onStartComment={() => {
             setCommentingKey(key)
@@ -304,6 +358,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
       followTail={live}
     >
       <div
+        ref={bodyRef}
         className={`code-diff-code${pendingRows ? ' code-diff-code--pending' : ''}`}
         style={bodyMinHeight ? { minHeight: bodyMinHeight } : undefined}
         aria-hidden={pendingRows ? true : undefined}

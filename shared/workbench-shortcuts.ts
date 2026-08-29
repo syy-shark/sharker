@@ -125,7 +125,7 @@ export function matchDefaultWorkbenchShortcut(event: {
   ) {
     return 'toggle_review'
   }
-  // 官方 Search chats 默认不绑；⌘G 留给对话内 Find next
+  // 官方 Search chats 默认不绑；⌘G 留给 Find next（对话或审查）
   if (key === 'z' && event.shiftKey && !event.altKey) return 'redo_app'
   if (key === 'z' && !event.shiftKey && !event.altKey) return 'undo_app'
   if (key === 'y' && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
@@ -302,8 +302,8 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '鼠标侧键', title: '后退 / 前进' },
   { keys: '⌘↑ / ⌘↓ / Home / End', title: '对话顶 / 底' },
   { keys: '↑↓ / PgUp / Space', title: '点对话柱后滚动（不抢输入框）' },
-  { keys: '⌘F', title: '在对话中查找' },
-  { keys: '⌘G / ⌘⇧G', title: '查找下一条 / 上一条' },
+  { keys: '⌘F', title: '在对话或审查中查找' },
+  { keys: '⌘G / ⌘⇧G', title: '查找下一条 / 上一条（对话或审查）' },
   { keys: 'Ctrl⇧M', title: '模型选择' },
   { keys: 'Ctrl⇧D', title: '听写' },
   { keys: 'Ctrl⇧V', title: '语音对话' },

@@ -59,6 +59,10 @@ import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import { findInThread, seedFindQuery, type ThreadSearchHit } from '../../shared/thread-search'
+import {
+  isReviewFindFocus,
+  shouldHandleReviewFindShortcut
+} from '../../shared/review-diff-search'
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
@@ -655,6 +659,14 @@ export function ChatView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing) return
+      if (
+        shouldHandleReviewFindShortcut({
+          focusInsideReview:
+            isReviewFindFocus(e.target) || isReviewFindFocus(document.activeElement)
+        })
+      ) {
+        return
+      }
       const isF3 = e.key === 'F3'
       const isFindNext =
         (e.metaKey || e.ctrlKey) &&
@@ -680,6 +692,14 @@ export function ChatView({
       const mod = e.metaKey || e.ctrlKey
       if (mod && e.key.toLowerCase() === 'f' && !e.altKey && !e.shiftKey) {
         const target = e.target
+        if (
+          shouldHandleReviewFindShortcut({
+            focusInsideReview:
+              isReviewFindFocus(target) || isReviewFindFocus(document.activeElement)
+          })
+        ) {
+          return
+        }
         if (target instanceof HTMLElement && target.closest('input, textarea, [contenteditable=true]')) {
           if (target === findInputRef.current) {
             e.preventDefault()

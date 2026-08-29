@@ -1,10 +1,11 @@
 /**
  * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
  * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line）。
+ * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * @see ./ARCH.md
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { FileDiff, GitBranch, RefreshCw } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileDiff, GitBranch, RefreshCw, Search } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
 import type { GitReviewAction } from '../../../shared/git-review-actions'
@@ -21,6 +22,14 @@ import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { formatBranchPrefix } from '../../../shared/git-branch-create'
 import { CodeDiffBlock } from '../CodeDiffBlock'
+import { seedFindQuery } from '../../../shared/thread-search'
+import {
+  findInReviewDiffs,
+  isReviewFindFocus,
+  sameReviewFindMatch,
+  shouldHandleReviewFindShortcut,
+  wrapFindIndex
+} from '../../../shared/review-diff-search'
 import { maxDiffGotoLine, parseGoToLineInput } from '../../../shared/file-preview'
 import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
 import {
@@ -99,6 +108,21 @@ function isUnstaged(file: ChangeFile): boolean {
   return file.unstaged ?? file.untracked ?? file.raw.slice(1, 2) !== ' '
 }
 
+function keepRecordKeys<T>(prev: Record<string, T>, keep: (key: string) => boolean): Record<string, T> {
+  let same = true
+  const next: Record<string, T> = {}
+  for (const key of Object.keys(prev)) {
+    if (keep(key)) next[key] = prev[key] as T
+    else same = false
+  }
+  if (same && Object.keys(next).length === Object.keys(prev).length) return prev
+  return next
+}
+
+function sameStringList(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((key, index) => key === right[index])
+}
+
 /** Codex 式变更审查：对比范围 + 当前文件 diff + Git 动作 */
 export function ChangesPanel({
   workspacePath,
@@ -146,9 +170,14 @@ export function ChangesPanel({
   })
   const [goToOpen, setGoToOpen] = useState(false)
   const [goToDraft, setGoToDraft] = useState('')
+  const [findOpen, setFindOpen] = useState(false)
+  const [findQuery, setFindQuery] = useState('')
+  const [findHit, setFindHit] = useState(0)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const goToInputRef = useRef<HTMLInputElement | null>(null)
+  const findInputRef = useRef<HTMLInputElement | null>(null)
   const lastReviewKeyRef = useRef('')
+  const findAnchorRef = useRef<{ fileKey: string; lineIndex: number; start: number } | null>(null)
 
   useEffect(() => {
     if (!agentFindings.length) return
@@ -512,33 +541,28 @@ export function ChangesPanel({
       setDiffLoadingKeys([])
       return
     }
-    const allowed = new Set(expandedKeys)
-    setDiffs((prev) => {
-      const next: Record<string, FileDiffModel> = {}
-      for (const key of expandedKeys) {
-        if (prev[key]) next[key] = prev[key]
-      }
-      return next
-    })
-    setDiffErrors((prev) => {
-      const next: Record<string, string> = {}
-      for (const key of expandedKeys) {
-        if (prev[key]) next[key] = prev[key]
-      }
-      return next
-    })
-    if (expandedKeys.length === 0) {
-      setDiffLoadingKeys([])
+    const prefetch =
+      findOpen && findQuery.trim()
+        ? visible.map((file) => reviewDiffKey(file.repoRoot ?? reviewCwd, file.path))
+        : []
+    const allowed = new Set([...expandedKeys, ...prefetch])
+    const legal = new Set(visible.map((file) => reviewDiffKey(file.repoRoot ?? reviewCwd, file.path)))
+    const keepCached = (key: string) => allowed.has(key) || (findOpen && legal.has(key))
+    setDiffs((prev) => keepRecordKeys(prev, keepCached))
+    setDiffErrors((prev) => keepRecordKeys(prev, keepCached))
+    const keyList = [...allowed]
+    if (keyList.length === 0) {
+      setDiffLoadingKeys((prev) => (prev.length === 0 ? prev : []))
       return
     }
     let cancelled = false
     const diffScope = compare === 'branch' ? 'branch' : compare === 'commit' ? 'commit' : scope
-    setDiffLoadingKeys(expandedKeys.slice())
+    setDiffLoadingKeys((prev) => (sameStringList(prev, keyList) ? prev : keyList))
     void Promise.all(
-      expandedKeys.map(async (key) => {
+      keyList.map(async (key) => {
         const parsed = parseReviewDiffKey(key)
         if (!parsed) return
-        const file = sourceFiles.find(
+        const file = visible.find(
           (row) =>
             row.path === parsed.path && (row.repoRoot ?? reviewCwd) === parsed.repoRoot
         )
@@ -586,7 +610,20 @@ export function ChangesPanel({
     return () => {
       cancelled = true
     }
-  }, [sourceFiles, expandedKeys, reviewCwd, revision, scope, compare, commitSha])
+  }, [
+    expandedKeys,
+    reviewCwd,
+    revision,
+    scope,
+    compare,
+    commitSha,
+    findOpen,
+    findQuery,
+    visible
+      .map((file) => reviewDiffKey(file.repoRoot ?? reviewCwd, file.path))
+      .sort()
+      .join('\n')
+  ])
 
   const applyReviewGoToLine = useCallback(() => {
     const preferred =
@@ -643,6 +680,109 @@ export function ChangesPanel({
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [expandedKeys.length])
+
+  const reviewFindFiles = useMemo(
+    () =>
+      visible.map((file) => {
+        const fileKey = reviewDiffKey(file.repoRoot ?? reviewCwd, file.path)
+        return { fileKey, filePath: file.path, diff: diffs[fileKey] }
+      }),
+    [visible, reviewCwd, diffs]
+  )
+  const findMatches = useMemo(
+    () => (findOpen ? findInReviewDiffs(reviewFindFiles, findQuery) : []),
+    [findOpen, reviewFindFiles, findQuery]
+  )
+
+  useEffect(() => {
+    findAnchorRef.current = null
+    setFindHit(0)
+  }, [findQuery])
+
+  useEffect(() => {
+    const anchor = findAnchorRef.current
+    if (!anchor || !findMatches.length) return
+    const next = findMatches.findIndex((hit) => sameReviewFindMatch(hit, anchor))
+    if (next >= 0) {
+      if (next !== findHit) setFindHit(next)
+      return
+    }
+    if (findHit >= findMatches.length) setFindHit(0)
+  }, [findMatches, findHit])
+
+  const currentFind = findOpen ? findMatches[findHit] : undefined
+
+  useEffect(() => {
+    if (!currentFind) return
+    findAnchorRef.current = currentFind
+    setExpandedKeys((prev) =>
+      prev.includes(currentFind.fileKey) ? prev : [...prev, currentFind.fileKey]
+    )
+    const parsed = parseReviewDiffKey(currentFind.fileKey)
+    const root = panelRef.current
+    if (!parsed || !root) return
+    const row = Array.from(root.querySelectorAll('[data-review-diff-path]')).find(
+      (el) =>
+        el.getAttribute('data-review-diff-path') === parsed.path &&
+        el.getAttribute('data-review-diff-root') === parsed.repoRoot
+    )
+    row?.scrollIntoView({ block: 'nearest' })
+  }, [currentFind?.fileKey, currentFind?.lineIndex, currentFind?.start])
+
+  const openReviewFind = useCallback((selected?: string) => {
+    const seeded = seedFindQuery(selected ?? '')
+    if (seeded) setFindQuery(seeded)
+    setFindOpen(true)
+    requestAnimationFrame(() => {
+      findInputRef.current?.focus()
+      if (seeded) findInputRef.current?.select()
+    })
+  }, [])
+
+  const stepReviewFind = useCallback(
+    (delta: 1 | -1) => {
+      setFindOpen(true)
+      if (!findMatches.length) return
+      setFindHit((index) => {
+        const next = wrapFindIndex(index, findMatches.length, delta)
+        const hit = findMatches[next]
+        if (hit) findAnchorRef.current = hit
+        return next
+      })
+    },
+    [findMatches]
+  )
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.isComposing) return
+      const focusInsideReview =
+        isReviewFindFocus(event.target) || isReviewFindFocus(document.activeElement)
+      if (!shouldHandleReviewFindShortcut({ focusInsideReview })) return
+      if (event.target instanceof HTMLElement) {
+        if (event.target.closest('.composer-box, .embedded-browser, .embedded-terminal')) return
+      }
+      const mod = event.metaKey || event.ctrlKey
+      const findOpenKey = mod && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'f'
+      const findNextKey =
+        event.key === 'F3' || (mod && !event.altKey && (event.key === 'g' || event.key === 'G'))
+      if (!findOpenKey && !findNextKey) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      if (findOpenKey) {
+        const selected =
+          event.target instanceof HTMLElement && event.target.closest('.changes-panel__find')
+            ? ''
+            : window.getSelection()?.toString() ?? ''
+        openReviewFind(selected)
+        return
+      }
+      stepReviewFind(event.shiftKey ? -1 : 1)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [openReviewFind, stepReviewFind])
 
   if (!workspacePath) {
     return (
@@ -704,6 +844,22 @@ export function ChangesPanel({
           ) : null}
           <button
             type="button"
+            className={`changes-panel__refresh${findOpen ? ' is-pressed' : ''}`}
+            title="在审查中查找"
+            aria-label="在审查中查找"
+            aria-pressed={findOpen}
+            onClick={() => {
+              if (findOpen) {
+                setFindOpen(false)
+                return
+              }
+              openReviewFind(window.getSelection()?.toString() ?? '')
+            }}
+          >
+            <Search size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
             className={`changes-panel__refresh changes-panel__wrap${wrapLines ? ' is-pressed' : ''}`}
             aria-pressed={wrapLines}
             title={wrapLines ? '不换行长 diff' : '换行长 diff'}
@@ -734,6 +890,64 @@ export function ChangesPanel({
           </button>
         </div>
       </div>
+      {findOpen ? (
+        <div className="changes-panel__find review-find glass-pill" role="search">
+          <input
+            ref={findInputRef}
+            className="changes-panel__find-input"
+            value={findQuery}
+            placeholder="查找审查…"
+            aria-label="在审查中查找"
+            onChange={(event) => setFindQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                event.stopPropagation()
+                setFindOpen(false)
+                panelRef.current?.focus()
+                return
+              }
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                stepReviewFind(event.shiftKey ? -1 : 1)
+              }
+            }}
+          />
+          <span className="changes-panel__find-count">
+            {findQuery.trim()
+              ? findMatches.length
+                ? `${findHit + 1}/${findMatches.length}`
+                : '无结果'
+              : ''}
+          </span>
+          <button
+            type="button"
+            className="changes-panel__find-nav"
+            disabled={findMatches.length === 0}
+            onClick={() => stepReviewFind(-1)}
+            aria-label="上一条"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="changes-panel__find-nav"
+            disabled={findMatches.length === 0}
+            onClick={() => stepReviewFind(1)}
+            aria-label="下一条"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            className="changes-panel__find-nav"
+            onClick={() => setFindOpen(false)}
+            aria-label="关闭查找"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       {goToOpen ? (
         <form
           className="changes-panel__goto glass-pill"
@@ -1082,7 +1296,11 @@ export function ChangesPanel({
               const fileError = diffErrors[key]
               const fileLoading = diffLoadingKeys.includes(key)
               return (
-              <li key={`${gitRoot}:${f.raw}:${f.path}`}>
+              <li
+                key={`${gitRoot}:${f.raw}:${f.path}`}
+                data-review-diff-path={f.path}
+                data-review-diff-root={gitRoot}
+              >
                 <div className={`changes-panel__row${expanded ? ' is-selected' : ''}`}>
                   <button
                     type="button"
@@ -1152,6 +1370,9 @@ export function ChangesPanel({
                         defaultExpanded
                         showHeader
                         wrapLines={wrapLines}
+                        findQuery={findOpen ? findQuery : undefined}
+                        findLineIndex={currentFind?.fileKey === key ? currentFind.lineIndex : -1}
+                        findStart={currentFind?.fileKey === key ? currentFind.start : undefined}
                         onOpenLine={(line) =>
                           dispatchOpenWorkspaceFile({
                             path: openPath,

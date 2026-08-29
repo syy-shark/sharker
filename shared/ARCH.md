@@ -57,7 +57,7 @@
 | `at-mention.test.ts` | `@` 边界与路径插入 |
 | `chat-mention.ts` | Composer `@chat/<id>`：过滤其它线程、有界摘要 |
 | `chat-mention.test.ts` | 解析 id、排除当前线程、截断摘要 |
-| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动；终端聚焦 ⌘K 清屏判定） |
+| `workbench-shortcuts.ts` | 默认工作台快捷键与 `SHORTCUT_CATALOG`（设置页改绑；含 ⌘J 开关工作区面板、Ctrl+` 打开终端（对标 Codex Toggle bottom panel / Toggle terminal）、Search chats 默认不绑、⌘G 留给 Find next（审查聚焦时走审查 diff）、⌘⌥U 活动视图、⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥⇧O 项目选择器、⌘⌥⇧C 对话路径、⌘Z / ⌘⇧Z / Ctrl+Y 应用撤销重做、小键盘字号、⌃⇧G 打开审查、⌃Tab / ⌃⇧Tab 切对话、Esc 停止当前回合可改绑；帮助表含输入框 Shift+Tab 切计划（不进全局和弦）、⌘↑⌘↓ / Home / End 跳对话顶底、点对话柱后 ↑↓ / Page / Space 滚动、⌘F 对话或审查查找；终端聚焦 ⌘K 清屏判定） |
 | `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌃⇧G（⌘⇧G 不打开审查）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
@@ -104,7 +104,8 @@
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；`seedFindQuery` 把划选收成查找词；`locateFlatRange` 给可见文本高亮 |
-| `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断 |
+| `thread-search.test.ts` | 命中消息 id 与多处偏移；划选预填去空白并截断；审查 diff 查找命中 / 空查询 / 高亮切片 |
+| `review-diff-search.ts` | 审查 diff 跨文件查找：`findInReviewDiffs` 按 `FileDiff.lines` 偏移命中；审查聚焦时 ⌘F / ⌘G 走审查而不是线程（对标 Codex review search / Cmd+F starts with selection）；`splitFindHighlights` 给行内高亮 |
 | `terminal-tabs.ts` | 集成终端按线程分标签：标题、上限 8、关最后一张不准、最近 6 条线程缓存；pending 窗格可收成对话 id |
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
 | `terminal-snapshot.ts` | 集成终端快照：去 ANSI、环形缓冲、`read_thread_terminal` 文案 |
