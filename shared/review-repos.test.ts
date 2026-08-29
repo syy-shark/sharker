@@ -14,7 +14,9 @@ import {
   shouldShowReviewRepoSelector,
   sumReviewLineStats,
   toggleReviewDiffKey,
-  uniqueReviewRepos
+  uniqueReviewRepos,
+  compareFileTreePaths,
+  sortReviewFilesLikeFileTree
 } from './review-repos'
 
 describe('review repos', () => {
@@ -96,5 +98,26 @@ describe('review repos', () => {
       )
     ).toEqual(['/proj\0src/a.ts', '/extra\0lib/b.ts'])
     expect(pruneReviewDiffKeys(['/proj\0a.ts', '/proj\0gone.ts'], ['/proj\0a.ts'])).toEqual(['/proj\0a.ts'])
+    expect(compareFileTreePaths('src/a.ts', 'src/components/A.tsx')).toBeGreaterThan(0)
+    expect(
+      sortReviewFilesLikeFileTree(
+        [
+          { path: 'src/a.ts' },
+          { path: 'z.ts' },
+          { path: 'src/components/B.tsx' },
+          { path: 'src/components/A.tsx' },
+          { path: 'docs/ARCH.md' }
+        ]
+      ).map((f) => f.path)
+    ).toEqual(['docs/ARCH.md', 'src/components/A.tsx', 'src/components/B.tsx', 'src/a.ts', 'z.ts'])
+    expect(
+      sortReviewFilesLikeFileTree(
+        [
+          { path: 'lib/b.ts', repoRoot: '/extra' },
+          { path: 'src/a.ts', repoRoot: '/proj' }
+        ],
+        '/proj'
+      ).map((f) => f.path)
+    ).toEqual(['lib/b.ts', 'src/a.ts'])
   })
 })

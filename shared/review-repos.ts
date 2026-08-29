@@ -165,6 +165,36 @@ export function sumReviewLineStats(
   return { added, removed }
 }
 
+/**
+ * 与工作区文件树同一套顺序：同层目录在文件前，再按名字（对标 Codex
+ * Kept review diff ordering consistent with the file tree）。
+ */
+export function compareFileTreePaths(leftPath: string, rightPath: string): number {
+  const left = posixPath(leftPath).split('/').filter(Boolean)
+  const right = posixPath(rightPath).split('/').filter(Boolean)
+  const n = Math.min(left.length, right.length)
+  for (let i = 0; i < n; i++) {
+    const leftLeaf = i === left.length - 1
+    const rightLeaf = i === right.length - 1
+    if (leftLeaf !== rightLeaf) return leftLeaf ? 1 : -1
+    const cmp = left[i]!.localeCompare(right[i]!, undefined, { sensitivity: 'base' })
+    if (cmp !== 0) return cmp
+  }
+  return left.length - right.length
+}
+
+export function sortReviewFilesLikeFileTree<T extends { path: string; repoRoot?: string }>(
+  files: T[],
+  primaryRoot = ''
+): T[] {
+  const primary = posixPath(primaryRoot)
+  return files.slice().sort((a, b) => {
+    const aPath = primary ? reviewFileOpenPath(a.path, a.repoRoot ?? primary, primary) : posixPath(a.path)
+    const bPath = primary ? reviewFileOpenPath(b.path, b.repoRoot ?? primary, primary) : posixPath(b.path)
+    return compareFileTreePaths(aPath, bPath) || compareFileTreePaths(a.path, b.path)
+  })
+}
+
 /** 附加仓库文件用目录名前缀打开预览（与 `@` / 文件引用一致） */
 export function reviewFileOpenPath(filePath: string, repoRoot: string, primaryRoot: string): string {
   const file = posixPath(filePath)

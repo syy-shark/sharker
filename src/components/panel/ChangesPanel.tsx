@@ -2,9 +2,10 @@
  * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
  * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line）。
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
+ * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
  * @see ./ARCH.md
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { FileDiff, GitBranch, RefreshCw, Search } from 'lucide-react'
 import type { FileDiff as FileDiffModel } from '../../../shared/types'
 import { buildHunkPatch, type DiffHunk } from '../../../shared/diff-hunk'
@@ -33,8 +34,10 @@ import {
 import { maxDiffGotoLine, parseGoToLineInput } from '../../../shared/file-preview'
 import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
 import {
+  clampReviewMenuPosition,
   resolveReviewFileClick,
-  reviewFileClickTargetFromElement
+  reviewFileClickTargetFromElement,
+  reviewFileMenuItems
 } from '../../../shared/review-file-click'
 import {
   ALL_REPOS_ID,
@@ -48,6 +51,7 @@ import {
   reviewFileOpenPath,
   reviewProbeRoots,
   shouldShowReviewRepoSelector,
+  sortReviewFilesLikeFileTree,
   sumReviewLineStats,
   toggleReviewDiffKey,
   uniqueReviewRepos,
@@ -178,6 +182,15 @@ export function ChangesPanel({
   const findInputRef = useRef<HTMLInputElement | null>(null)
   const lastReviewKeyRef = useRef('')
   const findAnchorRef = useRef<{ fileKey: string; lineIndex: number; start: number } | null>(null)
+  const listRef = useRef<HTMLUListElement | null>(null)
+  const listScrollTopRef = useRef(0)
+  const [fileMenu, setFileMenu] = useState<{
+    fileKey: string
+    openPath: string
+    expanded: boolean
+    x: number
+    y: number
+  } | null>(null)
 
   useEffect(() => {
     if (!agentFindings.length) return
@@ -230,18 +243,21 @@ export function ChangesPanel({
           ? lastTurnAllFiles
           : taggedRepoFiles
   const readOnly = compare === 'branch' || compare === 'commit'
-  const visible = sourceFiles.filter((f) => {
-    if (compare === 'last_turn') {
-      return isAllRepos
-        ? true
-        : fileInLastTurnForRepo(f.path, lastTurnPaths, f.repoRoot ?? reviewCwd, workspacePath)
-    }
-    if (compare === 'branch') return true
-    return scope === 'staged' ? isStaged(f) : isUnstaged(f)
-  })
+  const visible = sortReviewFilesLikeFileTree(
+    sourceFiles.filter((f) => {
+      if (compare === 'last_turn') {
+        return isAllRepos
+          ? true
+          : fileInLastTurnForRepo(f.path, lastTurnPaths, f.repoRoot ?? reviewCwd, workspacePath)
+      }
+      if (compare === 'branch') return true
+      return scope === 'staged' ? isStaged(f) : isUnstaged(f)
+    }),
+    workspacePath
+  )
   const stagedCount = taggedRepoFiles.filter(isStaged).length
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     if (!workspacePath || !window.sharker?.getGitStatusChanges) {
       setIsRepo(false)
       setFiles([])
@@ -249,7 +265,7 @@ export function ChangesPanel({
       setBranchFiles([])
       return
     }
-    setLoading(true)
+    if (!opts?.silent) setLoading(true)
     setError(null)
     try {
       const probes = reviewProbeRoots(workspacePath, extraRoots)
@@ -527,12 +543,22 @@ export function ChangesPanel({
   }, [acting, refresh, workspacePath])
 
   useEffect(() => {
-    void refresh()
+    void refresh({ silent: revision > 0 })
     const id = window.setInterval(() => {
-      void refresh()
+      void refresh({ silent: true })
     }, 2500)
     return () => window.clearInterval(id)
   }, [refresh, revision])
+
+  const visibleKeySig = visible
+    .map((file) => reviewDiffKey(file.repoRoot ?? reviewCwd, file.path))
+    .join('\n')
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    list.scrollTop = listScrollTopRef.current
+  }, [visibleKeySig, revision, expandedKeys.length])
 
   useEffect(() => {
     if (!window.sharker?.getGitFileDiff) {
@@ -783,6 +809,28 @@ export function ChangesPanel({
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [openReviewFind, stepReviewFind])
+
+  useEffect(() => {
+    if (!fileMenu) return
+    const close = () => setFileMenu(null)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      close()
+    }
+    const onDown = (event: MouseEvent) => {
+      const target = event.target
+      if (target instanceof Element && target.closest('.changes-panel__file-menu')) return
+      close()
+    }
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('mousedown', onDown, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('mousedown', onDown, true)
+    }
+  }, [fileMenu])
 
   if (!workspacePath) {
     return (
@@ -1285,7 +1333,15 @@ export function ChangesPanel({
         </div>
       ) : (
         <div className="changes-panel__body">
-          <ul className="changes-panel__list" role="listbox" aria-label="变更文件">
+          <ul
+            className="changes-panel__list"
+            role="listbox"
+            aria-label="变更文件"
+            ref={listRef}
+            onScroll={(event) => {
+              listScrollTopRef.current = event.currentTarget.scrollTop
+            }}
+          >
             {visible.map((f) => {
               const gitRoot = f.repoRoot ?? reviewCwd
               const openPath = reviewFileOpenPath(f.path, gitRoot, workspacePath)
@@ -1297,7 +1353,7 @@ export function ChangesPanel({
               const fileLoading = diffLoadingKeys.includes(key)
               return (
               <li
-                key={`${gitRoot}:${f.raw}:${f.path}`}
+                key={key}
                 data-review-diff-path={f.path}
                 data-review-diff-root={gitRoot}
               >
@@ -1305,7 +1361,7 @@ export function ChangesPanel({
                   <button
                     type="button"
                     className="changes-panel__item"
-                    title="展开或收起 diff"
+                    title="展开或收起 diff · 右键打开"
                     aria-selected={expanded}
                     aria-expanded={expanded}
                     onClick={(e) => {
@@ -1316,6 +1372,23 @@ export function ChangesPanel({
                       }
                       lastReviewKeyRef.current = key
                       setExpandedKeys((prev) => toggleReviewDiffKey(prev, key))
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      lastReviewKeyRef.current = key
+                      const next = clampReviewMenuPosition(
+                        event.clientX,
+                        event.clientY,
+                        { width: 168, height: 76 },
+                        { width: window.innerWidth, height: window.innerHeight }
+                      )
+                      setFileMenu({
+                        fileKey: key,
+                        openPath,
+                        expanded,
+                        x: next.x,
+                        y: next.y
+                      })
                     }}
                   >
                     <span className={`changes-panel__status status-${f.status.trim().charAt(0) || 'M'}`}>
@@ -1459,6 +1532,33 @@ export function ChangesPanel({
           ) : null}
         </div>
       )}
+      {fileMenu ? (
+        <div
+          className="changes-panel__file-menu glass-popover popover-enter"
+          role="menu"
+          style={{ top: fileMenu.y, left: fileMenu.x }}
+        >
+          {reviewFileMenuItems(fileMenu.expanded).map((item) => (
+            <button
+              key={item.action}
+              type="button"
+              role="menuitem"
+              className="changes-panel__file-menu-item"
+              onClick={() => {
+                if (item.action === 'open') {
+                  dispatchOpenWorkspaceFile({ path: fileMenu.openPath })
+                } else {
+                  lastReviewKeyRef.current = fileMenu.fileKey
+                  setExpandedKeys((prev) => toggleReviewDiffKey(prev, fileMenu.fileKey))
+                }
+                setFileMenu(null)
+              }}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

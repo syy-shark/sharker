@@ -72,7 +72,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **创建仓库**：项目还不是 Git 仓库时，审查面板提示并一键 `git init`（对标 Codex Review：prompt you to create one）；建在主文件夹，默认 `main`
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
-- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；Agent 写盘后文件树静默刷新、正在预览的同一文件会重读（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；审查聚焦时 **⌘F / ⌘G** 在 diff 内查找（划选预填、跨文件、屏外命中展开并滚入，对标 Codex search in long review files）；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
+- 点 **文件名** 打开右侧预览（本机文件打开路径，不对标外部默认编辑器）；**右键** 出打开菜单（打开预览 / 展开或收起 diff，对标 Codex review file tree open menu）；Agent 写盘后文件树静默刷新、正在预览的同一文件会重读（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；列表顺序与文件树一致（同层目录在文件前，对标 Codex review diff ordering）；直播写盘时审查列表不换行 key、静默刷新保住滚动（对标 Codex review panel scroll jumps）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；审查聚焦时 **⌘F / ⌘G** 在 diff 内查找（划选预填、跨文件、屏外命中展开并滚入，对标 Codex search in long review files）；顶栏 **换行** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；换行时行网格收在对话柱内，不再 `max-content` 撑开）
 - 填写提交说明后 **提交** 已暂存变更，可选 **推送** 当前分支
 - **创建 PR**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **创建分支**（对标 Codex Create branch here）；顶栏也可 **打开隔离 worktree**
