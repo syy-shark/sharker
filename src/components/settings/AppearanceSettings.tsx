@@ -17,6 +17,7 @@ import {
 } from '../../../shared/ui-font-scale'
 import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
 import { parseReduceMotion, REDUCE_MOTION_LABEL } from '../../../shared/reduce-motion'
+import { DECREASE_FONT_SIZE_LABEL, INCREASE_FONT_SIZE_LABEL } from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsRow,
@@ -188,7 +189,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               <button
                 type="button"
                 className="appearance-font-btn"
-                aria-label="缩小字号"
+                aria-label={DECREASE_FONT_SIZE_LABEL}
                 disabled={clampUiFontScale(draft.uiFontScale) <= UI_FONT_SCALE_MIN}
                 onClick={() => onFontScale(stepUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT, -1))}
               >
@@ -198,7 +199,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               <button
                 type="button"
                 className="appearance-font-btn"
-                aria-label="放大字号"
+                aria-label={INCREASE_FONT_SIZE_LABEL}
                 disabled={clampUiFontScale(draft.uiFontScale) >= UI_FONT_SCALE_MAX}
                 onClick={() => onFontScale(stepUiFontScale(draft.uiFontScale ?? UI_FONT_SCALE_DEFAULT, 1))}
               >

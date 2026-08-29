@@ -5,7 +5,17 @@
  */
 import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../../shared/ipc'
-import { COPY_AS_MARKDOWN_LABEL } from '../../shared/reveal-in-folder'
+import {
+  COPY_AS_MARKDOWN_LABEL,
+  OPEN_COMMAND_MENU_LABEL,
+  OPEN_KEYBOARD_SHORTCUTS_LABEL,
+  OPEN_REVIEW_TAB_LABEL,
+  TOGGLE_BOTTOM_PANEL_LABEL,
+  TOGGLE_FILE_TREE_MENU_LABEL,
+  TOGGLE_REVIEW_PANEL_LABEL,
+  TOGGLE_SIDEBAR_LABEL,
+  TOGGLE_TERMINAL_LABEL
+} from '../../shared/reveal-in-folder'
 
 /** 把菜单动作发给所有渲染窗 */
 export function sendMenuAction(action: string): void {
@@ -103,44 +113,44 @@ export function installApplicationMenu(): void {
       label: '显示',
       submenu: [
         {
-          label: '切换侧栏',
+          label: TOGGLE_SIDEBAR_LABEL,
           accelerator: 'Command+B',
           registerAccelerator: false,
           ...send('toggle_sidebar')
         },
         {
-          label: '开关工作区面板',
+          label: TOGGLE_BOTTOM_PANEL_LABEL,
           accelerator: 'Command+J',
           registerAccelerator: false,
           ...send('toggle_panel')
         },
         {
-          label: '开关终端',
+          label: TOGGLE_TERMINAL_LABEL,
           accelerator: 'Control+`',
           registerAccelerator: false,
           ...send('toggle_terminal')
         },
         {
-          label: '开关审查面板',
+          label: TOGGLE_REVIEW_PANEL_LABEL,
           accelerator: 'Command+Alt+B',
           registerAccelerator: false,
           ...send('toggle_review')
         },
         {
-          label: '打开审查',
+          label: OPEN_REVIEW_TAB_LABEL,
           accelerator: 'Control+Shift+G',
           registerAccelerator: false,
           ...send('open_review')
         },
         {
-          label: '开关文件树',
+          label: TOGGLE_FILE_TREE_MENU_LABEL,
           accelerator: 'Command+Shift+E',
           registerAccelerator: false,
           ...send('toggle_files')
         },
         { type: 'separator' },
         {
-          label: '键盘快捷键',
+          label: OPEN_KEYBOARD_SHORTCUTS_LABEL,
           accelerator: 'Command+/',
           registerAccelerator: false,
           ...send('shortcut_help')
@@ -164,13 +174,13 @@ export function installApplicationMenu(): void {
       role: 'help',
       submenu: [
         {
-          label: '命令面板',
+          label: OPEN_COMMAND_MENU_LABEL,
           accelerator: 'Command+K',
           registerAccelerator: false,
           ...send('command_palette')
         },
         {
-          label: '键盘快捷键',
+          label: OPEN_KEYBOARD_SHORTCUTS_LABEL,
           accelerator: 'Command+/',
           registerAccelerator: false,
           ...send('shortcut_help')

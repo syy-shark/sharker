@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
+  KEYBOARD_SHORTCUTS_LABEL,
+  OPEN_COMMAND_MENU_LABEL,
+  OPEN_MODEL_PICKER_LABEL,
+  OPEN_SETTINGS_LABEL,
   revealInFolderLabel,
   reviewFileRevealPath,
+  RUN_ENVIRONMENT_ACTION_1_LABEL,
+  START_DICTATION_LABEL,
   threadCopyMenuItems,
   threadMenuItems,
-  threadRevealFolderPath
+  threadRevealFolderPath,
+  TOGGLE_ACTIVITY_VIEW_LABEL,
+  TOGGLE_FILE_TREE_LABEL,
+  TOGGLE_FILE_TREE_MENU_LABEL,
+  TOGGLE_SIDEBAR_LABEL
 } from './reveal-in-folder'
 
 describe('reveal in folder', () => {
@@ -65,5 +75,15 @@ describe('reveal in folder', () => {
     expect(threadCopyMenuItems()[3]?.title).toBe('Copy as Markdown')
     expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('Open in File Manager')
     expect(threadMenuItems({ platform: 'darwin' })[0]?.title).toBe('Open in Finder')
+    expect(OPEN_COMMAND_MENU_LABEL).toBe('Open command menu')
+    expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
+    expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
+    expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
+    expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
+    expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
+    expect(START_DICTATION_LABEL).toBe('Start dictation')
+    expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')
+    expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
+    expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
   })
 })

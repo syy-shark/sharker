@@ -45,6 +45,7 @@ import {
   PIN_LABEL,
   PINNED_LABEL,
   RENAME_LABEL,
+  TOGGLE_ACTIVITY_VIEW_LABEL,
   revealInFolderLabel,
   threadMenuItems,
   threadRevealFolderPath,
@@ -895,9 +896,9 @@ export const Sidebar = memo(function Sidebar({
           <button
             type="button"
             className={`sidebar-nav-item${activityOpen ? ' active' : ''}`}
-            title="活动视图（⌘⌥U）"
+            title={`${TOGGLE_ACTIVITY_VIEW_LABEL} (⌘⌥U)`}
             aria-pressed={activityOpen}
-            aria-label="活动视图"
+            aria-label={TOGGLE_ACTIVITY_VIEW_LABEL}
             onClick={() => onToggleActivity?.()}
           >
             <Bell size={18} className="sidebar-nav-ico" aria-hidden />

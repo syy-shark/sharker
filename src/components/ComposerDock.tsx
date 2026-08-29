@@ -122,7 +122,7 @@ import {
 } from '../../shared/conversation'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
-import { SEARCH_CHATS_LABEL } from '../../shared/reveal-in-folder'
+import { SEARCH_CHATS_LABEL, START_DICTATION_LABEL, START_VOICE_CHAT_LABEL } from '../../shared/reveal-in-folder'
 import { GoalProgressRow } from './GoalProgressRow'
 import { ContextUsageDonut } from './ContextUsageDonut'
 import './ChatView.css'
@@ -2324,8 +2324,8 @@ export const ComposerDock = memo(
               type="button"
               className={`composer-mic${dictating && !voiceChat ? ' is-active' : ''}`}
               onClick={() => toggleDictation()}
-              title={dictating && !voiceChat ? '停止听写（Ctrl⇧D）' : '听写（Ctrl⇧D）'}
-              aria-label={dictating && !voiceChat ? '停止听写' : '开始听写'}
+              title={dictating && !voiceChat ? '停止听写（Ctrl⇧D）' : `${START_DICTATION_LABEL} (Ctrl⇧D)`}
+              aria-label={dictating && !voiceChat ? '停止听写' : START_DICTATION_LABEL}
               aria-pressed={dictating && !voiceChat}
             >
               <Mic size={14} aria-hidden />
@@ -2334,7 +2334,7 @@ export const ComposerDock = memo(
               type="button"
               className={`composer-jump${voiceChat ? ' is-active' : ''}`}
               onClick={() => toggleVoiceChat()}
-              title={voiceChat ? '结束语音对话（Ctrl⇧V）' : '语音对话（Ctrl⇧V）'}
+              title={voiceChat ? '结束语音对话（Ctrl⇧V）' : `${START_VOICE_CHAT_LABEL} (Ctrl⇧V)`}
               aria-pressed={voiceChat}
             >
               {voiceChat ? '语音中' : '语音'}

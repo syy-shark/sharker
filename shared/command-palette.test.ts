@@ -49,6 +49,22 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-chats')?.title).toBe('Search chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.title).toBe('New standalone chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-files')?.title).toBe('Search files')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'settings')?.title).toBe('Open settings')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'sidebar')?.title).toBe('Toggle sidebar')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'files')?.title).toBe('Toggle file tree')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'panel')?.title).toBe('Toggle bottom panel')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'terminal')?.title).toBe('Toggle terminal')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'model')?.title).toBe('Open model picker')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'project-picker')?.title).toBe('Open project picker')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'dictate')?.title).toBe('Start dictation')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'voice-chat')?.title).toBe('Start voice chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'environment-action')?.title).toBe(
+      'Run environment action 1'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'activity')?.title).toBe('Toggle Activity view')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'shortcuts')?.title).toBe('Open keyboard shortcuts')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'undo-app')?.title).toBe('Undo last app action')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'redo-app')?.title).toBe('Redo last app action')
     expect(ids).toContain('local')
     expect(ids).toContain('worktree')
     expect(ids).toContain('side')
@@ -132,6 +148,9 @@ describe('command palette', () => {
     expect(filterPaletteCommands('Archive chat').some((c) => c.action === 'archive_thread')).toBe(
       true
     )
+    expect(filterPaletteCommands('Open settings').some((c) => c.id === 'settings')).toBe(true)
+    expect(filterPaletteCommands('Toggle sidebar').some((c) => c.id === 'sidebar')).toBe(true)
+    expect(filterPaletteCommands('Start dictation').some((c) => c.id === 'dictate')).toBe(true)
     expect(filterPaletteCommands('zzz-none')).toEqual([])
   })
 })

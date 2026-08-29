@@ -2,6 +2,7 @@
  * 斜杠命令目录：供输入框菜单与 /help 展示。
  * @see agent/commands.ts
  */
+import { OPEN_KEYBOARD_SHORTCUTS_LABEL, OPEN_SETTINGS_LABEL } from './reveal-in-folder'
 
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
@@ -434,14 +435,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'settings',
-    description: '打开设置',
+    description: OPEN_SETTINGS_LABEL,
     scope: 'ui',
     action: 'open_settings',
     category: 'other'
   },
   {
     name: 'keymap',
-    description: '打开键盘快捷键设置',
+    description: OPEN_KEYBOARD_SHORTCUTS_LABEL,
     scope: 'ui',
     action: 'open_shortcuts',
     category: 'other'

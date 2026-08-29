@@ -221,6 +221,25 @@ describe('workbench shortcuts', () => {
       WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘F' && row.title === 'Find in chat')
     ).toBe(true)
     expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘B' && row.title === 'Toggle sidebar')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘⇧E' && row.title === 'Toggle file tree')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === '⌘K' && row.title === 'Open command menu')
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === 'Ctrl⇧D' && row.title === 'Start dictation'
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘⌥U' && row.title === 'Toggle Activity view'
+      )
+    ).toBe(true)
+    expect(
       WORKBENCH_SHORTCUT_HELP.some(
         (row) =>
           row.keys === '⌘G / ⌘⇧G' &&

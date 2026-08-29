@@ -5,21 +5,45 @@
 import {
   ARCHIVE_CHAT_LABEL,
   CLEAR_ALL_UNREAD_INDICATORS_LABEL,
+  CLEAR_TERMINAL_LABEL,
   COPY_AS_MARKDOWN_LABEL,
   COPY_CHAT_DEEP_LINK_LABEL,
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
   COPY_WORKING_DIRECTORY_LABEL,
+  DECREASE_FONT_SIZE_LABEL,
   FIND_IN_CHAT_LABEL,
+  INCREASE_FONT_SIZE_LABEL,
   MARK_CHAT_AS_UNREAD_LABEL,
+  NAVIGATE_BACK_LABEL,
+  NAVIGATE_FORWARD_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   NEXT_CHAT_NEEDING_ATTENTION_LABEL,
+  OPEN_BROWSER_TAB_LABEL,
+  OPEN_FOLDER_LABEL,
+  OPEN_KEYBOARD_SHORTCUTS_LABEL,
+  OPEN_MODEL_PICKER_LABEL,
+  OPEN_PROJECT_PICKER_LABEL,
+  OPEN_REVIEW_TAB_LABEL,
+  OPEN_SETTINGS_LABEL,
   OPEN_SIDE_CHAT_LABEL,
   PIN_OR_UNPIN_CHAT_LABEL,
+  REDO_LAST_APP_ACTION_LABEL,
   RENAME_CHAT_LABEL,
+  RESET_FONT_SIZE_LABEL,
+  RUN_ENVIRONMENT_ACTION_1_LABEL,
   SEARCH_CHATS_LABEL,
-  SEARCH_FILES_LABEL
+  SEARCH_FILES_LABEL,
+  START_DICTATION_LABEL,
+  START_VOICE_CHAT_LABEL,
+  TOGGLE_ACTIVITY_VIEW_LABEL,
+  TOGGLE_BOTTOM_PANEL_LABEL,
+  TOGGLE_BROWSER_PANEL_LABEL,
+  TOGGLE_FILE_TREE_LABEL,
+  TOGGLE_SIDEBAR_LABEL,
+  TOGGLE_TERMINAL_LABEL,
+  UNDO_LAST_APP_ACTION_LABEL
 } from './reveal-in-folder'
 
 /** 命令面板条目 */
@@ -49,7 +73,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'model',
-    title: '选择模型',
+    title: OPEN_MODEL_PICKER_LABEL,
     shortcut: 'Ctrl⇧M',
     keywords: 'model pick 模型 /model',
     action: 'pick_model'
@@ -274,41 +298,41 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'changes',
-    title: '打开审查面板',
+    title: OPEN_REVIEW_TAB_LABEL,
     shortcut: '⌃⇧G',
     keywords: 'changes panel review 审查 面板 open review',
     action: 'toggle_changes'
   },
   {
     id: 'files',
-    title: '开关文件树',
+    title: TOGGLE_FILE_TREE_LABEL,
     keywords: 'files tree 文件 开关 toggle',
     action: 'toggle_files'
   },
   {
     id: 'panel',
-    title: '开关工作区面板',
+    title: TOGGLE_BOTTOM_PANEL_LABEL,
     shortcut: '⌘J',
     keywords: 'panel bottom 面板 右侧',
     action: 'toggle_panel'
   },
   {
     id: 'terminal',
-    title: '开关终端',
+    title: TOGGLE_TERMINAL_LABEL,
     shortcut: 'Ctrl+`',
     keywords: 'terminal 终端 开关 toggle',
     action: 'toggle_terminal'
   },
   {
     id: 'environment-action',
-    title: '运行环境动作',
+    title: RUN_ENVIRONMENT_ACTION_1_LABEL,
     shortcut: '⌘⇧D',
     keywords: 'run action environment local worktree 环境 动作 setup',
     action: 'run_environment_action'
   },
   {
     id: 'browser',
-    title: '开关内置浏览器',
+    title: TOGGLE_BROWSER_PANEL_LABEL,
     keywords: 'browser 浏览器 开关 toggle',
     action: 'toggle_browser'
   },
@@ -321,7 +345,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'activity',
-    title: '活动视图',
+    title: TOGGLE_ACTIVITY_VIEW_LABEL,
     shortcut: '⌘⌥U',
     keywords: 'activity waiting unread running 活动 等待 未读 进行中',
     action: 'toggle_activity'
@@ -354,14 +378,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'dictate',
-    title: '开始听写',
+    title: START_DICTATION_LABEL,
     shortcut: '⌃⇧D',
     keywords: 'dictate voice speech 听写 语音',
     action: 'start_dictation'
   },
   {
     id: 'voice-chat',
-    title: '语音对话',
+    title: START_VOICE_CHAT_LABEL,
     shortcut: '⌃⇧V',
     keywords: 'voice chat talk 语音 对话',
     action: 'start_voice_chat'
@@ -374,14 +398,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'settings',
-    title: '打开设置',
+    title: OPEN_SETTINGS_LABEL,
     shortcut: '⌘,',
     keywords: 'settings 设置',
     action: 'open_settings'
   },
   {
     id: 'folder',
-    title: '打开文件夹',
+    title: OPEN_FOLDER_LABEL,
     shortcut: '⌘O',
     keywords: 'open folder workspace 工作区 文件夹',
     action: 'open_folder'
@@ -400,56 +424,56 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'sidebar',
-    title: '切换侧栏',
+    title: TOGGLE_SIDEBAR_LABEL,
     shortcut: '⌘B',
     keywords: 'sidebar 侧栏',
     action: 'toggle_sidebar'
   },
   {
     id: 'shortcuts',
-    title: '键盘快捷键',
+    title: OPEN_KEYBOARD_SHORTCUTS_LABEL,
     shortcut: '⌘/',
     keywords: 'shortcuts keymap help 快捷键',
     action: 'shortcut_help'
   },
   {
     id: 'nav-back',
-    title: '后退',
+    title: NAVIGATE_BACK_LABEL,
     shortcut: '⌘[',
     keywords: 'back navigate 后退 导航',
     action: 'nav_back'
   },
   {
     id: 'nav-forward',
-    title: '前进',
+    title: NAVIGATE_FORWARD_LABEL,
     shortcut: '⌘]',
     keywords: 'forward navigate 前进 导航',
     action: 'nav_forward'
   },
   {
     id: 'font-larger',
-    title: '放大字号',
+    title: INCREASE_FONT_SIZE_LABEL,
     shortcut: '⌘+',
     keywords: 'font size zoom larger 字号 放大',
     action: 'font_larger'
   },
   {
     id: 'font-smaller',
-    title: '缩小字号',
+    title: DECREASE_FONT_SIZE_LABEL,
     shortcut: '⌘-',
     keywords: 'font size zoom smaller 字号 缩小',
     action: 'font_smaller'
   },
   {
     id: 'font-reset',
-    title: '重置字号',
+    title: RESET_FONT_SIZE_LABEL,
     shortcut: '⌘0',
     keywords: 'font size reset 字号 重置',
     action: 'font_reset'
   },
   {
     id: 'clear-terminal',
-    title: '清终端',
+    title: CLEAR_TERMINAL_LABEL,
     shortcut: 'Ctrl+L',
     keywords: 'clear terminal 清屏 终端',
     action: 'clear_terminal'
@@ -477,7 +501,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'open-browser',
-    title: '打开浏览器标签',
+    title: OPEN_BROWSER_TAB_LABEL,
     shortcut: '⌘T',
     keywords: 'browser tab 浏览器 标签',
     action: 'open_browser'
@@ -525,7 +549,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'project-picker',
-    title: '打开项目选择器',
+    title: OPEN_PROJECT_PICKER_LABEL,
     shortcut: '⌘⌥⇧O',
     keywords: 'project picker workspace folder 项目 工作区',
     action: 'open_project_picker'
@@ -566,14 +590,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'undo-app',
-    title: '撤销上一次应用操作',
+    title: UNDO_LAST_APP_ACTION_LABEL,
     shortcut: '⌘Z',
     keywords: 'undo archive pin rename 撤销 归档 置顶 重命名',
     action: 'undo_app'
   },
   {
     id: 'redo-app',
-    title: '重做上一次应用操作',
+    title: REDO_LAST_APP_ACTION_LABEL,
     shortcut: '⌘⇧Z',
     keywords: 'redo 重做',
     action: 'redo_app'

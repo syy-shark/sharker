@@ -13,6 +13,7 @@ import {
   normalizeKeymap,
   type KeymapOverrides
 } from '../../../shared/keymap'
+import { KEYBOARD_SHORTCUTS_LABEL } from '../../../shared/reveal-in-folder'
 import { SettingsCard, SettingsSection } from './SettingsPrimitives'
 import './ShortcutSettings.css'
 
@@ -89,7 +90,7 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
   const resetAll = () => persist({})
 
   return (
-    <SettingsSection title="键盘快捷键">
+    <SettingsSection title={KEYBOARD_SHORTCUTS_LABEL}>
       <SettingsCard>
         <div className="shortcut-toolbar">
           <input

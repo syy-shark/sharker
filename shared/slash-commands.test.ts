@@ -46,6 +46,11 @@ describe('slash commands', () => {
     expect(names).toContain('unread')
     expect(names).toContain('usage')
     expect(names).toContain('keymap')
+    expect(names).toContain('settings')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'settings')?.description).toBe('Open settings')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'keymap')?.description).toBe(
+      'Open keyboard shortcuts'
+    )
     expect(names).toContain('project')
     expect(names).toContain('chat')
     expect(names).toContain('reasoning')
