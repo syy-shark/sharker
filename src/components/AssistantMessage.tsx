@@ -310,7 +310,7 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   const legacyProcessLabel = isStreaming
     ? activeTool
-      ? '工作中'
+      ? 'Working'
       : '思考中'
     : hadThinking
       ? '已思考并完成'

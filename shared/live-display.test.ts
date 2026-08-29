@@ -5,6 +5,7 @@ import {
   formatElapsedClock,
   formatStoppedAfterClock,
   formatStoppedAfterLabel,
+  formatWorkedForLabel,
   parseStoppedAfterSeconds,
   resolveStoppedAfterLabel,
   stoppedAfterFootnote,
@@ -336,12 +337,16 @@ describe('elapsed clock', () => {
     expect(formatElapsedClock(3599).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
     expect(formatStoppedAfterClock(0)).toBe('0s')
     expect(formatStoppedAfterClock(2848)).toBe('47m 28s')
-    expect(formatStoppedAfterLabel(0)).toBe('已停止 · 0s')
-    expect(stoppedAfterFootnote(2848)).toContain('已停止 · 47m 28s')
+    expect(formatWorkedForLabel(true)).toBe('Working')
+    expect(formatWorkedForLabel(false)).toBe('Worked for')
+    expect(formatStoppedAfterLabel(0)).toBe('You stopped after 0s')
+    expect(stoppedAfterFootnote(2848)).toContain('You stopped after 47m 28s')
     expect(parseStoppedAfterSeconds('hello\n\n_(已停止 · 47m 28s)_')).toBe(2848)
+    expect(parseStoppedAfterSeconds('hello\n\n_(You stopped after 47m 28s)_')).toBe(2848)
     expect(stripStoppedAfterFootnote('保留\n\n_(已停止 · 47m 28s)_')).toBe('保留')
+    expect(stripStoppedAfterFootnote('保留\n\n_(You stopped after 47m 28s)_')).toBe('保留')
     expect(resolveStoppedAfterLabel({ content: '_(已停止)_', startedAt: 0, endedAt: 0 })).toBe(
-      '已停止 · 0s'
+      'You stopped after 0s'
     )
   })
 })

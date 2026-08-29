@@ -240,7 +240,7 @@ export function resolveStopAction(input: {
 }): {
   /** 传给 abortChat；null 表示对话尚未落库，只收口 UI */
   abortConversationId: string | null
-  /** 写入 _(已停止 · 时长)_ 的会话；null 表示写当前可见列 */
+  /** 写入 _(You stopped after 时长)_ 的会话；null 表示写当前可见列 */
   commitStopToConversationId: string | null
   /** 首轮尚未落库也要收口直播并保留用户气泡（对标 Codex #34839 / #38896） */
   commitStopToActiveUi: boolean

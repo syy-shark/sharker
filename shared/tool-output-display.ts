@@ -65,7 +65,7 @@ export function shouldMountToolOutputDetails(options: {
   return true
 }
 
-/** 直播中不挂退出码：工具一结束就多一行会顶过程区，收束后点开「工作了」再看 */
+/** 直播中不挂退出码：工具一结束就多一行会顶过程区，收束后点开 Worked for 再看 */
 export function shouldMountToolExitCode(options: {
   exitCode: number | null | undefined
   isStreaming?: boolean
@@ -86,7 +86,7 @@ export function isToolProgressSummary(text: string | null | undefined): boolean 
 
 /**
  * 直播中不挂结果摘要：「执行中… Ns」每秒更新还会另起一行顶过程区。
- * 进度只留在直播头秒表；收束后点开「工作了」再看真正摘要。
+ * 进度只留在直播头秒表；收束后点开 Worked for 再看真正摘要。
  */
 export function shouldMountToolResultSummary(options: {
   summary?: string | null

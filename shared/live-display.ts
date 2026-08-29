@@ -265,7 +265,7 @@ export function shouldPromoteSyntheticLiveHead(
 export const NEAR_LIVE_ROW_WINDOW = 8
 
 /**
- * 正文已上屏或回合结束后，把可折叠过程收成「工作了 / 工作中」（对标 Codex Worked for）。
+ * 正文已上屏或回合结束后，把可折叠过程收成 Working / Worked for（对标 Codex）。
  * 审批/失败行不算可折叠：折叠时仍要露出来。
  */
 export function shouldFoldTurnWork(options: {
@@ -326,6 +326,14 @@ export function formatElapsedClock(seconds: number): string {
   return rem ? `${hours}h ${rem}m` : `${hours}h`
 }
 
+/** 官方直播折叠头：进行中 Working，完成后 Worked for（秒表仍走预留宽时钟） */
+export const WORKING_LABEL = 'Working'
+export const WORKED_FOR_LABEL = 'Worked for'
+
+export function formatWorkedForLabel(streaming: boolean): string {
+  return streaming ? WORKING_LABEL : WORKED_FOR_LABEL
+}
+
 /** 对标 Codex “You stopped after 47m 28s” / “You stopped after 0s”，保留分秒 */
 export function formatStoppedAfterClock(seconds: number): string {
   const s = Math.max(0, Math.round(Number.isFinite(seconds) ? seconds : 0))
@@ -341,13 +349,13 @@ export function formatStoppedAfterClock(seconds: number): string {
   return `${hours}h ${remM}m ${remS}s`
 }
 
-/** 中文直播行：已停止 · 47m 28s */
+/** 官方中止行：You stopped after 47m 28s */
 export function formatStoppedAfterLabel(seconds: number): string {
-  return `已停止 · ${formatStoppedAfterClock(seconds)}`
+  return `You stopped after ${formatStoppedAfterClock(seconds)}`
 }
 
 export const STOPPED_AFTER_FOOTNOTE_RE =
-  /\s*_\((?:已停止|You stopped after|stopped)(?:\s*[·.]\s*[^)]+)?\)_\s*$/iu
+  /\s*_\((?:已停止|You stopped after|stopped)(?:\s*[·.]?\s*[^)]+)?\)_\s*$/iu
 
 export function stoppedAfterFootnote(seconds: number): string {
   return `\n\n_(${formatStoppedAfterLabel(seconds)})_`
@@ -367,7 +375,7 @@ function parseClockToSeconds(text: string): number | undefined {
 
 export function parseStoppedAfterSeconds(content: string): number | undefined {
   const match = content.match(
-    /_\((?:已停止|You stopped after|stopped)(?:\s*[·.]\s*([^)]+))?\)_\s*$/iu
+    /_\((?:已停止|You stopped after|stopped)(?:\s*[·.]?\s*([^)]+))?\)_\s*$/iu
   )
   if (!match?.[1]) return undefined
   return parseClockToSeconds(match[1].trim())
