@@ -1,7 +1,7 @@
 /**
  * 直播 token / 回合元信息快照：引用没变则复用同一对象，供外部 store 订阅。
  * 工具心跳只换 meta / 秒表，不抬 ChatView（对标 Codex #22860）。
- * `liveStreamPatchFromSegments` 给 DEV seed / 验收一次写齐片段与秒表。
+ * `liveStreamPatchFromSegments` 给 DEV seed / 开轮准备中 / 收束与中止一次写齐片段与秒表。
  * @see shared/ARCH.md
  */
 import type { AssistantMeta, TurnSegment } from './types'
@@ -69,8 +69,8 @@ export function nextLiveStreamUi(
 }
 
 /**
- * DEV / 验收：从片段拼一帧直播补丁，避免只写秒表、过程行进不了 store。
- * `streaming` / `activeTool` 未传时从片段推导。
+ * DEV / 开轮 / 收束：从片段拼一帧直播补丁，避免只写秒表、过程行进不了 store。
+ * `streaming` / `activeTool` 未传时从片段推导；收束传入 `activeTool: null` 与最终正文。
  */
 export function liveStreamPatchFromSegments(
   segments: TurnSegment[],

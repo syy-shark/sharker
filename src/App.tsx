@@ -2684,10 +2684,20 @@ export default function App() {
           thinkRafRef.current = null
         }
         segmentsRef.current = finalizeSegments(segmentsRef.current)
-        // 先把最终片段刷到直播区，再提交到消息列表；loading 由 commit 后统一关闭，避免空窗闪断
+        const finalPreview = extractFinalContent(segmentsRef.current)
+        // 先把最终片段刷到直播 store，再提交到消息列表；loading 由 commit 后统一关闭，避免空窗闪断
+        publishLiveStreamUi(
+          liveStreamPatchFromSegments(segmentsRef.current, {
+            streaming: finalPreview || streamingRef.current,
+            activeTool: null,
+            turnStartedAt: turnStartedAtRef.current || null,
+            liveTurnMeta: liveTurnMetaRef.current,
+            turnHadThinking: turnHadThinkingRef.current
+          })
+        )
         setLiveSegments(cloneSegments(segmentsRef.current))
         setTurnThinking(thinkingPreviewFromSegments(segmentsRef.current))
-        setStreaming(extractFinalContent(segmentsRef.current))
+        setStreaming(finalPreview)
         setActiveTool(null)
         sendInFlightRef.current = false
         rememberLastTurn(completedId, [...turnChangedPathsRef.current])
@@ -3168,6 +3178,16 @@ export default function App() {
           doneCommittedRef.current = true
           const msg = e instanceof Error ? e.message : String(e)
           turnOutcomeRef.current = 'error'
+          segmentsRef.current = finalizeSegments(segmentsRef.current)
+          publishLiveStreamUi(
+            liveStreamPatchFromSegments(segmentsRef.current, {
+              streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
+              activeTool: null,
+              turnStartedAt: turnStartedAtRef.current || null,
+              liveTurnMeta: liveTurnMetaRef.current,
+              turnHadThinking: turnHadThinkingRef.current
+            })
+          )
           commitAssistantReply(streamingRef.current, `\n\n**错误**: ${msg}`, 'error')
           segmentsRef.current = []
           setLiveSegments([])
@@ -3475,6 +3495,15 @@ export default function App() {
               timestamp: Date.now()
             })
             segmentsRef.current = finalizeSegments(segmentsRef.current)
+            publishLiveStreamUi(
+              liveStreamPatchFromSegments(segmentsRef.current, {
+                streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
+                activeTool: null,
+                turnStartedAt: turnStartedAtRef.current || null,
+                liveTurnMeta: liveTurnMetaRef.current,
+                turnHadThinking: turnHadThinkingRef.current
+              })
+            )
             commitAssistantReply(
               streamingRef.current,
               '\n\n_(已停止)_',
@@ -3783,6 +3812,15 @@ export default function App() {
       })
       segmentsRef.current = finalizeSegments(segmentsRef.current)
       setLiveSegments(cloneSegments(segmentsRef.current))
+      publishLiveStreamUi(
+        liveStreamPatchFromSegments(segmentsRef.current, {
+          streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
+          activeTool: null,
+          turnStartedAt: turnStartedAtRef.current || null,
+          liveTurnMeta: liveTurnMetaRef.current,
+          turnHadThinking: turnHadThinkingRef.current
+        })
+      )
     } else if (action.commitStopToConversationId) {
       const buf = sessionBuffersRef.current.get(action.commitStopToConversationId)
       if (buf) {
@@ -3813,6 +3851,15 @@ export default function App() {
         timestamp: Date.now()
       })
       segmentsRef.current = finalizeSegments(segmentsRef.current)
+      publishLiveStreamUi(
+        liveStreamPatchFromSegments(segmentsRef.current, {
+          streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
+          activeTool: null,
+          turnStartedAt: turnStartedAtRef.current || null,
+          liveTurnMeta: liveTurnMetaRef.current,
+          turnHadThinking: turnHadThinkingRef.current
+        })
+      )
       commitAssistantReply(
         streamingRef.current,
         '\n\n_(已停止)_',

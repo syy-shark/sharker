@@ -192,5 +192,24 @@ describe('live stream ui snapshot', () => {
     expect(preparingSnap.liveSegments[0]?.content).toBe('连接模型并准备任务…')
     expect(preparingSnap.turnStartedAt).toBe(7)
     expect(nextLiveProcessView(null, preparingSnap).processForFlow[0]?.kind).toBe('status')
+    const doneSegs: TurnSegment[] = [
+      { id: 't-done', kind: 'tool', toolName: 'read_file', status: 'done', content: '' },
+      { id: 'txt-done', kind: 'text', role: 'final', status: 'done', content: 'Hello world' }
+    ]
+    const donePatch = liveStreamPatchFromSegments(doneSegs, {
+      streaming: 'Hello world',
+      activeTool: null,
+      turnStartedAt: 42,
+      liveTurnMeta: meta,
+      turnHadThinking: false
+    })
+    const doneSnap = nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, donePatch)
+    expect(doneSnap.streaming).toBe('Hello world')
+    expect(doneSnap.activeTool).toBe(null)
+    expect(doneSnap.liveSegments).toBe(doneSegs)
+    expect(doneSnap.liveTurnMeta).toBe(meta)
+    expect(doneSnap.turnStartedAt).toBe(42)
+    expect(nextLiveAnswerView(null, doneSnap).copyable).toBe('Hello world')
+    expect(nextLiveProcessView(null, doneSnap).processForFlow[0]).toBe(doneSegs[0])
   })
 })
