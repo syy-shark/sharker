@@ -163,6 +163,13 @@
   white-space: nowrap;
 }
 
+.file-tree-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .file-tree-viewer-close {
   flex-shrink: 0;
   border: none;

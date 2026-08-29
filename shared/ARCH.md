@@ -108,8 +108,8 @@
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
-| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；工作区 HTML 无行号改走内置浏览器 `file://`（对标 Codex file-backed previews / #32773，带行号仍走源码预览）；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树；`shouldRereadOpenPreviewOnReload` 让写盘 revision / 回前台在文件树内重读已打开预览（不抬 App，对标 Codex 打开文档跟着改）；`shouldAnimateFileTreeInsert` 定居后不再播进入动画（对标 Codex sidebar jitter） |
-| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、工作区 HTML → `file://`（拒工作区外与 `..`）、写盘路径是否碰到预览、写盘重拉树不清预览、写盘/回前台才重读已打开预览 |
+| `file-preview.ts` | 右侧预览种类：图 / PDF / 文本；xlsx 等办公二进制不假装表格；工作区 HTML 无行号改走内置浏览器 `file://`（对标 Codex file-backed previews / #32773，带行号仍走源码预览）；工作区 Markdown 默认可切富预览 / 源码，相对图按文档目录解析，frontmatter 不当正文（对标 Codex View preview / #31389 / #34440）；`parseGoToLineInput` / `maxDiffGotoLine` 给预览与审查 ⌘L 跳行；`previewPathTouchedByWrites` 判断打开的预览是否被本轮写盘碰到；`fileTreeReloadMode` 区分换工作区与写盘静默重拉树；`shouldRereadOpenPreviewOnReload` 让写盘 revision / 回前台在文件树内重读已打开预览（不抬 App，对标 Codex 打开文档跟着改）；`shouldAnimateFileTreeInsert` 定居后不再播进入动画（对标 Codex sidebar jitter） |
+| `file-preview.test.ts` | 扩展名分流、MIME、跳行夹取与 diff 行号上限、工作区 HTML → `file://`（拒工作区外与 `..`）、Markdown 预览/源码、frontmatter、相对图、写盘路径是否碰到预览、写盘重拉树不清预览、写盘/回前台才重读已打开预览 |
 | `git-branch-create.ts` | detached HEAD 上创建命名分支；可选 Settings 前缀 |
 | `git-branch-create.test.ts` | 拒绝非法名、前缀校验、临时仓库 checkout -b |
 | `git-branch-list.ts` | Composer 隔离起点：解析本地 + 远程跟踪分支并搜索（对标 Codex local branch search）；远程只保留 `origin/…` 完整 ref（对标 #22635） |
@@ -206,7 +206,7 @@
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
-| `side-chat-quote.ts` | 对话 / 终端 / 文件预览 / 浏览器批注 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
+| `side-chat-quote.ts` | 对话 / 终端 / 文件预览（含 Markdown 富预览）/ 浏览器批注 → 「加入对话」芯片或「旁路提问」：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex Add to chat / Ask in side chat / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注；Shift+点选区域、⌘/Ctrl+点立刻写入芯片（对标 Codex Annotation mode / hold Shift and click / Hold Cmd while clicking）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位、Shift 区域 / ⌘ 立刻提交 |

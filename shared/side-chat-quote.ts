@@ -24,7 +24,7 @@ export const SIDE_CHAT_LIVE_ROW_SEL = '.message-row--live'
 export const SIDE_CHAT_TRANSCRIPT_SEL =
   '.message-row, .message-body, .streaming-markdown, .live-prose-tail'
 export const FILE_PREVIEW_SEL =
-  '.file-tree-viewer-body, .file-tree-viewer-line, .file-tree-viewer-text'
+  '.file-tree-viewer-body, .file-tree-viewer-line, .file-tree-viewer-text, .file-md-preview'
 
 /** 官方划选条：Add to chat / Ask in side chat */
 export const ADD_TO_CHAT_LABEL = '加入对话'

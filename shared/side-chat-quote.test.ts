@@ -100,6 +100,7 @@ describe('side chat quote', () => {
     expect(shouldOfferSideChat(hits(SIDE_CHAT_LIVE_ROW_SEL))).toBe(true)
     expect(shouldOfferSideChat(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
     expect(shouldOfferSideChat(() => null)).toBe(false)
+    expect(FILE_PREVIEW_SEL).toContain('file-md-preview')
     expect(shouldOfferFilePreviewSelection(hits(FILE_PREVIEW_SEL))).toBe(true)
     expect(shouldOfferFilePreviewSelection(hits(SIDE_CHAT_COMPOSER_SEL))).toBe(false)
     expect(shouldOfferFilePreviewSelection(() => null)).toBe(false)

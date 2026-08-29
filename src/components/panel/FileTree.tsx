@@ -1,5 +1,5 @@
 /**
- * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器。
+ * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器；Markdown 默认可切富预览。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
@@ -9,14 +9,18 @@ import {
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  isMarkdownPreviewPath,
+  nextMarkdownFileView,
   resolveWorkspaceHtmlFileUrl,
   shouldAnimateFileTreeInsert,
   shouldOpenHtmlInAppBrowser,
   shouldRereadOpenPreviewOnReload,
   parseGoToLineInput,
   type FilePreviewKind,
-  type FileTreeReloadReason
+  type FileTreeReloadReason,
+  type MarkdownFileView
 } from '../../../shared/file-preview'
+import { FileMarkdownPreview } from './FileMarkdownPreview'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import {
   ADD_TO_CHAT_LABEL,
@@ -131,6 +135,7 @@ export const FileTree = memo(function FileTree({
     content?: string
     dataUrl?: string
     line?: number
+    markdownView?: MarkdownFileView
   } | null>(null)
   const openFileRef = useRef(openFile)
   openFileRef.current = openFile
@@ -139,7 +144,7 @@ export const FileTree = memo(function FileTree({
   const [goToOpen, setGoToOpen] = useState(false)
   const [goToDraft, setGoToDraft] = useState('')
   const lineTargetRef = useRef<HTMLDivElement | null>(null)
-  const viewerBodyRef = useRef<HTMLPreElement | null>(null)
+  const viewerBodyRef = useRef<HTMLElement | null>(null)
   const treeRef = useRef<HTMLDivElement | null>(null)
   const goToInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -230,7 +235,13 @@ export const FileTree = memo(function FileTree({
     if (!stillOpen()) return
     const lineCount = res.content.split('\n').length
     const clamped = line != null ? parseGoToLineInput(String(line), lineCount) ?? undefined : undefined
-    setOpenFile({ path: res.path, kind: 'text', content: res.content, line: clamped })
+    const markdownView = nextMarkdownFileView(
+      res.path,
+      clamped,
+      openFileRef.current,
+      Boolean(opts?.keepIfClosed)
+    )
+    setOpenFile({ path: res.path, kind: 'text', content: res.content, line: clamped, markdownView })
   }, [workspacePath, extraRoots])
 
   const rereadOpenPreview = useCallback(
@@ -297,6 +308,11 @@ export const FileTree = memo(function FileTree({
       if (!mod || e.altKey || e.shiftKey) return
       if (e.key !== 'l' && e.key !== 'L') return
       if (openFile?.kind !== 'text') return
+      if (openFile.markdownView === 'preview') {
+        setOpenFile((prev) =>
+          prev && prev.kind === 'text' ? { ...prev, markdownView: 'source' } : prev
+        )
+      }
       const root = treeRef.current
       if (!root) return
       const active = document.activeElement
@@ -394,9 +410,29 @@ export const FileTree = memo(function FileTree({
               {openFile.path.split('/').pop()}
               {openFile.line ? `:${openFile.line}` : ''}
             </span>
-            <button type="button" className="file-tree-viewer-close" onClick={() => setOpenFile(null)}>
-              关闭
-            </button>
+            <div className="file-tree-viewer-actions">
+              {openFile.kind === 'text' && isMarkdownPreviewPath(openFile.path) ? (
+                <button
+                  type="button"
+                  className="file-tree-viewer-close"
+                  onClick={() => {
+                    setOpenFile((prev) =>
+                      prev && prev.kind === 'text'
+                        ? {
+                            ...prev,
+                            markdownView: prev.markdownView === 'preview' ? 'source' : 'preview'
+                          }
+                        : prev
+                    )
+                  }}
+                >
+                  {openFile.markdownView === 'preview' ? '源码' : '预览'}
+                </button>
+              ) : null}
+              <button type="button" className="file-tree-viewer-close" onClick={() => setOpenFile(null)}>
+                关闭
+              </button>
+            </div>
           </div>
           {goToOpen && openFile.kind === 'text' ? (
             <form
@@ -440,6 +476,15 @@ export const FileTree = memo(function FileTree({
               className="file-tree-viewer-embed"
               src={openFile.dataUrl}
               title={openFile.path.split('/').pop() || 'PDF'}
+            />
+          ) : openFile.kind === 'text' && openFile.markdownView === 'preview' ? (
+            <FileMarkdownPreview
+              content={openFile.content ?? ''}
+              markdownPath={openFile.path}
+              workspacePath={workspacePath}
+              extraRoots={extraRoots}
+              onMouseUp={syncSideAsk}
+              bodyRef={viewerBodyRef}
             />
           ) : (
           <pre

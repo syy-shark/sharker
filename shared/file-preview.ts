@@ -1,6 +1,7 @@
 /**
  * 右侧文件预览种类：文本 / 图 / PDF；办公二进制不假装表格编辑器。
  * 工作区 HTML 无行号时改走内置浏览器 file://（对标 Codex file-backed previews / #32773）。
+ * 工作区 Markdown 默认可切富预览 / 源码（对标 Codex View preview）。
  * 对标 Codex「在同一工作区打开文档、表格、图片」。
  * @see shared/ARCH.md
  */
@@ -131,6 +132,85 @@ export function resolveWorkspaceHtmlFileUrl(
   if (roots.length === 0 || !roots.some((root) => isPathInsideRoot(abs, root))) return ''
   const url = toBrowserFileUrl(abs)
   return url ? `${url}${suffix}` : ''
+}
+
+/** 工作区 Markdown 富预览（对标 Codex View preview / #34440） */
+export function isMarkdownPreviewPath(filePath: string): boolean {
+  const ext = fileExt(stripPreviewHrefSuffix(filePath).path)
+  return ext === 'md' || ext === 'markdown'
+}
+
+export type MarkdownFileView = 'source' | 'preview'
+
+/** 无行号默认富预览；带行号走源码以便 ⌘L / 引用跳行 */
+export function defaultMarkdownFileView(filePath: string, line?: number): MarkdownFileView {
+  if (!isMarkdownPreviewPath(filePath)) return 'source'
+  if (line != null && Number.isFinite(line) && line > 0) return 'source'
+  return 'preview'
+}
+
+/** 写盘重读保住当前预览/源码；新打开带行号则切源码 */
+export function nextMarkdownFileView(
+  filePath: string,
+  line: number | undefined,
+  prev: { path?: string; markdownView?: MarkdownFileView } | null,
+  keepView: boolean
+): MarkdownFileView | undefined {
+  if (!isMarkdownPreviewPath(filePath)) return undefined
+  if (keepView && prev?.markdownView && (prev.path === filePath || prev.path?.endsWith(`/${filePath}`))) {
+    return prev.markdownView
+  }
+  return defaultMarkdownFileView(filePath, line)
+}
+
+function parentDir(absPath: string): string {
+  const norm = normScopedPath(absPath)
+  const cut = norm.lastIndexOf('/')
+  if (cut <= 0) return norm.startsWith('/') ? '/' : ''
+  return norm.slice(0, cut)
+}
+
+/** 去掉开头 YAML frontmatter，避免 --- 画成分隔线（对标 Codex #34440 预期，不抄回归） */
+export function splitMarkdownFrontmatter(src: string): { body: string; raw: string } {
+  const text = String(src ?? '').replace(/^\uFEFF/, '')
+  const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text)
+  if (!match) return { body: text, raw: '' }
+  return { body: text.slice(match[0].length), raw: match[1] ?? '' }
+}
+
+/**
+ * Markdown 预览图：先按文档目录解析相对路径，再回退工作区。
+ * 对标 Codex #31389，不认 file://。
+ */
+export function resolveMarkdownPreviewImageSrc(
+  src: string,
+  markdownAbsPath: string,
+  workspacePath: string,
+  extraRoots: readonly string[] = []
+): string {
+  const raw = String(src || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw) || /^data:image\//i.test(raw)) return raw
+  if (/^(?:javascript|vbscript|data:|mailto:|sharker:|file:)/i.test(raw)) return ''
+  if (filePreviewKind(stripPreviewHrefSuffix(raw).path) !== 'image') return ''
+  const extras = [...extraRoots]
+  let abs = ''
+  if (raw.startsWith('/') || /^[A-Za-z]:\//.test(raw)) {
+    abs = collapseDotSegments(resolveCitationPath(raw, workspacePath, extras))
+  } else {
+    const dir = parentDir(markdownAbsPath)
+    abs = dir
+      ? collapseDotSegments(`${dir}/${raw.replace(/^\.\//, '')}`)
+      : collapseDotSegments(resolveCitationPath(raw, workspacePath, extras))
+    const roots = [workspacePath, ...extras].map((root) => String(root || '').trim()).filter(Boolean)
+    if (roots.length && abs && !roots.some((root) => isPathInsideRoot(abs, root))) {
+      abs = collapseDotSegments(resolveCitationPath(raw, workspacePath, extras))
+    }
+  }
+  if (!abs) return ''
+  const roots = [workspacePath, ...extraRoots].map((root) => String(root || '').trim()).filter(Boolean)
+  if (roots.length && !roots.some((root) => isPathInsideRoot(abs, root))) return ''
+  return abs
 }
 
 /** 按扩展名分流预览；无扩展名当文本 */

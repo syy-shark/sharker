@@ -1,12 +1,20 @@
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
   dataUrlMimeForPath,
   filePreviewKind,
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
+  defaultMarkdownFileView,
   isHtmlPreviewPath,
+  isMarkdownPreviewPath,
   isPathInsideRoot,
+  nextMarkdownFileView,
+  resolveMarkdownPreviewImageSrc,
   resolveWorkspaceHtmlFileUrl,
+  splitMarkdownFrontmatter,
   shouldAnimateFileTreeInsert,
   shouldOpenHtmlInAppBrowser,
   shouldRereadOpenPreviewOnReload,
@@ -54,6 +62,36 @@ describe('file preview kinds', () => {
     expect(resolveWorkspaceHtmlFileUrl('extra/page.html', '/tmp/proj', ['/tmp/extra'])).toBe(
       'file:///tmp/extra/page.html'
     )
+    expect(isMarkdownPreviewPath('README.md')).toBe(true)
+    expect(isMarkdownPreviewPath('notes.markdown')).toBe(true)
+    expect(isMarkdownPreviewPath('src/app.ts')).toBe(false)
+    expect(defaultMarkdownFileView('README.md')).toBe('preview')
+    expect(defaultMarkdownFileView('README.md', 12)).toBe('source')
+    expect(nextMarkdownFileView('README.md', undefined, { path: '/tmp/proj/README.md', markdownView: 'source' }, true)).toBe(
+      'source'
+    )
+    expect(nextMarkdownFileView('/tmp/proj/README.md', 3, { path: '/tmp/proj/README.md', markdownView: 'preview' }, false)).toBe(
+      'source'
+    )
+    expect(splitMarkdownFrontmatter('---\ntitle: A\n---\n# Hi\n').body).toBe('# Hi\n')
+    expect(splitMarkdownFrontmatter('---\ntitle: A\n---\n# Hi\n').raw).toBe('title: A')
+    expect(splitMarkdownFrontmatter('# Hi\n').raw).toBe('')
+    expect(
+      resolveMarkdownPreviewImageSrc('assets/a.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/docs/assets/a.png')
+    expect(
+      resolveMarkdownPreviewImageSrc('docs/assets/a.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/docs/docs/assets/a.png')
+    expect(
+      resolveMarkdownPreviewImageSrc('/tmp/proj/docs/assets/a.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/docs/assets/a.png')
+    expect(
+      resolveMarkdownPreviewImageSrc('../secret.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('/tmp/proj/secret.png')
+    expect(
+      resolveMarkdownPreviewImageSrc('../../outside.png', '/tmp/proj/docs/guide.md', '/tmp/proj')
+    ).toBe('')
+    expect(resolveMarkdownPreviewImageSrc('file:///tmp/proj/a.png', '/tmp/proj/a.md', '/tmp/proj')).toBe('')
     expect(dataUrlMimeForPath('a.webp')).toBe('image/webp')
     expect(dataUrlMimeForPath('a.pdf')).toBe('application/pdf')
     expect(filePreviewUnsupportedMessage('a.xlsx')).toMatch(/表格/)
@@ -88,5 +126,12 @@ describe('file preview kinds', () => {
     expect(shouldRereadOpenPreviewOnReload('revision')).toBe(true)
     expect(shouldRereadOpenPreviewOnReload('focus')).toBe(true)
     expect(shouldRereadOpenPreviewOnReload('workspace')).toBe(false)
+    const treeSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/FileTree.tsx'),
+      'utf8'
+    )
+    expect(treeSrc).toContain('FileMarkdownPreview')
+    expect(treeSrc).toContain('nextMarkdownFileView')
+    expect(treeSrc).toContain('markdownView')
   })
 })
