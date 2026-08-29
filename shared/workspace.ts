@@ -15,6 +15,7 @@ import { normalizeBranchPrefix } from './git-branch-create'
 import { parseToolOutputDisplay } from './tool-output-display'
 import { parseFileOpener } from './file-opener'
 import { parseShowContextWindowUsage } from './context-usage-indicator'
+import { parseReduceMotion } from './reduce-motion'
 import { parseBrowserAskWhereToSave, parseBrowserDownloadPath } from './browser-downloads'
 import { parseComposerEnterBehavior } from './composer-submit'
 import { parseReviewDelivery, parseReviewProviderId } from './review-prompt'
@@ -145,6 +146,7 @@ export function normalizeSettings(
 
     uiGlass: migrateUiGlass(raw),
     uiTheme: raw.uiTheme === 'dark' ? 'dark' : 'light',
+    reduceMotion: parseReduceMotion(raw.reduceMotion),
     uiFontScale: clampUiFontScale(raw.uiFontScale),
     codeFont: parseCodeFont(raw.codeFont),
     codeFontScale: clampUiFontScale(raw.codeFontScale),

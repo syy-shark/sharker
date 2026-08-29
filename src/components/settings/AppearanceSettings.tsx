@@ -1,6 +1,7 @@
 /**
  * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
+ * Reduce Motion 写 `html.reduce-motion`，关掉直播思考扫光（对标 Codex #16857）。
  * 人格与个人说明在 `PersonalizationSettings`；回合通知在 `NotificationSettings`。
  * @see src/components/settings/ARCH.md
  */
@@ -15,6 +16,7 @@ import {
   UI_FONT_SCALE_MIN
 } from '../../../shared/ui-font-scale'
 import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
+import { parseReduceMotion, REDUCE_MOTION_LABEL } from '../../../shared/reduce-motion'
 import {
   SettingsCard,
   SettingsRow,
@@ -35,12 +37,14 @@ export function applyAppearanceDom(
   theme: 'light' | 'dark',
   fontScale = UI_FONT_SCALE_DEFAULT,
   codeFont?: string,
-  codeFontScale = UI_FONT_SCALE_DEFAULT
+  codeFontScale = UI_FONT_SCALE_DEFAULT,
+  reduceMotion = false
 ): void {
   const root = document.documentElement
   root.dataset.theme = theme
   root.classList.toggle('theme-dark', theme === 'dark')
   root.classList.toggle('theme-light', theme === 'light')
+  root.classList.toggle('reduce-motion', reduceMotion)
   // 固定材质：浅色始终玻璃，深色始终金属；不再暴露透明度滑杆
   root.classList.toggle('ui-glass', theme === 'light')
   root.classList.toggle('ui-solid', theme === 'dark')
@@ -55,14 +59,15 @@ export function applyAppearanceDom(
 }
 
 function paintDraftAppearance(
-  draft: Pick<AppSettings, 'uiTheme' | 'uiFontScale' | 'codeFont' | 'codeFontScale'>,
+  draft: Pick<AppSettings, 'uiTheme' | 'uiFontScale' | 'codeFont' | 'codeFontScale' | 'reduceMotion'>,
   theme?: 'light' | 'dark'
 ): void {
   applyAppearanceDom(
     theme ?? (draft.uiTheme === 'dark' ? 'dark' : 'light'),
     draft.uiFontScale,
     draft.codeFont,
-    draft.codeFontScale
+    draft.codeFontScale,
+    parseReduceMotion(draft.reduceMotion)
   )
 }
 
@@ -94,7 +99,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
     const t = draft.uiTheme === 'dark' ? 'dark' : 'light'
     setTheme(t)
     paintDraftAppearance(draft, t)
-  }, [draft.uiTheme, draft.uiFontScale, draft.codeFont, draft.codeFontScale])
+  }, [draft.uiTheme, draft.uiFontScale, draft.codeFont, draft.codeFontScale, draft.reduceMotion])
 
   const scheduleSave = useCallback(
     (next: AppSettings) => {
@@ -243,6 +248,24 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
               value={parseCodeFont(draft.codeFont)}
               options={CODE_FONT_OPTIONS.map((item) => ({ value: item.id, label: item.label }))}
               onChange={(value) => onCodeFont(parseCodeFont(value))}
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+      <SettingsSection title={REDUCE_MOTION_LABEL}>
+        <SettingsCard>
+          <SettingsRow
+            title={REDUCE_MOTION_LABEL}
+            description="对标 Codex Settings → Appearance Reduce Motion：关掉直播思考扫光，减轻 GPU。进度圈仍转（对标 #22787）。不跟系统辅助功能绑定。"
+            last
+          >
+            <SettingsToggle
+              checked={parseReduceMotion(draft.reduceMotion)}
+              onChange={(reduceMotion) => {
+                paintDraftAppearance({ ...draftRef.current, reduceMotion }, themeRef.current)
+                scheduleSave({ ...draftRef.current, reduceMotion })
+              }}
+              label={REDUCE_MOTION_LABEL}
             />
           </SettingsRow>
         </SettingsCard>

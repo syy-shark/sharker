@@ -80,6 +80,11 @@ export interface AppSettings {
   uiGlass?: number
   /** 外观主题：light=苹果玻璃，dark=深金属 */
   uiTheme?: 'light' | 'dark'
+  /**
+   * 关掉直播思考扫光等装饰动效（对标 Codex Settings → Appearance Reduce Motion / #16857）。
+   * 官方默认关；进度圈仍转（对标 #22787）。
+   */
+  reduceMotion?: boolean
   /** 界面字号缩放（对标 Codex ⌘+ / ⌘-）；默认 1 */
   uiFontScale?: number
   /**
@@ -465,6 +470,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   browserUseEnabled: true,
   uiGlass: 0.82,
   uiTheme: 'light',
+  reduceMotion: false,
   uiFontScale: 1,
   codeFont: 'system',
   codeFontScale: 1,

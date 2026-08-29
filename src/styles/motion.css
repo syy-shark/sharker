@@ -298,4 +298,28 @@
   .ui-interactive:active:not(:disabled) {
     transform: none;
   }
+
+  /* 官方 #22787：Reduce Motion 不关进度圈 */
+  .ui-spin {
+    animation: ui-spin 0.7s linear infinite !important;
+  }
+}
+
+/* 应用内 Reduce Motion（对标 Codex #16857）：停直播扫光，进度圈仍转 */
+html.reduce-motion .live-orb,
+html.reduce-motion .live-orb::after,
+html.reduce-motion .live-dot,
+html.reduce-motion .live-shimmer,
+html.reduce-motion .live-text-shimmer,
+html.reduce-motion .streaming-placeholder.live-shimmer {
+  animation: none !important;
+  opacity: 1;
+}
+
+html.reduce-motion .live-text-shimmer {
+  background: none;
+  color: var(--text-secondary);
+  -webkit-text-fill-color: unset;
+  -webkit-background-clip: unset;
+  background-clip: unset;
 }

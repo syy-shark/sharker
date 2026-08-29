@@ -427,9 +427,10 @@ export default function App() {
       settings.uiTheme === 'dark' ? 'dark' : 'light',
       settings.uiFontScale ?? UI_FONT_SCALE_DEFAULT,
       settings.codeFont,
-      settings.codeFontScale
+      settings.codeFontScale,
+      settings.reduceMotion === true
     )
-  }, [settings.uiTheme, settings.uiFontScale, settings.codeFont, settings.codeFontScale])
+  }, [settings.uiTheme, settings.uiFontScale, settings.codeFont, settings.codeFontScale, settings.reduceMotion])
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [page, setPage] = useState<AppPage>('chat')
   const pageRef = useRef<AppPage>('chat')
@@ -2082,6 +2083,7 @@ export default function App() {
           browserUseEnabled: updated.browserUseEnabled,
           uiGlass: updated.uiGlass,
           uiTheme: updated.uiTheme,
+          reduceMotion: updated.reduceMotion,
           personality: updated.personality,
           worktreeKeepCount: updated.worktreeKeepCount,
           worktreeRoot: updated.worktreeRoot,
@@ -2135,7 +2137,8 @@ export default function App() {
         merged.uiTheme === 'dark' ? 'dark' : 'light',
         uiFontScale,
         merged.codeFont,
-        merged.codeFontScale
+        merged.codeFontScale,
+        merged.reduceMotion === true
       )
       settingsRef.current = merged
       setSettings(merged)
@@ -2161,6 +2164,7 @@ export default function App() {
       browserUseEnabled: draft.browserUseEnabled,
       uiGlass: draft.uiGlass,
       uiTheme: draft.uiTheme,
+      reduceMotion: draft.reduceMotion,
       personality: draft.personality,
       worktreeKeepCount: draft.worktreeKeepCount,
       worktreeRoot: draft.worktreeRoot,
@@ -4249,6 +4253,7 @@ export default function App() {
       browserUseEnabled: next.browserUseEnabled,
       uiGlass: next.uiGlass,
       uiTheme: next.uiTheme,
+      reduceMotion: next.reduceMotion,
       personality: next.personality,
       worktreeKeepCount: next.worktreeKeepCount,
       worktreeRoot: next.worktreeRoot,

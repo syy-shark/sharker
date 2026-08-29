@@ -37,6 +37,10 @@ describe('workspace settings', () => {
       true
     )
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').showContextWindowUsage).toBe(false)
+    expect(normalizeSettings({}, '/home/u').reduceMotion).toBe(false)
+    expect(normalizeSettings({ reduceMotion: true }, '/home/u').reduceMotion).toBe(true)
+    expect(normalizeSettings({ reduceMotion: 'true' as never }, '/home/u').reduceMotion).toBe(false)
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').reduceMotion).toBe(false)
     expect(normalizeSettings({}, '/home/u').browserDownloadPath).toBe('')
     expect(normalizeSettings({ browserDownloadPath: ' /tmp/dl ' }, '/home/u').browserDownloadPath).toBe(
       '/tmp/dl'

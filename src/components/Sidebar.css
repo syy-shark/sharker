@@ -927,6 +927,11 @@ html.theme-dark .sidebar-live-dot {
   }
 }
 
+html.reduce-motion .sidebar-live-dot {
+  animation: none !important;
+  opacity: 0.9;
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar-project-menu.popover-enter,
