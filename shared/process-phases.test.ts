@@ -274,6 +274,16 @@ describe('process phases privacy', () => {
     expect(writeAnswerSettled).toHaveLength(2)
     expect(writeAnswerSettled![0].segment).toBe(cmdDoneDiff)
     expect(writeAnswerSettled![1].segment).toBe(cmdNextSettled)
+    const writeThinkAnswerSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, nextThink, firstReplyEarly, cmdNextSettled],
+      true
+    )
+    expect(writeThinkAnswerSettled).not.toBeNull()
+    expect(writeThinkAnswerSettled).toHaveLength(2)
+    expect(writeThinkAnswerSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writeThinkAnswerSettled![1].segment).toBe(cmdNextSettled)
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
     ).toBe(appended)
@@ -1020,6 +1030,77 @@ describe('process phases privacy', () => {
     expect(thinkDemoFenceAppend).not.toBeNull()
     expect(thinkDemoFenceAppend).toHaveLength(1)
     expect(thinkDemoFenceAppend![0]).toBe(doneRetargeted![0])
+    const writeThinkDemoFence = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, nextThinkDone, demoFence, inlineDemo],
+      true
+    )
+    expect(writeThinkDemoFence).not.toBeNull()
+    expect(writeThinkDemoFence).toHaveLength(1)
+    expect(writeThinkDemoFence![0].segment).toBe(cmdDoneDiff)
+    const writeFenceDemo = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, demoFence, inlineDemo],
+      true
+    )
+    expect(writeFenceDemo).not.toBeNull()
+    expect(writeFenceDemo).toHaveLength(1)
+    expect(writeFenceDemo![0].segment).toBe(cmdDoneDiff)
+    const writePlanThinkSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, nextThinkDone, readSettled],
+      true
+    )
+    expect(writePlanThinkSettled).not.toBeNull()
+    expect(writePlanThinkSettled).toHaveLength(3)
+    expect(writePlanThinkSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writePlanThinkSettled![1].segment).toBe(reconnectStatus)
+    expect(writePlanThinkSettled![2].segment).toBe(readSettled)
+    const writePlanTokenSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, firstReply, readSettled],
+      true
+    )
+    expect(writePlanTokenSettled).not.toBeNull()
+    expect(writePlanTokenSettled).toHaveLength(3)
+    expect(writePlanTokenSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writePlanTokenSettled![1].segment).toBe(reconnectStatus)
+    expect(writePlanTokenSettled![2].segment).toBe(readSettled)
+    const writePlanThinkTokenSettled = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, nextThinkDone, firstReply, readSettled],
+      true
+    )
+    expect(writePlanThinkTokenSettled).not.toBeNull()
+    expect(writePlanThinkTokenSettled).toHaveLength(3)
+    expect(writePlanThinkTokenSettled![0].segment).toBe(cmdDoneDiff)
+    expect(writePlanThinkTokenSettled![1].segment).toBe(reconnectStatus)
+    expect(writePlanThinkTokenSettled![2].segment).toBe(readSettled)
+    const writePlanDemo = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, demoFence, inlineDemo],
+      true
+    )
+    expect(writePlanDemo).not.toBeNull()
+    expect(writePlanDemo).toHaveLength(2)
+    expect(writePlanDemo![0].segment).toBe(cmdDoneDiff)
+    expect(writePlanDemo![1].segment).toBe(reconnectStatus)
+    const writePlanThinkDemo = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, nextThinkDone, demoFence, inlineDemo],
+      true
+    )
+    expect(writePlanThinkDemo).not.toBeNull()
+    expect(writePlanThinkDemo).toHaveLength(2)
+    expect(writePlanThinkDemo![0].segment).toBe(cmdDoneDiff)
+    expect(writePlanThinkDemo![1].segment).toBe(reconnectStatus)
     const reconnectStatusDone: TurnSegment = { ...reconnectStatus, status: 'done', endedAt: 14 }
     const nextRoundTool: TurnSegment = {
       id: 'read2',
