@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canExportChatImage,
+  chatImageMenuItems,
   chatImageAspectStyle,
   chatImageSlotMinHeight,
   liveChatImageMinHeight,
@@ -83,5 +84,18 @@ describe('chat-image', () => {
     expect(chatImageSlotMinHeight(null, false)).toBe(0)
     expect(liveChatImageMinHeight(48, { width: 16, height: 16 }, false)).toBe(48)
     expect(liveChatImageMinHeight(0, null, true)).toBe(48)
+    expect(chatImageMenuItems({ canExport: true }).map((item) => item.action)).toEqual([
+      'copy-image',
+      'save'
+    ])
+    expect(
+      chatImageMenuItems({ workspace: true, canExport: true, platform: 'darwin' }).map(
+        (item) => item.action
+      )
+    ).toEqual(['open', 'reveal', 'copy-path', 'copy-image', 'save'])
+    expect(chatImageMenuItems({ workspace: true, platform: 'darwin' })[1]?.title).toBe(
+      '在访达中显示'
+    )
+    expect(chatImageMenuItems({})).toEqual([])
   })
 })

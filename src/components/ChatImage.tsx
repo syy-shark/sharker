@@ -1,6 +1,7 @@
 /**
  * 对话渲染图：悬停复制 / 保存；工作区相对路径经 readFileDataUrl 成图。
- * 对标 Codex Save or copy rendered images，以及在同一工作区打开图片。
+ * 右键页内菜单：复制/保存；工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778）。
+ * 不订直播 token。
  * @see src/components/ARCH.md
  */
 import {
@@ -12,10 +13,12 @@ import {
   useState,
   type ReactNode
 } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, Copy, Download } from 'lucide-react'
 import {
   canExportChatImage,
   chatImageAspectStyle,
+  chatImageMenuItems,
   chatImageSlotMinHeight,
   liveChatImageMinHeight,
   isRemoteChatImageSrc,
@@ -28,7 +31,12 @@ import {
   writeCachedWorkspaceImageDataUrl,
   type ChatImageExportInput
 } from '../../shared/chat-image'
-import { dispatchOpenWorkspaceFile } from '../lib/open-workspace-file'
+import { clampReviewMenuPosition } from '../../shared/review-file-click'
+import {
+  dispatchCopyWorkspaceFilePath,
+  dispatchOpenWorkspaceFile,
+  dispatchRevealWorkspaceFile
+} from '../lib/open-workspace-file'
 import './MessageActions.css'
 import './ChatImage.css'
 
@@ -106,6 +114,7 @@ export function ChatImage({
   const [failed, setFailed] = useState(false)
   const [copied, setCopied] = useState(false)
   const [, setSizeTick] = useState(0)
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
@@ -176,6 +185,30 @@ export function ChatImage({
     await window.sharker.saveChatImage(input)
   }
 
+  const menuItems = chatImageMenuItems({
+    workspace: workspaceSrc,
+    canExport,
+    platform: typeof window !== 'undefined' ? window.sharker?.platform : undefined
+  })
+
+  useEffect(() => {
+    if (!menu) return
+    const onDoc = (event: MouseEvent) => {
+      const node = event.target
+      if (node instanceof Element && node.closest('[data-chat-image-menu]')) return
+      setMenu(null)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
+
   if (!remote && !workspaceSrc) return null
   if (workspaceSrc && (!absPath || failed)) return null
 
@@ -190,6 +223,18 @@ export function ChatImage({
         workspaceSrc ? ' chat-image--workspace' : ''
       }`}
       style={reserved ? { minHeight: reserved } : undefined}
+      onContextMenu={(event) => {
+        if (menuItems.length === 0) return
+        event.preventDefault()
+        event.stopPropagation()
+        const next = clampReviewMenuPosition(
+          event.clientX,
+          event.clientY,
+          { width: 176, height: Math.max(36, menuItems.length * 32 + 12) },
+          { width: window.innerWidth, height: window.innerHeight }
+        )
+        setMenu({ x: next.x, y: next.y })
+      }}
     >
       {displaySrc ? (
         <img
@@ -238,6 +283,40 @@ export function ChatImage({
           </button>
         </span>
       ) : null}
+      {menu && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              className="chat-image-menu glass-popover popover-enter"
+              role="menu"
+              data-chat-image-menu
+              style={{ top: menu.y, left: menu.x }}
+            >
+              {menuItems.map((item) => (
+                <button
+                  key={item.action}
+                  type="button"
+                  role="menuitem"
+                  className="chat-image-menu-item"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (item.action === 'open') openWorkspace()
+                    else if (item.action === 'reveal' && workspaceSrc) {
+                      dispatchRevealWorkspaceFile(src)
+                    } else if (item.action === 'copy-path' && workspaceSrc) {
+                      dispatchCopyWorkspaceFilePath(src)
+                    } else if (item.action === 'copy-image') void copy()
+                    else if (item.action === 'save') void save()
+                    setMenu(null)
+                  }}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )
+        : null}
     </span>
   )
 }

@@ -1,11 +1,13 @@
 /**
  * 对话渲染图：导出文件名与来源判定（对标 Codex Save or copy rendered images）。
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
+ * 右键：复制/保存图片；工作区图再加打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单）。
  * @see shared/ARCH.md
  */
 
 import { resolveCitationPath } from './file-citation'
 import { filePreviewKind } from './file-preview'
+import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
 
 export type ChatImageExportInput = {
   src?: string
@@ -97,6 +99,28 @@ export function resolveWorkspaceChatImagePath(
 export function canExportChatImage(input: ChatImageExportInput): boolean {
   if (input.filePath?.trim()) return true
   return isRemoteChatImageSrc(input.src)
+}
+
+export type ChatImageMenuAction = 'open' | 'reveal' | 'copy-path' | 'copy-image' | 'save'
+
+/** 图片右键：页内复制/保存，避免官方原生 Save Image As 崩进程（#40778） */
+export function chatImageMenuItems(options: {
+  workspace?: boolean
+  canExport?: boolean
+  platform?: RevealFolderPlatform
+}): Array<{ action: ChatImageMenuAction; title: string }> {
+  const items: Array<{ action: ChatImageMenuAction; title: string }> = []
+  if (options.workspace) {
+    items.push(
+      { action: 'open', title: '打开预览' },
+      { action: 'reveal', title: revealInFolderLabel(options.platform) },
+      { action: 'copy-path', title: '复制路径' }
+    )
+  }
+  if (options.canExport) {
+    items.push({ action: 'copy-image', title: '复制图片' }, { action: 'save', title: '保存图片' })
+  }
+  return items
 }
 
 /** 已测到的渲染图固有尺寸，直播重挂时首帧就占位，避免从 0 高撑开贴底 */
