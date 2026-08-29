@@ -69,6 +69,20 @@ export function resolveRestoredScrollTop(
   }
 }
 
+/**
+ * 查找 / 回编：只算对话柱该写的 scrollTop，不调用 scrollIntoView
+ *（避免直播增高把祖先或贴底一起拽走，对标 Codex #38220）。
+ */
+export function scrollTopToCenterChild(
+  scroller: TranscriptScrollBox & { top: number },
+  child: { top: number; height: number }
+): number {
+  const childTop = child.top - scroller.top + scroller.scrollTop
+  const next = childTop - (scroller.clientHeight - child.height) / 2
+  const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight)
+  return Math.min(maxTop, Math.max(0, next))
+}
+
 /** 内容还没画到保存时的高度（图 / mermaid）时先按距底占位，等高了再钉 scrollTop */
 export function shouldDeferScrollRestore(
   el: Pick<TranscriptScrollBox, 'scrollHeight' | 'clientHeight'>,

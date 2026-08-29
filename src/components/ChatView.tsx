@@ -56,6 +56,7 @@ import {
 import {
   captureTranscriptScroll,
   resolveRestoredScrollTop,
+  scrollTopToCenterChild,
   shouldDeferScrollRestore,
   type TranscriptScrollSnapshot
 } from '../../shared/transcript-scroll'
@@ -1146,12 +1147,23 @@ export function ChatView({
       setPinnedStart(null)
       return
     }
+    const scroller = messagesRef.current
     const el = document.getElementById(`msg-${findCurrent.messageId}`)
-    if (!el) return
+    if (!scroller || !el) return
     lockUserScroll()
     setCanJumpToBottom(true)
     programmaticScrollRef.current = true
-    el.scrollIntoView({ block: 'center', behavior: 'auto' })
+    const scrollerBox = scroller.getBoundingClientRect()
+    const childBox = el.getBoundingClientRect()
+    scroller.scrollTop = scrollTopToCenterChild(
+      {
+        top: scrollerBox.top,
+        scrollTop: scroller.scrollTop,
+        scrollHeight: scroller.scrollHeight,
+        clientHeight: scroller.clientHeight
+      },
+      { top: childBox.top, height: childBox.height }
+    )
     requestAnimationFrame(() => {
       programmaticScrollRef.current = false
       rememberTranscriptSnapshot()
@@ -1574,10 +1586,26 @@ export function ChatView({
       setPinnedStart((p) => windowStartToCoverIndex(messages.length, p, idx))
     }
     setEditUserMessageId(id)
+    lockUserScroll()
     requestAnimationFrame(() => {
-      document.getElementById(`msg-${id}`)?.scrollIntoView({ block: 'center' })
+      const scroller = messagesRef.current
+      const el = document.getElementById(`msg-${id}`)
+      if (!scroller || !el) return
+      const scrollerBox = scroller.getBoundingClientRect()
+      const childBox = el.getBoundingClientRect()
+      programmaticScrollRef.current = true
+      scroller.scrollTop = scrollTopToCenterChild(
+        {
+          top: scrollerBox.top,
+          scrollTop: scroller.scrollTop,
+          scrollHeight: scroller.scrollHeight,
+          clientHeight: scroller.clientHeight
+        },
+        { top: childBox.top, height: childBox.height }
+      )
+      programmaticScrollRef.current = false
     })
-  }, [messages])
+  }, [messages, lockUserScroll])
 
   const handleEditRequestHandled = useCallback(() => {
     setEditUserMessageId(null)

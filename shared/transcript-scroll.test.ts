@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   captureTranscriptScroll,
   resolveRestoredScrollTop,
+  scrollTopToCenterChild,
   shouldDeferScrollRestore
 } from './transcript-scroll'
 import type { ChatMessage } from './types'
@@ -285,5 +286,17 @@ describe('transcript scroll restore', () => {
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 40, messages: [kept] })).toBe(true)
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [kept] })).toBe(false)
     expect(shouldReloadUnslimmedHistory({ historyStartSeq: 0, messages: [slimed] })).toBe(true)
+    expect(
+      scrollTopToCenterChild(
+        { top: 0, scrollTop: 800, scrollHeight: 4000, clientHeight: 800 },
+        { top: 200, height: 80 }
+      )
+    ).toBe(640)
+    expect(
+      scrollTopToCenterChild(
+        { top: 0, scrollTop: 0, scrollHeight: 400, clientHeight: 800 },
+        { top: 10, height: 40 }
+      )
+    ).toBe(0)
   })
 })

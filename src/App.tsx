@@ -223,6 +223,7 @@ import {
 } from '../shared/session-runtime'
 import {
   appendConsumedSteerMessage,
+  appendFinishLeftoverSteers,
   applyHeldBusyFollowUp,
   cancelHeldBusyFollowUp,
   createPendingSteer,
@@ -1488,12 +1489,14 @@ export default function App() {
         content: text,
         meta
       }
-      const leftoverIds = targetId
-        ? (leftoverFinishByConvRef.current.get(targetId) ?? []).map((item) => item.id)
-        : []
+      const leftover = targetId ? leftoverFinishByConvRef.current.get(targetId) ?? [] : []
+      const leftoverIds = leftover.map((item) => item.id)
+      const withLeftover = leftoverIds.length
+        ? appendFinishLeftoverSteers(sourceMessages, leftover)
+        : sourceMessages
       const next = leftoverIds.length
-        ? placeMessageBeforeIds(sourceMessages, assistant, leftoverIds)
-        : upsertAssistantMessage(sourceMessages, assistant)
+        ? placeMessageBeforeIds(withLeftover, assistant, leftoverIds)
+        : upsertAssistantMessage(withLeftover, assistant)
 
       if (targetId) {
         doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, targetId)
@@ -2126,11 +2129,14 @@ export default function App() {
           text: chunk.content || pending?.text || '',
           attachments: pending?.attachments
         }
-        const nextMsgs = appendConsumedSteerMessage(targetMsgs, consumed)
-        if (chunk.steerFinish && consumed.text.trim()) {
-          const prev = leftoverFinishByConvRef.current.get(ownerId) ?? []
-          leftoverFinishByConvRef.current.set(ownerId, [...prev, consumed])
+        if (chunk.steerFinish) {
+          if (consumed.text.trim()) {
+            const prev = leftoverFinishByConvRef.current.get(ownerId) ?? []
+            leftoverFinishByConvRef.current.set(ownerId, [...prev, consumed])
+          }
+          return
         }
+        const nextMsgs = appendConsumedSteerMessage(targetMsgs, consumed)
         if (applyToUi) {
           messagesRef.current = nextMsgs
           setMessages(nextMsgs)
@@ -2247,10 +2253,14 @@ export default function App() {
               outcome: buf.turnOutcome
             }
           }
-          const leftoverIds = (leftoverFinishByConvRef.current.get(ownerId) ?? []).map((item) => item.id)
+          const leftover = leftoverFinishByConvRef.current.get(ownerId) ?? []
+          const leftoverIds = leftover.map((item) => item.id)
+          const withLeftover = leftoverIds.length
+            ? appendFinishLeftoverSteers(buf.messages, leftover)
+            : buf.messages
           buf.messages = leftoverIds.length
-            ? placeMessageBeforeIds(buf.messages, assistant, leftoverIds)
-            : upsertAssistantMessage(buf.messages, assistant)
+            ? placeMessageBeforeIds(withLeftover, assistant, leftoverIds)
+            : upsertAssistantMessage(withLeftover, assistant)
           buf.streaming = ''
           buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
           buf.changedRelPaths = []
@@ -2505,12 +2515,14 @@ export default function App() {
                 outcome: buf.turnOutcome
               }
             }
-            const leftoverIds = (leftoverFinishByConvRef.current.get(completedId!) ?? []).map(
-              (item) => item.id
-            )
+            const leftover = leftoverFinishByConvRef.current.get(completedId!) ?? []
+            const leftoverIds = leftover.map((item) => item.id)
+            const withLeftover = leftoverIds.length
+              ? appendFinishLeftoverSteers(buf.messages, leftover)
+              : buf.messages
             buf.messages = leftoverIds.length
-              ? placeMessageBeforeIds(buf.messages, assistant, leftoverIds)
-              : upsertAssistantMessage(buf.messages, assistant)
+              ? placeMessageBeforeIds(withLeftover, assistant, leftoverIds)
+              : upsertAssistantMessage(withLeftover, assistant)
             buf.streaming = ''
             buf.lastTurnPaths = [...(buf.changedRelPaths ?? [])]
             buf.changedRelPaths = []

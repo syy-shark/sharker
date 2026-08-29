@@ -278,6 +278,19 @@ export function formatSteerForModel(item: PendingSteerItem): string {
   return `${text}\n\n[附件: ${names.join(', ')}]`
 }
 
+/** 收束残留：等助手行落盘后再写入，避免直播中途插用户气泡拽贴底 */
+export function appendFinishLeftoverSteers(
+  messages: ChatMessage[],
+  leftovers: Array<Pick<PendingSteerItem, 'id' | 'text' | 'attachments'>>
+): ChatMessage[] {
+  let next = messages
+  for (const item of leftovers) {
+    if (!String(item.text || '').trim()) continue
+    next = appendConsumedSteerMessage(next, item)
+  }
+  return next
+}
+
 /** 排空后写入对话历史；已有同一 id 不重复（对标 committed UserMessage） */
 export function appendConsumedSteerMessage(
   messages: ChatMessage[],

@@ -298,6 +298,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘P', title: '引用工作区文件' },
   { keys: '⌘W', title: '关闭右侧面板' },
   { keys: '⌘T', title: '打开浏览器标签' },
+  { keys: '⌘R / ⌘⇧R', title: '浏览器刷新 / 无缓存刷新（聚焦时）' },
   { keys: '⌘L', title: '跳到行 / 浏览器地址栏（视焦点）' },
   { keys: '鼠标侧键', title: '后退 / 前进' },
   { keys: '⌘↑ / ⌘↓ / Home / End', title: '对话顶 / 底' },

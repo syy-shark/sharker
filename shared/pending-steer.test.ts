@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendConsumedSteerMessage,
+  appendFinishLeftoverSteers,
   applyHeldBusyFollowUp,
   cancelHeldBusyFollowUp,
   cancelPendingSteer,
@@ -69,6 +70,16 @@ describe('pending steer mailbox', () => {
       ['s-late']
     )
     expect(placed.map((m) => m.id)).toEqual(['s-a', 'a1', 's-late'])
+    expect(
+      placeMessageBeforeIds(
+        appendFinishLeftoverSteers([{ id: 'live', role: 'user', content: '问' } as (typeof msgs)[0]], [
+          { id: 's-late', text: '残留' }
+        ]),
+        { id: 'a1', role: 'assistant', content: '答' } as (typeof msgs)[0],
+        ['s-late']
+      ).map((m) => m.id)
+    ).toEqual(['live', 'a1', 's-late'])
+    expect(appendFinishLeftoverSteers(msgs, [{ id: 's-a', text: '改用测试' }])).toBe(msgs)
     expect(queuedChipPrimaryAction(true)).toBe('steer')
     expect(queuedChipPrimaryAction(false)).toBe('send')
     expect(resolveBusyFollowUp({ intent: 'queue' })).toBe('queue')
