@@ -219,7 +219,7 @@ describe('process phases privacy', () => {
       status: 'active',
       startedAt: 15
     }
-    const cmdSteps = deriveChronologicalSteps([runningCmd], { isStreaming: true })
+    const approvalSteps = deriveChronologicalSteps([runningCmd], { isStreaming: true })
     const approvalReq = {
       id: 'appr-1',
       title: '执行命令',
@@ -237,7 +237,7 @@ describe('process phases privacy', () => {
       startedAt: 16
     }
     const afterApproval = appendProcessPhaseStepOnToolStart(
-      cmdSteps,
+      approvalSteps,
       [runningCmd],
       [cmdAwaiting, awaitingStatus],
       true
