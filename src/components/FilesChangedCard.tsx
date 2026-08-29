@@ -1,6 +1,6 @@
 /**
- * 对话「已改 N 个文件」卡：标题打开审查，展开列短标签与种类，右键打开 / 访达 / 复制路径。
- * 不订直播 token，只吃本轮路径列表（对标 Codex Files changed / #20700 / #21426）。
+ * 对话「已改 N 个文件」卡：标题打开审查，展开列短标签、种类与 +/-，右键打开 / 访达 / 复制路径。
+ * 不订直播 token，只吃路径列表与已合计的 +/-（对标 Codex Files changed / #20700 / #21426）。
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
@@ -11,7 +11,10 @@ import {
   filesChangedDisplayPaths,
   filesChangedFileMenuItems,
   filesChangedHeaderTargetFromElement,
-  filesChangedKindLabel
+  filesChangedKindLabel,
+  filesChangedStatsForPath,
+  formatFilesChangedLineStats,
+  type FilesChangedLineStats
 } from '../../shared/files-changed-card'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import {
@@ -24,13 +27,54 @@ import './FilesChangedCard.css'
 interface Props {
   files: readonly string[]
   live?: boolean
+  added?: number
+  removed?: number
+  fileStats?: Readonly<Record<string, FilesChangedLineStats>>
   onOpenReview?: (paths: string[]) => void
+}
+
+function FilesChangedStatsMarks({
+  added,
+  removed,
+  reserve
+}: {
+  added: number
+  removed: number
+  reserve?: boolean
+}) {
+  const label = formatFilesChangedLineStats(added, removed)
+  if (!label && !reserve) return null
+  return (
+    <span
+      className="files-changed-card__stats"
+      title={label || undefined}
+      aria-hidden={!label}
+    >
+      <span
+        className={`files-changed-card__stat files-changed-card__stat--add${
+          added ? '' : ' is-empty'
+        }`}
+      >
+        +{added}
+      </span>
+      <span
+        className={`files-changed-card__stat files-changed-card__stat--del${
+          removed ? '' : ' is-empty'
+        }`}
+      >
+        −{removed}
+      </span>
+    </span>
+  )
 }
 
 /** 本轮写盘摘要卡 */
 export const FilesChangedCard = memo(function FilesChangedCard({
   files,
   live = false,
+  added = 0,
+  removed = 0,
+  fileStats,
   onOpenReview
 }: Props) {
   const paths = filesChangedDisplayPaths(files)
@@ -61,6 +105,8 @@ export const FilesChangedCard = memo(function FilesChangedCard({
 
   if (paths.length === 0) return null
   const label = formatChangedFilesLabel(paths.length)
+  const totalsLabel = formatFilesChangedLineStats(added, removed)
+  const chipTitle = totalsLabel ? `${label} ${totalsLabel}` : label
 
   return (
     <div className="files-changed-card">
@@ -69,7 +115,7 @@ export const FilesChangedCard = memo(function FilesChangedCard({
           <button
             type="button"
             className={`assistant-meta-chip${live ? ' assistant-meta-chip--live' : ''}`}
-            title="打开本轮审查"
+            title={chipTitle}
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -82,11 +128,13 @@ export const FilesChangedCard = memo(function FilesChangedCard({
           >
             <span>已改</span>
             <span className="assistant-meta-chip-value">{paths.length} 个文件</span>
+            <FilesChangedStatsMarks added={added} removed={removed} reserve={live} />
           </button>
         ) : (
-          <span className="assistant-meta-chip assistant-meta-chip--static" title={label}>
+          <span className="assistant-meta-chip assistant-meta-chip--static" title={chipTitle}>
             <span>已改</span>
             <span className="assistant-meta-chip-value">{paths.length} 个文件</span>
+            <FilesChangedStatsMarks added={added} removed={removed} reserve={live} />
           </span>
         )}
         <button
@@ -116,13 +164,18 @@ export const FilesChangedCard = memo(function FilesChangedCard({
       >
         <div className="files-changed-card__collapse-inner">
           <ul className="files-changed-card__list">
-            {paths.map((path) => (
+            {paths.map((path) => {
+              const stats = filesChangedStatsForPath(path, fileStats)
+              const statsLabel = stats
+                ? formatFilesChangedLineStats(stats.added, stats.removed)
+                : ''
+              return (
               <li key={path}>
                 <button
                   type="button"
                   className="files-changed-card__file"
                   data-files-changed-file
-                  title={`${path} · 打开`}
+                  title={statsLabel ? `${path} · ${statsLabel} · 打开` : `${path} · 打开`}
                   aria-label={path}
                   onClick={(event) => {
                     event.preventDefault()
@@ -149,9 +202,13 @@ export const FilesChangedCard = memo(function FilesChangedCard({
                       {filesChangedKindLabel(path)}
                     </span>
                   ) : null}
+                  {stats && statsLabel ? (
+                    <FilesChangedStatsMarks added={stats.added} removed={stats.removed} />
+                  ) : null}
                 </button>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </div>
       </div>

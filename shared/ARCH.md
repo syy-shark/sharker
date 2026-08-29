@@ -128,8 +128,8 @@
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
 | `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`parseLiveReviewFindings` 只认已闭合围栏；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline） |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、审查面板订直播切片 |
-| `files-changed-card.ts` | 对话「已改 N 个文件」卡：标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径（对标 Codex Files changed / #20700 / #21426）。不发明回合 Undo |
-| `files-changed-card.test.ts` | 标题 vs 展开、平台揭示文案、路径去重、basename 碰撞标签、种类标签 |
+| `files-changed-card.ts` | 对话「已改 N 个文件」卡：标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象（对标 Codex Files changed / Edited N files / #20700 / #21426）。不发明回合 Undo |
+| `files-changed-card.test.ts` | 标题 vs 展开、平台揭示文案、路径去重、basename 碰撞标签、种类标签、HTML 文档种类、片段 +/- 合计与复用 |
 | `review-file-click.ts` | 审查文件名走 `file_opener`、行背景展开/收起、⌘单击行跳预览；右键「打开预览 / 在访达中显示 / 展开 diff」（对标 Codex review Open in Finder / file tree open menu） |
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项含揭示与菜单位置夹取 |
 | `reveal-in-folder.ts` | 官方 Open in Finder / Explorer / File Manager：平台文案、线程项目目录、审查文件绝对路径、侧栏线程菜单项（含复制为 Markdown，对标 Codex #25646）、顶栏 Copy 子菜单项。不接自定义 Open with |

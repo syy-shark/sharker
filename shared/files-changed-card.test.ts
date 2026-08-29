@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  EMPTY_FILES_CHANGED_STATS,
   filesChangedDisplayLabel,
   filesChangedDisplayPaths,
   filesChangedFileMenuItems,
   filesChangedHeaderTargetFromElement,
-  filesChangedKindLabel
+  filesChangedKindLabel,
+  filesChangedStatsForPath,
+  filesChangedStatsFromSegments,
+  formatFilesChangedLineStats,
+  nextFilesChangedStats
 } from './files-changed-card'
 
 describe('files changed card', () => {
@@ -27,6 +32,38 @@ describe('files changed card', () => {
     expect(filesChangedDisplayLabel('docs/guide.md', ['docs/guide.md'])).toBe('guide.md')
     expect(filesChangedKindLabel('docs/guide.md')).toBe('Document · MD')
     expect(filesChangedKindLabel('shot.JPEG')).toBe('Image · JPG')
+    expect(filesChangedKindLabel('index.html')).toBe('Document · HTML')
     expect(filesChangedKindLabel('src/a.ts')).toBe('')
+    expect(formatFilesChangedLineStats(16, 199)).toBe('+16 −199')
+    expect(formatFilesChangedLineStats(0, 0)).toBe('')
+    const first = filesChangedStatsFromSegments([
+      {
+        editPreview: [{ path: 'src/a.ts', stats: { added: 2, removed: 1 } }]
+      },
+      {
+        fileDiff: { path: 'src/a.ts', stats: { added: 16, removed: 199 } },
+        fileDiffs: [{ path: 'docs/guide.md', stats: { added: 4, removed: 0 } }]
+      }
+    ])
+    expect(first).toEqual({
+      added: 20,
+      removed: 199,
+      byPath: {
+        'src/a.ts': { added: 16, removed: 199 },
+        'docs/guide.md': { added: 4, removed: 0 }
+      }
+    })
+    expect(filesChangedStatsForPath('src\\\\a.ts', first.byPath)).toEqual({
+      added: 16,
+      removed: 199
+    })
+    expect(filesChangedStatsFromSegments([])).toBe(EMPTY_FILES_CHANGED_STATS)
+    const again = nextFilesChangedStats(first, [
+      {
+        fileDiff: { path: 'src/a.ts', stats: { added: 16, removed: 199 } },
+        fileDiffs: [{ path: 'docs/guide.md', stats: { added: 4, removed: 0 } }]
+      }
+    ])
+    expect(again).toBe(first)
   })
 })

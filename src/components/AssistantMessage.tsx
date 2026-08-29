@@ -28,6 +28,7 @@ import {
   turnProcessBounds
 } from '../../shared/live-display'
 import { MessageActions } from './MessageActions'
+import { nextFilesChangedStats } from '../../shared/files-changed-card'
 import { FilesChangedCard } from './FilesChangedCard'
 import { ProcessTimeline } from './ProcessTimeline'
 import { ThoughtDisclosure, TurnFlow } from './TurnFlow'
@@ -131,6 +132,7 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   const browsedFiles = meta?.browsedFiles ?? []
   const changedFiles = meta?.changedFiles ?? []
+  const changedStats = useMemo(() => nextFilesChangedStats(null, segments), [segments])
   const hadThinking = meta?.hadThinking ?? hadThinkingLive
   // Keep the UI at a high-level status; raw provider reasoning remains internal.
   const thinkingText = hadThinking
@@ -572,6 +574,9 @@ export const AssistantMessage = memo(function AssistantMessage({
         <FilesChangedCard
           files={changedFiles}
           live={Boolean(isStreaming)}
+          added={changedStats.added}
+          removed={changedStats.removed}
+          fileStats={changedStats.byPath}
           onOpenReview={onOpenChangedFiles}
         />
       ) : null}

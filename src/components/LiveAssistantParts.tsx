@@ -7,6 +7,10 @@ import { memo } from 'react'
 import type { ApprovalRequest, AssistantMeta } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { shouldMountMessageActions } from '../../shared/live-display'
+import {
+  nextFilesChangedStats,
+  type FilesChangedStatsView
+} from '../../shared/files-changed-card'
 import { FilesChangedCard } from './FilesChangedCard'
 import {
   liveAnswerViewFromSnap,
@@ -121,6 +125,29 @@ const LiveStoreActions = memo(function LiveStoreActions({ messageId }: { message
   )
 })
 
+/** 已改文件卡：只订片段 +/-，token 数字没变不重绘 */
+const LiveFilesChangedCard = memo(function LiveFilesChangedCard({
+  files,
+  onOpenReview
+}: {
+  files: readonly string[]
+  onOpenReview?: (paths: string[]) => void
+}) {
+  const stats = useLiveStreamUiSelect((snap, prev: FilesChangedStatsView | undefined) =>
+    nextFilesChangedStats(prev ?? null, snap.liveSegments)
+  )
+  return (
+    <FilesChangedCard
+      files={files}
+      live
+      added={stats.added}
+      removed={stats.removed}
+      fileStats={stats.byPath}
+      onOpenReview={onOpenReview}
+    />
+  )
+})
+
 /** 直播助手正文：外壳不订 token */
 export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   messageId,
@@ -165,7 +192,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
         />
       ) : null}
       {changedFiles.length > 0 ? (
-        <FilesChangedCard files={changedFiles} live onOpenReview={onOpenChangedFiles} />
+        <LiveFilesChangedCard files={changedFiles} onOpenReview={onOpenChangedFiles} />
       ) : null}
       <LiveStoreActions messageId={messageId} />
     </article>

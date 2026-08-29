@@ -81,6 +81,34 @@
   color: var(--text-secondary);
 }
 
+.files-changed-card__stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.files-changed-card__stat {
+  display: inline-block;
+  min-width: 4ch;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.files-changed-card__stat--add {
+  color: var(--success);
+}
+
+.files-changed-card__stat--del {
+  color: var(--danger);
+}
+
+.files-changed-card__stat.is-empty {
+  visibility: hidden;
+}
+
 .files-changed-card__file:hover,
 .files-changed-card__file:focus-visible {
   color: var(--text);

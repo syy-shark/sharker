@@ -1,11 +1,143 @@
 /**
  * 对话里「已改 N 个文件」卡（对标 Codex Files changed card / N files edited / artifact cards）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
+ * 头栏与文件行可画 +N −M（对标 Codex Edited N files / TUI render_changes_block）。
  * 右键打开 / 揭示 / 复制路径。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
 
 import { revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
+
+export type FilesChangedLineStats = { added: number; removed: number }
+
+/** 头栏合计 + 按路径；数字没变就复用同一对象，避免直播 token 重挂卡 */
+export type FilesChangedStatsView = {
+  added: number
+  removed: number
+  byPath: Readonly<Record<string, FilesChangedLineStats>>
+}
+
+export const EMPTY_FILES_CHANGED_STATS: FilesChangedStatsView = {
+  added: 0,
+  removed: 0,
+  byPath: {}
+}
+
+type FilesChangedStatSource = 'done' | 'preview'
+
+type FilesChangedStatSegment = {
+  fileDiff?: { path?: string; stats?: FilesChangedLineStats }
+  fileDiffs?: Array<{ path?: string; stats?: FilesChangedLineStats }>
+  editPreview?: Array<{ path?: string; stats?: FilesChangedLineStats }>
+}
+
+function normalizeFilesChangedPath(path: string): string {
+  return String(path || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/{2,}/g, '/')
+}
+
+function addFilesChangedStat(
+  map: Map<string, FilesChangedLineStats & { source: FilesChangedStatSource }>,
+  path: string,
+  stats: FilesChangedLineStats | undefined,
+  source: FilesChangedStatSource
+): void {
+  const norm = normalizeFilesChangedPath(path)
+  if (!norm) return
+  const added = Math.max(0, stats?.added ?? 0)
+  const removed = Math.max(0, stats?.removed ?? 0)
+  const existing = map.get(norm)
+  if (existing) {
+    if (source === 'preview' && existing.source === 'done') return
+    if (source === 'done' && existing.source === 'preview') {
+      map.set(norm, { added, removed, source })
+      return
+    }
+    existing.added += added
+    existing.removed += removed
+    return
+  }
+  map.set(norm, { added, removed, source })
+}
+
+function sameFilesChangedByPath(
+  left: Readonly<Record<string, FilesChangedLineStats>>,
+  right: Readonly<Record<string, FilesChangedLineStats>>
+): boolean {
+  const leftKeys = Object.keys(left)
+  const rightKeys = Object.keys(right)
+  if (leftKeys.length !== rightKeys.length) return false
+  for (const key of leftKeys) {
+    const a = left[key]
+    const b = right[key]
+    if (!a || !b || a.added !== b.added || a.removed !== b.removed) return false
+  }
+  return true
+}
+
+/** 从本轮片段合计 +/-；同一路径预览被完成后的 diff 盖掉，多次完成则累加 */
+export function filesChangedStatsFromSegments(
+  segments: readonly FilesChangedStatSegment[] | null | undefined
+): FilesChangedStatsView {
+  const map = new Map<string, FilesChangedLineStats & { source: FilesChangedStatSource }>()
+  for (const segment of segments ?? []) {
+    if (segment.fileDiff) {
+      addFilesChangedStat(map, segment.fileDiff.path ?? '', segment.fileDiff.stats, 'done')
+    }
+    for (const diff of segment.fileDiffs ?? []) {
+      addFilesChangedStat(map, diff.path ?? '', diff.stats, 'done')
+    }
+    for (const preview of segment.editPreview ?? []) {
+      addFilesChangedStat(map, preview.path ?? '', preview.stats, 'preview')
+    }
+  }
+  if (map.size === 0) return EMPTY_FILES_CHANGED_STATS
+  const byPath: Record<string, FilesChangedLineStats> = {}
+  let added = 0
+  let removed = 0
+  for (const [path, stats] of map) {
+    byPath[path] = { added: stats.added, removed: stats.removed }
+    added += stats.added
+    removed += stats.removed
+  }
+  return { added, removed, byPath }
+}
+
+/** 数字没变退回 prev，直播 token / 心跳不换卡上的 +/- 对象 */
+export function nextFilesChangedStats(
+  prev: FilesChangedStatsView | null,
+  segments: readonly FilesChangedStatSegment[] | null | undefined
+): FilesChangedStatsView {
+  const next = filesChangedStatsFromSegments(segments)
+  if (
+    prev &&
+    prev.added === next.added &&
+    prev.removed === next.removed &&
+    sameFilesChangedByPath(prev.byPath, next.byPath)
+  ) {
+    return prev
+  }
+  return next
+}
+
+/** 与审查合计同一套 `+N −M`；两边都是 0 则空串 */
+export function formatFilesChangedLineStats(added: number, removed: number): string {
+  if (!added && !removed) return ''
+  return `+${Math.max(0, added)} −${Math.max(0, removed)}`
+}
+
+/** 展开行查找该路径的 +/-（兼容斜杠） */
+export function filesChangedStatsForPath(
+  path: string,
+  byPath: Readonly<Record<string, FilesChangedLineStats>> | undefined
+): FilesChangedLineStats | undefined {
+  if (!byPath) return undefined
+  const direct = byPath[path]
+  if (direct) return direct
+  return byPath[normalizeFilesChangedPath(path)]
+}
 
 export type FilesChangedHeaderTarget = 'review' | 'toggle'
 
@@ -78,7 +210,7 @@ export function filesChangedDisplayLabel(path: string, allPaths: readonly string
   return norm
 }
 
-const DOCUMENT_EXT = new Set(['md', 'mdx', 'txt', 'rst', 'pdf', 'doc', 'docx'])
+const DOCUMENT_EXT = new Set(['md', 'mdx', 'txt', 'rst', 'pdf', 'doc', 'docx', 'html', 'htm'])
 const SPREADSHEET_EXT = new Set(['csv', 'tsv', 'xls', 'xlsx'])
 const SLIDE_EXT = new Set(['ppt', 'pptx'])
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'])
