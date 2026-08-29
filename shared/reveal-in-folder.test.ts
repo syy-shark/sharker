@@ -17,6 +17,13 @@ import {
   OPEN_COMMAND_MENU_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SHARE_LABEL,
+  SHARE_SNAPSHOT_INTRO,
+  SHARE_SNAPSHOT_CONTENTS,
+  SHARE_SNAPSHOT_REVIEW,
+  SHARE_LOCAL_COPY_NOTE,
+  MINIMIZE_LABEL,
+  WINDOW_ZOOM_LABEL,
+  BRING_ALL_TO_FRONT_LABEL,
   FORK_LABEL,
   PAUSE_LABEL,
   RESUME_LABEL,
@@ -167,6 +174,14 @@ describe('reveal in folder', () => {
     expect(PREVENT_SLEEP_WHILE_RUNNING_LABEL).toBe('Prevent sleep while running')
     expect(PREVENT_SLEEP_WHILE_RUNNING_DESCRIPTION).toMatch(/local chats can continue/)
     expect(SHARE_LABEL).toBe('Share')
+    expect(SHARE_SNAPSHOT_INTRO).toMatch(/doesn't give other people access/)
+    expect(SHARE_SNAPSHOT_CONTENTS).toMatch(/user-visible messages/)
+    expect(SHARE_SNAPSHOT_CONTENTS).toMatch(/don't include the original thread's tool calls/)
+    expect(SHARE_SNAPSHOT_REVIEW).toMatch(/file paths/)
+    expect(SHARE_LOCAL_COPY_NOTE).toMatch(/Does not upload/)
+    expect(MINIMIZE_LABEL).toBe('Minimize')
+    expect(WINDOW_ZOOM_LABEL).toBe('Zoom')
+    expect(BRING_ALL_TO_FRONT_LABEL).toBe('Bring All to Front')
     expect(OPEN_IN_POPUP_WINDOW_LABEL).toBe('Open in Popup Window')
     expect(ALWAYS_ON_TOP_LABEL).toBe('Always on top')
     expect(KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL).toBe('Keep a chat near your work')
@@ -219,6 +234,11 @@ describe('reveal in folder', () => {
     expect(SELECT_ALL_LABEL).toBe('Select All')
     const root = dirname(fileURLToPath(import.meta.url))
     const menuSrc = readFileSync(join(root, '../electron/main/app-menu.ts'), 'utf8')
+    expect(menuSrc).toContain('MINIMIZE_LABEL')
+    expect(menuSrc).toContain('WINDOW_ZOOM_LABEL')
+    expect(menuSrc).toContain('BRING_ALL_TO_FRONT_LABEL')
+    expect(menuSrc).not.toContain('最小化')
+    expect(menuSrc).not.toContain('前置全部窗口')
     expect(menuSrc).toContain('aboutAppLabel')
     expect(menuSrc).toContain('hideAppLabel')
     expect(menuSrc).toContain('quitAppLabel')

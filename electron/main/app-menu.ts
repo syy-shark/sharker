@@ -49,7 +49,10 @@ import {
   TOGGLE_REVIEW_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
   VIEW_MENU_LABEL,
-  WINDOW_MENU_LABEL
+  WINDOW_MENU_LABEL,
+  MINIMIZE_LABEL,
+  WINDOW_ZOOM_LABEL,
+  BRING_ALL_TO_FRONT_LABEL
 } from '../../shared/reveal-in-folder'
 
 /** 把菜单动作发给所有渲染窗 */
@@ -252,10 +255,10 @@ export function installApplicationMenu(options?: { onNewWindow?: () => void }): 
       label: WINDOW_MENU_LABEL,
       role: 'window',
       submenu: [
-        { role: 'minimize', label: '最小化' },
-        { role: 'zoom', label: '缩放' },
+        { role: 'minimize', label: MINIMIZE_LABEL },
+        { role: 'zoom', label: WINDOW_ZOOM_LABEL },
         { type: 'separator' },
-        { role: 'front', label: '前置全部窗口' }
+        { role: 'front', label: BRING_ALL_TO_FRONT_LABEL }
       ]
     },
     {

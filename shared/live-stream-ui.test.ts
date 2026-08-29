@@ -291,5 +291,7 @@ describe('live stream ui snapshot', () => {
     expect(demoSrc).toContain('shouldMeasureInlineDemoInParent')
     expect(demoSrc).toContain('shouldWalkInlineDemoTree')
     expect(demoSrc).toContain('var walkTree')
+    expect(demoSrc).toContain('katex@0.16.11')
+    expect(demoSrc).toMatch(/shouldWalkInlineDemoTree\(\{ streaming \}\)/)
   })
 })

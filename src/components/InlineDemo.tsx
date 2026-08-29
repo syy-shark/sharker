@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵，只信估高、range/body 底边与 postMessage。
+ * 直播中父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN，只信估高、range/body 底边与 postMessage。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -1070,6 +1070,7 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   }
 
   function renderMath() {
+    if (!walkTree) return;
     try {
       if (window.renderMathInElement) {
         window.renderMathInElement(document.body, {
@@ -1180,8 +1181,9 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
 
   const trimmed = html.trim()
   const isFullDoc = /<!DOCTYPE|<\s*html[\s>]/i.test(trimmed)
-  /** KaTeX + 自动渲染；离线/CDN 失败时由 enhanceScript 里的 Unicode 回退接管 */
-  const mathHead = `
+  /** 闭合后才灌 KaTeX CDN；直播 srcDoc 刷新不拉远程脚本（对标 Codex #22860 / #39120） */
+  const mathHead = shouldWalkInlineDemoTree({ streaming })
+    ? `
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"><\/script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"><\/script>
@@ -1191,6 +1193,7 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   .sharker-math { font-family: "SF Pro Text", "Times New Roman", Times, serif; font-feature-settings: "tnum"; }
 </style>
 `
+    : ''
   const headInject = `<meta charset="utf-8" />${mathHead}<style data-sharker-host>${hostCss}</style>`
 
   if (isFullDoc) {

@@ -1,10 +1,19 @@
 /**
  * `/share` 只读快照对话框：对标 Codex 桌面 Share。
  * 打开时用已拍好的 Markdown，不跟直播 token 重绘；只复制本机，不上传。
+ * 文案用官方快照说明；按钮用 Close / Copy as Markdown，不发明 Who has access / Copy link。
  * @see src/components/ARCH.md
  */
 import { useEffect, useState } from 'react'
-import { SHARE_LABEL } from '../../shared/reveal-in-folder'
+import {
+  COPY_AS_MARKDOWN_LABEL,
+  FILE_CLOSE_LABEL,
+  SHARE_LABEL,
+  SHARE_LOCAL_COPY_NOTE,
+  SHARE_SNAPSHOT_CONTENTS,
+  SHARE_SNAPSHOT_INTRO,
+  SHARE_SNAPSHOT_REVIEW
+} from '../../shared/reveal-in-folder'
 import './ShareDialog.css'
 
 interface Props {
@@ -25,12 +34,10 @@ export function ShareDialog({
   messageCount,
   onClose
 }: Props) {
-  const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState('')
 
   useEffect(() => {
     if (!open) return
-    setCopied(false)
     setCopyError('')
   }, [open, markdown])
 
@@ -53,42 +60,39 @@ export function ShareDialog({
     if (!markdown.trim()) return
     try {
       await navigator.clipboard.writeText(markdown)
-      setCopied(true)
       setCopyError('')
     } catch {
-      setCopyError('无法写入剪贴板，请手动全选复制。')
+      setCopyError('Could not write to the clipboard.')
     }
   }
 
   return (
     <div className="share-dialog-root" role="presentation">
-      <button type="button" className="share-dialog-backdrop" aria-label="关闭分享" onClick={onClose} />
+      <button type="button" className="share-dialog-backdrop" aria-label={FILE_CLOSE_LABEL} onClick={onClose} />
       <div className="share-dialog glass-popover popover-enter" role="dialog" aria-labelledby="share-dialog-title">
         <div className="share-dialog-head">
           <h2 id="share-dialog-title">{SHARE_LABEL}</h2>
           <p>
-            对标 Codex 桌面 Share / <code>/share</code>：只读快照，不含项目或本机访问。收录用户可见消息、思考摘要和改文件
-            diff，不含工具调用或命令输出。只复制到剪贴板，不会上传。
+            {SHARE_SNAPSHOT_INTRO} {SHARE_SNAPSHOT_CONTENTS} {SHARE_LOCAL_COPY_NOTE}
           </p>
         </div>
         <p className="share-dialog-meta">
-          {title ? <strong>{title}</strong> : '当前对话'}
-          {' · '}
-          {messageCount} 条
-          {redactedCount > 0 ? ` · 已脱敏 ${redactedCount} 处已知密钥` : ''}
+          {title ? <strong>{title}</strong> : null}
+          {title ? ' · ' : ''}
+          {messageCount}
+          {redactedCount > 0 ? ` · Redacted ${redactedCount} known secret patterns` : ''}
         </p>
         <label className="share-dialog-preview">
-          预览后再复制。路径等敏感内容可能仍在正文或 diff 里。
+          {SHARE_SNAPSHOT_REVIEW}
           <textarea readOnly value={markdown} spellCheck={false} />
         </label>
-        {copied ? <p className="share-dialog-ok">已复制只读快照。</p> : null}
         {copyError ? <p className="share-dialog-err">{copyError}</p> : null}
         <div className="share-dialog-actions">
           <button type="button" onClick={onClose}>
-            关闭
+            {FILE_CLOSE_LABEL}
           </button>
           <button type="button" className="is-primary" disabled={!markdown.trim()} onClick={() => void copy()}>
-            复制快照
+            {COPY_AS_MARKDOWN_LABEL}
           </button>
         </div>
       </div>
