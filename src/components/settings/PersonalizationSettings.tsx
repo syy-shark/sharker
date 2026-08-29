@@ -5,7 +5,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import type { AgentPersonality } from '../../../shared/personality'
-import { PERSONALITY_OPTIONS, parsePersonality } from '../../../shared/personality'
+import {
+  CUSTOM_INSTRUCTIONS_LABEL,
+  PERSONALITY_OPTIONS,
+  parsePersonality
+} from '../../../shared/personality'
 import {
   ENABLE_MEMORIES_LABEL,
   GENERATE_MEMORIES_LABEL,
@@ -128,7 +132,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           />
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title="自定义说明">
+      <SettingsSection title={CUSTOM_INSTRUCTIONS_LABEL}>
         <SettingsCard>
           <SettingsRow
             title="个人 AGENTS.md"

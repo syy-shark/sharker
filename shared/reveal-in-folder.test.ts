@@ -46,7 +46,15 @@ import {
   TOGGLE_ACTIVITY_VIEW_LABEL,
   TOGGLE_FILE_TREE_LABEL,
   TOGGLE_FILE_TREE_MENU_LABEL,
-  TOGGLE_SIDEBAR_LABEL
+  TOGGLE_SIDEBAR_LABEL,
+  FILE_MENU_LABEL,
+  FILE_CLOSE_LABEL,
+  EDIT_MENU_LABEL,
+  VIEW_MENU_LABEL,
+  WINDOW_MENU_LABEL,
+  HELP_MENU_LABEL,
+  TOGGLE_FULL_SCREEN_LABEL,
+  OPEN_BROWSER_TAB_MENU_LABEL
 } from './reveal-in-folder'
 
 describe('reveal in folder', () => {
@@ -149,5 +157,13 @@ describe('reveal in folder', () => {
     expect(LOCAL_LABEL).toBe('Local')
     expect(WORKTREE_LABEL).toBe('Worktree')
     expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')
+    expect(FILE_MENU_LABEL).toBe('File')
+    expect(FILE_CLOSE_LABEL).toBe('Close')
+    expect(EDIT_MENU_LABEL).toBe('Edit')
+    expect(VIEW_MENU_LABEL).toBe('View')
+    expect(WINDOW_MENU_LABEL).toBe('Window')
+    expect(HELP_MENU_LABEL).toBe('Help')
+    expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
+    expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
   })
 })

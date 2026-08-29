@@ -185,7 +185,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'personalization',
     title: PERSONALIZATION_SETTINGS_LABEL,
-    keywords: 'personalization personality agents.md 个性化 人格 自定义说明',
+    keywords: 'personalization personality custom instructions agents.md 个性化 人格 自定义说明',
     action: 'open_personalization'
   },
   {

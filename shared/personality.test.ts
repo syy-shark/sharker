@@ -7,6 +7,7 @@ import {
   personalitySwitchNote,
   FRIENDLY_LABEL,
   NONE_PERSONALITY_LABEL,
+  CUSTOM_INSTRUCTIONS_LABEL,
   PERSONALITY_OPTIONS,
   PRAGMATIC_LABEL
 } from './personality'
@@ -39,5 +40,6 @@ describe('personality', () => {
     expect(PRAGMATIC_LABEL).toBe('Pragmatic')
     expect(FRIENDLY_LABEL).toBe('Friendly')
     expect(NONE_PERSONALITY_LABEL).toBe('None')
+    expect(CUSTOM_INSTRUCTIONS_LABEL).toBe('Custom instructions')
   })
 })

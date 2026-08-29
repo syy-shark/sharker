@@ -7,8 +7,13 @@ import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'elect
 import { IPC } from '../../shared/ipc'
 import {
   COPY_AS_MARKDOWN_LABEL,
+  EDIT_MENU_LABEL,
+  FILE_CLOSE_LABEL,
+  FILE_MENU_LABEL,
+  HELP_MENU_LABEL,
   NEW_CHAT_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
+  OPEN_BROWSER_TAB_MENU_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -17,9 +22,12 @@ import {
   OPEN_REVIEW_TAB_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
   TOGGLE_FILE_TREE_MENU_LABEL,
+  TOGGLE_FULL_SCREEN_LABEL,
   TOGGLE_REVIEW_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
-  TOGGLE_TERMINAL_LABEL
+  TOGGLE_TERMINAL_LABEL,
+  VIEW_MENU_LABEL,
+  WINDOW_MENU_LABEL
 } from '../../shared/reveal-in-folder'
 
 /** 把菜单动作发给所有渲染窗 */
@@ -57,7 +65,7 @@ export function installApplicationMenu(): void {
       ]
     },
     {
-      label: '文件',
+      label: FILE_MENU_LABEL,
       submenu: [
         {
           label: NEW_CHAT_LABEL,
@@ -89,11 +97,11 @@ export function installApplicationMenu(): void {
           ...send('copy_conversation_markdown')
         },
         { type: 'separator' },
-        { role: 'close', label: '关闭窗口' }
+        { role: 'close', label: FILE_CLOSE_LABEL }
       ]
     },
     {
-      label: '编辑',
+      label: EDIT_MENU_LABEL,
       submenu: [
         {
           label: '撤销',
@@ -115,7 +123,7 @@ export function installApplicationMenu(): void {
       ]
     },
     {
-      label: '显示',
+      label: VIEW_MENU_LABEL,
       submenu: [
         {
           label: TOGGLE_SIDEBAR_LABEL,
@@ -153,6 +161,12 @@ export function installApplicationMenu(): void {
           registerAccelerator: false,
           ...send('toggle_files')
         },
+        {
+          label: OPEN_BROWSER_TAB_MENU_LABEL,
+          accelerator: 'Command+T',
+          registerAccelerator: false,
+          ...send('open_browser')
+        },
         { type: 'separator' },
         {
           label: OPEN_KEYBOARD_SHORTCUTS_LABEL,
@@ -161,11 +175,11 @@ export function installApplicationMenu(): void {
           ...send('shortcut_help')
         },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: '进入全屏幕' }
+        { role: 'togglefullscreen', label: TOGGLE_FULL_SCREEN_LABEL }
       ]
     },
     {
-      label: '窗口',
+      label: WINDOW_MENU_LABEL,
       role: 'window',
       submenu: [
         { role: 'minimize', label: '最小化' },
@@ -175,7 +189,7 @@ export function installApplicationMenu(): void {
       ]
     },
     {
-      label: '帮助',
+      label: HELP_MENU_LABEL,
       role: 'help',
       submenu: [
         {

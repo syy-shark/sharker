@@ -7203,6 +7203,10 @@ export default function App() {
         handleShortcutPanel('files')
         return
       }
+      if (action === 'open_browser') {
+        handleOpenBrowserTab()
+        return
+      }
       if (action === 'shortcut_help') {
         void handleNavigate('settings', 'shortcuts')
         return
@@ -7220,6 +7224,7 @@ export default function App() {
     handleNativeOrAppUndo,
     handleNavigate,
     handleNewConversation,
+    handleOpenBrowserTab,
     openShareThread,
     copyConversationMarkdown,
     handleShortcutPanel,

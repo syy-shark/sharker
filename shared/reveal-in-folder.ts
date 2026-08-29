@@ -101,6 +101,18 @@ export const CLEAR_ALL_UNREAD_INDICATORS_LABEL = 'Clear all unread indicators'
 export const NEXT_CHAT_NEEDING_ATTENTION_LABEL = 'Next chat needing attention'
 export const SEARCH_FILES_LABEL = 'Search files'
 
+/** Official Codex app-menu roots (github.com/openai/codex#14450 File, Edit, View, Window, Help). */
+export const FILE_MENU_LABEL = 'File'
+export const EDIT_MENU_LABEL = 'Edit'
+export const VIEW_MENU_LABEL = 'View'
+export const WINDOW_MENU_LABEL = 'Window'
+export const HELP_MENU_LABEL = 'Help'
+/** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
+export const FILE_CLOSE_LABEL = 'Close'
+export const TOGGLE_FULL_SCREEN_LABEL = 'Toggle Full Screen'
+/** 官方 View 菜单（对标 Codex #30659 Open Browser Tab） */
+export const OPEN_BROWSER_TAB_MENU_LABEL = 'Open Browser Tab'
+
 /** 官方快捷键 / 命令面板（对标 developers.openai.com/codex/app/commands） */
 export const OPEN_COMMAND_MENU_LABEL = 'Open command menu'
 export const OPEN_SETTINGS_LABEL = 'Open settings'
