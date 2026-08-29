@@ -184,7 +184,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 | 工具 | 能做什么 |
 |------|----------|
-| `run_terminal_cmd` | bash 执行命令（`rm` 后自动验证路径；cwd 锁在工作区） |
+| `run_terminal_cmd` | bash 执行命令（`rm` 后自动验证路径；cwd 锁在工作区）。直播头 Running / Ran + 短命令（对标 Codex exec_cell），不发明 You ran |
 | `read_thread_terminal` | 读当前对话集成终端当前标签的输出尾（对标 Codex inspect terminal；不请用户粘贴） |
 
 ### Git / Tasks / Sub-agents
@@ -303,6 +303,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `view_image` | **done** | 官方读本地图（#36966）：短结果 + 视觉回灌；相对路径接工作区 cwd（#29526）；过程区 ImageView 卡（#7468）。不发明 ImageGen / 关闭开关 |
 | web search 活动 | **done** | 直播 Searching the web / Searched the web for（#9960 / #24693）；过程区 title+url 来源花片（#32898）。不发明 find_in_page / 官方 search API |
 | MCP 工具调用活动 | **done** | 直播 Calling / Called `server.tool(args)`（#20677 / #23236）；不倾倒 JSON、不抄 InProgress 当完成（#22300）。不发明 Apps / node_repl |
+| 命令 Running / Ran | **done** | 直播头 `Running cmd` / `Ran cmd`（对标 Codex exec_cell）。不发明 You ran / unified-exec |
 | Accessibility 窗口树 | **partial** | `desktop_get_ui_tree` / `desktop_list_windows` |
 | Agent Workspace 隔离 | **partial** | networkMode MVP |
 | Voice STT/TTS | **partial** | voice_* 本地 say；无 conversation-mode STT 循环 |

@@ -124,5 +124,30 @@ describe('process phases privacy', () => {
       }
     ])
     expect(mcpDone[0]?.title).toBe('Called docs.lookup({"q":"plan"})')
+    const running = deriveChronologicalSteps([
+      {
+        id: 'ex1',
+        kind: 'tool',
+        toolName: 'run_terminal_cmd',
+        toolTitle: '运行命令',
+        toolArgs: { command: 'rm -rf /tmp/demo' },
+        status: 'active',
+        startedAt: 12
+      }
+    ])
+    expect(running[0]?.title).toBe('Running rm -rf /tmp/demo')
+    const ran = deriveChronologicalSteps([
+      {
+        id: 'ex2',
+        kind: 'tool',
+        toolName: 'run_terminal_cmd',
+        toolTitle: '运行命令',
+        toolArgs: { command: 'sleep 2' },
+        status: 'done',
+        startedAt: 13,
+        endedAt: 14
+      }
+    ])
+    expect(ran[0]?.title).toBe('Ran sleep 2')
   })
 })

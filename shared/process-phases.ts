@@ -3,6 +3,7 @@
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
+import { formatExecActivity, summarizeExecCommand } from './exec-activity'
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
@@ -171,15 +172,7 @@ function shortNameFromDetail(detail: string | undefined): string | undefined {
 
 /** shell 命令摘要：保留 -rf 等短选项，不取路径末段误伤命令 */
 function commandSummaryFromDetail(detail: string | undefined): string | undefined {
-  if (!detail) return undefined
-  const clean = detail
-    .replace(/```[\s\S]*?```/g, '代码片段')
-    .replace(/[`*>#]/g, ' ')
-    // 保留连字符（rm -rf），只压空白
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (!clean) return undefined
-  return clean.length > 36 ? `${clean.slice(0, 35)}…` : clean
+  return summarizeExecCommand(detail)
 }
 
 function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
@@ -215,19 +208,15 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
     }
     if (tool === 'run_terminal_cmd') {
       const fromArgs =
-        typeof segment.toolArgs?.command === 'string'
-          ? commandSummaryFromDetail(segment.toolArgs.command)
-          : undefined
-      // 进度心跳只进 resultSummary；标题优先 toolArgs / 非进度 toolDetail
+        typeof segment.toolArgs?.command === 'string' ? segment.toolArgs.command : undefined
       const detailCandidate = segment.toolDetail
-      const cmd =
+      const raw =
         fromArgs ||
-        (!isToolProgressSummary(detailCandidate)
-          ? commandSummaryFromDetail(detailCandidate)
-          : undefined)
-      if (cmd && !/^(已启动|执行中|运行中|处理中)/.test(cmd) && !base.includes(cmd)) {
-        return `${base} · ${cmd}`
+        (!isToolProgressSummary(detailCandidate) ? detailCandidate : undefined)
+      if (raw && !/^(已启动|执行中|运行中|处理中)/.test(raw.trim())) {
+        return formatExecActivity(raw, segment.status)
       }
+      return formatExecActivity(undefined, segment.status)
     }
     return base
   }

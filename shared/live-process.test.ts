@@ -170,7 +170,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = [...steps].reverse().find((s) => s.status === 'active')
-    expect(active?.title).toContain('运行命令')
+    expect(active?.title).toMatch(/^Running /)
     expect(active?.title).toMatch(/rm\s+-rf/)
   })
 
@@ -366,7 +366,7 @@ describe('live process seed', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.title).toMatch(/运行|命令/)
+    expect(active?.title).toMatch(/^Running /)
     // detail/title should carry command hint
     expect(`${active?.title || ''} ${active?.detail || ''}`).toMatch(/npm test/)
   })
@@ -395,7 +395,7 @@ describe('terminal progress title stability', () => {
     })
     const steps = deriveChronologicalSteps(segments, { isStreaming: true })
     const active = steps.find((s) => s.status === 'active')
-    expect(active?.title).toMatch(/运行命令/)
+    expect(active?.title).toMatch(/^Running /)
     expect(active?.title).toMatch(/sleep/)
     expect(active?.title).not.toMatch(/执行中/)
     expect(active?.detail || '').not.toMatch(/执行中|已启动/)
