@@ -127,6 +127,27 @@ import {
   isLiveApprovalAllowedSettleChange,
   isLiveApprovalAllowedStatusAppendChange,
   isLiveApprovalAllowedToolAppendChange,
+  isLiveApprovalAllowedThinkAppendChange,
+  isLiveApprovalAllowedAnswerAppendChange,
+  isLiveApprovalAllowedThinkAnswerAppendChange,
+  isLiveApprovalAllowedThinkSettledToolAppendChange,
+  isLiveApprovalAllowedAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedThinkAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedAnswerDemoAppendChange,
+  isLiveApprovalAllowedThinkAnswerDemoAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerAppendChange,
+  isLiveApprovalAllowedWriteStatThinkSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerDemoAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerDemoAppendChange,
+  isLiveApprovalResolvedThinkAppendChange,
+  isLiveApprovalDeniedThinkAppendChange,
+  isLiveApprovalDeniedAnswerAppendChange,
+  isLiveApprovalDeniedThinkSettledToolAppendChange,
+  isLiveApprovalDeniedAnswerSettledToolAppendChange,
   isLiveApprovalResolvedChange,
   isLiveUserInputNeededChange,
   isLiveAskResolvedSettleChange,
@@ -3170,6 +3191,370 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(processAfterAllowedTool.processForFlow.some((segment) => segment === nextAfterAllow)).toBe(true)
+    const awaitingLive = [cmdAwaiting, awaitingStatus]
+    let allowThink = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 50.1
+    })
+    allowThink = applyStreamChunk(allowThink, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'ok',
+      timestamp: 50.2
+    })
+    allowThink = applyStreamChunk(allowThink, { type: 'think', content: 'Next', timestamp: 50.3 })
+    expect(isLiveApprovalAllowedThinkAppendChange(awaitingLive, allowThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', awaitingLive, allowThink)).toBe('HmmNext')
+    let allowToken = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 50.4
+    })
+    allowToken = applyStreamChunk(allowToken, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'ok',
+      timestamp: 50.5
+    })
+    allowToken = applyStreamChunk(allowToken, { type: 'token', content: 'Hi', timestamp: 50.6 })
+    expect(isLiveApprovalAllowedAnswerAppendChange(awaitingLive, allowToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowToken)).toBe('text')
+    let allowThinkToken = applyStreamChunk(allowThink, { type: 'token', content: 'Hi', timestamp: 50.7 })
+    expect(isLiveApprovalAllowedThinkAnswerAppendChange(awaitingLive, allowThinkToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowThinkToken)).toBe('text')
+    let allowThinkSettled = applyStreamChunk(allowThink, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-think-settle-1',
+      timestamp: 50.8
+    })
+    allowThinkSettled = applyStreamChunk(allowThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 50.9
+    })
+    expect(isLiveApprovalAllowedThinkSettledToolAppendChange(awaitingLive, allowThinkSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowThinkSettled)).toBe('tool')
+    let allowTokenSettled = applyStreamChunk(allowToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-token-settle-1',
+      timestamp: 51.1
+    })
+    allowTokenSettled = applyStreamChunk(allowTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 51.2
+    })
+    expect(isLiveApprovalAllowedAnswerSettledToolAppendChange(awaitingLive, allowTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowTokenSettled)).toBe('text')
+    let allowThinkTokenSettled = applyStreamChunk(allowThinkToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-think-token-settle-1',
+      timestamp: 51.3
+    })
+    allowThinkTokenSettled = applyStreamChunk(allowThinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 51.4
+    })
+    expect(isLiveApprovalAllowedThinkAnswerSettledToolAppendChange(awaitingLive, allowThinkTokenSettled)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowThinkTokenSettled)).toBe('text')
+    let allowDemo = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 51.5
+    })
+    allowDemo = applyStreamChunk(allowDemo, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'ok',
+      timestamp: 51.6
+    })
+    allowDemo = applyStreamChunk(allowDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 51.7
+    })
+    allowDemo = applyStreamChunk(allowDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 51.8
+    })
+    expect(isLiveApprovalAllowedAnswerDemoAppendChange(awaitingLive, allowDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowDemo)).toBe('tool')
+    let allowThinkDemo = applyStreamChunk(allowThink, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 51.9
+    })
+    allowThinkDemo = applyStreamChunk(allowThinkDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 52.1
+    })
+    expect(isLiveApprovalAllowedThinkAnswerDemoAppendChange(awaitingLive, allowThinkDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowThinkDemo)).toBe('tool')
+    let allowResolvedThink = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 52.2
+    })
+    allowResolvedThink = applyStreamChunk(allowResolvedThink, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 52.4
+    })
+    expect(isLiveApprovalResolvedThinkAppendChange(awaitingLive, allowResolvedThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowResolvedThink)).toBe('think')
+    expect(nextLiveThinkText('Hmm', awaitingLive, allowResolvedThink)).toBe('HmmNext')
+    const thinkAfterAllowWrite: TurnSegment = {
+      id: 'th-allow-write',
+      kind: 'thinking',
+      status: 'active',
+      content: 'Next'
+    }
+    expect(
+      isLiveApprovalAllowedWriteStatThinkAppendChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, thinkAfterAllowWrite]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, thinkAfterAllowWrite]
+      )
+    ).toBe('think')
+    const writeDone = {
+      type: 'tool_done' as const,
+      toolName: 'run_terminal_cmd',
+      fileDiff: { path: 'a.ts', lines: [{ kind: 'add' as const, content: 'hi' }], stats: { added: 1, removed: 0 } },
+      timestamp: 54.1
+    }
+    let allowWriteToken = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 54
+    })
+    allowWriteToken = applyStreamChunk(allowWriteToken, writeDone)
+    allowWriteToken = applyStreamChunk(allowWriteToken, { type: 'token', content: 'Hi', timestamp: 54.2 })
+    expect(isLiveApprovalAllowedWriteStatAnswerAppendChange(awaitingLive, allowWriteToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteToken)).toBe('text')
+    let allowWriteThinkToken = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 54.3
+    })
+    allowWriteThinkToken = applyStreamChunk(allowWriteThinkToken, { ...writeDone, timestamp: 54.4 })
+    allowWriteThinkToken = applyStreamChunk(allowWriteThinkToken, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 54.5
+    })
+    allowWriteThinkToken = applyStreamChunk(allowWriteThinkToken, {
+      type: 'token',
+      content: 'Hi',
+      timestamp: 54.6
+    })
+    expect(isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(awaitingLive, allowWriteThinkToken)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteThinkToken)).toBe('text')
+    let allowWriteThinkSettled = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 54.7
+    })
+    allowWriteThinkSettled = applyStreamChunk(allowWriteThinkSettled, { ...writeDone, timestamp: 54.8 })
+    allowWriteThinkSettled = applyStreamChunk(allowWriteThinkSettled, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 54.9
+    })
+    allowWriteThinkSettled = applyStreamChunk(allowWriteThinkSettled, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-think-settle-1',
+      timestamp: 55.1
+    })
+    allowWriteThinkSettled = applyStreamChunk(allowWriteThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 55.2
+    })
+    expect(
+      isLiveApprovalAllowedWriteStatThinkSettledToolAppendChange(awaitingLive, allowWriteThinkSettled)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteThinkSettled)).toBe('tool')
+    let allowWriteTokenSettled = applyStreamChunk(allowWriteToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-token-settle-1',
+      timestamp: 55.3
+    })
+    allowWriteTokenSettled = applyStreamChunk(allowWriteTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 55.4
+    })
+    expect(
+      isLiveApprovalAllowedWriteStatAnswerSettledToolAppendChange(awaitingLive, allowWriteTokenSettled)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteTokenSettled)).toBe('text')
+    let allowWriteThinkTokenSettled = applyStreamChunk(allowWriteThinkToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-think-token-settle-1',
+      timestamp: 55.5
+    })
+    allowWriteThinkTokenSettled = applyStreamChunk(allowWriteThinkTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'allow-write-think-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 55.6
+    })
+    expect(
+      isLiveApprovalAllowedWriteStatThinkAnswerSettledToolAppendChange(
+        awaitingLive,
+        allowWriteThinkTokenSettled
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteThinkTokenSettled)).toBe('text')
+    let allowWriteDemo = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 55.7
+    })
+    allowWriteDemo = applyStreamChunk(allowWriteDemo, { ...writeDone, timestamp: 55.8 })
+    allowWriteDemo = applyStreamChunk(allowWriteDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 55.9
+    })
+    allowWriteDemo = applyStreamChunk(allowWriteDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 56.1
+    })
+    expect(isLiveApprovalAllowedWriteStatAnswerDemoAppendChange(awaitingLive, allowWriteDemo)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteDemo)).toBe('tool')
+    let allowWriteThinkDemo = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 56.2
+    })
+    allowWriteThinkDemo = applyStreamChunk(allowWriteThinkDemo, { ...writeDone, timestamp: 56.3 })
+    allowWriteThinkDemo = applyStreamChunk(allowWriteThinkDemo, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 56.4
+    })
+    allowWriteThinkDemo = applyStreamChunk(allowWriteThinkDemo, {
+      type: 'token',
+      content: '\n```demo\n<div>x',
+      timestamp: 56.5
+    })
+    allowWriteThinkDemo = applyStreamChunk(allowWriteThinkDemo, {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      content: '<div>x',
+      timestamp: 56.6
+    })
+    expect(isLiveApprovalAllowedWriteStatThinkAnswerDemoAppendChange(awaitingLive, allowWriteThinkDemo)).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowWriteThinkDemo)).toBe('tool')
+    let denyThink = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: false,
+      timestamp: 52.5
+    })
+    denyThink = applyStreamChunk(denyThink, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolStatus: 'error',
+      error: 'denied',
+      timestamp: 52.6
+    })
+    denyThink = applyStreamChunk(denyThink, { type: 'think', content: 'Next', timestamp: 52.7 })
+    expect(isLiveApprovalDeniedThinkAppendChange(awaitingLive, denyThink)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denyThink)).toBe('think')
+    let denyToken = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: false,
+      timestamp: 52.8
+    })
+    denyToken = applyStreamChunk(denyToken, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolStatus: 'error',
+      error: 'denied',
+      timestamp: 52.9
+    })
+    denyToken = applyStreamChunk(denyToken, { type: 'token', content: 'Hi', timestamp: 53.1 })
+    expect(isLiveApprovalDeniedAnswerAppendChange(awaitingLive, denyToken)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denyToken)).toBe('text')
+    let denyThinkSettled = applyStreamChunk(denyThink, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'deny-think-settle-1',
+      timestamp: 53.2
+    })
+    denyThinkSettled = applyStreamChunk(denyThinkSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'deny-think-settle-1',
+      resultSummary: 'ok',
+      timestamp: 53.3
+    })
+    expect(isLiveApprovalDeniedThinkSettledToolAppendChange(awaitingLive, denyThinkSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denyThinkSettled)).toBe('tool')
+    let denyTokenSettled = applyStreamChunk(denyToken, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'deny-token-settle-1',
+      timestamp: 53.4
+    })
+    denyTokenSettled = applyStreamChunk(denyTokenSettled, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'deny-token-settle-1',
+      resultSummary: 'ok',
+      timestamp: 53.5
+    })
+    expect(isLiveApprovalDeniedAnswerSettledToolAppendChange(awaitingLive, denyTokenSettled)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denyTokenSettled)).toBe('text')
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',

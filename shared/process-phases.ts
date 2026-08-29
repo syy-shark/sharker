@@ -38,6 +38,27 @@ import {
   isLiveApprovalAllowedSettleChange,
   isLiveApprovalAllowedStatusAppendChange,
   isLiveApprovalAllowedToolAppendChange,
+  isLiveApprovalAllowedThinkAppendChange,
+  isLiveApprovalAllowedAnswerAppendChange,
+  isLiveApprovalAllowedThinkAnswerAppendChange,
+  isLiveApprovalAllowedThinkSettledToolAppendChange,
+  isLiveApprovalAllowedAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedThinkAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedAnswerDemoAppendChange,
+  isLiveApprovalAllowedThinkAnswerDemoAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerAppendChange,
+  isLiveApprovalAllowedWriteStatThinkSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerSettledToolAppendChange,
+  isLiveApprovalAllowedWriteStatAnswerDemoAppendChange,
+  isLiveApprovalAllowedWriteStatThinkAnswerDemoAppendChange,
+  isLiveApprovalResolvedThinkAppendChange,
+  isLiveApprovalDeniedThinkAppendChange,
+  isLiveApprovalDeniedAnswerAppendChange,
+  isLiveApprovalDeniedThinkSettledToolAppendChange,
+  isLiveApprovalDeniedAnswerSettledToolAppendChange,
   isLiveApprovalResolvedChange,
   isLiveStatusSettleChange,
   isLiveUserInputNeededChange,
@@ -753,9 +774,21 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveApprovalAllowedWriteStatChange(prevSegments, segments) &&
     !isLiveApprovalAllowedWriteStatStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedWriteStatToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatThinkAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleChange(prevSegments, segments) &&
     !isLiveApprovalAllowedStatusAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedThinkAnswerSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedThinkAnswerDemoAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkSettledToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerSettledToolAppendChange(prevSegments, segments) &&
     !isLiveApprovalResolvedChange(prevSegments, segments) &&
     !isLiveUserInputNeededChange(prevSegments, segments) &&
     !isLiveAskResolvedSettleChange(prevSegments, segments) &&
@@ -808,7 +841,16 @@ export function remapProcessPhaseStepsOnThinkAppend(
   if (
     !isLiveThinkAppendChange(prevSegments, segments) &&
     !isLiveWriteStatThinkAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedThinkAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatThinkAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedThinkAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAppendChange(prevSegments, segments) &&
     !isLiveAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedThinkAnswerAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerAppendChange(prevSegments, segments) &&
     !isLiveWriteStatAnswerAppendChange(prevSegments, segments) &&
     !isLiveWriteStatThinkAnswerAppendChange(prevSegments, segments) &&
     !isLiveThinkAnswerAppendChange(prevSegments, segments) &&

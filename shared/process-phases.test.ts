@@ -504,6 +504,25 @@ describe('process phases privacy', () => {
     expect(afterDeniedTool).toHaveLength(3)
     expect(afterDeniedTool![0].segment).toBe(cmdDenied)
     expect(afterDeniedTool!.at(-1)?.segment).toBe(nextAfterDeny)
+    const afterDeniedThink = remapProcessPhaseStepsOnThinkAppend(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThink],
+      true
+    )
+    expect(afterDeniedThink).not.toBeNull()
+    expect(afterDeniedThink).toHaveLength(2)
+    expect(afterDeniedThink![0].segment).toBe(cmdDenied)
+    const afterDeniedThinkSettled = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThink, cmdNextSettled],
+      true
+    )
+    expect(afterDeniedThinkSettled).not.toBeNull()
+    expect(afterDeniedThinkSettled).toHaveLength(3)
+    expect(afterDeniedThinkSettled![0].segment).toBe(cmdDenied)
+    expect(afterDeniedThinkSettled!.at(-1)?.segment).toBe(cmdNextSettled)
     const cmdAllowedPreview: TurnSegment = {
       ...runningCmd,
       editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
@@ -606,6 +625,35 @@ describe('process phases privacy', () => {
     expect(afterAllowedNext).toHaveLength(3)
     expect(afterAllowedNext![0].segment).toBe(cmdAllowedSettled)
     expect(afterAllowedNext!.at(-1)?.segment).toBe(nextAfterAllow)
+    const afterAllowedThink = remapProcessPhaseStepsOnThinkAppend(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextThink],
+      true
+    )
+    expect(afterAllowedThink).not.toBeNull()
+    expect(afterAllowedThink).toHaveLength(2)
+    expect(afterAllowedThink![0].segment).toBe(cmdAllowedSettled)
+    expect(afterAllowedThink!.at(-1)?.segment).toBe(awaitingDone)
+    const afterAllowedAnswer = remapProcessPhaseStepsOnThinkAppend(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, firstReply],
+      true
+    )
+    expect(afterAllowedAnswer).not.toBeNull()
+    expect(afterAllowedAnswer).toHaveLength(2)
+    expect(afterAllowedAnswer![0].segment).toBe(cmdAllowedSettled)
+    const afterAllowedThinkSettled = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextThink, cmdNextSettled],
+      true
+    )
+    expect(afterAllowedThinkSettled).not.toBeNull()
+    expect(afterAllowedThinkSettled).toHaveLength(3)
+    expect(afterAllowedThinkSettled![0].segment).toBe(cmdAllowedSettled)
+    expect(afterAllowedThinkSettled!.at(-1)?.segment).toBe(cmdNextSettled)
     const askTool: TurnSegment = {
       id: 'ask-1',
       kind: 'tool',
