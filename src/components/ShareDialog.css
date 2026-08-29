@@ -1,0 +1,125 @@
+.share-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+}
+
+.share-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, #000 28%, transparent);
+  cursor: default;
+}
+
+.share-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(620px, 80vh);
+  overflow: auto;
+  padding: 16px 16px 12px;
+  border-radius: 18px;
+}
+
+.share-dialog-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.share-dialog-head p {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.share-dialog-head code {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.share-dialog-meta {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.share-dialog-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.share-dialog-preview textarea {
+  resize: vertical;
+  min-height: 220px;
+  max-height: min(42vh, 360px);
+  padding: 8px 10px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.share-dialog-preview textarea:focus {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+.share-dialog-ok,
+.share-dialog-err {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.share-dialog-ok {
+  color: var(--text);
+}
+
+.share-dialog-err {
+  color: var(--danger, #c43);
+}
+
+.share-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.share-dialog-actions button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0.5px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-fill-nested);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.share-dialog-actions button.is-primary {
+  border-color: var(--accent-ring);
+  background: color-mix(in srgb, var(--accent-ring) 18%, var(--glass-fill-nested));
+}
+
+.share-dialog-actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+html.theme-dark .share-dialog {
+  background: var(--metal-fill, var(--glass-fill-raised));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

@@ -13,6 +13,7 @@ import {
   PanelRightOpen,
   SquarePen,
   AppWindow,
+  Share2,
   FolderOpen,
   GitBranch,
   Pin
@@ -29,6 +30,8 @@ interface Props {
   onNewConversation?: () => void
   /** 弹出当前对话到独立窗（对标 Codex Open in Popup Window） */
   onPopOut?: () => void
+  /** 分享只读快照（对标 Codex Share / `/share`） */
+  onShare?: () => void
   popout?: boolean
   /** 弹出窗 Always on top（对标 Codex） */
   alwaysOnTop?: boolean
@@ -58,6 +61,7 @@ export function ChatToolbar({
   onToggleRightPanel,
   onNewConversation,
   onPopOut,
+  onShare,
   popout = false,
   alwaysOnTop = false,
   onToggleAlwaysOnTop,
@@ -200,6 +204,22 @@ export function ChatToolbar({
               aria-label={`打开 ${prLabel}`}
             >
               {prLabel}
+            </button>
+          ) : null}
+          {onShare && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-icon-btn"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onShare()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="分享只读快照"
+              aria-label="分享只读快照"
+            >
+              <Share2 size={18} strokeWidth={1.75} aria-hidden />
             </button>
           ) : null}
           {onPopOut && !popout ? (

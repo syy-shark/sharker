@@ -62,6 +62,11 @@ export function installApplicationMenu(): void {
           registerAccelerator: false,
           ...send('open_folder')
         },
+        {
+          label: '分享只读快照…',
+          registerAccelerator: false,
+          ...send('share_thread')
+        },
         { type: 'separator' },
         { role: 'close', label: '关闭窗口' }
       ]

@@ -259,6 +259,13 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
     category: 'other'
   },
   {
+    name: 'share',
+    description: '复制当前对话的只读快照（脱敏，不含工具输出）',
+    scope: 'ui',
+    action: 'share_thread',
+    category: 'session'
+  },
+  {
     name: 'model',
     description: '切换对话模型',
     scope: 'ui',

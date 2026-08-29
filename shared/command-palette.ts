@@ -200,6 +200,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_feedback'
   },
   {
+    id: 'share',
+    title: '分享只读快照',
+    keywords: 'share snapshot thread 分享 快照 只读 /share',
+    action: 'share_thread'
+  },
+  {
     id: 'local',
     title: '交接回本地',
     keywords: 'local handoff 本地 交接',

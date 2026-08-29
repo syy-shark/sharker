@@ -134,7 +134,9 @@ import { parseReviewFindings } from '../shared/review-comment'
 import { CommandPalette } from './components/CommandPalette'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { FeedbackDialog } from './components/FeedbackDialog'
+import { ShareDialog } from './components/ShareDialog'
 import { ProjectFoldersDialog } from './components/ProjectFoldersDialog'
+import { formatThreadSnapshot } from '../shared/thread-snapshot'
 import type { PaletteCommand } from '../shared/command-palette'
 import { SettingsPage } from './pages/SettingsPage'
 import { applyAppearanceDom } from './components/settings/AppearanceSettings'
@@ -447,6 +449,13 @@ export default function App() {
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackInfo, setFeedbackInfo] = useState<FeedbackBundleInfo | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareBundle, setShareBundle] = useState<{
+    title: string
+    markdown: string
+    redactedCount: number
+    messageCount: number
+  } | null>(null)
   const [composerIntent, setComposerIntent] = useState<
     'mention' | 'skill' | 'find' | 'model' | 'dictate' | 'voice' | 'project' | null
   >(null)
@@ -4880,6 +4889,27 @@ export default function App() {
     }
   }, [])
 
+  /** 打开时拍一帧只读快照，之后不跟直播 token 变（对标 Codex Share） */
+  const openShareThread = useCallback(() => {
+    const id = activeConversationIdRef.current
+    const title = conversationListRef.current.find((c) => c.id === id)?.title
+    const snap = formatThreadSnapshot({
+      title,
+      conversationId: id ?? undefined,
+      messages: messagesRef.current,
+      liveSegments: loadingLiveRef.current ? segmentsRef.current : undefined,
+      truncatedBefore: historyStartSeqRef.current > 0
+    })
+    setShareBundle({
+      title: title?.trim() || '当前对话',
+      markdown: snap.markdown,
+      redactedCount: snap.redactedCount,
+      messageCount: snap.messageCount
+    })
+    setShareOpen(true)
+    setPage('chat')
+  }, [])
+
   /** UI 斜杠命令（不经过模型） */
   const handleSlashAction = useCallback(
     async (cmd: SlashCommandMeta, args: string) => {
@@ -5304,6 +5334,9 @@ export default function App() {
           })
           break
         }
+        case 'share_thread':
+          openShareThread()
+          break
         case 'show_feedback': {
           setFeedbackOpen(true)
           setFeedbackInfo(null)
@@ -5672,6 +5705,7 @@ export default function App() {
       historyForModelTurn,
       persistActiveConversation,
       persistSettings,
+      openShareThread,
       threadMode,
       threadWorktreePath
     ]
@@ -6276,6 +6310,10 @@ export default function App() {
         void handleAddWorkspace()
         return
       }
+      if (action === 'share_thread') {
+        openShareThread()
+        return
+      }
       if (action === 'open_settings') {
         void handleNavigate('settings', 'models')
         return
@@ -6317,6 +6355,7 @@ export default function App() {
     handleNativeOrAppUndo,
     handleNavigate,
     handleNewConversation,
+    openShareThread,
     handleShortcutPanel,
     handleStandaloneConversation,
     handleToggleRightPanel,
@@ -7384,6 +7423,7 @@ export default function App() {
               onCreateBranchHere={() => void handleCreateBranchHere()}
               threadMode={threadMode}
               onThreadModeChange={handleThreadModeChange}
+              onShare={openShareThread}
               onPopOut={() => {
                 const ws = settingsRef.current.activeWorkspaceId
                 const id = activeConversationIdRef.current
@@ -7628,6 +7668,17 @@ export default function App() {
           onClose={() => {
             setFeedbackOpen(false)
             setFeedbackInfo(null)
+          }}
+        />
+        <ShareDialog
+          open={shareOpen}
+          title={shareBundle?.title}
+          markdown={shareBundle?.markdown ?? ''}
+          redactedCount={shareBundle?.redactedCount ?? 0}
+          messageCount={shareBundle?.messageCount ?? 0}
+          onClose={() => {
+            setShareOpen(false)
+            setShareBundle(null)
           }}
         />
         <CommandPalette

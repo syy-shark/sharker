@@ -26,6 +26,7 @@ describe('command palette', () => {
     expect(ids).toContain('create-branch')
     expect(ids).toContain('mcp')
     expect(ids).toContain('feedback')
+    expect(ids).toContain('share')
     expect(ids).toContain('local')
     expect(ids).toContain('worktree')
     expect(ids).toContain('side')

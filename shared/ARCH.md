@@ -118,7 +118,7 @@
 | `review-file-click.test.ts` | 文件名 vs 背景、修饰键开行、菜单项与菜单位置夹取 |
 | `skill-mention.ts` | Composer `$` Skill 引用解析与插入；`@` 菜单插入 `$name`；发送前收集 / 撤掉已绑定 Skill |
 | `skill-mention.test.ts` | `$token` 边界与过滤、`@` 插入、绑定芯片 |
-| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端） |
+| `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/task`、选择模型、项目选择器、打开用量、复制工作目录 / 会话 ID / 对话路径 / 对话深链、撤销/重做应用操作、初始化 AGENTS.md、权限、记忆、状态、目标、打开 worktree、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
 | `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象 |
@@ -144,6 +144,12 @@
 | `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
 | `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置） |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编、只有 send 贴底 |
+| `pending-preview.ts` | 注入/排队芯片预览截到 3 行 / 240 字（对标 Codex #39864 pending input wrapping），避免长文折行把对话柱挤矮（#40788） |
+| `pending-preview.test.ts` | 短文不截、多行与超长加省略号、CRLF 归一 |
+| `secret-redact.ts` | 已知 API Key / token / PEM / Bearer 形态换成 `[REDACTED:…]`（对标 Codex Share redacts known secret patterns） |
+| `secret-redact.test.ts` | 常见令牌脱敏、普通路径留下 |
+| `thread-snapshot.ts` | `/share` 只读快照：用户可见消息、思考摘要、改文件 diff；不含工具 I/O；打开时拍一帧；脱敏后复制，不上传 |
+| `thread-snapshot.test.ts` | 收录用户/回答/diff/直播可见段，丢掉 shell 输出，脱敏 Key |
 | `suggested-prompts.ts` | 空对话建议：先恢复进行中 / 未读 / 最近更新的对话，再审查 / 目标（对标 Codex Settings → Suggested prompts；不对创建时间排队） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
 | `composer-paste.ts` | 粘贴决策：text/plain（及 HTML 剥标签）优先于图片；CRLF 归一；超长收成 `Pasted text.txt`；空输入 / 空参斜杠折进正文 |
@@ -176,7 +182,7 @@
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp、/feedback、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表 |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/task、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表 |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或插入当前输入框：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat / send selection to composer） |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
