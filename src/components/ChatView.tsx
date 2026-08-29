@@ -1,6 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
+ * ⌘F 查找条在滚动层外占位，不盖正文（对标 Codex #40788 / #38220）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -1784,6 +1785,68 @@ export function ChatView({
       data-transcript-head={viewingHead ? '1' : undefined}
       data-transcript-head-start={viewingHead ? historyHeadStartSeq : undefined}
     >
+      {!isEmpty && findOpen ? (
+        <div className="chat-find glass-tile" role="search">
+          <input
+            ref={findInputRef}
+            className="chat-find__input"
+            value={findQuery}
+            placeholder="在对话中查找"
+            aria-label="在对话中查找"
+            onChange={(e) => {
+              setFindQuery(e.target.value)
+              setFindHit(0)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setFindOpen(false)
+                composerRef.current?.focus()
+                return
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                stepFindHit(e.shiftKey ? -1 : 1)
+              }
+            }}
+          />
+          <span className="chat-find__count">
+            {findQuery.trim()
+              ? findHits.length
+                ? `${findHit + 1}/${findHits.length}`
+                : '无结果'
+              : ''}
+          </span>
+          <button
+            type="button"
+            className="chat-find__nav"
+            disabled={findHits.length === 0}
+            onClick={() => stepFindHit(-1)}
+            aria-label="上一条"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="chat-find__nav"
+            disabled={findHits.length === 0}
+            onClick={() => stepFindHit(1)}
+            aria-label="下一条"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            className="chat-find__nav"
+            onClick={() => {
+              setFindOpen(false)
+            }}
+            aria-label="关闭查找"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
         <div
@@ -1803,68 +1866,6 @@ export function ChatView({
             messagesRef.current?.focus({ preventScroll: true })
           }}
         >
-          {findOpen ? (
-            <div className="chat-find glass-tile" role="search">
-              <input
-                ref={findInputRef}
-                className="chat-find__input"
-                value={findQuery}
-                placeholder="在对话中查找"
-                aria-label="在对话中查找"
-                onChange={(e) => {
-                  setFindQuery(e.target.value)
-                  setFindHit(0)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault()
-                    setFindOpen(false)
-                    composerRef.current?.focus()
-                    return
-                  }
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    stepFindHit(e.shiftKey ? -1 : 1)
-                  }
-                }}
-              />
-              <span className="chat-find__count">
-                {findQuery.trim()
-                  ? findHits.length
-                    ? `${findHit + 1}/${findHits.length}`
-                    : '无结果'
-                  : ''}
-              </span>
-              <button
-                type="button"
-                className="chat-find__nav"
-                disabled={findHits.length === 0}
-                onClick={() => stepFindHit(-1)}
-                aria-label="上一条"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="chat-find__nav"
-                disabled={findHits.length === 0}
-                onClick={() => stepFindHit(1)}
-                aria-label="下一条"
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                className="chat-find__nav"
-                onClick={() => {
-                  setFindOpen(false)
-                }}
-                aria-label="关闭查找"
-              >
-                ×
-              </button>
-            </div>
-          ) : null}
           <div className="messages" ref={messagesInnerRef}>
             {historicalRows}
 
