@@ -535,7 +535,7 @@ describe('turn segment event state machine', () => {
     const afterRealDetail = applyStreamChunk(afterWriteBeat, {
       type: 'status',
       toolName: 'write_file',
-      content: 'src/b.ts',
+      content: 'src/b.ts · 3s',
       timestamp: 8
     })
     expect(afterRealDetail).not.toBe(afterWriteBeat)
@@ -545,7 +545,7 @@ describe('turn segment event state machine', () => {
     const afterSameDetail = applyStreamChunk(afterRealDetail, {
       type: 'status',
       toolName: 'write_file',
-      content: 'src/b.ts',
+      content: 'src/b.ts · 4s',
       timestamp: 9
     })
     expect(afterSameDetail).toBe(afterRealDetail)

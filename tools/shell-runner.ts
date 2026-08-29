@@ -1,5 +1,6 @@
 /**
  * 可中止、可后台的 shell 执行器：开发服务器等长驻进程不阻塞 Agent turn。
+ * 直播进度只回传真实末行，不推「执行中… Ns」（对标 Codex #19260）。
  * @see tools/ARCH.md
  */
 import { spawn, type ChildProcess } from 'child_process'
@@ -164,7 +165,7 @@ export interface ShellRunOptions {
   blockUntilMs?: number
   signal?: AbortSignal
   maxBuffer?: number
-  /** 节流进度回调：命令执行中推送末行/耗时，供直播过程保持“活着” */
+  /** 节流进度回调：只推真实末行，不推「执行中… Ns」（秒表走直播头时钟） */
   onStatus?: (content: string) => void
 }
 
@@ -200,30 +201,21 @@ export async function runShellCommand(
     let settled = false
     let backgrounded = false
     let readinessInFlight = false
-    const startedAt = Date.now()
     let lastStatusAt = 0
     let lastStatusText = ''
 
-    const emitStatus = (raw?: string, force = false): void => {
+    const emitStatus = (raw?: string): void => {
       if (!options?.onStatus || settled) return
-      const now = Date.now()
-      if (!force && now - lastStatusAt < 700) return
-      const elapsedSec = Math.max(1, Math.round((now - startedAt) / 1000))
       const line = (raw || '')
         .split(/\r?\n/)
         .map((s) => s.trim())
         .filter(Boolean)
         .at(-1)
-      let text = line
-        ? (line.length > 96 ? `${line.slice(0, 95)}…` : line)
-        : `执行中… ${elapsedSec}s`
-      if (!line) {
-        // keep heartbeat even without output
-        text = `执行中… ${elapsedSec}s`
-      } else if (elapsedSec >= 2) {
-        text = `${text} · ${elapsedSec}s`
-      }
-      if (!force && text === lastStatusText && now - lastStatusAt < 1600) return
+      if (!line) return
+      const now = Date.now()
+      if (now - lastStatusAt < 700) return
+      const text = line.length > 96 ? `${line.slice(0, 95)}…` : line
+      if (text === lastStatusText && now - lastStatusAt < 1600) return
       lastStatusText = text
       lastStatusAt = now
       try {
@@ -232,11 +224,6 @@ export async function runShellCommand(
         /* ignore UI bridge errors */
       }
     }
-
-    const heartbeat = setInterval(() => {
-      emitStatus(undefined, true)
-    }, 1600)
-    emitStatus('已启动命令…', true)
 
     let blockTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -254,7 +241,6 @@ export async function runShellCommand(
       if (settled) return
       settled = true
       if (blockTimer) clearTimeout(blockTimer)
-      clearInterval(heartbeat)
       detachListeners()
       killChildTree(child)
       cleanup(false)
@@ -265,7 +251,6 @@ export async function runShellCommand(
       if (settled) return
       settled = true
       if (blockTimer) clearTimeout(blockTimer)
-      clearInterval(heartbeat)
       detachListeners()
       if (keepChild) detachBackgroundChild(child)
       cleanup(keepChild)

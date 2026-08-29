@@ -344,9 +344,14 @@ function applyTokenChunk(segments: TurnSegment[], content: string, timestamp: nu
   return next
 }
 
+/** 去掉「末行 · 3s」秒表后缀，避免真实输出被当成心跳丢掉 */
+function stripLiveElapsedSuffix(text: string): string {
+  return text.replace(/\s*·\s*\d+s$/, '').trim()
+}
+
 /** 秒表心跳或源码首行：不换工具对象，也不新开 status（对标 Codex #19260） */
 function isLiveToolHeartbeat(content: string): boolean {
-  const clean = content.trim()
+  const clean = stripLiveElapsedSuffix(content.trim())
   if (!clean) return true
   if (/^(L\d+:|[{}\[\]]|```)/.test(clean)) return true
   return isToolProgressSummary(clean)
@@ -417,7 +422,7 @@ export function applyStreamChunk(segments: TurnSegment[], chunk: StreamChunk): T
     if (isLiveToolHeartbeat(chunk.content)) return segments
     const activeToolIndex = findSoleActiveToolIndex(next, chunk.toolName)
     if (activeToolIndex >= 0) {
-      const clean = chunk.content.trim()
+      const clean = stripLiveElapsedSuffix(chunk.content.trim())
       if (clean) {
         const current = next[activeToolIndex]!
         const detail = clean.length > 120 ? `${clean.slice(0, 119)}…` : clean

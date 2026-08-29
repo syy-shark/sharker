@@ -29,7 +29,7 @@
 | `context.ts` | `assertAccess`、`toolCwd`、`ok` 等执行上下文；沙箱可读主文件夹 + `extraPaths` |
 | `permissions.ts（含 permissions.test.ts 路径/高危门禁单测）` | 沙箱路径（含附加文件夹根）、高危 shell/路径模式 |
 | `network-policy.ts` | `networkMode` 限制 web / shell 出站 |
-| `shell-runner.ts` | 可中止 shell；开发服务器就绪后放后台；长命令 `onStatus` 进度回传 |
+| `shell-runner.ts` | 可中止 shell；开发服务器就绪后放后台；长命令 `onStatus` 只回传真实末行，不推「执行中… Ns」秒表（对标 Codex #19260） |
 | `truncate.ts` | 工具输出截断 |
 | `tool-groups.ts` | 工具分组与计划模式白名单 |
 | `harness-state.ts` | 计划模式 / Build / 按会话隔离的 worktree 运行时状态（`phaseByConversation`） |
