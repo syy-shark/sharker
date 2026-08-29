@@ -223,6 +223,43 @@ describe('live stream ui snapshot', () => {
     expect(
       shouldSkipLiveStreamDerivation([statusGrow('Preparing')], [statusGrow('Preparing…')])
     ).toBe('status')
+    const hello = text('Hello')
+    const running: TurnSegment = {
+      id: 'run-1',
+      kind: 'tool',
+      toolName: 'run_terminal_cmd',
+      status: 'active',
+      toolDetail: 'npm test'
+    }
+    const runningLine: TurnSegment = { ...running, toolDetail: 'PASS src/a.test.ts' }
+    const runningPreview: TurnSegment = {
+      ...running,
+      editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
+    }
+    const answerWhileTool = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    expect(nextLiveAnswerView(answerWhileTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningLine]
+    })).toBe(answerWhileTool)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, runningLine]
+      })
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, runningLine])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, runningPreview]
+      })
+    ).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, runningPreview])).toBe(null)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,
@@ -433,6 +470,7 @@ describe('live stream ui snapshot', () => {
     expect(appSrc.includes('setActiveTool(')).toBe(false)
     expect(appSrc).toContain('publishLiveStreamUi')
     expect(appSrc).toContain('shouldSkipLiveStreamDerivation')
+    expect(appSrc).toContain("skip === 'tool'")
     expect(appSrc).toContain('segments === prevSnap.liveSegments')
     expect(appSrc).toContain('segmentsRef.current !== prevLiveSegments')
     expect(appSrc).toContain('shouldDeferLastTurnUi')

@@ -1,5 +1,5 @@
 /**
- * 直播行过程 / 回答切片：token 只换回答；正文或思考加长不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
+ * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
  * 对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
@@ -81,7 +81,20 @@ function isLiveStatus(segment: TurnSegment): boolean {
 }
 
 /** 16ms flush：前缀没变时不必整表 extract / 思考预览 / 找 active tool */
-export type LiveStreamDerivationSkip = 'think' | 'status' | 'text'
+export type LiveStreamDerivationSkip = 'think' | 'status' | 'text' | 'tool'
+
+/** 同一工具只改详情 / 摘要：预览与参数引用没变，不必重拆回答 */
+function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.kind !== 'tool' || next.kind !== 'tool') return false
+  if (prev.id !== next.id || prev.status !== next.status) return false
+  if (prev.toolName !== next.toolName) return false
+  return (
+    prev.toolArgs === next.toolArgs &&
+    prev.fileDiff === next.fileDiff &&
+    prev.fileDiffs === next.fileDiffs &&
+    prev.editPreview === next.editPreview
+  )
+}
 
 export function shouldSkipLiveStreamDerivation(
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -99,6 +112,7 @@ export function shouldSkipLiveStreamDerivation(
   if (prevTail !== nextTail && prevTail.status !== nextTail.status) return null
   if (isLiveThinking(nextTail)) return 'think'
   if (isLiveStatus(nextTail)) return 'status'
+  if (isLiveToolMetaOnlyChange(prevTail, nextTail)) return 'tool'
   if (
     isLiveAnswerText(nextTail) &&
     !hasStreamingDemoFenceGrowth(prevTail.content ?? '', nextTail.content ?? '')
@@ -379,8 +393,8 @@ export function liveAnswerGrowState(
  * 就地比 all-but-last，不 `slice`（对标 Codex #22860）。
  */
 /**
- * 末段仍是同一段增长中的思考 / 状态：回答槽没变，不必 `buildAnswerParts`。
- * 工具末段不跳（预览可补 diff）。对标 Codex #22860。
+ * 末段仍是同一段增长中的思考 / 状态，或同一工具只改详情：回答槽没变，不必 `buildAnswerParts`。
+ * 工具预览 / diff / 参数变了才重拆。对标 Codex #22860。
  */
 export function shouldSkipLiveAnswerIdentity(input: {
   prev: LiveAnswerView | null
@@ -401,6 +415,7 @@ export function shouldSkipLiveAnswerIdentity(input: {
   if (nextTail.kind === 'thinking' || nextTail.kind === 'status') {
     return prevTail.status === nextTail.status
   }
+  if (nextTail.kind === 'tool') return isLiveToolMetaOnlyChange(prevTail, nextTail)
   return false
 }
 

@@ -1560,6 +1560,10 @@ export default function App() {
           liveSegments: segments,
           streaming: tail?.content ?? ''
         })
+      } else if (skip === 'tool') {
+        publishLiveStreamUi({
+          liveSegments: segments
+        })
       } else {
         const finalPreview = extractFinalContent(segments, { isStreaming: true })
         const thinkPreview = thinkingPreviewFromSegments(segments)
