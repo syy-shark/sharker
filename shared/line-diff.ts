@@ -116,6 +116,46 @@ export function shouldReserveDiffStat(live: boolean, value: number): boolean {
   return live || Math.max(0, Number(value) || 0) > 0
 }
 
+function sameDiffLine(left: FileDiffLine, right: FileDiffLine): boolean {
+  return (
+    left.kind === right.kind &&
+    left.content === right.content &&
+    left.oldLine === right.oldLine &&
+    left.newLine === right.newLine
+  )
+}
+
+/**
+ * 直播 diff 行：已画行退回同一对象，只换增长行。
+ * 对标 Codex PatchApplyUpdated / #38695 / #22860。
+ */
+export function continueLiveDiffLines(
+  prev: readonly FileDiffLine[] | null | undefined,
+  next: readonly FileDiffLine[]
+): FileDiffLine[] {
+  if (!next.length) return prev?.length ? [] : ((prev as FileDiffLine[] | undefined) ?? [])
+  if (!prev?.length) return next.slice()
+  if (prev.length === next.length && next.every((line, index) => sameDiffLine(prev[index]!, line))) {
+    return prev as FileDiffLine[]
+  }
+  return next.map((line, index) => {
+    const old = prev[index]
+    return old && sameDiffLine(old, line) ? old : line
+  })
+}
+
+/** 已完成 diff 行：引用没变就退回 prev */
+export function nextClosedDiffLines(
+  prev: readonly FileDiffLine[] | null | undefined,
+  lines: readonly FileDiffLine[]
+): FileDiffLine[] {
+  const next = lines.length > 1 ? lines.slice(0, -1) : []
+  if (prev && prev.length === next.length && next.every((line, index) => line === prev[index])) {
+    return prev as FileDiffLine[]
+  }
+  return next
+}
+
 /** 统计 add/del 行数 */
 export function statsFromLines(lines: FileDiffLine[]): { added: number; removed: number } {
   let added = 0

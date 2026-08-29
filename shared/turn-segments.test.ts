@@ -16,7 +16,9 @@ import {
   estimateDiffBodyHeight,
   liveDiffBodyMinHeight,
   shouldCollapseDiffPreview,
-  shouldReserveDiffCollapseFooter
+  shouldReserveDiffCollapseFooter,
+  continueLiveDiffLines,
+  nextClosedDiffLines
 } from './line-diff'
 
 describe('turn segment event state machine', () => {
@@ -271,6 +273,20 @@ describe('turn segment event state machine', () => {
         stats: { added: 1, removed: 1 }
       }
     })
+    const diffFirst = continueLiveDiffLines(null, [
+      { kind: 'add', content: 'one', newLine: 1 },
+      { kind: 'add', content: 'tw', newLine: 2 }
+    ])
+    const diffGrown = continueLiveDiffLines(diffFirst, [
+      { kind: 'add', content: 'one', newLine: 1 },
+      { kind: 'add', content: 'two', newLine: 2 }
+    ])
+    expect(diffGrown[0]).toBe(diffFirst[0])
+    expect(diffGrown[1]).not.toBe(diffFirst[1])
+    expect(continueLiveDiffLines(diffGrown, diffGrown)).toBe(diffGrown)
+    const closedDiff = nextClosedDiffLines(null, diffFirst)
+    expect(closedDiff).toHaveLength(1)
+    expect(nextClosedDiffLines(closedDiff, diffGrown)).toBe(closedDiff)
     expect(estimateDiffBodyHeight(0)).toBe(0)
     expect(estimateDiffBodyHeight(3)).toBe(71)
     expect(liveDiffBodyMinHeight(0, 3, 0)).toBe(71)

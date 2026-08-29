@@ -167,7 +167,7 @@
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / persist 目标 / 直播预留 id / 收束空窗单测 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`mergeChangedRelPaths` 只在路径新增时扩列表；`liveAssistantMeta` 把已改路径带进直播元信息（写入预览就开始挂「已改」）；`reuseLiveAssistantMeta` 在路径/活动没变时保住同一对象，避免工具心跳重挂直播行 |
 | `turn-meta-write.test.ts` | 写盘相对路径；apply_patch hunk；合并本轮路径只在新增时返回 true；字段相同的直播元信息复用原对象 |
-| `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff；直播占位按行估高，`liveDiffBodyMinHeight` 只升不降以免占位换行跳贴底；`canOfferDiffPreviewCollapse` / `shouldCollapseDiffPreview` 历史长 diff 才折预览，直播中不折以免 +/- 停在第 20 行（对标 Codex #32030 / #38695）；`shouldReserveDiffCollapseFooter` 直播先占「收起变更」页脚，收束不再冒出 32px（对标 Codex #40788）；`DIFF_STAT_RESERVE_CH` / `formatDiffStatLabel` 给直播 +/- 预留宽（对标 Codex animated diff stat alignment） |
+| `line-diff.ts` | 行级 diff、`buildFileDiff`、解析 unified diff；直播占位按行估高，`liveDiffBodyMinHeight` 只升不降以免占位换行跳贴底；`canOfferDiffPreviewCollapse` / `shouldCollapseDiffPreview` 历史长 diff 才折预览，直播中不折以免 +/- 停在第 20 行（对标 Codex #32030 / #38695）；`shouldReserveDiffCollapseFooter` 直播先占「收起变更」页脚，收束不再冒出 32px（对标 Codex #40788）；`DIFF_STAT_RESERVE_CH` / `formatDiffStatLabel` 给直播 +/- 预留宽（对标 Codex animated diff stat alignment）；`continueLiveDiffLines` / `nextClosedDiffLines` 已画 +/- 行退回同一对象（对标 Codex PatchApplyUpdated / #22860） |
 | `patch.ts` | apply_patch 格式解析与应用 |
 | `notebook.ts` | Jupyter .ipynb 读写辅助 |
 | `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |

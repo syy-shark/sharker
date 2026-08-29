@@ -18,7 +18,9 @@ import {
   shouldCollapseDiffPreview,
   shouldReserveDiffCollapseFooter,
   shouldReserveDiffStat,
-  statsFromLines
+  statsFromLines,
+  continueLiveDiffLines,
+  nextClosedDiffLines
 } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
@@ -126,8 +128,10 @@ function renderDiffFindText(text: string, query: string | undefined, currentStar
   )
 }
 
-/** 单行：审查模式下可悬停加点评 */
-function DiffLineRow({
+const noopComment = () => {}
+
+/** 单行：审查模式下可悬停加点评；按行对象身份 memo（对标 Codex #22860） */
+const DiffLineRow = memo(function DiffLineRow({
   line,
   index,
   review,
@@ -193,7 +197,31 @@ function DiffLineRow({
       {commenting ? <span className="code-diff-commenting-anchor" data-line-index={index} /> : null}
     </div>
   )
-}
+})
+
+/** 已完成直播 diff 行：lines 引用没变就不重绘（对标 Codex #38695 / #22860） */
+const ClosedDiffLines = memo(function ClosedDiffLines({
+  lines,
+  onOpenLine
+}: {
+  lines: FileDiffLine[]
+  onOpenLine?: (n: number) => void
+}) {
+  return (
+    <>
+      {lines.map((line, index) => (
+        <DiffLineRow
+          key={lineKey(line, index)}
+          line={line}
+          index={index}
+          commenting={false}
+          onStartComment={noopComment}
+          onOpenLine={onOpenLine}
+        />
+      ))}
+    </>
+  )
+})
 
 /** 行级 diff 块；直播里同一份 fileDiff 引用不变时不跟 token 重绘 */
 export const CodeDiffBlock = memo(function CodeDiffBlock({
@@ -216,7 +244,11 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
   const [draft, setDraft] = useState('')
   const pendingFloorRef = useRef(0)
   const bodyRef = useRef<HTMLDivElement | null>(null)
-  const displayLines = diff?.lines ?? lines ?? []
+  const paintedRef = useRef<FileDiffLine[]>([])
+  const closedRef = useRef<FileDiffLine[]>([])
+  const rawLines = diff?.lines ?? lines ?? []
+  const displayLines = live ? continueLiveDiffLines(paintedRef.current, rawLines) : rawLines
+  if (live) paintedRef.current = displayLines
   const hunks = useMemo(() => (review ? splitDiffHunks(displayLines) : []), [displayLines, review])
   const stats = diff?.stats ?? statsFromLines(displayLines)
   const filePath = diff?.path ?? path ?? ''
@@ -261,6 +293,10 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
       previewLimit
     })
   const visible = needsCollapse ? displayLines.slice(0, previewLimit) : displayLines
+  const liveClosed =
+    live && !review ? nextClosedDiffLines(closedRef.current, visible) : closedRef.current
+  if (live && !review) closedRef.current = liveClosed
+  const liveTail = live && !review && visible.length ? visible[visible.length - 1]! : null
   if (live && pendingRows > 0) {
     pendingFloorRef.current = Math.max(pendingFloorRef.current, estimateDiffBodyHeight(pendingRows))
   }
@@ -425,7 +461,16 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
                   {hunk.lines.map((line, i) => renderLine(line, hunk.index * 1000 + i))}
                 </section>
               ))
-            : visible.map((line, index) => renderLine(line, index))}
+            : live && !review
+              ? (
+                  <>
+                    {liveClosed.length ? (
+                      <ClosedDiffLines lines={liveClosed} onOpenLine={onOpenLine} />
+                    ) : null}
+                    {liveTail ? renderLine(liveTail, liveClosed.length) : null}
+                  </>
+                )
+              : visible.map((line, index) => renderLine(line, index))}
       </div>
     </CodeArtifactShell>
   )
