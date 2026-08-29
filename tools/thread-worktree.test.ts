@@ -264,7 +264,15 @@ describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
     await execFileAsync('git', ['config', 'user.email', 'wt@test'], { cwd: repo })
     await execFileAsync('git', ['config', 'user.name', 'wt'], { cwd: repo })
     await writeFile(path.join(repo, 'README.md'), 'hello\n')
-    await execFileAsync('git', ['add', 'README.md'], { cwd: repo })
+    await mkdir(path.join(repo, '.codex', 'environments'), { recursive: true })
+    const cleanupMark = path.join(repo, 'cleanup-ran.txt')
+    await writeFile(
+      path.join(repo, '.codex', 'environments', 'environment.toml'),
+      `[cleanup]\nscript = "printf cleaned >> ${cleanupMark.replace(/\\/g, '/')}"\n`
+    )
+    await execFileAsync('git', ['add', 'README.md', '.codex/environments/environment.toml'], {
+      cwd: repo
+    })
     await execFileAsync('git', ['commit', '-m', 'init'], { cwd: repo })
 
     const prepared = await prepareThreadWorktree({
@@ -283,6 +291,7 @@ describe('prepareThreadWorktree', { timeout: 40_000 }, () => {
     expect(removed).toEqual({ ok: true, removed: true })
     const { stdout } = await execFileAsync('git', ['worktree', 'list'], { cwd: repo })
     expect(stdout).not.toContain(prepared.path)
+    expect(await readUtf(cleanupMark, 'utf8')).toBe('cleaned')
   })
 
   it('inspects a missing worktree and a snapshot file', async () => {

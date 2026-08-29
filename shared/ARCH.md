@@ -28,8 +28,8 @@
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |
-| `local-environment.ts` | 解析 `.codex/environments/environment.toml` 的 `[setup] script`（对标 Codex Local environments setup scripts；不发明 Actions / ⌘⇧D） |
-| `local-environment.test.ts` | 空脚本 / 转义换行 / 三引号；确认 worktree 创建会跑安装脚本 |
+| `local-environment.ts` | 解析 `.codex/environments/environment.toml` 的 `[setup]` / `[cleanup] script`（对标 Codex Local environments；不发明 Actions / ⌘⇧D） |
+| `local-environment.test.ts` | 空脚本 / 转义换行 / 三引号；setup 与 cleanup 互不串表；确认 worktree 创建/删除会跑对应脚本 |
 | `worktree-root.ts` | Settings → Worktrees 根目录：只收绝对路径，空/非法回退默认 |
 | `worktree-root.test.ts` | 绝对路径保留、相对/`..`/`/` 丢弃 |
 | `needs-tools.ts` | 寒暄是否跳过 tools；续跑短句保留 tools |

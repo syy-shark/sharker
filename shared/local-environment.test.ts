@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   LOCAL_ENVIRONMENT_REL,
   localEnvironmentTomlPath,
+  parseLocalEnvironmentCleanupScript,
   parseLocalEnvironmentSetupScript
 } from './local-environment'
 
@@ -23,12 +24,20 @@ describe('local environment setup script', () => {
       parseLocalEnvironmentSetupScript('[setup]\nscript = """\nnpm install\nnpm run build\n"""\n')
     ).toBe('npm install\nnpm run build')
     expect(parseLocalEnvironmentSetupScript('[cleanup]\nscript = "echo no"\n')).toBe('')
+    expect(parseLocalEnvironmentCleanupScript('[cleanup]\nscript = "scripts/worktree-down.sh"\n')).toBe(
+      'scripts/worktree-down.sh'
+    )
+    expect(
+      parseLocalEnvironmentCleanupScript('[setup]\nscript = "up"\n[cleanup]\nscript = "down"\n')
+    ).toBe('down')
+    expect(parseLocalEnvironmentCleanupScript('[setup]\nscript = "up"\n')).toBe('')
     expect(localEnvironmentTomlPath('/repo')).toBe(join('/repo', LOCAL_ENVIRONMENT_REL))
     const wtSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../tools/thread-worktree.ts'),
       'utf8'
     )
-    expect(wtSrc).toContain('parseLocalEnvironmentSetupScript')
+    expect(wtSrc).toContain('parseLocalEnvironmentScript')
+    expect(wtSrc).toContain("runLocalEnvironmentScript(cwd, dest, 'cleanup')")
     expect(wtSrc).toContain('localEnvironmentTomlPath')
     expect(wtSrc.includes('[[actions]]')).toBe(false)
   })

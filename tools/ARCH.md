@@ -34,8 +34,8 @@
 | `tool-groups.ts` | 工具分组与计划模式白名单 |
 | `harness-state.ts` | 计划模式 / Build / 按会话隔离的 worktree 运行时状态（`phaseByConversation`） |
 | `harness-state.test.ts` | 计划阶段按会话隔离、`/plan` 空参切换 |
-| `thread-worktree.ts` | 为会话创建或复用隔离 worktree（默认 `~/.sharker/worktrees`，可设 `worktreeRoot`）；可选起点分支；按 `.worktreeinclude` 拷被忽略文件；新建时跑仓库 `.codex/environments/environment.toml` 的 `[setup] script`（对标 Codex setup scripts，不发明 Actions）；默认保留最近 15 个并在删除前快照；归档可移除；项目菜单可建永久 worktree（`{root}/permanent/`，不自动删）；`inspectWorktreePath` 探活目录与快照 |
-| `thread-worktree.test.ts` | worktree 创建/复用、自定义根、include 拷贝、起点分支、安装脚本只在新建时跑、非 git 拒绝、清理与快照恢复 |
+| `thread-worktree.ts` | 为会话创建或复用隔离 worktree（默认 `~/.sharker/worktrees`，可设 `worktreeRoot`）；可选起点分支；按 `.worktreeinclude` 拷被忽略文件；新建时跑 `[setup] script`，归档/裁掉托管 worktree 前先快照再跑 `[cleanup] script`（对标 Codex Local environments / #19480，不发明 Actions）；默认保留最近 15 个；项目菜单可建永久 worktree（`{root}/permanent/`，不自动删）；`inspectWorktreePath` 探活目录与快照 |
+| `thread-worktree.test.ts` | worktree 创建/复用、自定义根、include 拷贝、起点分支、安装脚本只在新建时跑、归档删除前跑 cleanup、非 git 拒绝、清理与快照恢复 |
 | `builtins/present-inline-demo.ts` | 对话内嵌 HTML 演示（不写文件、不开浏览器） |
 | `ARCH.md` | 本层架构说明 |
 

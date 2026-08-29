@@ -1,6 +1,7 @@
 /**
  * 为会话准备隔离 Git worktree（对标 Codex 桌面端 Worktree 线程）。
  * 创建时按 `.worktreeinclude` 拷贝被忽略的本地文件，并跑仓库 `[setup] script`。
+ * 删除托管 worktree 前先快照再跑 `[cleanup] script`。
  * 不发明顶栏 Actions / ⌘⇧D。
  * @see tools/ARCH.md
  */
@@ -12,7 +13,8 @@ import path from 'path'
 import { runGit } from './shared/git-runner'
 import {
   localEnvironmentTomlPath,
-  parseLocalEnvironmentSetupScript
+  parseLocalEnvironmentScript,
+  type LocalEnvironmentScriptKind
 } from '../shared/local-environment'
 
 const execFileAsync = promisify(execFile)
@@ -36,10 +38,11 @@ export type PrepareWorktreeResult =
 
 const SETUP_TIMEOUT_MS = 10 * 60 * 1000
 
-/** 新建 worktree 后跑官方 `[setup] script`（对标 Codex Local environments setup scripts） */
-export async function runLocalEnvironmentSetup(
+/** 在 worktree 目录跑官方 `[setup]` / `[cleanup] script` */
+export async function runLocalEnvironmentScript(
   sourceRoot: string,
-  dest: string
+  dest: string,
+  kind: LocalEnvironmentScriptKind
 ): Promise<{ ran: boolean; error?: string }> {
   let toml = ''
   try {
@@ -47,7 +50,7 @@ export async function runLocalEnvironmentSetup(
   } catch {
     return { ran: false }
   }
-  const script = parseLocalEnvironmentSetupScript(toml)
+  const script = parseLocalEnvironmentScript(toml, kind)
   if (!script) return { ran: false }
   try {
     const shell = process.platform === 'win32' ? 'cmd.exe' : 'bash'
@@ -61,6 +64,26 @@ export async function runLocalEnvironmentSetup(
   } catch (e) {
     return { ran: true, error: e instanceof Error ? e.message : String(e) }
   }
+}
+
+/** 新建 worktree 后跑官方 `[setup] script`（对标 Codex Local environments setup scripts） */
+export async function runLocalEnvironmentSetup(
+  sourceRoot: string,
+  dest: string
+): Promise<{ ran: boolean; error?: string }> {
+  return runLocalEnvironmentScript(sourceRoot, dest, 'setup')
+}
+
+/** 快照之后、删目录之前跑 `[cleanup] script`（对标 Codex #19480） */
+async function snapshotThenRemoveWorktree(
+  cwd: string,
+  dest: string,
+  home: string
+): Promise<void> {
+  await snapshotManagedWorktree(dest, home)
+  const cleanup = await runLocalEnvironmentScript(cwd, dest, 'cleanup')
+  if (cleanup.error) console.warn('[worktree] cleanup script failed', cleanup.error)
+  await runGit(cwd, ['worktree', 'remove', '--force', dest])
 }
 
 function shortId(conversationId: string): string {
@@ -275,8 +298,7 @@ export async function pruneManagedWorktrees(options: {
     protectPaths: options.protectPaths
   })) {
     try {
-      await snapshotManagedWorktree(dest, home)
-      await runGit(cwd, ['worktree', 'remove', '--force', dest])
+      await snapshotThenRemoveWorktree(cwd, dest, home)
       removed.push(dest)
     } catch (e) {
       console.warn('[worktree] prune failed', dest, e)
@@ -466,8 +488,7 @@ export async function removeManagedWorktree(options: {
     if (!listed.split('\n').some((line) => line === `worktree ${dest}`)) {
       return { ok: true, removed: false }
     }
-    await snapshotManagedWorktree(dest, home)
-    await runGit(cwd, ['worktree', 'remove', '--force', dest])
+    await snapshotThenRemoveWorktree(cwd, dest, home)
     return { ok: true, removed: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
