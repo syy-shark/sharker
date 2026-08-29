@@ -8,6 +8,7 @@
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
  * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
+ * - 官方 ImageView 过程行标题 Viewed Image，短结果不当摘要倾倒
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -35,7 +36,7 @@ import { InlineDemo } from './InlineDemo'
 import { ChatImage } from './ChatImage'
 import { ChatLink } from './ChatLink'
 import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
-import { viewedImagePathFromTool } from '../../shared/view-image'
+import { isViewImageDump, isViewImageTool, viewedImagePathFromTool } from '../../shared/view-image'
 import { parseWebSearchSources } from '../../shared/web-search'
 import { parseUpdatePlanArgs } from '../../shared/update-plan'
 import { isMcpActivityToolName, isMcpJsonDump } from '../../shared/mcp-activity'
@@ -477,6 +478,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
   const updatePlan =
     segment?.toolName === 'update_plan' ? parseUpdatePlanArgs(segment.toolArgs) : null
   const mcpActivity = Boolean(segment?.toolName && isMcpActivityToolName(segment.toolName))
+  const viewImageActivity = Boolean(segment?.toolName && isViewImageTool(segment.toolName))
   const title = step.title
   const subAgentId = subAgentIdFromTool(
     segment?.toolName,
@@ -562,7 +564,9 @@ const ProcessStepRow = memo(function ProcessStepRow({
             isDemo ||
             Boolean(updatePlan?.plan.length) ||
             mcpActivity ||
-            isMcpJsonDump(segment?.resultSummary)
+            viewImageActivity ||
+            isMcpJsonDump(segment?.resultSummary) ||
+            isViewImageDump(segment?.resultSummary)
         }) ? (
           <span className="turn-flow-step-result">{segment?.resultSummary}</span>
         ) : null}
@@ -612,6 +616,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
               webSources.length === 0 &&
               !updatePlan?.plan.length &&
               !mcpActivity &&
+              !viewImageActivity &&
               ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
                 (segment && segmentHasDeferredOutput(segment)))
           ),

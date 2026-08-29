@@ -9,7 +9,7 @@ import { executeViewImage } from './view-image'
 
 export const readImageTool: ToolHandler = {
   name: 'read_image',
-  title: '读取图片',
+  title: 'Viewed Image',
   extractPaths: (args, workspace) => {
     const input = String(args.path ?? '').trim()
     if (!input) return []

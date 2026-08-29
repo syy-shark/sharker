@@ -52,7 +52,7 @@ export async function executeViewImage(
 
 export const viewImageTool: ToolHandler = {
   name: 'view_image',
-  title: '查看图片',
+  title: 'Viewed Image',
   extractPaths: (args, workspace) => {
     const input = String(args.path ?? '').trim()
     if (!input) return []

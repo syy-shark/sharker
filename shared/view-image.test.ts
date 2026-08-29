@@ -4,7 +4,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  formatViewImageActivity,
   formatViewImageToolOutput,
+  isViewImageDump,
   isViewImageRasterExt,
   isViewImageTool,
   mimeForViewImagePath,
@@ -19,6 +21,10 @@ describe('view-image', () => {
     expect(isViewImageTool('view_image')).toBe(true)
     expect(isViewImageTool('read_image')).toBe(true)
     expect(isViewImageTool('read_file')).toBe(false)
+    expect(formatViewImageActivity()).toBe('Viewed Image')
+    expect(isViewImageDump('Viewed image: /tmp/shot.png')).toBe(true)
+    expect(isViewImageDump('path: /tmp/shot.png')).toBe(true)
+    expect(isViewImageDump('Read package.json')).toBe(false)
   })
 
   it('only treats original as the official detail override', () => {

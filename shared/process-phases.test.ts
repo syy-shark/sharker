@@ -308,5 +308,22 @@ describe('process phases privacy', () => {
       }
     ])
     expect(askingMany[0]?.title).toBe('2 questions requested')
+    const viewing = deriveChronologicalSteps([
+      {
+        id: 'img1',
+        kind: 'tool',
+        toolName: 'view_image',
+        toolTitle: '查看图片',
+        toolArgs: { path: '/tmp/shot.png' },
+        toolDetail: '/tmp/shot.png',
+        resultSummary: 'Viewed image: /tmp/shot.png',
+        resultOutput: 'Viewed image: /tmp/shot.png\npath: /tmp/shot.png\nbytes: 12',
+        status: 'done',
+        startedAt: 31,
+        endedAt: 32
+      }
+    ])
+    expect(viewing[0]?.title).toBe('Viewed Image')
+    expect(viewing[0]?.detail).toBe('shot.png')
   })
 })

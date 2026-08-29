@@ -18,6 +18,11 @@ import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-a
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
+  formatViewImageActivity,
+  isViewImageDump,
+  isViewImageTool
+} from './view-image'
+import {
   parseRequestUserInput,
   REQUEST_USER_INPUT_TOOL,
   summarizeUserInputRequest
@@ -200,6 +205,9 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
         formatEditActivity(tool, segment.toolArgs, segment.toolDetail, segment.status, fileCount) ??
         base
       )
+    }
+    if (isViewImageTool(tool)) {
+      return formatViewImageActivity()
     }
     if (isCompactActivityToolName(tool)) {
       return formatCompactActivity(segment.toolTitle || segment.content, segment.status)
@@ -429,6 +437,14 @@ function buildStepsFromSource(
               }
               if (isMcpActivityToolName(segment.toolName || '') && isMcpJsonDump(stableDetail || summary)) {
                 return undefined
+              }
+              if (isViewImageTool(segment.toolName || '')) {
+                if (isViewImageDump(summary) || isViewImageDump(stableDetail)) {
+                  return exploreNameFromPath(
+                    typeof segment.toolArgs?.path === 'string' ? segment.toolArgs.path : stableDetail
+                  )
+                }
+                return exploreNameFromPath(stableDetail) || (isViewImageDump(summary) ? undefined : summary)
               }
               return stableDetail || summary
             })(),

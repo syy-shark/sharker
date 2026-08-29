@@ -1,11 +1,14 @@
 /**
  * 官方 `view_image`：读本地图并交给视觉回灌（对标 Codex view_image / #36966）。
  * 工具结果只留路径与体积，不把整段 base64 灌进直播。
- * 不发明 ImageGen、画布或 `features.view_image` 关闭开关。
+ * 过程行标题固定 Viewed Image。不发明 ImageGen、画布或 `features.view_image` 关闭开关。
  * @see shared/ARCH.md
  */
 
 export const VIEW_IMAGE_TOOL = 'view_image'
+
+/** 官方 ImageView 过程行标题（对标 Codex `Viewed Image`） */
+export const VIEW_IMAGE_ACTIVITY = 'Viewed Image'
 
 const VIEW_IMAGE_TOOLS = new Set(['view_image', 'read_image'])
 
@@ -90,4 +93,15 @@ export function viewImageApiDetail(detail: ViewImageDetail): 'low' | 'high' {
 export function viewedImagePathFromTool(toolName: string, output: string): string | null {
   if (!isViewImageTool(toolName)) return null
   return parseViewImageToolOutput(output)?.path ?? null
+}
+
+/** 短结果第一行，不当过程 detail / 摘要倾倒 */
+export function isViewImageDump(text: string | undefined): boolean {
+  const value = String(text || '').trim()
+  return /^viewed image:/i.test(value) || /^path:\s*\//m.test(value)
+}
+
+/** 官方过程行：标题固定 Viewed Image */
+export function formatViewImageActivity(): string {
+  return VIEW_IMAGE_ACTIVITY
 }
