@@ -39,7 +39,8 @@ import {
   extractChangedRelPaths,
   formatToolActivity,
   liveAssistantMeta,
-  mergeChangedRelPaths
+  mergeChangedRelPaths,
+  reuseLiveAssistantMeta
 } from '../shared/turn-meta'
 import { previewPathTouchedByWrites } from '../shared/file-preview'
 import { stampSubAgentActivity } from '../shared/subagent'
@@ -1231,7 +1232,8 @@ export default function App() {
   /** 将 ref 中的回合元信息同步到 React state */
   const syncLiveTurnMeta = useCallback(() => {
     const m = turnMetaRef.current
-    setLiveTurnMeta(liveAssistantMeta(m.browsedFiles, m.activities, turnChangedPathsRef.current))
+    const next = liveAssistantMeta(m.browsedFiles, m.activities, turnChangedPathsRef.current)
+    setLiveTurnMeta((prev) => reuseLiveAssistantMeta(prev, next))
   }, [])
 
   /** 清空本轮助手元信息 */
@@ -1375,7 +1377,7 @@ export default function App() {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
       lastStreamRenderAt.current = performance.now()
-      setLiveSegments(segmentsRef.current)
+      setLiveSegments((prev) => (prev === segmentsRef.current ? prev : segmentsRef.current))
       // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
       const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
       setStreaming((prev) => (prev === finalPreview ? prev : finalPreview))

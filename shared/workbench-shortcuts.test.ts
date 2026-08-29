@@ -35,6 +35,10 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'g', ctrlKey: true, shiftKey: true }))).toBe(
       'open_review'
     )
+    expect(matchWorkbenchShortcut(ev({ key: 'm', ctrlKey: true, shiftKey: true }))).toBe(
+      'pick_model'
+    )
+    expect(matchWorkbenchShortcut(ev({ key: 'm', metaKey: true, shiftKey: true }))).toBeNull()
     expect(shouldOpenReviewPanel('open_review', { open: true, tab: 'changes' })).toBe(true)
     expect(shouldOpenReviewPanel('toggle_review', { open: true, tab: 'changes' })).toBe(false)
     expect(shouldOpenReviewPanel('toggle_review', { open: true, tab: 'files' })).toBe(true)

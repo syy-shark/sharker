@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { extractChangedRelPaths, liveAssistantMeta, mergeChangedRelPaths } from './turn-meta'
+import {
+  extractChangedRelPaths,
+  liveAssistantMeta,
+  mergeChangedRelPaths,
+  reuseLiveAssistantMeta,
+  sameLiveAssistantMeta
+} from './turn-meta'
 
 describe('extractChangedRelPaths', () => {
   it('strips the workspace prefix from write tools', () => {
@@ -18,6 +24,13 @@ describe('extractChangedRelPaths', () => {
       }
     )
     expect(liveAssistantMeta([], []).changedFiles).toBeUndefined()
+    const meta = liveAssistantMeta(['a.ts'], [{ kind: 'tool', label: 'write_file' }], ['src/a.ts'])
+    const sameAgain = liveAssistantMeta(['a.ts'], [{ kind: 'tool', label: 'write_file' }], ['src/a.ts'])
+    expect(sameLiveAssistantMeta(meta, sameAgain)).toBe(true)
+    expect(reuseLiveAssistantMeta(meta, sameAgain)).toBe(meta)
+    expect(
+      sameLiveAssistantMeta(meta, liveAssistantMeta(['a.ts'], [{ kind: 'tool', label: 'write_file' }], ['src/b.ts']))
+    ).toBe(false)
   })
 
   it('extracts apply_patch hunk paths', () => {

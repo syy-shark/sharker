@@ -105,6 +105,40 @@ export function liveAssistantMeta(
   }
 }
 
+function sameStringList(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((item, index) => item === right[index])
+}
+
+/** 工具心跳若路径/活动没变，保住同一对象，避免直播行跟 meta 重挂 */
+export function sameLiveAssistantMeta(
+  left: AssistantMeta | null | undefined,
+  right: AssistantMeta | null | undefined
+): boolean {
+  if (left === right) return true
+  if (!left || !right) return false
+  const leftActs = left.activities ?? []
+  const rightActs = right.activities ?? []
+  if (leftActs.length !== rightActs.length) return false
+  if (
+    !leftActs.every(
+      (item, index) => item.kind === rightActs[index]?.kind && item.label === rightActs[index]?.label
+    )
+  ) {
+    return false
+  }
+  return (
+    sameStringList(left.browsedFiles ?? [], right.browsedFiles ?? []) &&
+    sameStringList(left.changedFiles ?? [], right.changedFiles ?? [])
+  )
+}
+
+export function reuseLiveAssistantMeta(
+  prev: AssistantMeta | null | undefined,
+  next: AssistantMeta
+): AssistantMeta {
+  return sameLiveAssistantMeta(prev, next) ? (prev as AssistantMeta) : next
+}
+
 /** 格式化工具活动侧栏 label（含路径/命令摘要） */
 export function formatToolActivity(
   toolName: string,

@@ -156,7 +156,15 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'j' && !event.altKey && !event.shiftKey) return 'toggle_panel'
   if (key === 'e' && event.shiftKey && !event.altKey) return 'toggle_files'
   if (key === 'b' && event.shiftKey && !event.altKey) return 'toggle_browser'
-  if (key === 'm' && event.shiftKey && !event.altKey) return 'pick_model'
+  if (
+    key === 'm' &&
+    event.shiftKey &&
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  ) {
+    return 'pick_model'
+  }
   if ((key === '/' || key === '?') && !event.altKey) return 'shortcut_help'
   if (event.altKey && !event.shiftKey && /^[1-6]$/.test(key)) return 'select_recent'
   if (!event.altKey && !event.shiftKey && /^[1-9]$/.test(key)) return 'select_chat'
