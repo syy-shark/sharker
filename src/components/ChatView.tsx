@@ -3,6 +3,7 @@
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡（对标 Codex #33907）。
+ * 直播 token 走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -22,7 +23,6 @@ import type {
   ChatAttachment,
   ChatMessage,
   ProviderConfig,
-  TurnSegment,
   WorkspaceItem
 } from '../../shared/types'
 import { sortWorkspaces } from '../../shared/workspace'
@@ -93,6 +93,7 @@ import {
   windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
+import { useLiveStreamUi, useLiveStreamUiWhen } from '../hooks/useLiveStreamUi'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -308,11 +309,7 @@ interface Props {
   queuedPrompts: QueuedPrompt[]
   /** 已接受、下一工具/采样后写入当前回合（对标 Codex pending steer） */
   pendingSteers?: QueuedPrompt[]
-  liveSegments: TurnSegment[]
-  streaming: string
-  turnThinking: string
   loading: boolean
-  activeTool: string | null
   liveTurnMeta: AssistantMeta | null
   turnStartedAt: number | null
   turnHadThinking: boolean
@@ -574,7 +571,218 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
 })
 
 /** 消息区 + 底部输入框（工作区/模型选择、上下文环、发送/停止/插队） */
-export function ChatView({
+/**
+ * 直播体是否已出现：只在布尔翻转时抬 ChatView，不跟每枚 token。
+ */
+function LiveBodyFlag({
+  approvalWaiting,
+  onChange
+}: {
+  approvalWaiting: boolean
+  onChange: (hasBody: boolean) => void
+}) {
+  const live = useLiveStreamUi()
+  const hasBody = hasLiveAssistantBody({
+    streaming: live.streaming,
+    liveSegmentCount: live.liveSegments.length,
+    thinking: live.turnThinking,
+    approvalWaiting
+  })
+  useEffect(() => {
+    onChange(hasBody)
+  }, [hasBody, onChange])
+  return null
+}
+
+/**
+ * 查找开着才订阅直播正文。关闭时不跟 token。
+ */
+function LiveFindSync({
+  enabled,
+  query,
+  liveRowId,
+  seq,
+  onHits,
+  onPaintTick
+}: {
+  enabled: boolean
+  query: string
+  liveRowId: string
+  seq: number
+  onHits: (hits: ThreadSearchHit[]) => void
+  onPaintTick: (chars: number) => void
+}) {
+  const live = useLiveStreamUiWhen(enabled)
+  const hits = useMemo(() => {
+    if (!enabled || !query.trim() || !live.streaming.trim()) return EMPTY_FIND_HITS
+    return findInThread([{ id: liveRowId, content: live.streaming, seq }], query)
+  }, [enabled, live.streaming, liveRowId, query, seq])
+  useEffect(() => {
+    onHits(hits)
+  }, [hits, onHits])
+  useEffect(() => {
+    if (enabled) onPaintTick(live.streaming.length)
+  }, [enabled, live.streaming.length, onPaintTick])
+  return null
+}
+
+/** 回到底部 / 新消息：自己订 store，不抬对话柱历史行 */
+const JumpToBottomChip = memo(function JumpToBottomChip({
+  visible,
+  stickToBottom,
+  onClick,
+  userLockedRef,
+  stickToBottomRef
+}: {
+  visible: boolean
+  stickToBottom: boolean
+  onClick: () => void
+  userLockedRef: { current: boolean }
+  stickToBottomRef: { current: boolean }
+}) {
+  const live = useLiveStreamUi()
+  const [unseen, setUnseen] = useState(false)
+  const lastKeyRef = useRef('')
+  useEffect(() => {
+    const next = liveProgressKey({
+      streamingChars: live.streaming.length,
+      liveSegmentCount: live.liveSegments.length,
+      thinkingChars: live.turnThinking.length
+    })
+    const prev = lastKeyRef.current
+    lastKeyRef.current = next
+    if (
+      shouldClearUnseenLive({
+        stickToBottom: stickToBottomRef.current,
+        userLocked: userLockedRef.current
+      })
+    ) {
+      setUnseen(false)
+      return
+    }
+    if (
+      shouldMarkUnseenLive({
+        userLocked: userLockedRef.current,
+        stickToBottom: stickToBottomRef.current,
+        liveGrew: liveProgressGrew(prev, next)
+      })
+    ) {
+      setUnseen(true)
+    }
+  }, [
+    live.liveSegments.length,
+    live.streaming.length,
+    live.turnThinking.length,
+    stickToBottom,
+    stickToBottomRef,
+    userLockedRef
+  ])
+  if (!visible && !unseen) return null
+  const jump = jumpToBottomAffordance(unseen)
+  return (
+    <div className="chat-scroll-bottom-wrap">
+      <button
+        type="button"
+        className={`chat-scroll-bottom${jump.emphasize ? ' is-unseen' : ''}`}
+        onClick={() => {
+          setUnseen(false)
+          onClick()
+        }}
+        aria-label={jump.ariaLabel}
+      >
+        {jump.label}
+      </button>
+    </div>
+  )
+})
+
+/** 直播助手行：只订 token store，历史列不跟着重绘 */
+const LiveAssistantSlot = memo(function LiveAssistantSlot({
+  liveRowId,
+  loading,
+  historyHasReserved,
+  findHit,
+  findCurrent,
+  liveTurnMeta,
+  modelLabel,
+  turnHadThinking,
+  turnStartedAt,
+  approval,
+  approvalResponding,
+  onApproval,
+  onOpenSubAgent,
+  toolOutputDisplay,
+  onNeedFullMessage
+}: {
+  liveRowId: string
+  loading: boolean
+  historyHasReserved: boolean
+  findHit: boolean
+  findCurrent: boolean
+  liveTurnMeta: AssistantMeta | null
+  modelLabel?: string
+  turnHadThinking: boolean
+  turnStartedAt: number | null
+  approval?: ApprovalRequest | null
+  approvalResponding?: boolean
+  onApproval?: (decision: import('../../shared/approval-session').ApprovalDecision) => void | Promise<void>
+  onOpenSubAgent?: (id: string | null) => void
+  toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
+  onNeedFullMessage?: (messageId: string) => void
+}) {
+  const live = useLiveStreamUi()
+  const liveBody = hasLiveAssistantBody({
+    streaming: live.streaming,
+    liveSegmentCount: live.liveSegments.length,
+    thinking: live.turnThinking,
+    approvalWaiting: Boolean(approval)
+  })
+  if (
+    !shouldRenderLiveAssistantRow({
+      loading,
+      hasLiveBody: liveBody,
+      historyHasReserved
+    })
+  ) {
+    return null
+  }
+  const isThinkingLive =
+    loading &&
+    !live.streaming.trim() &&
+    (Boolean(live.turnThinking.trim()) ||
+      live.liveSegments.some((s) => s.kind === 'thinking' && s.status === 'active') ||
+      live.liveSegments.some((s) => s.kind === 'status' && s.status === 'active'))
+  return (
+    <div
+      key={liveRowId}
+      id={`msg-${liveRowId}`}
+      className={`message-row message-row--assistant message-row--live${
+        findHit ? ' is-find-hit' : ''
+      }${findCurrent ? ' is-find-current' : ''}`}
+    >
+      <AssistantMessage
+        messageId={liveRowId}
+        content={live.streaming}
+        meta={liveTurnMeta ?? undefined}
+        liveSegments={live.liveSegments}
+        modelLabel={modelLabel}
+        hadThinkingLive={turnHadThinking}
+        isThinkingLive={isThinkingLive}
+        activeTool={live.activeTool}
+        liveStartedAt={turnStartedAt ?? undefined}
+        isStreaming
+        approval={approval}
+        approvalResponding={approvalResponding}
+        onApproval={onApproval}
+        onOpenSubAgent={onOpenSubAgent}
+        toolOutputDisplay={toolOutputDisplay}
+        onNeedFullMessage={onNeedFullMessage}
+      />
+    </div>
+  )
+})
+
+export const ChatView = memo(function ChatView({
   sessionKey = null,
   workspaces,
   activeWorkspaceId,
@@ -587,11 +795,7 @@ export function ChatView({
   liveAssistantId = null,
   queuedPrompts,
   pendingSteers = [],
-  liveSegments,
-  streaming,
-  turnThinking,
   loading,
-  activeTool,
   liveTurnMeta,
   turnStartedAt,
   turnHadThinking,
@@ -662,9 +866,10 @@ export function ChatView({
   const [stickToBottom, setStickToBottom] = useState(true)
   /** 内容溢出且用户不在底部时才显示「回到底部」 */
   const [canJumpToBottom, setCanJumpToBottom] = useState(false)
-  /** 读历史时直播又长高：按钮改「新消息」，不抢镜头（对标 Codex #38220） */
-  const [unseenLive, setUnseenLive] = useState(false)
-  const lastLiveKeyRef = useRef('')
+  /** 直播体是否已出现：只在布尔翻转时重绘历史列 */
+  const [liveBody, setLiveBody] = useState(false)
+  const [liveMemoryFindHits, setLiveMemoryFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
+  const [liveFindRev, setLiveFindRev] = useState(0)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
@@ -680,8 +885,9 @@ export function ChatView({
     setPinnedStart(restoreTranscriptWindowStart(scrollSnapshot))
     setDiskFindHits(EMPTY_FIND_HITS)
     findAnchorRef.current = null
-    setUnseenLive(false)
-    lastLiveKeyRef.current = ''
+    setLiveBody(false)
+    setLiveMemoryFindHits(EMPTY_FIND_HITS)
+    setLiveFindRev(0)
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [copyPickIndex, setCopyPickIndex] = useState(0)
@@ -976,9 +1182,6 @@ export function ChatView({
     messages.length === 0 &&
     queuedPrompts.length === 0 &&
     pendingSteers.length === 0 &&
-    liveSegments.length === 0 &&
-    !streaming &&
-    !turnThinking &&
     !loading
   const activeWorkspace =
     sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
@@ -1032,13 +1235,15 @@ export function ChatView({
     return findInThread(rows, findQuery)
   }, [historyHead, historyHeadStartSeq, historyStartSeq, liveRowId, messages, findQuery])
 
-  const liveMemoryFindHits = useMemo(() => {
-    if (!findQuery.trim() || !streaming.trim()) return EMPTY_FIND_HITS
-    return findInThread(
-      [{ id: liveRowId, content: streaming, seq: historyStartSeq + messages.length }],
-      findQuery
-    )
-  }, [findQuery, historyStartSeq, liveRowId, messages.length, streaming])
+  const handleLiveFindHits = useCallback((hits: ThreadSearchHit[]) => {
+    setLiveMemoryFindHits((prev) => (prev === hits ? prev : hits))
+  }, [])
+  const handleLiveFindPaint = useCallback((chars: number) => {
+    setLiveFindRev(chars)
+  }, [])
+  const handleLiveBody = useCallback((next: boolean) => {
+    setLiveBody((prev) => (prev === next ? prev : next))
+  }, [])
 
   const memoryFindHits = useMemo(
     () => appendLiveFindHits(historicalMemoryFindHits, liveMemoryFindHits),
@@ -1200,7 +1405,6 @@ export function ChatView({
       stickToBottomRef.current = true
       setStickToBottom(true)
       setCanJumpToBottom(false)
-      setUnseenLive(false)
       return
     }
     if (userScrollLockRef.current) {
@@ -1216,7 +1420,6 @@ export function ChatView({
         stickToBottomRef.current = true
         setStickToBottom(true)
         setCanJumpToBottom(false)
-        setUnseenLive(false)
         setPinnedStart(null)
         return
       }
@@ -1236,7 +1439,6 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
-    setUnseenLive(false)
     setPinnedStart(null)
   }, [readScrollMetrics])
 
@@ -1417,7 +1619,7 @@ export function ChatView({
     findQuery,
     liveRowId,
     windowStart,
-    findCurrent?.messageId === liveRowId ? streaming : ''
+    findCurrent?.messageId === liveRowId ? liveFindRev : 0
   ])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
@@ -1450,7 +1652,6 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
-    setUnseenLive(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     onLeaveHistoryHeadRef.current?.()
@@ -1465,16 +1666,13 @@ export function ChatView({
     userScrollLockRef.current = false
     stickToBottomRef.current = true
     setStickToBottom(true)
-    setUnseenLive(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     onLeaveHistoryHeadRef.current?.()
   }, [])
 
   const dockIntent = composerIntent === 'find' ? null : composerIntent
-  const speechHint = loading
-    ? ''
-    : textForSpeech(lastCompletedAssistantText(messages) || streaming)
+  const speechHint = loading ? '' : textForSpeech(lastCompletedAssistantText(messages))
 
   /** ⌘↑ / ⌘↓ / Home / End：长对话跳到顶/底（输入框与右侧预览不抢，对标 Codex #39181） */
   useEffect(() => {
@@ -1835,41 +2033,6 @@ export function ChatView({
     setEditUserMessageId(null)
   }, [])
 
-  const liveBody = hasLiveAssistantBody({
-    streaming,
-    liveSegmentCount: liveSegments.length,
-    thinking: turnThinking,
-    approvalWaiting: Boolean(approval)
-  })
-  const jumpBottom = jumpToBottomAffordance(unseenLive)
-
-  useEffect(() => {
-    const next = liveProgressKey({
-      streamingChars: streaming.length,
-      liveSegmentCount: liveSegments.length,
-      thinkingChars: turnThinking.length
-    })
-    const prev = lastLiveKeyRef.current
-    lastLiveKeyRef.current = next
-    if (
-      shouldClearUnseenLive({
-        stickToBottom: stickToBottomRef.current,
-        userLocked: userScrollLockRef.current
-      })
-    ) {
-      setUnseenLive(false)
-      return
-    }
-    if (
-      shouldMarkUnseenLive({
-        userLocked: userScrollLockRef.current,
-        stickToBottom: stickToBottomRef.current,
-        liveGrew: liveProgressGrew(prev, next)
-      })
-    ) {
-      setUnseenLive(true)
-    }
-  }, [streaming, liveSegments.length, turnThinking])
   const historicalRows = useMemo(
     () =>
       historicalMessagesDuringLive(windowedMessages, liveAssistantId, loading, liveBody).map((m, index, rows) => {
@@ -1952,22 +2115,9 @@ export function ChatView({
     ]
   )
 
-  const showLiveAssistant =
-    atLatestWindow &&
-    shouldRenderLiveAssistantRow({
-      loading,
-      hasLiveBody: liveBody,
-      historyHasReserved: Boolean(
-        liveAssistantId && messages.some((m) => m.id === liveAssistantId)
-      )
-    })
-  // 有 segment 流时由 TurnFlow 负责；这里仅给旧路径/无实质工具时的思考态
-  const isThinkingLive =
-    loading &&
-    !streaming.trim() &&
-    (Boolean(turnThinking.trim()) ||
-      liveSegments.some((s) => s.kind === 'thinking' && s.status === 'active') ||
-      liveSegments.some((s) => s.kind === 'status' && s.status === 'active'))
+  const historyHasReserved = Boolean(
+    liveAssistantId && messages.some((m) => m.id === liveAssistantId)
+  )
 
   return (
     <ChatImageWorkspaceProvider
@@ -1982,6 +2132,15 @@ export function ChatView({
       data-transcript-head={viewingHead ? '1' : undefined}
       data-transcript-head-start={viewingHead ? historyHeadStartSeq : undefined}
     >
+      {loading ? <LiveBodyFlag approvalWaiting={Boolean(approval)} onChange={handleLiveBody} /> : null}
+      <LiveFindSync
+        enabled={Boolean(findOpen && findQuery.trim())}
+        query={findQuery}
+        liveRowId={liveRowId}
+        seq={historyStartSeq + messages.length}
+        onHits={handleLiveFindHits}
+        onPaintTick={handleLiveFindPaint}
+      />
       {!isEmpty && findOpen ? (
         <div className="chat-find glass-tile" role="search">
           <input
@@ -2066,34 +2225,25 @@ export function ChatView({
           <div className="messages" ref={messagesInnerRef}>
             {historicalRows}
 
-            {showLiveAssistant && (
-              <div
-                key={liveRowId}
-                id={`msg-${liveRowId}`}
-                className={`message-row message-row--assistant message-row--live${
-                  liveMemoryFindHits.length ? ' is-find-hit' : ''
-                }${currentFindMessageId === liveRowId ? ' is-find-current' : ''}`}
-              >
-                <AssistantMessage
-                  messageId={liveRowId}
-                  content={streaming}
-                  meta={liveTurnMeta ?? undefined}
-                  liveSegments={liveSegments}
-                  modelLabel={modelLabel}
-                  hadThinkingLive={turnHadThinking}
-                  isThinkingLive={isThinkingLive}
-                  activeTool={activeTool}
-                  liveStartedAt={turnStartedAt ?? undefined}
-                  isStreaming
-                  approval={approval}
-                  approvalResponding={approvalResponding}
-                  onApproval={onApproval}
-                  onOpenSubAgent={onOpenSubAgent}
-                  toolOutputDisplay={toolOutputDisplay}
-                  onNeedFullMessage={onNeedFullMessage}
-                />
-              </div>
-            )}
+            {atLatestWindow && loading ? (
+              <LiveAssistantSlot
+                liveRowId={liveRowId}
+                loading={loading}
+                historyHasReserved={historyHasReserved}
+                findHit={liveMemoryFindHits.length > 0}
+                findCurrent={currentFindMessageId === liveRowId}
+                liveTurnMeta={liveTurnMeta}
+                modelLabel={modelLabel}
+                turnHadThinking={turnHadThinking}
+                turnStartedAt={turnStartedAt}
+                approval={approval}
+                approvalResponding={approvalResponding}
+                onApproval={onApproval}
+                onOpenSubAgent={onOpenSubAgent}
+                toolOutputDisplay={toolOutputDisplay}
+                onNeedFullMessage={onNeedFullMessage}
+              />
+            ) : null}
 
             <div
               ref={bottomRef}
@@ -2129,18 +2279,13 @@ export function ChatView({
           </div>
         ) : null}
         <div className="composer-wrap">
-          {canJumpToBottom ? (
-            <div className="chat-scroll-bottom-wrap">
-              <button
-                type="button"
-                className={`chat-scroll-bottom${jumpBottom.emphasize ? ' is-unseen' : ''}`}
-                onClick={resumeStickToBottom}
-                aria-label={jumpBottom.ariaLabel}
-              >
-                {jumpBottom.label}
-              </button>
-            </div>
-          ) : null}
+          <JumpToBottomChip
+            visible={canJumpToBottom}
+            stickToBottom={stickToBottom}
+            onClick={resumeStickToBottom}
+            userLockedRef={userScrollLockRef}
+            stickToBottomRef={stickToBottomRef}
+          />
           {worktreeMissing ? (
             <div className="composer-worktree-banner" role="status">
               <span>隔离 worktree 已被清理。可从快照恢复后继续。</span>
@@ -2278,4 +2423,4 @@ export function ChatView({
     </div>
     </ChatImageWorkspaceProvider>
   )
-}
+})

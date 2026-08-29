@@ -74,6 +74,7 @@ import {
   stepThinkingLevel
 } from '../shared/thinking-levels'
 import { ChatView } from './components/ChatView'
+import { publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import type { TranscriptScrollSnapshot } from '../shared/transcript-scroll'
 import {
   TRANSCRIPT_MAX_MOUNTED,
@@ -838,6 +839,12 @@ export default function App() {
     setTurnThinking(buf.turnThinking)
     setLoading(buf.loading || buf.sendInFlight)
     setActiveTool(buf.activeTool)
+    publishLiveStreamUi({
+      streaming: buf.streaming,
+      liveSegments: segmentsRef.current,
+      turnThinking: buf.turnThinking,
+      activeTool: buf.activeTool
+    })
     setApproval(buf.approval)
     setApprovalResponding(false)
     setTurnHadThinking(buf.turnHadThinking)
@@ -1349,6 +1356,7 @@ export default function App() {
     setTurnThinking('')
     setLoading(false)
     setActiveTool(null)
+    resetLiveStreamUi()
     setApproval(null)
     setApprovalResponding(false)
     const convId = activeConversationIdRef.current
@@ -1377,18 +1385,21 @@ export default function App() {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
       lastStreamRenderAt.current = performance.now()
-      setLiveSegments((prev) => (prev === segmentsRef.current ? prev : segmentsRef.current))
       // 兼容：从片段推导 streaming / thinking 供旧逻辑与最终正文预览
       const finalPreview = extractFinalContent(segmentsRef.current, { isStreaming: true })
-      setStreaming((prev) => (prev === finalPreview ? prev : finalPreview))
       const thinkPreview = thinkingPreviewFromSegments(segmentsRef.current)
-      setTurnThinking((prev) => (prev === thinkPreview ? prev : thinkPreview))
       const activeToolSeg = findLastSegment(
         segmentsRef.current,
         (s) => s.kind === 'tool' && s.status === 'active'
       )
       const nextTool = activeToolSeg?.toolName ?? null
-      setActiveTool((prev) => (prev === nextTool ? prev : nextTool))
+      // 16ms 只写外部 store，不抬 App / ChatView（对标 Codex #22860）
+      publishLiveStreamUi({
+        streaming: finalPreview,
+        liveSegments: segmentsRef.current,
+        turnThinking: thinkPreview,
+        activeTool: nextTool
+      })
       // 当前可见会话也持续写 buffer，切换对话返回时不会丢 live 步骤
       const activeId = activeConversationIdRef.current
       const stillLive =
@@ -1456,6 +1467,10 @@ export default function App() {
       schedulePaint()
     }, Math.max(0, SEGMENT_RENDER_MS - elapsed))
   }, [])
+
+  useEffect(() => {
+    if (!loading) resetLiveStreamUi()
+  }, [loading])
 
   /** 并发创建对话时复用同一 Promise，避免连点/双触发造出多个空会话 */
   const creatingConversationRef = useRef<Promise<string> | null>(null)
@@ -7000,6 +7015,12 @@ export default function App() {
           streamingRef.current = streaming
           setStreaming(streaming)
           setActiveTool(opts?.activeTool ?? null)
+          publishLiveStreamUi({
+            streaming,
+            liveSegments: segs,
+            turnThinking: thinkingPreviewFromSegments(segs),
+            activeTool: opts?.activeTool ?? null
+          })
           const now = Date.now()
           setTurnStartedAt((prev) => prev ?? now - 1200)
           turnStartedAtRef.current = turnStartedAtRef.current || now - 1200
@@ -7811,11 +7832,7 @@ export default function App() {
               onThinkingLevelChange={handleThinkingLevelChange}
               messages={messages}
               liveAssistantId={liveAssistantId}
-              liveSegments={liveSegments}
-              streaming={streaming}
-              turnThinking={turnThinking}
               loading={loading}
-              activeTool={activeTool}
               liveTurnMeta={liveTurnMeta}
               turnStartedAt={turnStartedAt}
               turnHadThinking={turnHadThinking}
