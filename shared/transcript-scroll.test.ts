@@ -17,16 +17,22 @@ import {
   utf8ByteLength
 } from './transcript-hydrate'
 import {
+  TRANSCRIPT_MAX_MOUNTED,
+  effectiveTranscriptWindowEnd,
   effectiveTranscriptWindowStart,
   mergeConversationHistory,
   nextHistoryStartSeq,
   prependHistoryPage,
+  revealNewerWindowStart,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
   shiftPinnedStartAfterPrepend,
   shouldFetchOlderHistoryPage,
+  shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
   stickTranscriptWindowStart,
+  windowIncludesLatest,
+  windowStartToCoverIndex,
   windowStartToIncludeIndex
 } from './transcript-window'
 
@@ -111,6 +117,30 @@ describe('transcript scroll restore', () => {
     expect(windowStartToIncludeIndex(40, 7)).toBe(7)
     expect(windowStartToIncludeIndex(40, 55)).toBe(40)
     expect(windowStartToIncludeIndex(40, -1)).toBe(40)
+    expect(effectiveTranscriptWindowEnd(50, 0)).toBe(50)
+    expect(effectiveTranscriptWindowEnd(400, 0)).toBe(TRANSCRIPT_MAX_MOUNTED)
+    expect(effectiveTranscriptWindowEnd(400, 360)).toBe(400)
+    expect(windowIncludesLatest(400, 70)).toBe(false)
+    expect(windowIncludesLatest(400, 400)).toBe(true)
+    expect(revealNewerWindowStart(0, 400)).toBe(30)
+    expect(revealNewerWindowStart(350, 400)).toBe(360)
+    expect(
+      shouldRevealNewerTranscript({
+        distanceFromBottom: 12,
+        locked: true,
+        canReveal: true
+      })
+    ).toBe(true)
+    expect(
+      shouldRevealNewerTranscript({
+        distanceFromBottom: 12,
+        locked: false,
+        canReveal: true
+      })
+    ).toBe(false)
+    expect(windowStartToCoverIndex(400, 0, 12)).toBe(0)
+    expect(windowStartToCoverIndex(400, 0, 200)).toBe(200)
+    expect(windowStartToCoverIndex(400, 0, 390)).toBe(360)
     expect(
       shouldRevealOlderTranscript({ scrollTop: 12, locked: true, canReveal: true })
     ).toBe(true)

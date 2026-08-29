@@ -15,6 +15,9 @@ export const TRANSCRIPT_PAGE = 30
 /** 距滚动顶多少像素视为「到顶」，触发揭示 */
 export const TRANSCRIPT_REVEAL_PX = 80
 
+/** DOM 最多挂这么多行，避免 ⌘↑ / 读到顶把整段灌进 React（官方分页也不一次铺开） */
+export const TRANSCRIPT_MAX_MOUNTED = TRANSCRIPT_TAIL + TRANSCRIPT_PAGE
+
 /**
  * 贴底时的窗口起点：只留最近 `tail` 条。
  */
@@ -51,11 +54,67 @@ export function revealOlderWindowStart(
 }
 
 /**
- * 让指定下标进入窗口（查找 / 回编）：从该条一直画到最新。
+ * 让指定下标进入窗口（查找 / 回编）：从该条起向最新画，仍受挂载上限约束。
  */
 export function windowStartToIncludeIndex(currentStart: number, index: number): number {
   if (index < 0) return currentStart
   return Math.min(currentStart, index)
+}
+
+/** 窗口右端（不含）：从起点最多再挂 `maxMounted` 条 */
+export function effectiveTranscriptWindowEnd(
+  total: number,
+  start: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): number {
+  const s = Math.max(0, Math.floor(start))
+  const t = Math.max(0, Math.floor(total))
+  if (t <= maxMounted) return t
+  return Math.min(t, s + Math.max(1, Math.floor(maxMounted)))
+}
+
+/** 下翻到窗底且后面还有更新消息时，把窗口滑向尾页 */
+export function shouldRevealNewerTranscript(input: {
+  distanceFromBottom: number
+  locked: boolean
+  canReveal: boolean
+  revealPx?: number
+}): boolean {
+  if (!input.canReveal || !input.locked) return false
+  return input.distanceFromBottom <= (input.revealPx ?? TRANSCRIPT_REVEAL_PX)
+}
+
+export function revealNewerWindowStart(
+  currentStart: number,
+  total: number,
+  page: number = TRANSCRIPT_PAGE,
+  tail: number = TRANSCRIPT_TAIL
+): number {
+  const stick = stickTranscriptWindowStart(total, tail)
+  return Math.min(stick, Math.max(0, currentStart) + Math.max(0, page))
+}
+
+/**
+ * 查找 / 回编：命中已在窗内则不动；在窗前把起点前移；在窗后把窗口滑到该条（不灌到最新）。
+ */
+export function windowStartToCoverIndex(
+  total: number,
+  pinned: number | null | undefined,
+  index: number,
+  maxMounted: number = TRANSCRIPT_MAX_MOUNTED
+): number {
+  if (index < 0) return effectiveTranscriptWindowStart(total, pinned)
+  const start = effectiveTranscriptWindowStart(total, pinned)
+  const end = effectiveTranscriptWindowEnd(total, start, maxMounted)
+  if (index >= start && index < end) return start
+  if (index < start) return index
+  const stick = stickTranscriptWindowStart(total)
+  if (index >= stick) return stick
+  return Math.min(index, stick)
+}
+
+export function windowIncludesLatest(total: number, end: number): boolean {
+  return Math.floor(end) >= Math.floor(total)
 }
 
 /**

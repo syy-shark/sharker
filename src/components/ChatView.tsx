@@ -56,13 +56,18 @@ import {
   type TranscriptScrollSnapshot
 } from '../../shared/transcript-scroll'
 import {
+  effectiveTranscriptWindowEnd,
   effectiveTranscriptWindowStart,
+  revealNewerWindowStart,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
   shouldFetchOlderHistoryPage,
+  shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
   shiftPinnedStartAfterPrepend,
-  stickTranscriptWindowStart
+  stickTranscriptWindowStart,
+  windowIncludesLatest,
+  windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
@@ -599,6 +604,9 @@ export function ChatView({
   hasOlderHistoryRef.current = hasOlderHistory
   const onLoadOlderHistoryRef = useRef(onLoadOlderHistory)
   onLoadOlderHistoryRef.current = onLoadOlderHistory
+  const messagesListRef = useRef(messages)
+  messagesListRef.current = messages
+  const trimTopIdsRef = useRef<string[]>([])
   const prevHeadRef = useRef<{ id?: string; len: number; session?: string | null }>({
     id: messages[0]?.id,
     len: messages.length,
@@ -613,7 +621,11 @@ export function ChatView({
   ) {
     const delta = messages.length - prevHeadRef.current.len
     prevHeadRef.current = { id: messages[0].id, len: messages.length, session: sessionKey }
-    setPinnedStart((p) => shiftPinnedStartAfterPrepend(p, delta))
+    if (pendingJumpTopRef.current) {
+      setPinnedStart(0)
+    } else {
+      setPinnedStart((p) => shiftPinnedStartAfterPrepend(p, delta))
+    }
   } else {
     prevHeadRef.current = { id: messages[0]?.id, len: messages.length, session: sessionKey }
   }
@@ -889,7 +901,11 @@ export function ChatView({
       return
     }
     if (userScrollLockRef.current) {
-      const resume = lastScrollIntentRef.current === 'down' && distance <= AT_BOTTOM_PX
+      const total = messagesLengthRef.current
+      const start = effectiveTranscriptWindowStart(total, pinnedStartRef.current)
+      const moreBelow = effectiveTranscriptWindowEnd(total, start) < total
+      const resume =
+        !moreBelow && lastScrollIntentRef.current === 'down' && distance <= AT_BOTTOM_PX
       if (resume) {
         userScrollLockRef.current = false
         lastScrollIntentRef.current = null
@@ -949,21 +965,20 @@ export function ChatView({
   const windowStart = effectiveTranscriptWindowStart(
     messages.length,
     findHitIndex >= 0
-      ? Math.min(
-          pinnedStart ?? stickTranscriptWindowStart(messages.length),
-          findHitIndex
-        )
+      ? windowStartToCoverIndex(messages.length, pinnedStart, findHitIndex)
       : pinnedStart
   )
+  const windowEnd = effectiveTranscriptWindowEnd(messages.length, windowStart)
   const windowedMessages = useMemo(
-    () => messages.slice(windowStart),
-    [messages, windowStart]
+    () => messages.slice(windowStart, windowEnd),
+    [messages, windowStart, windowEnd]
   )
+  const atLatestWindow = windowIncludesLatest(messages.length, windowEnd)
 
   useLayoutEffect(() => {
     if (findHitIndex < 0) return
     setPinnedStart((p) => {
-      const next = Math.min(effectiveTranscriptWindowStart(messages.length, p), findHitIndex)
+      const next = windowStartToCoverIndex(messages.length, p, findHitIndex)
       return next === p ? p : next
     })
   }, [findHitIndex, messages.length])
@@ -974,11 +989,29 @@ export function ChatView({
     if (pendingJumpTopRef.current) {
       pendingJumpTopRef.current = false
       revealPreserveHeightRef.current = null
+      trimTopIdsRef.current = []
       programmaticScrollRef.current = true
       el.scrollTop = 0
       programmaticScrollRef.current = false
       lastScrollTopRef.current = 0
       rememberTranscriptSnapshot()
+      return
+    }
+    const trimmed = trimTopIdsRef.current
+    if (trimmed.length) {
+      trimTopIdsRef.current = []
+      revealPreserveHeightRef.current = null
+      const removedH = trimmed.reduce(
+        (n, id) => n + (measuredRowHeightsRef.current.get(id) ?? 0),
+        0
+      )
+      if (removedH) {
+        programmaticScrollRef.current = true
+        el.scrollTop = Math.max(0, el.scrollTop - removedH)
+        programmaticScrollRef.current = false
+        lastScrollTopRef.current = el.scrollTop
+        rememberTranscriptSnapshot()
+      }
       return
     }
     const prev = revealPreserveHeightRef.current
@@ -991,11 +1024,15 @@ export function ChatView({
     programmaticScrollRef.current = false
     lastScrollTopRef.current = el.scrollTop
     rememberTranscriptSnapshot()
-  }, [windowStart, rememberTranscriptSnapshot])
+  }, [windowStart, windowEnd, rememberTranscriptSnapshot])
 
   /** 换命中才滚；直播 token 不反复抢镜头 */
   useEffect(() => {
     if (!findOpen || !findCurrent) return
+    if (findCurrent.messageId === liveRowId && !atLatestWindow) {
+      setPinnedStart(null)
+      return
+    }
     const el = document.getElementById(`msg-${findCurrent.messageId}`)
     if (!el) return
     lockUserScroll()
@@ -1011,6 +1048,8 @@ export function ChatView({
     findCurrent?.occurrence,
     findOpen,
     windowStart,
+    liveRowId,
+    atLatestWindow,
     lockUserScroll,
     rememberTranscriptSnapshot
   ])
@@ -1101,10 +1140,10 @@ export function ChatView({
         stickToBottomRef.current = false
         setStickToBottom(false)
         setCanJumpToBottom(true)
-        pendingJumpTopRef.current = pinnedStartRef.current !== 0 || hasOlderHistoryRef.current
+        pendingJumpTopRef.current = true
         setPinnedStart(0)
         if (hasOlderHistoryRef.current) void onNeedFullHistory?.()
-        if (pinnedStartRef.current === 0) {
+        if (pinnedStartRef.current === 0 && !hasOlderHistoryRef.current) {
           programmaticScrollRef.current = true
           el.scrollTo({ top: 0, behavior: 'smooth' })
           window.setTimeout(() => {
@@ -1136,6 +1175,8 @@ export function ChatView({
       rememberTranscriptSnapshot()
       const total = messagesLengthRef.current
       const currentStart = effectiveTranscriptWindowStart(total, pinnedStartRef.current)
+      const currentEnd = effectiveTranscriptWindowEnd(total, currentStart)
+      const distanceFromBottom = Math.max(0, el.scrollHeight - el.clientHeight - top)
       if (
         shouldRevealOlderTranscript({
           scrollTop: top,
@@ -1159,6 +1200,20 @@ export function ChatView({
         void Promise.resolve(onLoadOlderHistoryRef.current?.()).finally(() => {
           loadOlderBusyRef.current = false
         })
+      } else if (
+        shouldRevealNewerTranscript({
+          distanceFromBottom,
+          locked: userScrollLockRef.current,
+          canReveal: currentEnd < total
+        })
+      ) {
+        const nextStart = revealNewerWindowStart(currentStart, total)
+        if (nextStart > currentStart) {
+          trimTopIdsRef.current = messagesListRef.current
+            .slice(currentStart, nextStart)
+            .map((m) => m.id)
+          setPinnedStart(nextStart)
+        }
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
@@ -1338,7 +1393,7 @@ export function ChatView({
     if (!id) return
     const idx = messages.findIndex((m) => m.id === id)
     if (idx >= 0) {
-      setPinnedStart((p) => Math.min(effectiveTranscriptWindowStart(messages.length, p), idx))
+      setPinnedStart((p) => windowStartToCoverIndex(messages.length, p, idx))
     }
     setEditUserMessageId(id)
     requestAnimationFrame(() => {
@@ -1435,13 +1490,15 @@ export function ChatView({
     ]
   )
 
-  const showLiveAssistant = shouldRenderLiveAssistantRow({
-    loading,
-    hasLiveBody: liveBody,
-    historyHasReserved: Boolean(
-      liveAssistantId && messages.some((m) => m.id === liveAssistantId)
-    )
-  })
+  const showLiveAssistant =
+    atLatestWindow &&
+    shouldRenderLiveAssistantRow({
+      loading,
+      hasLiveBody: liveBody,
+      historyHasReserved: Boolean(
+        liveAssistantId && messages.some((m) => m.id === liveAssistantId)
+      )
+    })
   // 有 segment 流时由 TurnFlow 负责；这里仅给旧路径/无实质工具时的思考态
   const isThinkingLive =
     loading &&
@@ -1459,6 +1516,7 @@ export function ChatView({
       className={`chat ${isEmpty ? 'chat--empty' : 'chat--active'}`}
       data-session-key={sessionKey || undefined}
       data-transcript-window-start={windowStart}
+      data-transcript-window-end={windowEnd}
     >
       {!isEmpty && (
         /* 全宽滚动层：滚动条贴主区最右侧；内容柱仍居中 */
@@ -1466,6 +1524,7 @@ export function ChatView({
           className="messages-scroll"
           ref={messagesRef}
           data-transcript-window-start={windowStart}
+          data-transcript-window-end={windowEnd}
           tabIndex={0}
           role="region"
           aria-label="对话"
