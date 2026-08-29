@@ -644,6 +644,25 @@ describe('process phases privacy', () => {
     expect(afterWriteAllowToken).not.toBeNull()
     expect(afterWriteAllowToken!.some((step) => step.segment === firstReply)).toBe(false)
     expect(afterWriteAllowToken!.some((step) => step.segment === awaitingDone)).toBe(true)
+    const afterWriteAllowThinkToken = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, runningCmdAfterAllow, awaitingDone, nextThink, firstReply],
+      true
+    )
+    expect(afterWriteAllowThinkToken).not.toBeNull()
+    expect(afterWriteAllowThinkToken!.some((step) => step.segment === firstReply)).toBe(false)
+    expect(afterWriteAllowThinkToken!.some((step) => step.segment === nextThink)).toBe(false)
+    expect(afterWriteAllowThinkToken!.some((step) => step.segment === awaitingDone)).toBe(true)
+    const afterReconnectAllowThinkToken = appendProcessPhaseStepOnToolStart(
+      helloApprovalHangSteps,
+      [helloApprovalHang],
+      [helloApprovalHangDone, reconnectApprovalStatus, runningCmdAfterAllow, awaitingDone, nextThink, firstReply],
+      true
+    )
+    expect(afterReconnectAllowThinkToken).not.toBeNull()
+    expect(afterReconnectAllowThinkToken!.some((step) => step.segment === firstReply)).toBe(false)
+    expect(afterReconnectAllowThinkToken!.some((step) => step.segment === awaitingDone)).toBe(true)
     const cmdAllowedCancelled: TurnSegment = {
       ...runningCmd,
       status: 'cancelled',
