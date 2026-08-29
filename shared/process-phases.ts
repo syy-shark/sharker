@@ -568,7 +568,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀引用没变、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
+/** 前缀没变或只收束思考/status、末尾新开工具：只追加一步（对标 Codex exec_cell add_call） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
@@ -578,9 +578,25 @@ export function appendProcessPhaseStepOnToolStart(
   if (!isLiveToolAppendChange(prevSegments, segments)) return null
   const added = segments[segments.length - 1]
   if (!added) return prevSteps
+  const remapped = prevSteps.map((step) => {
+    const index = prevSegments!.indexOf(step.segment)
+    if (index < 0) return step
+    const nextSeg = segments[index]
+    if (!nextSeg || nextSeg === step.segment) return step
+    const rebuilt = buildStepsFromSource([nextSeg], isStreaming)[0]
+    if (!rebuilt) return step
+    if (
+      rebuilt.title === step.title &&
+      rebuilt.detail === step.detail &&
+      rebuilt.status === step.status
+    ) {
+      return { ...step, segment: nextSeg }
+    }
+    return { ...rebuilt, id: step.id, phase: step.phase }
+  })
   const built = buildStepsFromSource([added], isStreaming)[0]
-  if (!built) return prevSteps
-  return [...prevSteps, built]
+  if (!built) return remapped
+  return [...remapped, built]
 }
 
 /** 同一工具只改短路径详情或收束：只换该步；命令末行退回原数组（对标 Codex #22860 / #19260） */

@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 全文 ```demo、不重跑过程 / 回答 buildAnswerParts。
- * 工具详情只换时间线末步引用；工具收束无新写盘也只换末步；前缀引用没变时新工具只追加末步；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换时间线末步引用；工具收束无新写盘也只换末步；前缀没变或只收束思考/status 时新工具只追加末步；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -111,23 +111,38 @@ export function isLiveToolSettleChange(prev: TurnSegment, next: TurnSegment): bo
   )
 }
 
-/** 前缀引用没变、末尾新开工具：只追加过程步（对标 Codex exec_cell add_call） */
+/** 思考 / 桥接 status 只把 active 标成 done，正文没变（tool_start 收束） */
+export function isLiveThinkOrStatusClose(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev.id !== next.id || prev.kind !== next.kind) return false
+  if (prev.kind !== 'thinking' && prev.kind !== 'status') return false
+  if (prev.status !== 'active' || next.status !== 'done') return false
+  return (prev.content ?? '') === (next.content ?? '')
+}
+
+/** 前缀没变或只收束思考/status、末尾新开工具：只追加过程步（对标 Codex exec_cell add_call） */
 export function isLiveToolAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
   if (!prev || next.length !== prev.length + 1) return false
-  for (let i = 0; i < prev.length; i++) {
-    if (prev[i] !== next[i]) return false
-  }
   const added = next[next.length - 1]
-  return Boolean(
-    added &&
-      added.kind === 'tool' &&
-      added.status === 'active' &&
-      added.toolName &&
-      added.toolName !== 'present_inline_demo'
-  )
+  if (
+    !added ||
+    added.kind !== 'tool' ||
+    added.status !== 'active' ||
+    !added.toolName ||
+    added.toolName === 'present_inline_demo'
+  ) {
+    return false
+  }
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLiveThinkOrStatusClose(before, after)) return false
+  }
+  return true
 }
 
 /** 同一工具只把详情换成命令末行：过程切片保持原数组，不抬 TurnFlow */
@@ -410,7 +425,13 @@ export function nextLiveProcessView(
     isLiveToolAppendChange(processHold.segments, segments)
   ) {
     const added = segments[segments.length - 1]!
-    const view = { ...prev, processForFlow: [...prev.processForFlow, added] }
+    const holdSegments = processHold.segments
+    const remapped = prev.processForFlow.map((segment) => {
+      const index = holdSegments.indexOf(segment)
+      if (index < 0) return segment
+      return segments[index] ?? segment
+    })
+    const view = { ...prev, processForFlow: [...remapped, added] }
     processHold = {
       view,
       identity: liveProcessIdentity(segments),

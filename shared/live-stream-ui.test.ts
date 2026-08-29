@@ -29,6 +29,7 @@ import {
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
+  isLiveThinkOrStatusClose,
   isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
   shouldRetargetLiveProcessOnToolMeta,
@@ -362,6 +363,34 @@ describe('live stream ui snapshot', () => {
     expect(processWhileNext).not.toBe(processWhileRan)
     expect(processWhileNext.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
     expect(processWhileNext.processForFlow.some((segment) => segment === ran)).toBe(true)
+    const thinking: TurnSegment = {
+      id: 'th-1',
+      kind: 'thinking',
+      content: 'Hmm',
+      status: 'active'
+    }
+    const thinkingDone: TurnSegment = { ...thinking, status: 'done' }
+    const firstTool: TurnSegment = {
+      id: 'read-1',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'active',
+      toolDetail: 'src/a.ts'
+    }
+    expect(isLiveThinkOrStatusClose(thinking, thinkingDone)).toBe(true)
+    expect(isLiveToolAppendChange([thinking], [thinkingDone, firstTool])).toBe(true)
+    expect(isLiveToolAppendChange([thinking], [thinking, firstTool])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([thinking], [thinkingDone, firstTool])).toBe('tool')
+    const processWhileThink = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinking]
+    })
+    const processWhileFirst = nextLiveProcessView(processWhileThink, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thinkingDone, firstTool]
+    })
+    expect(processWhileFirst.processForFlow.some((segment) => segment === firstTool)).toBe(true)
+    expect(processWhileFirst.thinkText).toBe(processWhileThink.thinkText)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

@@ -126,6 +126,23 @@ describe('process phases privacy', () => {
     expect(appended).toHaveLength(2)
     expect(appended![0]).toBe(doneRetargeted![0])
     expect(appended![1].segment).toBe(cmdNext)
+    const thinkOpen: TurnSegment = {
+      id: 'th-live',
+      kind: 'thinking',
+      content: 'Hmm',
+      status: 'active',
+      startedAt: 1
+    }
+    const thinkClosed: TurnSegment = { ...thinkOpen, status: 'done', endedAt: 2 }
+    const thinkSteps = deriveChronologicalSteps([thinkOpen], { isStreaming: true })
+    const firstFromThink = appendProcessPhaseStepOnToolStart(
+      thinkSteps,
+      [thinkOpen],
+      [thinkClosed, cmdNext],
+      true
+    )
+    expect(firstFromThink).not.toBeNull()
+    expect(firstFromThink!.at(-1)?.segment).toBe(cmdNext)
     const search = deriveChronologicalSteps([
       {
         id: 'ws1',
