@@ -96,5 +96,33 @@ describe('process phases privacy', () => {
       }
     ])
     expect(planning[0]?.title).toBe('Wire tool')
+    const mcpLive = deriveChronologicalSteps([
+      {
+        id: 'mcp1',
+        kind: 'tool',
+        toolName: 'mcp_github__search',
+        toolTitle: 'mcp_github__search',
+        toolArgs: { q: 'codex' },
+        resultSummary: '{"items":[1,2,3]}',
+        resultOutput: '{"items":[1,2,3]}',
+        status: 'active',
+        startedAt: 9
+      }
+    ])
+    expect(mcpLive[0]?.title).toBe('Calling github.search({"q":"codex"})')
+    expect(mcpLive[0]?.detail).toBeUndefined()
+    const mcpDone = deriveChronologicalSteps([
+      {
+        id: 'mcp2',
+        kind: 'tool',
+        toolName: 'mcp_call_tool',
+        toolTitle: 'MCP 调用',
+        toolArgs: { server: 'docs', tool_name: 'lookup', arguments: { q: 'plan' } },
+        status: 'done',
+        startedAt: 10,
+        endedAt: 11
+      }
+    ])
+    expect(mcpDone[0]?.title).toBe('Called docs.lookup({"q":"plan"})')
   })
 })

@@ -2,7 +2,8 @@
 
 ## 职责
 
-- 模型侧 `mcp_list_tools` / `mcp_call` 等，对接 `tools/services/mcp-*`
+- 模型侧 `mcp_list_tools` / `mcp_call_tool` 等，对接 `tools/services/mcp-*`
+- 过程区文案走 `shared/mcp-activity.ts` 的 Calling / Called `server.tool`，不在本层发明直播 UI
 
 ## 同级目录
 

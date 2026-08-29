@@ -3,6 +3,7 @@
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
+import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
 import { isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 
@@ -81,6 +82,7 @@ const EXPLORE_TOOLS = new Set([
   'web_fetch',
   'web_search',
   'open_url',
+  'mcp_list_tools',
   'present_inline_demo',
   'task_list',
   'task_get',
@@ -207,6 +209,9 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
         typeof segment.toolArgs?.query === 'string' ? segment.toolArgs.query.trim() : ''
       if (segment.status === 'active') return 'Searching the web'
       return query ? `Searched the web for ${query}` : 'Searched the web'
+    }
+    if (isMcpActivityToolName(tool)) {
+      return formatMcpActivity(tool, segment.toolArgs, segment.status) ?? base
     }
     if (tool === 'run_terminal_cmd') {
       const fromArgs =
@@ -403,9 +408,13 @@ function buildStepsFromSource(
               if (
                 segment.status === 'active' &&
                 summary &&
-                !/^(L\d+:|[{}\[\]]|```)/.test(summary)
+                !/^(L\d+:|[{}\[\]]|```)/.test(summary) &&
+                !isMcpJsonDump(summary)
               ) {
                 return summary
+              }
+              if (isMcpActivityToolName(segment.toolName || '') && isMcpJsonDump(stableDetail || summary)) {
+                return undefined
               }
               return stableDetail || summary
             })(),

@@ -19,7 +19,7 @@
 | `mcp-config-io.ts` | `~/.sharker/mcp.json` / 工作区 mcp 配置读写 |
 | `mcp-settings.ts` | 设置页增删改开关与 Restart（写 mcp.json、清会话/工具池） |
 | `mcp-plugin-store.ts` | 插件目录安装状态、一键写入 mcp.json |
-| `mcp-tool-pool.ts` | 动态 Tool 池：tools/list 并入模型工具列表 |
+| `mcp-tool-pool.ts` | 动态 Tool 池：tools/list 并入模型工具列表；`isMcpDynamicToolName` 与 `shared/mcp-activity` 共用 |
 | `task-manager.ts` | 后台任务（shell/脚本/子 Agent）生命周期 |
 | `browser-native-host.ts` | Chrome native messaging manifest / host 二进制 |
 | `feature-use-setup.ts` | Computer / Browser Use 开关触发的一键就绪 |

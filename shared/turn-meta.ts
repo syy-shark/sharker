@@ -2,6 +2,7 @@
  * 工具活动的侧栏 label 格式化。
  * 详见 shared/ARCH.md
  */
+import { formatMcpActivity } from './mcp-activity'
 import type { AssistantMeta } from './types'
 import { parsePatch } from './patch'
 
@@ -144,6 +145,8 @@ export function formatToolActivity(
   toolName: string,
   args?: Record<string, unknown>
 ): string {
+  const mcp = formatMcpActivity(toolName, args, 'active')
+  if (mcp) return mcp
   const paths = extractBrowsedPaths(toolName, args)
   if (paths.length) return `${toolName} · ${paths[0]}`
   if (toolName === 'run_terminal_cmd' && typeof args?.command === 'string') {

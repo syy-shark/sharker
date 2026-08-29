@@ -43,7 +43,7 @@
 | `token-usage-store.ts` | 每日 Token 消耗（蓝点热力图数据） |
 | `token-usage-format.ts` | `/usage daily|weekly|cumulative` 文案；设置 → 用量的终身 / 峰值 / 连续活跃汇总与火花图比例 |
 | `token-usage-format.test.ts` | 用量窗口、洞察汇总与火花图比例 |
-| `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id） |
+| `process-steps.ts` | 旧消息回退：过程时间线步骤（含子 Agent 点开 id）；动态 MCP 标题用 `server.tool` |
 | `last-turn-flush.ts` | 直播写盘时审查「本轮」路径推迟 400ms 再抬 React（收束 / 切会话立刻刷，对标 Codex #22860） |
 | `live-stream-ui.ts` | 直播 token / 回合元信息快照：`nextLiveStreamUi` 字段没变则复用对象，给 ChatView 外部 store（对标 Codex #22860，16ms flush 与工具心跳不抬历史列；token 增长保住 meta 引用）；`liveStreamPatchFromSegments` 给 DEV seed / 开轮准备中 / 收束与中止一次写齐片段、最终正文与秒表；`shouldPublishTurnMetaReset` 让 commit 先留秒表，等 loading 关再清空（对标 Codex #37849）；`liveCompactStatusSegment` 给 `/compact` 写「正在压缩上下文…」直播状态（对标 contextCompaction） |
 | `live-stream-slices.ts` | 直播过程/回答切片：正文增长且工具引用没变时过程视图退回 prev；回答拆闭合块与增长尾；操作条只订布尔（对标 Codex #22860） |
@@ -143,8 +143,8 @@
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链 / 复制为 Markdown、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
-| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
-| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步 |
+| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；`update_plan` 直播头用当前步 / `Plan · n/m`；MCP 用 Calling / Called `server.tool` 且 JSON 结果不进 detail（对标 Codex #20677）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
+| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched；`update_plan` 当前步；MCP Calling / Called 且 JSON 不当 detail |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think / status / 写入预览 / 收束都只换数组和改过的段（已完成工具保持引用，避免心跳打穿过程行 memo）；`cloneSegments` 只给会话缓冲隔离用；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；写入/补丁 `tool_preview` 先占同一 tool 段与 `s.id-diff-N`（`isWritePreviewTool`），参数流把已解析的 +/- 填进同一槽（对标 Codex 约 0.5s 逐文件 diff），`tool_start` / `tool_done` 合并不换 id；`context_compress` 先把进行中 status 收成 done 再挂压缩步骤；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程；`buildAnswerParts` 写入一开始用 `editPreview` 占 `s.id-diff-N`，完成后填 `fileDiff`；`reuseAnswerParts` 在预览 token / 元信息刷新时保住已闭合文字与 diff 对象；正文 ```demo 开闭都拆成 `s.id` / `s.id-demo-stream` / `s.id-post`（直播未写完 `dem` / `viz` 就占槽，不认 ```diff / ```html / ```vim），收束不把演示搬回 Markdown 重挂 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；status 心跳 / 写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
@@ -163,6 +163,8 @@
 | `web-search.test.ts` | 活动文案、source 往返、忽略非 http(s) |
 | `update-plan.ts` | 官方 `update_plan` 清单：pending / in_progress / completed、短结果 `Plan updated`。不是计划模式，不发明 /plan-model 或底栏徽章 |
 | `update-plan.test.ts` | 状态解析、空参、直播头当前步 / `Plan · n/m`、计划模式白名单 |
+| `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
+| `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定 |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition / 收束后再写入、无会话 id 暂存与冲进 retry |

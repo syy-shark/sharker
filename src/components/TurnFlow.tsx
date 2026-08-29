@@ -7,6 +7,7 @@
  * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
+ * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -37,6 +38,7 @@ import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
 import { viewedImagePathFromTool } from '../../shared/view-image'
 import { parseWebSearchSources } from '../../shared/web-search'
 import { parseUpdatePlanArgs } from '../../shared/update-plan'
+import { isMcpActivityToolName, isMcpJsonDump } from '../../shared/mcp-activity'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
 import {
   clipToolOutput,
@@ -474,6 +476,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
       : []
   const updatePlan =
     segment?.toolName === 'update_plan' ? parseUpdatePlanArgs(segment.toolArgs) : null
+  const mcpActivity = Boolean(segment?.toolName && isMcpActivityToolName(segment.toolName))
   const title = step.title
   const subAgentId = subAgentIdFromTool(
     segment?.toolName,
@@ -519,7 +522,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
             detail: step.detail,
             title,
             isStreaming
-          }) && !isDemo && !updatePlan?.plan.length ? (
+          }) && !isDemo && !updatePlan?.plan.length && !mcpActivity ? (
             <code className="turn-flow-step-detail" title={step.detail || segment?.toolDetail}>
               {step.detail}
             </code>
@@ -555,7 +558,11 @@ const ProcessStepRow = memo(function ProcessStepRow({
           detail: step.detail,
           status: step.status,
           isStreaming,
-          isDemo: isDemo || Boolean(updatePlan?.plan.length)
+          isDemo:
+            isDemo ||
+            Boolean(updatePlan?.plan.length) ||
+            mcpActivity ||
+            isMcpJsonDump(segment?.resultSummary)
         }) ? (
           <span className="turn-flow-step-result">{segment?.resultSummary}</span>
         ) : null}
@@ -604,6 +611,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
               !viewedImageSrc &&
               webSources.length === 0 &&
               !updatePlan?.plan.length &&
+              !mcpActivity &&
               ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
                 (segment && segmentHasDeferredOutput(segment)))
           ),

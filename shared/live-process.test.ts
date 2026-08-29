@@ -141,6 +141,15 @@ describe('live process seed', () => {
     })
     const tool = segments.find((s) => s.toolCallId === 's1')
     expect(tool?.toolDetail).toBe('Searching the web')
+    let mcp = applyStreamChunk([], {
+      type: 'tool_start',
+      toolName: 'mcp_github__search',
+      toolCallId: 'm1',
+      toolArgs: { q: 'codex' },
+      timestamp: 3
+    })
+    const mcpSteps = deriveChronologicalSteps(mcp, { isStreaming: true })
+    expect(mcpSteps[0]?.title).toBe('Calling github.search({"q":"codex"})')
   })
 
 

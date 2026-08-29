@@ -2,13 +2,14 @@
  * MCP 动态 Tool 池：启动时 tools/list 并入模型 tool 列表，按 server/tool 路由调用。
  * @see tools/services/mcp-registry.ts
  */
+import { isMcpDynamicToolName, MCP_PREFIX } from '../../shared/mcp-activity'
 import type { OpenAIToolDefinition } from '../types'
 import type { ToolRiskAssessment } from '../types'
 import { NO_RISK } from '../types'
 import { callMcpTool, loadEnabledMcpConfig } from './mcp-registry'
 import { connectAndListMcpTools, MCP_POOL_CONNECT_MS } from './mcp-client'
 
-const MCP_PREFIX = 'mcp_'
+export { isMcpDynamicToolName }
 
 /** 动态 MCP 工具条目（externalName → server + tool） */
 export interface McpDynamicToolEntry {
@@ -32,11 +33,6 @@ export function mcpExternalToolName(server: string, toolName: string): string {
       .replace(/^_+|_+$/g, '')
       .slice(0, 48) || 'tool'
   return `${MCP_PREFIX}${sanitize(server)}__${sanitize(toolName)}`
-}
-
-/** 是否为动态 MCP 工具名 */
-export function isMcpDynamicToolName(name: string): boolean {
-  return name.startsWith(MCP_PREFIX) && name.includes('__')
 }
 
 /** 解析 MCP 工具 annotations（readOnlyHint / destructiveHint） */

@@ -2,6 +2,7 @@
  * 将一轮工具活动转为过程时间线步骤。
  * 详见 shared/ARCH.md
  */
+import { formatMcpInvocation, parseMcpInvocation } from './mcp-activity'
 import type { TurnActivity } from './types'
 import { isSubAgentInspectTool, parseSubAgentId, subAgentIdFromTool } from './subagent'
 
@@ -52,6 +53,8 @@ const TOOL_TITLES: Record<string, string> = {
   shell_kill: '终止 Shell',
   web_fetch: '抓取网页',
   web_search: '网页搜索',
+  mcp_list_tools: 'MCP 工具列表',
+  mcp_call_tool: 'MCP 调用',
   open_url: '打开网页',
   present_inline_demo: '内联演示',
   request_user_input: '询问用户',
@@ -183,7 +186,9 @@ export function canExpandProcess(steps: ProcessStep[]): boolean {
   return steps.length > 0
 }
 
-/** 工具英文名 → 中文步骤标题 */
+/** 工具英文名 → 中文步骤标题；动态 MCP 用官方 `server.tool` */
 export function toolTitle(toolName: string): string {
+  const invocation = parseMcpInvocation(toolName)
+  if (invocation) return formatMcpInvocation(invocation)
   return TOOL_TITLES[toolName] ?? toolName
 }
