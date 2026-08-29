@@ -63,7 +63,7 @@ export function normalizeStreamingText(text: string): string {
 
 /**
  * 把流式文本拆成不会再变的块，与仍在增长的尾部。
- * 尾部是未闭合围栏，或最后一个尚未空行收束的段落。
+ * 尾部是未闭合围栏，或最后一个尚未空行收束的段落。文末单独的换行不当空行，避免表的每一行被拆成独立闭合槽。
  */
 export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
   const src = normalizeStreamingText(text)
@@ -118,6 +118,11 @@ export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
     }
 
     if (line.trim() === '') {
+      // 文末单独的 `\n` 只是最后一行的行终止，不是空行收束（对标 Codex #34045 表行仍留在增长尾）
+      if (i === lines.length - 1) {
+        offset = lineEnd
+        continue
+      }
       if (current.length > 0) {
         current.push(line)
         flushBlock(lineEnd)

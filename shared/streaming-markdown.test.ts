@@ -40,6 +40,26 @@ describe('splitStreamingMarkdown', () => {
     expect(needsFullRemarkMarkdown('See the note.[^1]\n\n[^1]: hi')).toBe(false)
     expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-run-0'])
     expect(streamingRenderSlots(next).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    const headingNl = splitStreamingMarkdown('# Heading\n')
+    expect(headingNl.blocks).toEqual([])
+    expect(headingNl.tail).toBe('# Heading')
+    expect(streamingRenderSlots(headingNl).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    const tableRows = '| Key | Value |\n| --- | --- |\n| alpha | beta |\n'
+    const tableSplit = splitStreamingMarkdown(tableRows)
+    expect(tableSplit.blocks).toEqual([])
+    expect(tableSplit.tail).toBe('| Key | Value |\n| --- | --- |\n| alpha | beta |')
+    expect(streamingRenderSlots(tableSplit).map((slot) => slot.key)).toEqual(['prose-run-0'])
+    const tableFirst = parseCheapProseBlocks('| Key | Value |\n| --- | --- |\n| alpha | beta |')
+    const tableGrown = continueCheapProseBlocks(
+      '| Key | Value |\n| --- | --- |\n| alpha | beta |',
+      tableFirst,
+      '| Key | Value |\n| --- | --- |\n| alpha | beta |\n| gamma | delta |'
+    )
+    if (tableFirst[0]?.type === 'table' && tableGrown[0]?.type === 'table') {
+      expect(tableGrown[0].header[0]).toBe(tableFirst[0].header[0])
+      expect(tableGrown[0].rows[0]?.[0]).toBe(tableFirst[0].rows[0]?.[0])
+      expect(tableGrown[0].rows).toHaveLength(2)
+    }
   })
 
   it('commits a paragraph once a blank line arrives', () => {
@@ -1815,6 +1835,26 @@ describe('splitStreamingMarkdown', () => {
     ])
     const sameDone = continueStreamingRenderSlots(doneSlots, fenceDone)
     expect(sameDone).toBe(doneSlots)
+    const tableHead = 'Intro\n\n| Key | Value |\n'
+    const tableHeadSplit = splitStreamingMarkdown(tableHead)
+    expect(streamingRenderSlots(tableHeadSplit).map((slot) => slot.key)).toEqual([
+      'prose-md-0',
+      'prose-run-0'
+    ])
+    const tableSep = continueStreamingMarkdown(tableHeadSplit, tableHead, `${tableHead}| --- | --- |\n`)
+    const tableRow = continueStreamingMarkdown(
+      tableSep,
+      `${tableHead}| --- | --- |\n`,
+      `${tableHead}| --- | --- |\n| alpha | beta |\n`
+    )
+    const tableHeadSlots = streamingRenderSlots(tableHeadSplit)
+    const tableRowSlots = continueStreamingRenderSlots(
+      continueStreamingRenderSlots(tableHeadSlots, tableSep),
+      tableRow
+    )
+    expect(tableRowSlots.map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
+    expect(tableRowSlots[0]).toBe(tableHeadSlots[0])
+    expect(tableRow.tail).toContain('| alpha | beta |')
 
     const committed = continueStreamingMarkdown(
       grown,
