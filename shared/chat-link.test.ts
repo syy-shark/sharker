@@ -3,6 +3,7 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
+  chatLinkMenuItems,
   chatLinkOpensInSystemBrowser,
   isInAppBrowserChatHref,
   resolveChatLinkOpen
@@ -33,9 +34,15 @@ describe('chat link open', () => {
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/StreamingMarkdown.tsx'),
       'utf8'
     )
-    expect(md).toContain('resolveChatLinkOpen')
-    expect(md).toContain('dispatchOpenBrowserUrl')
-    expect(live).toContain('resolveChatLinkOpen')
-    expect(live).toContain('dispatchOpenBrowserUrl')
+    expect(chatLinkMenuItems().map((item) => item.action)).toEqual(['in-app', 'system', 'copy'])
+    expect(md).toContain('ChatLink')
+    expect(live).toContain('ChatLink')
+    const linkSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatLink.tsx'),
+      'utf8'
+    )
+    expect(linkSrc).toContain('chatLinkMenuItems')
+    expect(linkSrc).toContain('resolveChatLinkOpen')
+    expect(linkSrc).toContain('dispatchOpenBrowserUrl')
   })
 })

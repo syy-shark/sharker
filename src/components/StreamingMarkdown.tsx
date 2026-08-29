@@ -10,8 +10,8 @@ import { LiveFenceTail } from './CodeArtifactBlock'
 import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLangPrefix } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
-import { resolveChatLinkOpen } from '../../shared/chat-link'
-import { dispatchOpenBrowserUrl } from '../lib/browser-history-store'
+import { isInAppBrowserChatHref, resolveChatLinkOpen } from '../../shared/chat-link'
+import { ChatLink } from './ChatLink'
 import { FileCiteLink } from './FileCiteLink'
 import { InlineDemo, isInlineDemoLang } from './InlineDemo'
 import {
@@ -60,20 +60,24 @@ const CheapInlineView = memo(function CheapInlineView({ node }: { node: CheapInl
   if (node.type === 'del') return <del>{cheapMarkBody(node)}</del>
   if (node.type === 'em') return <em>{cheapMarkBody(node)}</em>
   if (node.type === 'link') {
+    if (isInAppBrowserChatHref(node.href)) {
+      return (
+        <ChatLink href={node.href} title={node.title}>
+          {node.children ? renderCheapInline(node.children) : node.text}
+        </ChatLink>
+      )
+    }
     return (
       <a
         href={node.href}
         title={node.title}
         target="_blank"
         rel="noopener noreferrer"
-        title={
-          node.href.startsWith('mailto:') ? undefined : '⌘/Ctrl+点击在系统浏览器打开'
-        }
         onClick={(event) => {
           event.preventDefault()
-          const target = resolveChatLinkOpen(node.href, event)
-          if (target === 'in-app') dispatchOpenBrowserUrl(node.href)
-          else if (target === 'system') void window.sharker?.openExternal?.(node.href)
+          if (resolveChatLinkOpen(node.href, event) === 'system') {
+            void window.sharker?.openExternal?.(node.href)
+          }
         }}
       >
         {node.children ? renderCheapInline(node.children) : node.text}

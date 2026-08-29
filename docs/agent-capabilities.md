@@ -129,7 +129,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - `sharker://settings/general` 打开通用；`sharker://settings/browser` / `sharker://settings/history` 打开浏览器历史（对标 Codex Settings → Browser）；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化
 - 设置 → **MCP 服务器**（对标 Codex Settings → MCP servers）：列表、开关、添加 STDIO 或 Streamable HTTP、Restart；写入 `~/.sharker/mcp.json` 或工作区 `.sharker/mcp.json`。`sharker://settings/mcp` 打开该页。不接 OAuth Authenticate / CIMD / DCR。对话里 `/mcp` 查看已连接的 Server；未配置时打开设置 → MCP 服务器（对标 Codex Open MCP status）
 - 设置 → **浏览器**（对标 Codex Settings → Browser）：搜索 / 重新打开 / 删除内置浏览历史；按时间清除历史，并可清 Cookie 与缓存；下载默认进系统 Downloads，可改目录、恢复默认，或打开每次询问保存位置。地址栏输入匹配本机历史。只用独立 `persist:sharker-browser` 配置，不混系统 Chrome，不发明 @Browser 搜历史、导入系统配置或下载列表
-- 对话与直播正文里的 http(s) 链接默认在内置浏览器打开（对标 Codex clicking a URL）；⌘/Ctrl+点击走系统浏览器（对标 Codex #41122 回归前的手势）。`mailto:` 仍走系统。不发明 Shift+点或自定义 Open with
+- 对话与直播正文里的 http(s) 链接默认在内置浏览器打开（对标 Codex clicking a URL）；⌘/Ctrl+点击走系统浏览器；右键可选内置浏览器 / 系统浏览器 / 复制链接（对标 Codex #41122）。`mailto:` 仍走系统。不发明 Shift+点、默认打开设置或自定义 Open with
 - 内置浏览器是单页：页内 `_blank` / `window.open` 仍在同一视口打开（对标 Codex #26863），不发明多标签条
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
 - 对话附件与正文渲染图可悬停 **复制** 或 **保存**（对标 Codex Save or copy rendered images）；**右键** 出页内菜单（复制图片 / 保存图片；工作区图再加打开预览 / 在访达中显示 / 复制路径，对标 Codex #17591 / #40778，不用会崩进程的原生 Save Image As）。只认本机附件、http(s) 与 `data:image`，不读任意 `file://`；工作区相对路径图（如 `![x](docs/foo.png)`）经文件预览同一条读盘通道成图，可点开右侧预览；直播从文件头读固有尺寸首帧占位，未测到前 48px 高水位，成图后高度只升不降，避免 8rem / 小图塌贴底

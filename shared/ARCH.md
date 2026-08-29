@@ -214,8 +214,8 @@
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `browser-downloads.ts` | 内置浏览器下载目录与文件名：默认系统 Downloads、自选目录、每次询问、重名 `(N)`（对标 Codex Settings → Browser downloads）。不发明下载列表 / @Browser |
 | `browser-downloads.test.ts` | 穿越路径拒绝、默认目录、重名、App 三处落盘与主进程 will-download |
-| `chat-link.ts` | 对话 http(s) 打开目标：默认内置浏览器，⌘/Ctrl+点系统浏览器；mailto 走系统（对标 Codex clicking a URL / #41122）。不发明 Shift+点 |
-| `chat-link.test.ts` | http(s)/mailto/危险协议；修饰键；Markdown 与直播正文都走 resolve |
+| `chat-link.ts` | 对话 http(s) 打开目标：默认内置浏览器，⌘/Ctrl+点系统浏览器；右键内置 / 系统 / 复制；mailto 走系统（对标 Codex clicking a URL / #41122）。不发明 Shift+点或默认打开设置 |
+| `chat-link.test.ts` | http(s)/mailto/危险协议；修饰键；菜单项；Markdown 与直播正文挂 `ChatLink` |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |

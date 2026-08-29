@@ -6,6 +6,17 @@
 
 export type ChatLinkOpenTarget = 'in-app' | 'system' | 'ignore'
 
+export type ChatLinkMenuAction = 'in-app' | 'system' | 'copy'
+
+/** 右键：内置 / 系统 / 复制（对标 Codex #41122 菜单，不发明默认打开设置） */
+export function chatLinkMenuItems(): Array<{ action: ChatLinkMenuAction; title: string }> {
+  return [
+    { action: 'in-app', title: '在内置浏览器打开' },
+    { action: 'system', title: '在系统浏览器打开' },
+    { action: 'copy', title: '复制链接' }
+  ]
+}
+
 /** 对话正文可进内置浏览器的网址 */
 export function isInAppBrowserChatHref(href: string): boolean {
   return /^https?:\/\//i.test(String(href || '').trim())
