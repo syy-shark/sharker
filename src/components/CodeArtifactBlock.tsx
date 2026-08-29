@@ -2,6 +2,7 @@
  * 紧凑编辑器式代码产物：固定头部、复制操作、行号与稳定滚动区域。
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
  * 直播跟尾时内层滚到最新行（外壳 max-height 后新行不再顶对话柱）。
+ * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
  */
 import { Check, Copy } from 'lucide-react'
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
