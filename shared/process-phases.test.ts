@@ -149,6 +149,18 @@ describe('process phases privacy', () => {
     expect(appended).toHaveLength(2)
     expect(appended![0]).toBe(doneRetargeted![0])
     expect(appended![1].segment).toBe(cmdNext)
+    const settleAndAppend = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, cmdNext],
+      true
+    )
+    expect(settleAndAppend).not.toBeNull()
+    expect(settleAndAppend).toHaveLength(2)
+    expect(settleAndAppend![0].id).toBe(cmdSteps[0].id)
+    expect(settleAndAppend![0].segment).toBe(cmdDone)
+    expect(settleAndAppend![0].status).toBe('done')
+    expect(settleAndAppend![1].segment).toBe(cmdNext)
     const nextThink: TurnSegment = {
       id: 'th-after',
       kind: 'thinking',
@@ -211,6 +223,17 @@ describe('process phases privacy', () => {
     expect(afterReconnect).toHaveLength(3)
     expect(afterReconnect!.at(-1)?.segment).toBe(reconnectStatus)
     expect(afterReconnect!.at(-1)?.title).toBe('Reconnecting... 1/5')
+    const settleAndStatus = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDone, reconnectStatus],
+      true
+    )
+    expect(settleAndStatus).not.toBeNull()
+    expect(settleAndStatus).toHaveLength(2)
+    expect(settleAndStatus![0].segment).toBe(cmdDone)
+    expect(settleAndStatus![0].status).toBe('done')
+    expect(settleAndStatus!.at(-1)?.segment).toBe(reconnectStatus)
     const runningCmd: TurnSegment = {
       id: 'run-appr',
       kind: 'tool',

@@ -390,7 +390,26 @@ describe('live stream ui snapshot', () => {
       toolDetail: 'src/b.ts'
     }
     expect(isLiveToolAppendChange([hello, ran], [hello, ran, nextCmd])).toBe(true)
-    expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(false)
+    expect(isLiveToolAppendChange([hello, running], [hello, ran, nextCmd])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], [hello, ran, nextCmd])).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, nextCmd]
+      })
+    ).toBe(true)
+    const processReadyForSettleAppend = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterSettleAppend = nextLiveProcessView(processReadyForSettleAppend, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextCmd]
+    })
+    expect(processAfterSettleAppend.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processAfterSettleAppend.processForFlow.some((segment) => segment === nextCmd)).toBe(true)
+    expect(processAfterSettleAppend.processForFlow.some((segment) => segment === running)).toBe(false)
     const helloDone: TurnSegment = { ...hello, status: 'done' }
     expect(isLiveTextClose(hello, helloDone)).toBe(true)
     expect(isLiveToolAppendChange([hello, ran], [helloDone, ran, nextCmd])).toBe(true)
@@ -722,6 +741,20 @@ describe('live stream ui snapshot', () => {
       content: 'Reconnecting... 1/5'
     }
     expect(isLiveStatusAppendChange([ran], [ran, reconnectStatus])).toBe(true)
+    expect(isLiveStatusAppendChange([running], [ran, reconnectStatus])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([running], [ran, reconnectStatus])).toBe('status')
+    const processReadyForSettleStatus = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [running]
+    })
+    const processAfterSettleStatus = nextLiveProcessView(processReadyForSettleStatus, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, reconnectStatus]
+    })
+    expect(processAfterSettleStatus.processForFlow.some((segment) => segment === ran)).toBe(true)
+    expect(processAfterSettleStatus.processForFlow.some((segment) => segment === reconnectStatus)).toBe(
+      true
+    )
     expect(isLiveStatusAppendChange([thinking], [thinkingDone, reconnectStatus])).toBe(true)
     expect(shouldSkipLiveStreamDerivation([ran], [ran, reconnectStatus])).toBe('status')
     expect(

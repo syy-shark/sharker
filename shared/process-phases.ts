@@ -583,7 +583,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
-/** 前缀没变或只收束思考/status/散文、末尾新开工具或 status：只追加一步；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell add_call / Reconnecting... n/5 / Awaiting approval / request_user_input） */
+/** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开工具或 status：只追加一步；审批或 Ask User 挂上/收束只换工具步与 Awaiting / Question requested 行（对标 Codex exec_cell complete_call + add_call / Reconnecting... n/5 / Awaiting approval / request_user_input） */
 export function appendProcessPhaseStepOnToolStart(
   prevSteps: ProcessPhaseStep[],
   prevSegments: readonly TurnSegment[] | null | undefined,
