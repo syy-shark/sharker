@@ -6,6 +6,7 @@ import { agentTools } from './builtins/agent'
 import { applyPatchTool } from './builtins/file/apply-patch'
 import { readGraphTool } from './builtins/file/read-graph'
 import { readImageTool } from './builtins/file/read-image'
+import { viewImageTool } from './builtins/file/view-image'
 import { readPdfTool } from './builtins/file/read-pdf'
 import { editNotebookTool, readNotebookTool } from './builtins/file/notebook'
 import { createDirectoryTool } from './builtins/create-directory'
@@ -62,6 +63,7 @@ function getAllToolHandlers(): ToolHandler[] {
     readFileTool,
     readPdfTool,
     readImageTool,
+    viewImageTool,
     readGraphTool,
     readNotebookTool,
     writeFileTool,

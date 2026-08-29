@@ -28,6 +28,7 @@ const TOOL_TITLES: Record<string, string> = {
   apply_patch: '应用补丁',
   read_pdf: '读取 PDF',
   read_image: '读取图片',
+  view_image: '查看图片',
   read_graph: '读取图表',
   read_notebook: '读取笔记本',
   edit_notebook: '编辑笔记本',

@@ -1,5 +1,5 @@
 /**
- * Computer Use 截图视觉回灌：将落盘 PNG 作为多模态 user 消息喂给视觉模型。
+ * Computer Use 截图与官方 view_image 视觉回灌：落盘图作为多模态 user 消息。
  * @see docs/agent-capabilities.md
  */
 import fs from 'fs/promises'
@@ -8,8 +8,14 @@ import type { AppSettings } from '../shared/types'
 import { getActiveProvider } from '../providers/openai'
 import type { ChatCompletionContentPart } from '../providers/openai'
 import { inferProviderVision } from '../shared/provider-vision'
+import {
+  isViewImageRasterExt,
+  type ViewImageDetail,
+  viewImageApiDetail
+} from '../shared/view-image'
 
 const MAX_VISION_BYTES = 800_000
+const MAX_ORIGINAL_VISION_BYTES = 4_000_000
 
 /** 是否为截图类工具（执行后可能附带图片） */
 export function isScreenshotTool(toolName: string): boolean {
@@ -74,5 +80,45 @@ export async function buildVisionContentParts(
   return [
     { type: 'text', text },
     { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}`, detail: 'low' } }
+  ]
+}
+
+/** 官方 view_image：把本地栅格图附进下一轮采样 */
+export async function buildViewImageContentParts(
+  imagePath: string,
+  detail: ViewImageDetail
+): Promise<ChatCompletionContentPart[]> {
+  const ext = path.extname(imagePath).toLowerCase()
+  if (!isViewImageRasterExt(ext)) {
+    return [{ type: 'text', text: `[系统] ${imagePath} 不是可附像素的栅格图，未回灌视觉。` }]
+  }
+  const cap = detail === 'original' ? MAX_ORIGINAL_VISION_BYTES : MAX_VISION_BYTES
+  const stat = await fs.stat(imagePath)
+  if (stat.size > cap) {
+    return [
+      {
+        type: 'text',
+        text: `[系统] 图片过大 (${stat.size} bytes)，未附图像。路径: ${imagePath}。`
+      }
+    ]
+  }
+  const buf = await fs.readFile(imagePath)
+  const mime =
+    ext === '.jpg' || ext === '.jpeg'
+      ? 'image/jpeg'
+      : ext === '.webp'
+        ? 'image/webp'
+        : ext === '.gif'
+          ? 'image/gif'
+          : ext === '.bmp'
+            ? 'image/bmp'
+            : 'image/png'
+  const b64 = buf.toString('base64')
+  return [
+    { type: 'text', text: `[系统] view_image 已附后：${imagePath}` },
+    {
+      type: 'image_url',
+      image_url: { url: `data:${mime};base64,${b64}`, detail: viewImageApiDetail(detail) }
+    }
   ]
 }

@@ -160,6 +160,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `glob_file_search` | 按文件名模式找文件 |
 | `grep` | 在目录下搜文本（结果截断 200 行） |
 | `read_file` | 读文件（支持 offset/limit） |
+| `view_image` | 查看本地图片（对标 Codex `view_image` / #36966）：工具结果只报路径与体积，视觉模型再回灌像素；`detail=original` 提高保真。`read_image` 同路径别名。不发明 ImageGen 或关闭开关 |
 
 ### 改 · 整理文件
 

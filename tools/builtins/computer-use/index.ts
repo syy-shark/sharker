@@ -40,7 +40,7 @@ export const desktopScreenshotTool: ToolHandler = {
       const { tool } = await captureScreenshot(outputPath)
       const stat = await fs.stat(outputPath)
       return ok(
-        `Screenshot saved (${tool})\npath: ${outputPath}\nbytes: ${stat.size}\nUse read_image to inspect.`
+        `Screenshot saved (${tool})\npath: ${outputPath}\nbytes: ${stat.size}\nUse view_image to inspect.`
       )
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

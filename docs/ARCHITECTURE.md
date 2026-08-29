@@ -41,7 +41,7 @@ flowchart LR
 4. `queryServe` 占坑（`turn_start`、AbortController、普通任务 15 分钟 / 桌面自动化 20 分钟超时）
 5. `processUserInput`：斜杠命令本地处理（`shouldQuery=false`）或进入 `onQuery`
 6. `onQuery`：`loadSettings` → `compressContextIfNeeded` → 组装 system（含官方 `# In app browser:`，仅当前可见对话且右侧浏览器已打开）
-7. `queryLoop`：`streamChat` 流式调模型；有 `tool_calls` 则审批 / Ask User + `executeTool`（默认最多 40 轮）
+7. `queryLoop`：`streamChat` 流式调模型；有 `tool_calls` 则审批 / Ask User + `executeTool`（默认最多 40 轮）；`view_image` / `read_image` 只回短结果，像素另走视觉回灌，避免直播灌 base64
 8. `StreamChunk` 经 `chat:stream` 推回 UI（含 `token` / `think` / `tool_*` / `command`）
 9. 结束后 `persistActiveConversation` 写入 `.sharker/conversations/`
 

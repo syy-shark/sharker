@@ -13,7 +13,7 @@
 | [agent/](./agent/ARCH.md) | 子 Agent spawn 等编排工具 |
 | [browser/](./browser/ARCH.md) | Playwright 浏览器自动化 |
 | [computer-use/](./computer-use/ARCH.md) | macOS 桌面截图/点击/键鼠 |
-| [file/](./file/ARCH.md) | patch、notebook、PDF/图/图结构读取 |
+| [file/](./file/ARCH.md) | patch、notebook、PDF、官方 view_image、图结构读取 |
 | [mcp/](./mcp/ARCH.md) | MCP list / call |
 | [mode/](./mode/ARCH.md) | 计划模式、worktree 模式 |
 | [shell/](./shell/ARCH.md) | 后台 shell 会话 |

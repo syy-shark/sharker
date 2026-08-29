@@ -7,6 +7,7 @@
 export const PLAN_MODE_TOOL_NAMES = new Set([
   'read_file',
   'read_image',
+  'view_image',
   'read_pdf',
   'read_notebook',
   'read_graph',

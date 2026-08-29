@@ -21,11 +21,13 @@ import { getHarnessPhase, enterPlanMode, finishBuildMode, getWorktreePath } from
 import { pickVerifyCommand, shouldSkipAutoVerify } from './verify'
 import { parseTextToolCalls, stripPartialToolXmlForDisplay, stripTextToolCalls, TEXT_TOOL_EXECUTED_HINT } from './text-tool-fallback'
 import {
+  buildViewImageContentParts,
   buildVisionContentParts,
   extractScreenshotPathFromToolOutput,
   isScreenshotTool,
   providerSupportsVision
 } from './vision-feedback'
+import { isViewImageTool, parseViewImageToolOutput } from '../shared/view-image'
 import { isWritePreviewTool } from '../shared/turn-segments'
 import type { ApprovalHandler, UserInputHandler } from './loop'
 import { setParentApprovalHandler, setParentUserInputHandler } from './approval-bridge'
@@ -262,6 +264,7 @@ function usedUninstallApplicationInTurn(messages: ChatCompletionMessage[]): bool
 const PARALLEL_READ_TOOLS = new Set([
   'read_file',
   'read_image',
+  'view_image',
   'read_pdf',
   'read_notebook',
   'read_graph',
@@ -705,11 +708,20 @@ export async function* queryLoop(
 
     let editedThisIteration = false
     const screenshotPaths: string[] = []
+    const viewedImages: { path: string; detail: 'original' | null }[] = []
 
     const collectScreenshotPath = (toolName: string, output: string) => {
       if (!isScreenshotTool(toolName)) return
       const p = extractScreenshotPathFromToolOutput(output)
       if (p && !screenshotPaths.includes(p)) screenshotPaths.push(p)
+    }
+
+    const collectViewImage = (toolName: string, output: string) => {
+      if (!isViewImageTool(toolName)) return
+      const parsed = parseViewImageToolOutput(output)
+      if (parsed && !viewedImages.some((item) => item.path === parsed.path)) {
+        viewedImages.push(parsed)
+      }
     }
 
     const parseToolArgs = (tc: NonNullable<typeof toolCalls>[number]): Record<string, unknown> => {
@@ -775,6 +787,7 @@ export async function* queryLoop(
         const result = outcome.result
         messages.push({ role: 'tool', tool_call_id: tc.id, content: result.output })
         collectScreenshotPath(tc.function.name, result.output)
+        collectViewImage(tc.function.name, result.output)
         if (isEditTool(tc.function.name)) editedThisIteration = true
         yield {
           type: 'tool_done',
@@ -971,6 +984,7 @@ export async function* queryLoop(
           }
           messages.push({ role: 'tool', tool_call_id: tc.id, content: result.output })
           collectScreenshotPath(toolName, result.output)
+          collectViewImage(toolName, result.output)
           if (isEditTool(toolName)) editedThisIteration = true
           if (result.planReady) {
             yield {
@@ -1020,6 +1034,17 @@ export async function* queryLoop(
       for (const imagePath of screenshotPaths) {
         try {
           const parts = await buildVisionContentParts(imagePath)
+          messages.push({ role: 'user', content: parts })
+        } catch {
+          /* 读图失败则跳过视觉回灌 */
+        }
+      }
+    }
+
+    if (providerSupportsVision(settings) && viewedImages.length > 0) {
+      for (const image of viewedImages) {
+        try {
+          const parts = await buildViewImageContentParts(image.path, image.detail)
           messages.push({ role: 'user', content: parts })
         } catch {
           /* 读图失败则跳过视觉回灌 */

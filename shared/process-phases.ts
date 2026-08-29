@@ -65,6 +65,7 @@ const UNDERSTAND_TOOLS = new Set(['compress', 'enter_plan_mode', 'exit_plan_mode
 const EXPLORE_TOOLS = new Set([
   'read_file',
   'read_image',
+  'view_image',
   'read_pdf',
   'read_notebook',
   'read_graph',

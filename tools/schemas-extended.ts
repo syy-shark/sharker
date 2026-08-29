@@ -37,8 +37,46 @@ export const EXTENDED_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
     type: 'function',
     function: {
       name: 'read_image',
-      description: 'Read image file metadata and base64 preview',
-      parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+      description:
+        'Alias of view_image. View a local image from the filesystem (only use if given a full filepath by the user, and the image isn\'t already attached to the thread context).',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Local filesystem path to an image file'
+          },
+          detail: {
+            type: 'string',
+            description:
+              'Optional detail override. The only supported value is `original`; omit this field for default resized behavior. Use `original` to preserve the file\'s original resolution instead of resizing to fit.'
+          }
+        },
+        required: ['path']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'view_image',
+      description:
+        'View a local image from the filesystem (only use if given a full filepath by the user, and the image isn\'t already attached to the thread context within <image ...> tags).',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Local filesystem path to an image file'
+          },
+          detail: {
+            type: 'string',
+            description:
+              'Optional detail override. The only supported value is `original`; omit this field for default resized behavior. Use `original` to preserve the file\'s original resolution instead of resizing to fit.'
+          }
+        },
+        required: ['path']
+      }
     }
   },
   {
