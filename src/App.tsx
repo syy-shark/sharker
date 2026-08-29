@@ -339,6 +339,8 @@ export default function App() {
   const [renameRequestId, setRenameRequestId] = useState<string | null>(null)
   const [editProjectId, setEditProjectId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const loadingLiveRef = useRef(false)
+  loadingLiveRef.current = loading
   const [liveSegments, setLiveSegments] = useState<TurnSegment[]>([])
   const [streaming, setStreaming] = useState('')
   const [turnThinking, setTurnThinking] = useState('')
@@ -815,6 +817,7 @@ export default function App() {
   }, [applyConversationMessages])
 
   const handleNeedFullHistory = useCallback(async () => {
+    if (loadingLiveRef.current) return
     const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
     if (!workspaceId || !convId) return

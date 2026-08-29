@@ -118,6 +118,17 @@ export function windowIncludesLatest(total: number, end: number): boolean {
 }
 
 /**
+ * ⌘↑ 要不要立刻揭开已瘦身全文。直播中灌进 React 会卡住贴底（官方也不在 turn 中抽干）。
+ * 收束后再揭开；直播中只滚到当前已加载窗顶。
+ */
+export function shouldFetchSlimHistoryOnJumpTop(input: {
+  hasOlder: boolean
+  loading?: boolean
+}): boolean {
+  return Boolean(input.hasOlder) && !input.loading
+}
+
+/**
  * 切回会话时要不要钉窗口：贴底的仍跟尾，读历史的恢复当时的起点。
  */
 export function restoreTranscriptWindowStart(snap: {

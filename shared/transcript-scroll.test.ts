@@ -28,6 +28,7 @@ import {
   restoreTranscriptWindowStart,
   shiftPinnedStartAfterPrepend,
   shouldFetchOlderHistoryPage,
+  shouldFetchSlimHistoryOnJumpTop,
   shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
   stickTranscriptWindowStart,
@@ -141,6 +142,9 @@ describe('transcript scroll restore', () => {
     expect(windowStartToCoverIndex(400, 0, 12)).toBe(0)
     expect(windowStartToCoverIndex(400, 0, 200)).toBe(200)
     expect(windowStartToCoverIndex(400, 0, 390)).toBe(360)
+    expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: true, loading: false })).toBe(true)
+    expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: true, loading: true })).toBe(false)
+    expect(shouldFetchSlimHistoryOnJumpTop({ hasOlder: false, loading: false })).toBe(false)
     expect(
       shouldRevealOlderTranscript({ scrollTop: 12, locked: true, canReveal: true })
     ).toBe(true)

@@ -62,6 +62,7 @@ import {
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
   shouldFetchOlderHistoryPage,
+  shouldFetchSlimHistoryOnJumpTop,
   shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
   shiftPinnedStartAfterPrepend,
@@ -599,11 +600,16 @@ export function ChatView({
   messagesLengthRef.current = messages.length
   const revealPreserveHeightRef = useRef<number | null>(null)
   const pendingJumpTopRef = useRef(false)
+  const pendingFullHistoryAfterLiveRef = useRef(false)
+  const loadingRef = useRef(loading)
+  loadingRef.current = loading
   const loadOlderBusyRef = useRef(false)
   const hasOlderHistoryRef = useRef(hasOlderHistory)
   hasOlderHistoryRef.current = hasOlderHistory
   const onLoadOlderHistoryRef = useRef(onLoadOlderHistory)
   onLoadOlderHistoryRef.current = onLoadOlderHistory
+  const onNeedFullHistoryRef = useRef(onNeedFullHistory)
+  onNeedFullHistoryRef.current = onNeedFullHistory
   const messagesListRef = useRef(messages)
   messagesListRef.current = messages
   const trimTopIdsRef = useRef<string[]>([])
@@ -1107,6 +1113,7 @@ export function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
+    pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     scrollToBottom(loading ? 'auto' : 'smooth')
   }, [loading, scrollToBottom])
@@ -1115,6 +1122,7 @@ export function ChatView({
     userScrollLockRef.current = false
     stickToBottomRef.current = true
     setStickToBottom(true)
+    pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
   }, [])
 
@@ -1142,7 +1150,16 @@ export function ChatView({
         setCanJumpToBottom(true)
         pendingJumpTopRef.current = true
         setPinnedStart(0)
-        if (hasOlderHistoryRef.current) void onNeedFullHistory?.()
+        if (
+          shouldFetchSlimHistoryOnJumpTop({
+            hasOlder: hasOlderHistoryRef.current,
+            loading: loadingRef.current
+          })
+        ) {
+          void onNeedFullHistoryRef.current?.()
+        } else if (hasOlderHistoryRef.current && loadingRef.current) {
+          pendingFullHistoryAfterLiveRef.current = true
+        }
         if (pinnedStartRef.current === 0 && !hasOlderHistoryRef.current) {
           programmaticScrollRef.current = true
           el.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1158,6 +1175,19 @@ export function ChatView({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [resumeStickToBottom, rememberTranscriptSnapshot])
+
+  useEffect(() => {
+    if (loading) return
+    if (!pendingFullHistoryAfterLiveRef.current) return
+    if (!hasOlderHistoryRef.current) {
+      pendingFullHistoryAfterLiveRef.current = false
+      return
+    }
+    pendingFullHistoryAfterLiveRef.current = false
+    pendingJumpTopRef.current = true
+    setPinnedStart(0)
+    void onNeedFullHistoryRef.current?.()
+  }, [loading])
 
   useEffect(() => {
     const el = messagesRef.current
