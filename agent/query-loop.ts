@@ -50,6 +50,11 @@ function summarizeToolOutput(output: string, toolName?: string): string | undefi
     .filter(Boolean)
   if (!lines.length) return undefined
 
+  if (toolName === 'web_search') {
+    const official = lines.find((line) => /^Searched the web/.test(line))
+    if (official) return official.length > 120 ? `${official.slice(0, 117)}...` : official
+  }
+
   // 文件读取：用“行数/路径感”摘要，不要把 L1 源码原文塞进直播步骤
   if (toolName === 'read_file') {
     const numbered = lines.filter((line) => /^L\d+:\s/.test(line)).length

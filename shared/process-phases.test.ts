@@ -54,5 +54,30 @@ describe('process phases privacy', () => {
     expect(reusedCloned[0]).toBe(steps[0])
     expect(reusedCloned[1]).toBe(steps[1])
     expect(reusedCloned[2]).toBe(clonedGrown[2])
+    const search = deriveChronologicalSteps([
+      {
+        id: 'ws1',
+        kind: 'tool',
+        toolName: 'web_search',
+        toolTitle: '网页搜索',
+        toolArgs: { query: 'codex desktop' },
+        status: 'active',
+        startedAt: 6
+      }
+    ])
+    expect(search[0]?.title).toBe('Searching the web')
+    const searched = deriveChronologicalSteps([
+      {
+        id: 'ws2',
+        kind: 'tool',
+        toolName: 'web_search',
+        toolTitle: '网页搜索',
+        toolArgs: { query: 'codex desktop' },
+        status: 'done',
+        startedAt: 6,
+        endedAt: 7
+      }
+    ])
+    expect(searched[0]?.title).toBe('Searched the web for codex desktop')
   })
 })

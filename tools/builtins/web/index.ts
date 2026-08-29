@@ -1,10 +1,17 @@
 /**
  * web_fetch / web_search。
+ * web_search 直播用官方 Searching / Searched 文案，来源结构化，不把 Instant Answer 灌进直播头。
  * @see tools/ARCH.md
  */
 import { ok } from '../../context'
 import { assertWebAccessAllowed } from '../../network-policy'
 import type { ToolHandler } from '../../types'
+import {
+  formatWebSearchLiveStatus,
+  formatWebSearchToolOutput,
+  normalizeWebSearchSources,
+  type WebSearchSource
+} from '../../../shared/web-search'
 
 /** HTML 粗略转文本 */
 function htmlToText(html: string): string {
@@ -37,33 +44,71 @@ export const webFetchTool: ToolHandler = {
   }
 }
 
-/** DuckDuckGo Instant Answer API（免 key） */
-async function searchDuckDuckGo(query: string): Promise<string> {
-  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1`
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  if (!res.ok) throw new Error(`DDG API ${res.status}`)
-  const json = (await res.json()) as {
-    Abstract?: string
-    AbstractURL?: string
-    RelatedTopics?: Array<{ Text?: string; FirstURL?: string }>
+type DdgTopic = { Text?: string; FirstURL?: string; Topics?: DdgTopic[] }
+
+function collectDdgTopics(topics: DdgTopic[] | undefined, into: WebSearchSource[]): void {
+  for (const topic of topics ?? []) {
+    if (into.length >= 8) return
+    if (topic.FirstURL || topic.Text) {
+      into.push(...normalizeWebSearchSources([{ Text: topic.Text, FirstURL: topic.FirstURL }]))
+    }
+    if (topic.Topics?.length) collectDdgTopics(topic.Topics, into)
   }
+}
+
+/** DuckDuckGo Instant Answer → 官方 title/url 来源 + 模型可读正文 */
+export function parseDuckDuckGoInstantAnswer(json: {
+  Heading?: string
+  Abstract?: string
+  AbstractURL?: string
+  RelatedTopics?: DdgTopic[]
+}): { sources: WebSearchSource[]; body: string } {
+  const sources = normalizeWebSearchSources([
+    { title: json.Heading, url: json.AbstractURL, snippet: json.Abstract }
+  ])
+  collectDdgTopics(json.RelatedTopics, sources)
+  const unique = new Map<string, WebSearchSource>()
+  for (const source of sources) {
+    if (!unique.has(source.url)) unique.set(source.url, source)
+  }
+  const list = [...unique.values()].slice(0, 8)
   const parts: string[] = []
   if (json.Abstract) parts.push(`Summary: ${json.Abstract}\nSource: ${json.AbstractURL ?? ''}`)
-  const topics = json.RelatedTopics?.slice(0, 8) ?? []
-  for (const t of topics) {
-    if (t.Text) parts.push(`- ${t.Text} (${t.FirstURL ?? ''})`)
+  for (const source of list) {
+    if (source.snippet && source.url === json.AbstractURL) continue
+    parts.push(`- ${source.title} (${source.url})`)
   }
-  return parts.join('\n') || '(no instant results — try web_fetch on a specific URL)'
+  return {
+    sources: list,
+    body: parts.join('\n') || '(no instant results — try web_fetch on a specific URL)'
+  }
 }
 
 export const webSearchTool: ToolHandler = {
   name: 'web_search',
   title: '网页搜索',
   async execute(args, ctx) {
-    const query = String(args.query)
+    const query = String(args.query ?? '')
     assertWebAccessAllowed('https://api.duckduckgo.com/', ctx.settings)
-    const results = await searchDuckDuckGo(query)
-    return ok(`Search: ${query}\n\n${results}`)
+    ctx.onStatus?.(formatWebSearchLiveStatus())
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1`
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+    if (!res.ok) throw new Error(`DDG API ${res.status}`)
+    const parsed = parseDuckDuckGoInstantAnswer(
+      (await res.json()) as {
+        Heading?: string
+        Abstract?: string
+        AbstractURL?: string
+        RelatedTopics?: DdgTopic[]
+      }
+    )
+    return ok(
+      formatWebSearchToolOutput({
+        query,
+        sources: parsed.sources,
+        body: parsed.body
+      })
+    )
   }
 }
 

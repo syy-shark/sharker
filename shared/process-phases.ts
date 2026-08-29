@@ -198,6 +198,12 @@ function stepTitle(segment: TurnSegment, phase: ProcessPhase): string {
       const leaf = shortNameFromDetail(segment.toolDetail)
       if (leaf && !base.includes(leaf)) return `${base} · ${leaf}`
     }
+    if (tool === 'web_search') {
+      const query =
+        typeof segment.toolArgs?.query === 'string' ? segment.toolArgs.query.trim() : ''
+      if (segment.status === 'active') return 'Searching the web'
+      return query ? `Searched the web for ${query}` : 'Searched the web'
+    }
     if (tool === 'run_terminal_cmd') {
       const fromArgs =
         typeof segment.toolArgs?.command === 'string'

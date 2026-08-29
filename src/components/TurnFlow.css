@@ -590,6 +590,31 @@ html.theme-dark .turn-flow-live-head {
   object-fit: contain;
 }
 
+.turn-flow-web-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turn-flow-web-source {
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--glass-fill-nested);
+  font-size: 11.5px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.turn-flow-web-source .chat-link {
+  color: var(--text-secondary);
+}
+
 /* 正文已上屏：收起命令输出，避免过程区在回答上方突然长高 */
 .turn-flow--answer-out .turn-flow-step-output {
   display: none;

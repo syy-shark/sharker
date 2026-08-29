@@ -136,11 +136,11 @@ describe('live process seed', () => {
     })
     segments = applyStreamChunk(segments, {
       type: 'status',
-      content: '检索中…',
+      content: 'Searching the web',
       timestamp: 2
     })
     const tool = segments.find((s) => s.toolCallId === 's1')
-    expect(tool?.toolDetail).toContain('检索')
+    expect(tool?.toolDetail).toBe('Searching the web')
   })
 
 

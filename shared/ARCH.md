@@ -143,8 +143,8 @@
 | `command-palette.ts` | ⌘K 命令面板目录（含查找、搜索对话、听写、语音、弹出窗、分叉 / 分叉到隔离 worktree、旁路、归档、归档当前项目对话、重命名、置顶、未读、独立新对话、无项目 `/chat` `/task`、选择模型、项目选择器、打开用量、打开通用 / 个性化 / 通知 / 建议提示 / MCP 服务器、复制工作目录 / 会话 ID / 对话路径 / 对话深链 / 复制为 Markdown、撤销/重做应用操作、初始化 AGENTS.md、权限、本对话记忆、状态、目标、在文件管理器中显示项目（对标 Codex Open in Finder）、运行环境动作、前进后退、字号、开关工作区面板、清终端、分享只读快照） |
 | `command-palette.test.ts` | 命令过滤 |
 | `workspace-search.test.ts` | `@` 文件命中排序 |
-| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
-| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象 |
+| `process-phases.ts` | 过程阶段/步骤派生；读/列/改标题附目标末段；`web_search` 进行中 Searching the web、完成后 Searched the web for（对标 Codex #9960 / #24693）；命令标题优先 `toolArgs` 且保留 shell 短选项/下划线；进度心跳不进直播/完成态 detail（只留预留宽秒表）；标题已含 path/command 时直播中也不重复 detail；仅 kind=tool 且 done 的命令计入 totals（status 桥接/cancelled 不计）；直播派生从后往前扫、不拷数组；`reuseProcessPhaseSteps` 保住已完成步骤对象（片段被浅拷但展示字段相同也复用） |
+| `process-phases.test.ts` | 思考原文不当标题；已完成步骤在后续工具增长或片段浅拷后仍是同一对象；`web_search` Searching / Searched |
 | `turn-segments.ts` | 流式 chunk → 有序 `TurnSegment[]` 状态机；token/think / status / 写入预览 / 收束都只换数组和改过的段（已完成工具保持引用，避免心跳打穿过程行 memo）；`cloneSegments` 只给会话缓冲隔离用；`extractFinalContent` / `findLastSegment` / 直播摘要从后往前扫、不拷数组；`tool_start` 保留 `toolArgs`；写入/补丁 `tool_preview` 先占同一 tool 段与 `s.id-diff-N`（`isWritePreviewTool`），参数流把已解析的 +/- 填进同一槽（对标 Codex 约 0.5s 逐文件 diff），`tool_start` / `tool_done` 合并不换 id；`context_compress` 先把进行中 status 收成 done 再挂压缩步骤；`finalizeSegments` 将未完成工具标为 `cancelled`；`hasProcessFlow` 完成后不计 `present_inline_demo` / 空过程；`buildAnswerParts` 写入一开始用 `editPreview` 占 `s.id-diff-N`，完成后填 `fileDiff`；`reuseAnswerParts` 在预览 token / 元信息刷新时保住已闭合文字与 diff 对象；正文 ```demo 开闭都拆成 `s.id` / `s.id-demo-stream` / `s.id-post`（直播未写完 `dem` / `viz` 就占槽，不认 ```diff / ```html / ```vim），收束不把演示搬回 Markdown 重挂 |
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；status 心跳 / 写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行状态字与 `startedAt`；`shouldStartGoalTurn` 只对设定文本开首轮 |
@@ -159,6 +159,8 @@
 | `user-input.ts` | Codex 桌面 `request_user_input`：解析 1–3 题、剥掉模型 Other、序列化 `{ answers: { [id]: { answers } } }`；Stop 用 AbortError 解开等待。不发明选项备注或分页问卷 |
 | `view-image.ts` | 官方 `view_image`：别名、`original` detail、短结果与 `path:` 解析；像素回灌不进直播 base64（对标 Codex #36966）。`viewedImagePathFromTool` 给过程区 ImageView 卡。不发明 ImageGen 或关闭开关 |
 | `view-image.test.ts` | 官方名 / 别名、detail、MIME、短结果往返（含空格路径）、ImageView 路径 |
+| `web-search.ts` | 官方 web_search：Searching / Searched 文案、title+url 来源行（对标 Codex #9960 / #24693 / #32898）。不发明 find_in_page / web.run |
+| `web-search.test.ts` | 活动文案、source 往返、忽略非 http(s) |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition / 收束后再写入、无会话 id 暂存与冲进 retry |

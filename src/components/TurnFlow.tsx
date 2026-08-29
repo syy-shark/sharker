@@ -32,8 +32,10 @@ import {
 } from '../../shared/live-display'
 import { InlineDemo } from './InlineDemo'
 import { ChatImage } from './ChatImage'
+import { ChatLink } from './ChatLink'
 import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
 import { viewedImagePathFromTool } from '../../shared/view-image'
+import { parseWebSearchSources } from '../../shared/web-search'
 import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
 import {
   clipToolOutput,
@@ -465,6 +467,10 @@ const ProcessStepRow = memo(function ProcessStepRow({
       : null
   const viewedImageSrc =
     viewedImagePath && isWorkspaceChatImageSrc(viewedImagePath) ? viewedImagePath : null
+  const webSources =
+    step.status === 'done' && segment?.toolName === 'web_search'
+      ? parseWebSearchSources(segment.resultOutput || '')
+      : []
   const title = step.title
   const subAgentId = subAgentIdFromTool(
     segment?.toolName,
@@ -557,11 +563,23 @@ const ProcessStepRow = memo(function ProcessStepRow({
             />
           </div>
         ) : null}
+        {webSources.length > 0 ? (
+          <ul className="turn-flow-web-sources">
+            {webSources.map((source) => (
+              <li key={source.url} className="turn-flow-web-source">
+                <ChatLink href={source.url} title={source.title}>
+                  {source.title}
+                </ChatLink>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {shouldMountToolOutputDetails({
           mode: outputMode,
           hasDistinctOutput: Boolean(
             !isDemo &&
               !viewedImageSrc &&
+              webSources.length === 0 &&
               ((segment?.resultOutput && segment.resultOutput !== segment.resultSummary) ||
                 (segment && segmentHasDeferredOutput(segment)))
           ),
