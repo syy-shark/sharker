@@ -1,6 +1,6 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ComposerDock（直播 token 不重绘）。
- * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容和滚动视口都盯）。
+ * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
  */
@@ -565,6 +565,7 @@ export function ChatView({
   const findInputRef = useRef<HTMLInputElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const messagesInnerRef = useRef<HTMLDivElement>(null)
+  const composerStageRef = useRef<HTMLDivElement>(null)
   const measuredRowHeightsRef = useRef(new Map<string, number>())
   const [intrinsicHeights, setIntrinsicHeights] = useState<ReadonlyMap<string, number>>(
     () => new Map()
@@ -1535,6 +1536,10 @@ export function ChatView({
     ro.observe(content)
     // 输入框变高 / 窗口变矮会挤视口，只盯内容高度会把直播尾藏进底部（对标 Codex #40788）
     ro.observe(scroller)
+    // 输入区是滚动层的 flex 兄弟：变高时先挤矮视口。有的引擎只报被挤的子节点，
+    // 同时盯 composer-stage 才能在排队/权限条长高的同一帧跟上贴底。
+    const composer = composerStageRef.current
+    if (composer) ro.observe(composer)
     follow()
     return () => {
       ro.disconnect()
@@ -1897,7 +1902,7 @@ export function ChatView({
         </div>
       )}
 
-      <div className="composer-stage">
+      <div className="composer-stage" ref={composerStageRef}>
         {/* 空对话不再堆欢迎语 / 快捷卡片 / 最近对话，只留输入区 */}
         {isEmpty && !hasWorkspace && (
           <h2 className="chat-empty-prompt chat-empty-prompt--hint">

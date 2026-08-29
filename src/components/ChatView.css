@@ -179,7 +179,7 @@
   transition: transform var(--motion-duration-panel) var(--motion-ease-spring);
 }
 
-/* Active chat: 底部悬浮输入，无页脚实心底 */
+/* Active chat: 输入区在对话柱 flex 流里占位，不浮到正文上（对标 Codex #40788） */
 .chat--active .composer-stage {
   position: relative;
   z-index: 5;
@@ -1682,7 +1682,7 @@ html.theme-dark .chat-side-ask {
   border-color: var(--border);
 }
 
-/* 全屏：输入框悬浮居中，无顶部分隔条 */
+/* 全屏：输入区仍在流里占位，无顶部分隔条 */
 .chat--active .composer-stage {
   padding: 4px 0 22px;
   border-top: none;

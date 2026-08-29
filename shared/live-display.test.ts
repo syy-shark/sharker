@@ -251,6 +251,12 @@ describe('near-live message rows', () => {
     ).toBe(true)
     expect(
       liveStickNeedsFollow(
+        { scrollHeight: 1200, clientHeight: 520 },
+        { scrollHeight: 1200, clientHeight: 440 }
+      )
+    ).toBe(true)
+    expect(
+      liveStickNeedsFollow(
         { scrollHeight: 800, clientHeight: 400 },
         { scrollHeight: 800, clientHeight: 400 }
       )
