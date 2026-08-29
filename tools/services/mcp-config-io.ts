@@ -5,7 +5,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
-import type { McpServerConfig } from './mcp-registry'
+import { normalizeMcpServers, type McpServerConfig } from '../../shared/mcp-config'
 
 export interface McpConfigFile {
   servers: McpServerConfig[]
@@ -27,12 +27,14 @@ export async function readMcpConfig(workspace: string): Promise<{
   path: string
   config: McpConfigFile
 }> {
-  const candidates = [workspaceMcpConfigPath(workspace), globalMcpConfigPath()]
+  const candidates: string[] = []
+  if (workspace?.trim()) candidates.push(workspaceMcpConfigPath(workspace))
+  candidates.push(globalMcpConfigPath())
   for (const p of candidates) {
     try {
       const raw = await fs.readFile(p, 'utf8')
-      const config = JSON.parse(raw) as McpConfigFile
-      if (!Array.isArray(config.servers)) config.servers = []
+      const parsed = JSON.parse(raw) as McpConfigFile
+      const config: McpConfigFile = { servers: normalizeMcpServers(parsed.servers) }
       return { raw, path: p, config }
     } catch {
       /* try next */

@@ -5,7 +5,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process'
-import type { McpServerConfig } from './mcp-registry'
+import { mcpServerKind, type McpServerConfig } from '../../shared/mcp-config'
 
 const MCP_PROTOCOL_VERSION = '2024-11-05'
 const REQUEST_TIMEOUT_MS = 120_000
@@ -18,7 +18,7 @@ export function resolveMcpSpawn(config: McpServerConfig): {
   args: string[]
   shell: boolean
 } {
-  return { command: config.command, args: config.args ?? [], shell: false }
+  return { command: config.command || '', args: config.args ?? [], shell: false }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -54,6 +54,13 @@ export interface McpToolInfo {
   name: string
   description?: string
   inputSchema?: Record<string, unknown>
+}
+
+/** stdio / HTTP 会话共用接口 */
+export interface McpSessionHandle {
+  listTools(): Promise<McpToolInfo[]>
+  callTool(name: string, args: Record<string, unknown>, workspace?: string): Promise<string>
+  close(): void
 }
 
 interface McpToolsListResult {
@@ -95,6 +102,9 @@ class McpStdioSession {
 
   /** 启动子进程并完成 MCP initialize 握手 */
   static async connect(config: McpServerConfig): Promise<McpStdioSession> {
+    if (!config.command?.trim()) {
+      throw new Error(`MCP stdio server "${config.name}" missing command`)
+    }
     const { command, args, shell } = resolveMcpSpawn(config)
     const proc = spawn(command, args, {
       env: { ...process.env, ...config.env },
@@ -239,13 +249,21 @@ class McpStdioSession {
 }
 
 /** 按 server 名缓存的活跃会话 */
-const sessionPool = new Map<string, McpStdioSession>()
+const sessionPool = new Map<string, McpSessionHandle>()
+
+async function openMcpSession(config: McpServerConfig): Promise<McpSessionHandle> {
+  if (mcpServerKind(config) === 'http') {
+    const { McpHttpSession } = await import('./mcp-http-client')
+    return McpHttpSession.connect(config)
+  }
+  return McpStdioSession.connect(config)
+}
 
 /** 获取或创建 MCP 会话 */
-export async function getMcpSession(config: McpServerConfig): Promise<McpStdioSession> {
+export async function getMcpSession(config: McpServerConfig): Promise<McpSessionHandle> {
   const cached = sessionPool.get(config.name)
   if (cached) return cached
-  const session = await McpStdioSession.connect(config)
+  const session = await openMcpSession(config)
   sessionPool.set(config.name, session)
   return session
 }
@@ -255,9 +273,8 @@ export async function connectAndListMcpTools(
   config: McpServerConfig,
   timeoutMs = MCP_POOL_CONNECT_MS
 ): Promise<McpToolInfo[]> {
-  let session: McpStdioSession | undefined
   try {
-    session = await withTimeout(McpStdioSession.connect(config), timeoutMs, `${config.name} connect`)
+    const session = await withTimeout(openMcpSession(config), timeoutMs, `${config.name} connect`)
     sessionPool.set(config.name, session)
     return await withTimeout(session.listTools(), timeoutMs, `${config.name} tools/list`)
   } catch (err) {
@@ -293,7 +310,7 @@ async function saveMcpImageBlock(
 }
 
 /** 将 tools/call 结果格式化为模型可读文本 */
-async function formatCallToolResult(
+export async function formatCallToolResult(
   result: McpCallToolResult,
   workspace?: string
 ): Promise<string> {

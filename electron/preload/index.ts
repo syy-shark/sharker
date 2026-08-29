@@ -275,6 +275,14 @@ contextBridge.exposeInMainWorld('sharker', {
     ipcRenderer.invoke(IPC.WORKSPACE_REMOVE_WORKTREE, cwd, conversationId),
   listMcpStatus: (workspace: string, verbose?: boolean) =>
     ipcRenderer.invoke(IPC.MCP_STATUS, workspace, verbose),
+  listMcpServers: (workspace: string) => ipcRenderer.invoke(IPC.MCP_LIST_SERVERS, workspace),
+  upsertMcpServer: (workspace: string, server: import('../../shared/mcp-config').McpServerConfig) =>
+    ipcRenderer.invoke(IPC.MCP_UPSERT_SERVER, workspace, server),
+  removeMcpServer: (workspace: string, name: string) =>
+    ipcRenderer.invoke(IPC.MCP_REMOVE_SERVER, workspace, name),
+  setMcpServerEnabled: (workspace: string, name: string, enabled: boolean) =>
+    ipcRenderer.invoke(IPC.MCP_SET_ENABLED, workspace, name, enabled),
+  restartMcpServers: () => ipcRenderer.invoke(IPC.MCP_RESTART),
   initAgentsMd: (workspace: string) => ipcRenderer.invoke(IPC.INIT_AGENTS_MD, workspace),
   getPersonalAgentsMd: () => ipcRenderer.invoke(IPC.GET_PERSONAL_AGENTS_MD),
   savePersonalAgentsMd: (content: string) => ipcRenderer.invoke(IPC.SAVE_PERSONAL_AGENTS_MD, content),

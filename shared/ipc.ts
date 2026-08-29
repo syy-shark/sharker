@@ -130,6 +130,12 @@ export const IPC = {
   WORKSPACE_REMOVE_WORKTREE: 'workspace:remove-worktree',
   /** `/mcp` 已配置 Server 列表 */
   MCP_STATUS: 'mcp:status',
+  /** 设置 → MCP 服务器：列表 / 写入 / 开关 / Restart */
+  MCP_LIST_SERVERS: 'mcp:list-servers',
+  MCP_UPSERT_SERVER: 'mcp:upsert-server',
+  MCP_REMOVE_SERVER: 'mcp:remove-server',
+  MCP_SET_ENABLED: 'mcp:set-enabled',
+  MCP_RESTART: 'mcp:restart',
   /** `/init`：没有说明文件时写入仓库根 AGENTS.md */
   INIT_AGENTS_MD: 'workspace:init-agents-md',
   /** 设置 → 自定义说明：读写 `~/.sharker/AGENTS.md` */

@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / 通用 / 外观 / 通知 / 个性化 / 建议提示 / 键盘快捷键 / 已归档 / 用量
+ * 设置页壳：权限 / 模型 / MCP / 通用 / 外观 / 通知 / 个性化 / 建议提示 / 键盘快捷键 / 已归档 / 用量
  * 桌面 / 浏览器能力入口暂隐藏（`ComputerUseSettings` / `BrowserUseSettings` 仍保留）
  * @see src/ARCH.md
  */
@@ -16,6 +16,7 @@ import { SuggestedPromptSettings } from '../components/settings/SuggestedPromptS
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
+import { McpSettings } from '../components/settings/McpSettings'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
@@ -26,6 +27,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   models: {
     title: '模型',
     desc: '配置 OpenAI 兼容 API，并选择对话时使用的模型。'
+  },
+  mcp: {
+    title: 'MCP 服务器',
+    desc: '添加 STDIO 或 Streamable HTTP Server，开关后 Restart。对标 Codex Settings → MCP servers。OAuth 登录未接。对话里用 /mcp 查看已连接的 Server。'
   },
   general: {
     title: '通用',
@@ -68,10 +73,11 @@ interface Props {
   setDraft: Dispatch<SetStateAction<AppSettings>>
   onSave: (next: AppSettings) => Promise<void>
   onNavigateTab?: (tab: SettingsTab) => void
+  workspacePath?: string
 }
 
 /** 设置页：按 Tab 渲染权限/模型等子面板 */
-export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
+export function SettingsPage({ tab, draft, setDraft, onSave, workspacePath = '' }: Props) {
   const meta = TAB_META[tab]
 
   return (
@@ -89,6 +95,7 @@ export function SettingsPage({ tab, draft, setDraft, onSave }: Props) {
           {tab === 'models' && (
             <ModelsSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
+          {tab === 'mcp' && <McpSettings workspacePath={workspacePath} />}
           {tab === 'general' && (
             <GeneralSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}

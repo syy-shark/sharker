@@ -5778,6 +5778,9 @@ export default function App() {
         case 'open_usage':
           void handleNavigate('settings', 'usage')
           break
+        case 'open_mcp':
+          void handleNavigate('settings', 'mcp')
+          break
         case 'show_debug_config':
           appendLocalNote(formatDebugConfig(settingsRef.current))
           break
@@ -7957,6 +7960,7 @@ export default function App() {
               setDraft={setSettingsDraft}
               onSave={handleSaveSettings}
               onNavigateTab={(tab) => void handleNavigate('settings', tab)}
+              workspacePath={getActiveWorkspacePath(settings) ?? ''}
             />
             </div>
           )}

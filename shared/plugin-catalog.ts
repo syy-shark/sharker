@@ -9,7 +9,7 @@ export {
 } from './skill-catalog-data'
 
 import type { McpCatalogItem } from './mcp-catalog-data'
-import type { McpServerConfig } from '../tools/services/mcp-registry'
+import type { McpServerConfig } from './mcp-config'
 
 export type McpPluginCatalogItem = McpCatalogItem & {
   buildConfig: (ctx: McpPluginBuildContext) => McpServerConfig

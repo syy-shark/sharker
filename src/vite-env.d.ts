@@ -323,8 +323,34 @@ export interface SharkerApi {
     workspace: string,
     verbose?: boolean
   ) => Promise<
-    Array<{ name: string; command: string; args?: string[]; tools?: string[]; error?: string }>
+    Array<{
+      name: string
+      command?: string
+      args?: string[]
+      url?: string
+      enabled?: boolean
+      tools?: string[]
+      error?: string
+    }>
   >
+  listMcpServers: (workspace: string) => Promise<{
+    path: string
+    servers: import('../shared/mcp-config').McpServerConfig[]
+  }>
+  upsertMcpServer: (
+    workspace: string,
+    server: import('../shared/mcp-config').McpServerConfig
+  ) => Promise<{ path: string; servers: import('../shared/mcp-config').McpServerConfig[] }>
+  removeMcpServer: (
+    workspace: string,
+    name: string
+  ) => Promise<{ path: string; servers: import('../shared/mcp-config').McpServerConfig[] }>
+  setMcpServerEnabled: (
+    workspace: string,
+    name: string,
+    enabled: boolean
+  ) => Promise<{ path: string; servers: import('../shared/mcp-config').McpServerConfig[] }>
+  restartMcpServers: () => Promise<{ ok: true }>
   initAgentsMd: (
     workspace: string
   ) => Promise<{ ok: true; path: string; created: boolean } | { ok: false; error: string }>

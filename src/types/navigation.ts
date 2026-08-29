@@ -5,7 +5,7 @@
 /** 主界面页面：聊天、设置、自动化、Skills */
 export type AppPage = 'chat' | 'settings' | 'automations' | 'skills'
 
-/** 设置页 Tab（桌面 / 浏览器入口暂隐藏；用量对标 Codex Profile） */
+/** 设置页 Tab（桌面 / 浏览器入口暂隐藏；用量对标 Codex Profile；mcp 对标 MCP servers） */
 export type SettingsTab =
   | 'permissions'
   | 'models'
@@ -13,6 +13,7 @@ export type SettingsTab =
   | 'appearance'
   | 'notifications'
   | 'personalization'
+  | 'mcp'
   | 'suggested'
   | 'shortcuts'
   | 'archived'

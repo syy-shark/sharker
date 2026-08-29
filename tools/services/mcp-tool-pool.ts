@@ -5,7 +5,7 @@
 import type { OpenAIToolDefinition } from '../types'
 import type { ToolRiskAssessment } from '../types'
 import { NO_RISK } from '../types'
-import { callMcpTool, loadMcpConfig } from './mcp-registry'
+import { callMcpTool, loadEnabledMcpConfig } from './mcp-registry'
 import { connectAndListMcpTools, MCP_POOL_CONNECT_MS } from './mcp-client'
 
 const MCP_PREFIX = 'mcp_'
@@ -62,7 +62,7 @@ export async function refreshMcpToolPool(workspace: string): Promise<McpDynamicT
     return cachedPool
   }
 
-  const servers = await loadMcpConfig(workspace)
+  const servers = await loadEnabledMcpConfig(workspace)
   const bundles = await Promise.all(
     servers.map(async (cfg) => {
       try {

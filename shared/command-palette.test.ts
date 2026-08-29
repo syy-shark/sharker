@@ -25,6 +25,7 @@ describe('command palette', () => {
     expect(ids).toContain('open-worktree')
     expect(ids).toContain('create-branch')
     expect(ids).toContain('mcp')
+    expect(ids).toContain('mcp-servers')
     expect(ids).toContain('feedback')
     expect(ids).toContain('share')
     expect(ids).toContain('local')
@@ -80,6 +81,7 @@ describe('command palette', () => {
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
     expect(filterPaletteCommands('用量').some((c) => c.action === 'open_usage')).toBe(true)
+    expect(filterPaletteCommands('MCP 服务器').some((c) => c.action === 'open_mcp')).toBe(true)
     expect(filterPaletteCommands('个性化').some((c) => c.action === 'open_personalization')).toBe(
       true
     )

@@ -14,7 +14,7 @@ export const mcpListToolsTool: ToolHandler = {
     const ws = getActiveWorkspacePath(ctx.settings)
     const tools = await listMcpTools(ws)
     if (!tools.length) {
-      return ok('No MCP servers configured. Add ~/.sharker/mcp.json')
+      return ok('No MCP servers configured. Open Settings → MCP servers or add ~/.sharker/mcp.json')
     }
     return ok(tools.map((t) => `${t.server}/${t.name}: ${t.description ?? ''}`).join('\n'))
   }

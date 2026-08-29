@@ -13,9 +13,11 @@
 
 | 文件 | 说明 |
 |------|------|
-| `mcp-client.ts` | MCP stdio JSON-RPC 会话（list/call） |
-| `mcp-registry.ts` | 从配置加载 Server，对外 list/call |
+| `mcp-client.ts` | MCP 会话（stdio JSON-RPC；HTTP 走 `mcp-http-client`） |
+| `mcp-http-client.ts` | Streamable HTTP JSON-RPC（Bearer / 静态头；不实现 OAuth） |
+| `mcp-registry.ts` | 从配置加载 Server，对外 list/call（跳过 `enabled: false`） |
 | `mcp-config-io.ts` | `~/.sharker/mcp.json` / 工作区 mcp 配置读写 |
+| `mcp-settings.ts` | 设置页增删改开关与 Restart（写 mcp.json、清会话/工具池） |
 | `mcp-plugin-store.ts` | 插件目录安装状态、一键写入 mcp.json |
 | `mcp-tool-pool.ts` | 动态 Tool 池：tools/list 并入模型工具列表 |
 | `task-manager.ts` | 后台任务（shell/脚本/子 Agent）生命周期 |

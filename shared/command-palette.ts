@@ -218,6 +218,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     action: 'show_mcp'
   },
   {
+    id: 'mcp-servers',
+    title: 'MCP 服务器',
+    keywords: 'mcp servers stdio http streamable 工具 设置',
+    action: 'open_mcp'
+  },
+  {
     id: 'feedback',
     title: '打开反馈',
     keywords: 'feedback diagnose 反馈 诊断 问题',

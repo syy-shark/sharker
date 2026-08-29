@@ -82,6 +82,14 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'personalization'
     })
+    expect(parseDeeplink('sharker://settings/mcp')).toEqual({
+      type: 'settings',
+      tab: 'mcp'
+    })
+    expect(parseDeeplink('sharker://settings/mcp-servers')).toEqual({
+      type: 'settings',
+      tab: 'mcp'
+    })
     expect(parseDeeplink('sharker://settings/suggested-prompts')).toEqual({
       type: 'settings',
       tab: 'suggested'

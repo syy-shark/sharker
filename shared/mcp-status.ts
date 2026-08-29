@@ -6,8 +6,10 @@
 /** 已配置的 MCP Server 快照（可不连上） */
 export interface McpStatusServer {
   name: string
-  command: string
+  command?: string
   args?: string[]
+  url?: string
+  enabled?: boolean
   tools?: string[]
   error?: string
 }
@@ -18,7 +20,7 @@ export function formatMcpStatus(servers: McpStatusServer[], verbose = false): st
     return [
       '**MCP**',
       '',
-      '未配置 Server。把 `servers` 写入 `~/.sharker/mcp.json` 或工作区 `.sharker/mcp.json`。',
+      '未配置 Server。打开 **设置 → MCP 服务器** 添加 STDIO 或 Streamable HTTP（`sharker://settings/mcp`），或把 `servers` 写入 `~/.sharker/mcp.json`。',
       '',
       '```json',
       '{ "servers": [{ "name": "example", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-everything"] }] }',
@@ -28,14 +30,16 @@ export function formatMcpStatus(servers: McpStatusServer[], verbose = false): st
   const lines = ['**MCP**', '', `已配置 ${servers.length} 个 Server。`, '']
   for (const server of servers) {
     const cmd = [server.command, ...(server.args ?? [])].join(' ').trim()
-    lines.push(`- **${server.name}** \`${cmd || '—'}\``)
+    const label = (server.url || cmd || '—').trim()
+    const off = server.enabled === false ? '（已关闭）' : ''
+    lines.push(`- **${server.name}** \`${label}\`${off}`)
     if (server.error) lines.push(`  - 连接失败：${server.error}`)
     if (verbose && server.tools?.length) {
       for (const tool of server.tools.slice(0, 24)) {
         lines.push(`  - \`${tool}\``)
       }
       if (server.tools.length > 24) lines.push(`  - …共 ${server.tools.length} 个工具`)
-    } else if (verbose && !server.error) {
+    } else if (verbose && !server.error && server.enabled !== false) {
       lines.push('  - （未列出工具）')
     }
   }

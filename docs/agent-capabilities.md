@@ -39,7 +39,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/diff` | 打开右侧变更审查看本地 diff |
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行可暂停 / 继续 / 编辑 / 清除，并显示设定后耗时 |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框「计划」芯片，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后可点 Build 执行 |
-| `/mcp [verbose]` | 列出 `~/.sharker/mcp.json` 已配置 Server；`verbose` 尝试连接并列工具 |
+| `/mcp [verbose]` | 列出已配置 MCP Server（设置 → MCP 服务器 / `~/.sharker/mcp.json`）；空配置指向设置页；`verbose` 尝试连接并列工具 |
 | `/feedback` | 打开反馈对话框（分类 / 说明 / 附带会话）；只复制本机诊断，不外发 |
 | `/share` | 打开只读快照（对标 Codex 桌面 Share）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。顶栏「分享」与文件菜单同一条路径。打开时拍一帧，之后不跟直播 token 变 |
 | `/compact` | 本地压缩当前对话上下文 |
@@ -122,6 +122,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - 设置 → 个性化 → **启用记忆**（对标 Codex Settings → Personalization Enable memories / `features.memories`，官方默认关）；打开后再设注入 / 写入（`memories.use_memories` / `generate_memories`）。`/memories` 只改当前对话（空命令先选使用 / 写入 / 关闭 / 跟随全局，不改全局）
 - 设置 → 个性化 → **人格** 与 **自定义说明**（写入 `~/.sharker/AGENTS.md`；对标 Codex Settings → Personalization；不改 `~/.codex`，不覆盖 `AGENTS.override.md`）
 - `sharker://settings/general` 打开通用；`sharker://settings/personalization` / `sharker://settings/memories` 打开个性化
+- 设置 → **MCP 服务器**（对标 Codex Settings → MCP servers）：列表、开关、添加 STDIO 或 Streamable HTTP、Restart；写入 `~/.sharker/mcp.json` 或工作区 `.sharker/mcp.json`。`sharker://settings/mcp` 打开该页。不接 OAuth Authenticate / CIMD / DCR。对话里 `/mcp` 查看已连接的 Server
 - 设置 → **用量**（对标 Codex Settings → Profile）：本机终身 Token / 回合、峰值日、连续活跃、近 14 日 Token 活动；没有最长任务时长或供应商额度
 - 对话附件与正文渲染图可悬停 **复制** 或 **保存**（对标 Codex Save or copy rendered images）；只认本机附件、http(s) 与 `data:image`，不读任意 `file://`；工作区相对路径图（如 `![x](docs/foo.png)`）经文件预览同一条读盘通道成图，可点开右侧预览；直播从文件头读固有尺寸首帧占位，未测到前 48px 高水位，成图后高度只升不降，避免 8rem / 小图塌贴底
 - 写盘预览一开始对话里就出现 **已改 N 个文件**（对标 Codex 回合内 N files edited / 约 0.5s 逐文件），点开审查切到本轮全部仓库；本轮列表也会先出现预览已点名、git status 还没见到的路径（不编造 diff）；数字与直播 +/- 统计预留等宽，侧栏进行中/未读占同一槽，文件树写盘重拉不再播进入动画；直播 token 不重绘侧栏 / 顶栏 / 文件树 / 审查 / ChatView 历史列（16ms 只写直播 store，对标 Codex #22860）；工具心跳若已改路径/活动没变也不换直播元信息对象（对标 Codex animated diff stat alignment / sidebar jitter / review panel scroll jumps）；收束不再整块冒出跳贴底

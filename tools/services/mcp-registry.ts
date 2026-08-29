@@ -2,19 +2,15 @@
  * MCP 基础：从配置文件加载 Server 列表，stdio JSON-RPC list/call。
  * @see tools/builtins/mcp/
  */
-import fs from 'fs/promises'
-import path from 'path'
-import os from 'os'
 import { closeMcpSession, connectAndListMcpTools, getMcpSession } from './mcp-client'
+import {
+  enabledMcpServers,
+  isMcpServerEnabled,
+  type McpServerConfig
+} from '../../shared/mcp-config'
+import { readMcpConfig } from './mcp-config-io'
 
-export interface McpServerConfig {
-  name: string
-  command: string
-  args?: string[]
-  env?: Record<string, string>
-  /** stdio 写帧格式：content-length（MCP 规范默认）| ndjson（rmcp / codex-computer-use-linux） */
-  transport?: 'content-length' | 'ndjson'
-}
+export type { McpServerConfig }
 
 export interface McpToolDescriptor {
   server: string
@@ -24,22 +20,13 @@ export interface McpToolDescriptor {
 
 /** 读取 ~/.sharker/mcp.json 或工作区 .sharker/mcp.json（工作区优先） */
 export async function loadMcpConfig(workspace: string): Promise<McpServerConfig[]> {
-  const paths: string[] = []
-  const ws = workspace?.trim()
-  if (ws) {
-    paths.push(path.join(ws, '.sharker', 'mcp.json'))
-  }
-  paths.push(path.join(os.homedir(), '.sharker', 'mcp.json'))
-  for (const p of paths) {
-    try {
-      const raw = await fs.readFile(p, 'utf8')
-      const json = JSON.parse(raw) as { servers?: McpServerConfig[] }
-      if (Array.isArray(json.servers)) return json.servers
-    } catch {
-      /* try next */
-    }
-  }
-  return []
+  const { config } = await readMcpConfig(workspace)
+  return config.servers
+}
+
+/** 只返回已启用的 Server（官方 `enabled`） */
+export async function loadEnabledMcpConfig(workspace: string): Promise<McpServerConfig[]> {
+  return enabledMcpServers(await loadMcpConfig(workspace))
 }
 
 /** 列出已配置 MCP 工具（连接各 Server 并 tools/list） */
@@ -56,7 +43,7 @@ async function listMcpToolsWithTimeout(
   workspace: string,
   timeoutMs: number
 ): Promise<McpToolDescriptor[]> {
-  const servers = await loadMcpConfig(workspace)
+  const servers = await loadEnabledMcpConfig(workspace)
   const out: McpToolDescriptor[] = []
 
   for (const cfg of servers) {
@@ -100,9 +87,12 @@ export async function callMcpTool(
   const cfg = servers.find((s) => s.name === server)
   if (!cfg) {
     return (
-      `MCP server not found: ${server}. Configure ~/.sharker/mcp.json:\n` +
+      `MCP server not found: ${server}. Open Settings → MCP servers, or configure ~/.sharker/mcp.json:\n` +
       `{\n  "servers": [\n    { "name": "my-server", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"] }\n  ]\n}`
     )
+  }
+  if (!isMcpServerEnabled(cfg)) {
+    return `MCP server disabled: ${server}. Enable it in Settings → MCP servers.`
   }
 
   try {

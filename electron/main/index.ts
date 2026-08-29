@@ -103,6 +103,14 @@ import { initAgentsMdFile, readPersonalAgentsMd, writePersonalAgentsMd } from '.
 import { listMemoriesExact } from '../../agent/memory/memories'
 import { getActiveSessionId, getWorkspaceProjectId } from '../../agent/memory/workspaces-sync'
 import { loadMcpConfig, listMcpToolsQuick } from '../../tools/services/mcp-registry'
+import {
+  listMcpServerSettings,
+  removeMcpServerSettings,
+  restartMcpServers,
+  setMcpServerEnabledSettings,
+  upsertMcpServerSettings
+} from '../../tools/services/mcp-settings'
+import type { McpServerConfig } from '../../shared/mcp-config'
 import { diffFromGitTexts, isDeletedGitChange } from '../../shared/git-change-diff'
 import {
   applyGitReviewAction,
@@ -1985,7 +1993,9 @@ function registerIpc(): void {
         return servers.map((s) => ({
           name: s.name,
           command: s.command,
-          args: s.args
+          args: s.args,
+          url: s.url,
+          enabled: s.enabled !== false
         }))
       }
       const tools = await listMcpToolsQuick(cwd).catch(() => [])
@@ -1996,12 +2006,45 @@ function registerIpc(): void {
           name: s.name,
           command: s.command,
           args: s.args,
+          url: s.url,
+          enabled: s.enabled !== false,
           error: failed?.description,
           tools: owned.filter((t) => !t.name.startsWith('(')).map((t) => t.name)
         }
       })
     }
   )
+
+  ipcMain.handle(IPC.MCP_LIST_SERVERS, async (_e, workspace: string) => {
+    return listMcpServerSettings(String(workspace || ''))
+  })
+
+  ipcMain.handle(
+    IPC.MCP_UPSERT_SERVER,
+    async (_e, workspace: string, server: McpServerConfig) => {
+      return upsertMcpServerSettings(String(workspace || ''), server)
+    }
+  )
+
+  ipcMain.handle(IPC.MCP_REMOVE_SERVER, async (_e, workspace: string, name: string) => {
+    return removeMcpServerSettings(String(workspace || ''), String(name || ''))
+  })
+
+  ipcMain.handle(
+    IPC.MCP_SET_ENABLED,
+    async (_e, workspace: string, name: string, enabled: boolean) => {
+      return setMcpServerEnabledSettings(
+        String(workspace || ''),
+        String(name || ''),
+        enabled !== false
+      )
+    }
+  )
+
+  ipcMain.handle(IPC.MCP_RESTART, async () => {
+    restartMcpServers()
+    return { ok: true as const }
+  })
 
   ipcMain.handle(
     IPC.GIT_HANDOFF,

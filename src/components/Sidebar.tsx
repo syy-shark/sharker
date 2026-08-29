@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Palette,
   Pin,
+  Plug,
   Smile,
   Settings,
   Settings2,
@@ -114,6 +115,7 @@ const SIDEBAR_LAYOUT_MS = 280
 const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'permissions', label: '权限', icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
+  { id: 'mcp', label: 'MCP', icon: Plug },
   { id: 'general', label: '通用', icon: Settings2 },
   { id: 'appearance', label: '外观', icon: Palette },
   { id: 'notifications', label: '通知', icon: BellRing },
