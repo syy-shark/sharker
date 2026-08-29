@@ -63,6 +63,12 @@ import {
   isLiveWriteStatStatusToolAppendChange,
   isLiveWriteStatThinkToolAppendChange,
   isLiveWriteStatStatusThinkToolAppendChange,
+  isLiveStatusDemoAppendChange,
+  isLiveThinkDemoAppendChange,
+  isLiveStatusThinkDemoAppendChange,
+  isLiveWriteStatStatusDemoAppendChange,
+  isLiveWriteStatThinkDemoAppendChange,
+  isLiveWriteStatStatusThinkDemoAppendChange,
   isLiveWriteStatCompressAppendChange,
   isLiveWriteStatErrorAppendChange,
   isLiveWriteStatDemoAppendChange,
@@ -642,6 +648,10 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusDemoFenceAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments) &&
+    !isLiveStatusDemoAppendChange(prevSegments, segments) &&
+    !isLiveStatusThinkDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusThinkDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatCompressAppendChange(prevSegments, segments) &&
     !isLiveCompressAppendChange(prevSegments, segments) &&
     !isLiveCancelChange(prevSegments, segments) &&
@@ -680,6 +690,7 @@ export function appendProcessPhaseStepOnToolStart(
   const built: ProcessPhaseStep[] = []
   for (const extra of extras) {
     if (extra.kind === 'thinking' || extra.kind === 'text') continue
+    if (extra.toolName === 'present_inline_demo') continue
     const step = buildStepsFromSource([extra], isStreaming)[0]
     if (step) built.push(step)
   }
@@ -703,6 +714,8 @@ export function remapProcessPhaseStepsOnThinkAppend(
     !isLiveThinkAnswerAppendChange(prevSegments, segments) &&
     !isLiveDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatDemoAppendChange(prevSegments, segments) &&
+    !isLiveThinkDemoAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatThinkDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatDemoFenceAppendChange(prevSegments, segments) &&
     !isLiveThinkDemoFenceAppendChange(prevSegments, segments) &&
     !isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) &&

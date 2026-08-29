@@ -54,6 +54,12 @@ import {
   isLiveWriteStatStatusToolAppendChange,
   isLiveWriteStatThinkToolAppendChange,
   isLiveWriteStatStatusThinkToolAppendChange,
+  isLiveStatusDemoAppendChange,
+  isLiveThinkDemoAppendChange,
+  isLiveStatusThinkDemoAppendChange,
+  isLiveWriteStatStatusDemoAppendChange,
+  isLiveWriteStatThinkDemoAppendChange,
+  isLiveWriteStatStatusThinkDemoAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1336,6 +1342,98 @@ describe('live stream ui snapshot', () => {
     expect(
       answerAfterWriteStatPlanTool.parts.find((part) => part.type === 'text' && part.id === hello.id)
     ).toBe(helloPlanToolPart)
+    expect(
+      isLiveStatusDemoAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, inlineDemo]
+      )
+    ).toBe(true)
+    expect(
+      isLiveThinkDemoAppendChange([hello, running], [hello, ran, nextThinkDone, inlineDemo])
+    ).toBe(true)
+    expect(
+      isLiveStatusThinkDemoAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextThinkDone, inlineDemo]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusDemoAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, inlineDemo]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatThinkDemoAppendChange(
+        [hello, running],
+        [hello, ranDiff, nextThinkDone, inlineDemo]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusThinkDemoAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, nextThinkDone, inlineDemo]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, inlineDemo]
+      )
+    ).toBe('tool')
+    expect(
+      nextLiveThinkText(
+        'Hmm',
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextThinkDone, inlineDemo]
+      )
+    ).toBe('HmmNext')
+    const demoRound = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: 'present_inline_demo',
+      timestamp: 23
+    })
+    expect(isLiveStatusDemoAppendChange([hello, running], demoRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], demoRound)).toBe('tool')
+    let thinkThenDemo = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 24 })
+    thinkThenDemo = applyStreamChunk(thinkThenDemo, {
+      type: 'tool_start',
+      toolName: 'present_inline_demo',
+      timestamp: 25
+    })
+    expect(isLiveThinkDemoAppendChange(afterPlanStatus, thinkThenDemo)).toBe(true)
+    expect(isLiveStatusThinkDemoAppendChange([hello, running], thinkThenDemo)).toBe(true)
+    const processReadyForPlanDemo = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterPlanDemo = nextLiveProcessView(processReadyForPlanDemo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: demoRound
+    })
+    expect(processAfterPlanDemo.processForFlow.some((segment) => segment.kind === 'status')).toBe(true)
+    expect(
+      processAfterPlanDemo.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')
+    ).toBe(false)
+    expect(processAfterPlanDemo.generatingDemo).toBe(true)
+    const processAfterThinkDemo = nextLiveProcessView(processReadyForPlanDemo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenDemo
+    })
+    expect(processAfterThinkDemo.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkDemo.thinkText).toBe(processReadyForPlanDemo.thinkText + 'Next')
+    expect(processAfterThinkDemo.generatingDemo).toBe(true)
+    const answerReadyForPlanDemo = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const answerAfterPlanDemo = nextLiveAnswerView(answerReadyForPlanDemo, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: demoRound
+    })
+    expect(answerAfterPlanDemo.tail?.type).toBe('demo')
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

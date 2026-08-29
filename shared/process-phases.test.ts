@@ -726,6 +726,38 @@ describe('process phases privacy', () => {
     expect(settleAndStatusThinkTool![2].segment).toBe(reconnectStatusDone)
     expect(settleAndStatusThinkTool!.at(-1)?.segment).toBe(nextRoundTool)
     expect(settleAndStatusThinkTool!.some((step) => step.segment === nextThinkDone)).toBe(false)
+    const settleAndStatusDemoTool = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, inlineDemo],
+      true
+    )
+    expect(settleAndStatusDemoTool).not.toBeNull()
+    expect(settleAndStatusDemoTool).toHaveLength(3)
+    expect(settleAndStatusDemoTool![0].segment).toBe(cmdDone)
+    expect(settleAndStatusDemoTool![1].segment).toBe(cmdNextDone)
+    expect(settleAndStatusDemoTool!.at(-1)?.segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusDemoTool!.some((step) => step.segment === inlineDemo)).toBe(false)
+    const settleAndThinkDemoTool = remapProcessPhaseStepsOnThinkAppend(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkDone, inlineDemo],
+      true
+    )
+    expect(settleAndThinkDemoTool).not.toBeNull()
+    expect(settleAndThinkDemoTool).toHaveLength(2)
+    expect(settleAndThinkDemoTool![0].segment).toBe(cmdDone)
+    expect(settleAndThinkDemoTool![1].segment).toBe(cmdNextDone)
+    const settleAndStatusThinkDemoTool = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, nextThinkDone, inlineDemo],
+      true
+    )
+    expect(settleAndStatusThinkDemoTool).not.toBeNull()
+    expect(settleAndStatusThinkDemoTool).toHaveLength(3)
+    expect(settleAndStatusThinkDemoTool!.at(-1)?.segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusThinkDemoTool!.some((step) => step.segment === inlineDemo)).toBe(false)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',
