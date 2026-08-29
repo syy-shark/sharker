@@ -20,6 +20,15 @@ export function isFastThinkingLevel(id: string): boolean {
   return FAST_IDS.has(id.trim().toLowerCase())
 }
 
+/** 当前档位再点 Fast：开则降到最低，关则回到默认档 */
+export function nextFastThinkingLevel(
+  options: Array<{ id: string }>,
+  currentId: string,
+  defaultId: string
+): string | null {
+  return pickFastThinkingLevel(options, !isFastThinkingLevel(currentId), defaultId)
+}
+
 /** Fast 开 → off/none/minimal/low；关 → 官方默认档 */
 export function pickFastThinkingLevel(
   options: Array<{ id: string }>,

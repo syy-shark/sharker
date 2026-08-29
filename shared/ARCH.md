@@ -195,8 +195,8 @@
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |
-| `fast-mode.ts` | `/fast` 解析与思考档位选择 |
-| `fast-mode.test.ts` | on/off、off/low 优先 |
+| `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |
+| `fast-mode.test.ts` | on/off、off/low 优先、芯片再点切回默认档 |
 | `copy-output.ts` | `/copy` 取最近一条助手正文；有围栏或引用时列出整段 / 代码块 / 引用（对标 Codex /copy picker） |
 | `copy-output.test.ts` | 跳过空助手行；围栏与引用分列、围栏内 `>` 不当引用 |
 | `skills-status.ts` | `/skills` 已安装列表；侧栏 Skills 页跨项目合并与过滤 |

@@ -3,6 +3,7 @@ import {
   formatFastStatus,
   isFastThinkingLevel,
   parseFastCommand,
+  nextFastThinkingLevel,
   pickFastThinkingLevel
 } from './fast-mode'
 
@@ -20,6 +21,8 @@ describe('fast mode', () => {
     expect(pickFastThinkingLevel(opts, false, 'high')).toBe('high')
     expect(pickFastThinkingLevel([{ id: 'low' }, { id: 'high' }], true, 'high')).toBe('low')
     expect(pickFastThinkingLevel([], true, 'high')).toBeNull()
+    expect(nextFastThinkingLevel(opts, 'high', 'high')).toBe('off')
+    expect(nextFastThinkingLevel(opts, 'off', 'high')).toBe('high')
   })
 
   it('formats status', () => {

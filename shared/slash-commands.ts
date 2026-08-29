@@ -384,7 +384,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'fast',
-    description: '开关 Fast（关掉或降到最低思考）',
+    description: '开关 Fast（输入框旁也可切；关掉或降到最低思考）',
     scope: 'ui',
     action: 'set_fast',
     argsHint: '[on|off|status]',

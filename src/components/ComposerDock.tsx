@@ -1,6 +1,7 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
  * 输入框下方有沙箱 / 完整权限芯片（对标 Codex permissions control beneath the composer）。
+ * 模型旁有思考档位条与 Fast 芯片（对标 Codex composer gauge / `/fast`）。
  * @see src/components/ARCH.md
  */
 import {
@@ -39,6 +40,7 @@ import {
   defaultThinkingLevel,
   resolveThinkingOptions
 } from '../../shared/thinking-levels'
+import { isFastThinkingLevel, nextFastThinkingLevel } from '../../shared/fast-mode'
 import {
   BANG_SLASH_COMMAND,
   composerSlashLine,
@@ -2023,6 +2025,28 @@ export const ComposerDock = memo(
                 value={thinkingValue}
                 onChange={(level) => onThinkingLevelChange(activeProvider.id, level)}
               />
+            ) : null}
+            {thinkingOpts.length > 0 && onThinkingLevelChange && activeProvider ? (
+              <button
+                type="button"
+                className={`composer-jump${isFastThinkingLevel(thinkingValue) ? ' is-active' : ''}`}
+                aria-pressed={isFastThinkingLevel(thinkingValue)}
+                onClick={() => {
+                  const next = nextFastThinkingLevel(
+                    thinkingOpts,
+                    thinkingValue,
+                    defaultThinkingLevel(activeProvider)
+                  )
+                  if (next) onThinkingLevelChange(activeProvider.id, next)
+                }}
+                title={
+                  isFastThinkingLevel(thinkingValue)
+                    ? '关闭 Fast（回到默认思考档）'
+                    : '开启 Fast（最低思考档，对标 Codex /fast）'
+                }
+              >
+                Fast
+              </button>
             ) : null}
             {onQueueHeldChange && (loading || queuedCount > 0 || queueHeld) ? (
               <button
