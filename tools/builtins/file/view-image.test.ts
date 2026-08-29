@@ -45,6 +45,15 @@ describe('executeViewImage', () => {
     expect(isToolAllowedInPlanMode('read_image')).toBe(true)
   })
 
+  it('resolves a workspace-relative path against cwd', async () => {
+    const { file, settings } = await workspaceWithPng()
+    const result = await executeViewImage({ path: 'dot.png' }, { settings })
+    expect(parseViewImageToolOutput(result.output)).toEqual({
+      path: file,
+      detail: null
+    })
+  })
+
   it('writes a short official-style result without base64', async () => {
     const { file, settings } = await workspaceWithPng()
     const result = await executeViewImage({ path: file }, { settings })

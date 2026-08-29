@@ -5,9 +5,9 @@
  */
 import fs from 'fs/promises'
 import path from 'path'
-import { assertAccess, ok } from '../../context'
+import { assertAccess, ok, toolCwd } from '../../context'
 import { normalizePath } from '../../permissions'
-import type { ToolHandler } from '../../types'
+import type { ToolContext, ToolHandler } from '../../types'
 import {
   formatViewImageToolOutput,
   isViewImageExt,
@@ -17,12 +17,20 @@ import {
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
+/** 官方：相对路径接到环境 cwd / worktree（#29526） */
+export function resolveViewImagePath(raw: unknown, ctx: ToolContext): string {
+  const input = String(raw ?? '').trim()
+  if (!input) throw new Error('image path is required')
+  if (path.isAbsolute(input)) return normalizePath(input)
+  return normalizePath(path.join(toolCwd(ctx, undefined), input))
+}
+
 /** 读盘校验后写短结果；不把 data URL 灌进直播 */
 export async function executeViewImage(
   args: Record<string, unknown>,
   ctx: Parameters<ToolHandler['execute']>[1]
 ) {
-  const p = normalizePath(String(args.path))
+  const p = resolveViewImagePath(args.path, ctx)
   assertAccess(ctx, p)
   const ext = path.extname(p).toLowerCase()
   if (!isViewImageExt(ext)) throw new Error(`Not an image: ${ext}`)
@@ -45,6 +53,10 @@ export async function executeViewImage(
 export const viewImageTool: ToolHandler = {
   name: 'view_image',
   title: '查看图片',
-  extractPaths: (args) => [String(args.path)],
+  extractPaths: (args, workspace) => {
+    const input = String(args.path ?? '').trim()
+    if (!input) return []
+    return [path.isAbsolute(input) ? normalizePath(input) : normalizePath(path.join(workspace, input))]
+  },
   execute: executeViewImage
 }
