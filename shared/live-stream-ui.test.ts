@@ -33,6 +33,8 @@ import {
   isLiveThinkAppendChange,
   isLiveAnswerAppendChange,
   isLiveCompressAppendChange,
+  isLiveCancelChange,
+  isLiveErrorAppendChange,
   isLiveDemoAppendChange,
   isLiveDemoFenceAppendChange,
   findLiveDemoFenceChange,
@@ -1017,6 +1019,83 @@ describe('live stream ui snapshot', () => {
       liveSegments: [askReady, askStatusDone]
     })
     expect(processAfterAskDone.processForFlow.some((segment) => segment === askStatusDone)).toBe(true)
+    const runningToCancel: TurnSegment = {
+      id: 'run-stop',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'active',
+      toolDetail: 'src/a.ts'
+    }
+    const thinkToCancel: TurnSegment = {
+      id: 'th-stop',
+      kind: 'thinking',
+      content: 'Hmm',
+      status: 'active'
+    }
+    const cancelledCmd: TurnSegment = {
+      ...runningToCancel,
+      status: 'cancelled',
+      errorMessage: '任务已停止',
+      resultSummary: '已停止'
+    }
+    const cancelledThink: TurnSegment = { ...thinkToCancel, status: 'cancelled' }
+    expect(
+      isLiveCancelChange(
+        [hello, runningToCancel, thinkToCancel],
+        [hello, cancelledCmd, cancelledThink]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, runningToCancel, thinkToCancel],
+        [hello, cancelledCmd, cancelledThink]
+      )
+    ).toBe('tool')
+    const processReadyForCancel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, runningToCancel, thinkToCancel]
+    })
+    const processAfterCancel = nextLiveProcessView(processReadyForCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, cancelledCmd, cancelledThink]
+    })
+    expect(processAfterCancel.processForFlow.some((segment) => segment === cancelledCmd)).toBe(true)
+    expect(processAfterCancel.processForFlow.some((segment) => segment === runningToCancel)).toBe(false)
+    const errorStatus: TurnSegment = {
+      id: 'st-err',
+      kind: 'status',
+      status: 'active',
+      content: 'Working'
+    }
+    const errorStatusDone: TurnSegment = { ...errorStatus, status: 'done' }
+    const errorText: TurnSegment = {
+      id: 'err-1',
+      kind: 'text',
+      status: 'done',
+      role: 'final',
+      content: '**错误**: boom'
+    }
+    expect(isLiveErrorAppendChange([ran, errorStatus], [ran, errorStatusDone, errorText])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([ran, errorStatus], [ran, errorStatusDone, errorText])).toBe(
+      'text'
+    )
+    const processReadyForError = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, errorStatus]
+    })
+    const processAfterError = nextLiveProcessView(processReadyForError, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ran, errorStatusDone, errorText]
+    })
+    expect(processAfterError.processForFlow.some((segment) => segment === errorStatusDone)).toBe(true)
+    expect(processAfterError.processForFlow.some((segment) => segment === errorText)).toBe(false)
+    const liveReply: TurnSegment = { id: 'reply-err', kind: 'text', status: 'active', content: 'Hi' }
+    const liveReplyErr: TurnSegment = {
+      ...liveReply,
+      status: 'done',
+      content: 'Hi\n\n**错误**: boom'
+    }
+    expect(isLiveErrorAppendChange([ran, liveReply], [ran, liveReplyErr])).toBe(true)
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

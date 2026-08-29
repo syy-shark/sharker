@@ -367,6 +367,60 @@ describe('process phases privacy', () => {
     expect(afterAskDone).toHaveLength(2)
     expect(afterAskDone!.at(-1)?.segment).toBe(askStatusDone)
     expect(afterAskDone!.at(-1)?.status).toBe('done')
+    const cancelCmd: TurnSegment = {
+      id: 'run-stop',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolDetail: 'src/a.ts',
+      status: 'active',
+      startedAt: 21
+    }
+    const cancelSteps = deriveChronologicalSteps([cancelCmd], { isStreaming: true })
+    const cancelledCmd: TurnSegment = {
+      ...cancelCmd,
+      status: 'cancelled',
+      errorMessage: '任务已停止',
+      resultSummary: '已停止',
+      endedAt: 22
+    }
+    const afterCancel = appendProcessPhaseStepOnToolStart(
+      cancelSteps,
+      [cancelCmd],
+      [cancelledCmd],
+      true
+    )
+    expect(afterCancel).not.toBeNull()
+    expect(afterCancel).toHaveLength(1)
+    expect(afterCancel![0].id).toBe(cancelSteps[0].id)
+    expect(afterCancel![0].segment).toBe(cancelledCmd)
+    expect(afterCancel![0].status).toBe('cancelled')
+    const errStatus: TurnSegment = {
+      id: 'st-err',
+      kind: 'status',
+      status: 'active',
+      content: 'Working',
+      startedAt: 23
+    }
+    const errStatusSteps = deriveChronologicalSteps([errStatus], { isStreaming: true })
+    const errStatusDone: TurnSegment = { ...errStatus, status: 'done', endedAt: 24 }
+    const errText: TurnSegment = {
+      id: 'err-1',
+      kind: 'text',
+      status: 'done',
+      role: 'final',
+      content: '**错误**: boom',
+      startedAt: 25
+    }
+    const afterError = remapProcessPhaseStepsOnThinkAppend(
+      errStatusSteps,
+      [errStatus],
+      [errStatusDone, errText],
+      true
+    )
+    expect(afterError).not.toBeNull()
+    expect(afterError).toHaveLength(1)
+    expect(afterError![0].segment).toBe(errStatusDone)
+    expect(afterError![0].status).toBe('done')
     const demoFence: TurnSegment = {
       id: 'demo-fence-1',
       kind: 'text',
