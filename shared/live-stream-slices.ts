@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 / 思考+```demo / status+```demo / status+思考+```demo 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token / ```demo 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、规划下一步后同一帧或下一轮 tool_start（规划下一步可先标 done，可夹 think）、think + tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 / 思考+```demo / status+```demo / status+思考+```demo 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token / ```demo 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -234,6 +234,62 @@ export function isLiveToolAppendChange(
     return false
   }
   return true
+}
+
+function hasLiveToolAppendPrefixClose(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev) return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (
+      isLivePrefixClose(before, after) ||
+      isLiveTextGrowClose(before, after) ||
+      isLiveThinkGrowClose(before, after)
+    ) {
+      continue
+    }
+    return false
+  }
+  return true
+}
+
+/** 规划下一步后同一帧 tool_start：status 可先被收口，再追加一或多个工具 */
+export function isLiveStatusToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 规划下一步已在场时 think 后 tool_start：旁白可先标 done，已画散文也可被收口，再追加工具 */
+export function isLiveThinkToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) {
+    return false
+  }
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 规划下一步 + think + tool_start 同一帧：status 可仍在，旁白可先标 done */
+export function isLiveStatusThinkToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 2, next)
 }
 
 /** 前缀没变或只收束思考/status/散文/无新写盘的工具、末尾新开 status：只追加过程步（对标 Codex Reconnecting... n/5 / Compacting） */
@@ -741,6 +797,34 @@ export function isLiveToolWriteStatAppendChange(
   return hasLiveWriteStatPrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
 }
 
+/** 写盘收束同时新开 status + 工具：过程 remap 并追加这些步，回答只换 diff 槽 */
+export function isLiveWriteStatStatusToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 写盘收束同时新开思考 + 工具：过程 remap 并追加工具，旁白续尾，回答只换 diff 槽 */
+export function isLiveWriteStatThinkToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedThinkPair(next[prev!.length])) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 1, next)
+}
+
+/** 写盘收束同时新开 status + 思考 + 工具：过程 remap 并追加 status 与工具，旁白续尾 */
+export function isLiveWriteStatStatusThinkToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) return false
+  if (!isLiveAddedThinkPair(next[prev!.length + 1])) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 2, next)
+}
+
 /** 写盘收束同时新开 status：过程 remap + 追加，回答只换 diff 槽（对标 规划下一步 / Reconnecting... n/5） */
 export function isLiveWriteStatStatusAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -1082,6 +1166,12 @@ export function shouldSkipLiveStreamDerivation(
   if (!prevSegments) return null
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveToolWriteStatAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveThinkToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusThinkToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatThinkToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusThinkToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveWriteStatStatusThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveWriteStatStatusAnswerAppendChange(prevSegments, segments)) return 'text'
@@ -1167,6 +1257,13 @@ export function nextLiveThinkText(
   }
   if (
     prevSegments &&
+    (isLiveThinkToolAppendChange(prevSegments, segments) ||
+      isLiveWriteStatThinkToolAppendChange(prevSegments, segments))
+  ) {
+    return prev + (segments[prevSegments.length]?.content ?? '')
+  }
+  if (
+    prevSegments &&
     (isLiveWriteStatThinkAnswerAppendChange(prevSegments, segments) ||
       isLiveThinkAnswerAppendChange(prevSegments, segments) ||
       isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) ||
@@ -1179,7 +1276,9 @@ export function nextLiveThinkText(
     (isLiveStatusThinkAnswerAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkAnswerAppendChange(prevSegments, segments) ||
       isLiveStatusThinkDemoFenceAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusThinkDemoFenceAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkToolAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusThinkToolAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
   }
@@ -1473,10 +1572,19 @@ export function nextLiveProcessView(
     processHold?.view === prev &&
     (isLiveToolAppendChange(processHold.segments, segments) ||
       isLiveToolWriteStatAppendChange(processHold.segments, segments) ||
+      isLiveStatusToolAppendChange(processHold.segments, segments) ||
+      isLiveThinkToolAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatThinkToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatCompressAppendChange(processHold.segments, segments) ||
       isLiveCompressAppendChange(processHold.segments, segments))
   ) {
-    const added = segments.slice(processHold.segments.length)
+    const added = segments.slice(processHold.segments.length).filter((segment) => {
+      if (segment.kind === 'thinking' || segment.kind === 'text') return false
+      return segment.toolName !== 'present_inline_demo'
+    })
     const remapped = remapProcessFlowRefs(prev.processForFlow, processHold.segments, segments)
     const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
     const view = { ...prev, processForFlow: [...remapped, ...added], thinkText }
@@ -1852,7 +1960,12 @@ export function shouldSkipLiveAnswerIdentity(input: {
   segments: readonly TurnSegment[]
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
-  if (isLiveToolAppendChange(input.prevSegments, input.segments)) {
+  if (
+    isLiveToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveStatusToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveThinkToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveStatusThinkToolAppendChange(input.prevSegments, input.segments)
+  ) {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
   if (isLiveStatusAppendChange(input.prevSegments, input.segments)) {
@@ -2189,6 +2302,9 @@ export function nextLiveAnswerView(
   if (
     prev &&
     (isLiveToolAppendChange(prevSegments, segments) ||
+      isLiveStatusToolAppendChange(prevSegments, segments) ||
+      isLiveThinkToolAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkToolAppendChange(prevSegments, segments) ||
       isLiveStatusAppendChange(prevSegments, segments))
   ) {
     const sealed = findLiveClosedAnswerText(prevSegments, segments)

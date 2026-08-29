@@ -48,6 +48,12 @@ import {
   isLiveWriteStatThinkDemoFenceAppendChange,
   isLiveWriteStatStatusDemoFenceAppendChange,
   isLiveWriteStatStatusThinkDemoFenceAppendChange,
+  isLiveStatusToolAppendChange,
+  isLiveThinkToolAppendChange,
+  isLiveStatusThinkToolAppendChange,
+  isLiveWriteStatStatusToolAppendChange,
+  isLiveWriteStatThinkToolAppendChange,
+  isLiveWriteStatStatusThinkToolAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1194,6 +1200,142 @@ describe('live stream ui snapshot', () => {
     demoFromPlan = applyStreamChunk(demoFromPlan, { type: 'token', content: '```demo\n<div>', timestamp: 16 })
     expect(isLiveThinkDemoFenceAppendChange(afterPlanStatus, demoFromPlan)).toBe(true)
     expect(shouldSkipLiveStreamDerivation(afterPlanStatus, demoFromPlan)).toBe('text')
+    expect(
+      isLiveStatusToolAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextCmd]
+      )
+    ).toBe(true)
+    expect(
+      isLiveThinkToolAppendChange([hello, running], [hello, ran, nextThinkDone, nextCmd])
+    ).toBe(true)
+    expect(
+      isLiveStatusThinkToolAppendChange(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextThinkDone, nextCmd]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusToolAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, nextCmd]
+      )
+    ).toBe(true)
+    expect(
+      isLiveWriteStatThinkToolAppendChange([hello, running], [hello, ranDiff, nextThinkDone, nextCmd])
+    ).toBe(true)
+    expect(
+      isLiveWriteStatStatusThinkToolAppendChange(
+        [hello, running],
+        [hello, ranDiff, reconnectStatusDone, nextThinkDone, nextCmd]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation([hello, running], [hello, ran, reconnectStatusDone, nextCmd])
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextThinkDone, nextCmd]
+      )
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveStreamDerivation([hello, running], [hello, ranDiff, reconnectStatusDone, nextCmd])
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ran, reconnectStatusDone, nextCmd]
+      })
+    ).toBe(true)
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: [hello, ranDiff, reconnectStatusDone, nextCmd]
+      })
+    ).toBe(false)
+    expect(
+      nextLiveThinkText('Hmm', [hello, running], [hello, ran, nextThinkDone, nextCmd])
+    ).toBe('HmmNext')
+    expect(
+      nextLiveThinkText(
+        'Hmm',
+        [hello, running],
+        [hello, ran, reconnectStatusDone, nextThinkDone, nextCmd]
+      )
+    ).toBe('HmmNext')
+    let nextRound = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolArgs: { path: 'src/b.ts' },
+      timestamp: 20
+    })
+    expect(isLiveStatusToolAppendChange([hello, running], nextRound)).toBe(true)
+    expect(isLiveToolAppendChange(afterPlanStatus, nextRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], nextRound)).toBe('tool')
+    let thinkThenTool = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 21 })
+    thinkThenTool = applyStreamChunk(thinkThenTool, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolArgs: { path: 'src/b.ts' },
+      timestamp: 22
+    })
+    expect(isLiveThinkToolAppendChange(afterPlanStatus, thinkThenTool)).toBe(true)
+    expect(isLiveStatusThinkToolAppendChange([hello, running], thinkThenTool)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, thinkThenTool)).toBe('tool')
+    expect(shouldSkipLiveStreamDerivation([hello, running], thinkThenTool)).toBe('tool')
+    const processReadyForPlanTool = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterPlanTool = nextLiveProcessView(processReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: nextRound
+    })
+    expect(processAfterPlanTool.processForFlow.some((segment) => segment.kind === 'status')).toBe(true)
+    expect(
+      processAfterPlanTool.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === 'read_file'
+      )
+    ).toBe(true)
+    expect(processAfterPlanTool.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterPlanTool.processForFlow.some((segment) => segment.kind === 'text')).toBe(false)
+    const processAfterThinkTool = nextLiveProcessView(processReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenTool
+    })
+    expect(processAfterThinkTool.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkTool.thinkText).toBe(processReadyForPlanTool.thinkText + 'Next')
+    expect(
+      processAfterThinkTool.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === 'read_file'
+      )
+    ).toBe(true)
+    const answerReadyForPlanTool = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const helloPlanToolPart = answerReadyForPlanTool.parts.find((part) => part.type === 'text')
+    const answerAfterPlanTool = nextLiveAnswerView(answerReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: nextRound
+    })
+    expect(
+      answerAfterPlanTool.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanToolPart)
+    const answerAfterWriteStatPlanTool = nextLiveAnswerView(answerReadyForPlanTool, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ranDiff, reconnectStatusDone, nextCmd]
+    })
+    expect(
+      answerAfterWriteStatPlanTool.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanToolPart)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

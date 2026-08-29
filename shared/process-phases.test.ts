@@ -679,6 +679,53 @@ describe('process phases privacy', () => {
     expect(settleAndThinkDemo).toHaveLength(2)
     expect(settleAndThinkDemo![0].segment).toBe(cmdDone)
     expect(settleAndThinkDemo![1].segment).toBe(cmdNextDone)
+    const reconnectStatusDone: TurnSegment = { ...reconnectStatus, status: 'done', endedAt: 14 }
+    const nextRoundTool: TurnSegment = {
+      id: 'read2',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolTitle: '读取文件',
+      toolDetail: 'src/c.ts',
+      status: 'active',
+      startedAt: 15
+    }
+    const settleAndStatusTool = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, nextRoundTool],
+      true
+    )
+    expect(settleAndStatusTool).not.toBeNull()
+    expect(settleAndStatusTool).toHaveLength(4)
+    expect(settleAndStatusTool![0].segment).toBe(cmdDone)
+    expect(settleAndStatusTool![1].segment).toBe(cmdNextDone)
+    expect(settleAndStatusTool![2].segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusTool!.at(-1)?.segment).toBe(nextRoundTool)
+    const settleAndThinkTool = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, nextThinkDone, nextRoundTool],
+      true
+    )
+    expect(settleAndThinkTool).not.toBeNull()
+    expect(settleAndThinkTool).toHaveLength(3)
+    expect(settleAndThinkTool![0].segment).toBe(cmdDone)
+    expect(settleAndThinkTool![1].segment).toBe(cmdNextDone)
+    expect(settleAndThinkTool!.at(-1)?.segment).toBe(nextRoundTool)
+    expect(settleAndThinkTool!.some((step) => step.segment === nextThinkDone)).toBe(false)
+    const settleAndStatusThinkTool = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatusDone, nextThinkDone, nextRoundTool],
+      true
+    )
+    expect(settleAndStatusThinkTool).not.toBeNull()
+    expect(settleAndStatusThinkTool).toHaveLength(4)
+    expect(settleAndStatusThinkTool![0].segment).toBe(cmdDone)
+    expect(settleAndStatusThinkTool![1].segment).toBe(cmdNextDone)
+    expect(settleAndStatusThinkTool![2].segment).toBe(reconnectStatusDone)
+    expect(settleAndStatusThinkTool!.at(-1)?.segment).toBe(nextRoundTool)
+    expect(settleAndStatusThinkTool!.some((step) => step.segment === nextThinkDone)).toBe(false)
     const thinkOpen: TurnSegment = {
       id: 'th-live',
       kind: 'thinking',
