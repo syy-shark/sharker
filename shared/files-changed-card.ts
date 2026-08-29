@@ -1,7 +1,7 @@
 /**
  * 对话写盘卡：官方 Edited basename / Edited N files（对标 Codex render_changes_block）。
  * 标题打开审查；展开列文件；同名只加最短可区分路径（对标 Codex #20700）。
- * 头栏与文件行可画 +N −M（对标 Codex Edited N files / TUI render_changes_block）。
+ * 头栏与文件行可画 +N −M；正文加长不重跑合计（对标 Codex Edited N files / #22860）。
  * 右键打开 / Open in Finder / Copy path。不发明回合 Undo / 自定义 Open with。
  * @see shared/ARCH.md
  */
@@ -106,21 +106,64 @@ export function filesChangedStatsFromSegments(
   return { added, removed, byPath }
 }
 
+let filesChangedHold: { view: FilesChangedStatsView; identity: string } | null = null
+
+/** 只盯写盘 +/-；正文加长不进指纹，避免每枚 token 重合计 */
+export function liveFilesChangedIdentity(
+  segments: readonly FilesChangedStatSegment[] | null | undefined
+): string {
+  let out = ''
+  for (const segment of segments ?? []) {
+    if (segment.fileDiff) {
+      const diff = segment.fileDiff
+      out += `d:${diff.path ?? ''}:${diff.stats?.added ?? 0}:${diff.stats?.removed ?? 0};`
+    }
+    for (const diff of segment.fileDiffs ?? []) {
+      out += `f:${diff.path ?? ''}:${diff.stats?.added ?? 0}:${diff.stats?.removed ?? 0};`
+    }
+    for (const preview of segment.editPreview ?? []) {
+      out += `p:${preview.path ?? ''}:${preview.stats?.added ?? 0}:${preview.stats?.removed ?? 0};`
+    }
+  }
+  return out
+}
+
+/** 写盘指纹没变则复用上一帧 +/-（对标 Codex #22860） */
+export function shouldReuseFilesChangedStats(input: {
+  prev: FilesChangedStatsView | null
+  identity: string
+  prevIdentity: string
+}): boolean {
+  return Boolean(input.prev && input.identity && input.identity === input.prevIdentity)
+}
+
 /** 数字没变退回 prev，直播 token / 心跳不换卡上的 +/- 对象 */
 export function nextFilesChangedStats(
   prev: FilesChangedStatsView | null,
   segments: readonly FilesChangedStatSegment[] | null | undefined
 ): FilesChangedStatsView {
-  const next = filesChangedStatsFromSegments(segments)
+  const identity = liveFilesChangedIdentity(segments)
   if (
+    prev &&
+    filesChangedHold?.view === prev &&
+    shouldReuseFilesChangedStats({
+      prev,
+      identity,
+      prevIdentity: filesChangedHold.identity
+    })
+  ) {
+    return prev
+  }
+  const next = filesChangedStatsFromSegments(segments)
+  const view =
     prev &&
     prev.added === next.added &&
     prev.removed === next.removed &&
     sameFilesChangedByPath(prev.byPath, next.byPath)
-  ) {
-    return prev
-  }
-  return next
+      ? prev
+      : next
+  filesChangedHold = { view, identity }
+  return view
 }
 
 /** 卡头：单文件 Edited basename，多文件 Edited N files（对标 Codex render_changes_block） */

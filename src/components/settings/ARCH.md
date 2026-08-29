@@ -26,7 +26,7 @@
 | `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量、Worktree 根目录与托管保留数 |
 | `ArchivedSettings.tsx` / `.css` | Archived chats：Unarchive 或彻底删除（含项目菜单一并归档的对话） |
 | `UsageSettings.tsx` / `.css` | Profile：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Settings → Profile，不假装最长任务或供应商额度） |
-| `McpSettings.tsx` / `.css` | MCP servers：列表、开关、Add server（STDIO / Streamable HTTP）、Restart（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |
+| `McpSettings.tsx` / `.css` | MCP servers：列表、开关、Add server（STDIO / Streamable HTTP 用官方传输说明）、Restart（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |
 | `ComputerUseSettings.tsx` | Computer Use 开关与就绪（设置入口暂隐藏） |
 | `BrowserUseSettings.tsx` | Browser Use 开关与就绪（设置入口暂隐藏） |
 | `FeatureStatusPanel.tsx` / `.css` | 功能检查列表（共用）；项进入 list-item-in |

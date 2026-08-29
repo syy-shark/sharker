@@ -227,6 +227,9 @@ export const MCP_SERVERS_LABEL = 'MCP servers'
 export const ADD_SERVER_LABEL = 'Add server'
 export const MCP_SERVERS_INTRO =
   'Select Add server. Enter a name, choose STDIO or Streamable HTTP, and provide the server’s command or URL. Save the server, then select Restart. In the composer, type /mcp to view connected servers.'
+/** Official MCP transport blurbs (learn.chatgpt.com/docs/extend/mcp). */
+export const MCP_STDIO_DESCRIPTION = 'Servers that run as a local process (started by a command).'
+export const MCP_HTTP_DESCRIPTION = 'Servers that you access at an address.'
 /** Official slash / command palette (learn.chatgpt.com / Codex Open MCP status). */
 export const OPEN_MCP_STATUS_LABEL = 'Open MCP status'
 /** Official Settings → Profile (learn.chatgpt.com/docs/reference/settings). No longest-task. */

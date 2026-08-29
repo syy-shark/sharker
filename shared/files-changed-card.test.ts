@@ -10,7 +10,9 @@ import {
   filesChangedStatsFromSegments,
   formatFilesChangedHeader,
   formatFilesChangedLineStats,
-  nextFilesChangedStats
+  liveFilesChangedIdentity,
+  nextFilesChangedStats,
+  shouldReuseFilesChangedStats
 } from './files-changed-card'
 
 describe('files changed card', () => {
@@ -68,5 +70,21 @@ describe('files changed card', () => {
       }
     ])
     expect(again).toBe(first)
+    const fileSegs = [
+      {
+        fileDiff: { path: 'src/a.ts', stats: { added: 16, removed: 199 } },
+        fileDiffs: [{ path: 'docs/guide.md', stats: { added: 4, removed: 0 } }]
+      }
+    ]
+    const identity = liveFilesChangedIdentity(fileSegs)
+    expect(liveFilesChangedIdentity([...fileSegs, {}])).toBe(identity)
+    expect(
+      shouldReuseFilesChangedStats({
+        prev: first,
+        identity,
+        prevIdentity: identity
+      })
+    ).toBe(true)
+    expect(nextFilesChangedStats(first, [...fileSegs, {}])).toBe(first)
   })
 })

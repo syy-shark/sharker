@@ -17,7 +17,9 @@ import {
   KEYSTROKE_SEARCH_LABEL,
   KEYSTROKE_SEARCH_PLACEHOLDER,
   ADD_SERVER_LABEL,
+  MCP_HTTP_DESCRIPTION,
   MCP_SERVERS_INTRO,
+  MCP_STDIO_DESCRIPTION,
   MCP_SERVERS_LABEL,
   OPEN_MCP_STATUS_LABEL,
   SHOW_CONTEXT_WINDOW_USAGE_LABEL,
@@ -196,6 +198,16 @@ describe('reveal in folder', () => {
     expect(ADD_SERVER_LABEL).toBe('Add server')
     expect(MCP_SERVERS_INTRO).toMatch(/Select Add server/)
     expect(MCP_SERVERS_INTRO).toMatch(/STDIO or Streamable HTTP/)
+    expect(MCP_STDIO_DESCRIPTION).toBe(
+      'Servers that run as a local process (started by a command).'
+    )
+    expect(MCP_HTTP_DESCRIPTION).toBe('Servers that you access at an address.')
+    const mcpSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/McpSettings.tsx'),
+      'utf8'
+    )
+    expect(mcpSrc).toContain('MCP_STDIO_DESCRIPTION')
+    expect(mcpSrc).toContain('MCP_HTTP_DESCRIPTION')
     expect(OPEN_MCP_STATUS_LABEL).toBe('Open MCP status')
     expect(PROFILE_SETTINGS_LABEL).toBe('Profile')
     expect(UNARCHIVE_LABEL).toBe('Unarchive')

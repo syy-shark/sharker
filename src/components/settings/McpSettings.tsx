@@ -1,5 +1,5 @@
 /**
- * 设置 → MCP 服务器：列表、开关、添加 STDIO / Streamable HTTP、Restart。
+ * 设置 → MCP 服务器：列表、开关、添加 STDIO / Streamable HTTP（官方传输说明）、Restart。
  * 对标 Codex Settings → MCP servers。不假装 OAuth Authenticate。
  * @see src/components/settings/ARCH.md
  */
@@ -12,7 +12,11 @@ import {
   mcpServerKind,
   mcpServerLaunchLabel
 } from '../../../shared/mcp-config'
-import { ADD_SERVER_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  ADD_SERVER_LABEL,
+  MCP_HTTP_DESCRIPTION,
+  MCP_STDIO_DESCRIPTION
+} from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -190,13 +194,13 @@ export function McpSettings({ workspacePath }: Props) {
                 {
                   value: 'stdio',
                   title: 'STDIO',
-                  description: '本地命令启动的进程。',
+                  description: MCP_STDIO_DESCRIPTION,
                   icon: <span aria-hidden>本</span>
                 },
                 {
                   value: 'http',
                   title: 'Streamable HTTP',
-                  description: '用地址连接远程 Server。',
+                  description: MCP_HTTP_DESCRIPTION,
                   icon: <span aria-hidden>网</span>
                 }
               ]}

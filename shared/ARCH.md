@@ -135,7 +135,7 @@
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
 | `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`nextLiveReviewFindings` 只认已闭合围栏，闭合后只追加不重扫；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline / #22860） |
 | `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、闭合后追加复用、审查面板订直播切片 |
-| `files-changed-card.ts` | 对话写盘卡：`formatFilesChangedHeader` 用 Edited basename / Edited N files；标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象（对标 Codex render_changes_block / #20700 / #21426）。不发明回合 Undo |
+| `files-changed-card.ts` | 对话写盘卡：`formatFilesChangedHeader` 用 Edited basename / Edited N files；标题打开审查、展开列短标签与种类、右键打开 / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象；正文加长不重跑 +/- 合计（对标 Codex render_changes_block / #20700 / #21426 / #22860）。不发明回合 Undo |
 | `edit-activity.ts` | 官方写盘过程：Edited / Deleted / Added + basename，多文件 Edited N files，失败补丁 Failed to apply patch（对标 Codex render_changes_block）。write_file 不一律标 Added |
 | `edit-activity.test.ts` | Edited / Deleted / 多文件头 / 失败补丁 |
 | `compact-activity.ts` | 官方压缩过程：Automatically compacting context / Context automatically compacted / Compacting context（对标 Codex 桌面 contextCompaction）。不发明 Optimized the conversation |
