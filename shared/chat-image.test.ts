@@ -6,6 +6,7 @@ import {
   chatImageSlotMinHeight,
   liveChatImageMinHeight,
   chatImageLightboxFit,
+  filePreviewImageFit,
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
@@ -123,5 +124,14 @@ describe('chat-image', () => {
     expect(chatImageLightboxFit({ width: 4000, height: 2000 }, viewport)).toEqual(landscape)
     expect(chatImageLightboxFit({ width: 0, height: 10 }, viewport).scale).toBe(0)
     expect(chatImageLightboxFit({ width: 100, height: 80 }, { width: 0, height: 600 }).scale).toBe(0)
+    const pane = filePreviewImageFit({ width: 2000, height: 3000 }, { width: 280, height: 400 })
+    expect(pane.width).toBeLessThanOrEqual(280 - 24)
+    expect(pane.height).toBeLessThanOrEqual(400 - 24)
+    expect(pane.scale).toBeLessThan(1)
+    expect(filePreviewImageFit({ width: 80, height: 40 }, { width: 280, height: 400 })).toEqual({
+      width: 80,
+      height: 40,
+      scale: 1
+    })
   })
 })

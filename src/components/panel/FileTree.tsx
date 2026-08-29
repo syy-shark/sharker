@@ -1,6 +1,7 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器；Markdown 默认可切富预览。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
+ * 图片预览按预览窗 CSS 像素 contain（对标 Codex #26851 / #31112），不订直播 token。
  * 文件右键打开 / 访达 / 复制路径，目录只揭示 / 复制（对标 Codex file tree Open menu）。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
@@ -22,6 +23,10 @@ import {
   type FileTreeReloadReason,
   type MarkdownFileView
 } from '../../../shared/file-preview'
+import {
+  filePreviewImageFit,
+  peekChatImageSizeFromDataUrl
+} from '../../../shared/chat-image'
 import { FileMarkdownPreview } from './FileMarkdownPreview'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import {
@@ -41,6 +46,52 @@ import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
 
 const EMPTY_EXTRA_ROOTS: string[] = []
+
+/** 右侧预览图：按预览窗 contain，不跟界面字号放大裁切 */
+function FilePreviewImage({ src, alt }: { src: string; alt: string }) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [pane, setPane] = useState({ width: 0, height: 0 })
+  const [natural, setNatural] = useState(() => peekChatImageSizeFromDataUrl(src))
+
+  useEffect(() => {
+    setNatural(peekChatImageSizeFromDataUrl(src))
+  }, [src])
+
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const update = () => setPane({ width: el.clientWidth, height: el.clientHeight })
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [src])
+
+  const fit = filePreviewImageFit(natural, pane)
+
+  return (
+    <div ref={boxRef} className="file-tree-viewer-media">
+      <img
+        className="file-tree-viewer-image"
+        src={src}
+        alt={alt}
+        width={fit.width || natural?.width}
+        height={fit.height || natural?.height}
+        style={
+          fit.width
+            ? { width: fit.width, height: fit.height }
+            : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }
+        }
+        onLoad={(event) => {
+          const img = event.currentTarget
+          if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+            setNatural({ width: img.naturalWidth, height: img.naturalHeight })
+          }
+        }}
+      />
+    </div>
+  )
+}
 
 interface Props {
   workspacePath: string
@@ -521,9 +572,7 @@ export const FileTree = memo(function FileTree({
             </form>
           ) : null}
           {openFile.kind === 'image' && openFile.dataUrl ? (
-            <div className="file-tree-viewer-media">
-              <img className="file-tree-viewer-image" src={openFile.dataUrl} alt="" />
-            </div>
+            <FilePreviewImage src={openFile.dataUrl} alt={openFile.path.split('/').pop() || ''} />
           ) : openFile.kind === 'pdf' && openFile.dataUrl ? (
             <iframe
               className="file-tree-viewer-embed"

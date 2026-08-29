@@ -3,6 +3,7 @@
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
  * 右键：复制/保存图片；工作区图再加打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单）。
  * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
+ * 右侧文件预览图同一套 contain（`filePreviewImageFit`），避免高图只露上半张。
  * @see shared/ARCH.md
  */
 
@@ -345,6 +346,20 @@ export function chatImageLightboxFit(
     height: Math.max(1, Math.round(ih * scale)),
     scale
   }
+}
+
+/** 右侧文件预览图内边距，与 `.file-tree-viewer-media` 一致 */
+export const FILE_PREVIEW_IMAGE_PAD_PX = 12
+
+/**
+ * 文件预览窗 fit-to-pane：按预览区 CSS 像素 contain，不乘界面字号。
+ * 对标 Codex 打开的 image preview / #26851 / #31112，不发明画布或缩放条。
+ */
+export function filePreviewImageFit(
+  image: ChatImageSize | null | undefined,
+  pane: { width: number; height: number }
+): ChatImageLightboxFit {
+  return chatImageLightboxFit(image, pane, FILE_PREVIEW_IMAGE_PAD_PX)
 }
 
 export function chatImageAspectStyle(
