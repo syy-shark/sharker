@@ -411,6 +411,24 @@ describe('process phases privacy', () => {
     expect(afterAskDone).toHaveLength(2)
     expect(afterAskDone!.at(-1)?.segment).toBe(askStatusDone)
     expect(afterAskDone!.at(-1)?.status).toBe('done')
+    const askToolDone: TurnSegment = {
+      ...askReady,
+      status: 'done',
+      resultSummary: 'Scope',
+      endedAt: 20
+    }
+    const afterAskResolveDone = appendProcessPhaseStepOnToolStart(
+      afterAsk!,
+      [askReady, askStatus],
+      [askToolDone, askStatusDone],
+      true
+    )
+    expect(afterAskResolveDone).not.toBeNull()
+    expect(afterAskResolveDone).toHaveLength(2)
+    expect(afterAskResolveDone![0].segment).toBe(askToolDone)
+    expect(afterAskResolveDone![0].status).toBe('done')
+    expect(afterAskResolveDone!.at(-1)?.segment).toBe(askStatusDone)
+    expect(afterAskResolveDone!.at(-1)?.status).toBe('done')
     const planStatus: TurnSegment = {
       id: 'st-plan',
       kind: 'status',

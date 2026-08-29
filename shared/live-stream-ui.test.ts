@@ -101,6 +101,7 @@ import {
   isLiveApprovalNeededChange,
   isLiveApprovalResolvedChange,
   isLiveUserInputNeededChange,
+  isLiveAskResolvedSettleChange,
   isLiveStatusSettleChange,
   isLiveThinkOrStatusClose,
   isLiveTextClose,
@@ -1781,6 +1782,56 @@ describe('live stream ui snapshot', () => {
     expect(
       answerAfterThinkAsk.parts.find((part) => part.type === 'text' && part.id === hello.id)
     ).toBe(helloPlanAskPart)
+    let toolThenAsk = applyStreamChunk(afterPlanStatus, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 41
+    })
+    toolThenAsk = applyStreamChunk(toolThenAsk, { ...askNeeded, timestamp: 42 })
+    const askResolvedOnly = applyStreamChunk(toolThenAsk, {
+      type: 'user_input_resolved',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 43
+    })
+    expect(isLiveStatusSettleChange(toolThenAsk, askResolvedOnly)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(toolThenAsk, askResolvedOnly)).toBe('status')
+    const askResolvedDone = applyStreamChunk(askResolvedOnly, {
+      type: 'tool_done',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      resultSummary: 'API style',
+      timestamp: 44
+    })
+    expect(isLiveAskResolvedSettleChange(toolThenAsk, askResolvedDone)).toBe(true)
+    expect(isLiveStatusSettleChange(toolThenAsk, askResolvedDone)).toBe(false)
+    expect(shouldSkipLiveStreamDerivation(toolThenAsk, askResolvedDone)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: toolThenAsk,
+        segments: askResolvedDone
+      })
+    ).toBe(true)
+    const processReadyForToolAskResolve = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: toolThenAsk
+    })
+    const processAfterAskResolveDone = nextLiveProcessView(processReadyForToolAskResolve, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askResolvedDone
+    })
+    expect(
+      processAfterAskResolveDone.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === REQUEST_USER_INPUT_TOOL && segment.status === 'done'
+      )
+    ).toBe(true)
+    expect(
+      processAfterAskResolveDone.processForFlow.some(
+        (segment) =>
+          segment.kind === 'status' &&
+          segment.toolName === REQUEST_USER_INPUT_TOOL &&
+          segment.status === 'done'
+      )
+    ).toBe(true)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]
@@ -2286,6 +2337,23 @@ describe('live stream ui snapshot', () => {
       liveSegments: [askReady, askStatusDone]
     })
     expect(processAfterAskDone.processForFlow.some((segment) => segment === askStatusDone)).toBe(true)
+    const askToolDone: TurnSegment = { ...askReady, status: 'done', resultSummary: 'Scope' }
+    expect(isLiveAskResolvedSettleChange([askReady, askStatus], [askToolDone, askStatusDone])).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation([askReady, askStatus], [askToolDone, askStatusDone])).toBe(
+      'tool'
+    )
+    const processAfterAskResolveDoneReady = nextLiveProcessView(processAfterAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [askToolDone, askStatusDone]
+    })
+    expect(processAfterAskResolveDoneReady.processForFlow.some((segment) => segment === askToolDone)).toBe(
+      true
+    )
+    expect(
+      processAfterAskResolveDoneReady.processForFlow.some((segment) => segment === askStatusDone)
+    ).toBe(true)
     const runningToCancel: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',
