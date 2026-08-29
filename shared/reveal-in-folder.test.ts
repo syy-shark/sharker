@@ -59,7 +59,13 @@ import {
   PREVIOUS_CHAT_MENU_LABEL,
   NEXT_CHAT_MENU_LABEL,
   BACK_MENU_LABEL,
-  FORWARD_MENU_LABEL
+  FORWARD_MENU_LABEL,
+  UNDO_LABEL,
+  REDO_LABEL,
+  CUT_LABEL,
+  COPY_LABEL,
+  PASTE_LABEL,
+  SELECT_ALL_LABEL
 } from './reveal-in-folder'
 
 describe('reveal in folder', () => {
@@ -175,5 +181,11 @@ describe('reveal in folder', () => {
     expect(NEXT_CHAT_MENU_LABEL).toBe('Next Chat')
     expect(BACK_MENU_LABEL).toBe('Back')
     expect(FORWARD_MENU_LABEL).toBe('Forward')
+    expect(UNDO_LABEL).toBe('Undo')
+    expect(REDO_LABEL).toBe('Redo')
+    expect(CUT_LABEL).toBe('Cut')
+    expect(COPY_LABEL).toBe('Copy')
+    expect(PASTE_LABEL).toBe('Paste')
+    expect(SELECT_ALL_LABEL).toBe('Select All')
   })
 })

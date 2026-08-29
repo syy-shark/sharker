@@ -7,6 +7,8 @@ import { BrowserWindow, Menu, app, type MenuItemConstructorOptions } from 'elect
 import { IPC } from '../../shared/ipc'
 import {
   COPY_AS_MARKDOWN_LABEL,
+  COPY_LABEL,
+  CUT_LABEL,
   EDIT_MENU_LABEL,
   FILE_CLOSE_LABEL,
   FILE_MENU_LABEL,
@@ -18,7 +20,11 @@ import {
   FORWARD_MENU_LABEL,
   NEXT_CHAT_MENU_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
+  PASTE_LABEL,
   PREVIOUS_CHAT_MENU_LABEL,
+  REDO_LABEL,
+  SELECT_ALL_LABEL,
+  UNDO_LABEL,
   OPEN_COMMAND_MENU_LABEL,
   OPEN_FOLDER_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -109,22 +115,22 @@ export function installApplicationMenu(): void {
       label: EDIT_MENU_LABEL,
       submenu: [
         {
-          label: '撤销',
+          label: UNDO_LABEL,
           accelerator: 'Command+Z',
           registerAccelerator: false,
           ...send('undo_app')
         },
         {
-          label: '重做',
+          label: REDO_LABEL,
           accelerator: 'Command+Shift+Z',
           registerAccelerator: false,
           ...send('redo_app')
         },
         { type: 'separator' },
-        { role: 'cut', label: '剪切' },
-        { role: 'copy', label: '复制' },
-        { role: 'paste', label: '粘贴' },
-        { role: 'selectAll', label: '全选' }
+        { role: 'cut', label: CUT_LABEL },
+        { role: 'copy', label: COPY_LABEL },
+        { role: 'paste', label: PASTE_LABEL },
+        { role: 'selectAll', label: SELECT_ALL_LABEL }
       ]
     },
     {

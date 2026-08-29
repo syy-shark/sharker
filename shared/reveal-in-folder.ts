@@ -110,6 +110,12 @@ export const HELP_MENU_LABEL = 'Help'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */
 export const FILE_CLOSE_LABEL = 'Close'
 export const TOGGLE_FULL_SCREEN_LABEL = 'Toggle Full Screen'
+/** Official Edit menu (github.com/openai/codex#26890 standard Electron role items). */
+export const UNDO_LABEL = 'Undo'
+export const REDO_LABEL = 'Redo'
+export const CUT_LABEL = 'Cut'
+export const PASTE_LABEL = 'Paste'
+export const SELECT_ALL_LABEL = 'Select All'
 /** 官方 View 菜单（对标 Codex #30659 Open Browser Tab / Find / Previous Chat / Next Chat / Back / Forward） */
 export const OPEN_BROWSER_TAB_MENU_LABEL = 'Open Browser Tab'
 export const FIND_MENU_LABEL = 'Find'
