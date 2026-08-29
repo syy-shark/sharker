@@ -4,6 +4,7 @@
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
  * 直播跟尾时内层滚到最新行（外壳 max-height 后新行不再顶对话柱）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
+ * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；未闭合直播围栏保持纯文本。
  */
 import { Check, Copy } from 'lucide-react'
 import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -14,7 +15,9 @@ import {
   nextClosedFenceLines,
   shouldFollowArtifactTail
 } from '../../shared/live-display'
+import { highlightFenceLines } from '../../shared/syntax-highlight'
 import './CodeArtifactBlock.css'
+import '../styles/syntax-highlight.css'
 
 interface CodeArtifactShellProps {
   label: string
@@ -182,43 +185,76 @@ function normalizeLanguage(language?: string): string {
 
 const ArtifactCodeLine = memo(function ArtifactCodeLine({
   index,
-  text
+  text,
+  html
 }: {
   index: number
   text: string
+  html?: string
 }) {
   return (
     <div className="code-artifact-line">
       <span className="code-artifact-line-number" aria-hidden>
         {index + 1}
       </span>
-      <code className="code-artifact-line-text">{text || ' '}</code>
+      {html != null ? (
+        <code
+          className="code-artifact-line-text"
+          dangerouslySetInnerHTML={{ __html: html || ' ' }}
+        />
+      ) : (
+        <code className="code-artifact-line-text">{text || ' '}</code>
+      )}
     </div>
   )
 })
 
 /** 已完成围栏行：lines 引用没变就不重绘（对标 Codex #39061 / #22860） */
-const ClosedFenceLines = memo(function ClosedFenceLines({ lines }: { lines: string[] }) {
+const ClosedFenceLines = memo(function ClosedFenceLines({
+  lines,
+  htmlLines
+}: {
+  lines: string[]
+  htmlLines?: string[] | null
+}) {
   return (
     <>
       {lines.map((line, index) => (
-        <ArtifactCodeLine key={index} index={index} text={line} />
+        <ArtifactCodeLine key={index} index={index} text={line} html={htmlLines?.[index]} />
       ))}
     </>
   )
 })
 
 /** 直播与收束共用行节点，闭合围栏时文字/行号不再换一套 DOM */
-export function ArtifactCodeLines({ code }: { code: string }) {
+export function ArtifactCodeLines({
+  code,
+  language,
+  highlight = false
+}: {
+  code: string
+  language?: string
+  highlight?: boolean
+}) {
   const prevRef = useRef({ lines: [] as string[], closed: [] as string[] })
   const lines = continueLiveFenceLines(prevRef.current.lines, code)
   const closed = nextClosedFenceLines(prevRef.current.closed, lines)
   prevRef.current = { lines, closed }
+  const htmlLines = highlight ? highlightFenceLines(code, language) : null
   const tail = lines.length ? lines[lines.length - 1]! : null
   return (
     <div className="code-artifact-code">
-      {closed.length ? <ClosedFenceLines lines={closed} /> : null}
-      {tail !== null ? <ArtifactCodeLine key={closed.length} index={closed.length} text={tail} /> : null}
+      {closed.length ? (
+        <ClosedFenceLines lines={closed} htmlLines={htmlLines} />
+      ) : null}
+      {tail !== null ? (
+        <ArtifactCodeLine
+          key={closed.length}
+          index={closed.length}
+          text={tail}
+          html={htmlLines?.[closed.length]}
+        />
+      ) : null}
     </div>
   )
 }
@@ -238,7 +274,7 @@ export function LiveFenceTail({ code, language, followTail = false }: CodeArtifa
       ariaLabel={`${label} 代码块`}
       followTail={followTail}
     >
-      <ArtifactCodeLines code={normalizedCode} />
+      <ArtifactCodeLines code={normalizedCode} language={language} highlight={!followTail} />
     </CodeArtifactShell>
   )
 }
@@ -250,7 +286,7 @@ export function CodeArtifactBlock({ code, language }: CodeArtifactBlockProps) {
 
   return (
     <CodeArtifactShell label={label} copyText={normalizedCode} ariaLabel={`${label} 代码块`}>
-      <ArtifactCodeLines code={normalizedCode} />
+      <ArtifactCodeLines code={normalizedCode} language={language} highlight />
     </CodeArtifactShell>
   )
 }

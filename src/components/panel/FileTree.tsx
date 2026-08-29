@@ -2,10 +2,20 @@
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器；Markdown 默认可切富预览。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
  * 图片预览按预览窗 CSS 像素 contain（对标 Codex #26851 / #31112），不订直播 token。
+ * 源码预览按扩展名 highlight.js 着色（对标 Codex 文件查看器 / #18966），不发明 .tex 语法。
  * 文件右键打开 / 访达 / 复制路径，目录只揭示 / 复制（对标 Codex file tree Open menu）。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type Ref
+} from 'react'
 import { fileTreeRowMenuItems, resolveCitationPath } from '../../../shared/file-citation'
 import { clampReviewMenuPosition } from '../../../shared/review-file-click'
 import {
@@ -27,6 +37,7 @@ import {
   filePreviewImageFit,
   peekChatImageSizeFromDataUrl
 } from '../../../shared/chat-image'
+import { fileHighlightLanguage, highlightFenceLines } from '../../../shared/syntax-highlight'
 import { FileMarkdownPreview } from './FileMarkdownPreview'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import {
@@ -44,6 +55,7 @@ import {
 } from '../../../shared/side-chat-quote'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
+import '../../styles/syntax-highlight.css'
 
 const EMPTY_EXTRA_ROOTS: string[] = []
 
@@ -87,9 +99,59 @@ function FilePreviewImage({ src, alt }: { src: string; alt: string }) {
           if (img.naturalWidth > 0 && img.naturalHeight > 0) {
             setNatural({ width: img.naturalWidth, height: img.naturalHeight })
           }
-        }}
+        }        }
       />
     </div>
+  )
+}
+
+/** 源码预览：按扩展名着色一次，不订直播 token */
+function FilePreviewSource({
+  content,
+  path,
+  targetLine,
+  lineTargetRef,
+  bodyRef,
+  onMouseUp
+}: {
+  content: string
+  path: string
+  targetLine?: number
+  lineTargetRef: Ref<HTMLDivElement>
+  bodyRef: Ref<HTMLElement>
+  onMouseUp: () => void
+}) {
+  const htmlLines = useMemo(
+    () => highlightFenceLines(content, fileHighlightLanguage(path)),
+    [content, path]
+  )
+  return (
+    <pre className="file-tree-viewer-body" ref={bodyRef} tabIndex={-1} onMouseUp={onMouseUp}>
+      {content.split('\n').map((text, index) => {
+        const lineNo = index + 1
+        const target = targetLine === lineNo
+        const html = htmlLines?.[index]
+        return (
+          <div
+            key={lineNo}
+            ref={target ? lineTargetRef : undefined}
+            className={`file-tree-viewer-line${target ? ' is-target' : ''}`}
+          >
+            <span className="file-tree-viewer-gutter" aria-hidden>
+              {lineNo}
+            </span>
+            {html != null ? (
+              <span
+                className="file-tree-viewer-text"
+                dangerouslySetInnerHTML={{ __html: html || ' ' }}
+              />
+            ) : (
+              <span className="file-tree-viewer-text">{text || ' '}</span>
+            )}
+          </div>
+        )
+      })}
+    </pre>
   )
 }
 
@@ -589,29 +651,14 @@ export const FileTree = memo(function FileTree({
               bodyRef={viewerBodyRef}
             />
           ) : (
-          <pre
-            className="file-tree-viewer-body"
-            ref={viewerBodyRef}
-            tabIndex={-1}
-            onMouseUp={syncSideAsk}
-          >
-            {(openFile.content ?? '').split('\n').map((text, index) => {
-              const lineNo = index + 1
-              const target = openFile.line === lineNo
-              return (
-                <div
-                  key={lineNo}
-                  ref={target ? lineTargetRef : undefined}
-                  className={`file-tree-viewer-line${target ? ' is-target' : ''}`}
-                >
-                  <span className="file-tree-viewer-gutter" aria-hidden>
-                    {lineNo}
-                  </span>
-                  <span className="file-tree-viewer-text">{text || ' '}</span>
-                </div>
-              )
-            })}
-          </pre>
+            <FilePreviewSource
+              content={openFile.content ?? ''}
+              path={openFile.path}
+              targetLine={openFile.line}
+              lineTargetRef={lineTargetRef}
+              bodyRef={viewerBodyRef}
+              onMouseUp={syncSideAsk}
+            />
           )}
           {openFile.kind === 'text' && sideAsk && (onAskInSideChat || onInsertComposer) ? (
             <div className="file-tree-side-ask-bar" style={{ top: sideAsk.top, left: sideAsk.left }}>

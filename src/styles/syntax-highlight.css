@@ -1,0 +1,61 @@
+/* 闭合围栏 / 文件预览 hljs token，只用现有语义色（对标 Codex 桌面 #18966） */
+.hljs-comment,
+.hljs-quote,
+.hljs-doctag {
+  color: var(--text-muted);
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-name,
+.hljs-section,
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--accent);
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-attribute,
+.hljs-addition,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: var(--success);
+}
+
+.hljs-deletion {
+  color: var(--danger);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-meta,
+.hljs-meta .hljs-string {
+  color: var(--warning);
+}
+
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_,
+.hljs-type,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--text);
+}
+
+.hljs-variable,
+.hljs-subst,
+.hljs-regexp,
+.hljs-link {
+  color: var(--text-secondary);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 600;
+}
