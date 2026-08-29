@@ -1230,6 +1230,56 @@ describe('splitStreamingMarkdown', () => {
       )
       expect(manyThenQuoteGrown[0].items[8]?.nodes).toBe(manyThenQuoteFirst[0].items[8]?.nodes)
     }
+    const nestedQuote = parseCheapProseBlocks('- a\n  - b\n    > quoted')
+    const nestedQuoteGrown = continueCheapProseBlocks(
+      '- a\n  - b\n    > quoted',
+      nestedQuote,
+      '- a\n  - b\n    > quoted more'
+    )
+    if (nestedQuote[0]?.type === 'list' && nestedQuoteGrown[0]?.type === 'list') {
+      expect(nestedQuoteGrown[0].items[0]?.nodes).toBe(nestedQuote[0].items[0]?.nodes)
+      expect(nestedQuoteGrown[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedQuote[0].items[0]?.nested?.items[0]?.nodes
+      )
+    }
+    const nestedHeadingQuote = parseCheapProseBlocks('- a\n  - b\n    # title\n    > quoted')
+    const nestedHeadingQuoteGrown = continueCheapProseBlocks(
+      '- a\n  - b\n    # title\n    > quoted',
+      nestedHeadingQuote,
+      '- a\n  - b\n    # title\n    > quoted more'
+    )
+    if (nestedHeadingQuote[0]?.type === 'list' && nestedHeadingQuoteGrown[0]?.type === 'list') {
+      expect(nestedHeadingQuoteGrown[0].items[0]?.nodes).toBe(nestedHeadingQuote[0].items[0]?.nodes)
+      expect(nestedHeadingQuoteGrown[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedHeadingQuote[0].items[0]?.nested?.items[0]?.nodes
+      )
+      expect(nestedHeadingQuoteGrown[0].items[0]?.nested?.items[0]?.blocks?.[0]).toBe(
+        nestedHeadingQuote[0].items[0]?.nested?.items[0]?.blocks?.[0]
+      )
+    }
+    const nestedFenceLive = parseCheapProseBlocks('- a\n  - b\n    ```js\n    x')
+    const nestedFenceGrown = continueCheapProseBlocks(
+      '- a\n  - b\n    ```js\n    x',
+      nestedFenceLive,
+      '- a\n  - b\n    ```js\n    xy'
+    )
+    if (nestedFenceLive[0]?.type === 'list' && nestedFenceGrown[0]?.type === 'list') {
+      expect(nestedFenceGrown[0].items[0]?.nodes).toBe(nestedFenceLive[0].items[0]?.nodes)
+      expect(nestedFenceGrown[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedFenceLive[0].items[0]?.nested?.items[0]?.nodes
+      )
+      expect(nestedFenceGrown[0].items[0]?.nested?.items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'xy',
+        lang: 'js'
+      })
+    }
+    const looseExtra = parseCheapProseBlocks('- 一项\n\n  续段')
+    const looseExtraGrown = continueCheapProseBlocks('- 一项\n\n  续段', looseExtra, '- 一项\n\n  续段更长')
+    if (looseExtra[0]?.type === 'list' && looseExtraGrown[0]?.type === 'list') {
+      expect(looseExtraGrown[0].items[0]?.nodes).toBe(looseExtra[0].items[0]?.nodes)
+      expect(looseExtraGrown[0].items[0]?.extra?.[0]).not.toBe(looseExtra[0].items[0]?.extra?.[0])
+    }
     const paraQuoteList = parseCheapProseBlocks('先说一句\n> - 一项')
     expect(paraQuoteList.map((b) => b.type)).toEqual(['p', 'quote'])
     const paraQuoteListGrown = continueCheapProseBlocks(
