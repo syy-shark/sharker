@@ -103,6 +103,8 @@ import {
   isLiveApprovalDeniedStatusAppendChange,
   isLiveApprovalDeniedToolAppendChange,
   isLiveApprovalAllowedWriteStatChange,
+  isLiveApprovalAllowedWriteStatStatusAppendChange,
+  isLiveApprovalAllowedWriteStatToolAppendChange,
   isLiveApprovalAllowedSettleChange,
   isLiveApprovalAllowedStatusAppendChange,
   isLiveApprovalAllowedToolAppendChange,
@@ -2403,6 +2405,78 @@ describe('live stream ui snapshot', () => {
     expect(answerAfterAllowedWrite).not.toBe(answerReadyForAllowedWrite)
     expect(
       answerAfterAllowedWrite.parts.some((part) => part.type === 'diff' && part.id === 'run-appr-diff-0')
+    ).toBe(true)
+    const planAfterAllowWrite: TurnSegment = {
+      id: 'st-plan-allow-write',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…'
+    }
+    expect(
+      isLiveApprovalAllowedWriteStatStatusAppendChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, planAfterAllowWrite]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, planAfterAllowWrite]
+      )
+    ).toBe('status')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: [cmdAwaiting, awaitingStatus],
+        segments: [cmdAllowedPreview, awaitingDone, planAfterAllowWrite]
+      })
+    ).toBe(false)
+    const processAfterAllowedWritePlan = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAllowedPreview, awaitingDone, planAfterAllowWrite]
+    })
+    expect(
+      processAfterAllowedWritePlan.processForFlow.some((segment) => segment === cmdAllowedPreview)
+    ).toBe(true)
+    expect(
+      processAfterAllowedWritePlan.processForFlow.some((segment) => segment === planAfterAllowWrite)
+    ).toBe(true)
+    const answerAfterAllowedWritePlan = nextLiveAnswerView(answerReadyForAllowedWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAllowedPreview, awaitingDone, planAfterAllowWrite]
+    })
+    expect(answerAfterAllowedWritePlan).not.toBe(answerReadyForAllowedWrite)
+    expect(
+      answerAfterAllowedWritePlan.parts.some((part) => part.type === 'diff' && part.id === 'run-appr-diff-0')
+    ).toBe(true)
+    const nextAfterAllowWrite: TurnSegment = {
+      id: 'read-after-allow-write',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'active',
+      toolDetail: 'src/a.ts'
+    }
+    expect(
+      isLiveApprovalAllowedWriteStatToolAppendChange(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, nextAfterAllowWrite]
+      )
+    ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [cmdAwaiting, awaitingStatus],
+        [cmdAllowedPreview, awaitingDone, nextAfterAllowWrite]
+      )
+    ).toBe('tool')
+    const processAfterAllowedWriteNext = nextLiveProcessView(processAfterApproval, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [cmdAllowedPreview, awaitingDone, nextAfterAllowWrite]
+    })
+    expect(
+      processAfterAllowedWriteNext.processForFlow.some((segment) => segment === cmdAllowedPreview)
+    ).toBe(true)
+    expect(
+      processAfterAllowedWriteNext.processForFlow.some((segment) => segment === nextAfterAllowWrite)
     ).toBe(true)
     const cmdAllowedSettled: TurnSegment = {
       ...cmdApproved,

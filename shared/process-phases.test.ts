@@ -434,6 +434,41 @@ describe('process phases privacy', () => {
     expect(afterAllowedWrite![0].segment).toBe(cmdAllowedPreview)
     expect(afterAllowedWrite!.at(-1)?.segment).toBe(awaitingDone)
     expect(afterAllowedWrite!.at(-1)?.status).toBe('done')
+    const planAfterAllowWrite: TurnSegment = {
+      id: 'st-plan-allow-write',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…',
+      startedAt: 18
+    }
+    const afterAllowedWritePlan = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedPreview, awaitingDone, planAfterAllowWrite],
+      true
+    )
+    expect(afterAllowedWritePlan).not.toBeNull()
+    expect(afterAllowedWritePlan).toHaveLength(3)
+    expect(afterAllowedWritePlan![0].segment).toBe(cmdAllowedPreview)
+    expect(afterAllowedWritePlan!.at(-1)?.segment).toBe(planAfterAllowWrite)
+    const nextAfterAllowWrite: TurnSegment = {
+      id: 'read-after-allow-write',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolDetail: 'src/a.ts',
+      status: 'active',
+      startedAt: 18
+    }
+    const afterAllowedWriteNext = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedPreview, awaitingDone, nextAfterAllowWrite],
+      true
+    )
+    expect(afterAllowedWriteNext).not.toBeNull()
+    expect(afterAllowedWriteNext).toHaveLength(3)
+    expect(afterAllowedWriteNext![0].segment).toBe(cmdAllowedPreview)
+    expect(afterAllowedWriteNext!.at(-1)?.segment).toBe(nextAfterAllowWrite)
     const cmdAllowedSettled: TurnSegment = {
       ...runningCmd,
       status: 'done',

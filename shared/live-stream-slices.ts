@@ -541,12 +541,11 @@ export function isLiveApprovalDeniedToolAppendChange(
   return hasLiveApprovalDeniedPrefix(prev, next) && isLiveAddedToolsWithOptionalStatus(prev!.length, next)
 }
 
-/** Allow once 后同一帧 approval_resolved + 首枚 tool_preview：Awaiting 行收口并换该工具写盘 +/-（对标 query-loop 放行后立即 runToolWithLiveStatus；不复制 #10760 / #38695） */
-export function isLiveApprovalAllowedWriteStatChange(
+function hasLiveApprovalAllowedWriteStatPrefix(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
-  if (!prev || prev.length !== next.length || prev.length === 0) return false
+  if (!prev || next.length < prev.length) return false
   let resolved = 0
   let writeStat = 0
   for (let i = 0; i < prev.length; i++) {
@@ -565,6 +564,36 @@ export function isLiveApprovalAllowedWriteStatChange(
     return false
   }
   return resolved === 1 && writeStat === 1
+}
+
+/** Allow once 后同一帧 approval_resolved + 首枚 tool_preview：Awaiting 行收口并换该工具写盘 +/-（对标 query-loop 放行后立即 runToolWithLiveStatus；不复制 #10760 / #38695） */
+export function isLiveApprovalAllowedWriteStatChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return hasLiveApprovalAllowedWriteStatPrefix(prev, next) && Boolean(prev && next.length === prev.length)
+}
+
+/** Allow 写盘收口后同一帧新开 规划下一步：过程 remap 并追加 status，回答只换 diff 槽 */
+export function isLiveApprovalAllowedWriteStatStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedWriteStatPrefix(prev, next) || next.length !== prev!.length + 1) {
+    return false
+  }
+  return isLiveAddedStatusPair(next[prev!.length])
+}
+
+/** Allow 写盘收口后同一帧下一工具（可带一条 规划下一步）：过程 remap 并追加这些步，回答只换 diff 槽 */
+export function isLiveApprovalAllowedWriteStatToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  return (
+    hasLiveApprovalAllowedWriteStatPrefix(prev, next) &&
+    isLiveAddedToolsWithOptionalStatus(prev!.length, next)
+  )
 }
 
 function hasLiveApprovalAllowedSettlePrefix(
@@ -1803,6 +1832,8 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveApprovalDeniedStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveApprovalDeniedToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalAllowedWriteStatChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedWriteStatStatusAppendChange(prevSegments, segments)) return 'status'
+  if (isLiveApprovalAllowedWriteStatToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalAllowedSettleChange(prevSegments, segments)) return 'tool'
   if (isLiveApprovalAllowedStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveApprovalAllowedToolAppendChange(prevSegments, segments)) return 'tool'
@@ -2196,6 +2227,7 @@ export function nextLiveProcessView(
       isLiveWriteStatStatusThinkToolAppendChange(processHold.segments, segments) ||
       isLiveApprovalDeniedToolAppendChange(processHold.segments, segments) ||
       isLiveApprovalAllowedToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedWriteStatToolAppendChange(processHold.segments, segments) ||
       isLiveThinkStatusAppendChange(processHold.segments, segments) ||
       isLiveStatusThinkStatusAppendChange(processHold.segments, segments) ||
       isLiveWriteStatThinkStatusAppendChange(processHold.segments, segments) ||
@@ -2301,6 +2333,7 @@ export function nextLiveProcessView(
     (isLiveStatusAppendChange(processHold.segments, segments) ||
       isLiveApprovalDeniedStatusAppendChange(processHold.segments, segments) ||
       isLiveApprovalAllowedStatusAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedWriteStatStatusAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusAppendChange(processHold.segments, segments))
   ) {
     const added = segments[segments.length - 1]!
@@ -2859,10 +2892,8 @@ function findLiveWriteStatTool(
       found = after
       continue
     }
-    if (next.length === prev.length) {
-      if (isLiveAwaitingStatusResolve(before, after)) continue
-      return null
-    }
+    if (isLiveAwaitingStatusResolve(before, after)) continue
+    if (next.length === prev.length) return null
     if (!isLivePrefixClose(before, after)) return null
   }
   return found
