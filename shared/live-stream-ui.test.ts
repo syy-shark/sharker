@@ -29,6 +29,7 @@ import {
   shouldReuseLiveProcessView,
   isLiveLastLineOnlyToolChange,
   isLiveToolAppendChange,
+  isLiveThinkAppendChange,
   isLiveThinkOrStatusClose,
   isLiveToolSettleChange,
   shouldSkipLiveStreamPublish,
@@ -419,6 +420,31 @@ describe('live stream ui snapshot', () => {
     })
     expect(processWhileFirst.processForFlow.some((segment) => segment === firstTool)).toBe(true)
     expect(processWhileFirst.thinkText).toBe(processWhileThink.thinkText)
+    const nextThink: TurnSegment = {
+      id: 'th-2',
+      kind: 'thinking',
+      content: 'Next',
+      status: 'active'
+    }
+    expect(isLiveThinkAppendChange([hello, ran], [hello, ran, nextThink])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, ran], [hello, ran, nextThink])).toBe('think')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, ran],
+        segments: [hello, ran, nextThink]
+      })
+    ).toBe(true)
+    const processWhileRanHold = nextLiveProcessView(processWhileRan, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran]
+    })
+    const processWhileNextThink = nextLiveProcessView(processWhileRanHold, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, ran, nextThink]
+    })
+    expect(processWhileNextThink.processForFlow).toBe(processWhileRanHold.processForFlow)
+    expect(processWhileNextThink.thinkText).toBe(processWhileRanHold.thinkText + 'Next')
     const sharedSegs = [tool, text('Same ref')]
     const answerSameRef = liveAnswerViewFromSnap({
       ...EMPTY_LIVE_STREAM_UI,

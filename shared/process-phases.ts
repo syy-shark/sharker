@@ -20,7 +20,11 @@ import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
 } from './stream-reconnect'
-import { findLiveToolInPlaceChange, isLiveToolAppendChange } from './live-stream-slices'
+import {
+  findLiveToolInPlaceChange,
+  isLiveThinkAppendChange,
+  isLiveToolAppendChange
+} from './live-stream-slices'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
@@ -597,6 +601,26 @@ export function appendProcessPhaseStepOnToolStart(
   const built = buildStepsFromSource([added], isStreaming)[0]
   if (!built) return remapped
   return [...remapped, built]
+}
+
+/** 前缀没变或只收束思考/status、末尾新开思考：时间线不追加思考步（旁白另订） */
+export function remapProcessPhaseStepsOnThinkAppend(
+  prevSteps: ProcessPhaseStep[],
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[]
+): ProcessPhaseStep[] | null {
+  if (!isLiveThinkAppendChange(prevSegments, segments)) return null
+  const remapped = prevSteps.map((step) => {
+    const index = prevSegments!.indexOf(step.segment)
+    if (index < 0) return step
+    const nextSeg = segments[index]
+    if (!nextSeg || nextSeg === step.segment) return step
+    return { ...step, segment: nextSeg }
+  })
+  for (let i = 0; i < remapped.length; i++) {
+    if (remapped[i] !== prevSteps[i]) return remapped
+  }
+  return prevSteps
 }
 
 /** 同一工具只改短路径详情或收束：只换该步（不必是末步）；命令末行退回原数组（对标 Codex #22860 / #19260 / complete_call） */

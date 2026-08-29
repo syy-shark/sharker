@@ -145,6 +145,24 @@ export function isLiveToolAppendChange(
   return true
 }
 
+/** 前缀没变或只收束思考/status、末尾新开思考：只换旁白（对标 Codex Thinking cell） */
+export function isLiveThinkAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!prev || next.length !== prev.length + 1) return false
+  const added = next[next.length - 1]
+  if (!added || added.kind !== 'thinking' || added.status !== 'active') return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (before === after) continue
+    if (!isLiveThinkOrStatusClose(before, after)) return false
+  }
+  return true
+}
+
 /** 同一列表里只有一个工具就地改详情或收束：找出该对，供非末步 complete_call */
 export function findLiveToolInPlaceChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -192,6 +210,7 @@ export function shouldSkipLiveStreamDerivation(
 ): LiveStreamDerivationSkip | null {
   if (!prevSegments) return null
   if (isLiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveThinkAppendChange(prevSegments, segments)) return 'think'
   if (findLiveToolInPlaceChange(prevSegments, segments)) return 'tool'
   if (prevSegments.length !== segments.length) return null
   const last = segments.length - 1
@@ -223,6 +242,9 @@ export function nextLiveThinkText(
   prevSegments: readonly TurnSegment[] | null,
   segments: readonly TurnSegment[]
 ): string {
+  if (isLiveThinkAppendChange(prevSegments, segments)) {
+    return prev + (segments[segments.length - 1]?.content ?? '')
+  }
   if (!prevSegments || prevSegments.length !== segments.length) return liveThinkingText(segments)
   const last = segments.length - 1
   for (let i = 0; i < last; i++) {
@@ -456,6 +478,40 @@ export function nextLiveProcessView(
   if (
     prev &&
     processHold?.view === prev &&
+    isLiveThinkAppendChange(processHold.segments, segments)
+  ) {
+    const holdSegments = processHold.segments
+    const remapped = prev.processForFlow.map((segment) => {
+      const index = holdSegments.indexOf(segment)
+      if (index < 0) return segment
+      return segments[index] ?? segment
+    })
+    let sameFlow = remapped.length === prev.processForFlow.length
+    if (sameFlow) {
+      for (let i = 0; i < remapped.length; i++) {
+        if (remapped[i] !== prev.processForFlow[i]) {
+          sameFlow = false
+          break
+        }
+      }
+    }
+    const processForFlow = sameFlow ? prev.processForFlow : remapped
+    const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+    const view =
+      processForFlow === prev.processForFlow && thinkText === prev.thinkText
+        ? prev
+        : { ...prev, processForFlow, thinkText }
+    processHold = {
+      view,
+      identity: liveProcessIdentity(segments),
+      segments,
+      answerTailPlain: processHold.answerTailPlain
+    }
+    return view
+  }
+  if (
+    prev &&
+    processHold?.view === prev &&
     shouldRetargetLiveProcessOnToolMeta({
       prev,
       prevSegments: processHold.segments,
@@ -569,6 +625,7 @@ export function shouldSkipLiveAnswerIdentity(input: {
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
   if (isLiveToolAppendChange(input.prevSegments, input.segments)) return true
+  if (isLiveThinkAppendChange(input.prevSegments, input.segments)) return true
   if (findLiveToolInPlaceChange(input.prevSegments, input.segments)) return true
   if (input.prevSegments.length !== input.segments.length) return false
   const last = input.segments.length - 1

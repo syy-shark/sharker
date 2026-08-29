@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appendProcessPhaseStepOnToolStart,
   deriveChronologicalSteps,
+  remapProcessPhaseStepsOnThinkAppend,
   retargetProcessPhaseStepsOnToolMeta,
   reuseProcessPhaseSteps
 } from './process-phases'
@@ -126,6 +127,16 @@ describe('process phases privacy', () => {
     expect(appended).toHaveLength(2)
     expect(appended![0]).toBe(doneRetargeted![0])
     expect(appended![1].segment).toBe(cmdNext)
+    const nextThink: TurnSegment = {
+      id: 'th-after',
+      kind: 'thinking',
+      content: 'Next',
+      status: 'active',
+      startedAt: 10
+    }
+    expect(
+      remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, nextThink])
+    ).toBe(appended)
     const twoActive = deriveChronologicalSteps([cmdRunning, cmdNext], { isStreaming: true })
     const earlierSettled = retargetProcessPhaseStepsOnToolMeta(
       twoActive,
