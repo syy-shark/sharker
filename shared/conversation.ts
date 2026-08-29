@@ -256,19 +256,26 @@ export function formatUnreadNote(): string {
   return '已将此对话标为未读。打开后会自动清未读。'
 }
 
-/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复） */
-export type SidebarChatFilter = 'chronological' | 'live' | 'waiting' | 'unread' | 'pinned'
+/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复 / 定时 / 置顶） */
+export type SidebarChatFilter =
+  | 'chronological'
+  | 'live'
+  | 'waiting'
+  | 'unread'
+  | 'pinned'
+  | 'scheduled'
 
 export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string }> = [
   { id: 'chronological', label: '按时间' },
   { id: 'live', label: '进行中' },
   { id: 'waiting', label: '等待回复' },
   { id: 'unread', label: '未读' },
+  { id: 'scheduled', label: '定时' },
   { id: 'pinned', label: '置顶' }
 ]
 
 export function isActivitySidebarFilter(filter: SidebarChatFilter): boolean {
-  return filter === 'live' || filter === 'waiting' || filter === 'unread'
+  return filter === 'live' || filter === 'waiting' || filter === 'unread' || filter === 'scheduled'
 }
 
 /** 对标 Codex ⌘⌥U：打开/关闭 Activity（默认落到等待回复） */
@@ -281,7 +288,8 @@ export function filterSidebarChats<T extends { id: string; unread?: boolean; pin
   items: T[],
   filter: SidebarChatFilter,
   liveIds: Iterable<string>,
-  waitingIds?: Iterable<string>
+  waitingIds?: Iterable<string>,
+  scheduledIds?: Iterable<string>
 ): T[] {
   if (filter === 'chronological') return items
   if (filter === 'live') {
@@ -293,6 +301,10 @@ export function filterSidebarChats<T extends { id: string; unread?: boolean; pin
     return items.filter((item) => waitingSet.has(item.id))
   }
   if (filter === 'unread') return items.filter((item) => item.unread)
+  if (filter === 'scheduled') {
+    const scheduledSet = scheduledIds instanceof Set ? scheduledIds : new Set(scheduledIds ?? [])
+    return items.filter((item) => scheduledSet.has(item.id))
+  }
   return items.filter((item) => item.pinned)
 }
 

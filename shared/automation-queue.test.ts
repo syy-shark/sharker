@@ -3,6 +3,8 @@ import {
   applyQueueTriageAction,
   attachQueueChangedPaths,
   enqueueAutomationRun,
+  archiveEligibleQueueRuns,
+  eligibleQueueArchiveCount,
   markAllQueueRead,
   markQueueItem,
   createPrAfterApprovePush,
@@ -24,6 +26,10 @@ describe('automation queue', () => {
     expect(unreadQueueCount([item])).toBe(1)
     expect(unreadQueueCount(markQueueItem([item], item.id, 'read'))).toBe(0)
     expect(unreadQueueCount(markAllQueueRead([item, { ...item, id: 'b' }]))).toBe(0)
+    expect(eligibleQueueArchiveCount([{ ...item, status: 'read' }, item])).toBe(1)
+    expect(
+      archiveEligibleQueueRuns([{ ...item, id: 'r', status: 'read' }, item]).map((row) => row.status)
+    ).toEqual(['archived', 'unread'])
   })
 
   it('sorts unread before read and archived', () => {

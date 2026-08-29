@@ -17,6 +17,9 @@ import {
 } from '../../shared/automation'
 import {
   applyQueueTriageAction,
+  archiveEligibleQueueRuns,
+  eligibleQueueArchiveCount,
+  markAllQueueRead,
   sortAutomationQueue,
   unreadQueueCount,
   type AutomationQueueItem,
@@ -29,6 +32,8 @@ interface Props {
   onBack: () => void
   onOpenConversation?: (conversationId: string) => void
   onTriage?: (item: AutomationQueueItem, action: QueueTriageAction) => void
+  /** 批量已读 / 归档后刷新侧栏 Activity 定时筛选 */
+  onQueueChanged?: () => void
   /** ⇧Esc 清未读后递增，刷新本页队列 */
   queueRevision?: number
   /** 深链 `sharker://automations`：打开创建流（对标 Codex Scheduled create） */
@@ -46,6 +51,7 @@ export function AutomationsPage({
   onBack,
   onOpenConversation,
   onTriage,
+  onQueueChanged,
   queueRevision = 0,
   openCreateNonce = 0,
   conversations = [],
@@ -166,6 +172,36 @@ export function AutomationsPage({
               <span className="automations-queue-count">{unreadQueueCount(queue)}</span>
             ) : null}
           </h2>
+          {queue.length > 0 ? (
+            <div className="automations-queue-bulk">
+              <button
+                type="button"
+                className="automations-queue-btn"
+                disabled={unreadQueueCount(queue) === 0}
+                onClick={() => {
+                  const next = markAllQueueRead(queue)
+                  setQueue(next)
+                  void window.sharker.saveAutomationQueue?.(next)
+                  onQueueChanged?.()
+                }}
+              >
+                全部标为已读
+              </button>
+              <button
+                type="button"
+                className="automations-queue-btn"
+                disabled={eligibleQueueArchiveCount(queue) === 0}
+                onClick={() => {
+                  const next = archiveEligibleQueueRuns(queue)
+                  setQueue(next)
+                  void window.sharker.saveAutomationQueue?.(next)
+                  onQueueChanged?.()
+                }}
+              >
+                归档已处理
+              </button>
+            </div>
+          ) : null}
           {queue.length === 0 ? (
             <p className="automations-empty">还没有自动化结果</p>
           ) : (

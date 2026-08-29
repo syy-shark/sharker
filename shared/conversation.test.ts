@@ -146,6 +146,8 @@ describe('conversation search', () => {
     expect(nextActivitySidebarFilter('waiting')).toBe('chronological')
     expect(nextActivitySidebarFilter('live')).toBe('chronological')
     expect(nextActivitySidebarFilter('unread')).toBe('chronological')
+    expect(nextActivitySidebarFilter('scheduled')).toBe('chronological')
+    expect(filterSidebarChats(items, 'scheduled', [], [], ['c']).map((c) => c.id)).toEqual(['c'])
     expect(
       collectAttentionConversationIds({
         conversations: items,

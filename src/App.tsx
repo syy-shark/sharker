@@ -134,6 +134,7 @@ import type { AutomationQueueItem, QueueTriageAction } from '../shared/automatio
 import {
   resolveAutomationRunPlan,
   resolveAutomationWorkspaceTargets,
+  scheduledActivityConversationIds,
   shouldPrepareAutomationWorktree,
   type AutomationJob
 } from '../shared/automation'
@@ -490,6 +491,7 @@ export default function App() {
   } | null>(null)
   const [goalEditTick, setGoalEditTick] = useState(0)
   const [queueUnread, setQueueUnread] = useState(0)
+  const [scheduledConversationIds, setScheduledConversationIds] = useState<string[]>([])
   const [queueRevision, setQueueRevision] = useState(0)
   const [suggestedCommit, setSuggestedCommit] = useState('')
   const lastTurnPathsByConvRef = useRef<Map<string, string[]>>(new Map())
@@ -1764,6 +1766,7 @@ export default function App() {
           )
           await window.sharker.saveAutomationQueue([item, ...prev])
           setQueueUnread(unreadQueueCount([item, ...prev]))
+          setScheduledConversationIds((ids) => (ids.includes(convId) ? ids : [...ids, convId]))
         }
 
         if (plan.mode === 'queue' && plan.conversationId) {
@@ -1847,10 +1850,18 @@ export default function App() {
     return () => off?.()
   }, [refreshConversationList, syncActiveQueueUi])
 
-  useEffect(() => {
-    if (!window.sharker?.listAutomationQueue) return
-    void window.sharker.listAutomationQueue().then((q) => setQueueUnread(unreadQueueCount(q)))
+  const refreshAutomationActivity = useCallback(async () => {
+    const queue = window.sharker.listAutomationQueue
+      ? await window.sharker.listAutomationQueue()
+      : []
+    const jobs = window.sharker.listAutomations ? await window.sharker.listAutomations() : []
+    setQueueUnread(unreadQueueCount(queue))
+    setScheduledConversationIds(scheduledActivityConversationIds({ jobs, queue }))
   }, [])
+
+  useEffect(() => {
+    void refreshAutomationActivity()
+  }, [refreshAutomationActivity])
 
   /** 切换右侧 Codex 风格面板 */
   const handleToggleRightPanel = useCallback(() => {
@@ -4631,11 +4642,11 @@ export default function App() {
       const prev = await window.sharker.listAutomationQueue()
       const next = markAllQueueRead(prev)
       await window.sharker.saveAutomationQueue(next)
-      setQueueUnread(unreadQueueCount(next))
+      await refreshAutomationActivity()
       setQueueRevision((n) => n + 1)
     }
     await handleMarkConversationsRead()
-  }, [handleMarkConversationsRead])
+  }, [handleMarkConversationsRead, refreshAutomationActivity])
 
   const handleNextAttention = useCallback(() => {
     const liveIds: string[] = []
@@ -7255,11 +7266,9 @@ export default function App() {
           setRightPanelOpen(true)
         }
       }
-      if (window.sharker.listAutomationQueue) {
-        setQueueUnread(unreadQueueCount(await window.sharker.listAutomationQueue()))
-      }
+      await refreshAutomationActivity()
     },
-    [handleSelectConversation, threadMode, threadWorktreePath]
+    [handleSelectConversation, refreshAutomationActivity, threadMode, threadWorktreePath]
   )
 
   const handleComposerSlash = useCallback((cmd: SlashCommandMeta, args: string) => {
@@ -7452,6 +7461,7 @@ export default function App() {
           activeConversationId={activeConversationId}
           liveConversationIds={liveConversationIds}
           waitingConversationIds={waitingConversationIds}
+          scheduledConversationIds={scheduledConversationIds}
           activityToggleNonce={activityToggleNonce}
           onSelectWorkspace={handleSelectWorkspace}
           onSelectConversation={handleSelectConversation}
@@ -7663,6 +7673,9 @@ export default function App() {
                 }}
                 onTriage={(item, action) => {
                   void handleQueueTriage(item, action)
+                }}
+                onQueueChanged={() => {
+                  void refreshAutomationActivity()
                 }}
               />
             </div>

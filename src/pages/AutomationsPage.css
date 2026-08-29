@@ -99,6 +99,13 @@ html.theme-dark .automations-filter {
   font-weight: 650;
 }
 
+.automations-queue-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
 .automations-queue-count {
   min-width: 1.25em;
   padding: 0 6px;

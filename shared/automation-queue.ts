@@ -68,9 +68,18 @@ export function markQueueItem(
   return items.map((i) => (i.id === id ? { ...i, status } : i))
 }
 
-/** 未读全部标已读（对标 Codex ⇧Esc 清未读徽标） */
+/** 未读全部标已读（对标 Codex ⇧Esc 清未读徽标 / Scheduled mark every run as read） */
 export function markAllQueueRead(items: AutomationQueueItem[]): AutomationQueueItem[] {
   return items.map((i) => (i.status === 'unread' ? { ...i, status: 'read' as const } : i))
+}
+
+/** 已处理（已读）的运行可一并归档（对标 Codex archive eligible scheduled runs） */
+export function archiveEligibleQueueRuns(items: AutomationQueueItem[]): AutomationQueueItem[] {
+  return items.map((i) => (i.status === 'read' ? { ...i, status: 'archived' as const } : i))
+}
+
+export function eligibleQueueArchiveCount(items: AutomationQueueItem[]): number {
+  return items.filter((i) => i.status === 'read').length
 }
 
 function cleanRelPaths(paths: string[]): string[] {

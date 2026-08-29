@@ -13,6 +13,7 @@ import {
   parseOptionalAutomationId,
   resolveAutomationRunPlan,
   resolveAutomationWorkspaceTargets,
+  scheduledActivityConversationIds,
   shouldPrepareAutomationWorktree
 } from './automation'
 
@@ -42,6 +43,15 @@ describe('automation destination', () => {
     })
     expect(thread.destination).toBe('thread')
     expect(thread.conversationId).toBe('conv-1')
+    expect(
+      scheduledActivityConversationIds({
+        jobs: [standalone, thread],
+        queue: [
+          { conversationId: 'q1', status: 'unread' },
+          { conversationId: 'q2', status: 'archived' }
+        ]
+      })
+    ).toEqual(['conv-1', 'q1'])
     expect(normalizeAutomationJobs([{ title: 'no-id' }, thread])).toEqual([thread])
     expect(defaultAutomationThreadId('conv-1', [{ id: 'conv-2' }, { id: 'conv-1' }])).toBe(
       'conv-1'

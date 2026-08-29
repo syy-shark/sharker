@@ -23,7 +23,7 @@
 | `review-repos.test.ts` | 同仓子目录合并、本轮 All repos、附加根路径匹配、多文件 diff 展开键；审查列表按文件树排序 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
-| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 置顶筛选、⌘⌥U 开关 Activity、项目菜单「归档对话」只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
+| `conversation.ts` | 对话模型、标题推导、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、侧栏 Chronological / 进行中 / 等待回复 / 未读 / 定时 / 置顶筛选、⌘⌥U 开关 Activity、项目菜单「归档对话」只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
 | `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、置顶排序、`/rename` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
@@ -174,11 +174,11 @@
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
 | `browser-use-status.ts` | Browser Use 环境检查聚合 |
 | `voice-status.ts` | Voice / Kokoro 状态 |
-| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前）；可选 `rrule` 与 `workspaceIds`（对标 Codex RRULE / 同一任务多个项目）；`filterAutomationJobs` 对标 Scheduled All / Active / Paused；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
+| `automation.ts` | 自动化任务类型；`destination` 新对话或回到指定对话；`runIn` 隔离 worktree / 本地项目；可选 `providerId` / `thinkingLevel`（空则跟随当前）；可选 `rrule` 与 `workspaceIds`（对标 Codex RRULE / 同一任务多个项目）；`filterAutomationJobs` 对标 Scheduled All / Active / Paused；`scheduledActivityConversationIds` 给 Activity「定时」；`applyScheduledTurnSettings` 只覆盖本轮；`applyScheduledTaskAction` 供对话内创建（对标 Codex Scheduled） |
 | `automation.test.ts` | 默认新对话、绑定线程、对话不在则回退新建、忙时排队、本地/隔离、对话内创建、RRULE / 多项目 |
 | `automation-schedule.ts` | 五字段 cron 与 RFC 5545 RRULE 分钟匹配（官方例 `FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=9;BYMINUTE=0`）；有 RRULE 优先 |
 | `automation-schedule.test.ts` | cron 通配 / 步进、官方 RRULE、UNTIL、日程回退 |
-| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc |
+| `automation-queue.ts` | 自动化审查队列（Triage）；条目带工作区与改过的路径，接受/拒绝只动这些文件；接受成功后推送，无 PR 时再创建；`markAllQueueRead` 供 ⇧Esc 与 Scheduled 页「全部标为已读」；`archiveEligibleQueueRuns` 归档已处理运行（对标 Codex archive eligible scheduled runs） |
 | `automation-queue.test.ts` | 入队、未读计数、排序、路径回写、提交后推送 |
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |

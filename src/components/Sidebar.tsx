@@ -50,6 +50,8 @@ interface Props {
   liveConversationIds?: Set<string> | string[]
   /** 等待你回复审批的会话（对标 Codex Activity waiting） */
   waitingConversationIds?: Set<string> | string[]
+  /** 定时任务绑定或审查队列里的对话（对标 Codex Activity Scheduled） */
+  scheduledConversationIds?: Set<string> | string[]
   /** 递增以开关 Activity 视图（⌘⌥U） */
   activityToggleNonce?: number
   onSelectWorkspace: (id: string) => void
@@ -94,6 +96,7 @@ function readSidebarChatFilter(): SidebarChatFilter {
     raw === 'waiting' ||
     raw === 'unread' ||
     raw === 'pinned' ||
+    raw === 'scheduled' ||
     raw === 'chronological'
   ) {
     return raw
@@ -133,6 +136,7 @@ export function Sidebar({
   activeConversationId,
   liveConversationIds,
   waitingConversationIds,
+  scheduledConversationIds,
   activityToggleNonce = 0,
   onSelectWorkspace,
   onSelectConversation,
@@ -172,6 +176,12 @@ export function Sidebar({
     return waitingConversationIds instanceof Set
       ? waitingConversationIds
       : new Set(waitingConversationIds)
+  })()
+  const scheduledIdSet = (() => {
+    if (!scheduledConversationIds) return new Set<string>()
+    return scheduledConversationIds instanceof Set
+      ? scheduledConversationIds
+      : new Set(scheduledConversationIds)
   })()
   const collapsed = collapsedProp ?? collapsedInner
   /** 单一写入口：不在 setState updater 里调父回调（StrictMode 会双调） */
@@ -291,8 +301,8 @@ export function Sidebar({
   const chatFilterRef = useRef<HTMLDivElement>(null)
   const groupedChats = chatFilter === 'chronological'
   const filteredConvs = useMemo(
-    () => filterSidebarChats(dialogConvs, chatFilter, liveIdSet, waitingIdSet),
-    [chatFilter, dialogConvs, liveIdSet, waitingIdSet]
+    () => filterSidebarChats(dialogConvs, chatFilter, liveIdSet, waitingIdSet, scheduledIdSet),
+    [chatFilter, dialogConvs, liveIdSet, waitingIdSet, scheduledIdSet]
   )
   const { live: liveConvs, rest: restConvs } = useMemo(
     () => splitLiveConversations(groupedChats ? dialogConvs : [], liveIdSet),

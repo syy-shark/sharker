@@ -374,3 +374,25 @@ export function resolveAutomationRunPlan(input: {
   if (input.conversationBusy) return { mode: 'queue', conversationId }
   return { mode: 'thread', conversationId }
 }
+
+/**
+ * Activity「定时」：绑定到对话的任务，以及未归档的审查队列结果。
+ * 对标 Codex Activity options → Scheduled。
+ */
+export function scheduledActivityConversationIds(input: {
+  jobs?: Array<{ destination?: string; conversationId?: string }>
+  queue?: Array<{ conversationId?: string; status?: string }>
+}): string[] {
+  const ids = new Set<string>()
+  for (const job of input.jobs ?? []) {
+    if (job.destination !== 'thread') continue
+    const id = String(job.conversationId || '').trim()
+    if (id) ids.add(id)
+  }
+  for (const item of input.queue ?? []) {
+    if (item.status === 'archived') continue
+    const id = String(item.conversationId || '').trim()
+    if (id) ids.add(id)
+  }
+  return [...ids]
+}
