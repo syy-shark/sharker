@@ -17,6 +17,7 @@ import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from './last-turn-flush'
 import { streamReconnectLiveStatus } from './stream-reconnect'
 import { TURN_START_LIVE_STATUS } from './live-display'
 import { applyStreamChunk } from './turn-segments'
+import { REQUEST_USER_INPUT_TOOL } from './user-input'
 import {
   liveAnswerGrowState,
   liveAnswerViewFromSnap,
@@ -78,6 +79,10 @@ import {
   isLiveWriteStatStatusCancelAppendChange,
   isLiveWriteStatThinkCancelAppendChange,
   isLiveWriteStatStatusThinkCancelAppendChange,
+  isLiveThinkStatusAppendChange,
+  isLiveStatusThinkStatusAppendChange,
+  isLiveWriteStatThinkStatusAppendChange,
+  isLiveWriteStatStatusThinkStatusAppendChange,
   isLiveWriteStatAnswerAppendChange,
   isLiveWriteStatDemoFenceAppendChange,
   isLiveWriteStatCompressAppendChange,
@@ -1653,6 +1658,129 @@ describe('live stream ui snapshot', () => {
     expect(
       answerAfterPlanStop.parts.find((part) => part.type === 'text' && part.id === hello.id)
     ).toBe(helloPlanStopPart)
+    const askNeeded = {
+      type: 'user_input_needed' as const,
+      toolName: REQUEST_USER_INPUT_TOOL,
+      userInput: {
+        questions: [
+          {
+            id: 'q1',
+            header: 'API style',
+            question: 'Which API?',
+            options: [
+              { id: 'a', label: 'REST' },
+              { id: 'b', label: 'gRPC' }
+            ]
+          }
+        ]
+      },
+      timestamp: 35
+    }
+    const askRound = applyStreamChunk(afterPlanStatus, askNeeded)
+    expect(isLiveUserInputNeededChange(afterPlanStatus, askRound)).toBe(true)
+    expect(isLiveStatusAppendChange(afterPlanStatus, askRound)).toBe(false)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, askRound)).toBe('tool')
+    expect(shouldSkipLiveStreamDerivation([hello, running], askRound)).toBe('status')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: afterPlanStatus,
+        segments: askRound
+      })
+    ).toBe(true)
+    const approvalRound = applyStreamChunk(afterPlanStatus, {
+      type: 'approval_needed',
+      approval: { id: 'ap-plan', toolName: 'run_terminal_cmd', title: 'npm test' },
+      timestamp: 36
+    })
+    expect(isLiveApprovalNeededChange(afterPlanStatus, approvalRound)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, approvalRound)).toBe('tool')
+    let thinkThenAsk = applyStreamChunk(afterPlanStatus, { type: 'think', content: 'Next', timestamp: 37 })
+    thinkThenAsk = applyStreamChunk(thinkThenAsk, { ...askNeeded, timestamp: 38 })
+    expect(isLiveThinkStatusAppendChange(afterPlanStatus, thinkThenAsk)).toBe(true)
+    expect(isLiveStatusThinkStatusAppendChange([hello, running], thinkThenAsk)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, thinkThenAsk)).toBe('tool')
+    expect(shouldSkipLiveStreamDerivation([hello, running], thinkThenAsk)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', afterPlanStatus, thinkThenAsk)).toBe('HmmNext')
+    expect(nextLiveThinkText('Hmm', [hello, running], thinkThenAsk)).toBe('HmmNext')
+    let thinkThenApproval = applyStreamChunk(afterPlanStatus, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 39
+    })
+    thinkThenApproval = applyStreamChunk(thinkThenApproval, {
+      type: 'approval_needed',
+      approval: { id: 'ap-think', toolName: 'run_terminal_cmd', title: 'npm test' },
+      timestamp: 40
+    })
+    expect(isLiveThinkStatusAppendChange(afterPlanStatus, thinkThenApproval)).toBe(true)
+    expect(isLiveStatusThinkStatusAppendChange([hello, running], thinkThenApproval)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(afterPlanStatus, thinkThenApproval)).toBe('tool')
+    const askFromWriteStat = [
+      hello,
+      ranDiff,
+      afterPlanStatus[2]!,
+      thinkThenAsk[3]!,
+      thinkThenAsk[4]!
+    ]
+    expect(isLiveWriteStatStatusThinkStatusAppendChange([hello, running], askFromWriteStat)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], askFromWriteStat)).toBe('tool')
+    expect(
+      isLiveWriteStatThinkStatusAppendChange(
+        [hello, running],
+        [hello, ranDiff, thinkThenAsk[3]!, thinkThenAsk[4]!]
+      )
+    ).toBe(true)
+    const processReadyForPlanAsk = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: afterPlanStatus
+    })
+    const processAfterPlanAsk = nextLiveProcessView(processReadyForPlanAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askRound
+    })
+    expect(processAfterPlanAsk.processForFlow.at(-1)?.content).toBe('API style')
+    expect(processAfterPlanAsk.processForFlow.at(-1)?.toolName).toBe(REQUEST_USER_INPUT_TOOL)
+    const processAfterThinkAsk = nextLiveProcessView(processReadyForPlanAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenAsk
+    })
+    expect(processAfterThinkAsk.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkAsk.thinkText).toBe(processReadyForPlanAsk.thinkText + 'Next')
+    expect(
+      processAfterThinkAsk.processForFlow.some(
+        (segment) => segment.toolName === REQUEST_USER_INPUT_TOOL
+      )
+    ).toBe(true)
+    const processAfterThinkApproval = nextLiveProcessView(processReadyForPlanAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenApproval
+    })
+    expect(processAfterThinkApproval.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(
+      false
+    )
+    expect(processAfterThinkApproval.processForFlow.at(-1)?.content).toMatch(/Awaiting approval/)
+    const answerReadyForPlanAsk = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: afterPlanStatus
+    })
+    const helloPlanAskPart = answerReadyForPlanAsk.parts.find((part) => part.type === 'text')
+    const answerAfterPlanAsk = nextLiveAnswerView(answerReadyForPlanAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: askRound
+    })
+    expect(
+      answerAfterPlanAsk.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanAskPart)
+    const answerAfterThinkAsk = nextLiveAnswerView(answerReadyForPlanAsk, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: thinkThenAsk
+    })
+    expect(
+      answerAfterThinkAsk.parts.find((part) => part.type === 'text' && part.id === hello.id)
+    ).toBe(helloPlanAskPart)
     const processReadyForDemoFence = nextLiveProcessView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [hello, running]

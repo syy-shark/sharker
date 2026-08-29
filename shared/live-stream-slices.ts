@@ -1,6 +1,6 @@
 /**
  * 直播行过程 / 回答切片：token 只换回答；正文或思考加长、同一工具只改详情时不扫过程指纹 / 正文 ```demo 只换演示槽、不重跑过程 / 全文 buildAnswerParts。
- * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、规划下一步后同一帧或下一轮 tool_start（规划下一步可先标 done，可夹 think）、think + tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 / 思考+```demo / status+```demo / status+思考+```demo 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token / ```demo 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call；规划下一步后同一帧 compress 可先把 status 标 done，可夹 think）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after；规划下一步后同一帧 Stop 可先挂上 status / think 再标 cancelled）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加；规划下一步后同一帧 present_inline_demo 可先把 status 标 done，过程只追加该行）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
+ * 工具详情只换该步引用；工具收束无新写盘也只换该步（不必是末步；同一帧多条只读并行 complete_call 也只换这些步，不发明 Exploring 分组格，对标 Codex exec_cell complete_call）；写盘 +/- / 参数或收束带核实 diff 只换该步，回答只换该工具的 diff 槽、已画正文不重拆（对标 ~0.5s / Edited 格，不复制 #38695）；写盘收束同时新开工具时过程 remap 并追加，回答只换该工具的 diff 槽；写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时过程 remap（status / compress 再追加该行，思考续旁白，散文/演示/错误开回答槽），写盘收束同时新开 status+思考 / 思考+散文 / status+散文 时过程 remap（有 status 再追加该行）且回答只换 diff 槽，以免藏直播 +/-（不把写盘收束算进 isLivePrefixClose）；前缀没变或只收束思考/status/散文/无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加过程步并封回答尾（同一 16ms 里 token 尾 + tool_start 可先加长再标 done、complete_call + add_call、只读并行多个 tool_start、规划下一步后同一帧或下一轮 tool_start（规划下一步可先标 done，可夹 think）、think + tool_start、tool_start + approval_needed / user_input_needed 也走这条，不发明 Exploring 分组格）、新思考只换旁白（无新写盘的工具收束后同一帧开思考也走这条，不复制 #24850；think 尾 + 首枚 token 可先加长再标 done）、新散文只开回答尾、新 status 只追加过程步（对标 Reconnecting... n/5 / Compacting）、无新写盘的工具收束后同一帧新开 status+思考 / 思考+散文 / status+散文 / status+思考+散文 / 思考+```demo / status+```demo / status+思考+```demo 时过程 remap（有 status 再追加该行；规划下一步后本地/快模型首枚 think / token / ```demo 也走这条，think 后首枚 token 可先把旁白标 done）、`compress` 收口 status 或无新写盘的工具后只追加已完成压缩步（对标 contextCompaction / complete_call；规划下一步后同一帧 compress 可先把 status 标 done，可夹 think）、审批挂上或收束只换工具步与 Awaiting approval 行、Ask User 挂上只换工具步与 Question requested 行（规划下一步后同一帧 user_input_needed / approval_needed 可改写规划下一步为第一题 header / Awaiting，已在场时 think 后推新 Question requested / Awaiting 只追加该行，可夹规划下一步；不发明 TUI Questions n/n）、status 收束只换该行、Stop 把多条 active 收成 cancelled 只换这些步（对标 You stopped after；规划下一步后同一帧 Stop 可先挂上 status / think 再标 cancelled）、错误收口 status 或无新写盘的工具后只开错误回答尾（不进过程）、新 present_inline_demo 或正文 ```demo 只开演示槽（过程不追加；规划下一步后同一帧 present_inline_demo 可先把 status 标 done，过程只追加该行）；演示 HTML / 说明 / 收束只换该槽；命令末行不换过程数组、不发 16ms store。对标 Codex #22860（已画过程不跟每枚 token 闪）。
  * @see shared/ARCH.md
  */
 import {
@@ -450,7 +450,9 @@ export function isLiveApprovalNeededChange(
     }
     return false
   }
-  if (attached !== 1) return false
+  if (attached !== 1) {
+    return attached === 0 && next.length === prev.length && statusRetarget === 1
+  }
   if (next.length === prev.length + 1) {
     const added = next[next.length - 1]
     return Boolean(
@@ -499,6 +501,17 @@ function isLiveStatusContentHold(prev: TurnSegment, next: TurnSegment): boolean 
   return prev.status === 'active' && next.status === 'active'
 }
 
+function isLiveAskStatusRetarget(prev: TurnSegment, next: TurnSegment): boolean {
+  return isLiveStatusContentHold(prev, next) && next.toolName === REQUEST_USER_INPUT_TOOL
+}
+
+function isLiveAddedAskOrAwaitingStatus(segment: TurnSegment | undefined): boolean {
+  if (!segment || segment.kind !== 'status' || segment.status !== 'active') return false
+  return (
+    segment.toolName === REQUEST_USER_INPUT_TOOL || isAwaitingApprovalText(segment.content ?? '')
+  )
+}
+
 /** Ask User 挂上：工具标题换成 Question requested / header，并新开或改写 status 行 */
 export function isLiveUserInputNeededChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -516,18 +529,26 @@ export function isLiveUserInputNeededChange(
       toolRetarget += 1
       continue
     }
+    if (next.length === prev.length && isLiveAskStatusRetarget(before, after)) {
+      statusRetarget += 1
+      continue
+    }
     if (next.length === prev.length && isLiveStatusContentHold(before, after)) {
       statusRetarget += 1
       continue
     }
     return false
   }
-  if (toolRetarget !== 1) return false
   if (next.length === prev.length + 1) {
+    if (toolRetarget !== 1) return false
     const added = next[next.length - 1]
     return Boolean(added && added.kind === 'status' && added.status === 'active')
   }
-  return statusRetarget === 1
+  if (toolRetarget === 1 && statusRetarget === 1) return true
+  return toolRetarget === 0 && statusRetarget === 1 && next.some((segment, index) => {
+    const before = prev[index]
+    return Boolean(before && before !== segment && isLiveAskStatusRetarget(before, segment))
+  })
 }
 
 /** 同一条 status 从 active 收成 done：只换该行（Ask User / compact / reconnect 收束） */
@@ -1290,6 +1311,54 @@ export function isLiveStatusThinkAppendChange(
   )
 }
 
+/** 规划下一步已在场时 think 后 Question requested / Awaiting：旁白续尾，追加 status（对标 Ask User / Awaiting approval，不发明 TUI Questions n/n） */
+export function isLiveThinkStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 2) return false
+  return (
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedAskOrAwaitingStatus(next[prev!.length + 1])
+  )
+}
+
+/** 规划下一步 + think + Ask User / Awaiting 同一帧：过程 remap 并追加两条 status，思考不进过程 */
+export function isLiveStatusThinkStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 3) return false
+  return (
+    isLiveAddedStatusPair(next[prev!.length]) &&
+    isLiveAddedThinkPair(next[prev!.length + 1]) &&
+    isLiveAddedAskOrAwaitingStatus(next[prev!.length + 2])
+  )
+}
+
+/** 写盘收束同时新开思考 + Question requested / Awaiting：过程 remap 并追加 status，旁白续尾，回答只换 diff 槽 */
+export function isLiveWriteStatThinkStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 2) return false
+  return (
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedAskOrAwaitingStatus(next[prev!.length + 1])
+  )
+}
+
+/** 写盘收束同时新开 status + 思考 + Ask User / Awaiting：过程 remap 并追加两条 status，旁白续尾 */
+export function isLiveWriteStatStatusThinkStatusAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || next.length !== prev!.length + 3) return false
+  return (
+    isLiveAddedStatusPair(next[prev!.length]) &&
+    isLiveAddedThinkPair(next[prev!.length + 1]) &&
+    isLiveAddedAskOrAwaitingStatus(next[prev!.length + 2])
+  )
+}
+
 /** 无新写盘收束同时新开思考 + 散文：过程 remap，旁白续尾，回答开尾 */
 export function isLiveThinkAnswerAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -1495,6 +1564,10 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveWriteStatStatusToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatThinkToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusThinkToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveThinkStatusAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusThinkStatusAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatThinkStatusAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusThinkStatusAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusAppendChange(prevSegments, segments)) return 'status'
   if (isLiveWriteStatStatusThinkAppendChange(prevSegments, segments)) return 'think'
   if (isLiveWriteStatStatusAnswerAppendChange(prevSegments, segments)) return 'text'
@@ -1614,7 +1687,9 @@ export function nextLiveThinkText(
   if (
     prevSegments &&
     (isLiveThinkToolAppendChange(prevSegments, segments) ||
-      isLiveWriteStatThinkToolAppendChange(prevSegments, segments))
+      isLiveWriteStatThinkToolAppendChange(prevSegments, segments) ||
+      isLiveThinkStatusAppendChange(prevSegments, segments) ||
+      isLiveWriteStatThinkStatusAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length]?.content ?? '')
   }
@@ -1650,7 +1725,9 @@ export function nextLiveThinkText(
       isLiveStatusThinkCompressAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusThinkCompressAppendChange(prevSegments, segments) ||
       isLiveStatusThinkCancelAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusThinkCancelAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusThinkCancelAppendChange(prevSegments, segments) ||
+      isLiveStatusThinkStatusAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusThinkStatusAppendChange(prevSegments, segments))
   ) {
     return prev + (segments[prevSegments.length + 1]?.content ?? '')
   }
@@ -1950,6 +2027,10 @@ export function nextLiveProcessView(
       isLiveWriteStatStatusToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatThinkToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusThinkToolAppendChange(processHold.segments, segments) ||
+      isLiveThinkStatusAppendChange(processHold.segments, segments) ||
+      isLiveStatusThinkStatusAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatThinkStatusAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusThinkStatusAppendChange(processHold.segments, segments) ||
       isLiveWriteStatCompressAppendChange(processHold.segments, segments) ||
       isLiveStatusCompressAppendChange(processHold.segments, segments) ||
       isLiveThinkCompressAppendChange(processHold.segments, segments) ||
@@ -2367,7 +2448,9 @@ export function shouldSkipLiveAnswerIdentity(input: {
     isLiveToolAppendChange(input.prevSegments, input.segments) ||
     isLiveStatusToolAppendChange(input.prevSegments, input.segments) ||
     isLiveThinkToolAppendChange(input.prevSegments, input.segments) ||
-    isLiveStatusThinkToolAppendChange(input.prevSegments, input.segments)
+    isLiveStatusThinkToolAppendChange(input.prevSegments, input.segments) ||
+    isLiveThinkStatusAppendChange(input.prevSegments, input.segments) ||
+    isLiveStatusThinkStatusAppendChange(input.prevSegments, input.segments)
   ) {
     return findLiveClosedAnswerText(input.prevSegments, input.segments) === null
   }
@@ -2712,7 +2795,9 @@ export function nextLiveAnswerView(
       if (
         isLiveWriteStatStatusCancelAppendChange(prevSegments, segments) ||
         isLiveWriteStatThinkCancelAppendChange(prevSegments, segments) ||
-        isLiveWriteStatStatusThinkCancelAppendChange(prevSegments, segments)
+        isLiveWriteStatStatusThinkCancelAppendChange(prevSegments, segments) ||
+        isLiveWriteStatThinkStatusAppendChange(prevSegments, segments) ||
+        isLiveWriteStatStatusThinkStatusAppendChange(prevSegments, segments)
       ) {
         const sealed = findLiveClosedAnswerText(prevSegments, segments)
         const view = sealed ? sealLiveAnswerTail(patched, sealed) : patched

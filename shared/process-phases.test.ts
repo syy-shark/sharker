@@ -411,6 +411,64 @@ describe('process phases privacy', () => {
     expect(afterAskDone).toHaveLength(2)
     expect(afterAskDone!.at(-1)?.segment).toBe(askStatusDone)
     expect(afterAskDone!.at(-1)?.status).toBe('done')
+    const planStatus: TurnSegment = {
+      id: 'st-plan',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…',
+      startedAt: 20
+    }
+    const planSteps = deriveChronologicalSteps([cmdDone, planStatus], { isStreaming: true })
+    const planAskStatus: TurnSegment = {
+      ...planStatus,
+      content: 'API style',
+      toolName: 'request_user_input'
+    }
+    const afterPlanAsk = appendProcessPhaseStepOnToolStart(
+      planSteps,
+      [cmdDone, planStatus],
+      [cmdDone, planAskStatus],
+      true
+    )
+    expect(afterPlanAsk).not.toBeNull()
+    expect(afterPlanAsk).toHaveLength(2)
+    expect(afterPlanAsk![0]).toBe(planSteps[0])
+    expect(afterPlanAsk!.at(-1)?.segment).toBe(planAskStatus)
+    const planAwaitingStatus: TurnSegment = {
+      ...planStatus,
+      content: 'Awaiting approval · npm test',
+      toolName: 'run_terminal_cmd'
+    }
+    const afterPlanApproval = appendProcessPhaseStepOnToolStart(
+      planSteps,
+      [cmdDone, planStatus],
+      [cmdDone, planAwaitingStatus],
+      true
+    )
+    expect(afterPlanApproval).not.toBeNull()
+    expect(afterPlanApproval!.at(-1)?.segment).toBe(planAwaitingStatus)
+    expect(afterPlanApproval!.at(-1)?.title).toMatch(/Awaiting approval/)
+    const afterPlanThinkAsk = appendProcessPhaseStepOnToolStart(
+      planSteps,
+      [cmdDone, planStatus],
+      [cmdDone, planStatus, nextThink, askStatus],
+      true
+    )
+    expect(afterPlanThinkAsk).not.toBeNull()
+    expect(afterPlanThinkAsk).toHaveLength(3)
+    expect(afterPlanThinkAsk![0]).toBe(planSteps[0])
+    expect(afterPlanThinkAsk![1].segment).toBe(planStatus)
+    expect(afterPlanThinkAsk!.at(-1)?.segment).toBe(askStatus)
+    expect(afterPlanThinkAsk!.some((step) => step.segment === nextThink)).toBe(false)
+    const afterPlanThinkApproval = appendProcessPhaseStepOnToolStart(
+      planSteps,
+      [cmdDone, planStatus],
+      [cmdDone, planStatus, nextThink, awaitingStatus],
+      true
+    )
+    expect(afterPlanThinkApproval).not.toBeNull()
+    expect(afterPlanThinkApproval!.at(-1)?.segment).toBe(awaitingStatus)
+    expect(afterPlanThinkApproval!.some((step) => step.segment === nextThink)).toBe(false)
     const cancelCmd: TurnSegment = {
       id: 'run-stop',
       kind: 'tool',
@@ -841,6 +899,28 @@ describe('process phases privacy', () => {
     expect(settleAndStatusThinkCancel).not.toBeNull()
     expect(settleAndStatusThinkCancel).toHaveLength(3)
     expect(settleAndStatusThinkCancel!.at(-1)?.segment).toBe(reconnectCancelled)
+    const settleAndStatusThinkAsk = appendProcessPhaseStepOnToolStart(
+      twoActive,
+      [cmdRunning, cmdNext],
+      [cmdDone, cmdNextDone, reconnectStatus, nextThink, askStatus],
+      true
+    )
+    expect(settleAndStatusThinkAsk).not.toBeNull()
+    expect(settleAndStatusThinkAsk).toHaveLength(4)
+    expect(settleAndStatusThinkAsk![2].segment).toBe(reconnectStatus)
+    expect(settleAndStatusThinkAsk!.at(-1)?.segment).toBe(askStatus)
+    expect(settleAndStatusThinkAsk!.some((step) => step.segment === nextThink)).toBe(false)
+    const writeAndStatusThinkAsk = appendProcessPhaseStepOnToolStart(
+      cmdSteps,
+      [cmdRunning],
+      [cmdDoneDiff, reconnectStatus, nextThink, askStatus],
+      true
+    )
+    expect(writeAndStatusThinkAsk).not.toBeNull()
+    expect(writeAndStatusThinkAsk).toHaveLength(3)
+    expect(writeAndStatusThinkAsk![0].segment).toBe(cmdDoneDiff)
+    expect(writeAndStatusThinkAsk![1].segment).toBe(reconnectStatus)
+    expect(writeAndStatusThinkAsk!.at(-1)?.segment).toBe(askStatus)
     expect(settleAndStatusThinkCancel!.some((step) => step.segment === nextThinkCancelled)).toBe(
       false
     )
