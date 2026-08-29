@@ -3,6 +3,19 @@
  * @see shared/ARCH.md
  */
 import {
+  SLASH_APPROVE_DESCRIPTION,
+  SLASH_COMPACT_DESCRIPTION,
+  SLASH_GOAL_DESCRIPTION,
+  SLASH_INIT_DESCRIPTION,
+  SLASH_MEMORIES_DESCRIPTION,
+  SLASH_PERSONALITY_DESCRIPTION,
+  SLASH_PLAN_DESCRIPTION,
+  SLASH_REASONING_DESCRIPTION,
+  SLASH_REVIEW_DESCRIPTION,
+  SLASH_STATUS_DESCRIPTION,
+  SLASH_TASK_DESCRIPTION
+} from './slash-commands'
+import {
   ARCHIVE_CHAT_LABEL,
   ARCHIVE_CHATS_ACTION_LABEL,
   SHARE_LABEL,
@@ -88,8 +101,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'task',
-    title: '无项目新对话',
-    keywords: 'task chat global no project 无项目 全局 /task /chat',
+    title: SLASH_TASK_DESCRIPTION,
+    keywords: 'task chat global no project 无项目新对话 无项目 全局 /task /chat',
     action: 'new_global_conversation'
   },
   {
@@ -113,8 +126,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'compact',
-    title: '压缩上下文',
-    keywords: 'compact context 压缩 上下文',
+    title: SLASH_COMPACT_DESCRIPTION,
+    keywords: 'compact context 压缩上下文 压缩 上下文',
     action: 'compact_context'
   },
   {
@@ -149,8 +162,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'init',
-    title: '初始化 AGENTS.md',
-    keywords: 'init agents.md 项目说明',
+    title: SLASH_INIT_DESCRIPTION,
+    keywords: 'init agents.md 初始化 AGENTS.md 项目说明',
     action: 'init_agents'
   },
   {
@@ -161,8 +174,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'memories',
-    title: '本对话记忆',
-    keywords: 'memories memory 记忆 注入 写入',
+    title: SLASH_MEMORIES_DESCRIPTION,
+    keywords: 'memories memory 本对话记忆 记忆 注入 写入',
     action: 'show_memories'
   },
   {
@@ -222,8 +235,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'reasoning',
-    title: '查看或设定思考档',
-    keywords: 'reasoning thinking effort 思考 推理',
+    title: SLASH_REASONING_DESCRIPTION,
+    keywords: 'reasoning thinking effort 查看或设定思考档 思考 推理',
     action: 'set_reasoning'
   },
   {
@@ -240,15 +253,21 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'status',
-    title: '会话状态',
-    keywords: 'status model permission 状态 模型',
+    title: SLASH_STATUS_DESCRIPTION,
+    keywords: 'status model permission 会话状态 状态 模型',
     action: 'show_status'
   },
   {
     id: 'goal',
-    title: '设定线程目标',
-    keywords: 'goal 目标',
+    title: SLASH_GOAL_DESCRIPTION,
+    keywords: 'goal 设定线程目标 目标 /plan',
     action: 'set_goal'
+  },
+  {
+    id: 'plan',
+    title: SLASH_PLAN_DESCRIPTION,
+    keywords: 'plan mode toggle 切换计划模式 计划 模式 /plan',
+    action: 'toggle_plan'
   },
   {
     id: 'open-worktree',
@@ -264,9 +283,9 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'review',
-    title: '审查未提交变更',
+    title: SLASH_REVIEW_DESCRIPTION,
     shortcut: '⌘⌥B',
-    keywords: 'review changes diff 审查 变更',
+    keywords: 'review changes diff 审查未提交变更 审查 变更',
     action: 'review_working_tree'
   },
   {
@@ -451,8 +470,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'personality',
-    title: '切换人格',
-    keywords: 'personality pragmatic friendly empathetic 人格 务实 友好 共情',
+    title: SLASH_PERSONALITY_DESCRIPTION,
+    keywords: 'personality pragmatic friendly empathetic 切换人格 人格 务实 友好 共情',
     action: 'set_personality'
   },
   {
@@ -562,8 +581,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'approve',
-    title: '批准重试被拒操作',
-    keywords: 'approve retry denied 批准 重试 拒绝',
+    title: SLASH_APPROVE_DESCRIPTION,
+    keywords: 'approve retry denied 批准重试被拒操作 批准 重试 拒绝',
     action: 'approve_denied'
   },
   {

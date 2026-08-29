@@ -4,6 +4,25 @@
  */
 import { OPEN_KEYBOARD_SHORTCUTS_LABEL, OPEN_SETTINGS_LABEL } from './reveal-in-folder'
 
+/** Official desktop slash copy (learn.chatgpt.com/docs/reference/slash-commands). */
+export const SLASH_PLAN_DESCRIPTION = 'Toggle plan mode for multi-step planning.'
+export const SLASH_GOAL_DESCRIPTION =
+  'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.'
+export const SLASH_STATUS_DESCRIPTION = 'Show the chat ID, context usage, and rate limits.'
+export const SLASH_COMPACT_DESCRIPTION = "Compact the current chat's context."
+export const SLASH_TASK_DESCRIPTION = 'Start a chat without a project.'
+export const SLASH_INIT_DESCRIPTION = 'Generate an AGENTS.md scaffold for the current project.'
+export const SLASH_MEMORIES_DESCRIPTION =
+  'Configure whether the chat can use or generate memories, when Memories is available.'
+export const SLASH_LOCAL_DESCRIPTION = 'Run the chat in the selected local project.'
+export const SLASH_REVIEW_DESCRIPTION =
+  'Start code review mode to review uncommitted changes or compare against a base branch.'
+export const SLASH_PERSONALITY_DESCRIPTION =
+  'Choose how Codex responds, when the current model supports personalities.'
+export const SLASH_REASONING_DESCRIPTION = 'Choose the reasoning effort for the current chat.'
+export const SLASH_APPROVE_DESCRIPTION =
+  'Approve one retry of a recent automatic-review denial, when automatic review is active.'
+
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
 
@@ -43,7 +62,7 @@ export const SLASH_COMMAND_CATEGORIES: Record<
 export const SLASH_COMMANDS: SlashCommandMeta[] = [
   {
     name: 'plan',
-    description: 'Toggle plan mode for multi-step planning.',
+    description: SLASH_PLAN_DESCRIPTION,
     scope: 'agent',
     argsHint: '[说明]',
     category: 'mode'
@@ -57,7 +76,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'goal',
-    description: 'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.',
+    description: SLASH_GOAL_DESCRIPTION,
     scope: 'ui',
     action: 'set_goal',
     argsHint: '[文本|edit|pause|resume|clear]',
@@ -65,7 +84,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'status',
-    description: 'Show the chat ID, context usage, and rate limits.',
+    description: SLASH_STATUS_DESCRIPTION,
     scope: 'ui',
     action: 'show_status',
     category: 'session'
@@ -85,7 +104,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'compact',
-    description: "Compact the current chat's context.",
+    description: SLASH_COMPACT_DESCRIPTION,
     scope: 'ui',
     action: 'compact_context',
     category: 'session'
@@ -105,14 +124,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'task',
-    description: 'Start a chat without a project.',
+    description: SLASH_TASK_DESCRIPTION,
     scope: 'ui',
     action: 'new_global_conversation',
     category: 'session'
   },
   {
     name: 'chat',
-    description: '不绑定项目开新对话（对标 Codex /chat）',
+    description: SLASH_TASK_DESCRIPTION,
     scope: 'ui',
     action: 'new_global_conversation',
     category: 'session'
@@ -216,7 +235,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'init',
-    description: 'Generate an AGENTS.md scaffold for the current project.',
+    description: SLASH_INIT_DESCRIPTION,
     scope: 'ui',
     action: 'init_agents',
     category: 'workspace'
@@ -231,7 +250,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'memories',
-    description: 'Configure whether the chat can use or generate memories, when Memories is available.',
+    description: SLASH_MEMORIES_DESCRIPTION,
     scope: 'ui',
     action: 'show_memories',
     argsHint: '[on|off|use|inherit]',
@@ -239,7 +258,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'local',
-    description: '交接回本地工作区',
+    description: SLASH_LOCAL_DESCRIPTION,
     scope: 'ui',
     action: 'set_thread_local',
     category: 'mode'
@@ -311,8 +330,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'review',
-    description:
-      'Start code review mode to review uncommitted changes or compare against a base branch.',
+    description: SLASH_REVIEW_DESCRIPTION,
     scope: 'ui',
     action: 'review_working_tree',
     argsHint: '[uncommitted|branch|commit] [here|detached] [关注点]',
@@ -320,7 +338,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'personality',
-    description: 'Choose how Codex responds, when the current model supports personalities.',
+    description: SLASH_PERSONALITY_DESCRIPTION,
     scope: 'ui',
     action: 'set_personality',
     argsHint: '[pragmatic|friendly|none]',
@@ -378,7 +396,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'reasoning',
-    description: 'Choose the reasoning effort for the current chat.',
+    description: SLASH_REASONING_DESCRIPTION,
     scope: 'ui',
     action: 'set_reasoning',
     argsHint: '[档位]',
@@ -422,8 +440,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'approve',
-    description:
-      'Approve one retry of a recent automatic-review denial, when automatic review is active.',
+    description: SLASH_APPROVE_DESCRIPTION,
     scope: 'ui',
     action: 'approve_denied',
     category: 'mode'

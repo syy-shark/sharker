@@ -6727,6 +6727,12 @@ export default function App() {
         void window.sharker.openNewWindow?.()
         return
       }
+      if (cmd.action === 'toggle_plan') {
+        const id = activeConversationIdRef.current
+        const on = id ? planModeByConvRef.current.get(id) === true : false
+        void handlePlanModeChange(!on)
+        return
+      }
       if (cmd.action === 'open_codex_docs') {
         void window.sharker.openExternal?.(CODEX_DOCUMENTATION_URL)
         return
@@ -6768,6 +6774,7 @@ export default function App() {
       handleFocusBrowserAddress,
       handleOpenBrowserTab,
       handleOpenTerminal,
+      handlePlanModeChange,
       handleReloadBrowserPage,
       handleRunEnvironmentAction,
       handleStandaloneConversation,

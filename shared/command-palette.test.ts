@@ -19,6 +19,7 @@ describe('command palette', () => {
     expect(ids).toContain('agents')
     expect(ids).toContain('activity')
     expect(ids).toContain('personality')
+    expect(ids).toContain('plan')
     expect(ids).toContain('shortcuts')
     expect(ids).toContain('fork')
     expect(ids).toContain('fork-worktree')
@@ -52,6 +53,39 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'share')?.title).toBe('Share')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'archive-project-chats')?.title).toBe('Archive chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'new')?.title).toBe('New chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'task')?.title).toBe(
+      'Start a chat without a project.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'compact')?.title).toBe(
+      "Compact the current chat's context."
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'init')?.title).toBe(
+      'Generate an AGENTS.md scaffold for the current project.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'status')?.title).toBe(
+      'Show the chat ID, context usage, and rate limits.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'review')?.title).toBe(
+      'Start code review mode to review uncommitted changes or compare against a base branch.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'goal')?.title).toBe(
+      'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'plan')?.title).toBe(
+      'Toggle plan mode for multi-step planning.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'memories')?.title).toBe(
+      'Configure whether the chat can use or generate memories, when Memories is available.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'reasoning')?.title).toBe(
+      'Choose the reasoning effort for the current chat.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'personality')?.title).toBe(
+      'Choose how Codex responds, when the current model supports personalities.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'approve')?.title).toBe(
+      'Approve one retry of a recent automatic-review denial, when automatic review is active.'
+    )
     expect(PALETTE_COMMANDS.find((c) => c.id === 'side')?.title).toBe('Open side chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'archive')?.title).toBe('Archive chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'rename')?.title).toBe('Rename chat')
@@ -128,6 +162,7 @@ describe('command palette', () => {
     )
     expect(ids).toContain('next-attention')
     expect(ids).toContain('approve')
+    expect(ids).toContain('plan')
     expect(ids).toContain('rename')
     expect(ids).toContain('pin')
     expect(ids).toContain('unread')
@@ -164,6 +199,23 @@ describe('command palette', () => {
     ).toBe(true)
     expect(filterPaletteCommands('面板').some((c) => c.action === 'toggle_panel')).toBe(true)
     expect(filterPaletteCommands('task').some((c) => c.id === 'task')).toBe(true)
+    expect(filterPaletteCommands('无项目').some((c) => c.id === 'task')).toBe(true)
+    expect(filterPaletteCommands('Start a chat without a project').some((c) => c.id === 'task')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('压缩上下文').some((c) => c.id === 'compact')).toBe(true)
+    expect(filterPaletteCommands('Compact the current chat').some((c) => c.id === 'compact')).toBe(
+      true
+    )
+    expect(filterPaletteCommands('初始化 AGENTS').some((c) => c.id === 'init')).toBe(true)
+    expect(filterPaletteCommands('会话状态').some((c) => c.id === 'status')).toBe(true)
+    expect(filterPaletteCommands('审查未提交').some((c) => c.id === 'review')).toBe(true)
+    expect(filterPaletteCommands('设定线程目标').some((c) => c.id === 'goal')).toBe(true)
+    expect(filterPaletteCommands('本对话记忆').some((c) => c.id === 'memories')).toBe(true)
+    expect(filterPaletteCommands('查看或设定思考档').some((c) => c.id === 'reasoning')).toBe(true)
+    expect(filterPaletteCommands('切换人格').some((c) => c.id === 'personality')).toBe(true)
+    expect(filterPaletteCommands('批准重试').some((c) => c.id === 'approve')).toBe(true)
+    expect(filterPaletteCommands('Toggle plan mode').some((c) => c.id === 'plan')).toBe(true)
     expect(filterPaletteCommands('/chat').some((c) => c.action === 'new_global_conversation')).toBe(
       true
     )

@@ -151,7 +151,12 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'reasoning')?.action).toBe('set_reasoning')
     expect(SLASH_COMMANDS.find((c) => c.name === 'task')?.action).toBe('new_global_conversation')
     expect(SLASH_COMMANDS.find((c) => c.name === 'chat')?.action).toBe('new_global_conversation')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'chat')?.description).toContain('Codex /chat')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'chat')?.description).toBe(
+      'Start a chat without a project.'
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'local')?.description).toBe(
+      'Run the chat in the selected local project.'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'model')?.action).toBe('pick_model')
   })
 
@@ -161,6 +166,8 @@ describe('slash commands', () => {
     expect(filterSlashCommands('code review').some((c) => c.name === 'review')).toBe(true)
     expect(filterSlashCommands('task').some((c) => c.name === 'task')).toBe(true)
     expect(filterSlashCommands('chat').some((c) => c.name === 'chat')).toBe(true)
+    expect(filterSlashCommands('without a project').some((c) => c.name === 'chat')).toBe(true)
+    expect(filterSlashCommands('selected local project').some((c) => c.name === 'local')).toBe(true)
   })
 
   it('appends installed skills to the slash list without shadowing builtins', () => {
