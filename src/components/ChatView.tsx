@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
- * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，思考 / 过程不重跑查找（对标 Codex #33907 / #22860）。
+ * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token 走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * @see src/ARCH.md
@@ -94,16 +94,13 @@ import {
   windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
-import {
-  useLiveStreamUiSelect,
-  useLiveStreamUiSelectWhen,
-  useLiveStreamUiWhen
-} from '../hooks/useLiveStreamUi'
+import { useLiveStreamUiSelect, useLiveStreamUiSelectWhen } from '../hooks/useLiveStreamUi'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
 import {
   appendLiveFindHits,
+  sameThreadSearchHits,
   findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
@@ -595,21 +592,20 @@ function LiveBodyFlag({
 
 /**
  * 查找开着才订阅直播正文，且只订 `streaming`。关闭或思考 / 过程增长时不跟 token。
+ * 命中列表没变不抬对话柱；当前命中在直播行时就地重标，不写 ChatView state。
  */
 function LiveFindSync({
   enabled,
   query,
   liveRowId,
   seq,
-  onHits,
-  onPaintTick
+  onHits
 }: {
   enabled: boolean
   query: string
   liveRowId: string
   seq: number
   onHits: (hits: ThreadSearchHit[]) => void
-  onPaintTick: (chars: number) => void
 }) {
   const streaming = useLiveStreamUiSelectWhen(enabled, (snap) => snap.streaming)
   const hits = useMemo(() => {
@@ -619,9 +615,32 @@ function LiveFindSync({
   useEffect(() => {
     onHits(hits)
   }, [hits, onHits])
+  return null
+}
+
+/** 当前命中在直播行：只订 streaming 重标，不抬对话柱（对标 Codex #33907 / #22860） */
+function LiveFindHighlight({
+  enabled,
+  query,
+  liveRowId,
+  occurrence
+}: {
+  enabled: boolean
+  query: string
+  liveRowId: string
+  occurrence: number
+}) {
+  const streaming = useLiveStreamUiSelectWhen(enabled, (snap) => snap.streaming)
   useEffect(() => {
-    if (enabled) onPaintTick(streaming.length)
-  }, [enabled, streaming.length, onPaintTick])
+    if (!enabled || !query.trim()) return
+    const el = document.getElementById(`msg-${liveRowId}`)
+    if (!el) {
+      clearFindHighlight()
+      return
+    }
+    paintFindHighlight(el, query, occurrence)
+    return () => clearFindHighlight()
+  }, [enabled, liveRowId, occurrence, query, streaming])
   return null
 }
 
@@ -640,14 +659,17 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
   stickToBottomRef: { current: boolean }
 }) {
   const [unseen, setUnseen] = useState(false)
-  const live = useLiveStreamUiWhen(visible || unseen)
+  const watchLive = visible || unseen
+  const progress = useLiveStreamUiSelectWhen(watchLive, (snap) =>
+    liveProgressKey({
+      streamingChars: snap.streaming.length,
+      liveSegmentCount: snap.liveSegments.length,
+      thinkingChars: snap.turnThinking.length
+    })
+  )
   const lastKeyRef = useRef('')
   useEffect(() => {
-    const next = liveProgressKey({
-      streamingChars: live.streaming.length,
-      liveSegmentCount: live.liveSegments.length,
-      thinkingChars: live.turnThinking.length
-    })
+    const next = progress
     const prev = lastKeyRef.current
     lastKeyRef.current = next
     if (
@@ -668,14 +690,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
     ) {
       setUnseen(true)
     }
-  }, [
-    live.liveSegments.length,
-    live.streaming.length,
-    live.turnThinking.length,
-    stickToBottom,
-    stickToBottomRef,
-    userLockedRef
-  ])
+  }, [progress, stickToBottom, stickToBottomRef, userLockedRef])
   if (!visible && !unseen) return null
   const jump = jumpToBottomAffordance(unseen)
   return (
@@ -851,7 +866,6 @@ export const ChatView = memo(function ChatView({
   /** 直播体是否已出现：只在布尔翻转时重绘历史列 */
   const [liveBody, setLiveBody] = useState(false)
   const [liveMemoryFindHits, setLiveMemoryFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
-  const [liveFindRev, setLiveFindRev] = useState(0)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findHit, setFindHit] = useState(0)
@@ -869,7 +883,6 @@ export const ChatView = memo(function ChatView({
     findAnchorRef.current = null
     setLiveBody(false)
     setLiveMemoryFindHits(EMPTY_FIND_HITS)
-    setLiveFindRev(0)
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [copyPickIndex, setCopyPickIndex] = useState(0)
@@ -1218,10 +1231,7 @@ export const ChatView = memo(function ChatView({
   }, [historyHead, historyHeadStartSeq, historyStartSeq, liveRowId, messages, findQuery])
 
   const handleLiveFindHits = useCallback((hits: ThreadSearchHit[]) => {
-    setLiveMemoryFindHits((prev) => (prev === hits ? prev : hits))
-  }, [])
-  const handleLiveFindPaint = useCallback((chars: number) => {
-    setLiveFindRev(chars)
+    setLiveMemoryFindHits((prev) => (sameThreadSearchHits(prev, hits) ? prev : hits))
   }, [])
   const handleLiveBody = useCallback((next: boolean) => {
     setLiveBody((prev) => (prev === next ? prev : next))
@@ -1587,6 +1597,7 @@ export const ChatView = memo(function ChatView({
       clearFindHighlight()
       return
     }
+    if (findCurrent.messageId === liveRowId) return
     const el = document.getElementById(`msg-${findCurrent.messageId}`)
     if (!el) {
       clearFindHighlight()
@@ -1600,8 +1611,7 @@ export const ChatView = memo(function ChatView({
     findOpen,
     findQuery,
     liveRowId,
-    windowStart,
-    findCurrent?.messageId === liveRowId ? liveFindRev : 0
+    windowStart
   ])
 
   /** 滚动到底部：流式贴底用即时 scrollTop，离散事件才用 smooth */
@@ -2121,7 +2131,12 @@ export const ChatView = memo(function ChatView({
         liveRowId={liveRowId}
         seq={historyStartSeq + messages.length}
         onHits={handleLiveFindHits}
-        onPaintTick={handleLiveFindPaint}
+      />
+      <LiveFindHighlight
+        enabled={Boolean(findOpen && findQuery.trim() && findCurrent?.messageId === liveRowId)}
+        query={findQuery}
+        liveRowId={liveRowId}
+        occurrence={findCurrent?.occurrence ?? 0}
       />
       {!isEmpty && findOpen ? (
         <div className="chat-find glass-tile" role="search">

@@ -1,6 +1,6 @@
 /**
  * 线程内查找：在用户/助手消息正文里定位查询。
- * 分页线程盘上检索与内存/直播命中合并（对标 Codex #33907）。
+ * 分页线程盘上检索与内存/直播命中合并；`sameThreadSearchHits` 避免直播 token 换命中数组（对标 Codex #33907 / #22860）。
  * @see shared/ARCH.md
  */
 
@@ -91,6 +91,27 @@ export function findInThread(
     })
   })
   return hits
+}
+
+/** 命中列表没变则退回同一引用，避免直播 token 抬对话柱（对标 Codex #33907 / #22860） */
+export function sameThreadSearchHits(
+  left: readonly ThreadSearchHit[],
+  right: readonly ThreadSearchHit[]
+): boolean {
+  if (left === right) return true
+  if (left.length !== right.length) return false
+  return left.every((hit, index) => {
+    const other = right[index]
+    return (
+      Boolean(other) &&
+      hit.messageId === other.messageId &&
+      hit.index === other.index &&
+      hit.occurrence === other.occurrence &&
+      hit.start === other.start &&
+      hit.end === other.end &&
+      hit.seq === other.seq
+    )
+  })
 }
 
 /**

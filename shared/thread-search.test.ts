@@ -16,6 +16,7 @@ import {
   findInThread,
   locateFlatRange,
   mergeThreadSearchHits,
+  sameThreadSearchHits,
   resolveFindHitIndex,
   seedFindQuery
 } from './thread-search'
@@ -97,6 +98,16 @@ describe('thread search', () => {
       'live'
     ])
     expect([...findHitMessageIds(historical)]).toEqual(['old'])
+    expect(sameThreadSearchHits(liveHit, liveHit)).toBe(true)
+    expect(sameThreadSearchHits(liveHit, findInThread([{ id: 'live', content: 'review now', seq: 41 }], 'review'))).toBe(
+      true
+    )
+    expect(sameThreadSearchHits(liveHit, findInThread([{ id: 'live', content: 'review now more', seq: 41 }], 'review'))).toBe(
+      true
+    )
+    expect(sameThreadSearchHits(liveHit, findInThread([{ id: 'live', content: 'review now review', seq: 41 }], 'review'))).toBe(
+      false
+    )
   })
 
   it('returns nothing for empty query', () => {
