@@ -925,6 +925,17 @@ describe('splitStreamingMarkdown', () => {
       expect(afterTable[0].items[0]?.blocks?.[0]?.type).toBe('table')
       expect(afterTable[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
     }
+    const headingThenTable = parseCheapProseBlocks(
+      '- note\n  # title\n  | A | B |\n  | --- | --- |\n  | 1 | 2 |'
+    )
+    expect(headingThenTable.map((b) => b.type)).toEqual(['list'])
+    if (headingThenTable[0]?.type === 'list') {
+      expect(headingThenTable[0].items[0]?.blocks?.map((block) => block.type)).toEqual([
+        'heading',
+        'table'
+      ])
+      expect(headingThenTable[0].items[0]?.suffix).toBeUndefined()
+    }
     const looseFence = parseCheapProseBlocks('- a\n\n  ```\n  x\n  ```')
     expect(looseFence.map((b) => b.type)).toEqual(['list'])
     if (looseFence[0]?.type === 'list') {
@@ -1520,6 +1531,34 @@ describe('splitStreamingMarkdown', () => {
       expect(nestedHeadingGrown[0].items[0]?.nested?.items[0]?.suffix).toEqual([
         { type: 'text', text: 'after' }
       ])
+    }
+    const headingTableText = '- note\n  # title\n  | A | B |\n  | --- | --- |\n  | 1 | 2'
+    const headingTableFirst = parseCheapProseBlocks(headingTableText)
+    const headingTableGrown = continueCheapProseBlocks(
+      headingTableText,
+      headingTableFirst,
+      `${headingTableText}0`
+    )
+    if (headingTableFirst[0]?.type === 'list' && headingTableGrown[0]?.type === 'list') {
+      expect(headingTableGrown[0].items[0]?.nodes).toBe(headingTableFirst[0].items[0]?.nodes)
+      expect(headingTableGrown[0].items[0]?.blocks?.[0]).toBe(headingTableFirst[0].items[0]?.blocks?.[0])
+      const prevTable = headingTableFirst[0].items[0]?.blocks?.[1]
+      const nextTable = headingTableGrown[0].items[0]?.blocks?.[1]
+      if (prevTable?.type === 'table' && nextTable?.type === 'table') {
+        expect(nextTable.header[0]).toBe(prevTable.header[0])
+        expect(nextTable.rows[0]?.[1]).toEqual([{ type: 'text', text: '20' }])
+      }
+    }
+    const quoteTableText = '> | A | B |\n> | --- | --- |\n> | 1 | 2'
+    const quoteTableFirst = parseCheapProseBlocks(quoteTableText)
+    const quoteTableGrown = continueCheapProseBlocks(quoteTableText, quoteTableFirst, `${quoteTableText}0`)
+    if (quoteTableFirst[0]?.type === 'quote' && quoteTableGrown[0]?.type === 'quote') {
+      const prevTable = quoteTableFirst[0].blocks[0]
+      const nextTable = quoteTableGrown[0].blocks[0]
+      if (prevTable?.type === 'table' && nextTable?.type === 'table') {
+        expect(nextTable.header[0]).toBe(prevTable.header[0])
+        expect(nextTable.rows[0]?.[1]).toEqual([{ type: 'text', text: '20' }])
+      }
     }
   })
 
