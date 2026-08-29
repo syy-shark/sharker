@@ -173,10 +173,12 @@ import {
   isLiveApprovalDeniedThinkAnswerDemoCompressAppendChange,
   isLiveApprovalDeniedThinkErrorCompressAppendChange,
   isLiveApprovalDeniedThinkAnswerCancelAppendChange,
+  isLiveApprovalDeniedAnswerCancelAppendChange,
   isLiveApprovalDeniedAnswerDemoAppendChange,
   isLiveApprovalDeniedAnswerDemoCompressAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerCancelAppendChange,
   isLiveApprovalAllowedSettleAnswerCancelAppendChange,
+  isLiveApprovalAllowedSettleErrorCancelAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoCompressAppendChange,
   isLiveApprovalAllowedSettleToolAppendChange,
   isLiveApprovalAllowedSettleThinkCancelAppendChange,
@@ -187,6 +189,9 @@ import {
   isLiveWriteStatApprovalResolvedThinkCompressAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerCancelAppendChange,
   isLiveWriteStatApprovalResolvedAnswerCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAskAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerCompressAppendChange,
   isLiveWriteStatApprovalResolvedThinkErrorCompressAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerDemoCompressAppendChange,
@@ -208,6 +213,10 @@ import {
   isLiveStatusApprovalResolvedThinkToolAppendChange,
   isLiveStatusApprovalResolvedAskAppendChange,
   isLiveStatusApprovalResolvedToolAppendChange,
+  isLiveStatusApprovalResolvedThinkSettledToolAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerCancelAppendChange,
+  isLiveStatusApprovalResolvedAnswerCancelAppendChange,
+  isLiveStatusApprovalResolvedAnswerDemoCancelAppendChange,
   isLiveStatusApprovalResolvedThinkAnswerCompressAppendChange,
   isLiveStatusApprovalResolvedThinkErrorCompressAppendChange,
   isLiveStatusApprovalResolvedThinkAnswerDemoCompressAppendChange,
@@ -4590,6 +4599,187 @@ describe('live stream ui snapshot', () => {
         segments: approvalWriteAllowThinkTokenCancel
       })
     ).toBe(false)
+    let approvalWriteAllowStatusNext = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.51
+    })
+    approvalWriteAllowStatusNext = applyStreamChunk(approvalWriteAllowStatusNext, {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 91.52
+    })
+    approvalWriteAllowStatusNext = applyStreamChunk(approvalWriteAllowStatusNext, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.53
+    })
+    approvalWriteAllowStatusNext = applyStreamChunk(approvalWriteAllowStatusNext, {
+      ...approvalHang,
+      timestamp: 91.54
+    })
+    approvalWriteAllowStatusNext = applyStreamChunk(approvalWriteAllowStatusNext, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.55
+    })
+    approvalWriteAllowStatusNext = applyStreamChunk(approvalWriteAllowStatusNext, {
+      type: 'tool_start',
+      toolName: 'read_file',
+      toolCallId: 'r-write-st-1',
+      timestamp: 91.56
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedToolAppendChange([hello, running], approvalWriteAllowStatusNext)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusNext)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: approvalWriteAllowStatusNext
+      })
+    ).toBe(false)
+    const processReadyForWriteAllowStatusNext = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterWriteAllowStatusNext = nextLiveProcessView(processReadyForWriteAllowStatusNext, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: approvalWriteAllowStatusNext
+    })
+    expect(
+      processAfterWriteAllowStatusNext.processForFlow.some(
+        (segment) => segment.kind === 'tool' && segment.toolName === 'read_file'
+      )
+    ).toBe(true)
+    let approvalWriteAllowStatusAsk = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.57
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      type: 'status',
+      content: '规划下一步',
+      timestamp: 91.58
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.59
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      ...approvalHang,
+      timestamp: 91.61
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.62
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      type: 'tool_start',
+      toolName: REQUEST_USER_INPUT_TOOL,
+      timestamp: 91.63
+    })
+    approvalWriteAllowStatusAsk = applyStreamChunk(approvalWriteAllowStatusAsk, {
+      ...askNeeded,
+      timestamp: 91.64
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedAskAppendChange([hello, running], approvalWriteAllowStatusAsk)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusAsk)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: approvalWriteAllowStatusAsk
+      })
+    ).toBe(false)
+    let approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk([hello, running], {
+      ...writeAskDone,
+      timestamp: 91.65
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'status',
+      content: 'Reconnecting... 1/5',
+      timestamp: 91.66
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'tool_start',
+      toolName: 'run_terminal_cmd',
+      timestamp: 91.67
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      ...approvalHang,
+      timestamp: 91.68
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 91.69
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'think',
+      content: 'Next',
+      timestamp: 91.71
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'token',
+      content: 'Hi',
+      timestamp: 91.72
+    })
+    approvalWriteAllowStatusThinkTokenCancel = applyStreamChunk(approvalWriteAllowStatusThinkTokenCancel, {
+      type: 'turn_cancelled',
+      timestamp: 91.73
+    })
+    expect(
+      isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange(
+        [hello, running],
+        approvalWriteAllowStatusThinkTokenCancel
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello, running], approvalWriteAllowStatusThinkTokenCancel)).toBe(
+      'text'
+    )
+    expect(nextLiveThinkText('Hmm', [hello, running], approvalWriteAllowStatusThinkTokenCancel)).toBe(
+      'HmmNext'
+    )
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileTool,
+        prevSegments: [hello, running],
+        segments: approvalWriteAllowStatusThinkTokenCancel
+      })
+    ).toBe(false)
+    const processReadyForWriteAllowStatusThinkTokenCancel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const processAfterWriteAllowStatusThinkTokenCancel = nextLiveProcessView(
+      processReadyForWriteAllowStatusThinkTokenCancel,
+      {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: approvalWriteAllowStatusThinkTokenCancel
+      }
+    )
+    expect(
+      processAfterWriteAllowStatusThinkTokenCancel.processForFlow.some((segment) => segment.kind === 'text')
+    ).toBe(false)
+    const answerReadyForWriteAllowStatusThinkTokenCancel = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, running]
+    })
+    const answerAfterWriteAllowStatusThinkTokenCancel = nextLiveAnswerView(
+      answerReadyForWriteAllowStatusThinkTokenCancel,
+      {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: approvalWriteAllowStatusThinkTokenCancel
+      }
+    )
+    expect(answerAfterWriteAllowStatusThinkTokenCancel.tail?.content).toBe('Hi')
     let approvalReconnectAllowThinkToken = applyStreamChunk([hello], {
       type: 'status',
       content: 'Reconnecting... 1/5',
@@ -4625,6 +4815,63 @@ describe('live stream ui snapshot', () => {
     )
     expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowThinkToken)).toBe('text')
     expect(nextLiveThinkText('Hmm', [hello], approvalReconnectAllowThinkToken)).toBe('HmmNext')
+    let approvalReconnectAllowTokenCancel = applyStreamChunk(approvalReconnectAllowToken, {
+      type: 'turn_cancelled',
+      timestamp: 91.91
+    })
+    expect(
+      isLiveStatusApprovalResolvedAnswerCancelAppendChange([hello], approvalReconnectAllowTokenCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowTokenCancel)).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileHelloOnly,
+        prevSegments: [hello],
+        segments: approvalReconnectAllowTokenCancel
+      })
+    ).toBe(false)
+    const processReadyForReconnectAllowTokenCancel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const processAfterReconnectAllowTokenCancel = nextLiveProcessView(
+      processReadyForReconnectAllowTokenCancel,
+      {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: approvalReconnectAllowTokenCancel
+      }
+    )
+    expect(
+      processAfterReconnectAllowTokenCancel.processForFlow.some((segment) => segment.kind === 'text')
+    ).toBe(false)
+    const answerReadyForReconnectAllowTokenCancel = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const answerAfterReconnectAllowTokenCancel = nextLiveAnswerView(answerReadyForReconnectAllowTokenCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: approvalReconnectAllowTokenCancel
+    })
+    expect(answerAfterReconnectAllowTokenCancel.tail?.content).toBe('Hi')
+    let approvalReconnectAllowThinkTokenCancel = applyStreamChunk(approvalReconnectAllowThinkToken, {
+      type: 'turn_cancelled',
+      timestamp: 91.92
+    })
+    expect(
+      isLiveStatusApprovalResolvedThinkAnswerCancelAppendChange(
+        [hello],
+        approvalReconnectAllowThinkTokenCancel
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowThinkTokenCancel)).toBe('text')
+    expect(nextLiveThinkText('Hmm', [hello], approvalReconnectAllowThinkTokenCancel)).toBe('HmmNext')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileHelloOnly,
+        prevSegments: [hello],
+        segments: approvalReconnectAllowThinkTokenCancel
+      })
+    ).toBe(false)
     let approvalReconnectAllowThinkDemo = applyStreamChunk([hello], {
       type: 'status',
       content: 'Reconnecting... 1/5',
@@ -4700,6 +4947,21 @@ describe('live stream ui snapshot', () => {
       true
     )
     expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowDemoFresh)).toBe('tool')
+    let approvalReconnectAllowDemoCancel = applyStreamChunk(approvalReconnectAllowDemoFresh, {
+      type: 'turn_cancelled',
+      timestamp: 93.61
+    })
+    expect(
+      isLiveStatusApprovalResolvedAnswerDemoCancelAppendChange([hello], approvalReconnectAllowDemoCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowDemoCancel)).toBe('tool')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileHelloOnly,
+        prevSegments: [hello],
+        segments: approvalReconnectAllowDemoCancel
+      })
+    ).toBe(false)
     let approvalReconnectAllowError = applyStreamChunk([hello], {
       type: 'status',
       content: 'Reconnecting... 1/5',
@@ -4948,6 +5210,42 @@ describe('live stream ui snapshot', () => {
         segments: approvalReconnectAllowThinkNext
       })
     ).toBe(false)
+    let approvalReconnectAllowThinkSettled = applyStreamChunk(approvalReconnectAllowThinkNext, {
+      type: 'tool_done',
+      toolName: 'read_file',
+      toolCallId: 'r-st-2',
+      resultSummary: 'ok',
+      timestamp: 94.611
+    })
+    expect(
+      isLiveStatusApprovalResolvedThinkSettledToolAppendChange([hello], approvalReconnectAllowThinkSettled)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([hello], approvalReconnectAllowThinkSettled)).toBe('tool')
+    expect(nextLiveThinkText('Hmm', [hello], approvalReconnectAllowThinkSettled)).toBe('HmmNext')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerWhileHelloOnly,
+        prevSegments: [hello],
+        segments: approvalReconnectAllowThinkSettled
+      })
+    ).toBe(false)
+    const processReadyForReconnectAllowThinkSettled = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const processAfterReconnectAllowThinkSettled = nextLiveProcessView(
+      processReadyForReconnectAllowThinkSettled,
+      {
+        ...EMPTY_LIVE_STREAM_UI,
+        liveSegments: approvalReconnectAllowThinkSettled
+      }
+    )
+    expect(
+      processAfterReconnectAllowThinkSettled.processForFlow.some(
+        (segment) =>
+          segment.kind === 'tool' && segment.toolName === 'read_file' && segment.status === 'done'
+      )
+    ).toBe(true)
     let approvalReconnectAllowAsk = applyStreamChunk([hello], {
       type: 'status',
       content: 'Reconnecting... 1/5',
@@ -6605,6 +6903,58 @@ describe('live stream ui snapshot', () => {
       liveSegments: allowSettledTokenCancel
     })
     expect(answerAfterAllowSettledTokenCancel.tail?.content).toBe('Hi')
+    let allowSettledErrorCancel = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: true,
+      timestamp: 52.8861
+    })
+    allowSettledErrorCancel = applyStreamChunk(allowSettledErrorCancel, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      resultSummary: 'ok',
+      timestamp: 52.8862
+    })
+    allowSettledErrorCancel = applyStreamChunk(allowSettledErrorCancel, {
+      type: 'error',
+      error: 'boom',
+      timestamp: 52.8863
+    })
+    allowSettledErrorCancel = applyStreamChunk(allowSettledErrorCancel, {
+      type: 'turn_cancelled',
+      timestamp: 52.8864
+    })
+    expect(
+      isLiveApprovalAllowedSettleErrorCancelAppendChange(awaitingLive, allowSettledErrorCancel)
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, allowSettledErrorCancel)).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: awaitingLive,
+        segments: allowSettledErrorCancel
+      })
+    ).toBe(false)
+    const processReadyForAllowSettledErrorCancel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: awaitingLive
+    })
+    const processAfterAllowSettledErrorCancel = nextLiveProcessView(processReadyForAllowSettledErrorCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: allowSettledErrorCancel
+    })
+    expect(
+      processAfterAllowSettledErrorCancel.processForFlow.some((segment) => segment.kind === 'text')
+    ).toBe(false)
+    const answerReadyForAllowSettledErrorCancel = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: awaitingLive
+    })
+    const answerAfterAllowSettledErrorCancel = nextLiveAnswerView(answerReadyForAllowSettledErrorCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: allowSettledErrorCancel
+    })
+    expect(answerAfterAllowSettledErrorCancel.copyable).toContain('**错误**: boom')
     let allowSettledNext = applyStreamChunk(awaitingLive, {
       type: 'approval_resolved',
       toolName: 'run_terminal_cmd',
@@ -6883,6 +7233,57 @@ describe('live stream ui snapshot', () => {
         segments: denySettledThinkTokenCancel
       })
     ).toBe(false)
+    let denySettledTokenCancel = applyStreamChunk(awaitingLive, {
+      type: 'approval_resolved',
+      toolName: 'run_terminal_cmd',
+      approved: false,
+      timestamp: 52.9371
+    })
+    denySettledTokenCancel = applyStreamChunk(denySettledTokenCancel, {
+      type: 'tool_done',
+      toolName: 'run_terminal_cmd',
+      toolStatus: 'error',
+      resultSummary: 'denied',
+      timestamp: 52.9372
+    })
+    denySettledTokenCancel = applyStreamChunk(denySettledTokenCancel, {
+      type: 'token',
+      content: 'Hi',
+      timestamp: 52.9373
+    })
+    denySettledTokenCancel = applyStreamChunk(denySettledTokenCancel, {
+      type: 'turn_cancelled',
+      timestamp: 52.9374
+    })
+    expect(isLiveApprovalDeniedAnswerCancelAppendChange(awaitingLive, denySettledTokenCancel)).toBe(true)
+    expect(shouldSkipLiveStreamDerivation(awaitingLive, denySettledTokenCancel)).toBe('text')
+    expect(
+      shouldSkipLiveAnswerIdentity({
+        prev: answerToolsOnly,
+        prevSegments: awaitingLive,
+        segments: denySettledTokenCancel
+      })
+    ).toBe(false)
+    const processReadyForDenySettledTokenCancel = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: awaitingLive
+    })
+    const processAfterDenySettledTokenCancel = nextLiveProcessView(processReadyForDenySettledTokenCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: denySettledTokenCancel
+    })
+    expect(
+      processAfterDenySettledTokenCancel.processForFlow.some((segment) => segment.kind === 'text')
+    ).toBe(false)
+    const answerReadyForDenySettledTokenCancel = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: awaitingLive
+    })
+    const answerAfterDenySettledTokenCancel = nextLiveAnswerView(answerReadyForDenySettledTokenCancel, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: denySettledTokenCancel
+    })
+    expect(answerAfterDenySettledTokenCancel.tail?.content).toBe('Hi')
     let denySettledNext = applyStreamChunk(awaitingLive, {
       type: 'approval_resolved',
       toolName: 'run_terminal_cmd',
