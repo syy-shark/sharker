@@ -1,5 +1,6 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
+ * 划选进 Selection 芯片，不灌 textarea；发送收成官方 `# Selected text:`（对标 Codex selected-text previews）。
  * 输入框下方有沙箱 / 完整权限芯片（对标 Codex permissions control beneath the composer）。
  * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
  * @see src/components/ARCH.md
@@ -14,7 +15,7 @@ import {
   useRef,
   useState
 } from 'react'
-import { ArrowUp, FileText, Folder, Mic } from 'lucide-react'
+import { ArrowUp, FileText, Folder, Mic, Quote } from 'lucide-react'
 import type {
   ChatAttachment,
   ChatMessage,
@@ -66,7 +67,17 @@ import {
   loadComposerDraft,
   saveComposerDraft
 } from '../../shared/composer-draft'
-import { mergeComposerInsert } from '../../shared/side-chat-quote'
+import {
+  formatComposerInsert,
+  mergeComposerInsert
+} from '../../shared/side-chat-quote'
+import {
+  formatSelectedTextSubmit,
+  normalizeSelectedTextDraft,
+  selectedTextChipLabel,
+  selectedTextTitle,
+  type SelectedTextPreview
+} from '../../shared/selected-text-preview'
 import {
   collectUserPrompts,
   filterPromptHistory,
@@ -174,11 +185,13 @@ export type ComposerDockIntent =
   | 'project'
   | null
 
-/** 深链覆盖或划选追加；nonce 变化才写入，不跟直播 token 重绘 */
+/** 深链覆盖、审查跟进或划选芯片；nonce 变化才写入，不跟直播 token 重绘 */
 export type ComposerSeed = {
   nonce: number
   text: string
   mode?: 'replace' | 'append'
+  /** 官方 selected-text previews：进芯片，不灌 textarea */
+  selections?: SelectedTextPreview[]
 }
 
 export interface ComposerDockProps {
@@ -297,8 +310,12 @@ export const ComposerDock = memo(
     const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>(
       () => loadComposerDraft(composerDraftKey(sessionKey, activeWorkspaceId)).attachments
     )
+    const [selectedTexts, setSelectedTexts] = useState<SelectedTextPreview[]>(
+      () => loadComposerDraft(composerDraftKey(sessionKey, activeWorkspaceId)).selectedTexts ?? []
+    )
     const [attachmentError, setAttachmentError] = useState('')
     const [pastePreviewId, setPastePreviewId] = useState<string | null>(null)
+    const [selectedPreviewId, setSelectedPreviewId] = useState<string | null>(null)
     const [composerFocus, setComposerFocus] = useState<'none' | 'pointer' | 'keyboard'>('none')
     const [historyActiveIndex, setHistoryActiveIndex] = useState(0)
     const historyActiveIndexRef = useRef(0)
@@ -338,6 +355,7 @@ export const ComposerDock = memo(
     const voiceChatRef = useRef(false)
     const inputRef = useRef(input)
     const attachmentsRef = useRef<ChatAttachment[]>(pendingAttachments)
+    const selectedTextsRef = useRef<SelectedTextPreview[]>(selectedTexts)
     const loadingRef = useRef(false)
     const submitVoiceRef = useRef<(text: string) => void>(() => {})
     const wasLoadingRef = useRef(false)
@@ -558,7 +576,9 @@ export const ComposerDock = memo(
       return () => window.removeEventListener('keydown', onKey)
     }, [showWorktreeBranchPicker, worktreeBranchRows, onWorktreeBaseRefChange])
 
-    const canSend = Boolean(input.trim() || pendingAttachments.length > 0)
+    const canSend = Boolean(
+      input.trim() || pendingAttachments.length > 0 || selectedTexts.length > 0
+    )
     const activeWorkspace =
       sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
       sortWorkspaces(workspaces ?? [])[0]
@@ -802,7 +822,17 @@ export const ComposerDock = memo(
     }, [composerIntent, onComposerIntentHandled])
 
     useEffect(() => {
-      if (!composerSeed?.text) return
+      if (composerSeed?.selections?.length) {
+        setSelectedTexts((cur) =>
+          normalizeSelectedTextDraft([...cur, ...composerSeed.selections!])
+        )
+      }
+      if (!composerSeed?.text) {
+        if (composerSeed?.selections?.length) {
+          requestAnimationFrame(() => textareaRef.current?.focus())
+        }
+        return
+      }
       setInput((cur) =>
         composerSeed.mode === 'append' ? mergeComposerInsert(cur, composerSeed.text) : composerSeed.text
       )
@@ -903,6 +933,8 @@ export const ComposerDock = memo(
           const line = composerSlashLine(input, cmd.name)
           setInput('')
           setPendingAttachments([])
+          setSelectedTexts([])
+          setSelectedPreviewId(null)
           setAttachmentError('')
           setSlashDismissed(true)
           onSubmitted?.('queue')
@@ -915,6 +947,8 @@ export const ComposerDock = memo(
         }
         setInput('')
         setPendingAttachments([])
+        setSelectedTexts([])
+        setSelectedPreviewId(null)
         setAttachmentError('')
         onSlashAction(cmd, '')
         requestAnimationFrame(() => {
@@ -1050,6 +1084,9 @@ export const ComposerDock = memo(
       attachmentsRef.current = pendingAttachments
     }, [pendingAttachments])
     useEffect(() => {
+      selectedTextsRef.current = selectedTexts
+    }, [selectedTexts])
+    useEffect(() => {
       loadingRef.current = loading
     }, [loading])
 
@@ -1058,21 +1095,30 @@ export const ComposerDock = memo(
     useEffect(() => {
       const prev = draftKeyRef.current
       if (prev === draftKey) return
-      saveComposerDraft(prev, { text: inputRef.current, attachments: attachmentsRef.current })
+      saveComposerDraft(prev, {
+        text: inputRef.current,
+        attachments: attachmentsRef.current,
+        selectedTexts: selectedTextsRef.current
+      })
       draftKeyRef.current = draftKey
       const next = loadComposerDraft(draftKey)
       setInput(next.text)
       inputRef.current = next.text
       setPendingAttachments(next.attachments)
       attachmentsRef.current = next.attachments
+      const nextSelections = next.selectedTexts ?? []
+      setSelectedTexts(nextSelections)
+      selectedTextsRef.current = nextSelections
       setPastePreviewId(null)
+      setSelectedPreviewId(null)
       setAttachmentError('')
     }, [draftKey])
     useEffect(
       () => () => {
         saveComposerDraft(draftKeyRef.current, {
           text: inputRef.current,
-          attachments: attachmentsRef.current
+          attachments: attachmentsRef.current,
+          selectedTexts: selectedTextsRef.current
         })
       },
       []
@@ -1224,7 +1270,7 @@ export const ComposerDock = memo(
       const resolved = materializeComposerInput(input, pendingAttachments)
       const t = resolved.text.trim()
       const attachments = resolved.attachments
-      if (!t && attachments.length === 0) return
+      if (!t && attachments.length === 0 && selectedTexts.length === 0) return
       if (!shouldQueueComposerSlash(mode) && t.startsWith('/') && attachments.length === 0) {
         const body = t.slice(1).trim()
         const space = body.search(/\s/)
@@ -1235,7 +1281,9 @@ export const ComposerDock = memo(
           clearComposerDraft(draftKey)
           setInput('')
           setPendingAttachments([])
+          setSelectedTexts([])
           setPastePreviewId(null)
+          setSelectedPreviewId(null)
           setAttachmentError('')
           onSlashAction(cmd, args)
           requestAnimationFrame(() => {
@@ -1250,7 +1298,9 @@ export const ComposerDock = memo(
         clearComposerDraft(draftKey)
         setInput('')
         setPendingAttachments([])
+        setSelectedTexts([])
         setPastePreviewId(null)
+        setSelectedPreviewId(null)
         setAttachmentError('')
         onSlashAction(BANG_SLASH_COMMAND, bang)
         requestAnimationFrame(() => {
@@ -1259,12 +1309,15 @@ export const ComposerDock = memo(
         })
         return
       }
-      const sent = t || composerEmptyAttachmentPrompt(attachments)
+      const ask = t || composerEmptyAttachmentPrompt(attachments)
+      const sent = formatSelectedTextSubmit(selectedTexts, ask)
       rememberSubmittedComposerPrompt(sent)
       clearComposerDraft(draftKey)
       setInput('')
       setPendingAttachments([])
+      setSelectedTexts([])
       setPastePreviewId(null)
+      setSelectedPreviewId(null)
       setAttachmentError('')
       onSubmitted?.(mode)
       onSend(sent, mode, attachments)
@@ -1276,16 +1329,21 @@ export const ComposerDock = memo(
 
     submitVoiceRef.current = (text) => {
       const t = text.trim()
-      if (!t) return
-      rememberSubmittedComposerPrompt(t)
+      if (!t && selectedTextsRef.current.length === 0) return
+      const sent = formatSelectedTextSubmit(selectedTextsRef.current, t)
+      if (!sent) return
+      rememberSubmittedComposerPrompt(sent)
       clearComposerDraft(draftKey)
       setInput('')
       inputRef.current = ''
       setPendingAttachments([])
+      setSelectedTexts([])
+      selectedTextsRef.current = []
+      setSelectedPreviewId(null)
       setAttachmentError('')
       const voiceMode = loadingRef.current ? 'queue' : 'send'
       onSubmitted?.(voiceMode)
-      onSend(t, voiceMode)
+      onSend(sent, voiceMode)
       requestAnimationFrame(() => {
         syncTextareaHeight()
         textareaRef.current?.focus()
@@ -2024,8 +2082,64 @@ export const ComposerDock = memo(
             ))}
           </div>
         ) : null}
-        {pendingAttachments.length > 0 || attachmentError ? (
+        {pendingAttachments.length > 0 || selectedTexts.length > 0 || attachmentError ? (
           <div className="composer-attachments">
+            {selectedTexts.map((sel, index) => (
+              <div key={sel.id} className="composer-attachment composer-attachment--text composer-attachment--selection">
+                <Quote size={16} strokeWidth={2} aria-hidden />
+                <button
+                  type="button"
+                  className="composer-attachment-name"
+                  title={`${selectedTextTitle(index)} · 预览划选`}
+                  onClick={() =>
+                    setSelectedPreviewId((cur) => (cur === sel.id ? null : sel.id))
+                  }
+                >
+                  {selectedTextChipLabel(sel.text) || selectedTextTitle(index)}
+                </button>
+                <button
+                  type="button"
+                  className="composer-attachment-revert"
+                  onClick={() => {
+                    const insert = formatComposerInsert(sel.text, sel.source)
+                    setInput((cur) => mergeComposerInsert(cur, insert))
+                    setSelectedTexts((prev) => prev.filter((item) => item.id !== sel.id))
+                    setSelectedPreviewId((cur) => (cur === sel.id ? null : cur))
+                    requestAnimationFrame(() => {
+                      const el = textareaRef.current
+                      if (!el) return
+                      el.focus()
+                      const end = el.value.length
+                      setCursor(end)
+                      el.setSelectionRange(end, end)
+                      syncTextareaHeight()
+                    })
+                  }}
+                >
+                  插入正文
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTexts((prev) => prev.filter((item) => item.id !== sel.id))
+                    setSelectedPreviewId((cur) => (cur === sel.id ? null : cur))
+                  }}
+                  aria-label={`移除 ${selectedTextTitle(index)}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {selectedPreviewId
+              ? (() => {
+                  const preview = selectedTexts.find((item) => item.id === selectedPreviewId)
+                  return preview?.text ? (
+                    <pre className="composer-paste-preview" tabIndex={0}>
+                      {preview.text}
+                    </pre>
+                  ) : null
+                })()
+              : null}
             {pendingAttachments.map((a) => (
               <div
                 key={a.id}

@@ -159,8 +159,10 @@
 | `transcript-window.ts` | 长线程只挂最近一段、上滑分页揭示更早消息；DOM 有挂载上限；⌘↑ / 查找命中 / 尾页上滑只算 `historyHead` 有界页（`headRangeForJumpTop` / `headRangeForFindHit` / `olderPageRangeForTail` / `nextHeadRange`），不把瘦身全文或更早页 prepend 进尾页 `messages`、空页也不把 `historyStartSeq` 置 0；直播中不取跳顶头页（`shouldFetchSlimHistoryOnJumpTop`），收束后再取（对标 Codex older history fetched as needed / 官方分页，不一次铺开、无「加载更早」按钮）；盘页合并 / 钉窗下标后移 |
 | `transcript-hydrate.ts` | 打开长线程时按约 50KiB 人类可读预算瘦身：正文走快路径，过长命令输出 / 思考改占位（对标 Codex #38653）；`mergeHydratedMessage` 点开再补全文；`shouldReloadUnslimmedHistory` 判断模型/压缩/分叉/`/status`/`/feedback` 要不要回库取原文（UI 尾页或瘦身占位不能当模型历史或用量）；落盘必须跳过占位消息以免写成空壳 |
 | `session-runtime.ts` | 多会话队列归属、Stop/done 门闩、commit 目标解析（纯逻辑）；busy 但对话尚未落库时 `commitStopToActiveUi` 仍收口（对标 Codex #34839 / #38896）；`shouldAbandonInFlightTurn` 让 ensure 后不再 sendMessage；held 时不自动出队；排队可编辑 / 重排 / 取出立刻发送；排队项可带定时任务的 `providerId` / `thinkingLevel`；直播行预留助手 id / 收束 upsert；`shouldHideReservedDuringLive` 仅在历史列真有预留行时才藏（首枚 token 不重建历史 JSX，对标 Codex #22860）；直播体已空且历史已挂同一 id 时不再藏历史行、也不再画空直播行（对标 Codex preserved streamed activity when tasks complete） |
-| `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿（对标 Codex restore unsent prompts） |
-| `composer-draft.test.ts` | 键、空草稿删除、附件、最旧淘汰 |
+| `composer-draft.ts` | 未发送输入按会话记住（`chat:id` / `new:workspace`，最多 40 条）；切对话不串稿；划选预览跟草稿一起恢复（对标 Codex restore unsent prompts / selected-text previews） |
+| `composer-draft.test.ts` | 键、空草稿删除、附件、划选芯片、最旧淘汰 |
+| `selected-text-preview.ts` | Composer 划选芯片：`Selection N` 标题、一行摘录、发送收成官方 `# Selected text:` / `## My request for Codex:`（对标 Codex selected-text previews / #22670）；最多 8 条；不进 `ChatAttachment` |
+| `selected-text-preview.test.ts` | 芯片截断、空划选、官方 submit 块、草稿最多 8 条 |
 | `composer-submit.ts` | Composer Enter/Tab：空闲发送；忙时按 `followUpBehavior` 默认排队（对标 Codex 桌面）；⌘⇧Enter 反转单条；`composerEnterBehavior`（`enter` / `cmdIfMultiline` / `cmdAlways`，旧 `requireModEnter`）决定是否要修饰键；Tab 仍排队；Shift+Tab 不排队（`isPlanModeToggleKey`，对标 Codex Best practices `/plan` 或 Shift+Tab）；审批打开时 Enter 允许一次 / Esc 拒绝；空输入 ↑ 恢复刚提交或上一条（取消运行 / 取消 worktree 创建后即使还没进对话也能恢复）；Ctrl+R 提示历史；空输入 Esc+Esc 就地回编上一条并分叉；`shouldStickAfterComposerSubmit` 只有 `'send'` 贴底（对标 Codex #13698 / #38220，排队/注入不拽阅读位置）；`shouldQueueComposerSlash` 让忙时 `/` 与 `!` 先排队、收束后再解析（对标 Codex Tab queue slash） |
 | `composer-submit.test.ts` | Enter/Tab 与菜单/换行、默认排队、⌘⇧Enter 反转、⌘Enter 发送、Shift+Tab 切计划不排队、审批热键、恢复上一条 / 刚提交草稿、空输入 Esc+Esc 回编、只有 send 贴底 |
 | `pending-preview.ts` | 注入/排队芯片预览截到 3 行 / 240 字（对标 Codex #39864 pending input wrapping），避免长文折行把对话柱挤矮（#40788） |
@@ -204,7 +206,7 @@
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | 沙箱 / 完整权限文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Ask / Auto / 命名 profile） |
 | `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork [local|worktree]、/side [问题]、/project、/chat（不绑定项目，对标 Codex /chat）、/task（/chat 同义）、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan 切换计划模式、/plan-mode、/mcp（打开 MCP 状态；空配置打开设置 → MCP 服务器）、/feedback、/share、/local、/worktree、/approve、/subagents）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
-| `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或插入当前输入框：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat / send selection to composer） |
+| `side-chat-quote.ts` | 对话 / 终端 / 文件预览划选 → `/side` 旁路提问或 `formatComposerInsert` 回退成正文引用：摘录归一、拒输入框/直播行、拼引用块与旁路提示、追加不覆盖草稿（对标 Codex Ask in side chat；默认插入走 `selected-text-preview` 芯片） |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件标签、插入输入框引用、closest 拒绝 composer / 直播行、文件预览划选 |
 | `bang-command.ts` | Composer 行首 `!` 直接执行 shell |
 | `bang-command.test.ts` | 空 bang / 普通文本 |

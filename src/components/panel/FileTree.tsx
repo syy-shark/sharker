@@ -1,6 +1,6 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
- * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
+ * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选进 composer 芯片或旁路提问。
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -16,11 +16,11 @@ import {
   type FileTreeReloadReason
 } from '../../../shared/file-preview'
 import {
-  formatComposerInsert,
   formatSideChatPrompt,
   isFilePreviewSelectionRange,
   normalizeTranscriptSelection,
-  placeSelectionAskBar
+  placeSelectionAskBar,
+  type SideChatSource
 } from '../../../shared/side-chat-quote'
 import type { WorkspaceTreeNode } from '../../../shared/workspace-tree'
 import './FileTree.css'
@@ -36,8 +36,8 @@ interface Props {
   extraRoots?: string[]
   /** 划选预览正文后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
-  /** 划选预览正文插入当前输入框（对标 Codex send selection to composer） */
-  onInsertComposer?: (text: string) => void
+  /** 划选预览正文进 composer Selection 芯片（对标 Codex selected-text previews） */
+  onInsertComposer?: (text: string, source?: SideChatSource) => void
   /** 工具写盘后递增：静默重拉树，不清预览、不折叠已展开目录 */
   revision?: number
 }
@@ -462,7 +462,7 @@ export const FileTree = memo(function FileTree({
                   className="file-tree-side-ask glass-pill"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    onInsertComposer(formatComposerInsert(sideAsk.text, 'file'))
+                    onInsertComposer(sideAsk.text, 'file')
                     setSideAsk(null)
                     window.getSelection()?.removeAllRanges()
                   }}

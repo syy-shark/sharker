@@ -81,6 +81,7 @@ import {
   resolveThinkingOptions,
   stepThinkingLevel
 } from '../shared/thinking-levels'
+import { createSelectedTextPreview } from '../shared/selected-text-preview'
 import { ChatView } from './components/ChatView'
 import {
   liveCompactStatusSegment,
@@ -507,6 +508,7 @@ export default function App() {
     nonce: number
     text: string
     mode?: 'replace' | 'append'
+    selections?: import('../shared/selected-text-preview').SelectedTextPreview[]
   } | null>(null)
   const composerSeedNonceRef = useRef(0)
   const [copyPicker, setCopyPicker] = useState<CopyOutputTarget[] | null>(null)
@@ -7894,12 +7896,13 @@ export default function App() {
     )
   }, [])
 
-  const handleInsertComposer = useCallback(
-    (text: string) => {
-      seedComposer(text, 'append')
-    },
-    [seedComposer]
-  )
+  const handleInsertComposer = useCallback((text: string, source?: 'transcript' | 'file' | 'terminal') => {
+    const preview = createSelectedTextPreview(text, source ?? 'transcript')
+    if (!preview) return
+    const nonce = composerSeedNonceRef.current + 1
+    composerSeedNonceRef.current = nonce
+    setComposerSeed({ nonce, text: '', mode: 'append', selections: [preview] })
+  }, [])
 
   const handleSendReviewComments = useCallback(
     (prompt: string) => {

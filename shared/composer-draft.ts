@@ -3,10 +3,15 @@
  * @see shared/ARCH.md
  */
 import type { ChatAttachment } from './types'
+import {
+  normalizeSelectedTextDraft,
+  type SelectedTextPreview
+} from './selected-text-preview'
 
 export type ComposerDraftState = {
   text: string
   attachments: ChatAttachment[]
+  selectedTexts?: SelectedTextPreview[]
 }
 
 const MAX_DRAFTS = 40
@@ -28,12 +33,13 @@ export function saveComposerDraft(key: string, draft: ComposerDraftState): void 
   if (!key) return
   const text = draft.text.slice(0, MAX_TEXT)
   const attachments = draft.attachments.slice(0, 16)
-  if (!text.trim() && attachments.length === 0) {
+  const selectedTexts = normalizeSelectedTextDraft(draft.selectedTexts)
+  if (!text.trim() && attachments.length === 0 && selectedTexts.length === 0) {
     drafts.delete(key)
     return
   }
   drafts.delete(key)
-  drafts.set(key, { text, attachments })
+  drafts.set(key, { text, attachments, selectedTexts })
   while (drafts.size > MAX_DRAFTS) {
     const oldest = drafts.keys().next().value
     if (oldest == null) break
@@ -42,7 +48,7 @@ export function saveComposerDraft(key: string, draft: ComposerDraftState): void 
 }
 
 export function loadComposerDraft(key: string): ComposerDraftState {
-  return drafts.get(key) ?? { text: '', attachments: [] }
+  return drafts.get(key) ?? { text: '', attachments: [], selectedTexts: [] }
 }
 
 export function clearComposerDraft(key: string): void {

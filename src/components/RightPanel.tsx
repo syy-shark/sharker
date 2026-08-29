@@ -65,8 +65,8 @@ interface Props {
   extraRoots?: string[]
   /** 终端 / 文件预览划选 → 旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
-  /** 终端 / 文件预览划选 → 插入当前输入框 */
-  onInsertComposer?: (text: string) => void
+  /** 终端 / 文件预览划选 → composer Selection 芯片 */
+  onInsertComposer?: (text: string, source?: import('../../shared/side-chat-quote').SideChatSource) => void
 }
 
 /** Codex 风格右侧面板 */

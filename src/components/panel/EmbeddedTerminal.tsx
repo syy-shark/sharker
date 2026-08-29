@@ -7,10 +7,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import {
-  formatComposerInsert,
   formatSideChatPrompt,
   normalizeTranscriptSelection,
-  placeSelectionAskBar
+  placeSelectionAskBar,
+  type SideChatSource
 } from '../../../shared/side-chat-quote'
 import {
   addTerminalTab,
@@ -38,8 +38,8 @@ interface Props {
   clearTick?: number
   /** 划选终端输出后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
-  /** 划选终端输出插入当前输入框（对标 Codex send selection to composer） */
-  onInsertComposer?: (text: string) => void
+  /** 划选终端输出进 composer Selection 芯片（对标 Codex selected-text previews） */
+  onInsertComposer?: (text: string, source?: SideChatSource) => void
 }
 
 /**
@@ -162,7 +162,7 @@ function TerminalSession({
   onPendingCommandSent?: () => void
   clearTick?: number
   onAskInSideChat?: (prompt: string) => void
-  onInsertComposer?: (text: string) => void
+  onInsertComposer?: (text: string, source?: SideChatSource) => void
   themeTick: number
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -439,7 +439,7 @@ function TerminalSession({
               className="embedded-terminal-side-ask glass-pill"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
-                onInsertComposer(formatComposerInsert(sideAsk.text, 'terminal'))
+                onInsertComposer(sideAsk.text, 'terminal')
                 setSideAsk(null)
                 termRef.current?.clearSelection()
               }}

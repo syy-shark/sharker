@@ -22,6 +22,16 @@ describe('composer-draft', () => {
       attachments: [{ id: '1', name: 'a.png', mimeType: 'image/png', path: '/a.png', size: 1, kind: 'image' }]
     })
     expect(loadComposerDraft('chat:a').attachments).toHaveLength(1)
+    saveComposerDraft('chat:sel', {
+      text: '',
+      attachments: [],
+      selectedTexts: [{ id: 's1', text: 'hello world', source: 'transcript' }]
+    })
+    expect(loadComposerDraft('chat:sel').selectedTexts).toEqual([
+      expect.objectContaining({ id: 's1', text: 'hello world', source: 'transcript' })
+    ])
+    saveComposerDraft('chat:sel', { text: '', attachments: [], selectedTexts: [] })
+    expect(loadComposerDraft('chat:sel').selectedTexts ?? []).toEqual([])
     clearComposerDraft('chat:a')
     expect(loadComposerDraft('chat:a').attachments).toEqual([])
     for (let i = 0; i < 41; i += 1) {

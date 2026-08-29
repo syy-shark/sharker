@@ -118,11 +118,11 @@ import {
 import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
-  formatComposerInsert,
   formatSideChatPrompt,
   isTranscriptSelectionRange,
   normalizeTranscriptSelection,
-  placeSelectionAskBar
+  placeSelectionAskBar,
+  type SideChatSource
 } from '../../shared/side-chat-quote'
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
@@ -374,8 +374,8 @@ interface Props {
   showContextWindowUsage?: boolean
   /** 划选正文后旁路提问（对标 Codex Ask in side chat） */
   onAskInSideChat?: (prompt: string) => void
-  /** 划选正文插入当前输入框（对标 Codex send selection to composer） */
-  onInsertComposer?: (text: string) => void
+  /** 划选正文进 composer Selection 芯片（对标 Codex selected-text previews） */
+  onInsertComposer?: (text: string, source?: SideChatSource) => void
   /** `/copy` 有代码块或引用时先选再复制（对标 Codex /copy picker） */
   copyPicker?: CopyOutputTarget[] | null
   onCopyPick?: (target: CopyOutputTarget) => void
@@ -2394,7 +2394,7 @@ export const ChatView = memo(function ChatView({
               className="chat-side-ask glass-pill"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
-                onInsertComposer(formatComposerInsert(sideAsk.text))
+                onInsertComposer(sideAsk.text, 'transcript')
                 setSideAsk(null)
                 window.getSelection()?.removeAllRanges()
               }}
