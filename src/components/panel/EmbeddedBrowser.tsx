@@ -25,6 +25,7 @@ import {
   BROWSER_HISTORY_CHANGED_EVENT,
   BROWSER_SESSION_PARTITION,
   browserHistoryLabel,
+  inAppBrowserPopupUrl,
   recordBrowserHistoryVisit,
   shouldRecordBrowserHistory,
   suggestBrowserOmnibox,
@@ -268,6 +269,30 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
       void applyPageGlass()
       if (annotatingRef.current) applyAnnotate(true)
     }
+    const openPopupInSameView = (raw: unknown) => {
+      const next = inAppBrowserPopupUrl(raw)
+      if (!next) return
+      setUrl(next)
+      setInput(displayUrlForBar(next))
+      setSuggestOpen(false)
+      safeCall(() => wv.loadURL(next))
+    }
+    const onNewWindow = (event: Event) => {
+      const ev = event as Event & { url?: string }
+      ev.preventDefault?.()
+      openPopupInSameView(ev.url)
+    }
+    const onAttach = () => {
+      const contents = (
+        wv as Electron.WebviewTag & {
+          getWebContents?: () => { setWindowOpenHandler?: (fn: (details: { url: string }) => { action: 'deny' }) => void }
+        }
+      ).getWebContents?.()
+      contents?.setWindowOpenHandler?.(({ url }) => {
+        openPopupInSameView(url)
+        return { action: 'deny' }
+      })
+    }
     const onConsole = (event: Event) => {
       const message = (event as Event & { message?: string }).message
       const parsed = parseBrowserCommentMessage(String(message || ''))
@@ -295,6 +320,8 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
     wv.addEventListener('did-navigate-in-page', onNav)
     wv.addEventListener('dom-ready', onDomReady)
     wv.addEventListener('console-message', onConsole)
+    wv.addEventListener('new-window', onNewWindow)
+    wv.addEventListener('did-attach', onAttach)
 
     return () => {
       wv.removeEventListener('did-start-loading', onStart)
@@ -304,6 +331,8 @@ export function EmbeddedBrowser({ initialUrl, openNonce = 0, onInsertComposer }:
       wv.removeEventListener('did-navigate-in-page', onNav)
       wv.removeEventListener('dom-ready', onDomReady)
       wv.removeEventListener('console-message', onConsole)
+      wv.removeEventListener('new-window', onNewWindow)
+      wv.removeEventListener('did-attach', onAttach)
       glassCssKeyRef.current = null
     }
   }, [syncNav, applyPageGlass, applyAnnotate, recordVisit])

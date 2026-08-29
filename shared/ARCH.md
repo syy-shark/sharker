@@ -210,7 +210,7 @@
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注（对标 Codex Annotation mode / Toggle browser browse or comment mode）。不发明 @Browser / Adjust |
 | `browser-comment.test.ts` | http(s)/file 可批注、data/about 拒绝、元素/区域摘录、cancel 消息、气泡定位 |
-| `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除（对标 Codex Settings → Browser / Search from the address bar）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史 |
+| `browser-history.ts` | 内置浏览历史：记录 / 搜索 / 地址栏建议 / 按时间窗清除；`_blank` / window.open 只回同一视口可开的 http(s)/file（对标 Codex Settings → Browser / 单页内置浏览器 #26863）。独立 `persist:sharker-browser` 配置。不发明 @Browser 搜历史或多标签 |
 | `browser-history.test.ts` | 起始页不记、同 URL 去重、建议、时间窗清除 |
 | `browser-downloads.ts` | 内置浏览器下载目录与文件名：默认系统 Downloads、自选目录、每次询问、重名 `(N)`（对标 Codex Settings → Browser downloads）。不发明下载列表 / @Browser |
 | `browser-downloads.test.ts` | 穿越路径拒绝、默认目录、重名、App 三处落盘与主进程 will-download |

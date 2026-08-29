@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
   BROWSER_HISTORY_MAX,
@@ -11,6 +14,7 @@ import {
   removeBrowserHistoryUrl,
   searchBrowserHistory,
   shouldRecordBrowserHistory,
+  inAppBrowserPopupUrl,
   suggestBrowserHistory,
   suggestBrowserOmnibox
 } from './browser-history'
@@ -84,5 +88,16 @@ describe('browser history', () => {
     expect(recordBrowserHistoryVisit(overflow, { url: 'https://fresh.com', visitedAt: 999 })).toHaveLength(
       BROWSER_HISTORY_MAX
     )
+    expect(inAppBrowserPopupUrl('https://localhost:3000/docs')).toBe('https://localhost:3000/docs')
+    expect(inAppBrowserPopupUrl('file:///tmp/a.html')).toBe('file:///tmp/a.html')
+    expect(inAppBrowserPopupUrl('javascript:alert(1)')).toBe('')
+    expect(inAppBrowserPopupUrl('about:blank')).toBe('')
+    const browserSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedBrowser.tsx'),
+      'utf8'
+    )
+    expect(browserSrc).toContain("addEventListener('new-window'")
+    expect(browserSrc).toContain('inAppBrowserPopupUrl')
+    expect(browserSrc).toContain("action: 'deny'")
   })
 })

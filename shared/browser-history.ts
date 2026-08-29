@@ -34,8 +34,17 @@ export function normalizeBrowserHistoryUrl(url: string): string {
 /** http(s) / file 才记；起始页与 about 不进历史 */
 export function shouldRecordBrowserHistory(url: string): boolean {
   const raw = String(url || '').trim()
-  if (!raw || /^(data:|about:)/i.test(raw)) return false
+  if (!raw || /^(data:|about:|javascript:|blob:)/i.test(raw)) return false
   return /^(https?:|file:)/i.test(raw)
+}
+
+/**
+ * `_blank` / window.open 的目标：只留可在同一视口打开的 http(s)/file。
+ * 对标 Codex 单页内置浏览器（#26863），不发明多标签。
+ */
+export function inAppBrowserPopupUrl(raw: unknown): string {
+  const url = String(raw || '').trim()
+  return shouldRecordBrowserHistory(url) ? url : ''
 }
 
 /** 从 localStorage / JSON 读出合法条目 */
