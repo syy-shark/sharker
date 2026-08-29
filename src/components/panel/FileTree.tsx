@@ -1,7 +1,7 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行。
  * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选可插入输入框或旁路提问。
- * 写盘 revision 静默重拉树，不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
+ * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveCitationPath } from '../../../shared/file-citation'
@@ -10,6 +10,7 @@ import {
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
   shouldAnimateFileTreeInsert,
+  shouldRereadOpenPreviewOnReload,
   parseGoToLineInput,
   type FilePreviewKind,
   type FileTreeReloadReason
@@ -126,6 +127,8 @@ export const FileTree = memo(function FileTree({
     dataUrl?: string
     line?: number
   } | null>(null)
+  const openFileRef = useRef(openFile)
+  openFileRef.current = openFile
   const [fileError, setFileError] = useState('')
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
   const [goToOpen, setGoToOpen] = useState(false)
@@ -162,24 +165,6 @@ export const FileTree = memo(function FileTree({
     })
   }, [load])
 
-  useEffect(() => {
-    if (!revision) return
-    void load('revision')
-  }, [load, revision])
-
-  useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === 'visible') void load('focus')
-    }
-    window.addEventListener('focus', onVis)
-    document.addEventListener('visibilitychange', onVis)
-    return () => {
-      window.removeEventListener('focus', onVis)
-      document.removeEventListener('visibilitychange', onVis)
-    }
-  }, [load])
-
-
   const onToggle = (path: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -189,37 +174,79 @@ export const FileTree = memo(function FileTree({
     })
   }
 
-  const onOpenFile = useCallback(async (path: string, line?: number) => {
+  const onOpenFile = useCallback(async (
+    path: string,
+    line?: number,
+    opts?: { keepIfClosed?: boolean }
+  ) => {
     setFileError('')
     const abs = resolveCitationPath(path, workspacePath, extraRoots)
     const kind = filePreviewKind(abs)
     if (kind === 'unsupported') {
+      if (opts?.keepIfClosed) return
       setFileError(filePreviewUnsupportedMessage(abs))
       setOpenFile(null)
       return
+    }
+    const stillOpen = () => {
+      if (!opts?.keepIfClosed) return true
+      const open = openFileRef.current
+      if (!open) return false
+      return open.path === path || open.path === abs
     }
     if (kind === 'image' || kind === 'pdf') {
       if (!window.sharker?.readFileDataUrl) return
       const res = await window.sharker.readFileDataUrl(abs)
       if (!res.ok) {
+        if (opts?.keepIfClosed) return
         setFileError(res.error)
         setOpenFile(null)
         return
       }
+      if (!stillOpen()) return
       setOpenFile({ path: res.path, kind, dataUrl: res.dataUrl })
       return
     }
     if (!window.sharker?.readTextFile) return
     const res = await window.sharker.readTextFile(abs)
     if (!res.ok) {
+      if (opts?.keepIfClosed) return
       setFileError(res.error)
       setOpenFile(null)
       return
     }
+    if (!stillOpen()) return
     const lineCount = res.content.split('\n').length
     const clamped = line != null ? parseGoToLineInput(String(line), lineCount) ?? undefined : undefined
     setOpenFile({ path: res.path, kind: 'text', content: res.content, line: clamped })
   }, [workspacePath, extraRoots])
+
+  const rereadOpenPreview = useCallback(
+    (reason: FileTreeReloadReason) => {
+      if (!shouldRereadOpenPreviewOnReload(reason)) return
+      const open = openFileRef.current
+      if (open?.path) void onOpenFile(open.path, open.line, { keepIfClosed: true })
+    },
+    [onOpenFile]
+  )
+
+  useEffect(() => {
+    if (!revision) return
+    void load('revision').then(() => rereadOpenPreview('revision'))
+  }, [load, revision, rereadOpenPreview])
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return
+      void load('focus').then(() => rereadOpenPreview('focus'))
+    }
+    window.addEventListener('focus', onVis)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', onVis)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [load, rereadOpenPreview])
 
   useEffect(() => {
     if (!previewRequest?.path || isHome) return

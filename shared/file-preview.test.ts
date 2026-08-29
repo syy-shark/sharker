@@ -5,6 +5,7 @@ import {
   filePreviewUnsupportedMessage,
   fileTreeReloadMode,
   shouldAnimateFileTreeInsert,
+  shouldRereadOpenPreviewOnReload,
   maxDiffGotoLine,
   parseGoToLineInput,
   previewPathTouchedByWrites
@@ -51,5 +52,8 @@ describe('file preview kinds', () => {
     expect(fileTreeReloadMode('focus')).toEqual(fileTreeReloadMode('revision'))
     expect(shouldAnimateFileTreeInsert(false)).toBe(true)
     expect(shouldAnimateFileTreeInsert(true)).toBe(false)
+    expect(shouldRereadOpenPreviewOnReload('revision')).toBe(true)
+    expect(shouldRereadOpenPreviewOnReload('focus')).toBe(true)
+    expect(shouldRereadOpenPreviewOnReload('workspace')).toBe(false)
   })
 })

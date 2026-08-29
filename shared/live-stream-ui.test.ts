@@ -255,9 +255,17 @@ describe('live stream ui snapshot', () => {
     expect(appSrc.includes('setActiveTool(')).toBe(false)
     expect(appSrc).toContain('publishLiveStreamUi')
     expect(appSrc).toContain('shouldDeferLastTurnUi')
+    expect(appSrc.includes('refreshOpenPreviewRef')).toBe(false)
+    expect(appSrc).toContain('bumpChangesSoon')
     expect(shouldDeferLastTurnUi(true)).toBe(true)
     expect(shouldDeferLastTurnUi(true, true)).toBe(false)
     expect(shouldDeferLastTurnUi(false)).toBe(false)
     expect(LAST_TURN_UI_FLUSH_MS).toBe(400)
+    const treeSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/FileTree.tsx'),
+      'utf8'
+    )
+    expect(treeSrc).toContain('shouldRereadOpenPreviewOnReload')
+    expect(treeSrc).toContain('keepIfClosed')
   })
 })

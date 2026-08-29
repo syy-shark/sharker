@@ -1,6 +1,7 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
  * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state（对标 Codex #22860）。
+ * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -49,7 +50,6 @@ import {
   mergeChangedRelPaths,
   reuseLiveAssistantMeta
 } from '../shared/turn-meta'
-import { previewPathTouchedByWrites } from '../shared/file-preview'
 import { stampSubAgentActivity } from '../shared/subagent'
 import { prToolbarLabel } from '../shared/git-pr-context'
 import {
@@ -435,7 +435,6 @@ export default function App() {
       setChangesRevision((n) => n + 1)
     }, 400)
   }, [])
-  const refreshOpenPreviewRef = useRef<(written: string[]) => void>(() => {})
   const [threadMode, setThreadMode] = useState<ThreadMode>('local')
   const [planMode, setPlanMode] = useState(false)
   const planModeByConvRef = useRef(new Map<string, boolean>())
@@ -2506,9 +2505,6 @@ export default function App() {
           if (chunk.type !== 'tool_preview') {
             bumpChangesSoon()
             syncLiveTurnMeta()
-            if (chunk.type === 'tool_done') {
-              refreshOpenPreviewRef.current(turnChangedPathsRef.current)
-            }
           } else if (grew) {
             syncLiveTurnMeta()
           }
@@ -2730,6 +2726,13 @@ export default function App() {
         )
         sendInFlightRef.current = false
         rememberLastTurn(completedId, [...turnChangedPathsRef.current], true)
+        if (turnChangedPathsRef.current.length) {
+          if (changesFlushTimerRef.current != null) {
+            window.clearTimeout(changesFlushTimerRef.current)
+            changesFlushTimerRef.current = null
+          }
+          setChangesRevision((n) => n + 1)
+        }
         turnChangedPathsRef.current = []
         commitAssistantReply(streamingRef.current, '', turnOutcomeRef.current, completedId)
         segmentsRef.current = []
@@ -3321,17 +3324,6 @@ export default function App() {
     line?: number
     token: number
   } | null>(null)
-  refreshOpenPreviewRef.current = (written) => {
-    const open = filePreview
-    if (!open?.path || written.length === 0) return
-    const extra = getActiveWorkspace(settingsRef.current)?.extraPaths ?? []
-    const cwd =
-      threadWorktreePathRef.current || getActiveWorkspacePath(settingsRef.current) || ''
-    if (!previewPathTouchedByWrites(open.path, written, cwd, extra)) return
-    setFilePreview((prev) =>
-      prev && prev.path === open.path ? { ...prev, token: Date.now() } : prev
-    )
-  }
 
   useEffect(() => {
     const onCite = (event: Event) => {

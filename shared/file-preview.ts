@@ -98,9 +98,6 @@ function normPreviewPath(path: string): string {
   return path.replaceAll('\\', '/').replace(/\/$/, '')
 }
 
-/**
- * 打开的预览是否被本轮写盘碰到。写完后重读同一文件，对标 Codex 打开文档跟着 Agent 改。
- */
 /** 文件树为何重拉：换工作区要清预览并折回根；写盘/回前台只换节点，保住预览与展开 */
 export type FileTreeReloadReason = 'workspace' | 'focus' | 'revision'
 
@@ -115,11 +112,20 @@ export function fileTreeReloadMode(reason: FileTreeReloadReason): {
   return { clearPreview: false, resetExpanded: false, showLoading: false }
 }
 
+/**
+ * 写盘 revision / 回前台时在文件树内重读已打开预览，不抬 App（对标 Codex 打开文档跟着改）。
+ * 换工作区会清预览，不必再读。
+ */
+export function shouldRereadOpenPreviewOnReload(reason: FileTreeReloadReason): boolean {
+  return reason === 'revision' || reason === 'focus'
+}
+
 /** 写盘静默重拉后不再播进入动画，避免文件树/侧栏跟着直播抖（对标 Codex sidebar jitter） */
 export function shouldAnimateFileTreeInsert(settled: boolean): boolean {
   return !settled
 }
 
+/** 打开的预览是否被本轮写盘碰到。 */
 export function previewPathTouchedByWrites(
   previewPath: string,
   writtenRelPaths: readonly string[],
