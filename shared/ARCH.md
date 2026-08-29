@@ -263,7 +263,7 @@
 | `feedback-bundle.ts` | `/feedback` 本地诊断包（分类 / 说明 / 可否附带会话；不外发） |
 | `feedback-bundle.test.ts` | 含状态、分类/说明、可省略会话诊断，且声明不外发 |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析 |
-| `personality.ts` | 务实 / 友好 / 关闭人格与 system 语气段（对标 Codex Pragmatic / Friendly / None；旧 `empathetic` 读成 `friendly`） |
+| `personality.ts` | 人格与 system 语气段；用户可见 Pragmatic / Friendly / None（对标 Codex Settings → Personalization；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
 | `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |

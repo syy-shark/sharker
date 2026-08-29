@@ -28,7 +28,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/clear` | 清空当前对话 |
 | `/changes` | 打开右侧变更审查 |
 | `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；Settings → General → **代码审查** 可改独立线程，并可指定审查模型（对标 Codex `review_model`，空则当前会话）；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
-| `/personality` | 切换务实 / 友好 / 关闭（对标 Codex Friendly；无参数则循环） |
+| `/personality` | 切换 Pragmatic / Friendly / None（对标 Codex Settings → Personalization；无参数则循环） |
 | `/memories` | 空命令先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改 Settings → Personalization 的 Enable memories）；功能关闭时本对话选择会记下，打开后才 Use / Generate；`on|off|use|inherit` 可直接改本对话 |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
@@ -93,7 +93,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 人格
 
-Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（对标 Codex Settings → Personalization：Pragmatic / Friendly / None；旧 `empathetic` 读成友好）。只改回复语气，不改工具与权限。默认务实。
+Settings → Personalization，或 `/personality [pragmatic|friendly|none]`（对标 Codex Settings → Personalization：Pragmatic / Friendly / None；旧 `empathetic` 读成 Friendly）。只改回复语气，不改工具与权限。默认 Pragmatic。 None 关闭人格指令。
 
 ### 自动化审查队列
 

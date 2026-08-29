@@ -4,10 +4,15 @@
  * @see shared/ARCH.md
  */
 
-/** 务实 / 友好 / 关闭（自动化与严格解析用） */
+/** Pragmatic / Friendly / None（自动化与严格解析用） */
 export type AgentPersonality = 'pragmatic' | 'friendly' | 'none'
 
-/** 桌面端默认：务实 */
+/** Official desktop Settings → Personalization option titles. */
+export const PRAGMATIC_LABEL = 'Pragmatic'
+export const FRIENDLY_LABEL = 'Friendly'
+export const NONE_PERSONALITY_LABEL = 'None'
+
+/** 桌面端默认：Pragmatic */
 export const DEFAULT_PERSONALITY: AgentPersonality = 'pragmatic'
 
 /** 设置页与斜杠可选值 */
@@ -16,9 +21,13 @@ export const PERSONALITY_OPTIONS: Array<{
   title: string
   description: string
 }> = [
-  { id: 'pragmatic', title: '务实', description: '短、直接、先行动，少寒暄。' },
-  { id: 'friendly', title: '友好', description: '更会解释与确认，适合一起想清楚。' },
-  { id: 'none', title: '关闭', description: '不加人格指令，语气中性。' }
+  { id: 'pragmatic', title: PRAGMATIC_LABEL, description: '短、直接、先行动，少寒暄。' },
+  { id: 'friendly', title: FRIENDLY_LABEL, description: '更会解释与确认，适合一起想清楚。' },
+  {
+    id: 'none',
+    title: NONE_PERSONALITY_LABEL,
+    description: 'Use None to disable personality instructions.'
+  }
 ]
 
 /** 规范化设置里的人格字段；旧 `empathetic` 读成 `friendly` */

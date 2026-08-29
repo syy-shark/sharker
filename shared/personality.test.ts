@@ -4,7 +4,11 @@ import {
   parsePersonality,
   parsePersonalityArg,
   personalityPrompt,
-  personalitySwitchNote
+  personalitySwitchNote,
+  FRIENDLY_LABEL,
+  NONE_PERSONALITY_LABEL,
+  PERSONALITY_OPTIONS,
+  PRAGMATIC_LABEL
 } from './personality'
 
 describe('personality', () => {
@@ -26,6 +30,14 @@ describe('personality', () => {
     expect(personalityPrompt('none')).toBe('')
     expect(personalityPrompt('pragmatic')).toContain('pragmatic')
     expect(personalityPrompt('friendly')).toContain('friendly')
-    expect(personalitySwitchNote('friendly')).toContain('友好')
+    expect(personalitySwitchNote('friendly')).toContain(FRIENDLY_LABEL)
+    expect(PERSONALITY_OPTIONS.map((row) => row.title)).toEqual([
+      PRAGMATIC_LABEL,
+      FRIENDLY_LABEL,
+      NONE_PERSONALITY_LABEL
+    ])
+    expect(PRAGMATIC_LABEL).toBe('Pragmatic')
+    expect(FRIENDLY_LABEL).toBe('Friendly')
+    expect(NONE_PERSONALITY_LABEL).toBe('None')
   })
 })
