@@ -231,6 +231,8 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 同长普通工具原地收束 / 改详情（可多枚并行 complete_call，正文可仍在末尾）标 `'tool'`。
  * 同长只改 status / 思考（正文可仍在末尾；重连 n/5 可改写文案）标 `'status'` / `'think'`。
  * 规划下一步改写成 Ask（换 `toolName`）仍等表。
+ * 已有无 fence 正文后再开第二段 text 标 `'text'`，先封上一尾再开新尾。
+ * 写盘 +/- 在 `'tool'` skip 上只换该工具 diff 槽。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
 function liveCoreInPlaceProcessToolSkip(
@@ -300,8 +302,8 @@ export function liveCoreAppendedProcessToolsSkip(
   }
   const extras = next.slice(processLen + prevAnswer.length)
   if (!extras.length) return null
+  if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
   if (!prevAnswer.length) {
-    if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
     if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
     if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
     if (extrasHaveAnswerThenThinkOrStatus(extras)) {
@@ -829,6 +831,99 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   }
 }
 
+/** 工具后新开一段散文：先收起上一尾，再开新尾，不重跑 buildAnswerParts */
+function appendLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
+  if (prev.tail && prev.tail.id !== tail.id) {
+    return growLiveAnswerView({ ...prev, closed: [...prev.closed, prev.tail], tail: null }, tail)
+  }
+  return growLiveAnswerView(prev, tail)
+}
+
+function liveWriteStatDiffParts(tool: TurnSegment): Extract<AnswerPart, { type: 'diff' }>[] {
+  return buildAnswerParts([tool], { isStreaming: true }).filter(
+    (part): part is Extract<AnswerPart, { type: 'diff' }> => part.type === 'diff'
+  )
+}
+
+function findLiveCoreWriteStatTool(
+  prev: readonly TurnSegment[] | null,
+  next: readonly TurnSegment[]
+): TurnSegment | null {
+  if (!prev) return null
+  const n = Math.min(prev.length, next.length)
+  let found: TurnSegment | null = null
+  for (let i = 0; i < n; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after || before === after) continue
+    if (isLiveToolWriteStatChange(before, after)) {
+      if (found) return null
+      found = after
+      continue
+    }
+    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) continue
+    if (
+      before.id === after.id &&
+      isLiveThinking(before) &&
+      isLiveThinking(after) &&
+      liveTailContentGrew(before, after)
+    ) {
+      continue
+    }
+    if (
+      before.id === after.id &&
+      isLiveStatus(before) &&
+      isLiveStatus(after) &&
+      (before.toolName ?? '') === (after.toolName ?? '')
+    ) {
+      continue
+    }
+    if (before.id === after.id && isLiveCoreProcessTool(before) && isLiveCoreProcessTool(after)) {
+      continue
+    }
+    return null
+  }
+  return found
+}
+
+/** 写盘 +/- 只换该工具的 diff 槽，已画正文 / 尾不重拆（对标 ~0.5s / #22860，不复制 #38695） */
+function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveAnswerView {
+  const diffs = liveWriteStatDiffParts(tool)
+  const prefix = `${tool.id}-diff-`
+  let start = -1
+  let end = -1
+  for (let i = 0; i < prev.parts.length; i++) {
+    const part = prev.parts[i]
+    if (part.type === 'diff' && part.id.startsWith(prefix)) {
+      if (start < 0) start = i
+      end = i + 1
+      continue
+    }
+    if (start >= 0) break
+  }
+  if (start < 0) {
+    if (!diffs.length) return prev
+    const parts =
+      prev.tail && prev.parts.length && prev.parts[prev.parts.length - 1] === prev.tail
+        ? [...prev.parts.slice(0, -1), ...diffs, prev.tail]
+        : [...prev.parts, ...diffs]
+    return { ...prev, parts, show: true }
+  }
+  const reused = diffs.map((diff, index) => {
+    const old = prev.parts[start + index]
+    if (old && old.type === 'diff' && old.id === diff.id && old.diff === diff.diff) return old
+    return diff
+  })
+  if (
+    reused.length === end - start &&
+    reused.every((part, index) => part === prev.parts[start + index])
+  ) {
+    return prev
+  }
+  const parts = [...prev.parts.slice(0, start), ...reused, ...prev.parts.slice(end)]
+  return { ...prev, parts, show: parts.length > 0 }
+}
+
 function rebuildLiveProcessView(
   prev: LiveProcessView | null,
   segments: readonly TurnSegment[]
@@ -1023,6 +1118,7 @@ export function nextLiveAnswerView(
       coreSkip === 'text' && last && isLiveAnswerText(last)
         ? last
         : liveCoreLastNoFenceAnswer(segments)
+    let view: LiveAnswerView | null = null
     if (extra && isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
       const seed = prev ?? {
         parts: [],
@@ -1032,13 +1128,15 @@ export function nextLiveAnswerView(
         copyable: '',
         hasCopyable: false
       }
-      const view = growLiveAnswerView(seed, extra)
-      answerGrowHold = { view, segments, tailPlain: true }
-      return view
+      view = appendLiveAnswerView(seed, extra)
+    } else if (prev && coreSkip !== 'text') {
+      view = prev
     }
-    if (prev && coreSkip !== 'text') {
-      answerGrowHold = { view: prev, segments, tailPlain: Boolean(prev.tail) }
-      return prev
+    if (view) {
+      const writeStat = findLiveCoreWriteStatTool(prevSegments, segments)
+      if (writeStat) view = retargetLiveAnswerDiffs(view, writeStat)
+      answerGrowHold = { view, segments, tailPlain: Boolean(view.tail) }
+      return view
     }
   }
   const view = rebuildLiveAnswerView(segments)

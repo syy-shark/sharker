@@ -168,7 +168,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe('tool')
   })
 
-  it('does not classify a second no-fence text after existing prose until the table is registered', () => {
+  it('classifies a second no-fence text after existing prose without the table', () => {
     const thought = think('Hmm')
     const reading = tool('active')
     const reply = prose('Hi')
@@ -181,10 +181,24 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     }
     expect(
       shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, extraText])
-    ).toBeNull()
+    ).toBe('text')
     expect(
       hasLiveProcessPhaseGrowHold([thought, reading, reply], [thought, reading, reply, extraText])
-    ).toBe(false)
+    ).toBe(true)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, extraText]
+    })
+    expect(nextAnswer.closed.some((part) => part.type === 'text' && part.content === 'Hi')).toBe(
+      true
+    )
+    expect(nextAnswer.tail?.content).toBe('Error: boom')
+    expect(nextAnswer.copyable).toContain('Hi')
+    expect(nextAnswer.copyable).toContain('Error: boom')
   })
 
   it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
@@ -669,6 +683,50 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       liveSegments: [thought, readingDone, listingDone, reply]
     })
     expect(heldAnswer).toBe(firstAnswer)
+  })
+
+  it('retargets write-stat diffs after no-fence prose without rebuilding the answer tail', () => {
+    const thought = think('Hmm')
+    const writing: TurnSegment = {
+      id: 'w1',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    const reply = prose('Hi')
+    const nextDiff = {
+      path: 'a.ts',
+      lines: [
+        { kind: 'add' as const, content: 'hi' },
+        { kind: 'add' as const, content: 'there' }
+      ],
+      stats: { added: 2, removed: 0 }
+    }
+    const written: TurnSegment = { ...writing, fileDiff: nextDiff, fileDiffs: [nextDiff] }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, writing, reply], [thought, written, reply])
+    ).toBe('tool')
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, reply]
+    })
+    expect(firstAnswer.parts.some((part) => part.type === 'diff')).toBe(true)
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, written, reply]
+    })
+    expect(nextAnswer.tail).toBe(firstAnswer.tail)
+    const diff = nextAnswer.parts.find((part) => part.type === 'diff')
+    expect(diff?.type === 'diff' && diff.diff.stats?.added).toBe(2)
+    expect(nextAnswer.parts.filter((part) => part.type === 'text')).toEqual(
+      firstAnswer.parts.filter((part) => part.type === 'text')
+    )
   })
 
   it('opens the answer tail from the first prose after tools without the table', () => {
