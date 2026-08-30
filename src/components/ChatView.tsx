@@ -54,6 +54,7 @@ import {
   findSelectedTextSourceMessageId,
   formatSelectedTextSubmit,
   parseSelectedTextSubmit,
+  SELECTED_TEXT_COMMENT_LABEL,
   selectedTextChipLabel,
   selectedTextTitle,
   userFacingSelectedTextRequest
@@ -335,7 +336,7 @@ const UserMessageRow = memo(function UserMessageRow({
                       className={`message-user-annotation${
                         previewId === sel.id ? ' message-user-annotation--open' : ''
                       }`}
-                      title={`${selectedTextTitle(index)} · 回到原文`}
+                      title={selectedTextTitle(index)}
                       onClick={() => {
                         onRevealSelection?.(sel.text, id)
                         setPreviewId((cur) => (cur === sel.id ? null : sel.id))
@@ -352,7 +353,7 @@ const UserMessageRow = memo(function UserMessageRow({
                     return preview ? (
                       <pre className="message-user-annotation-preview" tabIndex={0}>
                         {preview.text}
-                        {preview.comment ? `\n\n备注：${preview.comment}` : ''}
+                        {preview.comment ? `\n\n${SELECTED_TEXT_COMMENT_LABEL}: ${preview.comment}` : ''}
                       </pre>
                     ) : null
                   })()

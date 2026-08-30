@@ -16,7 +16,13 @@ import {
   UI_FONT_SCALE_MAX,
   UI_FONT_SCALE_MIN
 } from '../../../shared/ui-font-scale'
-import { CODE_FONT_OPTIONS, codeFontStack, parseCodeFont, type CodeFontId } from '../../../shared/code-font'
+import {
+  CODE_FONT_LABEL,
+  CODE_FONT_OPTIONS,
+  codeFontStack,
+  parseCodeFont,
+  type CodeFontId
+} from '../../../shared/code-font'
 import { parseReduceMotion, REDUCE_MOTION_LABEL } from '../../../shared/reduce-motion'
 import {
   KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO,
@@ -247,7 +253,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
             </div>
           </SettingsRow>
           <SettingsRow
-            title="代码字体"
+            title={CODE_FONT_LABEL}
             description="对标 Codex Code font。审查、终端与对话代码共用这一栈。"
             last
           >

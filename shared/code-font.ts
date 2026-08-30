@@ -4,6 +4,9 @@
  * @see shared/ARCH.md
  */
 
+/** Official Settings pane name (learn.chatgpt.com troubleshooting: configure the font as Code font). */
+export const CODE_FONT_LABEL = 'Code font'
+
 /** 可选代码字体 id；空 / 未知回退 system */
 export const CODE_FONT_IDS = [
   'system',

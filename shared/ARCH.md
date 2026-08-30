@@ -87,7 +87,7 @@
 | `live-shimmer-pause.ts` | 直播扫光：`document.hidden` 挂 `html.live-hidden`，屏外容器挂 `live-shimmer-paused`（对标 Codex #16857 / #40531）；不关进度圈 |
 | `live-shimmer-pause.test.ts` | 后台类开关与屏外暂停类 |
 | `ui-font-scale.ts` | 界面字号档位：0.85–1.35、0.05 步进 |
-| `code-font.ts` | 代码字体白名单与 `--mono` 栈（对标 Codex Code font） |
+| `code-font.ts` | 代码字体白名单与 `--mono` 栈；设置行名用官方 Code font |
 | `code-font.test.ts` | 未知值回退 system、别名与栈含 monospace |
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
