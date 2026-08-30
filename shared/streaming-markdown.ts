@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -3056,6 +3056,72 @@ function growLastListItemInline(
   return nodes === item.nodes ? item : { ...item, nodes }
 }
 
+/**
+ * 松散项续段只改正文：同一行、软换行、或空行后新起一段。
+ * 单独换行保持同一 extra；新列表项 / 项内块仍走整项窗口。
+ */
+function growLastListItemExtra(
+  item: CheapListItem,
+  itemPrev: string,
+  suffix: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapListItem | null {
+  if (!item.extra?.length || item.blocks?.length || item.suffix?.length) return null
+  if (!suffix || suffix.includes(']:')) return null
+  if (suffix === '\n') return item
+  const lastPara = item.extra[item.extra.length - 1]!
+  if (!suffix.includes('\n') && !itemPrev.endsWith('\n')) {
+    const prevSrc = cheapInlineSourceAll(lastPara)
+    const nodes = continueCheapInlineMarkdown(prevSrc, lastPara, prevSrc + suffix, defs)
+    if (nodes === lastPara) return item
+    return { ...item, extra: [...item.extra.slice(0, -1), nodes] }
+  }
+  const continued = itemPrev.endsWith('\n')
+    ? suffix
+    : suffix.startsWith('\n')
+      ? suffix.slice(1)
+      : null
+  if (continued == null || !continued) return null
+  if (continued.startsWith('\n')) {
+    const after = continued.slice(1)
+    if (!after) return item
+    if (after.includes('\n\n')) return null
+    const nl = after.indexOf('\n')
+    const first = nl < 0 ? after : after.slice(0, nl)
+    if (!first.trim() || parseListLine(first) || lineOpensNewCheapBlock(first.trimStart())) return null
+    if (leadingIndent(first) === 0) return null
+    const text = after
+      .split('\n')
+      .map((line) => line.trimStart())
+      .join('\n')
+    if (!text) return item
+    return { ...item, extra: [...item.extra, parseCheapInlineMarkdown(text, defs)] }
+  }
+  if (continued.includes('\n\n')) return null
+  let add = ''
+  let offset = 0
+  while (offset <= continued.length) {
+    const nl = continued.indexOf('\n', offset)
+    const end = nl < 0 ? continued.length : nl
+    const line = continued.slice(offset, end)
+    if (line) {
+      if (parseListLine(line) || lineOpensNewCheapBlock(line.trimStart()) || lastLineNeedsFullProseParse(line)) {
+        return null
+      }
+      add += `\n${line.trimStart()}`
+    } else if (nl >= 0) {
+      return null
+    }
+    if (nl < 0) break
+    offset = nl + 1
+  }
+  if (!add) return item
+  const prevSrc = cheapInlineSourceAll(lastPara)
+  const nodes = continueCheapInlineMarkdown(prevSrc, lastPara, prevSrc + add, defs)
+  if (nodes === lastPara) return item
+  return { ...item, extra: [...item.extra.slice(0, -1), nodes] }
+}
+
 /** 指定缩进的最后一项起点；缩进更浅的列表标记说明已离开这一层 */
 function lastMatchingListItemStart(text: string, indent: number, ordered: boolean): number | null {
   return lastMatchingListLineStart(text, indent, ordered, indent > 0)
@@ -3318,21 +3384,8 @@ function growLastListItemInnerBlocks(
     }
   }
   const suffix = itemNext.slice(itemPrev.length)
-  if (
-    item.extra?.length &&
-    !item.blocks?.length &&
-    !item.suffix?.length &&
-    suffix &&
-    !suffix.includes('\n') &&
-    !suffix.includes(']:') &&
-    !itemPrev.endsWith('\n')
-  ) {
-    const lastPara = item.extra[item.extra.length - 1]!
-    const prevSrc = cheapInlineSourceAll(lastPara)
-    const nodes = continueCheapInlineMarkdown(prevSrc, lastPara, prevSrc + suffix, defs)
-    if (nodes === lastPara) return item
-    return { ...item, extra: [...item.extra.slice(0, -1), nodes] }
-  }
+  const grownExtra = growLastListItemExtra(item, itemPrev, suffix, defs)
+  if (grownExtra) return grownExtra
   if (!item.blocks?.length) return null
   const last = item.blocks[item.blocks.length - 1]!
   const firstLine = itemPrev.slice(0, itemPrev.indexOf('\n') === -1 ? itemPrev.length : itemPrev.indexOf('\n'))
@@ -3562,20 +3615,22 @@ function continueLastListBlock(
   const suffix = nextText.slice(prevNorm.length)
   if (shouldGrowLastListItemInline({ prevNorm, suffix }) && prev.items.length) {
     const lastItem = prev.items[prev.items.length - 1]!
-    const inlineSuffix =
-      prevNorm.endsWith('\n') && !suffix.startsWith('\n') ? `\n${suffix}` : suffix
-    const grown = growLastListItemInline(lastItem, inlineSuffix, defs)
-    if (grown) {
-      if (grown === lastItem) return [prev]
-      return [
-        {
-          type: 'list',
-          ordered: prev.ordered,
-          items: [...prev.items.slice(0, -1), grown],
-          loose: prev.loose,
-          start: prev.start
-        }
-      ]
+    if (!lastItem.extra?.length && !lastItem.blocks?.length && !lastItem.suffix?.length) {
+      const inlineSuffix =
+        prevNorm.endsWith('\n') && !suffix.startsWith('\n') ? `\n${suffix}` : suffix
+      const grown = growLastListItemInline(lastItem, inlineSuffix, defs)
+      if (grown) {
+        if (grown === lastItem) return [prev]
+        return [
+          {
+            type: 'list',
+            ordered: prev.ordered,
+            items: [...prev.items.slice(0, -1), grown],
+            loose: prev.loose,
+            start: prev.start
+          }
+        ]
+      }
     }
   }
   if (shouldAppendStreamingListItem({ prevNorm, suffix, ordered: prev.ordered }) && prev.items.length) {

@@ -1996,6 +1996,64 @@ describe('splitStreamingMarkdown', () => {
       expect(looseExtraGrown[0].items[0]?.nodes).toBe(looseExtra[0].items[0]?.nodes)
       expect(looseExtraGrown[0].items[0]?.extra?.[0]).not.toBe(looseExtra[0].items[0]?.extra?.[0])
     }
+    const looseExtraNl = continueCheapProseBlocks(
+      '- 一项\n\n  续段更长',
+      looseExtraGrown,
+      '- 一项\n\n  续段更长\n'
+    )
+    expect(looseExtraNl[0]).toBe(looseExtraGrown[0])
+    const looseExtraWrap = continueCheapProseBlocks(
+      '- 一项\n\n  续段更长\n',
+      looseExtraNl,
+      '- 一项\n\n  续段更长\n  软换行'
+    )
+    if (looseExtraNl[0]?.type === 'list' && looseExtraWrap[0]?.type === 'list') {
+      expect(looseExtraWrap[0].items[0]?.nodes).toBe(looseExtraNl[0].items[0]?.nodes)
+      expect(looseExtraWrap[0].items[0]?.extra?.[0]).not.toBe(looseExtraNl[0].items[0]?.extra?.[0])
+    }
+    const looseExtraSecond = continueCheapProseBlocks(
+      '- 一项\n\n  续段更长\n  软换行',
+      looseExtraWrap,
+      '- 一项\n\n  续段更长\n  软换行\n\n  第二段'
+    )
+    if (looseExtraWrap[0]?.type === 'list' && looseExtraSecond[0]?.type === 'list') {
+      expect(looseExtraSecond[0].items[0]?.nodes).toBe(looseExtraWrap[0].items[0]?.nodes)
+      expect(looseExtraSecond[0].items[0]?.extra?.[0]).toBe(looseExtraWrap[0].items[0]?.extra?.[0])
+      expect(looseExtraSecond[0].items[0]?.extra).toHaveLength(2)
+    }
+    const manyLoose =
+      Array.from({ length: 12 }, (_, i) => `- keep-${i}`).join('\n') + '\n- tail\n\n  续段'
+    const manyLooseFirst = parseCheapProseBlocks(manyLoose)
+    const manyLooseGrown = continueCheapProseBlocks(manyLoose, manyLooseFirst, `${manyLoose}更`)
+    if (manyLooseFirst[0]?.type === 'list' && manyLooseGrown[0]?.type === 'list') {
+      expect(manyLooseGrown[0].items.slice(0, 12).every((item, i) => item === manyLooseFirst[0].items[i])).toBe(
+        true
+      )
+      expect(manyLooseGrown[0].items[12]?.nodes).toBe(manyLooseFirst[0].items[12]?.nodes)
+    }
+    const manyLooseWrap = continueCheapProseBlocks(
+      `${manyLoose}更`,
+      manyLooseGrown,
+      `${manyLoose}更\n  软换行`
+    )
+    if (manyLooseGrown[0]?.type === 'list' && manyLooseWrap[0]?.type === 'list') {
+      expect(manyLooseWrap[0].items.slice(0, 12).every((item, i) => item === manyLooseGrown[0].items[i])).toBe(
+        true
+      )
+      expect(manyLooseWrap[0].items[12]?.nodes).toBe(manyLooseGrown[0].items[12]?.nodes)
+    }
+    const manyLooseSecond = continueCheapProseBlocks(
+      `${manyLoose}更\n  软换行`,
+      manyLooseWrap,
+      `${manyLoose}更\n  软换行\n\n  第二段`
+    )
+    if (manyLooseWrap[0]?.type === 'list' && manyLooseSecond[0]?.type === 'list') {
+      expect(
+        manyLooseSecond[0].items.slice(0, 12).every((item, i) => item === manyLooseWrap[0].items[i])
+      ).toBe(true)
+      expect(manyLooseSecond[0].items[12]?.nodes).toBe(manyLooseWrap[0].items[12]?.nodes)
+      expect(manyLooseSecond[0].items[12]?.extra?.[0]).toBe(manyLooseWrap[0].items[12]?.extra?.[0])
+    }
     const paraQuoteList = parseCheapProseBlocks('先说一句\n> - 一项')
     expect(paraQuoteList.map((b) => b.type)).toEqual(['p', 'quote'])
     const paraQuoteListGrown = continueCheapProseBlocks(
@@ -2742,6 +2800,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('lastItemInnerStripHold')
     expect(mdSrc).toContain('rememberItemInnerStrip')
     expect(mdSrc).toContain('growStrippedItemInnerWindow')
+    expect(mdSrc).toContain('growLastListItemExtra')
     expect(mdSrc).toContain('streamingFenceCloseAfter')
     expect(mdSrc).toContain('lastFenceOpenHold')
     expect(mdSrc).toContain('rememberFenceOpen')
