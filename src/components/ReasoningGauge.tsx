@@ -1,5 +1,5 @@
 /**
- * 输入框旁思考档位条（对标 Codex compact composer gauge）。
+ * 输入框旁思考档位条：官方 Pick a reasoning effort（Light / Medium / High / Extra High / Max）。
  * 只读当前模型官方档位，不跟直播 token 重绘。
  * @see src/components/ARCH.md
  */

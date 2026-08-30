@@ -217,7 +217,7 @@
 | `provider-catalog.ts` | 内置接入预设（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode Go）、主力型号展示名 `MODEL_LABELS` |
 | `provider-validate.ts` | 当前 API 配置校验 |
 | `provider-vision.ts` | 模型是否支持视觉（截图回灌） |
-| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射；`stepThinkingLevel` 供 ⌥, / ⌥.；`cycleThinkingLevel` 供官方 Cycle reasoning effort（默认不绑）；`thinkingGaugeIndex` 给输入框旁思考条；`/reasoning` 解析与状态文案 |
+| `thinking-levels.ts` | 各厂商思考/推理水平与请求字段映射；桌面档位名 **Light** / **Medium** / **High** / **Extra High** / **Max**（CLI Low = Light，`xhigh` = Extra High；不发明 Ultra）；`stepThinkingLevel` 供 ⌥, / ⌥.；`cycleThinkingLevel` 供官方 Cycle reasoning effort（默认不绑）；`thinkingGaugeIndex` 给输入框旁思考条；`/reasoning` 解析与状态文案 |
 | `oauth-gpt.ts` | ChatGPT 订阅凭据导入 |
 | `oauth-xai.ts` | xAI SuperGrok 设备码 OAuth |
 | `computer-use-status.ts` | Computer Use 环境检查聚合 |
