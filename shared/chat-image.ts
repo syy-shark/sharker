@@ -3,6 +3,7 @@
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
  * 右键：复制/保存图片；工作区图再加打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778 页内菜单）。
  * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
+ * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，避免 48px 占位再跳。
  * 右侧文件预览图同一套 contain（`filePreviewImageFit`），避免高图只露上半张。
  * @see shared/ARCH.md
  */
@@ -158,6 +159,83 @@ export function writeCachedChatImageSize(
   const key = imageCacheKey(src)
   if (key && size.width > 0 && size.height > 0) imageSizeCache.set(key, size)
   return size
+}
+
+const imagePrefetchJobs = new Map<string, Promise<ChatImageSize | null>>()
+
+/**
+ * 同一 src 共用一次量尺寸。缓存命中立刻返回；进行中的 Promise 给收束预取与
+ * ChatImage 重挂共用，避免 48px 占位再跳。
+ */
+export function takeChatImagePrefetchJob(
+  src: string,
+  start: () => Promise<ChatImageSize | null>
+): Promise<ChatImageSize | null> {
+  const key = imageCacheKey(src)
+  if (!key) return Promise.resolve(null)
+  const cached = readCachedChatImageSize(key)
+  if (cached) return Promise.resolve(cached)
+  const existing = imagePrefetchJobs.get(key)
+  if (existing) return existing
+  const job = start()
+    .then((size) => {
+      if (size && size.width > 0 && size.height > 0) return writeCachedChatImageSize(key, size)
+      return null
+    })
+    .finally(() => {
+      imagePrefetchJobs.delete(key)
+    })
+  imagePrefetchJobs.set(key, job)
+  return job
+}
+
+/** data: 同步窥尺寸；http(s) 在有 `Image` 时异步解码。不在 16ms 热路径调用。 */
+export function prefetchRemoteChatImageSize(src: string): Promise<ChatImageSize | null> {
+  const url = src.trim()
+  if (!url) return Promise.resolve(null)
+  if (url.startsWith('data:image/')) {
+    const peeked = peekChatImageSizeFromDataUrl(url)
+    if (peeked) writeCachedChatImageSize(url, peeked)
+    return Promise.resolve(peeked)
+  }
+  if (!/^https?:\/\//i.test(url)) return Promise.resolve(readCachedChatImageSize(url))
+  if (typeof Image === 'undefined') return Promise.resolve(readCachedChatImageSize(url))
+  return takeChatImagePrefetchJob(
+    url,
+    () =>
+      new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          const width = img.naturalWidth
+          const height = img.naturalHeight
+          resolve(width > 0 && height > 0 ? { width, height } : null)
+        }
+        img.onerror = () => resolve(null)
+        img.src = url
+      })
+  )
+}
+
+/**
+ * 收束后写入 data: 尺寸，并在有 `document` 时开工 http(s) 解码。
+ * 不 await，以免卡住 prefetch microtask。
+ */
+export function prefetchChatImageSizes(srcs: readonly string[]): number {
+  let n = 0
+  for (const src of srcs) {
+    const url = src.trim()
+    if (!url) continue
+    n += 1
+    if (url.startsWith('data:image/')) {
+      const peeked = peekChatImageSizeFromDataUrl(url)
+      if (peeked) writeCachedChatImageSize(url, peeked)
+      continue
+    }
+    if (typeof document !== 'undefined' && /^https?:\/\//i.test(url)) {
+      void prefetchRemoteChatImageSize(url).catch(() => undefined)
+    }
+  }
+  return n
 }
 
 function be16(bytes: Uint8Array, offset: number): number {

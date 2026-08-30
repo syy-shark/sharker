@@ -706,9 +706,14 @@ function findInlineLinkCloser(src: string, destStart: number): number {
   return src[i] === ')' ? i : -1
 }
 
-/** 对标 micromark：`javascript:` / `vbscript:` / `data:` 画成空 href，避免收束跳协议 */
+/** `javascript:` / `vbscript:` / 非栅格 `data:` 画成空 href；`data:image/png|jpeg|gif|webp|bmp|avif` 留给 ChatImage 占位。 */
 function sanitizeCheapHref(href: string): string {
-  return /^(?:javascript|vbscript|data):/i.test(href.trim()) ? '' : href
+  const value = href.trim()
+  if (/^(?:javascript|vbscript):/i.test(value)) return ''
+  if (/^data:/i.test(value)) {
+    return /^data:image\/(?:png|jpe?g|gif|webp|bmp|avif)[;,]/i.test(value) ? href : ''
+  }
+  return href
 }
 
 /** CommonMark dest：`url` / `<url>`，可选 `"title"` / `'title'` / `(title)` */

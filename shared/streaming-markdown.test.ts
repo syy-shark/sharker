@@ -389,6 +389,12 @@ describe('splitStreamingMarkdown', () => {
     expect(parseCheapInlineMarkdown('[x](javascript:alert(1))')).toEqual([
       { type: 'link', text: 'x', href: '' }
     ])
+    expect(parseCheapInlineMarkdown('![x](data:text/html,hi)')).toEqual([
+      { type: 'image', alt: 'x', href: '' }
+    ])
+    expect(parseCheapInlineMarkdown('![x](data:image/png;base64,aa)')).toEqual([
+      { type: 'image', alt: 'x', href: 'data:image/png;base64,aa' }
+    ])
     expect(parseCheapInlineMarkdown('a\\\nb')).toEqual([
       { type: 'text', text: 'a' },
       { type: 'br' },

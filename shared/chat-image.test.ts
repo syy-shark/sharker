@@ -13,6 +13,8 @@ import {
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
+  prefetchChatImageSizes,
+  takeChatImagePrefetchJob,
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveWorkspaceChatImagePath,
@@ -89,6 +91,9 @@ describe('chat-image', () => {
     expect(chatImageSlotMinHeight(null, false)).toBe(0)
     expect(liveChatImageMinHeight(48, { width: 16, height: 16 }, false)).toBe(48)
     expect(liveChatImageMinHeight(0, null, true)).toBe(48)
+    expect(prefetchChatImageSizes(['', '  '])).toBe(0)
+    expect(prefetchChatImageSizes([png])).toBe(1)
+    expect(readCachedChatImageSize(png)).toEqual({ width: 320, height: 200 })
     expect(chatImageMenuItems({ canExport: true }).map((item) => item.action)).toEqual([
       'copy-image',
       'save'
@@ -142,6 +147,35 @@ describe('chat-image', () => {
       'utf8'
     )
     expect(imageSrc).toContain('FILE_CLOSE_LABEL')
+    expect(imageSrc).toContain('prefetchRemoteChatImageSize')
     expect(imageSrc).not.toContain('aria-label="关闭图片预览"')
+  })
+
+  it('shares one chat image size job and writes the size cache', async () => {
+    let starts = 0
+    const start = () => {
+      starts += 1
+      return Promise.resolve({ width: 64, height: 32 })
+    }
+    const first = takeChatImagePrefetchJob('https://a.test/job.png', start)
+    const second = takeChatImagePrefetchJob('https://a.test/job.png', start)
+    expect(starts).toBe(1)
+    expect(await first).toEqual({ width: 64, height: 32 })
+    expect(await second).toEqual({ width: 64, height: 32 })
+    expect(readCachedChatImageSize('https://a.test/job.png')).toEqual({ width: 64, height: 32 })
+    expect(await takeChatImagePrefetchJob('https://a.test/job.png', start)).toEqual({
+      width: 64,
+      height: 32
+    })
+    expect(starts).toBe(1)
+
+    let fails = 0
+    const boom = () => {
+      fails += 1
+      return Promise.reject(new Error('boom'))
+    }
+    await expect(takeChatImagePrefetchJob('https://a.test/fail.png', boom)).rejects.toThrow('boom')
+    await expect(takeChatImagePrefetchJob('https://a.test/fail.png', boom)).rejects.toThrow('boom')
+    expect(fails).toBe(2)
   })
 })

@@ -2,6 +2,7 @@
  * 对话渲染图：悬停复制 / 保存；工作区相对路径经 readFileDataUrl 成图。
  * 右键页内菜单：复制/保存；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
  * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
+ * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，命中尺寸缓存则首帧占位。
  * @see src/components/ARCH.md
  */
 import {
@@ -25,6 +26,7 @@ import {
   isRemoteChatImageSrc,
   isWorkspaceChatImageSrc,
   peekChatImageSizeFromDataUrl,
+  prefetchRemoteChatImageSize,
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveWorkspaceChatImagePath,
@@ -129,6 +131,17 @@ export function ChatImage({
   const [lightbox, setLightbox] = useState(false)
   const [viewport, setViewport] = useState(() => readLightboxViewport())
   const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!remote || src.startsWith('data:image/')) return
+    let cancelled = false
+    void prefetchRemoteChatImageSize(src).then((size) => {
+      if (!cancelled && size) setSizeTick((n) => n + 1)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [remote, src])
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
