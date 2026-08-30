@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记仍整块拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记仍整块拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -4275,27 +4275,28 @@ function lineCouldStartLastBlock(line: string, type: CheapProseBlock['type']): b
 /**
  * 最后一块窗口：从文末往前扩，取仍只解析成一块且类型对得上的最长后缀
  * （前面已有同型引用 / 列表 / 表 / 围栏时不要指到第一处）。
- * 只在可能开块的行上 `parseCheapProseBlocks`，续行不扫（对标 Codex #22860）。
+ * 从文末 `lastIndexOf` 往前找，不 split 全文；只在可能开块的行上 `parseCheapProseBlocks`，续行不扫（对标 Codex #22860）。
  */
 function lastSingleBlockStart(text: string, last: CheapProseBlock): number | null {
-  const lines = text.split('\n')
-  const starts: number[] = []
-  let offset = 0
-  for (let i = 0; i < lines.length; i++) {
-    starts.push(offset)
-    offset += lines[i]!.length + (i < lines.length - 1 ? 1 : 0)
-  }
   let found: number | null = null
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (!lineCouldStartLastBlock(lines[i]!, last.type)) continue
-    const suffix = text.slice(starts[i]!)
-    if (!suffix) continue
-    const parsed = parseCheapProseBlocks(suffix)
-    if (parsed.length === 1 && parsed[0]!.type === last.type) {
-      found = starts[i]!
-      continue
+  let end = text.length
+  while (end > 0) {
+    const nl = text.lastIndexOf('\n', end - 1)
+    const start = nl < 0 ? 0 : nl + 1
+    const line = text.slice(start, end)
+    if (lineCouldStartLastBlock(line, last.type)) {
+      const suffix = text.slice(start)
+      if (suffix) {
+        const parsed = parseCheapProseBlocks(suffix)
+        if (parsed.length === 1 && parsed[0]!.type === last.type) {
+          found = start
+        } else if (found != null) {
+          break
+        }
+      }
     }
-    if (found != null) break
+    if (nl < 0) break
+    end = nl
   }
   return found
 }
@@ -4484,7 +4485,10 @@ export function continueCheapProseBlocks(
   const incremental = tryContinueLastCheapProseBlock(prevNorm, prevBlocks, nextText, defs)
   if (incremental) return incremental
   const parsed = parseCheapProseBlocks(nextText, defs)
-  if (!prevBlocks.length) return parsed
+  if (!prevBlocks.length) {
+    if (parsed.length > 1) rememberLastCheapBlockStart(parsed, nextText)
+    return parsed
+  }
   const out: CheapProseBlock[] = []
   let pi = 0
   let ni = 0
@@ -4520,5 +4524,6 @@ export function continueCheapProseBlocks(
     ni += 1
   }
   if (ni < parsed.length) out.push(...parsed.slice(ni))
+  if (out.length > 1) rememberLastCheapBlockStart(out, nextText)
   return out
 }

@@ -1389,6 +1389,25 @@ describe('splitStreamingMarkdown', () => {
     expect(paraList.map((b) => b.type)).toEqual(['p', 'list'])
     const paraListGrown = continueCheapProseBlocks('先说一句\n- 一项', paraList, '先说一句\n- 一项更长')
     expect(paraListGrown[0]).toBe(paraList[0])
+    const fromEmpty = continueCheapProseBlocks('', [], '先说一句\n- 一项')
+    const fromEmptyGrown = continueCheapProseBlocks(
+      '先说一句\n- 一项',
+      fromEmpty,
+      '先说一句\n- 一项更长'
+    )
+    expect(fromEmptyGrown[0]).toBe(fromEmpty[0])
+    if (fromEmpty[1]?.type === 'list' && fromEmptyGrown[1]?.type === 'list') {
+      expect(fromEmptyGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
+    }
+    const defSrc = '先说一句\n- 一项\n[d]: https://a.test/x'
+    const defFirst = parseCheapProseBlocks(defSrc)
+    const defGrown = continueCheapProseBlocks(defSrc, defFirst, '先说一句\n- 一项更长\n[d]: https://a.test/x')
+    const defGrownAgain = continueCheapProseBlocks(
+      '先说一句\n- 一项更长\n[d]: https://a.test/x',
+      defGrown,
+      '先说一句\n- 一项更长了\n[d]: https://a.test/x'
+    )
+    expect(defGrownAgain[0]).toBe(defGrown[0])
     if (paraList[1]?.type === 'list' && paraListGrown[1]?.type === 'list') {
       expect(paraListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '一项更长' }])
     }
@@ -2566,6 +2585,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain('rememberLastCheapBlockStart')
+    expect(mdSrc).toContain('rememberLastCheapBlockStart(parsed, nextText)')
+    expect(mdSrc).toContain('rememberLastCheapBlockStart(out, nextText)')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')
     expect(mdSrc).toContain('cheapInlineStableHold')
