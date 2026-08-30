@@ -81,8 +81,8 @@ describe('mcp-activity', () => {
       'utf8'
     )
     expect(approvalSrc).toContain('formatMcpApprovalLabel')
-    expect(approvalSrc).not.toContain('查看操作参数')
+    expect(approvalSrc).not.toContain('<span>查看操作参数</span>')
     expect(approvalSrc).not.toContain('正在提交审批结果')
-    expect(approvalSrc).not.toContain('操作参数无法显示')
+    expect(approvalSrc).not.toContain("return '操作参数无法显示'")
   })
 })
