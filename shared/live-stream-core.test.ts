@@ -1454,6 +1454,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
 
     expect(src('process-phases.ts')).toContain("from './live-stream-core'")
     expect(src('process-phases.ts').includes('live-stream-slices')).toBe(false)
+
+    expect(src('../src/components/AssistantMessage.tsx')).toContain('wrapLines={!streaming}')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
+      'renderLiveAnswerPart(part, true)'
+    )
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {
@@ -1685,5 +1690,110 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(answer.parts.some((part) => part.type === 'diff')).toBe(true)
     expect(answer.parts.some((part) => part.type === 'demo' || part.type === 'text')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'search_replace')).toBe(true)
+  })
+
+  it('keeps one-shot tools, apply_patch, and mixed write-stat flushes off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('one-shot-read', [
+      { type: 'turn_start' },
+      { type: 'think', content: 'Scan' },
+      { type: 'tool_start', toolName: 'read_file', toolCallId: 'o1', toolArgs: { path: 'a.ts' } },
+      { type: 'tool_done', toolName: 'read_file', toolCallId: 'o1', resultSummary: '12 lines' }
+    ])
+    flush('patch-preview', [
+      {
+        type: 'tool_preview',
+        toolName: 'apply_patch',
+        toolCallId: 'o2',
+        toolArgs: {
+          patch: '*** Update File: a.ts\n@@ -1 +1 @@\n-old\n+new'
+        }
+      }
+    ])
+    flush('patch-grow-second-file', [
+      {
+        type: 'tool_preview',
+        toolName: 'apply_patch',
+        toolCallId: 'o2',
+        toolArgs: {
+          patch:
+            '*** Update File: a.ts\n@@ -1 +1 @@\n-old\n+new\n*** Add File: b.ts\n@@\n+hello'
+        }
+      }
+    ])
+    flush('patch-done-think-token', [
+      {
+        type: 'tool_done',
+        toolName: 'apply_patch',
+        toolCallId: 'o2',
+        fileDiffs: [
+          {
+            path: 'a.ts',
+            lines: [
+              { kind: 'del', content: 'old' },
+              { kind: 'add', content: 'new' }
+            ],
+            stats: { added: 1, removed: 1 }
+          },
+          {
+            path: 'b.ts',
+            lines: [{ kind: 'add', content: 'hello' }],
+            stats: { added: 1, removed: 0 }
+          }
+        ]
+      },
+      { type: 'status', content: 'Reconnecting... 1/5' },
+      { type: 'think', content: 'Check patch' },
+      { type: 'token', content: 'Patched' }
+    ])
+    flush('one-shot-write-and-token', [
+      {
+        type: 'tool_start',
+        toolName: 'write_file',
+        toolCallId: 'o3',
+        toolArgs: { path: 'c.ts', content: 'export {}\n' }
+      },
+      {
+        type: 'tool_done',
+        toolName: 'write_file',
+        toolCallId: 'o3',
+        fileDiff: {
+          path: 'c.ts',
+          lines: [{ kind: 'add', content: 'export {}' }],
+          stats: { added: 1, removed: 0 }
+        }
+      },
+      { type: 'token', content: ' and wrote' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.filter((part) => part.type === 'diff')).toHaveLength(3)
+    expect(
+      answer.parts.some((part) => part.type === 'text' && part.content.includes('Patched'))
+    ).toBe(true)
+    expect(answer.tail?.type === 'text' && answer.tail.content).toBe(' and wrote')
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'apply_patch')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'write_file')).toBe(true)
   })
 })
