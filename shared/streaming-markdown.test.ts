@@ -21,6 +21,7 @@ import {
   shouldGrowStreamingTableLastLine,
   shouldGrowStreamingIndentCodeLastLine,
   shouldGrowStreamingFencedPreLastLine,
+  shouldGrowStreamingFootnoteLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -691,6 +692,35 @@ describe('splitStreamingMarkdown', () => {
     if (twoNotes[1]?.type === 'footnotes' && twoGrown[1]?.type === 'footnotes') {
       expect(twoGrown[1].items[0]).toBe(twoNotes[1].items[0])
       expect(twoGrown[1].items[1]).not.toBe(twoNotes[1].items[1])
+    }
+    expect(
+      shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '更', lastId: '1' })
+    ).toBe(true)
+    expect(shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '\n' })).toBe(false)
+    expect(
+      shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '\n    续行' })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明\n', suffix: '    续行' })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '\n\n    第二段' })
+    ).toBe(false)
+    expect(shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '\n[^2]: 二' })).toBe(
+      false
+    )
+    const noteNl = continueCheapProseBlocks('见注[^1]。\n[^1]: 说明', notes, '见注[^1]。\n[^1]: 说明\n')
+    expect(noteNl[0]).toBe(notes[0])
+    expect(noteNl[1]).toBe(notes[1])
+    const manyNoteCites = Array.from({ length: 12 }, (_, i) => `[^n${i}]`).join('')
+    const manyNoteDefs = Array.from({ length: 12 }, (_, i) => `[^n${i}]: keep-${i}`).join('\n')
+    const manyNotes = `见注${manyNoteCites}[^last]。\n${manyNoteDefs}\n[^last]: tail`
+    const manyNotesFirst = parseCheapProseBlocks(manyNotes)
+    const manyNotesGrown = continueCheapProseBlocks(manyNotes, manyNotesFirst, `${manyNotes}更`)
+    if (manyNotesFirst[1]?.type === 'footnotes' && manyNotesGrown[1]?.type === 'footnotes') {
+      expect(
+        manyNotesGrown[1].items.slice(0, 12).every((item, i) => item === manyNotesFirst[1].items[i])
+      ).toBe(true)
     }
     expect(parseCheapProseBlocks('[^1]: n').map((b) => b.type)).toEqual([])
   })
@@ -2581,6 +2611,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingIndentCodeLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingFencedPreLastLine')
+    expect(mdSrc).toContain('shouldGrowStreamingFootnoteLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
