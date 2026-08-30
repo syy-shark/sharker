@@ -202,6 +202,92 @@ export function shouldWalkInlineDemoTree(options: { live?: boolean; streaming?: 
   return !options.live && !options.streaming
 }
 
+/** 只缓存历史重挂（walkTree）那份带套壳的 srcDoc；直播轻量 srcDoc 随 token 增长不进缓存。 */
+export function shouldCacheInlineDemoSrcDoc(options: { walkTree: boolean }): boolean {
+  return options.walkTree
+}
+
+/** 历史 srcDoc 用占位 id 入缓存，重挂换 `useId()` 后只替换占位，不重跑 `buildSrcDoc`。 */
+export const INLINE_DEMO_SRCDOC_ID_PLACEHOLDER = '__SHARKER_DEMO_ID__'
+
+const INLINE_DEMO_SRCDOC_CACHE_LIMIT = 8
+const inlineDemoSrcDocCache = new Map<string, string>()
+
+/** 主题 token 排序后当缓存键，避免对象字面量顺序换 miss。 */
+export function inlineDemoThemeCacheKey(theme: Record<string, string>): string {
+  return Object.keys(theme)
+    .sort()
+    .map((key) => `${key}=${theme[key] ?? ''}`)
+    .join('\n')
+}
+
+/** walkTree + 主题 + HTML 才进同一份套壳 srcDoc。 */
+export function inlineDemoSrcDocCacheKey(options: {
+  html: string
+  walkTree: boolean
+  themeKey: string
+}): string {
+  return `${options.walkTree ? '1' : '0'}\n${options.themeKey}\n${options.html}`
+}
+
+/** 把缓存模板里的占位 id 换成这次挂载的 demoId。 */
+export function applyInlineDemoSrcDocId(srcDoc: string, demoId: string): string {
+  return srcDoc.split(INLINE_DEMO_SRCDOC_ID_PLACEHOLDER).join(demoId)
+}
+
+/** LRU 读历史 srcDoc 模板。 */
+export function readCachedInlineDemoSrcDoc(key: string): string | undefined {
+  const hit = inlineDemoSrcDocCache.get(key)
+  if (hit === undefined) return undefined
+  inlineDemoSrcDocCache.delete(key)
+  inlineDemoSrcDocCache.set(key, hit)
+  return hit
+}
+
+/** 写入历史 srcDoc 模板；空串不进缓存。 */
+export function writeCachedInlineDemoSrcDoc(key: string, srcDoc: string): string {
+  if (!srcDoc) return srcDoc
+  inlineDemoSrcDocCache.delete(key)
+  inlineDemoSrcDocCache.set(key, srcDoc)
+  while (inlineDemoSrcDocCache.size > INLINE_DEMO_SRCDOC_CACHE_LIMIT) {
+    const oldest = inlineDemoSrcDocCache.keys().next().value
+    if (oldest === undefined) break
+    inlineDemoSrcDocCache.delete(oldest)
+  }
+  return srcDoc
+}
+
+/** 测试与会话切换清掉历史 srcDoc 模板。 */
+export function clearInlineDemoSrcDocCache(): void {
+  inlineDemoSrcDocCache.clear()
+}
+
+/**
+ * 历史重挂命中缓存则只换 demoId；直播 `walkTree` 假时当场 `build(demoId)`，不占缓存。
+ * `build` 收到占位 id 时才把套壳 srcDoc 写进缓存。
+ */
+export function resolveInlineDemoSrcDoc(options: {
+  html: string
+  walkTree: boolean
+  themeKey: string
+  demoId: string
+  build: (id: string) => string
+}): string {
+  if (!shouldCacheInlineDemoSrcDoc({ walkTree: options.walkTree })) {
+    return options.build(options.demoId)
+  }
+  const key = inlineDemoSrcDocCacheKey({
+    html: options.html,
+    walkTree: options.walkTree,
+    themeKey: options.themeKey
+  })
+  const cached = readCachedInlineDemoSrcDoc(key)
+  const template =
+    cached ??
+    writeCachedInlineDemoSrcDoc(key, options.build(INLINE_DEMO_SRCDOC_ID_PLACEHOLDER))
+  return applyInlineDemoSrcDocId(template, options.demoId)
+}
+
 /** 直播 srcDoc 首帧立刻画；大段增长 80ms，其余 200ms，避免每 token 重挂整页脚本 */
 export const LIVE_INLINE_DEMO_FIRST_PAINT_MS = 40
 export const LIVE_INLINE_DEMO_GROW_PAINT_MS = 80

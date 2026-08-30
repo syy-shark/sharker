@@ -32,6 +32,15 @@ import {
   shouldMeasureInlineDemoInParent,
   shouldMountInlineDemoFrame,
   shouldWalkInlineDemoTree,
+  shouldCacheInlineDemoSrcDoc,
+  INLINE_DEMO_SRCDOC_ID_PLACEHOLDER,
+  inlineDemoThemeCacheKey,
+  inlineDemoSrcDocCacheKey,
+  applyInlineDemoSrcDocId,
+  resolveInlineDemoSrcDoc,
+  readCachedInlineDemoSrcDoc,
+  writeCachedInlineDemoSrcDoc,
+  clearInlineDemoSrcDocCache,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
@@ -280,6 +289,72 @@ describe('inline demo paintability', () => {
     expect(readCachedInlineDemoHeight(scene)).toBe(48)
     clearInlineDemoHeightCache()
     expect(readCachedInlineDemoHeight(scene)).toBeNull()
+  })
+
+  it('caches historical walkTree srcDoc and only swaps the demo id', () => {
+    expect(shouldCacheInlineDemoSrcDoc({ walkTree: true })).toBe(true)
+    expect(shouldCacheInlineDemoSrcDoc({ walkTree: false })).toBe(false)
+    expect(inlineDemoThemeCacheKey({ isDark: '1', accent: '#007aff' })).toBe(
+      'accent=#007aff\nisDark=1'
+    )
+    expect(inlineDemoThemeCacheKey({ accent: '#007aff', isDark: '1' })).toBe(
+      inlineDemoThemeCacheKey({ isDark: '1', accent: '#007aff' })
+    )
+    const html = '<div class="scene"><h1>广义相对论</h1></div>'
+    expect(
+      inlineDemoSrcDocCacheKey({ html, walkTree: true, themeKey: 'dark' })
+    ).toBe(`1\ndark\n${html}`)
+    expect(
+      applyInlineDemoSrcDocId(
+        `id=${INLINE_DEMO_SRCDOC_ID_PLACEHOLDER};again=${INLINE_DEMO_SRCDOC_ID_PLACEHOLDER}`,
+        'demo-remount'
+      )
+    ).toBe('id=demo-remount;again=demo-remount')
+
+    clearInlineDemoSrcDocCache()
+    let builds = 0
+    const build = (id: string) => {
+      builds += 1
+      return `<html data-id="${id}">${html}</html>`
+    }
+    const first = resolveInlineDemoSrcDoc({
+      html,
+      walkTree: true,
+      themeKey: 'dark',
+      demoId: 'demo-a',
+      build
+    })
+    expect(first).toBe(`<html data-id="demo-a">${html}</html>`)
+    expect(builds).toBe(1)
+    const second = resolveInlineDemoSrcDoc({
+      html,
+      walkTree: true,
+      themeKey: 'dark',
+      demoId: 'demo-b',
+      build
+    })
+    expect(second).toBe(`<html data-id="demo-b">${html}</html>`)
+    expect(builds).toBe(1)
+    expect(
+      readCachedInlineDemoSrcDoc(inlineDemoSrcDocCacheKey({ html, walkTree: true, themeKey: 'dark' }))
+    ).toBe(`<html data-id="${INLINE_DEMO_SRCDOC_ID_PLACEHOLDER}">${html}</html>`)
+
+    const live = resolveInlineDemoSrcDoc({
+      html,
+      walkTree: false,
+      themeKey: 'dark',
+      demoId: 'demo-live',
+      build
+    })
+    expect(live).toBe(`<html data-id="demo-live">${html}</html>`)
+    expect(builds).toBe(2)
+
+    writeCachedInlineDemoSrcDoc('keep', '<html>keep</html>')
+    for (let i = 0; i < 8; i++) writeCachedInlineDemoSrcDoc(`g${i}`, `<html>${i}</html>`)
+    expect(readCachedInlineDemoSrcDoc('keep')).toBeUndefined()
+    expect(readCachedInlineDemoSrcDoc('g7')).toBe('<html>7</html>')
+    clearInlineDemoSrcDocCache()
+    expect(readCachedInlineDemoSrcDoc('g7')).toBeUndefined()
   })
 })
 

@@ -28055,5 +28055,7 @@ describe('live stream ui snapshot', () => {
     expect(demoSrc).toContain('var walkTree')
     expect(demoSrc).toContain('katex@0.16.11')
     expect(demoSrc).toContain('shouldWalkInlineDemoTree({ live:')
+    expect(demoSrc).toContain('resolveInlineDemoSrcDoc')
+    expect(demoSrc).toContain('inlineDemoThemeCacheKey')
   })
 })

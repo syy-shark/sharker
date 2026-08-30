@@ -1,5 +1,6 @@
 /**
  * ```mermaid / ```mmd 围栏判定。直播开闭都挂 MermaidBlock，闭合且不在直播 token 时才画图。
+ * 围栏在直播中闭合时 `shouldWarmLiveMermaid` 开工 `renderMermaidSvg` 写缓存，不 setSvg。
  * SVG 缓存避免收束 / 廉价尾 → 稳定块重挂时先闪回源码；`resolveLiveMermaidSvg` 收束后命中缓存则同一帧成图。
  * `loadMermaidApi` 给收束预取与成图共用同一动态 import；`takeMermaidRenderJob` /
  * `renderMermaidSvg` 让预取与组件共用同一次 `mermaid.render`，立刻跟进的重挂不取消已开工的成图。
@@ -110,9 +111,17 @@ export function isMermaidLang(lang?: string | null): boolean {
   return value === 'mermaid' || value === 'mmd'
 }
 
-/** 直播 token 中即使围栏已闭合也不跑 mermaid.render，收束后再成图以免卡贴底。 */
+/** 直播 token 中即使围栏已闭合也不画 SVG，收束后再成图以免卡贴底。 */
 export function shouldRenderLiveMermaid(options: { closed: boolean; streaming?: boolean }): boolean {
   return options.closed && !options.streaming
+}
+
+/**
+ * 围栏已闭合但仍在直播 token：effect 里开工 mermaid.render 写缓存，不 setSvg / 不成图。
+ * 收束帧更常命中 `readCachedMermaidSvg`，不必先闪源码。
+ */
+export function shouldWarmLiveMermaid(options: { closed: boolean; streaming?: boolean }): boolean {
+  return options.closed && Boolean(options.streaming)
 }
 
 /**

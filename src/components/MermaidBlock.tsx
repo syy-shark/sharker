@@ -1,8 +1,8 @@
 /**
  * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合或直播 token 中不解析。
  * 成图前继续代码尾，避免闭合瞬间卸掉再挂一套，也不在 16ms 热路径跑 mermaid.render。
- * 收束后若 SVG 缓存已暖，同一帧成图；否则与收束预取共用 `renderMermaidSvg`，
- * 立刻跟进的重挂不取消已开工的成图。
+ * 直播中围栏闭合后 effect 开工成图写缓存（不 setSvg）；收束后若 SVG 缓存已暖，同一帧成图；
+ * 否则与收束预取共用 `renderMermaidSvg`，立刻跟进的重挂不取消已开工的成图。
  * @see src/components/ARCH.md
  */
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -13,6 +13,7 @@ import {
   renderMermaidSvg,
   resolveLiveMermaidSvg,
   shouldRenderLiveMermaid,
+  shouldWarmLiveMermaid,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   type MermaidUiTheme
@@ -71,11 +72,14 @@ export function MermaidBlock({
   )
 
   useEffect(() => {
+    const text = source.trim()
     if (!paint) {
       setFailed(false)
+      if (shouldWarmLiveMermaid({ closed, streaming: stream }) && text) {
+        void renderMermaidSvg(text, theme).catch(() => undefined)
+      }
       return
     }
-    const text = source.trim()
     if (!text) {
       setSvg('')
       setFailed(false)
@@ -98,7 +102,7 @@ export function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [paint, source, theme])
+  }, [paint, source, theme, closed, stream])
 
   const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
     <CodeArtifactShell

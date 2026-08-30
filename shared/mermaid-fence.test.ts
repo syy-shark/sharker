@@ -6,6 +6,7 @@ import {
   isMermaidLang,
   isMermaidLangPrefix,
   shouldRenderLiveMermaid,
+  shouldWarmLiveMermaid,
   resolveLiveMermaidSvg,
   takeMermaidRenderJob,
   prefetchMermaidSvgs,
@@ -39,6 +40,10 @@ describe('mermaid-fence', () => {
     expect(shouldRenderLiveMermaid({ closed: true, streaming: false })).toBe(true)
     expect(shouldRenderLiveMermaid({ closed: false, streaming: false })).toBe(false)
     expect(shouldRenderLiveMermaid({ closed: true })).toBe(true)
+    expect(shouldWarmLiveMermaid({ closed: true, streaming: true })).toBe(true)
+    expect(shouldWarmLiveMermaid({ closed: true, streaming: false })).toBe(false)
+    expect(shouldWarmLiveMermaid({ closed: false, streaming: true })).toBe(false)
+    expect(shouldWarmLiveMermaid({ closed: true })).toBe(false)
     expect(resolveLiveMermaidSvg({ paint: false, svg: '<svg></svg>', cached: '<svg>c</svg>' })).toBe(
       ''
     )
