@@ -57,6 +57,8 @@ import {
   LAST_TURN_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
+  REVIEW_CREATE_ONE_HINT,
+  REVIEW_REQUIRES_GIT_LABEL,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
@@ -1381,8 +1383,8 @@ export const ChangesPanel = memo(function ChangesPanel({
 
       {!isRepo ? (
         <div className="changes-panel--empty">
-          <p>当前项目还不是 git 仓库</p>
-          <p className="changes-panel__hint">审查需要 Git。创建后即可看未提交、本轮与分支变更。</p>
+          <p>{REVIEW_REQUIRES_GIT_LABEL}</p>
+          <p className="changes-panel__hint">{REVIEW_CREATE_ONE_HINT}</p>
           <button
             type="button"
             className="changes-panel__action"

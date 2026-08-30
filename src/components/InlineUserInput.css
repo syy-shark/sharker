@@ -60,9 +60,12 @@
 
 .inline-user-input__hint {
   margin: 8px 0 0 38px;
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .inline-user-input__questions {
@@ -229,6 +232,7 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .inline-user-input__submit:hover:not(:disabled) {

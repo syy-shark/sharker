@@ -7,6 +7,7 @@ import {
   DENY_LABEL,
   type ApprovalDecision
 } from '../../shared/approval-session'
+import { AWAITING_APPROVAL_LABEL } from '../../shared/live-display'
 import { formatMcpApprovalLabel } from '../../shared/mcp-activity'
 import './InlineApproval.css'
 
@@ -93,7 +94,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
           <AlertTriangle size={17} strokeWidth={1.9} />
         </span>
         <div className="inline-approval__title-wrap">
-          <span className="inline-approval__eyebrow">Awaiting approval</span>
+          <span className="inline-approval__eyebrow">{AWAITING_APPROVAL_LABEL}</span>
           <h3 id={titleId}>{request.title}</h3>
         </div>
       </div>

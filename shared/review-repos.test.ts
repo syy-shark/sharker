@@ -7,6 +7,8 @@ import {
   LAST_TURN_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
+  REVIEW_CREATE_ONE_HINT,
+  REVIEW_REQUIRES_GIT_LABEL,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
@@ -47,6 +49,10 @@ describe('review repos', () => {
     expect(STAGE_LABEL).toBe('Stage')
     expect(UNSTAGE_LABEL).toBe('Unstage')
     expect(REVERT_LABEL).toBe('Revert')
+    expect(REVIEW_REQUIRES_GIT_LABEL).toBe(
+      'The review pane requires a project inside a Git repository.'
+    )
+    expect(REVIEW_CREATE_ONE_HINT).toMatch(/create one/)
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

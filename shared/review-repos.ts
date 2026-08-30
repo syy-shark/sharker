@@ -20,6 +20,11 @@ export const REVERT_ALL_LABEL = 'Revert all'
 export const STAGE_LABEL = 'Stage'
 export const UNSTAGE_LABEL = 'Unstage'
 export const REVERT_LABEL = 'Revert'
+/** Official review pane empty Git prompt (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_REQUIRES_GIT_LABEL =
+  'The review pane requires a project inside a Git repository.'
+export const REVIEW_CREATE_ONE_HINT =
+  "If your project isn't a Git repository yet, the app prompts you to create one."
 
 /** 审查最多再探几个附加根（含主根一共 cap） */
 export const MAX_REVIEW_REPOS = 8

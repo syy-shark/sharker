@@ -41,12 +41,15 @@
 
 .inline-approval__eyebrow {
   display: block;
+  overflow: hidden;
   margin-bottom: 2px;
   color: var(--warning);
   font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .inline-approval h3 {
@@ -189,6 +192,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   transition:
