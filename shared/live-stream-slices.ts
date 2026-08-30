@@ -166,7 +166,8 @@ function liveSameLengthAnswerIdentityHold(
     isLiveAnswerText(tails.nextTail) &&
     !hasStreamingDemoFenceGrowth(tails.prevTail.content ?? '', tails.nextTail.content ?? '')
   ) {
-    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? true : undefined
+    // Prose tokens must still grow the answer tail / copyable (对标 nextLiveAnswerView).
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? false : undefined
   }
   return undefined
 }

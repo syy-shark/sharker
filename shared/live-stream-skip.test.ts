@@ -62,13 +62,13 @@ describe('live same-length skip (16ms token path)', () => {
     expect(hasLiveProcessPhaseGrowHold([plan], [ask])).toBe(true)
   })
 
-  it('holds answer identity on same-length prose growth', () => {
+  it('does not skip answer identity on prose tokens so the tail can grow', () => {
     expect(
       shouldSkipLiveAnswerIdentity({
         prev: emptyAnswer,
         prevSegments: [prose('Hello')],
         segments: [prose('Hello world')]
       })
-    ).toBe(true)
+    ).toBe(false)
   })
 })
