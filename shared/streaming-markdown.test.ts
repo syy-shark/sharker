@@ -1563,6 +1563,17 @@ describe('splitStreamingMarkdown', () => {
       expect(fenceInListGrown[0].items[0]?.nodes).toBe(fenceInListLive[0].items[0]?.nodes)
       expect(fenceInListGrown[0].items[0]?.blocks?.[0]).toMatchObject({ type: 'pre', text: 'xy', lang: 'js' })
     }
+    const manyFence =
+      Array.from({ length: 12 }, (_, i) => `- keep-${i}`).join('\n') + '\n- tail\n   ```js\n   x'
+    const manyFenceFirst = parseCheapProseBlocks(manyFence)
+    const manyFenceGrown = continueCheapProseBlocks(manyFence, manyFenceFirst, `${manyFence}y`)
+    if (manyFenceFirst[0]?.type === 'list' && manyFenceGrown[0]?.type === 'list') {
+      expect(manyFenceGrown[0].items.slice(0, 12).every((item, i) => item === manyFenceFirst[0].items[i])).toBe(
+        true
+      )
+      expect(manyFenceGrown[0].items[12]?.nodes).toBe(manyFenceFirst[0].items[12]?.nodes)
+      expect(manyFenceGrown[0].items[12]?.blocks?.[0]).toMatchObject({ type: 'pre', text: 'xy', lang: 'js' })
+    }
     const manyThenQuote =
       Array.from({ length: 8 }, (_, i) => `- keep-${i}`).join('\n') + '\n- note\n  > quoted'
     const manyThenQuoteFirst = parseCheapProseBlocks(manyThenQuote)
@@ -2334,6 +2345,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
+    expect(mdSrc).toContain('lastMatchingListLineStart')
+    expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')

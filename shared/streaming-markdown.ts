@@ -2978,25 +2978,42 @@ function lastLineNeedsFullProseParse(line: string): boolean {
   return false
 }
 
+/**
+ * 从文末往前找最后一项匹配的列表标记，不 split 全文。
+ * 顶层列表 indent 为 0 时不可能有更浅标记，找到最后一项即可停。
+ */
+function lastMatchingListLineStart(
+  text: string,
+  indent: number,
+  ordered: boolean,
+  scanAllForShallower = false
+): number | null {
+  let end = text.length
+  let found: number | null = null
+  while (end > 0) {
+    const nl = text.lastIndexOf('\n', end - 1)
+    const lineStart = nl < 0 ? 0 : nl + 1
+    const parsed = parseListLine(text.slice(lineStart, end))
+    if (parsed) {
+      if (parsed.indent === indent && parsed.ordered === ordered) {
+        if (found == null) found = lineStart
+        if (!scanAllForShallower) return found
+      } else if (parsed.indent < indent) {
+        return null
+      }
+    }
+    if (nl < 0) break
+    end = nl
+  }
+  return found
+}
+
 /** 顶层列表最后一项在原文中的起点；嵌套项不算 */
 function lastTopLevelListItemStart(text: string): number | null {
-  const lines = text.split('\n')
-  const first = parseListLine(lines[0] ?? '')
+  const nl = text.indexOf('\n')
+  const first = parseListLine(nl < 0 ? text : text.slice(0, nl))
   if (!first) return null
-  const topIndent = first.indent
-  let start = 0
-  let offset = 0
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!
-    const parsed = parseListLine(line)
-    if (parsed && parsed.indent === topIndent && parsed.ordered === first.ordered) {
-      start = offset
-    } else if (parsed && parsed.indent < topIndent) {
-      return null
-    }
-    offset += line.length + (i < lines.length - 1 ? 1 : 0)
-  }
-  return start
+  return lastMatchingListLineStart(text, first.indent, first.ordered, first.indent > 0)
 }
 
 /** 只续最后一项的行内（无换行、无项内块），已画项保持同一引用 */
@@ -3035,17 +3052,7 @@ function growLastListItemInline(
 
 /** 指定缩进的最后一项起点；缩进更浅的列表标记说明已离开这一层 */
 function lastMatchingListItemStart(text: string, indent: number, ordered: boolean): number | null {
-  const lines = text.split('\n')
-  let start: number | null = null
-  let offset = 0
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!
-    const parsed = parseListLine(line)
-    if (parsed && parsed.indent === indent && parsed.ordered === ordered) start = offset
-    else if (parsed && parsed.indent < indent) return null
-    offset += line.length + (i < lines.length - 1 ? 1 : 0)
-  }
-  return start
+  return lastMatchingListLineStart(text, indent, ordered, indent > 0)
 }
 
 /** 项内最后一块在该项原文中的起点（含写在列表标记同一行的围栏 / 标题 / 引用） */
