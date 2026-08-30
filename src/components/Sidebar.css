@@ -910,6 +910,17 @@ html.theme-dark .sidebar-project-menu {
   line-height: 14px;
 }
 
+.sidebar-row-time {
+  flex-shrink: 0;
+  margin-left: 6px;
+  color: var(--text-muted, var(--text-secondary));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
 
 .sidebar-row-text {
   flex: 1;

@@ -76,6 +76,7 @@ import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator'
 import './Sidebar.css'
 import { SIDEBAR_LAYOUT } from '../constants/layout'
+import { formatLastActiveTime } from '../lib/format-time'
 import { loadThreadRuntime } from '../lib/thread-runtime'
 
 interface Props {
@@ -585,6 +586,7 @@ export const Sidebar = memo(function Sidebar({
     const live = liveIdSet.has(c.id)
     const isolated = loadThreadRuntime(c.id).mode === 'worktree'
     const renaming = renamingId === c.id
+    const lastActive = formatLastActiveTime(c.updatedAt)
     return (
       <div
         key={c.id}
@@ -666,6 +668,13 @@ export const Sidebar = memo(function Sidebar({
                 {WORKTREE_LABEL}
               </span>
             ) : null}
+            <span
+              className="sidebar-row-time"
+              data-last-active={lastActive}
+              title={new Date(c.updatedAt).toLocaleString()}
+            >
+              {lastActive}
+            </span>
             <span className="sidebar-row-status">
               {live ? (
                 <SidebarLiveDot />
