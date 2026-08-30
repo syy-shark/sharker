@@ -7,7 +7,7 @@
     "dev": "node scripts/dev.cjs",
     "postinstall": "bash scripts/fix-node-pty.sh",
     "fix:pty": "bash scripts/fix-node-pty.sh",
-    "test": "vitest run",
+    "test": "node --stack-size=16384 ./node_modules/vitest/vitest.mjs run",
     "build": "electron-vite build",
     "preview": "electron-vite preview"
   },
