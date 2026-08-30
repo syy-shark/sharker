@@ -169,6 +169,8 @@ describe('splitStreamingMarkdown', () => {
     expect(normalizeStreamingText('https://example.com/very/long')).toBe(
       'https://example.com/very/long'
     )
+    const lfOnly = '普通段落\n第二行 **粗**'
+    expect(normalizeStreamingText(lfOnly)).toBe(lfOnly)
   })
 
   it('extracts open fence body without the opener', () => {
@@ -600,6 +602,10 @@ describe('splitStreamingMarkdown', () => {
     expect(nextLinkDefinitions(defState, '[d]: https://a.test/x\n\n见 [d] 更长').defs).toBe(defState.defs)
     const emptyDefs = nextLinkDefinitions(null, '普通段落')
     expect(nextLinkDefinitions(emptyDefs, '普通段落增长')).toBe(emptyDefs)
+    const longProse = `${'段落 '.repeat(200)}继续写`
+    const longDefs = nextLinkDefinitions(null, longProse)
+    expect(longDefs.blob).toBe('')
+    expect(nextLinkDefinitions(longDefs, `${longProse} 更长`)).toBe(longDefs)
     expect(isOnlyLinkDefinitions('普通段落')).toBe(false)
     expect(parseCheapProseBlocks('<!-- comment -->').map((b) => b.type)).toEqual([])
     expect(parseCheapProseBlocks('foo <!-- x --> bar')).toEqual([
@@ -2163,5 +2169,11 @@ describe('streaming markdown remount holds', () => {
     expect(src).toContain('seedCheapProseHold')
     expect(src).toContain('writeCheapProseHold')
     expect(src.includes('live-stream-slices')).toBe(false)
+    const mdSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'streaming-markdown.ts'),
+      'utf8'
+    )
+    expect(mdSrc).toContain("if (!src.includes('\\r')) return src")
+    expect(mdSrc).toContain("prev.blob === '' && !raw.includes(']:')")
   })
 })

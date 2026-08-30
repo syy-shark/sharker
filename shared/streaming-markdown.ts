@@ -57,9 +57,11 @@ function isFenceClose(line: string, openMarker: string): boolean {
   return parsed.info.trim() === ''
 }
 
-/** 对标 Codex 0.150：CRLF 粘贴按 LF 拆，避免围栏/段落对不齐 */
+/** 对标 Codex 0.150：CRLF 粘贴按 LF 拆，避免围栏/段落对不齐。无 \\r 退回同一字符串，直播 token 不扫两遍。 */
 export function normalizeStreamingText(text: string): string {
-  return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const src = String(text ?? '')
+  if (!src.includes('\r')) return src
+  return src.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
 }
 
 /**
@@ -829,9 +831,11 @@ export function nextLinkDefinitions(
   prev: LinkDefinitionState | null | undefined,
   text: string
 ): LinkDefinitionState {
-  const blob = linkDefinitionBlob(text)
+  const raw = String(text ?? '')
+  if (prev && prev.blob === '' && !raw.includes(']:')) return prev
+  const blob = linkDefinitionBlob(raw)
   if (prev && prev.blob === blob) return prev
-  return { blob, defs: collectLinkDefinitions(text) }
+  return { blob, defs: collectLinkDefinitions(raw) }
 }
 
 /**
