@@ -14,10 +14,12 @@ import {
   type KeymapOverrides
 } from '../../../shared/keymap'
 import {
+  KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
   KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER,
   KEYSTROKE_SEARCH_LABEL,
-  KEYSTROKE_SEARCH_PLACEHOLDER
+  KEYSTROKE_SEARCH_PLACEHOLDER,
+  NOT_ASSIGNED_BY_DEFAULT_LABEL
 } from '../../../shared/reveal-in-folder'
 import { SettingsCard, SettingsSection } from './SettingsPrimitives'
 import './ShortcutSettings.css'
@@ -95,7 +97,7 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
   const resetAll = () => persist({})
 
   return (
-    <SettingsSection title={KEYBOARD_SHORTCUTS_LABEL}>
+    <SettingsSection title={KEYBOARD_SHORTCUTS_LABEL} description={KEYBOARD_SHORTCUTS_INTRO}>
       <SettingsCard>
         <div className="shortcut-toolbar">
           <input
@@ -186,7 +188,13 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
                       if (chord) bind(row.action, chord)
                     }}
                   >
-                    {listening ? '按下快捷键…' : bound ? (custom ? formatShortcutChord(bound) : bound) : '未分配'}
+                    {listening
+                      ? KEYSTROKE_SEARCH_PLACEHOLDER
+                      : bound
+                        ? custom
+                          ? formatShortcutChord(bound)
+                          : bound
+                        : NOT_ASSIGNED_BY_DEFAULT_LABEL}
                   </button>
                   {bound ? (
                     <button

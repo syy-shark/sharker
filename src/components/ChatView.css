@@ -1495,6 +1495,7 @@ html.theme-dark .composer-worktree-banner {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   box-shadow: var(--glass-rim-soft);
   animation: list-item-in var(--motion-duration-fast) var(--motion-ease-soft) both;
   transition:

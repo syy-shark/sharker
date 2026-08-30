@@ -208,6 +208,8 @@ export const GO_TO_CHAT_LABEL = 'Go to chat 1–9'
 export const OPEN_MODEL_PICKER_LABEL = 'Open model picker'
 export const OPEN_PROJECT_PICKER_LABEL = 'Open project picker'
 export const START_VOICE_CHAT_LABEL = 'Start voice chat'
+/** Official composer Voice control (learn.chatgpt.com Start voice chat; desktop issues call the chip Voice). */
+export const VOICE_LABEL = 'Voice'
 export const START_DICTATION_LABEL = 'Start dictation'
 export const RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL = 'Restore previous composer prompt'
 /** 官方 Commands：审批打开时 Enter / Esc（对标 learn.chatgpt.com/docs/reference/commands） */
@@ -248,7 +250,7 @@ export const PERSONALIZATION_SETTINGS_INTRO =
 export const KEYBOARD_SHORTCUTS_LABEL = 'Keyboard Shortcuts'
 /** Official Settings → Keyboard Shortcuts (learn.chatgpt.com/docs/reference/settings). */
 export const KEYBOARD_SHORTCUTS_INTRO =
-  'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults.'
+  'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it.'
 export const KEYSTROKE_SEARCH_LABEL = 'Keystroke search'
 export const KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER = 'Search by command name'
 export const KEYSTROKE_SEARCH_PLACEHOLDER = 'Press a key combination'

@@ -138,6 +138,7 @@ import {
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
   START_DICTATION_LABEL,
   START_VOICE_CHAT_LABEL,
+  VOICE_LABEL,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
 import { ANSWER_THE_QUESTIONS_TO_CONTINUE } from '../../shared/user-input'
@@ -2462,10 +2463,11 @@ export const ComposerDock = memo(
               type="button"
               className={`composer-jump${voiceChat ? ' is-active' : ''}`}
               onClick={() => toggleVoiceChat()}
-              title={voiceChat ? '结束语音对话（Ctrl⇧V）' : `${START_VOICE_CHAT_LABEL} (Ctrl⇧V)`}
+              title={`${START_VOICE_CHAT_LABEL} (Ctrl⇧V)`}
+              aria-label={START_VOICE_CHAT_LABEL}
               aria-pressed={voiceChat}
             >
-              {voiceChat ? '语音中' : '语音'}
+              {VOICE_LABEL}
             </button>
             <ModelPicker
               providers={providers}

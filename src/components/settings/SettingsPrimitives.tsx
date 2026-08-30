@@ -10,14 +10,17 @@ import './SettingsPrimitives.css'
 /** 设置区块标题与内容容器 */
 export function SettingsSection({
   title,
+  description,
   children
 }: {
   title: string
+  description?: string
   children: ReactNode
 }) {
   return (
     <section className="st-section">
       <h3 className="st-section-title">{title}</h3>
+      {description ? <p className="st-section-desc">{description}</p> : null}
       {children}
     </section>
   )

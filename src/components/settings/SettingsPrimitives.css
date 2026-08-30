@@ -12,6 +12,14 @@
   color: var(--text-muted);
 }
 
+.st-section-desc {
+  margin: -2px 0 10px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .st-card {
   position: relative;
   isolation: isolate;

@@ -371,7 +371,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'copy',
-    description: 'Copy the latest completed Codex output.',
+    description: 'Copy the last response, code block, or quote.',
     scope: 'ui',
     action: 'copy_last_output',
     category: 'session'

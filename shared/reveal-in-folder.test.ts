@@ -60,6 +60,8 @@ import {
   PROFILE_SETTINGS_LABEL,
   UNARCHIVE_LABEL,
   OPEN_MODEL_PICKER_LABEL,
+  START_VOICE_CHAT_LABEL,
+  VOICE_LABEL,
   OPEN_SETTINGS_LABEL,
   SKILLS_LABEL,
   revealInFolderLabel,
@@ -189,6 +191,8 @@ describe('reveal in folder', () => {
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
     expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
+    expect(START_VOICE_CHAT_LABEL).toBe('Start voice chat')
+    expect(VOICE_LABEL).toBe('Voice')
     expect(START_DICTATION_LABEL).toBe('Start dictation')
     expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')
     expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
@@ -208,7 +212,7 @@ describe('reveal in folder', () => {
     expect(RESTORE_LABEL).toBe('Restore')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
     expect(KEYBOARD_SHORTCUTS_INTRO).toBe(
-      'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults.'
+      'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it.'
     )
     expect(KEYSTROKE_SEARCH_LABEL).toBe('Keystroke search')
     expect(KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER).toBe('Search by command name')
