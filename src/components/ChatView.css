@@ -1158,6 +1158,7 @@
   font-size: 11px !important;
   color: var(--text-secondary);
   background: var(--glass-fill-nested);
+  white-space: nowrap;
 }
 
 .composer-attachment-revert:hover {

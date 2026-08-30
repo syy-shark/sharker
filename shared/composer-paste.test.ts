@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   PASTE_TEXT_ATTACHMENT_THRESHOLD,
   PASTED_TEXT_ATTACHMENT_NAME,
+  SHOW_IN_TEXT_FIELD_LABEL,
   classifyPastedAttachment,
   clipboardPlainText,
   composerEmptyAttachmentPrompt,
@@ -106,6 +110,14 @@ describe('composer paste intake', () => {
   })
 
   it('converts oversized paste into Pasted text.txt unless shift-forced inline', () => {
+    expect(SHOW_IN_TEXT_FIELD_LABEL).toBe('Show in text field')
+    expect(PASTE_TEXT_ATTACHMENT_THRESHOLD).toBe(10_001)
+    expect(
+      decideClipboardPaste({
+        getData: (type) => (type === 'text/plain' ? 'x'.repeat(10_000) : ''),
+        hasImageFiles: false
+      })
+    ).toEqual({ action: 'insert_text', text: 'x'.repeat(10_000) })
     const text = 'x'.repeat(PASTE_TEXT_ATTACHMENT_THRESHOLD)
     expect(
       decideClipboardPaste({
@@ -145,6 +157,15 @@ describe('composer paste intake', () => {
       text: '解释这份日志',
       attachments: atts
     })
+  })
+
+  it('wires official Show in text field on paste and selection chips', () => {
+    const composerSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
+      'utf8'
+    )
+    expect(composerSrc).toContain('SHOW_IN_TEXT_FIELD_LABEL')
+    expect(composerSrc).not.toContain('插入正文')
   })
 
   it('names sequential pasted text attachments', () => {

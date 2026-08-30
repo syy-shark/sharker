@@ -4,11 +4,14 @@
  * @see shared/ARCH.md
  */
 
-/** 超过该长度的粘贴收成 `Pasted text.txt`，避免撑爆输入框与上下文 */
-export const PASTE_TEXT_ATTACHMENT_THRESHOLD = 16_000
+/** Official ChatGPT paste: longer than 10,000 characters become attachments. */
+export const PASTE_TEXT_ATTACHMENT_THRESHOLD = 10_001
 
 /** Codex 桌面端超长粘贴附件名 */
 export const PASTED_TEXT_ATTACHMENT_NAME = 'Pasted text.txt'
+
+/** Official paste-attachment control (learn.chatgpt.com/docs/whats-new). */
+export const SHOW_IN_TEXT_FIELD_LABEL = 'Show in text field'
 
 /** 粘贴决策：插入正文 / 收成文本附件 / 收文件 / 收图片 / 交给浏览器 */
 export type ClipboardPasteDecision =

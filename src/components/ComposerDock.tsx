@@ -109,6 +109,7 @@ import {
   hasAttachableNonImageFiles,
   materializeComposerInput,
   pastedTextAttachmentName,
+  SHOW_IN_TEXT_FIELD_LABEL,
   utf8ToBase64
 } from '../../shared/composer-paste'
 import {
@@ -2272,7 +2273,7 @@ export const ComposerDock = memo(
                     })
                   }}
                 >
-                  插入正文
+                  {SHOW_IN_TEXT_FIELD_LABEL}
                 </button>
                 <button
                   type="button"
@@ -2341,7 +2342,7 @@ export const ComposerDock = memo(
                     className="composer-attachment-revert"
                     onClick={() => revertPastedText(a.id)}
                   >
-                    插入正文
+                    {SHOW_IN_TEXT_FIELD_LABEL}
                   </button>
                 ) : null}
                 <button
