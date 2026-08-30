@@ -14,6 +14,7 @@ import {
   type KeymapOverrides
 } from '../../../shared/keymap'
 import {
+  changeShortcutLabel,
   KEYBOARD_SHORTCUTS_INTRO,
   KEYBOARD_SHORTCUTS_LABEL,
   KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER,
@@ -161,7 +162,9 @@ export function ShortcutSettings({ draft, setDraft, onSave }: Props) {
                   <button
                     type="button"
                     className={`shortcut-bind${listening ? ' is-listening' : ''}`}
-                    aria-label={`${row.title} 快捷键`}
+                    aria-label={
+                      listening ? KEYSTROKE_SEARCH_PLACEHOLDER : changeShortcutLabel(row.title)
+                    }
                     onClick={() => setRecording(listening ? null : row.action)}
                     onKeyDown={(e) => {
                       if (!listening) return

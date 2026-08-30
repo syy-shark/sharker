@@ -2,7 +2,15 @@
  * 斜杠命令目录：供输入框菜单与 /help 展示。
  * @see agent/commands.ts
  */
-import { OPEN_KEYBOARD_SHORTCUTS_LABEL, OPEN_SETTINGS_LABEL } from './reveal-in-folder'
+import {
+  OPEN_KEYBOARD_SHORTCUTS_LABEL,
+  OPEN_REVIEW_TAB_LABEL,
+  OPEN_SETTINGS_LABEL,
+  TOGGLE_BROWSER_PANEL_LABEL,
+  TOGGLE_FILE_TREE_LABEL,
+  TOGGLE_REVIEW_PANEL_LABEL,
+  TOGGLE_TERMINAL_LABEL
+} from './reveal-in-folder'
 
 /** Official IDE / desktop slash copy (learn.chatgpt.com/docs/reference/slash-commands). */
 export const SLASH_PLAN_DESCRIPTION = 'Toggle plan mode for multi-step planning.'
@@ -25,6 +33,8 @@ export const SLASH_REASONING_DESCRIPTION = 'Choose the reasoning effort for the 
 export const SLASH_APPROVE_DESCRIPTION =
   'Approve one retry of a recent automatic-review denial, when automatic review is active.'
 export const SLASH_FORK_DESCRIPTION = 'Copy a local chat into a new local chat or worktree.'
+/** Official desktop Share / `/share` (learn.chatgpt.com Use ChatGPT + changelog). Local copy only; do not invent Who has access / Copy link. */
+export const SLASH_SHARE_DESCRIPTION = 'Share a read-only snapshot of a local Codex thread.'
 
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
@@ -94,7 +104,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'diff',
-    description: '打开变更审查（查看本地 diff）',
+    description: OPEN_REVIEW_TAB_LABEL,
     scope: 'ui',
     action: 'show_diff',
     category: 'panel'
@@ -290,7 +300,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'share',
-    description: '复制当前对话的只读快照（脱敏，不含工具输出）',
+    description: SLASH_SHARE_DESCRIPTION,
     scope: 'ui',
     action: 'share_thread',
     category: 'session'
@@ -312,21 +322,21 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'terminal',
-    description: '打开 / 关闭右侧终端面板',
+    description: TOGGLE_TERMINAL_LABEL,
     scope: 'ui',
     action: 'toggle_terminal',
     category: 'panel'
   },
   {
     name: 'files',
-    description: '打开 / 关闭右侧文件树',
+    description: TOGGLE_FILE_TREE_LABEL,
     scope: 'ui',
     action: 'toggle_files',
     category: 'panel'
   },
   {
     name: 'changes',
-    description: '打开右侧变更审查',
+    description: TOGGLE_REVIEW_PANEL_LABEL,
     scope: 'ui',
     action: 'toggle_changes',
     category: 'panel'
@@ -422,7 +432,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'browser',
-    description: '打开 / 关闭内置浏览器',
+    description: TOGGLE_BROWSER_PANEL_LABEL,
     scope: 'ui',
     action: 'toggle_browser',
     category: 'panel'

@@ -133,6 +133,18 @@ describe('slash commands', () => {
     )
     expect(SLASH_COMMANDS.find((c) => c.name === 'feedback')?.action).toBe('show_feedback')
     expect(SLASH_COMMANDS.find((c) => c.name === 'share')?.action).toBe('share_thread')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'share')?.description).toBe(
+      'Share a read-only snapshot of a local Codex thread.'
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'diff')?.description).toBe('Open review tab')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'changes')?.description).toBe(
+      'Toggle review panel'
+    )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'terminal')?.description).toBe('Toggle terminal')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'files')?.description).toBe('Toggle file tree')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'browser')?.description).toBe(
+      'Toggle browser panel'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'local')?.action).toBe('set_thread_local')
     expect(SLASH_COMMANDS.find((c) => c.name === 'worktree')?.action).toBe('set_thread_worktree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'agents')?.action).toBe('toggle_agents')
@@ -182,6 +194,8 @@ describe('slash commands', () => {
     expect(filterSlashCommands('chat').some((c) => c.name === 'chat')).toBe(true)
     expect(filterSlashCommands('without a project').some((c) => c.name === 'chat')).toBe(true)
     expect(filterSlashCommands('selected local project').some((c) => c.name === 'local')).toBe(true)
+    expect(filterSlashCommands('read-only snapshot').some((c) => c.name === 'share')).toBe(true)
+    expect(filterSlashCommands('toggle review panel').some((c) => c.name === 'changes')).toBe(true)
     expect(filterSlashCommands('optionally include logs').some((c) => c.name === 'feedback')).toBe(
       true
     )

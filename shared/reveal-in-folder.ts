@@ -265,6 +265,10 @@ export const KEYBOARD_SHORTCUTS_INTRO =
 export const KEYSTROKE_SEARCH_LABEL = 'Keystroke search'
 export const KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER = 'Search by command name'
 export const KEYSTROKE_SEARCH_PLACEHOLDER = 'Press a key combination'
+/** Official Keyboard Shortcuts bind-button name (packaged desktop #27835). Do not invent Add another shortcut. */
+export function changeShortcutLabel(commandTitle: string): string {
+  return `Change shortcut for ${commandTitle}`
+}
 export const GENERAL_SETTINGS_LABEL = 'General'
 export const APPEARANCE_SETTINGS_LABEL = 'Appearance'
 export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'
