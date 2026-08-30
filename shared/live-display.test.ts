@@ -478,6 +478,16 @@ describe('elapsed clock', () => {
     expect(resolveStoppedAfterLabel({ content: '_(已停止)_', startedAt: 0, endedAt: 0 })).toBe(
       'You stopped after 0s'
     )
+    const processSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), './process-phases.ts'),
+      'utf8'
+    )
+    expect(processSrc).toContain('WORKED_FOR_LABEL')
+    expect(processSrc).toContain('formatStoppedAfterLabel')
+    expect(processSrc).toContain('formatEditedFilesHeader')
+    expect(processSrc).not.toContain('浏览 ${model.totals.readFiles} 个文件')
+    expect(processSrc).not.toContain('修改 ${model.totals.modifiedFiles} 个文件')
+    expect(processSrc).not.toContain('运行 ${model.totals.commands} 个命令')
   })
 })
 

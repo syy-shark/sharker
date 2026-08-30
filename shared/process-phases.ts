@@ -7,7 +7,7 @@ import {
   formatCompactActivity,
   isCompactActivityToolName
 } from './compact-activity'
-import { formatEditActivity, isEditActivityToolName } from './edit-activity'
+import { formatEditActivity, formatEditedFilesHeader, isEditActivityToolName } from './edit-activity'
 import { formatExecActivity, summarizeExecCommand } from './exec-activity'
 import {
   exploreNameFromPath,
@@ -15,7 +15,11 @@ import {
   isExploreActivityToolName
 } from './explore-activity'
 import { formatMcpActivity, isMcpActivityToolName, isMcpJsonDump } from './mcp-activity'
-import { resolvePrepareLiveTitle } from './live-display'
+import {
+  formatStoppedAfterLabel,
+  resolvePrepareLiveTitle,
+  WORKED_FOR_LABEL
+} from './live-display'
 import {
   isReconnectLiveStatus,
   resolveReconnectLiveStatus
@@ -16600,32 +16604,20 @@ export function deriveProcessPhases(
   }
 }
 
-/** 供外层完成态摘要复用。 */
+/** 供外层完成态摘要复用。官方 Worked for / You stopped after / Edited N files，不发明浏览 N 个文件。 */
 export function summarizeProcessPhases(
   model: ProcessPhaseModel,
   durationSec?: number,
   outcome?: 'success' | 'error' | 'aborted'
 ): string {
+  const seconds = Math.max(0, durationSec ?? 0)
+  if (outcome === 'aborted') return formatStoppedAfterLabel(seconds)
   const parts: string[] = []
-  if (model.totals.readFiles > 0) parts.push(`浏览 ${model.totals.readFiles} 个文件`)
-  if (model.totals.modifiedFiles > 0) parts.push(`修改 ${model.totals.modifiedFiles} 个文件`)
-  if (model.totals.commands > 0) parts.push(`运行 ${model.totals.commands} 个命令`)
-
-  const verify = model.groups.find((group) => group.phase === 'verify')
-  if (verify?.state === 'error') parts.push('验证失败')
-  else if (verify?.state === 'active') parts.push('验证中')
-  else if (verify && verify.steps.length > 0) parts.push('验证完成')
-
-  if (parts.length === 0) {
-    if (outcome === 'error') parts.push('未完成')
-    else if (outcome === 'aborted') parts.push('已停止')
-    else parts.push('完成')
-  } else if (outcome === 'error') {
-    // 有过程统计时也要标明失败，避免鉴权失败仍显示“完成”
-    parts.unshift('未完成')
-  } else if (outcome === 'aborted') {
-    parts.unshift('已停止')
+  if (outcome === 'error') parts.push('未完成')
+  else parts.push(WORKED_FOR_LABEL)
+  if (model.totals.modifiedFiles > 0) {
+    parts.push(formatEditedFilesHeader(model.totals.modifiedFiles))
   }
-  if (durationSec != null && durationSec > 0) parts.push(`${durationSec}s`)
+  if (seconds > 0) parts.push(`${seconds}s`)
   return parts.join(' · ')
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   createSelectedTextPreview,
@@ -18,6 +19,9 @@ describe('selected-text-preview', () => {
   it('stages official Selection chips and wraps submit as # Selected text:', () => {
     expect(selectedTextTitle(0)).toBe('Selection 1')
     expect(selectedTextTitle(1)).toBe('Selection 2')
+    const composerSrc = readFileSync(new URL('../src/components/ComposerDock.tsx', import.meta.url), 'utf8')
+    expect(composerSrc).toContain('title={selectedTextTitle(index)}')
+    expect(composerSrc).not.toContain('预览划选')
     expect(SELECTED_TEXT_COMMENT_LABEL).toBe('Comment')
     expect(selectedTextChipLabel('short')).toBe('short')
     expect(selectedTextChipLabel('  many   spaces  ')).toBe('many spaces')

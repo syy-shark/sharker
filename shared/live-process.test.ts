@@ -548,6 +548,6 @@ describe('status bridge command totals', () => {
     segs = finalizeSegments(segs, 6)
     const model = deriveProcessPhases(segs, { isStreaming: false })
     expect(model.totals.commands).toBe(0)
-    expect(summarizeProcessPhases(model, 3, 'aborted')).not.toMatch(/运行 \d+ 个命令/)
+    expect(summarizeProcessPhases(model, 3, 'aborted')).toBe('You stopped after 3s')
   })
 })

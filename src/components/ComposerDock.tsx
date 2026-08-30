@@ -666,9 +666,9 @@ export const ComposerDock = memo(
       if (!mentionQuery) return []
       return filterChatMentions(conversationTitles ?? [], mentionQuery.query, sessionKey).map((c) => ({
         kind: 'chat' as const,
-        name: c.title || '对话',
+        name: c.title || DEFAULT_CONVERSATION_TITLE,
         value: chatMentionToken(c.id),
-        detail: '对话'
+        detail: ''
       }))
     }, [conversationTitles, mentionQuery, sessionKey])
     const fileMentionHits = useMemo(
@@ -1554,7 +1554,7 @@ export const ComposerDock = memo(
                       <span className="slash-menu-name">
                         {hit.kind === 'skill' ? `$${hit.name}` : `@${hit.name}`}
                       </span>
-                      <span className="slash-menu-desc">{hit.detail}</span>
+                      {hit.detail ? <span className="slash-menu-desc">{hit.detail}</span> : null}
                     </button>
                   </li>
                 ))}
@@ -1686,7 +1686,7 @@ export const ComposerDock = memo(
                         }}
                       >
                         <span className="history-picker-hit">
-                          <span className="slash-menu-desc">{w.label || w.path || '未命名项目'}</span>
+                          <span className="slash-menu-desc">{w.label || w.path}</span>
                           {w.path && w.label ? (
                             <span className="history-picker-hint">{w.path}</span>
                           ) : null}
@@ -2255,7 +2255,7 @@ export const ComposerDock = memo(
                 <button
                   type="button"
                   className="composer-attachment-name"
-                  title={`${selectedTextTitle(index)} · 预览划选`}
+                  title={selectedTextTitle(index)}
                   onClick={() =>
                     setSelectedPreviewId((cur) => (cur === sel.id ? null : sel.id))
                   }

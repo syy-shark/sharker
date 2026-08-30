@@ -1,7 +1,9 @@
 /**
  * `/status` 会话状态文案（对标 Codex 桌面端 /status：thread ID、上下文用量百分比、本机用量）。
+ * 环境行用官方 Local / Worktree。
  * @see shared/ARCH.md
  */
+import { LOCAL_LABEL, WORKTREE_LABEL } from './reveal-in-folder'
 
 /** `/status` 展示所需的当前线程快照 */
 export interface ThreadStatusInfo {
@@ -45,7 +47,7 @@ export function formatContextUsage(used: number, limit: number): string {
 
 /** 拼一段 Markdown 状态（本地助手回复，不走模型） */
 export function formatThreadStatus(info: ThreadStatusInfo): string {
-  const mode = info.threadMode === 'worktree' ? '隔离 worktree' : '本地工作区'
+  const mode = info.threadMode === 'worktree' ? WORKTREE_LABEL : LOCAL_LABEL
   const ctx =
     info.contextUsed != null && info.contextLimit
       ? formatContextUsage(info.contextUsed, info.contextLimit)

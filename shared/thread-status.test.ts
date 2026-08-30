@@ -20,7 +20,9 @@ describe('thread status', () => {
       fast: true,
       extraRoots: ['/notes', ' /docs ']
     })
-    expect(text).toContain('本地工作区')
+    expect(text).toContain('Local')
+    expect(text).not.toContain('本地工作区')
+    expect(text).not.toContain('隔离 worktree')
     expect(text).toContain('DeepSeek / deepseek-chat')
     expect(text).toContain('修好滚动')
     expect(text).toContain('1200 / 128000（1%）')
@@ -44,7 +46,9 @@ describe('thread status', () => {
       workspacePath: '/repo',
       worktreePath: '/tmp/wt'
     })
-    expect(text).toContain('隔离 worktree')
+    expect(text).toContain('Worktree')
+    expect(text).not.toContain('隔离 worktree')
+    expect(text).not.toContain('本地工作区')
     expect(text).toContain('/tmp/wt')
   })
 })

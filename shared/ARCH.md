@@ -156,8 +156,8 @@
 | `turn-segments.test.ts` | turn-segments / phases / token 不改旧对象；思考续尾不重拷已关闭准备中 status；status 心跳退回同一数组，真实路径才换活动工具；写入预览 / 收束也不换已完成工具引用；```demo 半截 `dem` 就占 `demo-stream`，开闭保持 `s.id` / `demo-stream` / `-post`；`hasStreamingDemoFenceGrowth` 追加时只认末行围栏；写入 `tool_preview` 先占槽再填 +/-，`tool_start` / `tool_done` 同一 `s.id-diff-N`；相同预览再派生不换 answer part；自动压缩 status 被 `context_compress` 收成 done |
 | `thread-goal.ts` | `/goal` 解析（含官方 `edit`）、暂停/清除、4000 字上限、system 注入块、进度行 **Goal mode** / Active / Paused 与 `startedAt` / `pausedAt`（Paused 冻结秒表，Resume 接上暂停前累计，对标 Codex #29370）；`shouldStartGoalTurn` 只对设定文本开首轮 |
 | `thread-goal.test.ts` | 设定 / 编辑 / 暂停冻结耗时 / 继续接秒表 / 芯片文案 / 首轮是否发起 |
-| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / Fast / 可写根 / 上下文用量含窗口百分比 / 本机今日用量） |
-| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量、上下文 `used / limit（%）`、Fast 与附加可写根 |
+| `thread-status.ts` | `/status` Markdown 快照（对话 ID / 模型 / 权限 / Fast / 可写根 / 上下文用量含窗口百分比 / 本机今日用量）；环境行官方 Local / Worktree |
+| `thread-status.test.ts` | 本地隐藏 worktree、隔离显示路径、今日用量、上下文 `used / limit（%）`、Fast 与附加可写根、环境行 Local / Worktree |
 | `worktree-prune.ts` | 托管 worktree 保留最近 15 个、受保护不删、永久名称清洗 |
 | `worktree-prune.test.ts` | 保留最新、保护路径、目录名 |
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 直播过程行不挂命令末行 / 工具间隙规划 单测 |
