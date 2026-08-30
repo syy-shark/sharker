@@ -205,7 +205,7 @@ Settings → Personalization → **Choose a personality**，或 `/personality [p
 | `web_search` | DuckDuckGo Instant Answer；直播 Searching the web / 完成后 Searched + query detail（对标 Codex TUI web_search_header / #9960 / #24693），过程区 title+url 来源花片（#32898）。不发明 find_in_page / web.run / 官方 search API |
 | `open_url` | 在用户的系统浏览器 / Chrome 中可见地打开 URL（用户明确要求打开网站时） |
 | `present_inline_demo` | 把自包含 HTML/CSS/JS **嵌进对话**做演示；工具一开始就占演示槽（直播开槽不重拆过程 / 回答，未可绘先 96px 骨架叠在同一 iframe 上，HTML 增长与收束只换该槽，可绘只换 srcDoc）；正文 ```demo 围栏未写完 `dem` / `viz` 就占同一 `demo-stream` 槽（直播开槽与 HTML 增长不重拆过程 / 回答；不先当散文再跳；不认 ```diff / ```html / ```vim），开闭都挂 `InlineDemo`；首帧按声明高度 / 块数估高并缓存实测，避免 48px 猛涨顶跳贴底；教学/可视化请用此工具，不要写文件再开浏览器 |
-| `request_user_input` | 结构化提问（对标 Codex 桌面 Ask User / #41350）：1–3 题、每题 2–3 个互斥选项，客户端补 Other；输出 `{ answers: { [id]: { answers } } }`。过程行 Question requested / N questions requested / 第一题 header。Default 与计划模式都可用。输入框禁用并提示先回答。不发明选项备注（#37365）、分页问卷（#9926）或 TUI Questions n/n 历史格。Stop 解开等待 |
+| `request_user_input` | 结构化提问（对标 Codex 桌面 Ask User / #41350）：1–3 题、每题 2–3 个互斥选项，客户端补 Other；输出 `{ answers: { [id]: { answers } } }`。过程行 Question requested / N questions requested / 第一题 header。Default 与计划模式都可用。输入框禁用并提示 Answer the questions to continue.。不发明选项备注（#37365）、分页问卷（#9926）、60s/90s 空答或 TUI Questions n/n 历史格。Stop 解开等待 |
 | `update_plan` | 官方任务清单（对标 Codex `update_plan` / PlanUpdate）：`plan[].step` + `pending` / `in_progress` / `completed`，可选 `explanation`。工具结果固定 `Plan updated`，过程区画清单。不是计划模式，不发明 `/plan-model` 或底栏 Step N/5 徽章 |
 | MCP 工具调用 | 动态 `mcp_{server}__{tool}` 与 `mcp_call_tool`：直播头 Calling / Called `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。过程区不倾倒 JSON。不发明 Apps / node_repl / @Browser，也不把进行中标成已完成（#22300） |
 

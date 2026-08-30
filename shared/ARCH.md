@@ -163,7 +163,7 @@
 | `live-process.test.ts` | 直播过程 seed / 审批等待 / 工具状态回写 / 直播过程行不挂命令末行 / 工具间隙规划 单测 |
 | `approval-session.ts` | 审批 once/session/deny 纯逻辑与会话授权表；用户可见 Allow once / Allow for session / Deny；拒绝记录 + `/approve` 一次性放行 |
 | `approval-session.test.ts` | 审批决策、会话授权、`/approve` 一次重试 |
-| `user-input.ts` | Codex 桌面 `request_user_input`：解析 1–3 题、剥掉模型 Other、序列化 `{ answers: { [id]: { answers } } }`；直播摘要 Question requested / N questions requested / 第一题 header。Stop 用 AbortError 解开等待。不发明选项备注、分页问卷或 TUI Questions n/n 历史格 |
+| `user-input.ts` | Codex 桌面 `request_user_input`：解析 1–3 题、剥掉模型 Other、序列化 `{ answers: { [id]: { answers } } }`；直播摘要 Question requested / N questions requested / 第一题 header；composer / 问句卡提示 Answer the questions to continue.。Stop 用 AbortError 解开等待。不发明选项备注、分页问卷、60s/90s 空答或 TUI Questions n/n 历史格 |
 | `view-image.ts` | 官方 `view_image`：别名、`original` detail、短结果与 `path:` 解析；过程行固定 Viewed Image（对标 Codex ImageView）；像素回灌不进直播 base64（对标 Codex #36966）。`viewedImagePathFromTool` 给过程区 ImageView 卡。不发明 ImageGen 或关闭开关 |
 | `view-image.test.ts` | 官方名 / 别名、detail、MIME、短结果往返（含空格路径）、ImageView 路径、Viewed Image 过程标题 |
 | `web-search.ts` | 官方 web_search / web_fetch：Searching the web / Searched 头 + query 或 URL detail、title+url 来源行（对标 Codex TUI web_search_header / open_page / #9960 / #24693 / #32898 / #7390）。仍认旧「Searched the web for」输出。不发明 Fetched / find_in_page / web.run |
@@ -176,7 +176,7 @@
 | `explore-activity.test.ts` | Read/List/Search、basename、Search query in path |
 | `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用；审批条 `formatMcpApprovalLabel`。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
 | `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定 |
-| `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 / Question requested |
+| `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 / Question requested / Answer the questions to continue. |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition / 收束后再写入、无会话 id 暂存与冲进 retry |
 | `transcript-scroll.ts` | 对话柱滚动快照：贴底跟到底、读历史钉 scrollTop、内容未画高先按距底占位（对标 Codex 26.406 按会话记住位置；窗口内、不落盘）；快照可带 `transcriptWindowStart`；`scrollTopToCenterChild` 给查找/回编只改对话柱（不 `scrollIntoView`） |
