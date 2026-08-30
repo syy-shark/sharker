@@ -3,6 +3,7 @@
  * 右键页内菜单：复制/保存；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
  * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，命中尺寸缓存则首帧占位。
+ * 直播 token 中只占位，不挂 `<img>`、不跑 `Image()` 解码；收束后命中预热则同一帧成图。
  * @see src/components/ARCH.md
  */
 import {
@@ -29,11 +30,14 @@ import {
   prefetchRemoteChatImageSize,
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
+  resolveLiveChatImageSrc,
   resolveWorkspaceChatImagePath,
+  shouldRenderLiveChatImage,
   writeCachedChatImageSize,
   writeCachedWorkspaceImageDataUrl,
   type ChatImageExportInput
 } from '../../shared/chat-image'
+import { LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import { FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
 import {
@@ -107,15 +111,20 @@ export function ChatImage({
   alt,
   title,
   filePath,
-  name
+  name,
+  streaming
 }: {
   src: string
   alt?: string
   title?: string
   filePath?: string
   name?: string
+  streaming?: boolean
 }) {
   const { workspacePath, extraRoots } = useContext(ChatImageWorkspaceContext)
+  const streamingFromTree = useContext(LiveMarkdownStreamingContext)
+  const isStreaming = streaming ?? streamingFromTree
+  const allowPaint = shouldRenderLiveChatImage({ streaming: isStreaming })
   const remote = isRemoteChatImageSrc(src)
   const workspaceSrc = isWorkspaceChatImageSrc(src)
   const absPath = workspaceSrc
@@ -133,7 +142,7 @@ export function ChatImage({
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!remote || src.startsWith('data:image/')) return
+    if (!allowPaint || !remote || src.startsWith('data:image/')) return
     let cancelled = false
     void prefetchRemoteChatImageSize(src).then((size) => {
       if (!cancelled && size) setSizeTick((n) => n + 1)
@@ -141,7 +150,7 @@ export function ChatImage({
     return () => {
       cancelled = true
     }
-  }, [remote, src])
+  }, [allowPaint, remote, src])
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
@@ -172,6 +181,7 @@ export function ChatImage({
   }, [absPath, workspaceSrc])
 
   const displaySrc = remote ? src : workspaceDataUrl ?? ''
+  const paintedSrc = resolveLiveChatImageSrc({ paint: allowPaint, src: displaySrc })
   const resolvedFilePath = filePath?.trim() || (absPath || undefined)
   const peeked =
     displaySrc.startsWith('data:image/') ? peekChatImageSizeFromDataUrl(displaySrc) : null
@@ -198,7 +208,7 @@ export function ChatImage({
     alt
   }
   const canExport = canExportChatImage(input)
-  const canLightbox = Boolean(displaySrc)
+  const canLightbox = Boolean(paintedSrc)
 
   const copy = async () => {
     if (!canExport || !window.sharker?.copyChatImage) return
@@ -226,7 +236,7 @@ export function ChatImage({
   }
 
   const openLightbox = () => {
-    if (!displaySrc) return
+    if (!paintedSrc) return
     setMenu(null)
     setViewport(readLightboxViewport())
     setLightbox(true)
@@ -296,9 +306,9 @@ export function ChatImage({
         setMenu({ x: next.x, y: next.y })
       }}
     >
-      {displaySrc ? (
+      {paintedSrc ? (
         <img
-          src={displaySrc}
+          src={paintedSrc}
           alt={alt ?? ''}
           title={title}
           loading="eager"
@@ -318,7 +328,7 @@ export function ChatImage({
               width: img.naturalWidth,
               height: img.naturalHeight
             })
-            if (displaySrc) writeCachedChatImageSize(displaySrc, size)
+            if (paintedSrc) writeCachedChatImageSize(paintedSrc, size)
             if (absPath) writeCachedChatImageSize(absPath, size)
             setSizeTick((n) => n + 1)
           }}
@@ -326,7 +336,7 @@ export function ChatImage({
       ) : (
         <span className="chat-image-slot" style={aspect} aria-hidden />
       )}
-      {canExport && displaySrc ? (
+      {canExport && paintedSrc ? (
         <span className="chat-image-actions" role="group" aria-label="图片操作">
           <button
             type="button"
@@ -383,7 +393,7 @@ export function ChatImage({
             document.body
           )
         : null}
-      {lightbox && displaySrc && typeof document !== 'undefined'
+      {lightbox && paintedSrc && typeof document !== 'undefined'}
         ? createPortal(
             <div className="chat-image-lightbox" role="presentation">
               <button
@@ -401,7 +411,7 @@ export function ChatImage({
                 tabIndex={-1}
               >
                 <img
-                  src={displaySrc}
+                  src={paintedSrc}
                   alt={alt ?? ''}
                   width={fit.width || known?.width}
                   height={fit.height || known?.height}

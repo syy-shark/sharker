@@ -652,6 +652,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
               alt="Viewed image"
               filePath={viewedImageSrc}
               name={viewedImageSrc.replace(/\\/g, '/').split('/').pop()}
+              streaming={isStreaming}
             />
           </div>
         ) : null}
