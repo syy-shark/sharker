@@ -7,6 +7,7 @@ import {
   hasLiveProcessPhaseGrowHold,
   isLiveSameLengthTokenGrow,
   nextLiveAnswerView,
+  nextLivePublishedStreaming,
   nextLiveProcessView,
   shouldPrefetchLiveStreamTable,
   shouldSkipLiveAnswerIdentity,
@@ -65,6 +66,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     const streamedClosed: TurnSegment = { ...streamed, status: 'done' }
     expect(shouldSkipLiveStreamDerivation([streamed], [streamedClosed, nextTool])).toBe('tool')
     expect(hasLiveProcessPhaseGrowHold([streamed], [streamedClosed, nextTool])).toBe(true)
+    expect(nextLivePublishedStreaming([streamedClosed, nextTool], '')).toBe('Hello')
   })
 
   it('classifies a newly appended tool after think, tool, and streaming no-fence prose without the table', () => {
@@ -1410,6 +1412,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx').includes("from '../shared/live-stream-slices'")).toBe(false)
     expect(src('../src/App.tsx')).toContain('prefetchLiveStreamTable')
     expect(src('../src/App.tsx')).toContain('shouldPrefetchLiveStreamTable')
+    expect(src('../src/App.tsx')).toContain('nextLivePublishedStreaming')
     expect(src('../src/App.tsx')).toContain('LAST_TURN_UI_FLUSH_MS')
 
     expect(src('../src/components/ChatView.tsx')).toContain(
@@ -1542,5 +1545,125 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(process.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')).toBe(
       false
     )
+  })
+
+  it('keeps same-flush harness batches off the combinatorial table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [
+      { type: 'turn_start' },
+      { type: 'think', content: 'Hmm' },
+      { type: 'think', content: ' more' }
+    ])
+    flush('think-and-read', [
+      { type: 'think', content: ' then read' },
+      { type: 'tool_start', toolName: 'read_file', toolCallId: 'p1', toolArgs: { path: 'a.ts' } },
+      { type: 'tool_start', toolName: 'list_dir', toolCallId: 'p2' }
+    ])
+    flush('parallel-done', [
+      { type: 'tool_done', toolName: 'read_file', toolCallId: 'p1', resultSummary: '12 lines' },
+      { type: 'tool_done', toolName: 'list_dir', toolCallId: 'p2' }
+    ])
+    flush('write-and-token', [
+      {
+        type: 'tool_preview',
+        toolName: 'write_file',
+        toolCallId: 'p3',
+        toolArgs: { path: 'a.ts', content: 'hi' }
+      },
+      {
+        type: 'tool_done',
+        toolName: 'write_file',
+        toolCallId: 'p3',
+        fileDiff: {
+          path: 'a.ts',
+          lines: [{ kind: 'add', content: 'hi' }],
+          stats: { added: 1, removed: 0 }
+        }
+      },
+      { type: 'token', content: 'Hello' }
+    ])
+    flush('token-and-run', [
+      { type: 'token', content: ' world' },
+      {
+        type: 'tool_start',
+        toolName: 'run_terminal_cmd',
+        toolCallId: 'p4',
+        toolArgs: { command: 'ls' }
+      },
+      {
+        type: 'approval_needed',
+        toolName: 'run_terminal_cmd',
+        approval: {
+          id: 'appr-2',
+          title: 'ls',
+          description: '',
+          toolName: 'run_terminal_cmd',
+          args: { command: 'ls' }
+        }
+      }
+    ])
+    flush('deny-error', [
+      { type: 'approval_resolved', toolName: 'run_terminal_cmd', approved: false },
+      {
+        type: 'tool_done',
+        toolName: 'run_terminal_cmd',
+        toolCallId: 'p4',
+        toolStatus: 'error',
+        error: 'denied'
+      }
+    ])
+    flush('reconnect-and-patch', [
+      { type: 'status', content: 'Reconnecting... 1/5' },
+      { type: 'status', content: 'Reconnecting... 2/5' },
+      {
+        type: 'tool_preview',
+        toolName: 'search_replace',
+        toolCallId: 'p5',
+        toolArgs: { path: 'b.ts', old_string: 'a', new_string: 'b' }
+      }
+    ])
+    flush('patch-done-and-demo', [
+      {
+        type: 'tool_done',
+        toolName: 'search_replace',
+        toolCallId: 'p5',
+        fileDiff: {
+          path: 'b.ts',
+          lines: [{ kind: 'add', content: 'b' }],
+          stats: { added: 1, removed: 0 }
+        }
+      },
+      { type: 'token', content: '\n```demo\n<div>' }
+    ])
+    flush('stop', [{ type: 'turn_cancelled' }])
+    flush('error-after-status', [
+      { type: 'status', content: 'Preparing' },
+      { type: 'error', error: 'boom' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'diff')).toBe(true)
+    expect(answer.parts.some((part) => part.type === 'demo' || part.type === 'text')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'search_replace')).toBe(true)
   })
 })

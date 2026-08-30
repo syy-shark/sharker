@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；命令末行不发 store（对标 Codex #22860 / #19260）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store（对标 Codex #22860 / #19260）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -95,6 +95,7 @@ import {
 } from '../shared/live-stream-ui'
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
+  nextLivePublishedStreaming,
   nextLiveThinkText,
   prefetchLiveStreamTable,
   shouldPrefetchLiveStreamTable,
@@ -1589,24 +1590,19 @@ export default function App() {
       const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
       // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
       if (skip === 'think' || skip === 'status') {
-        const answerTail = findLastSegment(
-          segments,
-          (s) => s.kind === 'text' && (s.role === 'final' || s.status === 'active')
-        )
         publishLiveStreamUi({
           liveSegments: segments,
           turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
-          streaming: answerTail?.content ?? prevSnap.streaming
+          streaming: nextLivePublishedStreaming(segments, prevSnap.streaming)
         })
       } else if (skip === 'text') {
-        const tail = segments[segments.length - 1]
         const activeToolSeg = findLastSegment(
           segments,
           (s) => s.kind === 'tool' && s.status === 'active'
         )
         publishLiveStreamUi({
           liveSegments: segments,
-          streaming: tail?.content ?? '',
+          streaming: nextLivePublishedStreaming(segments, prevSnap.streaming),
           turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
           activeTool: activeToolSeg?.toolName ?? null
         })
@@ -1615,14 +1611,10 @@ export default function App() {
           segments,
           (s) => s.kind === 'tool' && s.status === 'active'
         )
-        const answerTail = findLastSegment(
-          segments,
-          (s) => s.kind === 'text' && (s.role === 'final' || s.status === 'active')
-        )
         publishLiveStreamUi({
           liveSegments: segments,
           activeTool: activeToolSeg?.toolName ?? null,
-          streaming: answerTail?.content ?? prevSnap.streaming,
+          streaming: nextLivePublishedStreaming(segments, prevSnap.streaming),
           turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments)
         })
       } else {

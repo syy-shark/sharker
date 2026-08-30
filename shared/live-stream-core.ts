@@ -230,6 +230,20 @@ function liveCoreLastNoFenceAnswer(segments: readonly TurnSegment[]): TurnSegmen
   return null
 }
 
+/** 16ms flush 发布的找词 / 跳底进度：harness token 无 role，tool_start 收口后仍用这段正文。 */
+export function nextLivePublishedStreaming(
+  segments: readonly TurnSegment[],
+  fallback = ''
+): string {
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segment = segments[i]!
+    if (!isLiveCoreStreamText(segment)) continue
+    const content = segment.content ?? ''
+    if (content.trim()) return content
+  }
+  return fallback
+}
+
 /** 相对 prev 新开的无 fence 正文（同一帧可多段）。 */
 function liveCoreExtraNoFenceTexts(
   prev: readonly TurnSegment[],
