@@ -6,7 +6,7 @@
  * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
  * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播 token 中不着色，
- * 围栏闭合后 effect 开工 highlight.js 写缓存；收束后命中预热缓存则同一帧着色，否则 effect 再着色。
+ * 围栏闭合后 effect 开工 highlight.js 写缓存；收束后命中预热缓存则同一帧着色，否则 effect 再着色。远窗历史 FenceImmediateHighlightContext 为假时缓存未命中不在揭示帧跑 highlight.js。
  */
 import { Check, Copy } from 'lucide-react'
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -196,6 +196,9 @@ export const LiveMarkdownLiveContext = createContext(false)
 /** 直播 token 中：闭合 mermaid 也不跑 mermaid.render */
 export const LiveMarkdownStreamingContext = createContext(false)
 
+/** 远窗历史行：缓存未命中时不在揭示帧跑 highlight.js（对标 Codex #22860） */
+export const FenceImmediateHighlightContext = createContext(true)
+
 function normalizeLanguage(language?: string): string {
   const value = language?.trim().toLowerCase()
   if (!value || value === 'plaintext' || value === 'plain') return 'text'
@@ -285,17 +288,26 @@ export function ArtifactCodeLines({
 export function LiveFenceTail({ code, language, followTail = false }: CodeArtifactBlockProps) {
   const live = useContext(LiveMarkdownLiveContext)
   const streaming = useContext(LiveMarkdownStreamingContext)
+  const preferImmediate = useContext(FenceImmediateHighlightContext)
   const normalizedCode = code.replace(/\n$/, '')
   const label = normalizeLanguage(language)
   const closed = !followTail
   const allowHighlight = shouldAllowLiveFenceHighlight({ closed, streaming })
-  const immediateHighlight = shouldHighlightLiveFence({ live, closed, streaming })
+  const cached = hasCachedFenceHighlight(normalizedCode, language)
+  const immediateHighlight = shouldHighlightLiveFence({
+    live,
+    closed,
+    streaming,
+    cached,
+    preferImmediate
+  })
   const [highlight, setHighlight] = useState(immediateHighlight)
   const paintHighlight = shouldPaintLiveFenceHighlight({
     live,
     closed,
     streaming,
-    cached: highlight || hasCachedFenceHighlight(normalizedCode, language)
+    cached: highlight || cached,
+    preferImmediate
   })
 
   useEffect(() => {

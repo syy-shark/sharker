@@ -585,6 +585,7 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
     expect(chatView).toContain('shouldFlushRowIntrinsicHeight')
+    expect(chatView).toContain('FenceImmediateHighlightContext')
     expect(chatView).toContain('clearInlineDemoFramePool')
     expect(chatView).toContain('nextAboveFoldHeightScrollTop')
     expect(chatView).toContain('FAR_ROW_INTRINSIC_GUESS')
@@ -631,6 +632,25 @@ describe('near-live message rows', () => {
     expect(shouldHighlightLiveFence({ live: false, closed: true })).toBe(true)
     expect(shouldHighlightLiveFence({ live: false, closed: false })).toBe(false)
     expect(shouldHighlightLiveFence({ live: false, closed: true, streaming: true })).toBe(false)
+    expect(
+      shouldHighlightLiveFence({ live: false, closed: true, preferImmediate: false })
+    ).toBe(false)
+    expect(
+      shouldHighlightLiveFence({
+        live: false,
+        closed: true,
+        preferImmediate: false,
+        cached: true
+      })
+    ).toBe(true)
+    expect(
+      shouldPaintLiveFenceHighlight({
+        live: false,
+        closed: true,
+        cached: false,
+        preferImmediate: false
+      })
+    ).toBe(false)
     expect(shouldAllowLiveFenceHighlight({ closed: true, streaming: true })).toBe(false)
     expect(shouldAllowLiveFenceHighlight({ closed: true, streaming: false })).toBe(true)
     expect(shouldAllowLiveFenceHighlight({ closed: true })).toBe(true)

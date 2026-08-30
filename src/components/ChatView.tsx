@@ -34,6 +34,7 @@ import type {
 import { sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
+import { FenceImmediateHighlightContext } from './CodeArtifactBlock'
 import { LiveAssistantArticle } from './LiveAssistantParts'
 import { ChatImage, ChatImageWorkspaceProvider } from './ChatImage'
 import { MessageActions } from './MessageActions'
@@ -2597,26 +2598,28 @@ export const ChatView = memo(function ChatView({
                   )
             }
           >
-            {renderFrozenEjectedArticle(m.id) ?? (
-              <AssistantMessage
-                messageId={m.id}
-                content={m.content}
-                createdAt={m.createdAt}
-                meta={m.meta}
-                modelLabel={m.meta?.model ?? modelLabel}
-                onOpenSubAgent={onOpenSubAgent}
-                onOpenChangedFiles={onOpenChangedFiles}
-                toolOutputDisplay={toolOutputDisplay}
-                onNeedFullMessage={onNeedFullMessage}
-                preserveLiveDiffs={m.id === preserveLiveDiffsId}
-                onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
-                onRetry={
-                  index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
-                    ? () => onRetry(m.meta!.retryOfUserMessageId!)
-                    : undefined
-                }
-              />
-            )}
+            <FenceImmediateHighlightContext.Provider value={nearLive}>
+              {renderFrozenEjectedArticle(m.id) ?? (
+                <AssistantMessage
+                  messageId={m.id}
+                  content={m.content}
+                  createdAt={m.createdAt}
+                  meta={m.meta}
+                  modelLabel={m.meta?.model ?? modelLabel}
+                  onOpenSubAgent={onOpenSubAgent}
+                  onOpenChangedFiles={onOpenChangedFiles}
+                  toolOutputDisplay={toolOutputDisplay}
+                  onNeedFullMessage={onNeedFullMessage}
+                  preserveLiveDiffs={m.id === preserveLiveDiffsId}
+                  onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                  onRetry={
+                    index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
+                      ? () => onRetry(m.meta!.retryOfUserMessageId!)
+                      : undefined
+                  }
+                />
+              )}
+            </FenceImmediateHighlightContext.Provider>
           </div>
         )
       }),

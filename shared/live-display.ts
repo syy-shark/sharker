@@ -1057,14 +1057,18 @@ export function continueLiveFenceLines(
 /**
  * 历史气泡闭合后立刻着色。直播 token 中即使已闭合也不着色。
  * 直播收束后同一实例优先走 `shouldPaintLiveFenceHighlight` 命中缓存；未命中再交给 effect。
+ * 远窗历史 `preferImmediate: false` 时缓存未命中不在揭示帧跑 highlight.js。
  */
 export function shouldHighlightLiveFence(options: {
   live: boolean
   closed: boolean
   streaming?: boolean
+  cached?: boolean
+  preferImmediate?: boolean
 }): boolean {
-  if (!options.closed || options.streaming) return false
-  return !options.live
+  if (!options.closed || options.streaming || options.live) return false
+  if (options.cached) return true
+  return options.preferImmediate !== false
 }
 
 /** 闭合且不在直播 token 中即可着色：历史立刻画，直播收束后可画。 */
@@ -1084,6 +1088,7 @@ export function shouldPaintLiveFenceHighlight(options: {
   closed: boolean
   streaming?: boolean
   cached?: boolean
+  preferImmediate?: boolean
 }): boolean {
   if (!shouldAllowLiveFenceHighlight(options)) return false
   if (shouldHighlightLiveFence(options)) return true
