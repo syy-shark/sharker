@@ -1257,14 +1257,34 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n  - 嵌套' })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- 二项', ordered: false })).toBe(true)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项\n', suffix: '- 二项', ordered: false })).toBe(true)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- 二项\n- 三项', ordered: false })).toBe(
+      true
+    )
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- 二项\n', ordered: false })).toBe(true)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n', ordered: false })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n-', ordered: false })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n  - 嵌套', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- 二项\n  - 嵌套', ordered: false })).toBe(
+      false
+    )
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n1. 有序', ordered: false })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '1. 一项', suffix: '\n2. 二项', ordered: true })).toBe(true)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n\n- 松散', ordered: false })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- ```ts', ordered: false })).toBe(false)
+    const twoNew = continueCheapProseBlocks('- 一项', parseCheapProseBlocks('- 一项'), '- 一项\n- 二项\n- 三项')
+    if (twoNew[0]?.type === 'list') {
+      expect(twoNew[0].items).toHaveLength(3)
+      expect(twoNew[0].items[0]?.nodes).toEqual([{ type: 'text', text: '一项' }])
+      expect(twoNew[0].items[1]?.nodes).toEqual([{ type: 'text', text: '二项' }])
+      expect(twoNew[0].items[2]?.nodes).toEqual([{ type: 'text', text: '三项' }])
+    }
+    const manyTwo = continueCheapProseBlocks(manyItems, manyFirst, `${manyItems}\n- item-12\n- item-13`)
+    if (manyFirst[0]?.type === 'list' && manyTwo[0]?.type === 'list') {
+      expect(manyTwo[0].items.slice(0, 12).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
+      expect(manyTwo[0].items).toHaveLength(14)
+    }
     expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n  - 嵌套' })).toBe(true)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n  - 嵌套\n  - 第二' })).toBe(true)
     expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项\n  - 嵌套', suffix: '\n  - 第二' })).toBe(true)
     expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项\n  - 嵌套', suffix: '\n    - 更深' })).toBe(true)
     expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n- 二项' })).toBe(false)
@@ -1284,6 +1304,12 @@ describe('splitStreamingMarkdown', () => {
       expect(nestOpen[0].items[0]?.nodes).toBe(nestOpenFirst[0].items[0]?.nodes)
       expect(nestOpen[0].items[0]?.nested?.items).toHaveLength(1)
       expect(nestOpen[0].items[0]?.nested?.items[0]?.nodes).toEqual([{ type: 'text', text: '嵌套' }])
+    }
+    const nestTwo = continueCheapProseBlocks('- 一项', nestOpenFirst, '- 一项\n  - 嵌套\n  - 第二')
+    if (nestOpenFirst[0]?.type === 'list' && nestTwo[0]?.type === 'list') {
+      expect(nestTwo[0].items[0]?.nodes).toBe(nestOpenFirst[0].items[0]?.nodes)
+      expect(nestTwo[0].items[0]?.nested?.items).toHaveLength(2)
+      expect(nestTwo[0].items[0]?.nested?.items[1]?.nodes).toEqual([{ type: 'text', text: '第二' }])
     }
     const nestDeep = continueCheapProseBlocks(nestSrc, nestFirst, `${nestSrc}\n    - 更深`)
     if (nestFirst[0]?.type === 'list' && nestDeep[0]?.type === 'list') {
@@ -1362,9 +1388,20 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: 'y' })).toBe(false)
     expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n' })).toBe(false)
     expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n| 8 | y |' })).toBe(true)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n| 8 | y |\n| 9 | z |' })).toBe(true)
     expect(shouldGrowStreamingTableLastLine({ prevNorm: `${manyRows}\n`, suffix: '| 8 | y |' })).toBe(true)
     expect(shouldGrowStreamingTableLastLine({ prevNorm: `${manyRows}\n| 8`, suffix: ' | y |' })).toBe(true)
     expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n\n下一段' })).toBe(false)
+    const manyTableTwo = continueCheapProseBlocks(
+      manyRows,
+      manyTable,
+      `${manyRows}\n| 8 | y |\n| 9 | z |`
+    )
+    if (manyTable[0]?.type === 'table' && manyTableTwo[0]?.type === 'table') {
+      expect(manyTableTwo[0].header).toBe(manyTable[0].header)
+      expect(manyTableTwo[0].rows.slice(0, 8).every((row, i) => row === manyTable[0].rows[i])).toBe(true)
+      expect(manyTableTwo[0].rows).toHaveLength(10)
+    }
     const tableNl = continueCheapProseBlocks(manyRows, manyTable, `${manyRows}\n`)
     const tableMid = continueCheapProseBlocks(`${manyRows}\n`, tableNl, `${manyRows}\n| 8`)
     const tableDone = continueCheapProseBlocks(`${manyRows}\n| 8`, tableMid, `${manyRows}\n| 8 | y |`)
@@ -1498,6 +1535,12 @@ describe('splitStreamingMarkdown', () => {
     ).toBe(true)
     expect(
       shouldGrowStreamingIndentCodeLastLine({
+        prevNorm: '    const x = 1',
+        suffix: '\n    const y\n    const z'
+      })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({
         prevNorm: '    const x = 1\n',
         suffix: '    const y'
       })
@@ -1522,6 +1565,15 @@ describe('splitStreamingMarkdown', () => {
     if (manyIndentFirst[0]?.type === 'pre' && manyIndentGrown[0]?.type === 'pre') {
       expect(manyIndentGrown[0].text.endsWith('110')).toBe(true)
       expect(manyIndentGrown[0].text.startsWith('const x = 0\n')).toBe(true)
+    }
+    const manyIndentTwo = continueCheapProseBlocks(
+      manyIndent,
+      manyIndentFirst,
+      `${manyIndent}\n    const x = 12\n    const x = 13`
+    )
+    if (manyIndentFirst[0]?.type === 'pre' && manyIndentTwo[0]?.type === 'pre') {
+      expect(manyIndentTwo[0].text.startsWith('const x = 0\n')).toBe(true)
+      expect(manyIndentTwo[0].text.endsWith('const x = 13')).toBe(true)
     }
     const manyIndentNext = continueCheapProseBlocks(
       manyIndent,
@@ -2959,6 +3011,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('streamingOpenProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
+    expect(mdSrc).toContain('streamingSuffixLines')
+    expect(mdSrc).toContain('eachStreamingSuffixLine')
     expect(mdSrc).toContain('shouldAppendStreamingListItem')
     expect(mdSrc).toContain('shouldAppendStreamingNestedListItem')
     expect(mdSrc).toContain('paragraphSuffixNewLines')
