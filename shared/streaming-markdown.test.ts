@@ -2711,7 +2711,11 @@ describe('splitStreamingMarkdown', () => {
 
   it('reuses closed blocks when only the tail grows', () => {
     expect(shouldGrowOpenStreamingProseTail('普通段落', '继续写汉字')).toBe(true)
+    expect(shouldGrowOpenStreamingProseTail('普通段落', '\n续行')).toBe(true)
+    expect(shouldGrowOpenStreamingProseTail('普通段落', '\n')).toBe(true)
     expect(shouldGrowOpenStreamingProseTail('普通段落', '\n\n下一段')).toBe(false)
+    expect(shouldGrowOpenStreamingProseTail('普通段落\n', '\n下一段')).toBe(false)
+    expect(shouldGrowOpenStreamingProseTail('普通段落', '\n```ts')).toBe(false)
     expect(shouldGrowOpenStreamingProseTail('``', '`ts')).toBe(false)
     expect(shouldGrowOpenStreamingFenceTail('```js\n1', '2')).toBe(true)
     expect(shouldGrowOpenStreamingFenceTail('```js\n1', '\n2')).toBe(true)
@@ -2738,6 +2742,41 @@ describe('splitStreamingMarkdown', () => {
       text: '普通段落开始写更多汉字',
       closed: false
     })
+    const openWrap = continueStreamingMarkdown(
+      openGrown,
+      '普通段落开始写更多汉字',
+      '普通段落开始写更多汉字\n续行'
+    )
+    expect(openWrap.blocks).toBe(openGrown.blocks)
+    expect(openWrap.closedEnd).toBe(0)
+    expect(openWrap.tail).toBe('普通段落开始写更多汉字\n续行')
+    const openWrapSlots = continueStreamingRenderSlots(openGrownSlots, openWrap, openGrown)
+    expect(openWrapSlots).toHaveLength(1)
+    expect(openWrapSlots[0]).toMatchObject({
+      kind: 'prose',
+      key: 'prose-run-0',
+      text: '普通段落开始写更多汉字\n续行',
+      closed: false
+    })
+    const openWrapNl = continueStreamingMarkdown(
+      openGrown,
+      '普通段落开始写更多汉字',
+      '普通段落开始写更多汉字\n'
+    )
+    expect(openWrapNl).toBe(openGrown)
+    const openWrapMore = continueStreamingMarkdown(
+      openWrap,
+      '普通段落开始写更多汉字\n续行',
+      '普通段落开始写更多汉字\n续行更多'
+    )
+    expect(openWrapMore.blocks).toBe(openWrap.blocks)
+    expect(openWrapMore.tail).toBe('普通段落开始写更多汉字\n续行更多')
+    const openFenceFromWrap = continueStreamingMarkdown(
+      openGrown,
+      '普通段落开始写更多汉字',
+      '普通段落开始写更多汉字\n```ts'
+    )
+    expect(openFenceFromWrap.tailKind).toBe('fence')
     const openFence = continueStreamingMarkdown(openTail, '普通段落开始写', '```ts')
     expect(openFence.tailKind).toBe('fence')
     const openClosed = continueStreamingMarkdown(
@@ -2761,6 +2800,16 @@ describe('splitStreamingMarkdown', () => {
     expect(grownSlots).not.toBe(firstSlots)
     expect(grownSlots[0]).toBe(firstSlots[0])
     expect(grownSlots[1]).not.toBe(firstSlots[1])
+    const grownWrap = continueStreamingMarkdown(
+      grown,
+      'Hello world.\n\nNext sentence',
+      'Hello world.\n\nNext sentence\nmore'
+    )
+    expect(grownWrap.blocks).toBe(grown.blocks)
+    expect(grownWrap.closedEnd).toBe(grown.closedEnd)
+    expect(grownWrap.tail).toBe('Next sentence\nmore')
+    const grownWrapSlots = continueStreamingRenderSlots(grownSlots, grownWrap, grown)
+    expect(grownWrapSlots[0]).toBe(grownSlots[0])
     const fenceMid = splitStreamingMarkdown('Intro\n\n```js\n1')
     const fenceGrown = continueStreamingMarkdown(
       fenceMid,
@@ -2907,6 +2956,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain("prev.blob === '' && !raw.includes(']:')")
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
+    expect(mdSrc).toContain('streamingOpenProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
     expect(mdSrc).toContain('shouldAppendStreamingListItem')
