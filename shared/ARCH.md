@@ -61,8 +61,8 @@
 | `mermaid-fence.ts` | ```mermaid / ```mmd 围栏判定（直播 `mer` 起就认，不认 `md` / `mm`）；开闭都挂 MermaidBlock，`shouldRenderLiveMermaid` 只在闭合且不在直播 token 时画图；按主题缓存 SVG，避免重挂闪回源码；从 viewBox / 宽高解析固有尺寸；成图前按节点/边/行数估高并做高水位占位，避免代码尾换 SVG 跳贴底；解析失败仍留同一外壳 |
 | `mermaid-fence.test.ts` | 认 mermaid / mmd / 直播 `mer` 前缀，拒绝 js / diff / `md`；`shouldRenderLiveMermaid` 直播中闭合不成图；SVG 缓存按主题隔离并 LRU 淘汰；viewBox / px 尺寸、忽略百分宽高；估高 / 高度缓存 / 成图槽取高 |
 | `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；右键菜单查看大图 / 复制/保存，工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单，不发明拖出）；`chatImageLightboxFit` / `filePreviewImageFit` 按视口或预览窗 CSS 像素 contain、不乘界面字号（对标 Codex image preview / #26851 / #31112）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位，`liveChatImageMinHeight` 成图后只升不降（不再用 8rem / 小图塌贴底） |
-| `syntax-highlight.ts` | 闭合围栏 / 文件预览 highlight.js 着色（对标 Codex 桌面 / #18966）：未知语言与超大文件保持纯文本；未闭合直播围栏不调用；收束后直播实例着色会写入行缓存，下一轮历史重挂命中缓存；`.tex` 不发明语法 |
-| `syntax-highlight.test.ts` | 语言别名、扩展名、keyword / diff +/-、转义 `<script>`、超大跳过、跨行 span 拆行 |
+| `syntax-highlight.ts` | 闭合围栏 / 文件预览 highlight.js 着色（对标 Codex 桌面 / #18966）：未知语言与超大文件保持纯文本；未闭合直播围栏不调用；`schedulePrefetchLiveFenceHighlights` 收束后 microtask 暖缓存（跳过 mermaid / demo），立刻跟进的下一轮重挂命中缓存；`.tex` 不发明语法 |
+| `syntax-highlight.test.ts` | 语言别名、扩展名、keyword / diff +/-、转义 `<script>`、超大跳过、跨行 span 拆行；收束预取闭合围栏、跳过 mermaid / demo、二次着色命中缓存 |
 | `chat-math.ts` | 对话公式：只认闭合 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX / #14985）；不认 `$...$`；非法 TeX 回退原文；`trust: false`；`shouldRenderLiveChatMath` 直播 token 中先画原文，收束后再跑 KaTeX；`liveChatMathClassName` 展示公式直播中也占 block 槽 |
 | `chat-math.test.ts` | 三种围栏、拒绝 `$...$` / 未闭合 / 超长、KaTeX HTML 缓存与失败回退；直播中不着色、收束后再画；展示公式直播中也占 block 槽 |
 | `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高、右键菜单项、灯箱与文件预览 fit-to-window、灯箱 Close |

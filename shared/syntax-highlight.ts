@@ -1,11 +1,19 @@
 /**
  * 闭合代码围栏与文件预览着色（对标 Codex 桌面 highlight.js / #18966）。
  * 未闭合直播围栏不着色，避免每枚 token 重高亮卡顿。
+ * 收束后 `schedulePrefetchLiveFenceHighlights` 在 microtask 暖缓存，立刻跟进的下一轮重挂不必当场跑 highlight.js。
  * @see shared/ARCH.md
  */
 import hljs from 'highlight.js/lib/common'
 import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import powershell from 'highlight.js/lib/languages/powershell'
+import { isMermaidLang } from './mermaid-fence'
+import {
+  finalizeStreamingMarkdownSplit,
+  splitStreamingMarkdown,
+  streamingRenderSlots
+} from './streaming-markdown'
+import { isDemoFenceLangPrefix } from './turn-segments'
 
 hljs.registerLanguage('dockerfile', dockerfile)
 hljs.registerLanguage('powershell', powershell)
@@ -221,4 +229,44 @@ export function highlightFenceLines(
   } catch {
     return cacheSet(key, null)
   }
+}
+
+/** mermaid / demo 围栏不走 highlight.js（成图 / InlineDemo）。 */
+export function shouldPrefetchLiveFenceHighlight(lang?: string | null): boolean {
+  if (isMermaidLang(lang)) return false
+  const word = lang?.trim() ?? ''
+  if (word && isDemoFenceLangPrefix(word)) return false
+  return true
+}
+
+/** 与直播顶层围栏槽同一套已闭合 fence，正文去掉末尾换行以对上 LiveFenceTail。 */
+export function collectClosedHighlightFences(
+  text: string
+): Array<{ lang?: string; body: string }> {
+  const src = String(text ?? '')
+  if (!src.trim()) return []
+  const split = finalizeStreamingMarkdownSplit(splitStreamingMarkdown(src))
+  const fences: Array<{ lang?: string; body: string }> = []
+  for (const slot of streamingRenderSlots(split)) {
+    if (slot.kind !== 'fence' || !slot.closed) continue
+    if (!shouldPrefetchLiveFenceHighlight(slot.lang)) continue
+    fences.push({ lang: slot.lang, body: slot.body.replace(/\n$/, '') })
+  }
+  return fences
+}
+
+/** 把收束正文里的闭合围栏写入着色缓存。返回暖了几块。 */
+export function prefetchLiveFenceHighlights(text: string): number {
+  const fences = collectClosedHighlightFences(text)
+  for (const fence of fences) highlightFenceLines(fence.body, fence.lang)
+  return fences.length
+}
+
+/** 收束栈走完再暖缓存，排在 React 重挂历史行之前。 */
+export function schedulePrefetchLiveFenceHighlights(text: string): void {
+  const src = String(text ?? '')
+  if (!src.trim()) return
+  queueMicrotask(() => {
+    prefetchLiveFenceHighlights(src)
+  })
 }

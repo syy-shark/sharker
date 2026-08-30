@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   SYNTAX_HIGHLIGHT_MAX_CHARS,
+  collectClosedHighlightFences,
   fileHighlightLanguage,
   highlightFenceLines,
+  prefetchLiveFenceHighlights,
   resolveHighlightLanguage,
+  shouldPrefetchLiveFenceHighlight,
   splitHighlightedHtmlLines
 } from './syntax-highlight'
 
@@ -39,5 +42,20 @@ describe('syntax-highlight', () => {
       '<span class="hljs-string">"a</span>',
       '<span class="hljs-string">b"</span>'
     ])
+  })
+
+  it('prefetches closed highlight fences and skips mermaid/demo', () => {
+    expect(shouldPrefetchLiveFenceHighlight('ts')).toBe(true)
+    expect(shouldPrefetchLiveFenceHighlight('mermaid')).toBe(false)
+    expect(shouldPrefetchLiveFenceHighlight('demo')).toBe(false)
+    expect(collectClosedHighlightFences('See\n```ts\nconst x = 1\n```\n')).toEqual([
+      { lang: 'ts', body: 'const x = 1' }
+    ])
+    expect(collectClosedHighlightFences('```mermaid\ngraph TD\nA-->B\n```')).toEqual([])
+    expect(collectClosedHighlightFences('```demo\n<div></div>\n```')).toEqual([])
+    expect(prefetchLiveFenceHighlights('See\n```ts\nconst x = 1\n```\n')).toBe(1)
+    const painted = highlightFenceLines('const x = 1', 'ts')
+    expect(prefetchLiveFenceHighlights('See\n```ts\nconst x = 1\n```\n')).toBe(1)
+    expect(highlightFenceLines('const x = 1', 'ts')).toBe(painted)
   })
 })
