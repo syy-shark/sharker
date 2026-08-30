@@ -8,6 +8,7 @@ import {
   messageContainsSelectedText,
   normalizeSelectedTextDraft,
   parseSelectedTextSubmit,
+  SELECTED_TEXT_COMMENT_LABEL,
   selectedTextChipLabel,
   selectedTextTitle,
   userFacingSelectedTextRequest
@@ -17,6 +18,7 @@ describe('selected-text-preview', () => {
   it('stages official Selection chips and wraps submit as # Selected text:', () => {
     expect(selectedTextTitle(0)).toBe('Selection 1')
     expect(selectedTextTitle(1)).toBe('Selection 2')
+    expect(SELECTED_TEXT_COMMENT_LABEL).toBe('Comment')
     expect(selectedTextChipLabel('short')).toBe('short')
     expect(selectedTextChipLabel('  many   spaces  ')).toBe('many spaces')
     const long = 'word '.repeat(20).trim()

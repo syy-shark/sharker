@@ -1181,15 +1181,19 @@
 
 .composer-selection-comment {
   flex-basis: 100%;
+  min-width: 0;
   min-height: 32px;
   margin: 0;
   padding: 6px 10px;
+  overflow: hidden;
   border: 0.5px solid var(--glass-edge-soft);
   border-radius: var(--radius-sm);
   background: var(--glass-fill-nested);
   color: var(--text);
   font-size: 12px;
   line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .message-user-edit {

@@ -2,7 +2,7 @@
  * Composer 划选预览（对标 Codex selected-text previews / composerSelectedTextAttachments）。
  * 划选进芯片，不灌进输入框；发送时收成官方 `# Selected text:` 块。
  * 对话柱只画请求 + annotation 芯片，长划选不撑开贴底（对标 Codex #20294 transcript strip / #22670）。
- * 芯片可加备注（对标 Codex response annotation comments / #33763），不发明 #22677 划选跟帖气泡。
+ * 芯片可加备注（对标 Codex optional comments / `Comment:` / #33763），不发明 #22677 划选跟帖气泡。
  * 已发送芯片按摘录回跳原文段落（对标 Codex #41391），不把 message id 写进 submit 块。
  * @see shared/ARCH.md
  */
@@ -15,6 +15,9 @@ export type SelectedTextPreview = {
   source: SideChatSource
   comment?: string
 }
+
+/** Official selected-text annotation field (`Comment:` in the submit block). */
+export const SELECTED_TEXT_COMMENT_LABEL = 'Comment'
 
 let selectedTextSeq = 0
 

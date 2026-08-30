@@ -73,6 +73,7 @@ import {
   mergeComposerInsert
 } from '../../shared/side-chat-quote'
 import {
+  SELECTED_TEXT_COMMENT_LABEL,
   formatSelectedTextSubmit,
   normalizeSelectedTextDraft,
   selectedTextChipLabel,
@@ -2286,8 +2287,8 @@ export const ComposerDock = memo(
                         type="text"
                         className="composer-selection-comment"
                         value={preview.comment ?? ''}
-                        placeholder="给这段划选加备注（可选）"
-                        aria-label="划选备注"
+                        placeholder={SELECTED_TEXT_COMMENT_LABEL}
+                        aria-label={SELECTED_TEXT_COMMENT_LABEL}
                         onChange={(event) => {
                           const comment = event.target.value
                           setSelectedTexts((prev) =>
