@@ -116,6 +116,8 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'unread')?.title).toBe('Mark chat as unread')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'find')?.title).toBe('Find in chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-chats')?.title).toBe('Search chats')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'history')?.title).toBe('Search chats')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'resume')?.title).toBe('Search chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.title).toBe('New standalone chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.shortcut).toBe('⌘⌥O')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-files')?.title).toBe('Search files')

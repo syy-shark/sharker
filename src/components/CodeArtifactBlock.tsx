@@ -1,6 +1,6 @@
 /**
  * 紧凑编辑器式代码产物：固定头部、复制操作、行号与稳定滚动区域。
- * 头栏相对对话柱 sticky，块还在视口里就能复制（对标 Codex #20593，不发明换行开关）。
+ * 头栏相对对话柱 sticky，块还在视口里就能复制（对标 Codex #20593，按钮官方 Copy，不发明换行开关 / Copied）。
  * CodeDiffBlock 复用 CodeArtifactShell，确保普通代码和 diff 视觉一致。
  * 直播跟尾只盯滚动壳与一层增高节点，不因 children 每枚 token 重挂
  * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
@@ -25,6 +25,7 @@ import {
   highlightFenceLines,
   shouldWarmLiveFenceHighlight
 } from '../../shared/syntax-highlight'
+import { COPY_LABEL } from '../../shared/reveal-in-folder'
 import './CodeArtifactBlock.css'
 import '../styles/syntax-highlight.css'
 
@@ -165,8 +166,8 @@ export function CodeArtifactShell({
               className="code-artifact-copy"
               disabled={!copyText}
               onClick={() => void handleCopy()}
-              aria-label={copied ? '已复制代码' : '复制代码'}
-              title={copied ? '已复制' : '复制'}
+              aria-label={COPY_LABEL}
+              title={COPY_LABEL}
             >
               {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
             </button>

@@ -146,14 +146,14 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'history',
-    title: '历史对话',
-    keywords: 'history resume 历史',
+    title: SEARCH_CHATS_LABEL,
+    keywords: 'search chats history resume 历史对话 恢复 历史',
     action: 'show_history'
   },
   {
     id: 'resume',
-    title: '恢复历史对话',
-    keywords: 'resume history picker 恢复 历史',
+    title: SEARCH_CHATS_LABEL,
+    keywords: 'search chats resume history picker 恢复历史对话 恢复 历史',
     action: 'resume_conversation'
   },
   {
@@ -524,7 +524,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     id: 'search-chats',
     title: SEARCH_CHATS_LABEL,
     shortcut: undefined,
-    keywords: 'search chats history 搜索 对话 历史',
+    keywords: 'search chats history resume 搜索 对话 历史对话 恢复',
     action: 'show_history'
   },
   {

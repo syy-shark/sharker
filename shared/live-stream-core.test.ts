@@ -1683,6 +1683,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).not.toContain('LiveStoreAnswerTail')
     expect(src('../src/components/LiveAssistantParts.tsx')).not.toContain('LiveStoreClosedAnswer')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('FenceImmediateHighlightContext')
+    expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('COPY_LABEL')
+    expect(src('../src/components/CodeArtifactBlock.tsx').includes('复制代码')).toBe(false)
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
     expect(src('../src/components/ChatView.tsx')).toContain('FenceImmediateHighlightContext')
     expect(src('../src/components/ChatView.tsx')).toContain('rememberNearLiveHighlightPreference')
