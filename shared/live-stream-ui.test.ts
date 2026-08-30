@@ -6184,6 +6184,28 @@ import {
   isLiveAskResolvedErrorFourToolCancelCompressAppendChange,
   isLiveAskResolvedErrorFiveToolCancelCompressAppendChange,
   isLiveAskResolvedThinkErrorTwoToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkErrorFourToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkErrorFourToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkErrorFiveToolCancelCompressAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -17816,7 +17838,9 @@ describe('live stream ui snapshot', () => {
       ['error+two-settled+cancel+compress', [{ type: 'error', error: 'boom' }, ...liveNextSettled2, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['error+four-settled+cancel+compress', [{ type: 'error', error: 'boom' }, ...liveNextSettled4, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['error+five-settled+cancel+compress', [{ type: 'error', error: 'boom' }, ...liveNextSettled5, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
-      ['think+error+two-settled+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveNextSettled2, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
+      ['think+error+two-settled+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveNextSettled2, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['think+error+four-settled+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveNextSettled4, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['think+error+five-settled+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveNextSettled5, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
     ]
     const liveTokenAskHelpers = {
       'allow-settle': {
@@ -18334,6 +18358,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveApprovalAllowedSettleErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveApprovalAllowedSettleErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveApprovalAllowedSettleThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveApprovalAllowedSettleThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveApprovalAllowedSettleThinkErrorFiveToolCancelCompressAppendChange,
       },
       'deny-settle': {
         'think+token+ask': isLiveApprovalDeniedThinkAnswerAskAppendChange,
@@ -18850,6 +18876,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveApprovalDeniedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveApprovalDeniedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveApprovalDeniedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveApprovalDeniedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveApprovalDeniedThinkErrorFiveToolCancelCompressAppendChange,
       },
       'nosettle-allow': {
         'think+token+ask': isLiveApprovalResolvedThinkAnswerAskAppendChange,
@@ -19378,6 +19406,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveApprovalResolvedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveApprovalResolvedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveApprovalResolvedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
       },
       status: {
         'token+ask+cancel': isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -19890,6 +19920,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveStatusApprovalResolvedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveStatusApprovalResolvedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveStatusApprovalResolvedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveStatusApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveStatusApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
       },
       writestat: {
         'token+ask+cancel': isLiveWriteStatApprovalResolvedAnswerAskCancelAppendChange,
@@ -20402,6 +20434,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveWriteStatApprovalResolvedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveWriteStatApprovalResolvedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveWriteStatApprovalResolvedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveWriteStatApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveWriteStatApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
       },
       'writestat+status': {
         'token+ask+cancel': isLiveWriteStatStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -20914,6 +20948,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkErrorFiveToolCancelCompressAppendChange,
       },
       ask: {
         'token+ask+cancel': isLiveAskResolvedAnswerAskCancelAppendChange,
@@ -21438,6 +21474,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveAskResolvedErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveAskResolvedErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveAskResolvedThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveAskResolvedThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveAskResolvedThinkErrorFiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
@@ -22052,6 +22090,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveApprovalNeededErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveApprovalNeededErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveApprovalNeededThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
       },
       'hang-status': {
         'token+ask': isLiveStatusApprovalNeededAnswerAskAppendChange,
@@ -22592,6 +22632,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveStatusApprovalNeededErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveStatusApprovalNeededErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveStatusApprovalNeededThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveStatusApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveStatusApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
       },
       'write-hang': {
         'token+ask': isLiveWriteStatApprovalNeededAnswerAskAppendChange,
@@ -23132,6 +23174,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveWriteStatApprovalNeededErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveWriteStatApprovalNeededErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveWriteStatApprovalNeededThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveWriteStatApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveWriteStatApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
       },
       'write-status-hang': {
         'token+ask': isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
@@ -23672,6 +23716,8 @@ describe('live stream ui snapshot', () => {
         'error+four-settled+cancel+compress': isLiveWriteStatStatusApprovalNeededErrorFourToolCancelCompressAppendChange,
         'error+five-settled+cancel+compress': isLiveWriteStatStatusApprovalNeededErrorFiveToolCancelCompressAppendChange,
         'think+error+two-settled+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkErrorTwoToolCancelCompressAppendChange,
+        'think+error+four-settled+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkErrorFourToolCancelCompressAppendChange,
+        'think+error+five-settled+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkErrorFiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
