@@ -118,6 +118,12 @@ function liveSameLengthPrefixTail(
   return { prevTail, nextTail }
 }
 
+function liveTailContentGrew(prevTail: TurnSegment, nextTail: TurnSegment): boolean {
+  const prevContent = prevTail.content ?? ''
+  const nextContent = nextTail.content ?? ''
+  return nextContent === prevContent || nextContent.startsWith(prevContent)
+}
+
 function liveSameLengthDerivationSkip(
   prev: readonly TurnSegment[],
   next: readonly TurnSegment[]
@@ -127,15 +133,19 @@ function liveSameLengthDerivationSkip(
   if (tails.prevTail !== tails.nextTail && tails.prevTail.status !== tails.nextTail.status) {
     return undefined
   }
-  if (isLiveThinking(tails.nextTail)) return 'think'
-  if (isLiveStatus(tails.nextTail)) return 'status'
+  if (isLiveThinking(tails.nextTail)) {
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? 'think' : undefined
+  }
+  if (isLiveStatus(tails.nextTail)) {
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? 'status' : undefined
+  }
   if (isLiveToolMetaOnlyChange(tails.prevTail, tails.nextTail)) return 'tool'
   if (findLiveToolInPlaceChange(prev, next)) return 'tool'
   if (
     isLiveAnswerText(tails.nextTail) &&
     !hasStreamingDemoFenceGrowth(tails.prevTail.content ?? '', tails.nextTail.content ?? '')
   ) {
-    return 'text'
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? 'text' : undefined
   }
   return undefined
 }
@@ -148,13 +158,15 @@ function liveSameLengthAnswerIdentityHold(
   if (!tails) return undefined
   if (tails.prevTail === tails.nextTail) return true
   if (tails.prevTail.status !== tails.nextTail.status) return undefined
-  if (tails.nextTail.kind === 'thinking' || tails.nextTail.kind === 'status') return true
+  if (tails.nextTail.kind === 'thinking' || tails.nextTail.kind === 'status') {
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? true : undefined
+  }
   if (tails.nextTail.kind === 'tool') return isLiveToolMetaOnlyChange(tails.prevTail, tails.nextTail)
   if (
     isLiveAnswerText(tails.nextTail) &&
     !hasStreamingDemoFenceGrowth(tails.prevTail.content ?? '', tails.nextTail.content ?? '')
   ) {
-    return true
+    return liveTailContentGrew(tails.prevTail, tails.nextTail) ? true : undefined
   }
   return undefined
 }
@@ -145630,7 +145642,7 @@ export function hasLiveProcessPhaseGrowHold(
   if (prev && liveSameLengthPrefixTail(prev, next)) {
     const last = next[next.length - 1]!
     const before = prev[prev.length - 1]!
-    if (before.status === last.status) return false
+    if (before.status === last.status && liveTailContentGrew(before, last)) return false
   }
   return anyLiveChangeFns(prev, next, LIVE_PROCESS_PHASE_GROW_HOLDS)
 }

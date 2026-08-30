@@ -50,6 +50,18 @@ describe('live same-length skip (16ms token path)', () => {
     expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm more')])).toBe(false)
   })
 
+  it('does not treat in-place plan status rewrite as a token', () => {
+    const plan: TurnSegment = {
+      id: 'st-plan',
+      kind: 'status',
+      status: 'active',
+      content: '根据已完成步骤规划下一步…'
+    }
+    const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
+    expect(shouldSkipLiveStreamDerivation([plan], [ask])).not.toBe('status')
+    expect(hasLiveProcessPhaseGrowHold([plan], [ask])).toBe(true)
+  })
+
   it('holds answer identity on same-length prose growth', () => {
     expect(
       shouldSkipLiveAnswerIdentity({
