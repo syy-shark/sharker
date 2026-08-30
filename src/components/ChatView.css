@@ -125,6 +125,11 @@
   color: var(--text);
 }
 
+::highlight(sharker-selection) {
+  background-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: var(--text);
+}
+
 .messages-end {
   width: 100%;
   min-height: 1px;

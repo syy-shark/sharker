@@ -3,7 +3,7 @@
  * 划选进芯片，不灌进输入框；发送时收成官方 `# Selected text:` 块。
  * 对话柱只画请求 + annotation 芯片，长划选不撑开贴底（对标 Codex #20294 transcript strip / #22670）。
  * 芯片可加备注（对标 Codex response annotation comments / #33763），不发明 #22677 划选跟帖气泡。
- * 已发送芯片按摘录回跳原文（对标 Codex #41391），不把 message id 写进 submit 块。
+ * 已发送芯片按摘录回跳原文段落（对标 Codex #41391），不把 message id 写进 submit 块。
  * @see shared/ARCH.md
  */
 
@@ -129,8 +129,57 @@ export function userFacingSelectedTextRequest(markdown: string): string {
   return parsed ? parsed.request : String(markdown ?? '')
 }
 
-function flattenForSelectionMatch(text: string): string {
+/** 划选比对用：空白折叠成单空格再去首尾 */
+export function flattenForSelectionMatch(text: string): string {
   return String(text || '').replace(/\s+/g, ' ').trim()
+}
+
+/** 折叠空白时记下每个扁平字符对应的原文下标 */
+function flattenWithOrigIndexMap(text: string): { flat: string; origIndex: number[] } {
+  const src = String(text || '')
+  let flat = ''
+  const origIndex: number[] = []
+  let i = 0
+  while (i < src.length) {
+    const ch = src[i]!
+    if (/\s/.test(ch)) {
+      const runStart = i
+      i += 1
+      while (i < src.length && /\s/.test(src[i]!)) i += 1
+      if (flat.length > 0) {
+        flat += ' '
+        origIndex.push(runStart)
+      }
+    } else {
+      flat += ch
+      origIndex.push(i)
+      i += 1
+    }
+  }
+  if (flat.endsWith(' ')) {
+    flat = flat.slice(0, -1)
+    origIndex.pop()
+  }
+  return { flat, origIndex }
+}
+
+/**
+ * 在可见正文里定位划选摘录（空白不敏感，对标 Codex #41391 回跳段落）。
+ * 返回原文半开区间；找不到则 null。
+ */
+export function findFlattenedExcerptRange(
+  haystack: string,
+  excerpt: string
+): { start: number; end: number } | null {
+  const needle = flattenForSelectionMatch(excerpt)
+  if (!needle) return null
+  const { flat, origIndex } = flattenWithOrigIndexMap(haystack)
+  const at = flat.toLowerCase().indexOf(needle.toLowerCase())
+  if (at < 0) return null
+  const start = origIndex[at]
+  const last = origIndex[at + needle.length - 1]
+  if (start == null || last == null) return null
+  return { start, end: last + 1 }
 }
 
 /** 正文（含用户气泡只露的请求）是否含该划选 */

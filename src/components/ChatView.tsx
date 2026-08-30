@@ -132,7 +132,12 @@ import {
   isReviewFindFocus,
   shouldHandleReviewFindShortcut
 } from '../../shared/review-diff-search'
-import { clearFindHighlight, paintFindHighlight } from '../lib/find-highlight'
+import {
+  clearFindHighlight,
+  clearSelectionHighlight,
+  paintFindHighlight,
+  paintSelectionHighlight
+} from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import { FIND_IN_CHAT_LABEL } from '../../shared/reveal-in-folder'
 import {
@@ -986,7 +991,10 @@ export const ChatView = memo(function ChatView({
   const findAnchorRef = useRef<Pick<ThreadSearchHit, 'messageId' | 'occurrence'> | null>(null)
   const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
   const [selectionSourceId, setSelectionSourceId] = useState<string | null>(null)
+  const [selectionRevealTick, setSelectionRevealTick] = useState(0)
   const selectionSourceTimerRef = useRef<number | null>(null)
+  const selectionRevealRef = useRef<{ id: string; excerpt: string } | null>(null)
+  const selectionRevealScrolledRef = useRef<string | null>(null)
   const [pinnedStart, setPinnedStart] = useState<number | null>(() =>
     restoreTranscriptWindowStart(scrollSnapshot)
   )
@@ -1798,16 +1806,10 @@ export const ChatView = memo(function ChatView({
       if (selectionSourceTimerRef.current != null) {
         window.clearTimeout(selectionSourceTimerRef.current)
       }
+      selectionRevealRef.current = { id: sourceId, excerpt }
+      selectionRevealScrolledRef.current = null
       setSelectionSourceId(sourceId)
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`msg-${sourceId}`)
-        el?.scrollIntoView({
-          block: 'center',
-          behavior: document.documentElement.classList.contains('reduce-motion')
-            ? 'auto'
-            : 'smooth'
-        })
-      })
+      setSelectionRevealTick((n) => n + 1)
       selectionSourceTimerRef.current = window.setTimeout(() => {
         setSelectionSourceId((cur) => (cur === sourceId ? null : cur))
         selectionSourceTimerRef.current = null
@@ -1816,11 +1818,48 @@ export const ChatView = memo(function ChatView({
     [lockUserScroll, messages]
   )
 
+  /** 窗口揭开后再标段落并滚到 Range（不 scrollIntoView，对标 Codex #41391 / #38220） */
+  useLayoutEffect(() => {
+    if (!selectionSourceId) {
+      clearSelectionHighlight()
+      selectionRevealScrolledRef.current = null
+      return
+    }
+    const pending = selectionRevealRef.current
+    const excerpt = pending?.id === selectionSourceId ? pending.excerpt : ''
+    const el = document.getElementById(`msg-${selectionSourceId}`)
+    if (!el) return
+    const range = excerpt ? paintSelectionHighlight(el, excerpt) : null
+    if (selectionRevealScrolledRef.current === selectionSourceId) return
+    const scroller = messagesRef.current
+    if (!scroller) return
+    const rangeBox = range?.getBoundingClientRect()
+    const childBox =
+      rangeBox && rangeBox.width + rangeBox.height > 0 ? rangeBox : el.getBoundingClientRect()
+    const scrollerBox = scroller.getBoundingClientRect()
+    programmaticScrollRef.current = true
+    scroller.scrollTop = scrollTopToCenterChild(
+      {
+        top: scrollerBox.top,
+        scrollTop: scroller.scrollTop,
+        scrollHeight: scroller.scrollHeight,
+        clientHeight: scroller.clientHeight
+      },
+      { top: childBox.top, height: Math.max(childBox.height, 1) }
+    )
+    selectionRevealScrolledRef.current = selectionSourceId
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false
+      rememberTranscriptSnapshot()
+    })
+  }, [rememberTranscriptSnapshot, selectionRevealTick, selectionSourceId, windowStart])
+
   useEffect(() => {
     return () => {
       if (selectionSourceTimerRef.current != null) {
         window.clearTimeout(selectionSourceTimerRef.current)
       }
+      clearSelectionHighlight()
     }
   }, [])
 

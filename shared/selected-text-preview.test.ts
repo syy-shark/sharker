@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createSelectedTextPreview,
+  findFlattenedExcerptRange,
   findSelectedTextSourceMessageId,
+  flattenForSelectionMatch,
   formatSelectedTextSubmit,
   messageContainsSelectedText,
   normalizeSelectedTextDraft,
@@ -121,5 +123,19 @@ describe('selected-text-preview', () => {
     expect(findSelectedTextSourceMessageId(rows, 'overflow wraps on mobile', 'u1')).toBe('s1')
     expect(findSelectedTextSourceMessageId(rows, 'missing excerpt', 'u1')).toBeNull()
     expect(findSelectedTextSourceMessageId(rows, 'overflow wraps on mobile')).toBe('s1')
+  })
+
+  it('maps a flattened excerpt onto visible source offsets', () => {
+    expect(flattenForSelectionMatch('  hello\n  world  ')).toBe('hello world')
+    expect(findFlattenedExcerptRange('The overflow wraps on mobile.', 'overflow wraps')).toEqual({
+      start: 4,
+      end: 18
+    })
+    expect(findFlattenedExcerptRange('hello\n  world extra', 'hello world')).toEqual({
+      start: 0,
+      end: 13
+    })
+    expect(findFlattenedExcerptRange('  Foo BAR  ', 'foo bar')).toEqual({ start: 2, end: 9 })
+    expect(findFlattenedExcerptRange('unrelated', 'overflow wraps')).toBeNull()
   })
 })
