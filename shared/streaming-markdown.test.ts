@@ -22,6 +22,7 @@ import {
   shouldGrowStreamingIndentCodeLastLine,
   shouldGrowStreamingFencedPreLastLine,
   shouldGrowStreamingFootnoteLastLine,
+  shouldAppendStreamingFootnoteParagraph,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -721,6 +722,38 @@ describe('splitStreamingMarkdown', () => {
       expect(
         manyNotesGrown[1].items.slice(0, 12).every((item, i) => item === manyNotesFirst[1].items[i])
       ).toBe(true)
+    }
+    expect(
+      shouldAppendStreamingFootnoteParagraph({ prevNorm: `${manyNotes}更`, suffix: '\n\n    第二段' })
+    ).toBe(true)
+    expect(
+      shouldAppendStreamingFootnoteParagraph({ prevNorm: `${manyNotes}更\n`, suffix: '\n    第二段' })
+    ).toBe(true)
+    expect(shouldAppendStreamingFootnoteParagraph({ prevNorm: `${manyNotes}更`, suffix: '\n    续行' })).toBe(
+      false
+    )
+    const manyNotesPara = continueCheapProseBlocks(
+      `${manyNotes}更`,
+      manyNotesGrown,
+      `${manyNotes}更\n\n    第二段`
+    )
+    if (manyNotesGrown[1]?.type === 'footnotes' && manyNotesPara[1]?.type === 'footnotes') {
+      expect(
+        manyNotesPara[1].items.slice(0, 12).every((item, i) => item === manyNotesGrown[1].items[i])
+      ).toBe(true)
+      expect(manyNotesPara[1].items[12]?.paragraphs[0]).toBe(manyNotesGrown[1].items[12]?.paragraphs[0])
+      expect(manyNotesPara[1].items[12]?.paragraphs).toHaveLength(2)
+    }
+    const manyNotesParaGrown = continueCheapProseBlocks(
+      `${manyNotes}更\n\n    第二段`,
+      manyNotesPara,
+      `${manyNotes}更\n\n    第二段更`
+    )
+    if (manyNotesPara[1]?.type === 'footnotes' && manyNotesParaGrown[1]?.type === 'footnotes') {
+      expect(
+        manyNotesParaGrown[1].items.slice(0, 12).every((item, i) => item === manyNotesPara[1].items[i])
+      ).toBe(true)
+      expect(manyNotesParaGrown[1].items[12]?.paragraphs[0]).toBe(manyNotesPara[1].items[12]?.paragraphs[0])
     }
     expect(parseCheapProseBlocks('[^1]: n').map((b) => b.type)).toEqual([])
   })
@@ -2789,6 +2822,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowStreamingIndentCodeLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingFencedPreLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingFootnoteLastLine')
+    expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
