@@ -48,6 +48,7 @@ import {
   LOCAL_LABEL,
   WORKTREE_LABEL,
   CREATE_BRANCH_HERE_LABEL,
+  OPEN_LABEL,
   ALWAYS_ON_TOP_LABEL,
   KEEP_A_CHAT_NEAR_YOUR_WORK_INTRO,
   KEEP_A_CHAT_NEAR_YOUR_WORK_LABEL,
@@ -301,6 +302,7 @@ describe('reveal in folder', () => {
     expect(LOCAL_LABEL).toBe('Local')
     expect(WORKTREE_LABEL).toBe('Worktree')
     expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')
+    expect(OPEN_LABEL).toBe('Open')
     expect(FILE_MENU_LABEL).toBe('File')
     expect(FILE_CLOSE_LABEL).toBe('Close')
     expect(CLOSE_CURRENT_TAB_OR_WINDOW_LABEL).toBe('Close current tab or window')

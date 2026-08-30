@@ -3760,6 +3760,17 @@ export default function App() {
     void window.sharker.showItemInFolder(dest)
   }, [threadMode, threadWorktreePath])
 
+  const handleOpenWorktree = useCallback(() => {
+    const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath || ''
+    if (!dest) return
+    const uri = fileOpenerUri(parseFileOpener(settingsRef.current.fileOpener), dest)
+    if (uri) {
+      void window.sharker.openExternal?.(uri)
+      return
+    }
+    void window.sharker.openPath?.(dest)
+  }, [threadWorktreePath])
+
   const handleCreateBranchHere = useCallback(async () => {
     const dest = threadWorktreePath || threadRuntimeRef.current.worktreePath
     if (!dest || !window.sharker.createGitBranch) return
@@ -8764,6 +8775,7 @@ export default function App() {
               onOpenPullRequest={handleOpenPullRequest}
               worktreePath={threadMode === 'worktree' ? threadWorktreePath : undefined}
               threadFolderPath={fileSearchRoot || undefined}
+              onOpenWorktree={handleOpenWorktree}
               onRevealThreadFolder={handleRevealThreadFolder}
               onCreateBranchHere={handleCreateBranchHereUi}
               threadMode={threadMode}

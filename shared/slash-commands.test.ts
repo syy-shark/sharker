@@ -145,6 +145,8 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'browser')?.description).toBe(
       'Toggle browser panel'
     )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'title')?.description).toBe('Rename chat')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'automations')?.description).toBe('Scheduled')
     expect(SLASH_COMMANDS.find((c) => c.name === 'local')?.action).toBe('set_thread_local')
     expect(SLASH_COMMANDS.find((c) => c.name === 'worktree')?.action).toBe('set_thread_worktree')
     expect(SLASH_COMMANDS.find((c) => c.name === 'agents')?.action).toBe('toggle_agents')

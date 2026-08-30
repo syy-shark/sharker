@@ -2,10 +2,12 @@
  * 斜杠命令目录：供输入框菜单与 /help 展示。
  * @see agent/commands.ts
  */
+import { SCHEDULED_LABEL } from './automation'
 import {
   OPEN_KEYBOARD_SHORTCUTS_LABEL,
   OPEN_REVIEW_TAB_LABEL,
   OPEN_SETTINGS_LABEL,
+  RENAME_CHAT_LABEL,
   TOGGLE_BROWSER_PANEL_LABEL,
   TOGGLE_FILE_TREE_LABEL,
   TOGGLE_REVIEW_PANEL_LABEL,
@@ -165,7 +167,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'title',
-    description: '重命名当前对话（/rename 别名）',
+    description: RENAME_CHAT_LABEL,
     scope: 'ui',
     action: 'rename_conversation',
     argsHint: '[标题]',
@@ -460,7 +462,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'automations',
-    description: '打开自动化（定时任务）',
+    description: SCHEDULED_LABEL,
     scope: 'ui',
     action: 'open_automations',
     category: 'panel'

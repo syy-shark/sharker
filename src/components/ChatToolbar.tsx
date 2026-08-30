@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / Worktree / Local environment Actions / PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
+ * - 右：Hand off / Open（worktree IDE）/ Create branch here / Local environment Actions / PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -31,6 +31,7 @@ import {
   COPY_LABEL,
   CREATE_BRANCH_HERE_LABEL,
   FORK_LABEL,
+  OPEN_LABEL,
   HAND_OFF_LABEL,
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -311,6 +312,22 @@ export const ChatToolbar = memo(function ChatToolbar({
               aria-label={revealInFolderLabel(window.sharker?.platform)}
             >
               <FolderOpen size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
+          {worktreePath && onOpenWorktree && !popout ? (
+            <button
+              type="button"
+              className="chat-toolbar-pr-chip"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenWorktree()
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title={OPEN_LABEL}
+              aria-label={OPEN_LABEL}
+            >
+              {OPEN_LABEL}
             </button>
           ) : null}
           {worktreePath && onCreateBranchHere && !popout ? (

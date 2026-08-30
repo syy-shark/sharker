@@ -30,5 +30,8 @@ describe('file opener', () => {
     expect(fileOpenerUri('windsurf', 'C:/repo/a.ts', 3)).toBe('windsurf://file/C:/repo/a.ts:3')
     expect(fileOpenerUri('vscode', '', 12)).toBeNull()
     expect(fileOpenerUri('vscode', '/Users/me/a.ts', 0, 2)).toBe('vscode://file/Users/me/a.ts')
+    expect(fileOpenerUri('cursor', '/Users/me/.sharker/worktrees/demo')).toBe(
+      'cursor://file/Users/me/.sharker/worktrees/demo'
+    )
   })
 })
