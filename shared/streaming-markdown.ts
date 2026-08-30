@@ -158,8 +158,31 @@ export function shouldGrowOpenStreamingProseTail(prevNorm: string, suffix: strin
 }
 
 /**
+ * 已有闭合前缀后的未闭合围栏：同一行或新正文行增长不整段重拆。
+ * 新行或行尾长成闭合标记时退回全量拆分。
+ */
+export function shouldGrowOpenStreamingFenceTail(prevTail: string, suffix: string): boolean {
+  if (!suffix) return true
+  const nl = prevTail.indexOf('\n')
+  const open = parseFenceLine(nl === -1 ? prevTail : prevTail.slice(0, nl))
+  if (!open) return false
+  if (!suffix.includes('\n')) {
+    if (nl === -1) return true
+    const lastLine = prevTail.slice(prevTail.lastIndexOf('\n') + 1) + suffix
+    return !isFenceClose(lastLine, open.marker)
+  }
+  const lastPrev = prevTail.endsWith('\n') ? '' : prevTail.slice(prevTail.lastIndexOf('\n') + 1)
+  const firstNl = suffix.indexOf('\n')
+  if (isFenceClose(lastPrev + suffix.slice(0, firstNl), open.marker)) return false
+  for (const line of suffix.slice(firstNl + 1).split('\n')) {
+    if (isFenceClose(line, open.marker)) return false
+  }
+  return true
+}
+
+/**
  * 直播增量拆分：已闭合块复用同一对象，只重扫新增后缀。
- * 文本缩短或前缀对不上时回退全量拆分。首段未收束的同一行增长只换 tail。
+ * 文本缩短或前缀对不上时回退全量拆分。未收束散文 / 围栏同一行或围栏正文增长只换 tail。
  */
 export function continueStreamingMarkdown(
   prev: StreamingMarkdownSplit | null | undefined,
@@ -192,6 +215,30 @@ export function continueStreamingMarkdown(
     return splitStreamingMarkdown(nextText)
   }
   const rest = nextText.slice(closedEnd)
+  if (prev.tailKind === 'prose' && rest.startsWith(prev.tail)) {
+    const suffix = rest.slice(prev.tail.length)
+    if (shouldGrowOpenStreamingProseTail(prev.tail, suffix)) {
+      if (rest === prev.tail) return prev
+      return {
+        blocks: prev.blocks,
+        tail: rest,
+        tailKind: 'prose',
+        closedEnd
+      }
+    }
+  } else if (prev.tailKind === 'fence' && rest.startsWith(prev.tail)) {
+    const suffix = rest.slice(prev.tail.length)
+    if (shouldGrowOpenStreamingFenceTail(prev.tail, suffix)) {
+      if (rest === prev.tail) return prev
+      return {
+        blocks: prev.blocks,
+        tail: rest,
+        tailKind: 'fence',
+        tailLang: prev.tailLang,
+        closedEnd
+      }
+    }
+  }
   const restSplit = splitStreamingMarkdown(rest)
   if (restSplit.blocks.length === 0) {
     if (

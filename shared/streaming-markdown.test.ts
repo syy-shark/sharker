@@ -14,6 +14,7 @@ import {
   continueCheapInlineMarkdown,
   shouldGrowCheapInlineText,
   shouldGrowOpenStreamingProseTail,
+  shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   continueStreamingRenderSlots,
@@ -2067,6 +2068,10 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldGrowOpenStreamingProseTail('普通段落', '继续写汉字')).toBe(true)
     expect(shouldGrowOpenStreamingProseTail('普通段落', '\n\n下一段')).toBe(false)
     expect(shouldGrowOpenStreamingProseTail('``', '`ts')).toBe(false)
+    expect(shouldGrowOpenStreamingFenceTail('```js\n1', '2')).toBe(true)
+    expect(shouldGrowOpenStreamingFenceTail('```js\n1', '\n2')).toBe(true)
+    expect(shouldGrowOpenStreamingFenceTail('```js\n1', '\n```')).toBe(false)
+    expect(shouldGrowOpenStreamingFenceTail('```js\n``', '`')).toBe(false)
     const openTail = splitStreamingMarkdown('普通段落开始写')
     expect(openTail.closedEnd).toBe(0)
     expect(openTail.blocks).toEqual([])
@@ -2112,6 +2117,15 @@ describe('splitStreamingMarkdown', () => {
     expect(grownSlots[0]).toBe(firstSlots[0])
     expect(grownSlots[1]).not.toBe(firstSlots[1])
     const fenceMid = splitStreamingMarkdown('Intro\n\n```js\n1')
+    const fenceGrown = continueStreamingMarkdown(
+      fenceMid,
+      'Intro\n\n```js\n1',
+      'Intro\n\n```js\n12\nmore'
+    )
+    expect(fenceGrown.blocks).toBe(fenceMid.blocks)
+    expect(fenceGrown.tailKind).toBe('fence')
+    expect(fenceGrown.tail).toBe('```js\n12\nmore')
+    expect(fenceGrown.closedEnd).toBe(fenceMid.closedEnd)
     const fenceDone = continueStreamingMarkdown(
       fenceMid,
       'Intro\n\n```js\n1',
@@ -2248,6 +2262,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain("prev.blob === '' && !raw.includes(']:')")
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
+    expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain("nextText.indexOf('\\n\\n', Math.max(0, prevNorm.length - 1))")
     expect(mdSrc).toContain('split.blocks === prevSplit.blocks')
     expect(src).toContain('continueStreamingRenderSlots(prevRef.current.slots, nextSplit, prevSplit)')
