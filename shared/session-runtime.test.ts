@@ -17,8 +17,11 @@ import {
   pinnedLiveAssistantId,
   pinnedLiveAssistantIds,
   nextRetiredLiveArticles,
+  nextEjectedLiveArticles,
+  retireLiveArticle,
   retiredLiveArticle,
   RETIRED_LIVE_LIMIT,
+  EJECTED_LIVE_LIMIT,
   splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
   historicalMessagesHidingIds,
@@ -593,7 +596,31 @@ describe('commitAssistantReply persist targeting', () => {
       'b-live',
       'c-live'
     ])
+    expect(retireLiveArticle([first, second], third)).toEqual({
+      retired: [
+        { ...second, id: 'b-live' },
+        { ...third, id: 'c-live' }
+      ],
+      ejected: [{ ...first, id: 'a-live' }]
+    })
+    expect(nextEjectedLiveArticles([], [first]).map((a) => a.id)).toEqual(['a-live'])
+    expect(nextEjectedLiveArticles([first], [second, third]).map((a) => a.id)).toEqual([
+      'a-live',
+      'b-live',
+      'c-live'
+    ])
     expect(RETIRED_LIVE_LIMIT).toBe(2)
+    expect(EJECTED_LIVE_LIMIT).toBe(8)
+    const overflow = Array.from({ length: 9 }, (_, i) => ({
+      id: `e${i}`,
+      parts: [],
+      meta: null,
+      startedAt: i,
+      copyable: String(i)
+    }))
+    expect(nextEjectedLiveArticles([], overflow).map((a) => a.id)).toEqual(
+      overflow.slice(-8).map((a) => a.id)
+    )
     expect(retiredLiveArticle([first, second], 'a-live')?.copyable).toBe('A')
     expect(retiredLiveArticle([first, second], 'missing')).toBeNull()
     expect(

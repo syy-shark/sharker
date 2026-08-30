@@ -659,6 +659,28 @@ export function sameRefList<T>(prev: readonly T[] | null | undefined, next: read
   return prev.every((item, i) => item === next[i])
 }
 
+/** 挤出环的当帧读已挂行高，给历史 content-visibility 当内在尺寸。 */
+export function readMountedMessageRowHeight(id: string): number {
+  if (typeof document === 'undefined') return 0
+  const key = id.trim()
+  if (!key) return 0
+  const el = document.getElementById(`msg-${key}`)
+  return el ? Math.round(el.offsetHeight) : 0
+}
+
+/** 把挤出时记下的行高写入测量表，第一帧不走 160px 估高。 */
+export function mergeSeededRowHeights(
+  dest: Map<string, number>,
+  seeded: Readonly<Record<string, number>>
+): Map<string, number> {
+  for (const [id, height] of Object.entries(seeded)) {
+    const key = id.trim()
+    if (!key || height <= 0 || dest.has(key)) continue
+    dest.set(key, height)
+  }
+  return dest
+}
+
 /**
  * 只给历史行量 content-visibility 内在高度。
  * 直播行每枚 token 都会长高，高度由贴底 ResizeObserver 跟，再盯会叠一层

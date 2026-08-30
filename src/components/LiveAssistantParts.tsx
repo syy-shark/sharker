@@ -117,11 +117,13 @@ function renderLiveAnswerPart(
 const LiveStoreAnswer = memo(function LiveStoreAnswer({
   markdownStreaming,
   frozen = false,
-  frozenParts
+  frozenParts,
+  liveDiff = true
 }: {
   markdownStreaming: boolean
   frozen?: boolean
   frozenParts?: readonly LiveAnswerView['parts'][number][] | null
+  liveDiff?: boolean
 }) {
   const held = useRef<readonly LiveAnswerView['parts'][number][] | null>(null)
   const storeParts = useLiveStreamUiSelectWhen(
@@ -135,7 +137,7 @@ const LiveStoreAnswer = memo(function LiveStoreAnswer({
   return (
     <div className="assistant-message-body message-body--assistant turn-flow-final turn-flow-final--streaming message-body--streaming-active">
       {parts.map((part) =>
-        renderLiveAnswerPart(part, { liveDiff: true, markdownStreaming })
+        renderLiveAnswerPart(part, { liveDiff, markdownStreaming })
       )}
     </div>
   )
@@ -219,7 +221,8 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   isStreaming = true,
   frozen = false,
   frozenParts = null,
-  frozenCopyable
+  frozenCopyable,
+  liveDiff = true
 }: {
   messageId: string
   meta?: AssistantMeta
@@ -238,6 +241,8 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   frozen?: boolean
   frozenParts?: readonly LiveAnswerView['parts'][number][] | null
   frozenCopyable?: string
+  /** 挤出环后的历史冻结行关 live diff，以免 followTail 抢滚动。 */
+  liveDiff?: boolean
 }) {
   const changedFiles = meta?.changedFiles ?? []
   return (
@@ -256,6 +261,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
         markdownStreaming={isStreaming}
         frozen={frozen}
         frozenParts={frozenParts}
+        liveDiff={liveDiff}
       />
       {approval && onApproval ? (
         <InlineApproval

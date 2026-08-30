@@ -44,6 +44,8 @@ import {
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
+  mergeSeededRowHeights,
+  readMountedMessageRowHeight,
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
@@ -372,6 +374,14 @@ describe('near-live message rows', () => {
     expect(shouldObserveRowIntrinsicHeight({ id: 'a1', live: true })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: '' })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: 'hist-1' })).toBe(true)
+    const seeded = mergeSeededRowHeights(new Map(), { 'a-live': 420, skip: 0, '': 12 })
+    expect(seeded.get('a-live')).toBe(420)
+    expect(seeded.has('skip')).toBe(false)
+    mergeSeededRowHeights(seeded, { 'a-live': 99, 'b-live': 200 })
+    expect(seeded.get('a-live')).toBe(420)
+    expect(seeded.get('b-live')).toBe(200)
+    expect(readMountedMessageRowHeight('missing-live')).toBe(0)
+    expect(readMountedMessageRowHeight('')).toBe(0)
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(0)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })

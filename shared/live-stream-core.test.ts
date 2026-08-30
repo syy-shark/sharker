@@ -1547,7 +1547,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('nextLiveAnswerRenderParts')
     expect(src('../src/App.tsx')).toContain('resetLiveAnswerViewHold')
     expect(src('../src/App.tsx')).toContain('setRetiredLiveId')
-    expect(src('../src/App.tsx')).toContain('nextRetiredLiveArticles')
+    expect(src('../src/App.tsx')).toContain('retireLiveArticle')
+    expect(src('../src/App.tsx')).toContain('nextEjectedLiveArticles')
+    expect(src('../src/App.tsx')).toContain('readMountedMessageRowHeight')
+    expect(src('../src/components/ChatView.tsx')).toContain('ejectedLiveArticles')
+    expect(src('../src/components/ChatView.tsx')).toContain('liveDiff={false}')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('liveDiff={liveDiff}')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenParts')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('useLiveStreamUiSelectWhen')
 

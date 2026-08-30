@@ -112,6 +112,7 @@ import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-tur
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import {
   processElapsedSeconds,
+  readMountedMessageRowHeight,
   stoppedAfterFootnote,
   THOUGHT_LABEL,
   TURN_START_LIVE_STATUS,
@@ -326,7 +327,8 @@ import {
   shouldCancelLiveHandoffWithoutCommit,
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
-  nextRetiredLiveArticles,
+  nextEjectedLiveArticles,
+  retireLiveArticle,
   upsertAssistantMessage,
   type DoneCommittedMap,
   type RetiredLiveArticle,
@@ -529,8 +531,11 @@ export default function App() {
   const [retiredLiveStartedAt, setRetiredLiveStartedAt] = useState<number | null>(null)
   const [retiredLiveCopyable, setRetiredLiveCopyable] = useState<string | null>(null)
   const [retiredLiveArticles, setRetiredLiveArticles] = useState<RetiredLiveArticle[]>([])
+  const [ejectedLiveArticles, setEjectedLiveArticles] = useState<RetiredLiveArticle[]>([])
+  const [ejectedLiveHeights, setEjectedLiveHeights] = useState<Record<string, number>>({})
   const retiredLiveIdRef = useRef<string | null>(null)
   const retiredLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
+  const ejectedLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -1047,12 +1052,15 @@ export default function App() {
     setLiveAssistantId(buf.liveAssistantId ?? null)
     retiredLiveIdRef.current = null
     retiredLiveArticlesRef.current = []
+    ejectedLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
     setRetiredLiveStartedAt(null)
     setRetiredLiveCopyable(null)
     setRetiredLiveArticles([])
+    setEjectedLiveArticles([])
+    setEjectedLiveHeights({})
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     if (lastTurnUiTimerRef.current != null) {
       window.clearTimeout(lastTurnUiTimerRef.current)
@@ -1547,12 +1555,15 @@ export default function App() {
   const clearRetiredLive = useCallback(() => {
     retiredLiveIdRef.current = null
     retiredLiveArticlesRef.current = []
+    ejectedLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
     setRetiredLiveStartedAt(null)
     setRetiredLiveCopyable(null)
     setRetiredLiveArticles([])
+    setEjectedLiveArticles([])
+    setEjectedLiveHeights({})
   }, [])
 
   /**
@@ -1582,9 +1593,25 @@ export default function App() {
       startedAt: priorSnap.turnStartedAt,
       copyable: priorCopyable
     }
-    const nextRetired = nextRetiredLiveArticles(retiredLiveArticlesRef.current, article)
+    const { retired: nextRetired, ejected } = retireLiveArticle(
+      retiredLiveArticlesRef.current,
+      article
+    )
     retiredLiveArticlesRef.current = nextRetired
     setRetiredLiveArticles(nextRetired)
+    if (ejected.length) {
+      const nextEjected = nextEjectedLiveArticles(ejectedLiveArticlesRef.current, ejected)
+      ejectedLiveArticlesRef.current = nextEjected
+      setEjectedLiveArticles(nextEjected)
+      setEjectedLiveHeights((prev) => {
+        const next = { ...prev }
+        for (const item of ejected) {
+          const height = readMountedMessageRowHeight(item.id)
+          if (height > 0) next[item.id] = height
+        }
+        return next
+      })
+    }
     resetLiveAnswerViewHold()
     const now = Date.now()
     if (!turnStartedAtRef.current) turnStartedAtRef.current = now
@@ -9254,6 +9281,8 @@ export default function App() {
               retiredLiveStartedAt={retiredLiveStartedAt}
               retiredLiveCopyable={retiredLiveCopyable}
               retiredLiveArticles={retiredLiveArticles}
+              ejectedLiveArticles={ejectedLiveArticles}
+              ejectedLiveHeights={ejectedLiveHeights}
               loading={loading}
               queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}

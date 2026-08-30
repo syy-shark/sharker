@@ -530,18 +530,44 @@ export type RetiredLiveArticle = {
   copyable: string | null
 }
 
-/** 短线程连跟两轮时仍留下上一行；再早的行才退回历史 `AssistantMessage`。 */
+/** 短线程连跟两轮时仍留下上一行；再早的行退出环，但仍用冻结正文画，不重挂 `AssistantMessage`。 */
 export const RETIRED_LIVE_LIMIT = 2
+
+/** 退出环后仍按冻结 part 画的上限；再早的才走普通历史气泡。 */
+export const EJECTED_LIVE_LIMIT = 8
+
+/** 把刚 adopt 的行推进环；同 id 覆盖，超出上限的最早行进 `ejected`。 */
+export function retireLiveArticle(
+  prev: readonly RetiredLiveArticle[],
+  article: RetiredLiveArticle
+): { retired: RetiredLiveArticle[]; ejected: RetiredLiveArticle[] } {
+  const id = article.id.trim()
+  if (!id) return { retired: prev.slice(), ejected: [] }
+  const next = [...prev.filter((item) => item.id !== id), { ...article, id }]
+  if (next.length <= RETIRED_LIVE_LIMIT) return { retired: next, ejected: [] }
+  return {
+    retired: next.slice(-RETIRED_LIVE_LIMIT),
+    ejected: next.slice(0, next.length - RETIRED_LIVE_LIMIT)
+  }
+}
 
 /** 把刚 adopt 的行推进环；同 id 覆盖，超出上限丢掉最早的。 */
 export function nextRetiredLiveArticles(
   prev: readonly RetiredLiveArticle[],
   article: RetiredLiveArticle
 ): RetiredLiveArticle[] {
-  const id = article.id.trim()
-  if (!id) return prev.slice()
-  const next = [...prev.filter((item) => item.id !== id), { ...article, id }]
-  return next.length > RETIRED_LIVE_LIMIT ? next.slice(-RETIRED_LIVE_LIMIT) : next
+  return retireLiveArticle(prev, article).retired
+}
+
+/** 环里挤出的冻结行：同 id 覆盖，超出上限丢掉最早的。 */
+export function nextEjectedLiveArticles(
+  prev: readonly RetiredLiveArticle[],
+  ejected: readonly RetiredLiveArticle[]
+): RetiredLiveArticle[] {
+  if (!ejected.length) return prev.slice()
+  const drop = new Set(ejected.map((item) => item.id.trim()).filter(Boolean))
+  const next = [...prev.filter((item) => !drop.has(item.id)), ...ejected.map((item) => ({ ...item }))]
+  return next.length > EJECTED_LIVE_LIMIT ? next.slice(-EJECTED_LIVE_LIMIT) : next
 }
 
 /** 按 id 取冻结行。 */
