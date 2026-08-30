@@ -1,6 +1,6 @@
 /**
  * 一回合过程时间线（安静直播）：
- * - 思考：默认折叠成 Thinking（对标 Codex），点开才看旁白，避免顶着回答长高
+ * - 思考：默认折叠成 Thinking（对标 Codex），点开才看旁白，避免顶着回答长高；收束后同一直播行改 Thought，不整块卸掉
  * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯；审批只走官方 Awaiting approval 头，不另挂「审批」芯片以免挤高直播头
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
@@ -14,7 +14,7 @@
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { liveProcessViewFromSnap } from '../../shared/live-stream-core'
-import { useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
+import { useLiveStreamUiSelectWhen } from '../hooks/useLiveStreamUi'
 import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { ChevronDown } from 'lucide-react'
 import { LiveDuration } from './LiveDuration'
@@ -42,6 +42,8 @@ import {
   processElapsedSeconds,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
+  shouldKeepCompletedLiveTurnFlow,
+  shouldShowLiveThought,
   shouldPromoteSyntheticLiveHead,
   shouldSynthesizePlanning,
   turnProcessBounds
@@ -100,6 +102,8 @@ interface Props {
   /** 点开瘦身后的命令输出时取完整消息 */
   messageId?: string
   onNeedFullMessage?: (messageId: string) => void
+  /** 跟进 adopt 后停订 store，旁白用收束前原文 */
+  frozen?: boolean
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -386,17 +390,35 @@ export function ThoughtDisclosure({
   )
 }
 
-/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线 */
+/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线；frozen 保住收束前原文 */
 const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
   asLiveHead,
-  elapsed
+  elapsed,
+  frozen = false,
+  contentStreaming = false
 }: {
   asLiveHead: boolean
   elapsed?: ReactNode
+  frozen?: boolean
+  contentStreaming?: boolean
 }) {
-  const text = useLiveStreamUiSelect((snap) => liveProcessViewFromSnap(snap).thinkText)
+  const held = useRef('')
+  const storeText = useLiveStreamUiSelectWhen(
+    !frozen,
+    (snap) => liveProcessViewFromSnap(snap).thinkText
+  )
+  if (!frozen) held.current = storeText
+  const text = frozen ? held.current : storeText
   const [open, setOpen] = useState(false)
   const userRef = useRef(false)
+  const wasContentStreamingRef = useRef(contentStreaming)
+  useEffect(() => {
+    if (shouldCollapseProcessOnAnswerStart(contentStreaming, wasContentStreamingRef.current)) {
+      userRef.current = false
+      setOpen(false)
+    }
+    wasContentStreamingRef.current = contentStreaming
+  }, [contentStreaming])
   const expanded = userRef.current ? open : false
   return (
     <ThoughtDisclosure
@@ -407,7 +429,7 @@ const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
         setOpen((current) => !current)
       }}
       label={formatThoughtLabel(asLiveHead)}
-      elapsed={asLiveHead ? elapsed : undefined}
+      elapsed={elapsed}
       streaming={asLiveHead}
     />
   )
@@ -711,7 +733,8 @@ export const TurnFlow = memo(function TurnFlow({
   onOpenSubAgent,
   toolOutputDisplay,
   messageId,
-  onNeedFullMessage
+  onNeedFullMessage,
+  frozen = false
 }: Props) {
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -937,10 +960,18 @@ export const TurnFlow = memo(function TurnFlow({
     lastSwapAtRef.current = nowMs
   }, [isStreaming, rawLiveLabel, rawLiveDetail, stickyLive.label, stickyLive.detail])
 
-  // 完成后若无可视步骤则不渲染；直播时即便还没步骤也要出状态行，避免“停住”
+  // 完成后若无可视步骤且没有 Thought 则不渲染；直播时即便还没步骤也要出状态行，避免“停住”
   // （粘滞 effect 已在上方无条件注册）
-  if (!isStreaming && chronological.length === 0) return null
-  if (!isStreaming && steps.length === 0) return null
+  if (
+    !shouldKeepCompletedLiveTurnFlow({
+      isStreaming,
+      chronologicalCount: chronological.length,
+      visibleStepCount: steps.length,
+      hasThoughtBody
+    })
+  ) {
+    return null
+  }
 
   const displayLiveLabel = isStreaming ? stickyLive.label : WORKING_LABEL
   const displayLiveDetail = isStreaming ? stickyLive.detail : undefined
@@ -981,7 +1012,17 @@ export const TurnFlow = memo(function TurnFlow({
       !showWorkedChip &&
       (!contentStreaming || listSteps.length > 0 || approvalWaiting)
   )
-  const showThought = Boolean(hasThoughtBody && isStreaming)
+  const showThought = shouldShowLiveThought({ hasThoughtBody })
+  const thoughtElapsed = thoughtAsLiveHead
+    ? liveClock
+    : showThought && !isStreaming
+      ? formatElapsedClock(
+          processElapsedSeconds({
+            startedAt: workedStartedAt,
+            endedAt: processBounds.endedAt
+          })
+        )
+      : undefined
 
   return (
     <div
@@ -999,7 +1040,12 @@ export const TurnFlow = memo(function TurnFlow({
     >
       {showThought ? (
         liveThought ? (
-          <LiveThoughtFromStore asLiveHead={thoughtAsLiveHead} elapsed={liveClock} />
+          <LiveThoughtFromStore
+            asLiveHead={thoughtAsLiveHead}
+            elapsed={thoughtElapsed}
+            frozen={frozen}
+            contentStreaming={contentStreaming}
+          />
         ) : (
           <ThoughtDisclosure
             text={rawThinkText}
@@ -1009,7 +1055,7 @@ export const TurnFlow = memo(function TurnFlow({
               setThoughtOpen(!thoughtExpanded)
             }}
             label={formatThoughtLabel(thoughtAsLiveHead)}
-            elapsed={thoughtAsLiveHead ? liveClock : undefined}
+            elapsed={thoughtElapsed}
             streaming={thoughtAsLiveHead}
           />
         )

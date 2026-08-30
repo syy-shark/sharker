@@ -436,6 +436,24 @@ export function shouldCollapseProcessOnAnswerStart(
   return contentStreaming && !wasContentStreaming
 }
 
+/** 收束后同一直播行仍留 Thought，避免 Thinking 整块卸掉把贴底拽矮（对标 Codex Thought）。 */
+export function shouldShowLiveThought(options: { hasThoughtBody: boolean }): boolean {
+  return options.hasThoughtBody
+}
+
+/** 收束后无步骤但还有 Thought 时仍挂 TurnFlow，不整棵 return null。 */
+export function shouldKeepCompletedLiveTurnFlow(options: {
+  isStreaming: boolean
+  chronologicalCount: number
+  visibleStepCount: number
+  hasThoughtBody: boolean
+}): boolean {
+  if (options.isStreaming) return true
+  if (options.hasThoughtBody) return true
+  if (options.chronologicalCount === 0) return false
+  return options.visibleStepCount > 0
+}
+
 /** 过程区起止：最早 startedAt → 最晚 endedAt */
 export function turnProcessBounds(
   segments: Array<{ startedAt?: number; endedAt?: number }>

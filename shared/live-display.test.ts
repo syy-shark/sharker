@@ -61,6 +61,8 @@ import {
   sameRefList,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
+  shouldKeepCompletedLiveTurnFlow,
+  shouldShowLiveThought,
   shouldPromoteSyntheticLiveHead,
   shouldSynthesizePlanning,
   jumpToBottomAffordance,
@@ -719,6 +721,48 @@ describe('worked-for fold', () => {
     expect(shouldCollapseProcessOnAnswerStart(true, false)).toBe(true)
     expect(shouldCollapseProcessOnAnswerStart(true, true)).toBe(false)
     expect(shouldCollapseProcessOnAnswerStart(false, false)).toBe(false)
+    expect(shouldShowLiveThought({ hasThoughtBody: true })).toBe(true)
+    expect(shouldShowLiveThought({ hasThoughtBody: false })).toBe(false)
+    expect(
+      shouldKeepCompletedLiveTurnFlow({
+        isStreaming: false,
+        chronologicalCount: 0,
+        visibleStepCount: 0,
+        hasThoughtBody: true
+      })
+    ).toBe(true)
+    expect(
+      shouldKeepCompletedLiveTurnFlow({
+        isStreaming: false,
+        chronologicalCount: 0,
+        visibleStepCount: 0,
+        hasThoughtBody: false
+      })
+    ).toBe(false)
+    expect(
+      shouldKeepCompletedLiveTurnFlow({
+        isStreaming: false,
+        chronologicalCount: 2,
+        visibleStepCount: 0,
+        hasThoughtBody: false
+      })
+    ).toBe(false)
+    expect(
+      shouldKeepCompletedLiveTurnFlow({
+        isStreaming: true,
+        chronologicalCount: 0,
+        visibleStepCount: 0,
+        hasThoughtBody: false
+      })
+    ).toBe(true)
+    const turnFlowSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/TurnFlow.tsx'),
+      'utf8'
+    )
+    expect(turnFlowSrc).toContain('shouldShowLiveThought')
+    expect(turnFlowSrc).toContain('shouldKeepCompletedLiveTurnFlow')
+    expect(turnFlowSrc).toContain('useLiveStreamUiSelectWhen')
+    expect(turnFlowSrc).not.toContain('hasThoughtBody && isStreaming')
     const tool = { id: 'read' }
     const prev = [tool]
     expect(sameRefList(prev, [tool])).toBe(true)

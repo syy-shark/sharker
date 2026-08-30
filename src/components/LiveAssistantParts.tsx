@@ -2,7 +2,7 @@
  * 直播助手行：过程与回答分开订 store 切片。
  * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow；闭合与尾同一列表，封口按 part.id 留下 StreamingMarkdown（对标 Codex #22860）。
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
- * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，回答 diff 仍 live 以免折 20 行跳；跟进 adopt 后 `frozen` 停订 store，按 adopt 前 part 引用留下树（对标 Codex preserved streamed activity）。
+ * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，Thought 仍留在直播行（不整块卸掉），回答 diff 仍 live 以免折 20 行跳；跟进 adopt 后 `frozen` 停订 store，按 adopt 前 part 引用与旁白原文留下树（对标 Codex preserved streamed activity）。
  * 直播 `StreamingMarkdown` 标 `live`，闭合围栏不跑 Prism；`streaming` 跟 loading，收束后再画 mermaid。
  * @see src/components/ARCH.md
  */
@@ -78,6 +78,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
           toolOutputDisplay={toolOutputDisplay}
           messageId={messageId}
           onNeedFullMessage={onNeedFullMessage}
+          frozen={frozen}
         />
       </div>
     </div>
