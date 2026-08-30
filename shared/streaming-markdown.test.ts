@@ -14,6 +14,8 @@ import {
   continueCheapInlineMarkdown,
   shouldGrowCheapInlineText,
   shouldGrowLastListItemInline,
+  shouldAppendStreamingListItem,
+  paragraphSuffixNewLines,
   shouldGrowStreamingTableLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
@@ -1185,6 +1187,36 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldGrowLastListItemInline({ prevNorm: '- 一项\n', suffix: '- 二项' })).toBe(false)
     expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n\n下一段' })).toBe(false)
     expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n  - 嵌套' })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- 二项', ordered: false })).toBe(true)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项\n', suffix: '- 二项', ordered: false })).toBe(true)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n-', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n  - 嵌套', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n1. 有序', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '1. 一项', suffix: '\n2. 二项', ordered: true })).toBe(true)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n\n- 松散', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- ```ts', ordered: false })).toBe(false)
+    const orderedSrc = '1. 一项\n2. 二项'
+    const orderedFirst = parseCheapProseBlocks(orderedSrc)
+    const orderedNew = continueCheapProseBlocks(orderedSrc, orderedFirst, `${orderedSrc}\n3. 三项`)
+    if (orderedFirst[0]?.type === 'list' && orderedNew[0]?.type === 'list') {
+      expect(orderedNew[0].items[0]).toBe(orderedFirst[0].items[0])
+      expect(orderedNew[0].items[1]).toBe(orderedFirst[0].items[1])
+      expect(orderedNew[0].items).toHaveLength(3)
+      expect(orderedNew[0].items[2]?.nodes).toEqual([{ type: 'text', text: '三项' }])
+    }
+    expect(paragraphSuffixNewLines('第一行\n第二行', '继续')).toBeNull()
+    expect(paragraphSuffixNewLines('第一行\n第二行', '\n第三行')).toEqual(['第三行'])
+    expect(paragraphSuffixNewLines('第一行\n第二行\n', '第三行')).toEqual(['第三行'])
+    expect(paragraphSuffixNewLines('第一行', '续写\n- 新项')).toEqual(['- 新项'])
+    const longPara = Array.from({ length: 20 }, (_, i) => `第${i}行软换行正文`).join('\n')
+    const longFirst = parseCheapProseBlocks(longPara)
+    const longWrap = continueCheapProseBlocks(longPara, longFirst, `${longPara}\n又一行`)
+    expect(longWrap).toHaveLength(1)
+    expect(longWrap[0]?.type).toBe('p')
+    const longThenList = continueCheapProseBlocks(longPara, longFirst, `${longPara}\n- 新项`)
+    expect(longThenList[0]).toBe(longFirst[0])
+    expect(longThenList[1]?.type).toBe('list')
     const wrapSrc = '- 一项\n- 二项'
     const wrapFirst = parseCheapProseBlocks(wrapSrc)
     const wrapNl = continueCheapProseBlocks(wrapSrc, wrapFirst, `${wrapSrc}\n`)
@@ -2344,6 +2376,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
+    expect(mdSrc).toContain('shouldAppendStreamingListItem')
+    expect(mdSrc).toContain('paragraphSuffixNewLines')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")

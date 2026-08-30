@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；新同级列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -3251,6 +3251,36 @@ function growLastListItemInnerBlocks(
 }
 
 /**
+ * 列表后缀只追加一项：换行后的同级新项，不重解析已画项。
+ * 单独换行、未写完标记、嵌套缩进、换列表类型、项内围栏 / 标题仍走整项窗口。
+ */
+export function shouldAppendStreamingListItem(opts: {
+  prevNorm: string
+  suffix: string
+  ordered: boolean
+}): boolean {
+  const { prevNorm, suffix, ordered } = opts
+  if (!suffix || suffix.includes(']:') || suffix.includes('\n\n')) return false
+  let line: string
+  if (suffix.startsWith('\n')) {
+    if (suffix.slice(1).includes('\n')) return false
+    line = suffix.slice(1)
+  } else if (prevNorm.endsWith('\n')) {
+    if (suffix.includes('\n')) return false
+    line = suffix
+  } else {
+    return false
+  }
+  if (!line || isPendingListMarkerLine(line)) return false
+  const firstNl = prevNorm.indexOf('\n')
+  const first = parseListLine(firstNl < 0 ? prevNorm : prevNorm.slice(0, firstNl))
+  if (!first) return false
+  const parsed = parseListLine(line)
+  if (!parsed || parsed.ordered !== ordered || parsed.indent !== first.indent) return false
+  return !lastLineNeedsFullProseParse(parsed.text)
+}
+
+/**
  * 列表后缀只续最后一项行内：同行增长，或换行后续行不另起项 / 块。
  * 新列表项、空行后的兄弟段、嵌套标记仍走整项窗口。
  */
@@ -3304,6 +3334,27 @@ function continueLastListBlock(
           type: 'list',
           ordered: prev.ordered,
           items: [...prev.items.slice(0, -1), grown],
+          loose: prev.loose,
+          start: prev.start
+        }
+      ]
+    }
+  }
+  if (shouldAppendStreamingListItem({ prevNorm, suffix, ordered: prev.ordered }) && prev.items.length) {
+    const line = suffix.startsWith('\n') ? suffix.slice(1) : suffix
+    const parsed = parseListLine(line)
+    if (parsed) {
+      return [
+        {
+          type: 'list',
+          ordered: prev.ordered,
+          items: [
+            ...prev.items,
+            {
+              nodes: parseCheapInlineMarkdown(parsed.text, defs),
+              contentIndent: parsed.contentIndent
+            }
+          ],
           loose: prev.loose,
           start: prev.start
         }
@@ -3558,6 +3609,29 @@ function continueParagraphPrefix(
   return nodes === prev.nodes ? [prev] : [{ type: 'p', nodes }]
 }
 
+/**
+ * 段落软换行后只扫后缀新行，不 split 已画正文（对标 Codex #22860）。
+ * 无新行时返回 null，交给同行增长。
+ */
+export function paragraphSuffixNewLines(prevNorm: string, suffix: string): string[] | null {
+  if (!suffix) return null
+  if (suffix.startsWith('\n')) return suffix.slice(1).split('\n')
+  if (prevNorm.endsWith('\n')) return suffix.split('\n')
+  const nl = suffix.indexOf('\n')
+  if (nl < 0) return null
+  return suffix.slice(nl + 1).split('\n')
+}
+
+/** 后缀新行在 nextText 中的起点；与 paragraphSuffixNewLines 对齐 */
+function paragraphSuffixScanStart(prevNorm: string, suffix: string): number | null {
+  if (!suffix) return null
+  if (suffix.startsWith('\n')) return prevNorm.length + 1
+  if (prevNorm.endsWith('\n')) return prevNorm.length
+  const nl = suffix.indexOf('\n')
+  if (nl < 0) return null
+  return prevNorm.length + nl + 1
+}
+
 /** 续段落（含软换行后续写）；闭合后再起列表 / 标题 / 围栏时段落不动（对标 Codex #34045） */
 function continueLastParagraphBlock(
   prev: Extract<CheapProseBlock, { type: 'p' }>,
@@ -3581,18 +3655,22 @@ function continueLastParagraphBlock(
     return siblings.length ? [...para, ...siblings] : para
   }
   if (suffix.includes('\n') || prevNorm.endsWith('\n')) {
-    const lines = nextText.split('\n')
-    for (let i = 1; i < lines.length; i++) {
-      if (lineStartsSiblingAfterParagraph(lines[i]!)) {
-        const paraText = lines.slice(0, i).join('\n')
-        const after = lines.slice(i).join('\n')
-        const para = continueParagraphPrefix(prev, prevNorm, paraText, defs)
-        if (!para) return null
-        const siblings = parseCheapProseBlocks(after, defs)
-        if (after.trim() !== '' && !siblings.length) return null
-        return siblings.length ? [...para, ...siblings] : para
+    const newLines = paragraphSuffixNewLines(prevNorm, suffix)
+    let offset = paragraphSuffixScanStart(prevNorm, suffix)
+    if (newLines && offset != null) {
+      for (const line of newLines) {
+        if (lineStartsSiblingAfterParagraph(line)) {
+          const paraText = nextText.slice(0, offset)
+          const after = nextText.slice(offset)
+          const para = continueParagraphPrefix(prev, prevNorm, paraText, defs)
+          if (!para) return null
+          const siblings = parseCheapProseBlocks(after, defs)
+          if (after.trim() !== '' && !siblings.length) return null
+          return siblings.length ? [...para, ...siblings] : para
+        }
+        if (lineOpensNewCheapBlock(line)) return null
+        offset += line.length + 1
       }
-      if (lineOpensNewCheapBlock(lines[i]!)) return null
     }
   }
   if (!suffix.includes('\n') && !prevNorm.endsWith('\n')) {
