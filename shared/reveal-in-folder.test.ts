@@ -19,7 +19,9 @@ import {
   changeShortcutLabel,
   createNewShortcutLabel,
   ADD_SERVER_LABEL,
+  MCP_COMMAND_LABEL,
   MCP_HTTP_DESCRIPTION,
+  MCP_NAME_LABEL,
   MCP_SERVERS_INTRO,
   MCP_STDIO_DESCRIPTION,
   MCP_SERVERS_LABEL,
@@ -110,6 +112,7 @@ import {
   ADD_NEW_PROJECT_LABEL,
   SETTINGS_LABEL,
   REMOVE_LABEL,
+  SAVE_LABEL,
   PROJECTS_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
@@ -274,6 +277,9 @@ describe('reveal in folder', () => {
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
     expect(ADD_SERVER_LABEL).toBe('Add server')
+    expect(SAVE_LABEL).toBe('Save')
+    expect(MCP_NAME_LABEL).toBe('Name')
+    expect(MCP_COMMAND_LABEL).toBe('Command')
     expect(MCP_SERVERS_INTRO).toMatch(/Select Add server/)
     expect(MCP_SERVERS_INTRO).toMatch(/STDIO or Streamable HTTP/)
     expect(MCP_STDIO_DESCRIPTION).toBe(
@@ -286,6 +292,11 @@ describe('reveal in folder', () => {
     )
     expect(mcpSrc).toContain('MCP_STDIO_DESCRIPTION')
     expect(mcpSrc).toContain('MCP_HTTP_DESCRIPTION')
+    expect(mcpSrc).toContain('MCP_SERVERS_INTRO')
+    expect(mcpSrc).toContain('SAVE_LABEL')
+    expect(mcpSrc).toContain('REMOVE_LABEL')
+    expect(mcpSrc).toContain('MCP_NAME_LABEL')
+    expect(mcpSrc).toContain('MCP_COMMAND_LABEL')
     expect(OPEN_MCP_STATUS_LABEL).toBe('Open MCP status')
     expect(PROFILE_SETTINGS_LABEL).toBe('Profile')
     expect(UNARCHIVE_LABEL).toBe('Unarchive')
@@ -325,6 +336,7 @@ describe('reveal in folder', () => {
     expect(composerSrc).toContain('REMOTE_BRANCH_HINT')
     expect(composerSrc).toContain('RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL')
     expect(composerSrc).toContain('PERMISSIONS_LABEL')
+    expect(composerSrc).toContain('REMOVE_LABEL')
     expect(composerSrc).not.toContain('提示历史')
     expect(composerSrc).not.toContain('aria-label="权限"')
     const settingsSrc = readFileSync(

@@ -14,8 +14,13 @@ import {
 } from '../../../shared/mcp-config'
 import {
   ADD_SERVER_LABEL,
+  MCP_COMMAND_LABEL,
   MCP_HTTP_DESCRIPTION,
-  MCP_STDIO_DESCRIPTION
+  MCP_NAME_LABEL,
+  MCP_SERVERS_INTRO,
+  MCP_STDIO_DESCRIPTION,
+  REMOVE_LABEL,
+  SAVE_LABEL
 } from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
@@ -140,9 +145,8 @@ export function McpSettings({ workspacePath }: Props) {
         <SettingsCard>
           {servers.length === 0 ? (
             <p className="mcp-empty mcp-empty--inset">
-              还没有 Server。下面添加 STDIO 或 Streamable HTTP，保存后再 Restart。配置写在{' '}
-              <code>{configPath || '~/.sharker/mcp.json'}</code>。对话里输入 <code>/mcp</code>{' '}
-              可查看已连接的 Server。
+              {MCP_SERVERS_INTRO}{' '}
+              <code>{configPath || '~/.sharker/mcp.json'}</code>
             </p>
           ) : (
             servers.map((server, index) => {
@@ -170,7 +174,7 @@ export function McpSettings({ workspacePath }: Props) {
                       disabled={busy}
                       onClick={() => void onRemove(server.name)}
                     >
-                      删除
+                      {REMOVE_LABEL}
                     </button>
                   </div>
                 </SettingsRow>
@@ -206,7 +210,7 @@ export function McpSettings({ workspacePath }: Props) {
               ]}
             />
             <label className="settings-field">
-              名称
+              {MCP_NAME_LABEL}
               <input
                 value={draft.name}
                 onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
@@ -217,7 +221,7 @@ export function McpSettings({ workspacePath }: Props) {
             {draft.kind === 'stdio' ? (
               <>
                 <label className="settings-field">
-                  命令
+                  {MCP_COMMAND_LABEL}
                   <input
                     value={draft.command ?? ''}
                     onChange={(e) => setDraft((prev) => ({ ...prev, command: e.target.value }))}
@@ -272,7 +276,7 @@ export function McpSettings({ workspacePath }: Props) {
             {formError ? <p className="test-result err">{formError}</p> : null}
             <div>
               <button type="button" className="btn-secondary" disabled={busy} onClick={() => void onSave()}>
-                保存
+                {SAVE_LABEL}
               </button>
             </div>
           </div>

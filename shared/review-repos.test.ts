@@ -6,8 +6,11 @@ import {
   ALL_REPOS_ID,
   ALL_REPOS_LABEL,
   BRANCH_REVIEW_LABEL,
+  COMMIT_ACTION_LABEL,
   COMMIT_REVIEW_LABEL,
+  CREATE_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
+  PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
@@ -60,12 +63,18 @@ describe('review repos', () => {
     )
     expect(REVIEW_CREATE_ONE_HINT).toMatch(/create one/)
     expect(WRAP_LONG_DIFF_LINES_LABEL).toBe('Wrap long diff lines')
+    expect(COMMIT_ACTION_LABEL).toBe('Commit')
+    expect(PUSH_ACTION_LABEL).toBe('Push')
+    expect(CREATE_A_PULL_REQUEST_LABEL).toBe('Create a pull request')
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
       'utf8'
     )
     expect(panelSrc).toContain('WRAP_LONG_DIFF_LINES_LABEL')
     expect(panelSrc).toContain('UNSTAGE_ALL_LABEL')
+    expect(panelSrc).toContain('COMMIT_ACTION_LABEL')
+    expect(panelSrc).toContain('PUSH_ACTION_LABEL')
+    expect(panelSrc).toContain('CREATE_A_PULL_REQUEST_LABEL')
     expect(panelSrc).not.toContain('换行长 diff')
     expect(panelSrc).not.toContain('全部取消暂存')
   })

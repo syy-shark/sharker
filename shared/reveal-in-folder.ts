@@ -299,6 +299,10 @@ export const WORKTREES_SETTINGS_INTRO =
 export const MCP_SERVERS_LABEL = 'MCP servers'
 /** Official Settings → MCP servers (learn.chatgpt.com/docs/extend/mcp). No OAuth Authenticate. */
 export const ADD_SERVER_LABEL = 'Add server'
+/** Official MCP form: Enter a name / command / Save the server. */
+export const SAVE_LABEL = 'Save'
+export const MCP_NAME_LABEL = 'Name'
+export const MCP_COMMAND_LABEL = 'Command'
 export const MCP_SERVERS_INTRO =
   'Select Add server. Enter a name, choose STDIO or Streamable HTTP, and provide the server’s command or URL. Save the server, then select Restart. In the composer, type /mcp to view connected servers.'
 /** Official MCP transport blurbs (learn.chatgpt.com/docs/extend/mcp). */

@@ -138,6 +138,7 @@ import {
   LOCAL_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
+  REMOVE_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
   REMOTE_BRANCH_HINT,
   RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
@@ -2281,7 +2282,7 @@ export const ComposerDock = memo(
                     setSelectedTexts((prev) => prev.filter((item) => item.id !== sel.id))
                     setSelectedPreviewId((cur) => (cur === sel.id ? null : cur))
                   }}
-                  aria-label={`移除 ${selectedTextTitle(index)}`}
+                  aria-label={`${REMOVE_LABEL} ${selectedTextTitle(index)}`}
                 >
                   ×
                 </button>
@@ -2351,7 +2352,7 @@ export const ComposerDock = memo(
                     setPendingAttachments((prev) => prev.filter((x) => x.id !== a.id))
                     setPastePreviewId((cur) => (cur === a.id ? null : cur))
                   }}
-                  aria-label={`移除 ${a.name}`}
+                  aria-label={`${REMOVE_LABEL} ${a.name}`}
                 >
                   ×
                 </button>

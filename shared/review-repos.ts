@@ -29,6 +29,10 @@ export const REVIEW_CREATE_ONE_HINT =
   "If your project isn't a Git repository yet, the app prompts you to create one."
 /** Official review wrap (learn.chatgpt.com remote / Wrap long diff lines). */
 export const WRAP_LONG_DIFF_LINES_LABEL = 'Wrap long diff lines'
+/** Official local Git controls (learn.chatgpt.com/docs/environments/local-environment). */
+export const COMMIT_ACTION_LABEL = 'Commit'
+export const PUSH_ACTION_LABEL = 'Push'
+export const CREATE_A_PULL_REQUEST_LABEL = 'Create a pull request'
 
 /** 审查最多再探几个附加根（含主根一共 cap） */
 export const MAX_REVIEW_REPOS = 8

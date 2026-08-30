@@ -53,8 +53,11 @@ import {
   ALL_REPOS_ID,
   ALL_REPOS_LABEL,
   BRANCH_REVIEW_LABEL,
+  COMMIT_ACTION_LABEL,
   COMMIT_REVIEW_LABEL,
+  CREATE_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
+  PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
@@ -1326,7 +1329,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__action"
             disabled={acting || stagedCount === 0 || !commitMessage.trim()}
           >
-            提交{stagedCount ? ` ${stagedCount}` : ''}
+            {COMMIT_ACTION_LABEL}
           </button>
           <button
             type="button"
@@ -1334,7 +1337,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             disabled={acting}
             onClick={() => void runPush()}
           >
-            推送
+            {PUSH_ACTION_LABEL}
           </button>
         </form>
       ) : null}
@@ -1360,7 +1363,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__action"
             disabled={acting || !(prTitle.trim() || commitMessage.trim())}
           >
-            创建 PR
+            {CREATE_A_PULL_REQUEST_LABEL}
           </button>
         </form>
       ) : null}
