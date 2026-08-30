@@ -162,6 +162,9 @@ import {
 } from './automation-scheduler'
 import { stopLsp } from '../../tools/services/lsp-client'
 
+/** 直播切片模块初始化会撑满默认 V8 栈；与 `npm test` 的 `--stack-size=16384` 对齐，避免渲染进程导入溢出卡死直播。 */
+app.commandLine.appendSwitch('js-flags', '--stack-size=16384')
+
 let mainWindow: BrowserWindow | null = null
 const threadWindows = new Map<string, BrowserWindow>()
 let settings: AppSettings
