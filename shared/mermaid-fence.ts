@@ -11,12 +11,12 @@ export function isMermaidLang(lang?: string | null): boolean {
   return value === 'mermaid' || value === 'mmd'
 }
 
-/** 直播未写完 `mermaid`：`mer` 起就挂 MermaidBlock，不认 `md` / `mm` */
 /** 直播 token 中即使围栏已闭合也不跑 mermaid.render，收束后再成图以免卡贴底。 */
 export function shouldRenderLiveMermaid(options: { closed: boolean; streaming?: boolean }): boolean {
   return options.closed && !options.streaming
 }
 
+/** 直播未写完 `mermaid`：`mer` 起就挂 MermaidBlock，不认 `md` / `mm` */
 export function isMermaidLangPrefix(lang?: string | null): boolean {
   const value = lang?.trim().toLowerCase().split(/[\s{]/)[0] ?? ''
   if (!value) return false
