@@ -1,7 +1,7 @@
 /**
  * 对话数学：官方已交付的 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX）。
  * 不认 `$...$`（官方 tokenizer 也不认）；非法 TeX 回退原文；`trust: false`。
- * 直播 token 中先画原文，收束后再跑 KaTeX，避免同步着色卡 16ms 热路径。
+ * 直播 token 中先画原文，收束后再跑 KaTeX；预热命中则同一帧着色，避免先闪原文。
  * @see shared/ARCH.md
  */
 import katex from 'katex'
@@ -110,6 +110,26 @@ export function readChatMath(src: string, start: number): ChatMathHit | null {
     return { tex, display: false, fence: 'paren', end: close + 2 }
   }
   return null
+}
+
+/** 公式缓存是否已有这段 TeX（不现场跑 KaTeX）。未写入为 `undefined`。 */
+export function peekChatMathHtml(tex: string, display: boolean): string | null | undefined {
+  const key = `${display ? 'd' : 'i'}\n${tex}`
+  if (!renderCache.has(key)) return undefined
+  return cacheGet(key)
+}
+
+/**
+ * 直播收束后：state 或预热缓存任一有 HTML 就同一帧画，不必先闪原文再等 effect。
+ * 直播 token 中一律原文。
+ */
+export function resolveLiveChatMathHtml(options: {
+  streaming?: boolean
+  html: string | null
+  cached?: string | null
+}): string | null {
+  if (!shouldRenderLiveChatMath({ streaming: options.streaming })) return null
+  return options.html ?? options.cached ?? null
 }
 
 /**

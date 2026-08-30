@@ -1,6 +1,7 @@
 /**
  * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合或直播 token 中不解析。
  * 成图前继续代码尾，避免闭合瞬间卸掉再挂一套，也不在 16ms 热路径跑 mermaid.render。
+ * 收束后若 SVG 缓存已暖，同一帧成图，不必先闪源码再等 effect。
  * @see src/components/ARCH.md
  */
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
@@ -8,6 +9,7 @@ import {
   isMermaidLang,
   loadMermaidApi,
   mermaidSlotHeight,
+  resolveLiveMermaidSvg,
   shouldRenderLiveMermaid,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
@@ -60,9 +62,11 @@ export function MermaidBlock({
   const [svg, setSvg] = useState(() =>
     paint ? (readCachedMermaidSvg(source, theme) ?? '') : ''
   )
+  const cachedSvg = paint ? (readCachedMermaidSvg(source, theme) ?? '') : ''
+  const shownSvg = resolveLiveMermaidSvg({ paint, svg, cached: cachedSvg })
   const [failed, setFailed] = useState(false)
   const fenceLang = isMermaidLang(language) ? language : 'mermaid'
-  const slotHeight = mermaidSlotHeight(source, theme, svg)
+  const slotHeight = mermaidSlotHeight(source, theme, shownSvg)
   const slotHighWater = useRef(slotHeight)
   if (slotHeight > slotHighWater.current) slotHighWater.current = slotHeight
   const reserved = slotHighWater.current
@@ -131,25 +135,25 @@ export function MermaidBlock({
       copyText={source}
       bodyClassName={bodyClassName}
       ariaLabel={ariaLabel ?? `${fenceLang} 代码块`}
-      followTail={!closed && !svg}
+      followTail={!closed && !shownSvg}
     >
       {children}
     </CodeArtifactShell>
   )
 
-  if (!closed || !source.trim() || failed || !svg) {
+  if (!closed || !source.trim() || failed || !shownSvg) {
     return shell(
       placeholder(<ArtifactCodeLines code={source} />),
       undefined,
       failed ? 'mermaid 解析失败' : undefined
     )
   }
-  const aspect = mermaidSvgAspectStyle(svg)
+  const aspect = mermaidSvgAspectStyle(shownSvg)
   return shell(
     <div
       className="mermaid-block"
       style={{ ...aspect, minHeight: reserved }}
-      dangerouslySetInnerHTML={{ __html: svg }}
+      dangerouslySetInnerHTML={{ __html: shownSvg }}
     />,
     'mermaid-block-scroll',
     'mermaid 图'

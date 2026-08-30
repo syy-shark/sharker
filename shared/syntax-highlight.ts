@@ -1,7 +1,7 @@
 /**
  * 闭合代码围栏与文件预览着色（对标 Codex 桌面 highlight.js / #18966）。
  * 未闭合直播围栏不着色，避免每枚 token 重高亮卡顿。
- * 收束后 `schedulePrefetchLiveFenceHighlights` 在 microtask 暖缓存，立刻跟进的下一轮重挂不必当场跑 highlight.js。
+ * 收束后 `schedulePrefetchLiveFenceHighlights` 在 microtask 暖缓存；`hasCachedFenceHighlight` 给直播行同一帧着色，不必先画纯文本。
  * @see shared/ARCH.md
  */
 import hljs from 'highlight.js/lib/common'
@@ -198,6 +198,18 @@ function cacheSet(key: string, value: string[] | null): string[] | null {
     highlightCache.delete(first)
   }
   return value
+}
+
+/** 着色缓存是否已有这段闭合围栏（不现场跑 highlight.js）。 */
+export function hasCachedFenceHighlight(
+  code: string,
+  language?: string | null
+): boolean {
+  const lang = resolveHighlightLanguage(language)
+  if (!lang) return false
+  const source = String(code ?? '')
+  if (!source || source.length > SYNTAX_HIGHLIGHT_MAX_CHARS) return false
+  return highlightCache.has(`${lang}\n${source}`)
 }
 
 /**

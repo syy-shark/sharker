@@ -6,6 +6,7 @@ import {
   isMermaidLang,
   isMermaidLangPrefix,
   shouldRenderLiveMermaid,
+  resolveLiveMermaidSvg,
   mermaidSlotHeight,
   mermaidSvgAspectStyle,
   mermaidSvgCacheKey,
@@ -35,6 +36,16 @@ describe('mermaid-fence', () => {
     expect(shouldRenderLiveMermaid({ closed: true, streaming: false })).toBe(true)
     expect(shouldRenderLiveMermaid({ closed: false, streaming: false })).toBe(false)
     expect(shouldRenderLiveMermaid({ closed: true })).toBe(true)
+    expect(resolveLiveMermaidSvg({ paint: false, svg: '<svg></svg>', cached: '<svg>c</svg>' })).toBe(
+      ''
+    )
+    expect(resolveLiveMermaidSvg({ paint: true, svg: '', cached: '<svg>c</svg>' })).toBe(
+      '<svg>c</svg>'
+    )
+    expect(resolveLiveMermaidSvg({ paint: true, svg: '<svg>s</svg>', cached: '<svg>c</svg>' })).toBe(
+      '<svg>s</svg>'
+    )
+    expect(resolveLiveMermaidSvg({ paint: true, svg: '' })).toBe('')
 
     clearMermaidSvgCache()
     expect(mermaidSvgCacheKey('graph TD\nA-->B\n', 'dark')).toBe('dark\ngraph TD\nA-->B')

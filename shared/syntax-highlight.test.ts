@@ -3,6 +3,7 @@ import {
   SYNTAX_HIGHLIGHT_MAX_CHARS,
   collectClosedHighlightFences,
   fileHighlightLanguage,
+  hasCachedFenceHighlight,
   highlightFenceLines,
   prefetchLiveFenceHighlights,
   resolveHighlightLanguage,
@@ -53,9 +54,12 @@ describe('syntax-highlight', () => {
     ])
     expect(collectClosedHighlightFences('```mermaid\ngraph TD\nA-->B\n```')).toEqual([])
     expect(collectClosedHighlightFences('```demo\n<div></div>\n```')).toEqual([])
-    expect(prefetchLiveFenceHighlights('See\n```ts\nconst x = 1\n```\n')).toBe(1)
-    const painted = highlightFenceLines('const x = 1', 'ts')
-    expect(prefetchLiveFenceHighlights('See\n```ts\nconst x = 1\n```\n')).toBe(1)
-    expect(highlightFenceLines('const x = 1', 'ts')).toBe(painted)
+    expect(hasCachedFenceHighlight('const uniquePrefetch = 1', 'ts')).toBe(false)
+    expect(prefetchLiveFenceHighlights('See\n```ts\nconst uniquePrefetch = 1\n```\n')).toBe(1)
+    expect(hasCachedFenceHighlight('const uniquePrefetch = 1', 'ts')).toBe(true)
+    const painted = highlightFenceLines('const uniquePrefetch = 1', 'ts')
+    expect(prefetchLiveFenceHighlights('See\n```ts\nconst uniquePrefetch = 1\n```\n')).toBe(1)
+    expect(highlightFenceLines('const uniquePrefetch = 1', 'ts')).toBe(painted)
+    expect(hasCachedFenceHighlight('const uniquePrefetch = 1', 'plain')).toBe(false)
   })
 })

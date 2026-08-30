@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { renderChatMathHtml } from './chat-math'
+import { peekChatMathHtml, renderChatMathHtml } from './chat-math'
 import {
   collectClosedLiveChatMathFromAnswer,
   collectClosedLiveMermaidFromAnswer,
   prefetchLiveAnswerPaint
 } from './live-answer-prefetch'
-import { highlightFenceLines } from './syntax-highlight'
+import { hasCachedFenceHighlight, highlightFenceLines } from './syntax-highlight'
 
 describe('live-answer-prefetch', () => {
   it('warms fence and math caches and skips math inside code fences', () => {
@@ -24,6 +24,8 @@ describe('live-answer-prefetch', () => {
       'a+b'
     ])
     expect(prefetchLiveAnswerPaint(md)).toEqual({ fences: 1, math: 2, mermaid: 0 })
+    expect(hasCachedFenceHighlight('const ignore = "\\(x\\)"', 'ts')).toBe(true)
+    expect(peekChatMathHtml('E=mc^2', false)).toBeTruthy()
     const paintedMath = renderChatMathHtml('E=mc^2', false)
     const paintedFence = highlightFenceLines('const ignore = "\\(x\\)"', 'ts')
     expect(prefetchLiveAnswerPaint(md)).toEqual({ fences: 1, math: 2, mermaid: 0 })

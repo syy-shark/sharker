@@ -68,6 +68,7 @@ import {
   nextClosedFenceLines,
   shouldAllowLiveFenceHighlight,
   shouldHighlightLiveFence,
+  shouldPaintLiveFenceHighlight,
   shouldMountMessageActions,
   shouldReserveMessageActions,
   LIVE_TAIL_SAFE_PX,
@@ -446,6 +447,16 @@ describe('near-live message rows', () => {
     expect(shouldAllowLiveFenceHighlight({ closed: true, streaming: false })).toBe(true)
     expect(shouldAllowLiveFenceHighlight({ closed: true })).toBe(true)
     expect(shouldAllowLiveFenceHighlight({ closed: false })).toBe(false)
+    expect(
+      shouldPaintLiveFenceHighlight({ live: true, closed: true, streaming: true, cached: true })
+    ).toBe(false)
+    expect(
+      shouldPaintLiveFenceHighlight({ live: true, closed: true, streaming: false, cached: true })
+    ).toBe(true)
+    expect(
+      shouldPaintLiveFenceHighlight({ live: true, closed: true, streaming: false, cached: false })
+    ).toBe(false)
+    expect(shouldPaintLiveFenceHighlight({ live: false, closed: true, cached: false })).toBe(true)
     expect(shouldMountMessageActions({ showBody: true })).toBe(true)
     expect(shouldMountMessageActions({ showBody: true, isError: true })).toBe(false)
     expect(shouldMountMessageActions({ showBody: false })).toBe(false)

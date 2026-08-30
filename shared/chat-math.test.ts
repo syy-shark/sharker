@@ -4,8 +4,10 @@ import {
   chatMathSource,
   collectClosedChatMath,
   liveChatMathClassName,
+  peekChatMathHtml,
   readChatMath,
   renderChatMathHtml,
+  resolveLiveChatMathHtml,
   shouldRenderLiveChatMath
 } from './chat-math'
 
@@ -44,6 +46,12 @@ describe('chat-math', () => {
     )
     expect(liveChatMathClassName({ display: true })).toBe('chat-math chat-math--display')
     expect(liveChatMathClassName({ raw: true })).toBe('chat-math chat-math--raw')
+    expect(peekChatMathHtml('unique-live-math', false)).toBeUndefined()
+    const cached = renderChatMathHtml('n^2', false)
+    expect(peekChatMathHtml('n^2', false)).toBe(cached)
+    expect(resolveLiveChatMathHtml({ streaming: true, html: cached, cached })).toBeNull()
+    expect(resolveLiveChatMathHtml({ streaming: false, html: null, cached })).toBe(cached)
+    expect(resolveLiveChatMathHtml({ streaming: false, html: null })).toBeNull()
     expect(collectClosedChatMath('If \\(E=mc^2\\) and $$a+b$$.').map((hit) => hit.tex)).toEqual([
       'E=mc^2',
       'a+b'

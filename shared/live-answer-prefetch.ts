@@ -1,6 +1,7 @@
 /**
  * 收束后预热直播回答里的围栏着色、KaTeX 缓存，并开工 mermaid 模块。
- * microtask 排在 done 栈之后、React 重挂历史行之前，立刻跟进的下一轮不必当场跑 highlight.js / katex / import('mermaid')。
+ * microtask 排在 done 栈之后、React 收束帧之前，立刻跟进的下一轮不必当场跑 highlight.js / katex / import('mermaid')；
+ * 同一直播实例命中缓存则收束帧直接着色 / 成图，不必先闪纯文本。
  * @see shared/ARCH.md
  */
 import { collectClosedChatMath, renderChatMathHtml } from './chat-math'

@@ -754,7 +754,7 @@ export function continueLiveFenceLines(
 
 /**
  * 历史气泡闭合后立刻着色。直播 token 中即使已闭合也不着色。
- * 直播收束后同一实例交给 effect 再着色，避免收束帧 / 下一轮重挂一次跑完 Prism。
+ * 直播收束后同一实例优先走 `shouldPaintLiveFenceHighlight` 命中缓存；未命中再交给 effect。
  */
 export function shouldHighlightLiveFence(options: {
   live: boolean
@@ -765,12 +765,27 @@ export function shouldHighlightLiveFence(options: {
   return !options.live
 }
 
-/** 闭合且不在直播 token 中即可着色：历史立刻画，直播收束后由 effect 画。 */
+/** 闭合且不在直播 token 中即可着色：历史立刻画，直播收束后可画。 */
 export function shouldAllowLiveFenceHighlight(options: {
   closed: boolean
   streaming?: boolean
 }): boolean {
   return options.closed && !options.streaming
+}
+
+/**
+ * 收束后若预热已命中缓存，同一帧就着色，不必先画纯文本再等 effect。
+ * 直播 token 中即使缓存有旧围栏也不着色。
+ */
+export function shouldPaintLiveFenceHighlight(options: {
+  live: boolean
+  closed: boolean
+  streaming?: boolean
+  cached?: boolean
+}): boolean {
+  if (!shouldAllowLiveFenceHighlight(options)) return false
+  if (shouldHighlightLiveFence(options)) return true
+  return Boolean(options.cached)
 }
 
 /** 已完成围栏行：对象没变就退回 prev，给 memo 子树当稳定 props */

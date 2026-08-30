@@ -1,13 +1,15 @@
 /**
  * 对话公式：闭合 `\(...\)` / `\[...\]` / `$$...$$` 画 KaTeX（对标 Codex 桌面）。
- * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后再在 effect 里着色。
+ * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后命中预热缓存则同一帧着色，否则 effect 再着色。
  * @see src/components/ARCH.md
  */
 import { memo, useContext, useEffect, useState } from 'react'
 import {
   chatMathSource,
   liveChatMathClassName,
+  peekChatMathHtml,
   renderChatMathHtml,
+  resolveLiveChatMathHtml,
   shouldRenderLiveChatMath,
   type ChatMathFence
 } from '../../shared/chat-math'
@@ -30,6 +32,11 @@ export const ChatMath = memo(function ChatMath({
   const [html, setHtml] = useState<string | null>(() =>
     allowPaint ? renderChatMathHtml(tex, display) : null
   )
+  const painted = resolveLiveChatMathHtml({
+    streaming,
+    html,
+    cached: allowPaint ? peekChatMathHtml(tex, display) : undefined
+  })
 
   useEffect(() => {
     if (!allowPaint) {
@@ -39,7 +46,7 @@ export const ChatMath = memo(function ChatMath({
     setHtml(renderChatMathHtml(tex, display))
   }, [allowPaint, tex, display])
 
-  if (!html) {
+  if (!painted) {
     return (
       <span className={liveChatMathClassName({ display, raw: true })}>
         {chatMathSource(tex, fence)}
@@ -49,7 +56,7 @@ export const ChatMath = memo(function ChatMath({
   return (
     <span
       className={liveChatMathClassName({ display })}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: painted }}
     />
   )
 })
