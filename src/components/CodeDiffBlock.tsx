@@ -24,6 +24,7 @@ import {
 } from '../../shared/line-diff'
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
+import { REVERT_LABEL, STAGE_LABEL, UNSTAGE_LABEL } from '../../shared/review-repos'
 import type { ReviewLineComment } from '../../shared/review-comment'
 import { CodeArtifactShell } from './CodeArtifactBlock'
 import './CodeDiffBlock.css'
@@ -431,7 +432,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
                             disabled={review.acting}
                             onClick={() => review.onHunkAction?.(hunk, 'stage')}
                           >
-                            暂存此块
+                            {STAGE_LABEL}
                           </button>
                         ) : (
                           <button
@@ -440,7 +441,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
                             disabled={review.acting}
                             onClick={() => review.onHunkAction?.(hunk, 'unstage')}
                           >
-                            取消暂存此块
+                            {UNSTAGE_LABEL}
                           </button>
                         )}
                         <button
@@ -453,7 +454,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
                             }
                           }}
                         >
-                          还原此块
+                          {REVERT_LABEL}
                         </button>
                       </div>
                     )}

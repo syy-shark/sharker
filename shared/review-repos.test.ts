@@ -6,8 +6,11 @@ import {
   COMMIT_REVIEW_LABEL,
   LAST_TURN_LABEL,
   REVERT_ALL_LABEL,
+  REVERT_LABEL,
   STAGE_ALL_LABEL,
+  STAGE_LABEL,
   STAGED_LABEL,
+  UNSTAGE_LABEL,
   UNSTAGED_LABEL,
   fileInLastTurnForRepo,
   lastTurnPendingRelPath,
@@ -41,6 +44,9 @@ describe('review repos', () => {
     expect(ALL_REPOS_LABEL).toBe('All repos')
     expect(STAGE_ALL_LABEL).toBe('Stage all')
     expect(REVERT_ALL_LABEL).toBe('Revert all')
+    expect(STAGE_LABEL).toBe('Stage')
+    expect(UNSTAGE_LABEL).toBe('Unstage')
+    expect(REVERT_LABEL).toBe('Revert')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

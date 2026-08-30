@@ -16,6 +16,10 @@ export const BRANCH_REVIEW_LABEL = 'Branch'
 export const COMMIT_REVIEW_LABEL = 'Commit'
 export const STAGE_ALL_LABEL = 'Stage all'
 export const REVERT_ALL_LABEL = 'Revert all'
+/** Official review pane per-file / per-hunk verbs (learn.chatgpt.com/docs/code-review). */
+export const STAGE_LABEL = 'Stage'
+export const UNSTAGE_LABEL = 'Unstage'
+export const REVERT_LABEL = 'Revert'
 
 /** 审查最多再探几个附加根（含主根一共 cap） */
 export const MAX_REVIEW_REPOS = 8

@@ -56,8 +56,11 @@ import {
   COMMIT_REVIEW_LABEL,
   LAST_TURN_LABEL,
   REVERT_ALL_LABEL,
+  REVERT_LABEL,
   STAGE_ALL_LABEL,
+  STAGE_LABEL,
   STAGED_LABEL,
+  UNSTAGE_LABEL,
   UNSTAGED_LABEL,
   expandAllReviewDiffKeys,
   mergeReviewExpandedKeys,
@@ -1475,7 +1478,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                           disabled={acting}
                           onClick={() => void runAction('stage', [f.path], gitRoot)}
                         >
-                          暂存
+                          {STAGE_LABEL}
                         </button>
                       ) : null}
                       {isStaged(f) ? (
@@ -1485,7 +1488,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                           disabled={acting}
                           onClick={() => void runAction('unstage', [f.path], gitRoot)}
                         >
-                          取消暂存
+                          {UNSTAGE_LABEL}
                         </button>
                       ) : null}
                       <button
@@ -1494,7 +1497,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                         disabled={acting}
                         onClick={() => void runAction('revert', [f.path], gitRoot)}
                       >
-                        还原
+                        {REVERT_LABEL}
                       </button>
                     </div>
                   ) : null}
