@@ -345,6 +345,18 @@ export function shouldRenderLiveAssistantRow(options: {
 }
 
 /**
+ * 对话柱是否挂直播槽。收束关 loading 后 store 还留着本轮体也要挂，
+ * 否则历史列藏预留行、槽又卸掉，回答会从画面消失（对标 Codex preserved streamed activity）。
+ */
+export function shouldMountLiveAssistantSlot(options: {
+  atLatestWindow: boolean
+  loading: boolean
+  hasLiveBody: boolean
+}): boolean {
+  return options.atLatestWindow && (options.loading || options.hasLiveBody)
+}
+
+/**
  * 历史列真有预留行且直播体已上屏才藏。
  * 开轮预留 id 还不在 messages 里时，首枚 token 不把历史 JSX 整列重建（对标 Codex #22860）。
  * 收束关 loading 后 store 未清也继续藏，让同一直播行留下。

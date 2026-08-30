@@ -5,6 +5,7 @@ import {
   hasLiveAssistantBody,
   shouldHideReservedDuringLive,
   liveRowMessageId,
+  shouldMountLiveAssistantSlot,
   shouldRenderLiveAssistantRow,
   upsertAssistantMessage,
   cancelQueuedPrompt,
@@ -361,6 +362,34 @@ describe('commitAssistantReply persist targeting', () => {
         hasLiveBody: false,
         reservedId: 'a-live',
         hasReservedInHistory: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountLiveAssistantSlot({
+        atLatestWindow: true,
+        loading: false,
+        hasLiveBody: true
+      })
+    ).toBe(true)
+    expect(
+      shouldMountLiveAssistantSlot({
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: false
+      })
+    ).toBe(true)
+    expect(
+      shouldMountLiveAssistantSlot({
+        atLatestWindow: true,
+        loading: false,
+        hasLiveBody: false
+      })
+    ).toBe(false)
+    expect(
+      shouldMountLiveAssistantSlot({
+        atLatestWindow: false,
+        loading: true,
+        hasLiveBody: true
       })
     ).toBe(false)
     const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
