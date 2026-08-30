@@ -705,6 +705,34 @@ import {
   isLiveAskResolvedThinkAnswerDemoAskToolCancelAppendChange,
   isLiveAskResolvedAnswerDemoAskActiveToolCancelAppendChange,
   isLiveAskResolvedAskActiveToolCancelAppendChange,
+  isLiveApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+  isLiveApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+  isLiveApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveStatusApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+  isLiveStatusApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+  isLiveStatusApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveStatusApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveWriteStatApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+  isLiveWriteStatApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveApprovalDeniedThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveApprovalResolvedAnswerDemoAskToolCompressAppendChange,
+  isLiveApprovalResolvedAnswerAskToolCompressAppendChange,
+  isLiveApprovalResolvedErrorAnswerDemoAskCompressAppendChange,
+  isLiveApprovalResolvedErrorAnswerDemoAskCancelAppendChange,
+  isLiveApprovalResolvedThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveApprovalResolvedThinkErrorAnswerDemoAskCompressAppendChange,
+  isLiveAskResolvedAnswerDemoAskToolCompressAppendChange,
+  isLiveAskResolvedAnswerAskToolCompressAppendChange,
+  isLiveAskResolvedThinkErrorAnswerDemoAskCancelAppendChange,
+  isLiveAskResolvedThinkErrorAnswerDemoAskCompressAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -11660,7 +11688,13 @@ describe('live stream ui snapshot', () => {
       ['demo+ask+settled+cancel', [...liveDemo, ...liveAskStart, ...liveNextSettled, { type: 'turn_cancelled' }]],
       ['think+demo+ask+settled+cancel', [{ type: 'think', content: 'Next' }, ...liveDemo, ...liveAskStart, ...liveNextSettled, { type: 'turn_cancelled' }]],
       ['demo+ask+active+cancel', [...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }]],
-      ['ask+active+cancel', [...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }]]
+      ['ask+active+cancel', [...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }]],
+      ['think+error+demo+ask+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['demo+ask+settled+compress', [...liveDemo, ...liveAskStart, ...liveNextSettled, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['token+ask+settled+compress', [{ type: 'token', content: 'Hi' }, ...liveAskStart, ...liveNextSettled, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['error+demo+ask+compress', [{ type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['error+demo+ask+cancel', [{ type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, { type: 'turn_cancelled' }]],
+      ['think+error+demo+ask+cancel', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, { type: 'turn_cancelled' }]]
     ]
     const liveTokenAskHelpers = {
       'allow-settle': {
@@ -11684,6 +11718,7 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveApprovalAllowedSettleThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveApprovalAllowedSettleAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveApprovalAllowedSettleAskActiveToolCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveApprovalAllowedSettleThinkErrorAnswerDemoAskCompressAppendChange,
       },
       'deny-settle': {
         'think+token+ask': isLiveApprovalDeniedThinkAnswerAskAppendChange,
@@ -11706,6 +11741,7 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveApprovalDeniedThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveApprovalDeniedAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveApprovalDeniedAskActiveToolCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveApprovalDeniedThinkErrorAnswerDemoAskCompressAppendChange,
       },
       'nosettle-allow': {
         'think+token+ask': isLiveApprovalResolvedThinkAnswerAskAppendChange,
@@ -11730,6 +11766,12 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveApprovalResolvedThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveApprovalResolvedAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveApprovalResolvedAskActiveToolCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveApprovalResolvedThinkErrorAnswerDemoAskCompressAppendChange,
+        'demo+ask+settled+compress': isLiveApprovalResolvedAnswerDemoAskToolCompressAppendChange,
+        'token+ask+settled+compress': isLiveApprovalResolvedAnswerAskToolCompressAppendChange,
+        'error+demo+ask+compress': isLiveApprovalResolvedErrorAnswerDemoAskCompressAppendChange,
+        'error+demo+ask+cancel': isLiveApprovalResolvedErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+cancel': isLiveApprovalResolvedThinkErrorAnswerDemoAskCancelAppendChange,
       },
       status: {
         'token+ask+cancel': isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -11812,6 +11854,10 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveAskResolvedThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveAskResolvedAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveAskResolvedAskActiveToolCancelAppendChange,
+        'demo+ask+settled+compress': isLiveAskResolvedAnswerDemoAskToolCompressAppendChange,
+        'token+ask+settled+compress': isLiveAskResolvedAnswerAskToolCompressAppendChange,
+        'think+error+demo+ask+cancel': isLiveAskResolvedThinkErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveAskResolvedThinkErrorAnswerDemoAskCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
@@ -11921,6 +11967,10 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveApprovalNeededThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveApprovalNeededAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveApprovalNeededAskActiveToolCancelAppendChange,
+        'error+demo+ask+compress': isLiveApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+        'error+demo+ask+cancel': isLiveApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+cancel': isLiveApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
       },
       'hang-status': {
         'token+ask': isLiveStatusApprovalNeededAnswerAskAppendChange,
@@ -11956,6 +12006,10 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveStatusApprovalNeededThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveStatusApprovalNeededAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveStatusApprovalNeededAskActiveToolCancelAppendChange,
+        'error+demo+ask+compress': isLiveStatusApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+        'error+demo+ask+cancel': isLiveStatusApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+cancel': isLiveStatusApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveStatusApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
       },
       'write-hang': {
         'token+ask': isLiveWriteStatApprovalNeededAnswerAskAppendChange,
@@ -11991,6 +12045,10 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveWriteStatApprovalNeededThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveWriteStatApprovalNeededAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveWriteStatApprovalNeededAskActiveToolCancelAppendChange,
+        'error+demo+ask+compress': isLiveWriteStatApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+        'error+demo+ask+cancel': isLiveWriteStatApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+cancel': isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
       },
       'write-status-hang': {
         'token+ask': isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
@@ -12026,6 +12084,10 @@ describe('live stream ui snapshot', () => {
         'think+demo+ask+settled+cancel': isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolCancelAppendChange,
         'demo+ask+active+cancel': isLiveWriteStatStatusApprovalNeededAnswerDemoAskActiveToolCancelAppendChange,
         'ask+active+cancel': isLiveWriteStatStatusApprovalNeededAskActiveToolCancelAppendChange,
+        'error+demo+ask+compress': isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskCompressAppendChange,
+        'error+demo+ask+cancel': isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+cancel': isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskCancelAppendChange,
+        'think+error+demo+ask+compress': isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
