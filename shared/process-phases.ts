@@ -5805,6 +5805,7 @@ export function reuseProcessPhaseSteps(
   return out
 }
 
+/** Identity-hold helpers for tool-start grow. Flat list so Vite/esbuild does not recurse a 5k-deep `&&` chain. */
 const LIVE_PROCESS_PHASE_GROW_HOLDS: Array<
   (
     prevSegments: readonly TurnSegment[] | null | undefined,
