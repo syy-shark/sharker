@@ -1252,6 +1252,16 @@ describe('splitStreamingMarkdown', () => {
     const longThenList = continueCheapProseBlocks(longPara, longFirst, `${longPara}\n- 新项`)
     expect(longThenList[0]).toBe(longFirst[0])
     expect(longThenList[1]?.type).toBe('list')
+    const longListGrown = continueCheapProseBlocks(
+      `${longPara}\n- 新项`,
+      longThenList,
+      `${longPara}\n- 新项更长`
+    )
+    expect(longListGrown[0]).toBe(longFirst[0])
+    expect(longListGrown[1]?.type).toBe('list')
+    if (longThenList[1]?.type === 'list' && longListGrown[1]?.type === 'list') {
+      expect(longListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '新项更长' }])
+    }
     const wrapSrc = '- 一项\n- 二项'
     const wrapFirst = parseCheapProseBlocks(wrapSrc)
     const wrapNl = continueCheapProseBlocks(wrapSrc, wrapFirst, `${wrapSrc}\n`)
@@ -2440,6 +2450,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
+    expect(mdSrc).toContain('rememberLastCheapBlockStart')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')
     expect(mdSrc).toContain('cheapInlineStableHold')
