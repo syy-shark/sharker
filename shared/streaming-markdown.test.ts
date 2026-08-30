@@ -24,6 +24,7 @@ import {
   shouldGrowStreamingFootnoteLastLine,
   shouldAppendStreamingFootnoteParagraph,
   shouldAppendStreamingFootnoteItem,
+  shouldOpenStreamingFootnotesAfterParagraph,
   collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
@@ -873,6 +874,56 @@ describe('splitStreamingMarkdown', () => {
         manyPrefixAdded[1].items.slice(0, 12).every((item, i) => item === manyPrefixFirst[1].items[i])
       ).toBe(true)
       expect(manyPrefixAdded[1].items).toHaveLength(13)
+    }
+    expect(
+      shouldOpenStreamingFootnotesAfterParagraph({
+        prevNorm: '见注[^1]。',
+        suffix: '\n[^1]: 一',
+        citedIds: new Set(['1'])
+      })
+    ).toBe(true)
+    expect(
+      shouldOpenStreamingFootnotesAfterParagraph({
+        prevNorm: '见注[^1]。',
+        suffix: '\n\n[^1]: 一',
+        citedIds: new Set(['1'])
+      })
+    ).toBe(true)
+    expect(
+      shouldOpenStreamingFootnotesAfterParagraph({
+        prevNorm: '见注[^1]。',
+        suffix: '\n[d]: https://a.test',
+        citedIds: new Set(['1'])
+      })
+    ).toBe(false)
+    expect(
+      shouldOpenStreamingFootnotesAfterParagraph({
+        prevNorm: '普通段落',
+        suffix: '\n[^1]: n',
+        citedIds: new Set()
+      })
+    ).toBe(false)
+    const citePara = parseCheapProseBlocks('见注[^1]。')
+    const openedNotes = continueCheapProseBlocks('见注[^1]。', citePara, '见注[^1]。\n[^1]: 一')
+    expect(openedNotes[0]).toBe(citePara[0])
+    expect(openedNotes.map((b) => b.type)).toEqual(['p', 'footnotes'])
+    const openedBlank = continueCheapProseBlocks('见注[^1]。', citePara, '见注[^1]。\n\n[^1]: 一')
+    expect(openedBlank[0]).toBe(citePara[0])
+    if (openedBlank[1]?.type === 'footnotes') {
+      expect(openedBlank[1].items[0]?.id).toBe('1')
+    }
+    const unusedOpen = continueCheapProseBlocks('普通段落', parseCheapProseBlocks('普通段落'), '普通段落\n[^1]: n')
+    expect(unusedOpen.map((b) => b.type)).toEqual(['p'])
+    const manyCitePara = `见注${manyNoteCitesPrefix}。`
+    const manyCiteFirst = parseCheapProseBlocks(manyCitePara)
+    const manyCiteOpened = continueCheapProseBlocks(
+      manyCitePara,
+      manyCiteFirst,
+      `${manyCitePara}\n[^n0]: keep-0`
+    )
+    expect(manyCiteOpened[0]).toBe(manyCiteFirst[0])
+    if (manyCiteOpened[1]?.type === 'footnotes') {
+      expect(manyCiteOpened[1].items[0]?.id).toBe('n0')
     }
   })
 
@@ -3141,6 +3192,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowStreamingFootnoteLastLine')
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteItem')
+    expect(mdSrc).toContain('shouldOpenStreamingFootnotesAfterParagraph')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
