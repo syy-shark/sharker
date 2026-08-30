@@ -53,7 +53,8 @@ import { isViewImageDump, isViewImageTool, viewedImagePathFromTool } from '../..
 import { parseWebSearchSources } from '../../shared/web-search'
 import { parseUpdatePlanArgs } from '../../shared/update-plan'
 import { isMcpActivityToolName, isMcpJsonDump } from '../../shared/mcp-activity'
-import { isSubAgentInspectTool, subAgentIdFromTool } from '../../shared/subagent'
+import { OPEN_LABEL } from '../../shared/reveal-in-folder'
+import { isSubAgentInspectTool, openSubAgentControlLabel, subAgentIdFromTool } from '../../shared/subagent'
 import {
   clipToolOutput,
   parseToolOutputDisplay,
@@ -568,10 +569,10 @@ const ProcessStepRow = memo(function ProcessStepRow({
               type="button"
               className="turn-flow-step-open"
               onClick={() => onOpenSubAgent?.(subAgentId)}
-              aria-label={subAgentId ? `打开子 Agent ${subAgentId}` : '打开子 Agent 活动'}
+              aria-label={openSubAgentControlLabel(subAgentId)}
             >
               <span className="turn-flow-step-title">{title}</span>
-              <span className="turn-flow-step-open-hint">打开</span>
+              <span className="turn-flow-step-open-hint">{OPEN_LABEL}</span>
             </button>
           ) : (
             <span className="turn-flow-step-title">{title}</span>

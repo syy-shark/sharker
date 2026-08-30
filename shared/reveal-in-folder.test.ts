@@ -388,6 +388,7 @@ describe('reveal in folder', () => {
     )
     expect(askSrc).toContain('USER_INPUT_OTHER_LABEL')
     expect(askSrc).not.toContain('自由作答')
+    expect(askSrc).not.toContain('其他答案')
     expect(FORK_LABEL).toBe('Fork')
     expect(PAUSE_LABEL).toBe('Pause')
     expect(RESUME_LABEL).toBe('Resume')

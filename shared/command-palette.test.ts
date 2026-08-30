@@ -31,6 +31,7 @@ describe('command palette', () => {
       'Close current tab or window'
     )
     expect(ids).toContain('agents')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'agents')?.title).toBe('Open Subagents')
     expect(ids).toContain('activity')
     expect(ids).toContain('personality')
     expect(ids).toContain('plan')

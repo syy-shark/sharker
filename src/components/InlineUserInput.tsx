@@ -158,7 +158,7 @@ export function InlineUserInput({ request, onRespond, responding = false }: Inli
                   <label className="inline-user-input__other-field">
                     <input
                       type="text"
-                      aria-label="其他答案"
+                      aria-label={USER_INPUT_OTHER_LABEL}
                       value={otherValue}
                       placeholder="写下你的选择…"
                       onChange={(event) => typeOther(question.id, event.target.value)}

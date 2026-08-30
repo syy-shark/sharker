@@ -1,11 +1,16 @@
 /**
- * 右侧子 Agent 活动（对标 Codex Activity / Subagents）。
+ * 右侧 Subagents：官方 Active / Done、Stop / Steer（对标 Codex Subagents）。
  * @see ./ARCH.md
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { STEER_LABEL, STOP_LABEL } from '../../../shared/composer-submit'
 import {
   filterSubAgentsForParent,
   sortSubAgents,
+  SUBAGENT_ACTIVE_LABEL,
+  SUBAGENT_DONE_LABEL,
+  SUBAGENTS_LABEL,
+  subAgentStatusLabel,
   subAgentTitle,
   type SubAgentSnapshot
 } from '../../../shared/subagent'
@@ -84,9 +89,9 @@ export function AgentsPanel({ conversationId, focusId = null }: Props) {
   return (
     <div className="agents-panel">
       <div className="agents-panel__head">
-        <span className="agents-panel__title">子 Agent</span>
+        <span className="agents-panel__title">{SUBAGENTS_LABEL}</span>
         <span className="agents-panel__count">
-          {active.length} 进行中 · {done.length} 已结束
+          {active.length} {SUBAGENT_ACTIVE_LABEL} · {done.length} {SUBAGENT_DONE_LABEL}
         </span>
       </div>
       {error ? <p className="agents-panel__error">{error}</p> : null}
@@ -102,7 +107,7 @@ export function AgentsPanel({ conversationId, focusId = null }: Props) {
                 onClick={() => setSelectedId(s.id)}
               >
                 <span className={`agents-panel__status agents-panel__status--${s.status}`}>
-                  {s.status === 'running' ? '进行中' : s.status === 'failed' ? '失败' : '完成'}
+                  {subAgentStatusLabel(s.status)}
                 </span>
                 <span className="agents-panel__item-title">{subAgentTitle(s.prompt)}</span>
               </button>
@@ -121,7 +126,7 @@ export function AgentsPanel({ conversationId, focusId = null }: Props) {
                 disabled={acting}
                 onClick={() => void window.sharker.stopSubAgent(selected.id)}
               >
-                停止
+                {STOP_LABEL}
               </button>
             ) : null}
           </div>
@@ -139,12 +144,12 @@ export function AgentsPanel({ conversationId, focusId = null }: Props) {
               className="agents-panel__steer-input"
               value={steer}
               placeholder="转向：给这个子 Agent 追加指令"
-              aria-label="转向子 Agent"
+              aria-label={STEER_LABEL}
               disabled={acting}
               onChange={(e) => setSteer(e.target.value)}
             />
             <button type="submit" className="agents-panel__action" disabled={acting || !steer.trim()}>
-              转向
+              {STEER_LABEL}
             </button>
           </form>
         </div>

@@ -18,12 +18,19 @@
 .agents-panel__title {
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .agents-panel__count,
 .agents-panel__empty {
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+.agents-panel__count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .agents-panel__empty {
@@ -154,6 +161,7 @@
   background: var(--glass-fill-raised);
   color: var(--text);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .agents-panel__action:disabled {

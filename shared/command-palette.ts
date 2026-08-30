@@ -102,6 +102,7 @@ import {
   UNDO_LAST_APP_ACTION_LABEL,
   WORKTREE_LABEL
 } from './reveal-in-folder'
+import { OPEN_SUBAGENTS_LABEL } from './subagent'
 
 /** 命令面板条目 */
 export interface PaletteCommand {
@@ -440,7 +441,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'agents',
-    title: '打开子 Agent 活动',
+    title: OPEN_SUBAGENTS_LABEL,
     shortcut: '⌘⌥⇧U',
     keywords: 'agents subagent 子代理',
     action: 'toggle_agents'

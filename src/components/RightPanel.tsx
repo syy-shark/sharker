@@ -8,6 +8,7 @@ import { ThreadTerminalBank } from './panel/EmbeddedTerminal'
 import { EmbeddedBrowser, type BrowserMenuCommand } from './panel/EmbeddedBrowser'
 import { ChangesPanel } from './panel/ChangesPanel'
 import { AgentsPanel } from './panel/AgentsPanel'
+import { SUBAGENTS_LABEL } from '../../shared/subagent'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 import {
@@ -377,7 +378,7 @@ export const RightPanel = memo(function RightPanel({
               ['changes', '变更'],
               ['terminal', '终端'],
               ['browser', '浏览器'],
-              ['agents', '活动']
+              ['agents', SUBAGENTS_LABEL]
             ] as const
           ).map(([id, label]) => (
             <button

@@ -13,6 +13,7 @@ import {
   TOGGLE_REVIEW_PANEL_LABEL,
   TOGGLE_TERMINAL_LABEL
 } from './reveal-in-folder'
+import { OPEN_SUBAGENTS_LABEL } from './subagent'
 
 /** Official IDE / desktop slash copy (learn.chatgpt.com/docs/reference/slash-commands). */
 export const SLASH_PLAN_DESCRIPTION = 'Toggle plan mode for multi-step planning.'
@@ -175,7 +176,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'agent',
-    description: '打开子 Agent 活动',
+    description: OPEN_SUBAGENTS_LABEL,
     scope: 'ui',
     action: 'toggle_agents',
     category: 'panel'
@@ -441,14 +442,14 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'agents',
-    description: '打开子 Agent 活动',
+    description: OPEN_SUBAGENTS_LABEL,
     scope: 'ui',
     action: 'toggle_agents',
     category: 'panel'
   },
   {
     name: 'subagents',
-    description: '打开子 Agent 活动（/agents 别名）',
+    description: OPEN_SUBAGENTS_LABEL,
     scope: 'ui',
     action: 'toggle_agents',
     category: 'panel'

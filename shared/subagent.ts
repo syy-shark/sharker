@@ -6,6 +6,23 @@
 
 export type SubAgentStatus = 'running' | 'done' | 'failed'
 
+/** Official Subagents panel (learn.chatgpt.com/docs/agent-configuration/subagents). */
+export const SUBAGENT_LABEL = 'Subagent'
+export const SUBAGENTS_LABEL = 'Subagents'
+export const OPEN_SUBAGENTS_LABEL = 'Open Subagents'
+export const SUBAGENT_ACTIVE_LABEL = 'Active'
+export const SUBAGENT_DONE_LABEL = 'Done'
+
+export function openSubAgentControlLabel(id?: string | null): string {
+  return id ? `Open ${id}` : OPEN_SUBAGENTS_LABEL
+}
+
+export function subAgentStatusLabel(status: SubAgentStatus): string {
+  if (status === 'running') return SUBAGENT_ACTIVE_LABEL
+  if (status === 'done') return SUBAGENT_DONE_LABEL
+  return '失败'
+}
+
 /** 给 UI / IPC 的轻量快照，不含完整 messages */
 export interface SubAgentSnapshot {
   id: string
@@ -41,7 +58,7 @@ export function sortSubAgents(items: SubAgentSnapshot[]): SubAgentSnapshot[] {
 /** 面板标题：截一段任务说明 */
 export function subAgentTitle(prompt: string): string {
   const text = String(prompt || '').replace(/\s+/g, ' ').trim()
-  if (!text) return '子 Agent'
+  if (!text) return SUBAGENT_LABEL
   return text.length > 42 ? `${text.slice(0, 42)}…` : text
 }
 

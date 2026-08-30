@@ -3,7 +3,8 @@
  * @see src/ARCH.md
  */
 import type { ProcessStep } from '../../shared/process-steps'
-import { isSubAgentInspectTool } from '../../shared/subagent'
+import { OPEN_LABEL } from '../../shared/reveal-in-folder'
+import { isSubAgentInspectTool, openSubAgentControlLabel } from '../../shared/subagent'
 import './ProcessTimeline.css'
 
 /** ProcessTimeline Props：过程步骤列表 */
@@ -83,12 +84,10 @@ export function ProcessTimeline({ steps, onOpenSubAgent }: Props) {
                   type="button"
                   className="process-timeline-open"
                   onClick={() => onOpenSubAgent?.(step.subAgentId ?? null)}
-                  aria-label={
-                    step.subAgentId ? `打开子 Agent ${step.subAgentId}` : '打开子 Agent 活动'
-                  }
+                  aria-label={openSubAgentControlLabel(step.subAgentId)}
                 >
                   <span className="process-timeline-title">{step.title}</span>
-                  <span className="process-timeline-open-hint">打开</span>
+                  <span className="process-timeline-open-hint">{OPEN_LABEL}</span>
                 </button>
               ) : (
                 <span className="process-timeline-title">{step.title}</span>

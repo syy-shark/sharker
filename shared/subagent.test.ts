@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   capSubAgentSnapshot,
@@ -10,6 +13,13 @@ import {
   stampSubAgentIdOnLabel,
   subAgentIdFromTool,
   subAgentTitle,
+  subAgentStatusLabel,
+  openSubAgentControlLabel,
+  OPEN_SUBAGENTS_LABEL,
+  SUBAGENT_ACTIVE_LABEL,
+  SUBAGENT_DONE_LABEL,
+  SUBAGENT_LABEL,
+  SUBAGENTS_LABEL,
   SUBAGENT_PERSIST_INTERRUPTED,
   type SubAgentSnapshot
 } from './subagent'
@@ -45,7 +55,37 @@ describe('subagent snapshots', () => {
 
   it('truncates titles', () => {
     expect(subAgentTitle('  修好滚动  ')).toBe('修好滚动')
+    expect(subAgentTitle('')).toBe(SUBAGENT_LABEL)
     expect(subAgentTitle('x'.repeat(50)).endsWith('…')).toBe(true)
+  })
+
+  it('uses official Subagents panel copy', () => {
+    expect(SUBAGENTS_LABEL).toBe('Subagents')
+    expect(OPEN_SUBAGENTS_LABEL).toBe('Open Subagents')
+    expect(SUBAGENT_ACTIVE_LABEL).toBe('Active')
+    expect(SUBAGENT_DONE_LABEL).toBe('Done')
+    expect(subAgentStatusLabel('running')).toBe('Active')
+    expect(subAgentStatusLabel('done')).toBe('Done')
+    expect(subAgentStatusLabel('failed')).toBe('失败')
+    expect(openSubAgentControlLabel('ab12')).toBe('Open ab12')
+    expect(openSubAgentControlLabel(null)).toBe(OPEN_SUBAGENTS_LABEL)
+    const panelSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/AgentsPanel.tsx'),
+      'utf8'
+    )
+    expect(panelSrc).toContain('SUBAGENTS_LABEL')
+    expect(panelSrc).toContain('SUBAGENT_ACTIVE_LABEL')
+    expect(panelSrc).toContain('STOP_LABEL')
+    expect(panelSrc).toContain('STEER_LABEL')
+    expect(panelSrc).not.toContain('进行中')
+    expect(panelSrc).not.toContain('已结束')
+    const flowSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/TurnFlow.tsx'),
+      'utf8'
+    )
+    expect(flowSrc).toContain('openSubAgentControlLabel')
+    expect(flowSrc).toContain('OPEN_LABEL')
+    expect(flowSrc).not.toContain('打开子 Agent')
   })
 
   it('parses spawn / steer / list ids', () => {
