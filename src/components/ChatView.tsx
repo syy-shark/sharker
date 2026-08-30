@@ -94,6 +94,7 @@ import {
   shouldLockStickOnTranscriptKey,
   transcriptNavIntent,
   TRANSCRIPT_NAV_BLOCK,
+  clearInlineDemoFramePool,
   mergeSeededRowHeights,
   FAR_ROW_INTRINSIC_GUESS,
   nextAboveFoldHeightScrollTop,
@@ -1105,6 +1106,7 @@ export const ChatView = memo(function ChatView({
     setKeepReadingJump(false)
     measuredRowHeightsRef.current = new Map()
     heightFlushPreserveRef.current = null
+    clearInlineDemoFramePool()
     setIntrinsicHeights(new Map())
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])

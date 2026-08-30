@@ -1604,6 +1604,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/InlineDemo.tsx')).toContain('LiveMarkdownLiveContext')
     expect(src('../src/components/InlineDemo.tsx')).toContain('shouldWalkInlineDemoTree({ live:')
     expect(src('../src/components/InlineDemo.tsx')).toContain('resolveInlineDemoSrcDoc')
+    expect(src('../src/components/InlineDemo.tsx')).toContain('adoptInlineDemoFrame')
+    expect(src('../src/components/InlineDemo.tsx')).toContain('inlineDemoStableId')
+    expect(src('../src/components/ChatView.tsx')).toContain('clearInlineDemoFramePool')
     expect(src('../src/components/InlineDemo.tsx')).toContain('inlineDemoThemeCacheKey')
     expect(src('../src/components/LiveAssistantParts.tsx')).toMatch(
       /<InlineDemo[\s\S]{0,240}\blive\b/

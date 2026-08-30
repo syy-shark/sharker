@@ -559,6 +559,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                       key={part.id}
                       html={part.html}
                       caption={part.caption}
+                      instanceId={part.id}
                       streaming={Boolean(isStreaming && part.streaming)}
                     />
                   )

@@ -159,6 +159,15 @@ html.theme-dark .inline-demo {
   padding: 0;
 }
 
+.inline-demo-frame-host {
+  width: 100%;
+  min-height: 0;
+}
+.inline-demo-frame-host .inline-demo-frame {
+  display: block;
+  width: 100%;
+}
+
 .inline-demo-frame--pending {
   visibility: hidden;
 }

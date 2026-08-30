@@ -279,7 +279,7 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
       return <MermaidBlock key={key} code={block.text} />
     }
     if (isInlineDemoLang(block.lang)) {
-      return <InlineDemo key={key} html={block.text} />
+      return <InlineDemo key={key} html={block.text} instanceId={key} />
     }
     return <LiveFenceTail key={key} code={block.text} language={block.lang} />
   }
@@ -350,7 +350,7 @@ function renderLiveFenceSlot(
   closed: boolean
 ) {
   if (isInlineDemoLang(lang)) {
-    return <InlineDemo key={key} html={body} />
+    return <InlineDemo key={key} html={body} instanceId={key} />
   }
   if (isMermaidLangPrefix(lang)) {
     return <MermaidBlock key={key} code={body} closed={closed} language={lang} />

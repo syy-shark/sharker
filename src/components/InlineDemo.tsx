@@ -1,18 +1,22 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。直播实例（含收束后留下的那行）父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切；历史重挂再灌套壳，srcDoc 按 walkTree+主题+HTML 缓存，重挂只换 demoId。
+ * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。直播实例（含收束后留下的那行）父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切；历史重挂再灌套壳，srcDoc 按 walkTree+主题+HTML 缓存；稳定 demoId 复用同一 srcDoc 引用，walkTree iframe 进池，揭示回来不 reload。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
-import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
+  adoptInlineDemoFrame,
+  inlineDemoStableId,
   inlineDemoThemeCacheKey,
   isInlineDemoPaintable,
   liveInlineDemoPaintDelay,
   resolveInlineDemoSrcDoc,
+  retireInlineDemoFrame,
   seedInlineDemoHeight,
   shouldMeasureInlineDemoInParent,
   shouldMountInlineDemoFrame,
+  shouldPoolInlineDemoFrame,
   shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
@@ -28,6 +32,8 @@ export interface InlineDemoProps {
   streaming?: boolean
   /** 直播实例（含收束后留下的那行）：不重写 srcDoc 灌套壳 */
   live?: boolean
+  /** 历史槽稳定 id（围栏 key / part.id），重挂进同一 iframe 池 */
+  instanceId?: string
 }
 
 type ThemeVars = Record<string, string>
@@ -1313,15 +1319,19 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
  * 对话流内无缝演示：默认展开、无外框/标题栏；iframe 高度只升不降。
  * 可选「收起演示」是演示后的一行小字，不包一层卡片。
  */
-export function InlineDemo({ html, caption, streaming, live }: InlineDemoProps) {
+export function InlineDemo({ html, caption, streaming, live, instanceId }: InlineDemoProps) {
   const liveFromTree = useContext(LiveMarkdownLiveContext)
   const streamingFromTree = useContext(LiveMarkdownStreamingContext)
   const isLive = live ?? liveFromTree
   const isStreaming = streaming ?? streamingFromTree
   const walkTree = shouldWalkInlineDemoTree({ live: isLive, streaming: isStreaming })
+  const poolFrame = shouldPoolInlineDemoFrame({ walkTree })
   const reactId = useId()
-  const demoId = useMemo(() => `demo-${reactId.replace(/:/g, '')}`, [reactId])
+  const demoId = poolFrame
+    ? inlineDemoStableId(html, instanceId)
+    : `demo-${reactId.replace(/:/g, '')}`
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState(() => seedInlineDemoHeight(html, isStreaming))
   const [expanded, setExpanded] = useState(true)
   const [theme, setTheme] = useState<ThemeVars>(() => readHostTheme())
@@ -1390,6 +1400,25 @@ export function InlineDemo({ html, caption, streaming, live }: InlineDemoProps) 
         : '',
     [paintHtml, theme, demoId, showFrame, walkTree]
   )
+
+  useLayoutEffect(() => {
+    if (!poolFrame || !showFrame || !srcDoc) return
+    const host = hostRef.current
+    if (!host) return
+    const frame = adoptInlineDemoFrame({
+      id: demoId,
+      srcDoc,
+      title: caption?.trim() || '内联演示',
+      className: `inline-demo-frame${paintable ? '' : ' inline-demo-frame--pending'}`
+    })
+    if (!frame) return
+    frameRef.current = frame
+    if (frame.parentNode !== host) host.appendChild(frame)
+    return () => {
+      retireInlineDemoFrame(demoId, frame, srcDoc)
+      if (frameRef.current === frame) frameRef.current = null
+    }
+  }, [poolFrame, showFrame, srcDoc, demoId, caption, paintable])
 
   useEffect(() => {
     const onMsg = (event: MessageEvent) => {
@@ -1463,6 +1492,10 @@ export function InlineDemo({ html, caption, streaming, live }: InlineDemoProps) 
 
   const label = caption?.trim() || '内联演示'
   const frameH = expanded ? Math.max(height, isStreaming ? 96 : 48) : 0
+  useLayoutEffect(() => {
+    const frame = frameRef.current
+    if (frame) frame.style.height = `${frameH}px`
+  }, [frameH])
 
   return (
     <div
@@ -1481,7 +1514,9 @@ export function InlineDemo({ html, caption, streaming, live }: InlineDemoProps) 
         aria-hidden={!expanded}
         style={expanded && (showFrame || isStreaming) ? { minHeight: frameH } : undefined}
       >
-        {showFrame ? (
+        {showFrame && poolFrame ? (
+          <div ref={hostRef} className="inline-demo-frame-host" style={{ height: frameH }} />
+        ) : showFrame ? (
           <iframe
             ref={frameRef}
             className={`inline-demo-frame${paintable ? '' : ' inline-demo-frame--pending'}`}

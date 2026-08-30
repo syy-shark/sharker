@@ -41,6 +41,11 @@ import {
   readCachedInlineDemoSrcDoc,
   writeCachedInlineDemoSrcDoc,
   clearInlineDemoSrcDocCache,
+  clearInlineDemoFramePool,
+  inlineDemoStableId,
+  INLINE_DEMO_FRAME_POOL_LIMIT,
+  shouldPoolInlineDemoFrame,
+  shouldReusePooledInlineDemoFrame,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
@@ -342,6 +347,42 @@ describe('inline demo paintability', () => {
     })
     expect(second).toBe(`<html data-id="demo-b">${html}</html>`)
     expect(builds).toBe(1)
+    const remount = resolveInlineDemoSrcDoc({
+      html,
+      walkTree: true,
+      themeKey: 'dark',
+      demoId: 'demo-a',
+      build
+    })
+    expect(remount).toBe(first)
+    expect(builds).toBe(1)
+    expect(inlineDemoStableId(html, 'live-fence-0')).toBe(inlineDemoStableId(html, 'live-fence-0'))
+    expect(inlineDemoStableId(html, 'live-fence-0')).not.toBe(inlineDemoStableId(html, 'live-fence-1'))
+    expect(shouldPoolInlineDemoFrame({ walkTree: true })).toBe(true)
+    expect(shouldPoolInlineDemoFrame({ walkTree: false })).toBe(false)
+    expect(
+      shouldReusePooledInlineDemoFrame({
+        walkTree: true,
+        srcDoc: first,
+        pooledSrcDoc: first
+      })
+    ).toBe(true)
+    expect(
+      shouldReusePooledInlineDemoFrame({
+        walkTree: true,
+        srcDoc: first,
+        pooledSrcDoc: second
+      })
+    ).toBe(false)
+    expect(
+      shouldReusePooledInlineDemoFrame({
+        walkTree: false,
+        srcDoc: first,
+        pooledSrcDoc: first
+      })
+    ).toBe(false)
+    expect(INLINE_DEMO_FRAME_POOL_LIMIT).toBe(8)
+    clearInlineDemoFramePool()
     expect(
       readCachedInlineDemoSrcDoc(inlineDemoSrcDocCacheKey({ html, walkTree: true, themeKey: 'dark' }))
     ).toBe(`<html data-id="${INLINE_DEMO_SRCDOC_ID_PLACEHOLDER}">${html}</html>`)
@@ -544,6 +585,7 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
     expect(chatView).toContain('shouldFlushRowIntrinsicHeight')
+    expect(chatView).toContain('clearInlineDemoFramePool')
     expect(chatView).toContain('nextAboveFoldHeightScrollTop')
     expect(chatView).toContain('FAR_ROW_INTRINSIC_GUESS')
     expect(chatView).toContain('requestAnimationFrame(flush)')

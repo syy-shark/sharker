@@ -207,11 +207,44 @@ export function shouldCacheInlineDemoSrcDoc(options: { walkTree: boolean }): boo
   return options.walkTree
 }
 
-/** 历史 srcDoc 用占位 id 入缓存，重挂换 `useId()` 后只替换占位，不重跑 `buildSrcDoc`。 */
+/** 历史 srcDoc 用占位 id 入缓存，重挂换稳定 id 后只替换占位，不重跑 `buildSrcDoc`。 */
 export const INLINE_DEMO_SRCDOC_ID_PLACEHOLDER = '__SHARKER_DEMO_ID__'
 
 const INLINE_DEMO_SRCDOC_CACHE_LIMIT = 8
+const INLINE_DEMO_APPLIED_SRCDOC_LIMIT = 16
+export const INLINE_DEMO_FRAME_POOL_LIMIT = 8
 const inlineDemoSrcDocCache = new Map<string, string>()
+const inlineDemoAppliedSrcDocCache = new Map<string, string>()
+const inlineDemoFramePool = new Map<string, { frame: HTMLIFrameElement; srcDoc: string }>()
+
+/** 历史重挂用 html + 槽 id 生成稳定 demoId，避免 `useId()` 换串再 apply。 */
+export function inlineDemoStableId(html: string, instanceId = ''): string {
+  const src = `${String(instanceId || '').trim()}\n${String(html || '')}`
+  let hash = 2166136261
+  for (let i = 0; i < src.length; i++) {
+    hash ^= src.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `demo-${(hash >>> 0).toString(16)}-${src.length.toString(16)}`
+}
+
+/** 只有历史 walkTree 才把已加载的 iframe 留在池里。 */
+export function shouldPoolInlineDemoFrame(input: { walkTree?: boolean }): boolean {
+  return Boolean(input.walkTree)
+}
+
+/** 池里的 iframe 只有 srcDoc 完全一样才复用，避免主题/正文变了还留旧页。 */
+export function shouldReusePooledInlineDemoFrame(input: {
+  walkTree?: boolean
+  srcDoc: string
+  pooledSrcDoc?: string
+}): boolean {
+  return (
+    shouldPoolInlineDemoFrame(input) &&
+    Boolean(input.srcDoc) &&
+    input.srcDoc === input.pooledSrcDoc
+  )
+}
 
 /** 主题 token 排序后当缓存键，避免对象字面量顺序换 miss。 */
 export function inlineDemoThemeCacheKey(theme: Record<string, string>): string {
@@ -260,10 +293,102 @@ export function writeCachedInlineDemoSrcDoc(key: string, srcDoc: string): string
 /** 测试与会话切换清掉历史 srcDoc 模板。 */
 export function clearInlineDemoSrcDocCache(): void {
   inlineDemoSrcDocCache.clear()
+  inlineDemoAppliedSrcDocCache.clear()
+}
+
+function readAppliedInlineDemoSrcDoc(key: string): string | undefined {
+  const hit = inlineDemoAppliedSrcDocCache.get(key)
+  if (hit === undefined) return undefined
+  inlineDemoAppliedSrcDocCache.delete(key)
+  inlineDemoAppliedSrcDocCache.set(key, hit)
+  return hit
+}
+
+function writeAppliedInlineDemoSrcDoc(key: string, srcDoc: string): string {
+  if (!srcDoc) return srcDoc
+  inlineDemoAppliedSrcDocCache.delete(key)
+  inlineDemoAppliedSrcDocCache.set(key, srcDoc)
+  while (inlineDemoAppliedSrcDocCache.size > INLINE_DEMO_APPLIED_SRCDOC_LIMIT) {
+    const oldest = inlineDemoAppliedSrcDocCache.keys().next().value
+    if (oldest === undefined) break
+    inlineDemoAppliedSrcDocCache.delete(oldest)
+  }
+  return srcDoc
+}
+
+/** 历史 walkTree iframe 卸下后留在池里，揭示回来不 reload。 */
+export function adoptInlineDemoFrame(input: {
+  id: string
+  srcDoc: string
+  title: string
+  className?: string
+}): HTMLIFrameElement | null {
+  if (typeof document === 'undefined') return null
+  const id = String(input.id || '').trim()
+  const srcDoc = String(input.srcDoc || '')
+  if (!id || !srcDoc) return null
+  const pooled = inlineDemoFramePool.get(id)
+  if (
+    pooled &&
+    shouldReusePooledInlineDemoFrame({
+      walkTree: true,
+      srcDoc,
+      pooledSrcDoc: pooled.srcDoc
+    })
+  ) {
+    inlineDemoFramePool.delete(id)
+    pooled.frame.title = input.title
+    if (input.className) pooled.frame.className = input.className
+    return pooled.frame
+  }
+  if (pooled) {
+    inlineDemoFramePool.delete(id)
+    pooled.frame.remove()
+  }
+  const frame = document.createElement('iframe')
+  frame.setAttribute('sandbox', 'allow-scripts')
+  frame.setAttribute('scrolling', 'no')
+  frame.title = input.title
+  if (input.className) frame.className = input.className
+  frame.srcDoc = srcDoc
+  return frame
+}
+
+export function retireInlineDemoFrame(
+  id: string,
+  frame: HTMLIFrameElement | null,
+  srcDoc: string
+): void {
+  const key = String(id || '').trim()
+  if (!key || !frame || !srcDoc) {
+    frame?.remove()
+    return
+  }
+  if (frame.parentNode) frame.parentNode.removeChild(frame)
+  const stale = inlineDemoFramePool.get(key)
+  if (stale && stale.frame !== frame) stale.frame.remove()
+  inlineDemoFramePool.set(key, { frame, srcDoc })
+  while (inlineDemoFramePool.size > INLINE_DEMO_FRAME_POOL_LIMIT) {
+    const oldest = inlineDemoFramePool.keys().next().value
+    if (oldest === undefined) break
+    const evicted = inlineDemoFramePool.get(oldest)
+    inlineDemoFramePool.delete(oldest)
+    evicted?.frame.remove()
+  }
+}
+
+export function clearInlineDemoFramePool(): void {
+  for (const { frame } of inlineDemoFramePool.values()) frame.remove()
+  inlineDemoFramePool.clear()
+}
+
+export function pooledInlineDemoFrameCount(): number {
+  return inlineDemoFramePool.size
 }
 
 /**
- * 历史重挂命中缓存则只换 demoId；直播 `walkTree` 假时当场 `build(demoId)`，不占缓存。
+ * 历史重挂命中缓存则只换 demoId；同一 demoId 再挂回同一 srcDoc 引用。
+ * 直播 `walkTree` 假时当场 `build(demoId)`，不占缓存。
  * `build` 收到占位 id 时才把套壳 srcDoc 写进缓存。
  */
 export function resolveInlineDemoSrcDoc(options: {
@@ -285,7 +410,13 @@ export function resolveInlineDemoSrcDoc(options: {
   const template =
     cached ??
     writeCachedInlineDemoSrcDoc(key, options.build(INLINE_DEMO_SRCDOC_ID_PLACEHOLDER))
-  return applyInlineDemoSrcDocId(template, options.demoId)
+  const appliedKey = `${key}\n@${options.demoId}`
+  const applied = readAppliedInlineDemoSrcDoc(appliedKey)
+  if (applied) return applied
+  return writeAppliedInlineDemoSrcDoc(
+    appliedKey,
+    applyInlineDemoSrcDocId(template, options.demoId)
+  )
 }
 
 /** 直播 srcDoc 首帧立刻画；大段增长 80ms，其余 200ms，避免每 token 重挂整页脚本 */
