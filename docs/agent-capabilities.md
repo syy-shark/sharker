@@ -27,7 +27,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
 | `/changes` | Toggle review panel（对标官方 Commands） |
-| `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；Settings → General → **代码审查** 可改独立线程，并可指定审查模型（对标 Codex `review_model`，空则当前会话）；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
+| `/review` | 只读评审；空命令先出选择器：标题 **Review**，说明 **Choose Review against a base branch or Review uncommitted changes.**，关闭 **Close**（对标 learn.chatgpt.com/docs/code-review；不发明 Choose review scope）；官方默认当前对话；Settings → General → **代码审查** 可改独立线程，并可指定审查模型（对标 Codex `review_model`，空则当前会话）；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
 | `/personality` | 切换 Pragmatic / Friendly / None（对标 Codex Settings → Personalization；无参数则循环） |
 | `/memories` | 空命令先选本对话 Use memories / Generate memories / Disabled / Inherit（说明用官方 Use /memories to choose whether a chat can use local memories or contribute to future memories.；不改 Settings → Personalization 的 Enable memories）；功能关闭时本对话选择会记下，打开后才 Use / Generate；`on|off|use|inherit` 可直接改本对话 |
 | `/mention` | 打开 `@` 文件选择器 |
