@@ -19,6 +19,7 @@ import {
   paragraphSuffixNewLines,
   quoteSuffixStaysInside,
   shouldGrowStreamingTableLastLine,
+  shouldGrowStreamingIndentCodeLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -1402,6 +1403,50 @@ describe('splitStreamingMarkdown', () => {
     if (indentPre[0]?.type === 'pre' && indentGrown[0]?.type === 'pre') {
       expect(indentGrown[0].text).toBe('const x = 12')
     }
+    expect(shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '2' })).toBe(
+      true
+    )
+    expect(shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\n' })).toBe(
+      false
+    )
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\n    const y' })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({
+        prevNorm: '    const x = 1\n',
+        suffix: '    const y'
+      })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\n# title' })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\nafter' })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\n- item' })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingIndentCodeLastLine({ prevNorm: '    const x = 1', suffix: '\n\n下一段' })
+    ).toBe(false)
+    const indentNl = continueCheapProseBlocks('    const x = 1', indentPre, '    const x = 1\n')
+    expect(indentNl[0]).toBe(indentPre[0])
+    const manyIndent = Array.from({ length: 12 }, (_, i) => `    const x = ${i}`).join('\n')
+    const manyIndentFirst = parseCheapProseBlocks(manyIndent)
+    const manyIndentGrown = continueCheapProseBlocks(manyIndent, manyIndentFirst, `${manyIndent}0`)
+    if (manyIndentFirst[0]?.type === 'pre' && manyIndentGrown[0]?.type === 'pre') {
+      expect(manyIndentGrown[0].text.endsWith('110')).toBe(true)
+      expect(manyIndentGrown[0].text.startsWith('const x = 0\n')).toBe(true)
+    }
+    const manyIndentNext = continueCheapProseBlocks(
+      manyIndent,
+      manyIndentFirst,
+      `${manyIndent}\n    const x = 12`
+    )
+    if (manyIndentFirst[0]?.type === 'pre' && manyIndentNext[0]?.type === 'pre') {
+      expect(manyIndentNext[0].text.endsWith('\nconst x = 12')).toBe(true)
+    }
     const indentThenHeading = continueCheapProseBlocks(
       '    const x = 1',
       indentPre,
@@ -2447,6 +2492,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('quoteSuffixStaysInside')
     expect(mdSrc).toContain('stripQuoteSuffix')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
+    expect(mdSrc).toContain('shouldGrowStreamingIndentCodeLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
