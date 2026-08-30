@@ -45,6 +45,7 @@ import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import {
   lastUserMessageId,
+  SEND_LABEL,
   shouldKeepReadingAfterComposerSubmit,
   shouldStickAfterComposerSubmit,
   type ComposerEnterBehavior
@@ -309,7 +310,7 @@ const UserMessageRow = memo(function UserMessageRow({
                     commitEdit(draft)
                   }}
                 >
-                  发送
+                  {SEND_LABEL}
                 </button>
                 <button
                   type="button"

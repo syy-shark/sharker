@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import { Check, Copy, GitFork, Pencil, RotateCcw } from 'lucide-react'
 import { formatMessageTimestamp } from '../../shared/message-timestamp'
-import { COPY_LABEL, FORK_LABEL } from '../../shared/reveal-in-folder'
+import { COPY_LABEL, EDIT_LABEL, FORK_LABEL } from '../../shared/reveal-in-folder'
 import './MessageActions.css'
 
 /** MessageActions Props：消息正文与 ID */
@@ -90,8 +90,8 @@ export function MessageActions({
         <button
           type="button"
           className="message-actions-btn"
-          title="编辑并重发"
-          aria-label="编辑并重发"
+          title={EDIT_LABEL}
+          aria-label={EDIT_LABEL}
           onClick={onEdit}
         >
           <Pencil size={16} aria-hidden />

@@ -101,6 +101,12 @@ describe('composer submit', () => {
     expect(QUEUE_SAVE_LABEL).toBe('Save')
     expect(QUEUE_DELETE_LABEL).toBe('Delete')
     expect(SEND_LABEL).toBe('Send')
+    const chatViewSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
+      'utf8'
+    )
+    expect(chatViewSrc).toContain('{SEND_LABEL}')
+    expect(chatViewSrc).not.toContain('>发送<')
     const queueSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerQueue.tsx'),
       'utf8'

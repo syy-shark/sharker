@@ -435,6 +435,13 @@ describe('reveal in folder', () => {
     expect(PAUSE_LABEL).toBe('Pause')
     expect(RESUME_LABEL).toBe('Resume')
     expect(EDIT_LABEL).toBe('Edit')
+    const messageActionsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/MessageActions.tsx'),
+      'utf8'
+    )
+    expect(messageActionsSrc).toContain('EDIT_LABEL')
+    expect(messageActionsSrc).not.toContain('title="编辑并重发"')
+    expect(messageActionsSrc).not.toContain('aria-label="编辑并重发"')
     expect(CLEAR_LABEL).toBe('Clear')
     expect(HAND_OFF_LABEL).toBe('Hand off')
     expect(CODEX_ENVIRONMENTS_LABEL).toBe('Codex environments')
