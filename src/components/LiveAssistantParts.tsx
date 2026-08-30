@@ -3,6 +3,7 @@
  * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
  * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，回答 diff 仍 live 以免折 20 行跳（对标 Codex preserved streamed activity）。
+ * 直播 `StreamingMarkdown` 标 `live`，闭合围栏不跑 Prism。
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'
@@ -90,7 +91,7 @@ function renderLiveAnswerPart(part: LiveAnswerView['parts'][number], streaming: 
   if (part.type === 'diff') {
     return <LiveFileDiff key={part.id} diff={part.diff} streaming={streaming} />
   }
-  return <StreamingMarkdown key={part.id} text={part.content} />
+  return <StreamingMarkdown key={part.id} text={part.content} live />
 }
 
 /** 已闭合回答：只在新块封口时重绘。写盘 +/- 即使被正文挤进 closed 也保持 live，避免首挂就折 20 行、内层停跟尾。 */

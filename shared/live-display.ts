@@ -752,6 +752,14 @@ export function continueLiveFenceLines(
   return next.map((line, index) => (index < prev.length && prev[index] === line ? prev[index]! : line))
 }
 
+/**
+ * 直播实例不在围栏闭合时跑语法高亮：Prism 全量着色会卡 16ms 热路径。
+ * 历史气泡（live=false）闭合后再着色。
+ */
+export function shouldHighlightLiveFence(options: { live: boolean; closed: boolean }): boolean {
+  return !options.live && options.closed
+}
+
 /** 已完成围栏行：对象没变就退回 prev，给 memo 子树当稳定 props */
 export function nextClosedFenceLines(
   prev: readonly string[] | null | undefined,

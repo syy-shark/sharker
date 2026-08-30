@@ -66,6 +66,7 @@ import {
   codeArtifactHeadStickyTop,
   continueLiveFenceLines,
   nextClosedFenceLines,
+  shouldHighlightLiveFence,
   shouldMountMessageActions,
   shouldReserveMessageActions,
   LIVE_TAIL_SAFE_PX,
@@ -435,6 +436,10 @@ describe('near-live message rows', () => {
     const closedFirst = nextClosedFenceLines(null, fenceFirst)
     expect(closedFirst).toEqual(['const a = 1'])
     expect(nextClosedFenceLines(closedFirst, fenceGrown)).toBe(closedFirst)
+    expect(shouldHighlightLiveFence({ live: true, closed: true })).toBe(false)
+    expect(shouldHighlightLiveFence({ live: true, closed: false })).toBe(false)
+    expect(shouldHighlightLiveFence({ live: false, closed: true })).toBe(true)
+    expect(shouldHighlightLiveFence({ live: false, closed: false })).toBe(false)
     expect(shouldMountMessageActions({ showBody: true })).toBe(true)
     expect(shouldMountMessageActions({ showBody: true, isError: true })).toBe(false)
     expect(shouldMountMessageActions({ showBody: false })).toBe(false)

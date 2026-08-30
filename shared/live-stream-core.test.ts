@@ -1532,6 +1532,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'renderLiveAnswerPart(part, true)'
     )
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('isStreaming={isStreaming}')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
+      '<StreamingMarkdown key={part.id} text={part.content} live />'
+    )
+    expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
+    expect(src('../src/components/StreamingMarkdown.tsx')).toContain('LiveMarkdownLiveContext.Provider')
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {
@@ -2104,5 +2109,85 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       true
     )
     expect(process.processForFlow.some((segment) => segment.toolName === 'agent_spawn')).toBe(true)
+  })
+
+  it('keeps web_fetch, desktop, delete_path, and mcp_call first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Fetch and patch' }])
+    flush('fetch', [
+      {
+        type: 'tool_start',
+        toolName: 'web_fetch',
+        toolCallId: 'w1',
+        toolArgs: { url: 'https://learn.chatgpt.com/docs/appshots' }
+      },
+      { type: 'tool_done', toolName: 'web_fetch', toolCallId: 'w1', resultSummary: 'Fetched' }
+    ])
+    flush('desktop', [
+      { type: 'tool_start', toolName: 'desktop_screenshot', toolCallId: 'w2' },
+      { type: 'tool_done', toolName: 'desktop_screenshot', toolCallId: 'w2', resultSummary: 'Saved' },
+      {
+        type: 'tool_start',
+        toolName: 'mcp_call_tool',
+        toolCallId: 'w3',
+        toolArgs: { server: 'github', tool: 'search' }
+      },
+      { type: 'tool_done', toolName: 'mcp_call_tool', toolCallId: 'w3' }
+    ])
+    flush('delete', [
+      {
+        type: 'tool_start',
+        toolName: 'delete_path',
+        toolCallId: 'w4',
+        toolArgs: { path: 'tmp/old.ts' }
+      },
+      {
+        type: 'tool_done',
+        toolName: 'delete_path',
+        toolCallId: 'w4',
+        fileDiff: {
+          path: 'tmp/old.ts',
+          lines: [{ kind: 'del', content: 'export const old = 1' }],
+          stats: { added: 0, removed: 1 }
+        }
+      }
+    ])
+    flush('fence-close', [
+      { type: 'token', content: 'Removed.\n```ts\nexport const n = 1' },
+      { type: 'token', content: '\n```' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'diff')).toBe(true)
+    expect(answer.parts.some((part) => part.type === 'text' && part.content.includes('```ts'))).toBe(
+      true
+    )
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'web_fetch')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'desktop_screenshot')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'mcp_call_tool')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'delete_path')).toBe(true)
   })
 })

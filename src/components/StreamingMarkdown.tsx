@@ -4,10 +4,11 @@
  * 已画廉价块 / 列表项 / 表行 / 行内按对象身份 memo；新表行不换已画表头 / 旧行的 cells 引用；defs 与渲染槽没变则复用（对标 Codex #22860）。
  * 闭合 `\\(...\\)` / `$$` / `\\[` 画 ChatMath（对标 Codex 桌面 KaTeX）；未闭合不吃；不认 `$...$`。
  * 增长尾最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用 / 段落、标题后另起的项内表、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、缩进代码后另起的标题、缩进代码 / 脚注续行 / 引用内换行后的列表项、围栏 / 表 / 列表 / 引用 / 段落后的增长段）只重解析增长段；前面的标题 / 段落保持不动（对标 Codex #39061 / #34045）。
+ * 直播实例闭合围栏也不跑 Prism，历史气泡再着色（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
-import { LiveFenceTail } from './CodeArtifactBlock'
+import { LiveFenceTail, LiveMarkdownLiveContext } from './CodeArtifactBlock'
 import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLangPrefix } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
@@ -352,7 +353,13 @@ function renderLiveFenceSlot(
 }
 
 /** 直播正文：围栏顶层槽 + 已收散文闭合槽 + 增长尾 `prose-run-0` */
-export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { text: string }) {
+export const StreamingMarkdown = memo(function StreamingMarkdown({
+  text,
+  live = false
+}: {
+  text: string
+  live?: boolean
+}) {
   const prevRef = useRef({
     text: '',
     split: splitStreamingMarkdown(''),
@@ -376,15 +383,17 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
     return next
   }, [text])
   return (
-    <div className="streaming-markdown">
-      {slots.map((slot) => {
-        if (slot.kind === 'fence') {
-          return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
-        }
-        return (
-          <LiveProseTail key={slot.key} text={slot.text} defs={defsState.defs} closed={slot.closed} />
-        )
-      })}
-    </div>
+    <LiveMarkdownLiveContext.Provider value={live}>
+      <div className="streaming-markdown">
+        {slots.map((slot) => {
+          if (slot.kind === 'fence') {
+            return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
+          }
+          return (
+            <LiveProseTail key={slot.key} text={slot.text} defs={defsState.defs} closed={slot.closed} />
+          )
+        })}
+      </div>
+    </LiveMarkdownLiveContext.Provider>
   )
 })

@@ -5,16 +5,17 @@
  * 直播跟尾只盯滚动壳与一层增高节点，不因 children 每枚 token 重挂
  * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
- * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；未闭合直播围栏保持纯文本。
+ * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播实例闭合也不着色，避免 Prism 卡热路径。
  */
 import { Check, Copy } from 'lucide-react'
-import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   continueLiveFenceLines,
   liveStickNeedsFollow,
   liveStickScrollTop,
   nextClosedFenceLines,
-  shouldFollowArtifactTail
+  shouldFollowArtifactTail,
+  shouldHighlightLiveFence
 } from '../../shared/live-display'
 import { highlightFenceLines } from '../../shared/syntax-highlight'
 import './CodeArtifactBlock.css'
@@ -182,6 +183,9 @@ interface CodeArtifactBlockProps {
   followTail?: boolean
 }
 
+/** 直播 Markdown 树：true 时闭合围栏也不跑 Prism（对标 Codex #22860） */
+export const LiveMarkdownLiveContext = createContext(false)
+
 function normalizeLanguage(language?: string): string {
   const value = language?.trim().toLowerCase()
   if (!value || value === 'plaintext' || value === 'plain') return 'text'
@@ -269,8 +273,10 @@ export function ArtifactCodeLines({
  * 开闭不换外壳，收束后也不再另挂一套头栏。
  */
 export function LiveFenceTail({ code, language, followTail = false }: CodeArtifactBlockProps) {
+  const live = useContext(LiveMarkdownLiveContext)
   const normalizedCode = code.replace(/\n$/, '')
   const label = normalizeLanguage(language)
+  const highlight = shouldHighlightLiveFence({ live, closed: !followTail })
   return (
     <CodeArtifactShell
       className="live-fence-tail"
@@ -279,7 +285,7 @@ export function LiveFenceTail({ code, language, followTail = false }: CodeArtifa
       ariaLabel={`${label} 代码块`}
       followTail={followTail}
     >
-      <ArtifactCodeLines code={normalizedCode} language={language} highlight={!followTail} />
+      <ArtifactCodeLines code={normalizedCode} language={language} highlight={highlight} />
     </CodeArtifactShell>
   )
 }
