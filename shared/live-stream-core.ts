@@ -154,10 +154,20 @@ function extrasHaveOnlyFirstAnswerText(extras: readonly TurnSegment[]): boolean 
   return isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')
 }
 
+/** 同一帧先落过程 extras，再开首枚无 fence 正文。 */
+function extrasHaveProcessThenFirstAnswerText(extras: readonly TurnSegment[]): boolean {
+  if (extras.length < 2) return false
+  const last = extras[extras.length - 1]!
+  if (!isLiveAnswerText(last) || hasStreamingDemoFence(last.content ?? '')) return false
+  const head = extras.slice(0, -1)
+  return head.every((segment) => isLiveCoreAppendExtra(segment))
+}
+
 /**
  * 无表时：过程前缀（思考 / status / 普通工具）后新开普通工具可走 cheap path。
  * 同一帧 `think + tool`、以及首轮第二枚工具也走这条。
  * 过程前缀后首枚无 fence 正文标 `'text'`，过程步复用、回答另开尾。
+ * 同一帧过程 extras + 首枚无 fence 正文也标 `'text'`。
  * 只追加思考 / status 也走核心，不必等表。
  * 闭合散文、或 `present_inline_demo` 仍等表。
  */
@@ -175,6 +185,7 @@ export function liveCoreAppendedProcessToolsSkip(
   const extras = next.slice(prev.length)
   if (!extras.length) return null
   if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
+  if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
   if (extras.every((segment) => isLiveThinking(segment))) return 'think'
   if (extras.every((segment) => isLiveStatus(segment))) return 'status'
   if (!extras.every((segment) => isLiveCoreAppendExtra(segment))) return null
@@ -776,11 +787,12 @@ export function nextLiveProcessView(
   if (prev && processHold?.view === prev) {
     const coreSkip = liveCoreAppendedProcessToolsSkip(processHold.segments, segments)
     if (coreSkip === 'text') {
+      const appended = appendCoreProcessFlow(prev, processHold.segments, segments)
       const tail = segments[segments.length - 1]
       const hasProse = Boolean((tail?.content ?? '').trim())
       const view: LiveProcessView = hasProse
-        ? { ...prev, contentStreaming: true, answerStreaming: true }
-        : prev
+        ? { ...appended, contentStreaming: true, answerStreaming: true }
+        : appended
       const held = sameProcessView(prev, view) ? prev : view
       processHold = { view: held, segments }
       return held

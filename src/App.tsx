@@ -1595,9 +1595,15 @@ export default function App() {
         })
       } else if (skip === 'text') {
         const tail = segments[segments.length - 1]
+        const activeToolSeg = findLastSegment(
+          segments,
+          (s) => s.kind === 'tool' && s.status === 'active'
+        )
         publishLiveStreamUi({
           liveSegments: segments,
-          streaming: tail?.content ?? ''
+          streaming: tail?.content ?? '',
+          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
+          activeTool: activeToolSeg?.toolName ?? null
         })
       } else if (skip === 'tool') {
         const activeToolSeg = findLastSegment(

@@ -116,6 +116,27 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe(true)
   })
 
+  it('skips derivation when a tool and the first answer arrive in the same flush', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const reply = prose('Hi')
+    const moreThink: TurnSegment = { ...think('Next'), id: 'th2' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, nextTool, reply])
+    ).toBe('text')
+    expect(hasLiveProcessPhaseGrowHold([thought, reading], [thought, reading, nextTool, reply])).toBe(
+      true
+    )
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, moreThink, reply])
+    ).toBe('text')
+    const demoFence = prose('```demo\n<div>demo</div>\n```')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, nextTool, demoFence])
+    ).toBeNull()
+  })
+
   it('does not skip a first demo-fence answer after tools without the table', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
@@ -171,6 +192,45 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(next.processForFlow).toBe(first.processForFlow)
     expect(next.contentStreaming).toBe(true)
     expect(next.answerStreaming).toBe(true)
+  })
+
+  it('appends a same-flush tool and opens the answer tail without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const reply = prose('Hi')
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, nextTool, reply]
+    })
+    expect(next.processForFlow[0]).toBe(first.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(nextTool)
+    expect(next.contentStreaming).toBe(true)
+    expect(next.answerStreaming).toBe(true)
+    const steps = deriveChronologicalSteps([thought, reading], { isStreaming: true })
+    const appended = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, nextTool, reply],
+      true
+    )
+    expect(appended).not.toBeNull()
+    expect(appended!.at(-1)?.segment).toBe(nextTool)
+    expect(appended!.some((step) => step.segment === reply)).toBe(false)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, nextTool, reply]
+    })
+    expect(nextAnswer.tail?.content).toBe('Hi')
+    expect(nextAnswer.show).toBe(true)
   })
 
   it('holds processForFlow when a later think segment arrives after tools', () => {
