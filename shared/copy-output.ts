@@ -1,9 +1,43 @@
 /**
  * `/copy`：复制最近一条已完成的助手正文（对标 Codex /copy · Ctrl+O）。
  * 直播中跳过进行中预留行；斜杠确认 / 本机备注不当成模型输出。
- * 有围栏或引用时列出可选目标（对标 Codex /copy picker：整段 / 代码块 / 引用）。
+ * 有围栏或引用时列出可选目标（对标 Codex #39997 /copy picker：
+ * Whole response / `{lang} code` / Code block / Blockquote）。
  * @see shared/ARCH.md
  */
+
+/** Official TUI picker title (openai/codex #39997 Copy from response). */
+export const COPY_FROM_RESPONSE_LABEL = 'Copy from response'
+/** Official first picker row. */
+export const COPY_WHOLE_RESPONSE_LABEL = 'Whole response'
+/** Official unlabeled fence row. */
+export const COPY_CODE_BLOCK_LABEL = 'Code block'
+/** Official quote row. */
+export const COPY_BLOCKQUOTE_LABEL = 'Blockquote'
+/** Official first non-empty line preview (`chars().take(72)`). */
+export const COPY_TARGET_PREVIEW_MAX = 72
+
+/** Official labeled fence: `{language} code`. */
+export function copyCodeTargetLabel(language?: string | null): string {
+  const lang = String(language || '').trim()
+  return lang ? `${lang} code` : COPY_CODE_BLOCK_LABEL
+}
+
+/** Official picker description: first non-empty line, 72 chars. */
+export function copyTargetPreview(text: string, max = COPY_TARGET_PREVIEW_MAX): string {
+  const line = String(text ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .find((row) => row.trim())
+  if (!line) return ''
+  return Array.from(line.trim()).slice(0, max).join('')
+}
+
+/** Official TUI toast after a picker selection. */
+export function copiedToClipboardNote(label: string): string {
+  return `Copied ${String(label || COPY_WHOLE_RESPONSE_LABEL).trim() || COPY_WHOLE_RESPONSE_LABEL} to clipboard`
+}
 
 type CopyableMessage = {
   id?: string
@@ -68,6 +102,8 @@ export type CopyOutputTarget = {
   id: string
   kind: 'full' | 'code' | 'quote'
   label: string
+  /** Official picker description (first non-empty line). */
+  preview: string
   text: string
 }
 
@@ -75,10 +111,6 @@ const FENCE_RE = /^ {0,3}(`{3,}|~{3,})(.*)$/
 
 function normalizeCopyText(text: string): string {
   return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-}
-
-function previewSnippet(text: string, max = 42): string {
-  return text.replace(/\s+/g, ' ').trim().slice(0, max)
 }
 
 function fenceLineMask(lines: string[]): boolean[] {
@@ -183,28 +215,34 @@ function extractBlockquotes(text: string): string[] {
   return quotes
 }
 
-/** 最近一条回复里可复制的整段 / 代码块 / 引用；只有全文时长度为 1 */
+/** 最近一条回复里可复制的 Whole response / code / Blockquote；只有全文时长度为 1 */
 export function listCopyOutputTargets(markdown: string): CopyOutputTarget[] {
   const src = normalizeCopyText(markdown).trim()
   if (!src) return []
   const targets: CopyOutputTarget[] = [
-    { id: 'full', kind: 'full', label: '整段回答', text: src }
+    {
+      id: 'full',
+      kind: 'full',
+      label: COPY_WHOLE_RESPONSE_LABEL,
+      preview: copyTargetPreview(src),
+      text: src
+    }
   ]
   extractFencedBlocks(src).forEach((block, index) => {
-    const snippet = previewSnippet(block.text)
     targets.push({
       id: `code-${index}`,
       kind: 'code',
-      label: block.lang ? `代码 · ${block.lang}` : snippet ? `代码 · ${snippet}` : '代码块',
+      label: copyCodeTargetLabel(block.lang),
+      preview: copyTargetPreview(block.text),
       text: block.text
     })
   })
   extractBlockquotes(src).forEach((quote, index) => {
-    const snippet = previewSnippet(quote)
     targets.push({
       id: `quote-${index}`,
       kind: 'quote',
-      label: snippet ? `引用 · ${snippet}` : '引用',
+      label: COPY_BLOCKQUOTE_LABEL,
+      preview: copyTargetPreview(quote),
       text: quote
     })
   })

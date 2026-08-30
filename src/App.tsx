@@ -251,6 +251,8 @@ import {
 import {
   copySkipLiveMessageId,
   lastCompletedAssistantText,
+  copiedToClipboardNote,
+  COPY_WHOLE_RESPONSE_LABEL,
   listCopyOutputTargets,
   type CopyOutputTarget
 } from '../shared/copy-output'
@@ -6550,7 +6552,7 @@ export default function App() {
           } catch {
             /* ignore */
           }
-          appendLocalNote('已复制上一条助手回复。')
+          appendLocalNote(copiedToClipboardNote(COPY_WHOLE_RESPONSE_LABEL))
           break
         }
         case 'set_reasoning': {
@@ -8386,7 +8388,7 @@ export default function App() {
         /* ignore */
       }
       setCopyPicker(null)
-      appendLocalNote('已复制上一条助手回复。')
+      appendLocalNote(copiedToClipboardNote(target.label))
     },
     [appendLocalNote]
   )

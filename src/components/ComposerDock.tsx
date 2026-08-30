@@ -34,7 +34,7 @@ import {
   type KeymapOverrides
 } from '../../shared/keymap'
 import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
-import type { CopyOutputTarget } from '../../shared/copy-output'
+import { COPY_FROM_RESPONSE_LABEL, type CopyOutputTarget } from '../../shared/copy-output'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
 import { ReasoningGauge } from './ReasoningGauge'
@@ -273,7 +273,7 @@ export interface ComposerDockProps {
   keyboardShortcuts?: KeymapOverrides
   /** 输入框旁上下文用量环（对标 Codex Show context window usage；官方默认关） */
   showContextWindowUsage?: boolean
-  /** `/copy` 有代码/引用时先选；弹在输入框上，不占 composer-stage 高度以免挤直播贴底 */
+  /** `/copy` 有代码/引用时先选（Whole response / `{lang} code` / Blockquote）；弹在输入框上，不占 composer-stage 高度以免挤直播贴底 */
   copyPicker?: CopyOutputTarget[] | null
   onCopyPick?: (target: CopyOutputTarget) => void
   onCopyPickerClose?: () => void
@@ -1469,7 +1469,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="复制内容"
+              aria-label={COPY_FROM_RESPONSE_LABEL}
               aria-activedescendant={
                 copyPicker[copyPickIndex] ? `copy-option-${copyPicker[copyPickIndex]!.id}` : undefined
               }
@@ -1492,10 +1492,8 @@ export const ComposerDock = memo(
                         onCopyPick?.(target)
                       }}
                     >
-                      <span className="slash-menu-name">
-                        {target.kind === 'full' ? '整段' : target.kind === 'code' ? '代码' : '引用'}
-                      </span>
-                      <span className="slash-menu-desc">{target.label}</span>
+                      <span className="slash-menu-name">{target.label}</span>
+                      {target.preview ? <span className="slash-menu-desc">{target.preview}</span> : null}
                     </button>
                   </li>
                 ))}

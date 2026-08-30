@@ -456,7 +456,7 @@ interface Props {
   onAskInSideChat?: (prompt: string) => void
   /** 划选正文进 composer Selection 芯片（对标 Codex selected-text previews） */
   onInsertComposer?: (text: string, source?: SideChatSource, comment?: string) => void
-  /** `/copy` 有代码块或引用时先选再复制（对标 Codex /copy picker） */
+  /** `/copy` 有代码块或引用时先选再复制（对标 Codex #39997 Whole response / `{lang} code` / Blockquote） */
   copyPicker?: CopyOutputTarget[] | null
   onCopyPick?: (target: CopyOutputTarget) => void
   onCopyPickerClose?: () => void
