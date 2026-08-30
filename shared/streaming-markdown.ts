@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；单块引用不再 `lastSingleBlockStart`，多块记下 `lastQuoteInnerStartHold`；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -4097,6 +4097,20 @@ export function quoteSuffixStaysInside(prevNorm: string, suffix: string): boolea
   return true
 }
 
+/** 引用内最后一块起点：同一引用再增长时不再 `lastSingleBlockStart` 全量扫（对标 Codex #22860） */
+const lastQuoteInnerStartHold = new WeakMap<object, number>()
+
+function rememberQuoteInnerStart(quote: object, start: number): void {
+  lastQuoteInnerStartHold.set(quote, start)
+}
+
+function readQuoteInnerStart(quote: object, innerPrev: string): number | null {
+  const held = lastQuoteInnerStartHold.get(quote)
+  if (held == null || held < 0 || held > innerPrev.length) return null
+  if (held === innerPrev.length && held > 0) return null
+  return held
+}
+
 /** 引用里最后一块增长（含换行后新列表项 / 围栏或标题闭合后再起的后续块）：前面的引用子块保持同一引用 */
 function continueLastQuoteBlock(
   prev: Extract<CheapProseBlock, { type: 'quote' }>,
@@ -4116,26 +4130,38 @@ function continueLastQuoteBlock(
     const prevSrc = cheapInlineSourceAll(last.nodes)
     const nodes = continueCheapInlineMarkdown(prevSrc, last.nodes, prevSrc + suffix, defs)
     if (nodes === last.nodes) return [prev]
-    return [{ type: 'quote', blocks: [...prev.blocks.slice(0, -1), { type: 'p', nodes }] }]
+    const nextQuote = { type: 'quote' as const, blocks: [...prev.blocks.slice(0, -1), { type: 'p' as const, nodes }] }
+    rememberQuoteInnerStart(nextQuote, 0)
+    return [nextQuote]
   }
   const innerPrev = stripOuterQuotePrefixes(prevNorm)
   const innerNext = innerPrev + stripQuoteSuffix(suffix)
   quoteStripHold = { raw: nextText, inner: innerNext }
   if (!innerNext.startsWith(innerPrev)) return null
   const closed = prev.blocks.slice(0, -1)
-  let start = consumeClosedSingleLinePrefix(innerPrev, closed)
-  if (start == null || start <= 0) start = lastBlockSourceStart(innerPrev, last)
+  let start = closed.length ? readQuoteInnerStart(prev, innerPrev) : 0
+  if (start == null) {
+    start = consumeClosedSingleLinePrefix(innerPrev, closed)
+    if (start == null || start <= 0) start = lastBlockSourceStart(innerPrev, last)
+  }
   const grown =
     start != null && start > 0
       ? continueLastBlockOfType(last, innerPrev.slice(start), innerNext.slice(start), defs)
       : continueLastBlockOfType(last, innerPrev, innerNext, defs)
+  const stampQuoteInner = (quote: Extract<CheapProseBlock, { type: 'quote' }>, keepStart: boolean) => {
+    if (keepStart && start != null) rememberQuoteInnerStart(quote, start)
+  }
   if (grown && grown.length > 1) {
-    return [{ type: 'quote', blocks: [...closed, ...grown] }]
+    const nextQuote = { type: 'quote' as const, blocks: [...closed, ...grown] }
+    return [nextQuote]
   }
   if (grown?.length === 1 && grown[0] !== last) {
-    return [{ type: 'quote', blocks: [...closed, grown[0]!] }]
+    const nextQuote = { type: 'quote' as const, blocks: [...closed, grown[0]!] }
+    stampQuoteInner(nextQuote, true)
+    return [nextQuote]
   }
   if (grown?.length === 1 && grown[0] === last && innerNext.length === innerPrev.length) {
+    stampQuoteInner(prev, true)
     return [prev]
   }
   const parsed = parseCheapProseBlocks(innerNext, defs)
@@ -4146,7 +4172,13 @@ function continueLastQuoteBlock(
   })
   const same =
     out.length === prev.blocks.length && out.every((block, index) => block === prev.blocks[index])
-  return same ? [prev] : [{ type: 'quote', blocks: out }]
+  if (same) {
+    stampQuoteInner(prev, true)
+    return [prev]
+  }
+  const nextQuote = { type: 'quote' as const, blocks: out }
+  stampQuoteInner(nextQuote, out.length === prev.blocks.length)
+  return [nextQuote]
 }
 
 /**
@@ -4686,12 +4718,13 @@ function lastBlockSourceStart(text: string, last: CheapProseBlock): number | nul
   }
   if (last.type === 'heading') {
     const src = cheapInlineSourceAll(last.nodes)
-    const lines = text.split('\n')
-    let underlineAt = lines.length - 1
-    let underline = lines[underlineAt] ?? ''
-    if (underline.trim() === '' && underlineAt >= 1) {
-      underlineAt -= 1
-      underline = lines[underlineAt] ?? ''
+    let end = text.endsWith('\n') ? text.length - 1 : text.length
+    const lastNl = text.lastIndexOf('\n', end - 1)
+    let underline = lastNl < 0 ? text.slice(0, end) : text.slice(lastNl + 1, end)
+    if (src && underline.trim() === '' && lastNl >= 0) {
+      end = lastNl
+      const prevNl = text.lastIndexOf('\n', end - 1)
+      underline = prevNl < 0 ? text.slice(0, end) : text.slice(prevNl + 1, end)
     }
     if (src && SETEXT_RE.test(underline) && !isPendingSetextUnderline(underline)) {
       const marker = underline.trim()[0]

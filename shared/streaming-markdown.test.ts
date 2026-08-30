@@ -2160,6 +2160,49 @@ describe('splitStreamingMarkdown', () => {
         expect(grownList.items).toHaveLength(13)
       }
     }
+    const manyQuoteGrownAgain = continueCheapProseBlocks(
+      `${manyQuote}\n> - q-12`,
+      manyQuoteGrown,
+      `${manyQuote}\n> - q-12x`
+    )
+    if (manyQuoteGrown[0]?.type === 'quote' && manyQuoteGrownAgain[0]?.type === 'quote') {
+      const grownList = manyQuoteGrown[0].blocks[0]
+      const againList = manyQuoteGrownAgain[0].blocks[0]
+      if (grownList?.type === 'list' && againList?.type === 'list') {
+        expect(againList.items.slice(0, 12).every((item, index) => item === grownList.items[index])).toBe(true)
+        expect(againList.items[12]?.nodes).not.toBe(grownList.items[12]?.nodes)
+      }
+    }
+    const manyQuoteHeading =
+      '> # 标题\n' + Array.from({ length: 8 }, (_, i) => `> - q-${i}`).join('\n')
+    const manyQuoteHeadingFirst = parseCheapProseBlocks(manyQuoteHeading)
+    const manyQuoteHeadingGrown = continueCheapProseBlocks(
+      manyQuoteHeading,
+      manyQuoteHeadingFirst,
+      `${manyQuoteHeading}\n> - q-8`
+    )
+    if (manyQuoteHeadingFirst[0]?.type === 'quote' && manyQuoteHeadingGrown[0]?.type === 'quote') {
+      expect(manyQuoteHeadingGrown[0].blocks[0]).toBe(manyQuoteHeadingFirst[0].blocks[0])
+      const firstList = manyQuoteHeadingFirst[0].blocks[1]
+      const grownList = manyQuoteHeadingGrown[0].blocks[1]
+      if (firstList?.type === 'list' && grownList?.type === 'list') {
+        expect(grownList.items.slice(0, 8).every((item, index) => item === firstList.items[index])).toBe(true)
+        expect(grownList.items).toHaveLength(9)
+      }
+    }
+    const manyQuoteHeadingAgain = continueCheapProseBlocks(
+      `${manyQuoteHeading}\n> - q-8`,
+      manyQuoteHeadingGrown,
+      `${manyQuoteHeading}\n> - q-8x`
+    )
+    if (manyQuoteHeadingGrown[0]?.type === 'quote' && manyQuoteHeadingAgain[0]?.type === 'quote') {
+      expect(manyQuoteHeadingAgain[0].blocks[0]).toBe(manyQuoteHeadingGrown[0].blocks[0])
+      const grownList = manyQuoteHeadingGrown[0].blocks[1]
+      const againList = manyQuoteHeadingAgain[0].blocks[1]
+      if (grownList?.type === 'list' && againList?.type === 'list') {
+        expect(againList.items.slice(0, 8).every((item, index) => item === grownList.items[index])).toBe(true)
+      }
+    }
     const closedFence = '- a\n  ```\n  x\n  ```'
     const closedFenceFirst = parseCheapProseBlocks(closedFence)
     const closedFenceSuffix = continueCheapProseBlocks(
@@ -2823,6 +2866,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowStreamingFencedPreLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingFootnoteLastLine')
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
+    expect(mdSrc).toContain('lastQuoteInnerStartHold')
+    expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')
