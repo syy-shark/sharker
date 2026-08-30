@@ -80,7 +80,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
 - 点 **文件名** 按设置 `file_opener` 打开（`none` 为右侧预览）；**右键** 出打开菜单（打开预览 / 在访达或资源管理器中显示 / 展开或收起 diff，对标 Codex review Open in Finder）；Agent 写盘后文件树静默刷新，正在预览的同一文件在树内重读、不抬整棵 App（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；列表顺序与文件树一致（同层目录在文件前，对标 Codex review diff ordering）；直播写盘时审查列表不换行 key、静默刷新保住滚动（对标 Codex review panel scroll jumps）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；审查聚焦时 **⌘F / ⌘G** 在 diff 内查找（划选预填、跨文件、屏外命中展开并滚入，对标 Codex search in long review files）；顶栏 **Wrap long diff lines** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；nowrap 以免挤审查头；换行时行网格收在对话柱内，不再 `max-content` 撑开）
 - 填写提交说明后 **Commit** 已暂存变更，可选 **Push** 当前分支（对标 Codex commit changes, push a branch）
-- **Create a pull request**：调用本机 `gh pr create`（基线与分支对比相同）；成功后可打开链接
+- **Create a pull request**：调用本机 `gh pr create`（基线与分支对比相同）；成功后 **Open a pull request** 打开链接（对标 Codex worktrees：open a pull request on GitHub）
 - 隔离 worktree 若仍是 detached HEAD，可在审查面板或顶栏 **Create branch here**（对标 Codex Create branch here）；worktree 顶栏另有 **Open**（对标官方 open your IDE to the worktree；设置 `file_opener` 后打开该目录，none 走系统打开）；顶栏、对话右键与项目菜单可 **Open in Finder / Open in Explorer / Open in File Manager** 当前线程项目目录（对标 Codex Open in Finder from thread menus）
 - Composer **Ask for approval / Full access** 在输入框下方切换权限（对标 Codex permissions control beneath the composer）；`/permissions` 与设置 → Permissions 同一字段，不发明 Approve for me / Auto / 命名 profile
 - Composer **Fast** 在模型旁开关最低思考档（对标 Codex `/fast` + composer 控件）；`/fast on|off|status` 同一路径，不发明供应商 Fast service tier
