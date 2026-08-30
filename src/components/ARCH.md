@@ -53,7 +53,7 @@
 | `ProviderBrandIcon.tsx` / `.css` | 模型厂商官方标识图标（DeepSeek / xAI / OpenAI / Kimi / 智谱 / OpenCode） |
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex Share feedback / Include current Codex session logs）；只复制本机诊断，不上传、不发明 Safety check |
 | `ShareDialog.tsx` / `.css` | `/share` 只读快照（对标 Codex Share）：打开时拍一帧，预览脱敏 Markdown；标题 Share，说明用官方 snapshot 原文，按钮 Close / Copy as Markdown，不上传、不发明 Who has access / Copy link |
-| `ReviewScopeDialog.tsx` / `.css` | `/review` 空参数先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；选定前不派发回合 |
+| `ReviewScopeDialog.tsx` / `.css` | `/review` 空参数先选官方 Review uncommitted changes / Review against a base branch / Review a commit；选定前不派发回合 |
 | `MemoryChatDialog.tsx` / `.css` | `/memories` 空参数先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改全局 Enable memories） |
 | `ProjectFoldersDialog.tsx` / `.css` | Edit project：主文件夹 + 附加文件夹；Add folder / Make primary（对标 Codex Edit project）；Git / AGENTS.md / Skill 仍走主路径 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |

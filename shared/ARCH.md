@@ -19,8 +19,8 @@
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `showContextWindowUsage` / `reduceMotion` / `browserDownloadPath` / `browserAskWhereToSave` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
-| `review-repos.ts` | 跨仓库审查：探根、同仓去重、本轮固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
-| `review-repos.test.ts` | 同仓子目录合并、本轮固定 All repos（选中单仓也不改）、附加根路径匹配、本轮预览未落盘路径、多文件 diff 展开键、发现路径展开对应 diff；审查列表按文件树排序 |
+| `review-repos.ts` | 跨仓库审查：探根、同仓去重、Last turn 固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；官方审查范围标签 Unstaged / Staged / Last turn / Branch / Commit / All repos 与 Stage all / Revert all；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
+| `review-repos.test.ts` | 同仓子目录合并、Last turn 固定 All repos（选中单仓也不改）、官方审查范围标签、附加根路径匹配、本轮预览未落盘路径、多文件 diff 展开键、发现路径展开对应 diff；审查列表按文件树排序 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
 | `conversation.ts` | 对话模型、标题推导（空线程回退官方 `New chat`，旧盘 `新对话` 仍当占位再推导）、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、`conversationIdAtIndex` / `recentConversationIdAtIndex` 给 ⌘1–9 Go to chat / ⌘⌥1–6 Open recent chat（对标 Codex 桌面）、侧栏 Chats 区 + Chronological / Running / Waiting / Unread / Scheduled / Pinned 筛选、Activity **Mark all as read**、⌘⌥U 开关 Activity、项目菜单 Archive chats 只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`messagesThroughInclusive` / `canForkThroughMessage`（对标 Codex `thread/fork` `lastTurnId`，直播未完成行拒分叉）、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
@@ -92,7 +92,7 @@
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
-| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；Review delivery 默认 inline（官方当前对话）与 here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
+| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；官方选择器文案 Review uncommitted changes / Review against a base branch / Review a commit；Settings Code review / Review delivery 默认 Inline（Run /review in the current chat when possible）与 Detached（Start a separate review chat），here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -267,7 +267,7 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析 |
 | `personality.ts` | 人格与 system 语气段；用户可见 Choose a personality / Pragmatic / Friendly / None 与 Custom instructions（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` / `commit` 解析、Review delivery 覆盖、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
+| `review-prompt.test.ts` | `/review branch` / `commit` 解析、官方 Review delivery / /review 选择器文案、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 
