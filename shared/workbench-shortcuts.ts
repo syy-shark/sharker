@@ -54,6 +54,7 @@ import {
   RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SEARCH_CHATS_LABEL,
+  FORCE_RELOAD_SKILLS_LABEL,
   NOT_ASSIGNED_BY_DEFAULT_LABEL,
   SEARCH_FILES_LABEL,
   START_DICTATION_LABEL,
@@ -124,6 +125,7 @@ export type WorkbenchShortcutAction =
   | 'redo_app'
   | 'interrupt_turn'
   | 'run_environment_action'
+  | 'force_reload_skills'
 
 /** 默认和弦匹配（不含用户覆盖）。对外请用 `keymap.matchWorkbenchShortcut`。 */
 export function matchDefaultWorkbenchShortcut(event: {
@@ -536,6 +538,12 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'search_chats',
     title: SEARCH_CHATS_LABEL,
+    defaultKeys: NOT_ASSIGNED_BY_DEFAULT_LABEL,
+    defaultChord: ''
+  },
+  {
+    action: 'force_reload_skills',
+    title: FORCE_RELOAD_SKILLS_LABEL,
     defaultKeys: NOT_ASSIGNED_BY_DEFAULT_LABEL,
     defaultChord: ''
   },

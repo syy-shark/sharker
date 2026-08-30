@@ -80,6 +80,7 @@ import {
   VOICE_LABEL,
   OPEN_SETTINGS_LABEL,
   SKILLS_LABEL,
+  FORCE_RELOAD_SKILLS_LABEL,
   SKILLS_INTRO,
   revealInFolderLabel,
   reviewFileRevealPath,
@@ -218,6 +219,7 @@ describe('reveal in folder', () => {
     expect(RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL).toBe('Restore previous composer prompt')
     expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
     expect(SKILLS_LABEL).toBe('Skills')
+    expect(FORCE_RELOAD_SKILLS_LABEL).toBe('Force reload skills')
     expect(SKILLS_INTRO).toMatch(/view and explore skills created across your projects/)
     const skillsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SkillsPage.tsx'),
@@ -225,6 +227,18 @@ describe('reveal in folder', () => {
     )
     expect(skillsSrc).toContain('SKILLS_INTRO')
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
+    expect(skillsSrc).toContain('reloadNonce')
+    const composerSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
+      'utf8'
+    )
+    expect(composerSrc).toContain("'reload_skills'")
+    const appSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'),
+      'utf8'
+    )
+    expect(appSrc).toContain('force_reload_skills')
+    expect(appSrc).toContain('skillReloadNonce')
     expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
     const toolbarSrc = readFileSync(

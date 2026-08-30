@@ -109,6 +109,8 @@ export const NEXT_CHAT_NEEDING_ATTENTION_LABEL = 'Next chat needing attention'
 export const SEARCH_FILES_LABEL = 'Search files'
 /** Official sidebar / `codex://skills` (learn.chatgpt.com/docs/reference/commands). */
 export const SKILLS_LABEL = 'Skills'
+/** Official command palette / Keyboard Shortcuts (packaged desktop `codex.command.forceReloadSkills`). */
+export const FORCE_RELOAD_SKILLS_LABEL = 'Force reload skills'
 /** Official Skills sidebar (learn.chatgpt.com/docs/build-skills). */
 export const SKILLS_INTRO =
   'Open Skills in the sidebar to view and explore skills created across your projects.'

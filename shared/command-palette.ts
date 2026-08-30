@@ -82,6 +82,7 @@ import {
   SEARCH_CHATS_LABEL,
   SEARCH_FILES_LABEL,
   SKILLS_LABEL,
+  FORCE_RELOAD_SKILLS_LABEL,
   CODEX_DOCUMENTATION_LABEL,
   SEND_FEEDBACK_LABEL,
   START_DICTATION_LABEL,
@@ -290,6 +291,12 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: SKILLS_LABEL,
     keywords: 'skills $ 技能 浏览',
     action: 'show_skills'
+  },
+  {
+    id: 'force-reload-skills',
+    title: FORCE_RELOAD_SKILLS_LABEL,
+    keywords: 'force reload skills $ 技能 刷新 重载',
+    action: 'force_reload_skills'
   },
   {
     id: 'stop',

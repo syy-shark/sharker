@@ -1,5 +1,6 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
+ * 命令面板 Force reload skills 走 `reload_skills` 重扫 `$` 列表。
  * 划选进 Selection 芯片，不灌 textarea；发送收成官方 `# Selected text:`（对标 Codex selected-text previews）。
  * 输入框下方有 Ask for approval / Full access 芯片（对标 Codex permissions control beneath the composer）。
  * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
@@ -228,6 +229,7 @@ export type ComposerDockIntent =
   | 'voice'
   | 'project'
   | 'restore_prompt'
+  | 'reload_skills'
   | null
 
 /** 深链覆盖、审查跟进或划选芯片；nonce 变化才写入，不跟直播 token 重绘 */
@@ -885,6 +887,19 @@ export const ComposerDock = memo(
         onComposerIntentHandled?.()
         return
       }
+      if (composerIntent === 'reload_skills') {
+        if (!window.sharker?.listSkills) {
+          setSkillCatalog([])
+          onComposerIntentHandled?.()
+          return
+        }
+        void window.sharker
+          .listSkills(fileSearchRoot)
+          .then((list) => setSkillCatalog(list))
+          .catch(() => setSkillCatalog([]))
+          .finally(() => onComposerIntentHandled?.())
+        return
+      }
       if (composerIntent === 'project') {
         setWorktreeBranchOpen(false)
         setProjectPickerOpen(true)
@@ -925,7 +940,7 @@ export const ComposerDock = memo(
         el.setSelectionRange(1, 1)
         syncTextareaHeight()
       })
-    }, [composerIntent, onComposerIntentHandled])
+    }, [composerIntent, onComposerIntentHandled, fileSearchRoot])
 
     useEffect(() => {
       if (composerIntent !== 'restore_prompt') return

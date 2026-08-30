@@ -61,7 +61,8 @@ const ACTION_SET = new Set<string>([
   'undo_app',
   'redo_app',
   'interrupt_turn',
-  'run_environment_action'
+  'run_environment_action',
+  'force_reload_skills'
 ])
 
 function normalizeKeyName(key: string, code?: string): string {

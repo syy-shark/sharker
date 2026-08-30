@@ -102,6 +102,14 @@ describe('workbench shortcuts', () => {
     ).toBe(true)
     expect(
       SHORTCUT_CATALOG.some(
+        (row) =>
+          row.action === 'force_reload_skills' &&
+          row.title === 'Force reload skills' &&
+          row.defaultKeys === 'Not assigned by default'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
         (row) => row.action === 'thinking_lower' && row.title === 'Decrease reasoning effort'
       )
     ).toBe(true)

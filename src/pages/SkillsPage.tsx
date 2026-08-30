@@ -1,5 +1,6 @@
 /**
  * 侧栏 Skills 页：浏览各项目已安装 Skill（对标 Codex open Skills in the sidebar）。
+ * 命令面板 Force reload skills 用 `reloadNonce` 重扫盘上 SKILL.md。
  * @see src/pages/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -17,10 +18,12 @@ interface Props {
   workspaces: WorkspaceItem[]
   onBack: () => void
   onUseSkill: (name: string) => void
+  /** Force reload skills：盘上改过的 Skill 立刻重扫 */
+  reloadNonce?: number
 }
 
 /** 跨项目浏览 Skill，点选写入 `$name` */
-export function SkillsPage({ workspaces, onBack, onUseSkill }: Props) {
+export function SkillsPage({ workspaces, onBack, onUseSkill, reloadNonce }: Props) {
   const [items, setItems] = useState<SkillExplorerItem[]>([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -59,6 +62,11 @@ export function SkillsPage({ workspaces, onBack, onUseSkill }: Props) {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    if (!reloadNonce) return
+    void refresh()
+  }, [reloadNonce, refresh])
 
   const visible = useMemo(() => filterSkillExplorerItems(items, query), [items, query])
 

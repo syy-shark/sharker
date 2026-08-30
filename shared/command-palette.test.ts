@@ -166,6 +166,10 @@ describe('command palette', () => {
     expect(ids).toContain('reasoning')
     expect(ids).toContain('skills')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'skills')?.title).toBe('Skills')
+    expect(ids).toContain('force-reload-skills')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'force-reload-skills')?.title).toBe(
+      'Force reload skills'
+    )
     expect(ids).toContain('automations')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'automations')?.title).toBe('Scheduled')
     expect(ids).toContain('stop')
@@ -386,6 +390,9 @@ describe('command palette', () => {
     expect(filterPaletteCommands('Toggle sidebar').some((c) => c.id === 'sidebar')).toBe(true)
     expect(filterPaletteCommands('Start dictation').some((c) => c.id === 'dictate')).toBe(true)
     expect(filterPaletteCommands('Skills').some((c) => c.id === 'skills')).toBe(true)
+    expect(
+      filterPaletteCommands('Force reload skills').some((c) => c.id === 'force-reload-skills')
+    ).toBe(true)
     expect(filterPaletteCommands('Scheduled').some((c) => c.id === 'automations')).toBe(true)
     expect(filterPaletteCommands('Go to chat').some((c) => c.id === 'go-to-chat')).toBe(true)
     expect(filterPaletteCommands('Open recent chat').some((c) => c.id === 'open-recent-chat')).toBe(

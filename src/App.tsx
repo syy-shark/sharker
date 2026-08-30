@@ -587,8 +587,10 @@ export default function App() {
     | 'dictate'
     | 'voice'
     | 'project'
+    | 'reload_skills'
     | null
   >(null)
+  const [skillReloadNonce, setSkillReloadNonce] = useState(0)
   const [composerSeed, setComposerSeed] = useState<{
     nonce: number
     text: string
@@ -6642,6 +6644,10 @@ export default function App() {
           })
           break
         }
+        case 'force_reload_skills':
+          setSkillReloadNonce((n) => n + 1)
+          setComposerIntent('reload_skills')
+          break
         case 'show_skills': {
           if (!args.trim()) {
             setPage('skills')
@@ -6799,6 +6805,11 @@ export default function App() {
       if (cmd.action === 'start_voice_chat') {
         setPage('chat')
         setComposerIntent('voice')
+        return
+      }
+      if (cmd.action === 'force_reload_skills') {
+        setSkillReloadNonce((n) => n + 1)
+        setComposerIntent('reload_skills')
         return
       }
       if (cmd.action === 'popout_thread') {
@@ -7178,6 +7189,11 @@ export default function App() {
       if (action === 'search_chats') {
         setPage('chat')
         setShowHistoryPicker(true)
+        return
+      }
+      if (action === 'force_reload_skills') {
+        setSkillReloadNonce((n) => n + 1)
+        setComposerIntent('reload_skills')
         return
       }
       if (action === 'open_project_picker') {
@@ -8914,6 +8930,7 @@ export default function App() {
               <div className="main-drag-strip" aria-hidden />
               <SkillsPage
                 workspaces={settings.workspaces}
+                reloadNonce={skillReloadNonce}
                 onBack={() => setPage('chat')}
                 onUseSkill={(name) => {
                   seedComposer(`$${name} `)
