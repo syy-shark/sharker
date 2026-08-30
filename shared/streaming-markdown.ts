@@ -327,14 +327,51 @@ function sameStreamingRenderSlot(prev: StreamingRenderSlot, next: StreamingRende
   return prev.kind === 'fence' && next.kind === 'fence' && prev.lang === next.lang && prev.body === next.body
 }
 
+function streamingTailSlot(
+  split: StreamingMarkdownSplit,
+  fenceIndex: number
+): StreamingRenderSlot | null {
+  if (split.tailKind === 'fence') {
+    return {
+      kind: 'fence',
+      key: `live-fence-${fenceIndex}`,
+      lang: split.tailLang,
+      body: extractOpenFenceBody(split.tail),
+      closed: false
+    }
+  }
+  if (!split.tail) return null
+  return { kind: 'prose', key: 'prose-run-0', text: split.tail, closed: false }
+}
+
+function closedFenceSlotCount(slots: readonly StreamingRenderSlot[]): number {
+  let n = 0
+  for (const slot of slots) {
+    if (slot.kind === 'fence' && slot.closed) n += 1
+  }
+  return n
+}
+
 /**
  * 直播槽增量：已闭合围栏 / 散文 run 退回同一对象，只换增长尾。
- * 对标 Codex #22860（已画正文不跟每枚 token 换槽）。
+ * `split.blocks` 与上一帧同一数组时不重拆已收段（对标 Codex #22860）。
  */
 export function continueStreamingRenderSlots(
   prev: StreamingRenderSlot[] | null | undefined,
-  split: StreamingMarkdownSplit
+  split: StreamingMarkdownSplit,
+  prevSplit?: StreamingMarkdownSplit | null
 ): StreamingRenderSlot[] {
+  if (prev && prevSplit && split.blocks === prevSplit.blocks) {
+    const last = prev[prev.length - 1]
+    const prefix = last && !last.closed ? prev.slice(0, -1) : prev
+    const tail = streamingTailSlot(split, closedFenceSlotCount(prefix))
+    if (!tail) return last && !last.closed ? prefix : prev
+    if (last && !last.closed) {
+      if (sameStreamingRenderSlot(last, tail)) return prev
+      return prefix.length ? [...prefix, tail] : [tail]
+    }
+    return prev.length ? [...prev, tail] : [tail]
+  }
   const next = streamingRenderSlots(split)
   if (!prev?.length) return next
   const prevByKey = new Map(prev.map((slot) => [slot.key, slot]))

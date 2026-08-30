@@ -369,17 +369,15 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({
   streaming?: boolean
 }) {
   const prevRef = useRef(seedStreamingMarkdownHold(text))
-  const split = useMemo(() => {
-    const next = continueStreamingMarkdown(prevRef.current.split, prevRef.current.text, text)
+  const { split, slots } = useMemo(() => {
+    const prevSplit = prevRef.current.split
+    const nextSplit = continueStreamingMarkdown(prevSplit, prevRef.current.text, text)
+    const nextSlots = continueStreamingRenderSlots(prevRef.current.slots, nextSplit, prevSplit)
     prevRef.current.text = text
-    prevRef.current.split = next
-    return next
+    prevRef.current.split = nextSplit
+    prevRef.current.slots = nextSlots
+    return { split: nextSplit, slots: nextSlots }
   }, [text])
-  const slots = useMemo(() => {
-    const next = continueStreamingRenderSlots(prevRef.current.slots, split)
-    prevRef.current.slots = next
-    return next
-  }, [split])
   const defsState = useMemo(() => {
     const next = nextLinkDefinitions(prevRef.current.defs, text)
     prevRef.current.defs = next

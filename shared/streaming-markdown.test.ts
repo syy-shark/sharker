@@ -2079,6 +2079,15 @@ describe('splitStreamingMarkdown', () => {
     expect(openGrown.closedEnd).toBe(0)
     expect(openGrown.tail).toBe('普通段落开始写更多汉字')
     expect(openGrown.tailKind).toBe('prose')
+    const openSlots = streamingRenderSlots(openTail)
+    const openGrownSlots = continueStreamingRenderSlots(openSlots, openGrown, openTail)
+    expect(openGrownSlots).toHaveLength(1)
+    expect(openGrownSlots[0]).toMatchObject({
+      kind: 'prose',
+      key: 'prose-run-0',
+      text: '普通段落开始写更多汉字',
+      closed: false
+    })
     const openFence = continueStreamingMarkdown(openTail, '普通段落开始写', '```ts')
     expect(openFence.tailKind).toBe('fence')
     const openClosed = continueStreamingMarkdown(
@@ -2098,7 +2107,7 @@ describe('splitStreamingMarkdown', () => {
     expect(streamingRenderSlots(first).map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
     expect(streamingRenderSlots(grown).map((slot) => slot.key)).toEqual(['prose-md-0', 'prose-run-0'])
     const firstSlots = streamingRenderSlots(first)
-    const grownSlots = continueStreamingRenderSlots(firstSlots, grown)
+    const grownSlots = continueStreamingRenderSlots(firstSlots, grown, first)
     expect(grownSlots).not.toBe(firstSlots)
     expect(grownSlots[0]).toBe(firstSlots[0])
     expect(grownSlots[1]).not.toBe(firstSlots[1])
@@ -2240,5 +2249,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain("nextText.indexOf('\\n\\n', Math.max(0, prevNorm.length - 1))")
+    expect(mdSrc).toContain('split.blocks === prevSplit.blocks')
+    expect(src).toContain('continueStreamingRenderSlots(prevRef.current.slots, nextSplit, prevSplit)')
   })
 })
