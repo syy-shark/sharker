@@ -81419,7 +81419,7 @@ export function isLiveAskResolvedThinkErrorSettledSixActiveToolCancelCompressApp
   if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
   return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedError(next[prev!.length + 3]) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCompress(next[prev!.length + 11])
 }
-/** Awaiting approval 挂上后同一帧 Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81439,7 +81439,7 @@ export function isLiveApprovalNeededAskTwoSettledSixActiveToolCancelCompressAppe
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Awaiting approval 挂上后同一帧 think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81460,7 +81460,7 @@ export function isLiveApprovalNeededThinkAskTwoSettledSixActiveToolCancelCompres
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Awaiting approval 挂上后同一帧 token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81471,7 +81471,7 @@ export function isLiveApprovalNeededAnswerAskTwoSettledSixActiveToolCancelCompre
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 2]) && !isLiveErrorAnswer(next[prev!.length + 2]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Awaiting approval 挂上后同一帧 ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81492,7 +81492,7 @@ export function isLiveApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCancelCo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** Awaiting approval 挂上后同一帧 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81513,7 +81513,7 @@ export function isLiveApprovalNeededErrorAskTwoSettledSixActiveToolCancelCompres
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Awaiting approval 挂上后同一帧 think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81524,7 +81524,7 @@ export function isLiveApprovalNeededThinkAnswerAskTwoSettledSixActiveToolCancelC
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedAnswerPair(next[prev!.length + 3]!) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** Awaiting approval 挂上后同一帧 think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81546,7 +81546,7 @@ export function isLiveApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveToolCan
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** Awaiting approval 挂上后同一帧 think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Awaiting approval 挂上后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalNeededThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81568,7 +81568,7 @@ export function isLiveApprovalNeededThinkErrorAskTwoSettledSixActiveToolCancelCo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81590,7 +81590,7 @@ export function isLiveStatusApprovalNeededAskTwoSettledSixActiveToolCancelCompre
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81613,7 +81613,7 @@ export function isLiveStatusApprovalNeededThinkAskTwoSettledSixActiveToolCancelC
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81626,7 +81626,7 @@ export function isLiveStatusApprovalNeededAnswerAskTwoSettledSixActiveToolCancel
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 3]) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81649,7 +81649,7 @@ export function isLiveStatusApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCa
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81672,7 +81672,7 @@ export function isLiveStatusApprovalNeededErrorAskTwoSettledSixActiveToolCancelC
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81685,7 +81685,7 @@ export function isLiveStatusApprovalNeededThinkAnswerAskTwoSettledSixActiveToolC
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 3]) && isLiveAddedAnswerPair(next[prev!.length + 4]!) && !isLiveErrorAnswer(next[prev!.length + 4]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCancelledTool(next[prev!.length + 14]) && isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81709,7 +81709,7 @@ export function isLiveStatusApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveT
   return isLiveAddedCompress(next[prev!.length + 16])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalNeededThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81733,7 +81733,7 @@ export function isLiveStatusApprovalNeededThinkErrorAskTwoSettledSixActiveToolCa
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81753,7 +81753,7 @@ export function isLiveWriteStatApprovalNeededAskTwoSettledSixActiveToolCancelCom
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81774,7 +81774,7 @@ export function isLiveWriteStatApprovalNeededThinkAskTwoSettledSixActiveToolCanc
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81785,7 +81785,7 @@ export function isLiveWriteStatApprovalNeededAnswerAskTwoSettledSixActiveToolCan
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 2]) && !isLiveErrorAnswer(next[prev!.length + 2]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81806,7 +81806,7 @@ export function isLiveWriteStatApprovalNeededAnswerDemoAskTwoSettledSixActiveToo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81827,7 +81827,7 @@ export function isLiveWriteStatApprovalNeededErrorAskTwoSettledSixActiveToolCanc
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81838,7 +81838,7 @@ export function isLiveWriteStatApprovalNeededThinkAnswerAskTwoSettledSixActiveTo
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedAnswerPair(next[prev!.length + 3]!) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81860,7 +81860,7 @@ export function isLiveWriteStatApprovalNeededThinkAnswerDemoAskTwoSettledSixActi
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开工具并立刻 Awaiting + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalNeededThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81882,7 +81882,7 @@ export function isLiveWriteStatApprovalNeededThinkErrorAskTwoSettledSixActiveToo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81904,7 +81904,7 @@ export function isLiveWriteStatStatusApprovalNeededAskTwoSettledSixActiveToolCan
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81927,7 +81927,7 @@ export function isLiveWriteStatStatusApprovalNeededThinkAskTwoSettledSixActiveTo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81940,7 +81940,7 @@ export function isLiveWriteStatStatusApprovalNeededAnswerAskTwoSettledSixActiveT
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 3]) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81963,7 +81963,7 @@ export function isLiveWriteStatStatusApprovalNeededAnswerDemoAskTwoSettledSixAct
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81986,7 +81986,7 @@ export function isLiveWriteStatStatusApprovalNeededErrorAskTwoSettledSixActiveTo
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -81999,7 +81999,7 @@ export function isLiveWriteStatStatusApprovalNeededThinkAnswerAskTwoSettledSixAc
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 3]) && isLiveAddedAnswerPair(next[prev!.length + 4]!) && !isLiveErrorAnswer(next[prev!.length + 4]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCancelledTool(next[prev!.length + 14]) && isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82023,7 +82023,7 @@ export function isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskTwoSettledS
   return isLiveAddedCompress(next[prev!.length + 16])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalNeededThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82047,7 +82047,7 @@ export function isLiveWriteStatStatusApprovalNeededThinkErrorAskTwoSettledSixAct
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** Allow 收口并 tool_done 后同一帧 Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82066,7 +82066,7 @@ export function isLiveApprovalAllowedSettleAskTwoSettledSixActiveToolCancelCompr
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
-/** Allow 收口并 tool_done 后同一帧 think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82086,7 +82086,7 @@ export function isLiveApprovalAllowedSettleThinkAskTwoSettledSixActiveToolCancel
   return isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Allow 收口并 tool_done 后同一帧 token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82096,7 +82096,7 @@ export function isLiveApprovalAllowedSettleAnswerAskTwoSettledSixActiveToolCance
   return Boolean(isLiveAddedAnswerPair(next[prev!.length]) && !isLiveErrorAnswer(next[prev!.length]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 1) && isLiveAddedSettledTool(next[prev!.length + 3]) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Allow 收口并 tool_done 后同一帧 ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82116,7 +82116,7 @@ export function isLiveApprovalAllowedSettleAnswerDemoAskTwoSettledSixActiveToolC
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Allow 收口并 tool_done 后同一帧 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82136,7 +82136,7 @@ export function isLiveApprovalAllowedSettleErrorAskTwoSettledSixActiveToolCancel
   return isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Allow 收口并 tool_done 后同一帧 think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82146,7 +82146,7 @@ export function isLiveApprovalAllowedSettleThinkAnswerAskTwoSettledSixActiveTool
   return Boolean(isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedAnswerPair(next[prev!.length + 1]!) && !isLiveErrorAnswer(next[prev!.length + 1]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 2) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Allow 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82167,7 +82167,7 @@ export function isLiveApprovalAllowedSettleThinkAnswerDemoAskTwoSettledSixActive
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Allow 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalAllowedSettleThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82188,7 +82188,7 @@ export function isLiveApprovalAllowedSettleThinkErrorAskTwoSettledSixActiveToolC
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Deny 收口并 tool_done 后同一帧 Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82207,7 +82207,7 @@ export function isLiveApprovalDeniedAskTwoSettledSixActiveToolCancelCompressAppe
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
-/** Deny 收口并 tool_done 后同一帧 think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82227,7 +82227,7 @@ export function isLiveApprovalDeniedThinkAskTwoSettledSixActiveToolCancelCompres
   return isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Deny 收口并 tool_done 后同一帧 token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82237,7 +82237,7 @@ export function isLiveApprovalDeniedAnswerAskTwoSettledSixActiveToolCancelCompre
   return Boolean(isLiveAddedAnswerPair(next[prev!.length]) && !isLiveErrorAnswer(next[prev!.length]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 1) && isLiveAddedSettledTool(next[prev!.length + 3]) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Deny 收口并 tool_done 后同一帧 ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82257,7 +82257,7 @@ export function isLiveApprovalDeniedAnswerDemoAskTwoSettledSixActiveToolCancelCo
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Deny 收口并 tool_done 后同一帧 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82277,7 +82277,7 @@ export function isLiveApprovalDeniedErrorAskTwoSettledSixActiveToolCancelCompres
   return isLiveAddedCompress(next[prev!.length + 11])
 }
 
-/** Deny 收口并 tool_done 后同一帧 think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82287,7 +82287,7 @@ export function isLiveApprovalDeniedThinkAnswerAskTwoSettledSixActiveToolCancelC
   return Boolean(isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedAnswerPair(next[prev!.length + 1]!) && !isLiveErrorAnswer(next[prev!.length + 1]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 2) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Deny 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82308,7 +82308,7 @@ export function isLiveApprovalDeniedThinkAnswerDemoAskTwoSettledSixActiveToolCan
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Deny 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Deny 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalDeniedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82329,7 +82329,7 @@ export function isLiveApprovalDeniedThinkErrorAskTwoSettledSixActiveToolCancelCo
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82343,7 +82343,7 @@ export function isLiveApprovalResolvedAskTwoSettledSixActiveToolCancelCompressAp
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82357,7 +82357,7 @@ export function isLiveApprovalResolvedThinkAskTwoSettledSixActiveToolCancelCompr
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82371,7 +82371,7 @@ export function isLiveApprovalResolvedAnswerAskTwoSettledSixActiveToolCancelComp
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82385,7 +82385,7 @@ export function isLiveApprovalResolvedAnswerDemoAskTwoSettledSixActiveToolCancel
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82399,7 +82399,7 @@ export function isLiveApprovalResolvedErrorAskTwoSettledSixActiveToolCancelCompr
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82413,7 +82413,7 @@ export function isLiveApprovalResolvedThinkAnswerAskTwoSettledSixActiveToolCance
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82427,7 +82427,7 @@ export function isLiveApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiveToolC
   return false
 }
 
-/** Allow / Deny 只收口 Awaiting 行后同一帧 think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Allow / Deny 只收口 Awaiting 行后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveApprovalResolvedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82441,7 +82441,7 @@ export function isLiveApprovalResolvedThinkErrorAskTwoSettledSixActiveToolCancel
   return false
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82463,7 +82463,7 @@ export function isLiveStatusApprovalResolvedAskTwoSettledSixActiveToolCancelComp
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82486,7 +82486,7 @@ export function isLiveStatusApprovalResolvedThinkAskTwoSettledSixActiveToolCance
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82499,7 +82499,7 @@ export function isLiveStatusApprovalResolvedAnswerAskTwoSettledSixActiveToolCanc
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 3]) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82522,7 +82522,7 @@ export function isLiveStatusApprovalResolvedAnswerDemoAskTwoSettledSixActiveTool
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82545,7 +82545,7 @@ export function isLiveStatusApprovalResolvedErrorAskTwoSettledSixActiveToolCance
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82558,7 +82558,7 @@ export function isLiveStatusApprovalResolvedThinkAnswerAskTwoSettledSixActiveToo
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 3]) && isLiveAddedAnswerPair(next[prev!.length + 4]!) && !isLiveErrorAnswer(next[prev!.length + 4]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCancelledTool(next[prev!.length + 14]) && isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82582,7 +82582,7 @@ export function isLiveStatusApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiv
   return isLiveAddedCompress(next[prev!.length + 16])
 }
 
-/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveStatusApprovalResolvedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82606,7 +82606,7 @@ export function isLiveStatusApprovalResolvedThinkErrorAskTwoSettledSixActiveTool
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82626,7 +82626,7 @@ export function isLiveWriteStatApprovalResolvedAskTwoSettledSixActiveToolCancelC
   return isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82647,7 +82647,7 @@ export function isLiveWriteStatApprovalResolvedThinkAskTwoSettledSixActiveToolCa
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82658,7 +82658,7 @@ export function isLiveWriteStatApprovalResolvedAnswerAskTwoSettledSixActiveToolC
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 2]) && !isLiveErrorAnswer(next[prev!.length + 2]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82679,7 +82679,7 @@ export function isLiveWriteStatApprovalResolvedAnswerDemoAskTwoSettledSixActiveT
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82700,7 +82700,7 @@ export function isLiveWriteStatApprovalResolvedErrorAskTwoSettledSixActiveToolCa
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82711,7 +82711,7 @@ export function isLiveWriteStatApprovalResolvedThinkAnswerAskTwoSettledSixActive
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedAnswerPair(next[prev!.length + 3]!) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82733,7 +82733,7 @@ export function isLiveWriteStatApprovalResolvedThinkAnswerDemoAskTwoSettledSixAc
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatApprovalResolvedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82755,7 +82755,7 @@ export function isLiveWriteStatApprovalResolvedThinkErrorAskTwoSettledSixActiveT
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82777,7 +82777,7 @@ export function isLiveWriteStatStatusApprovalResolvedAskTwoSettledSixActiveToolC
   return isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82800,7 +82800,7 @@ export function isLiveWriteStatStatusApprovalResolvedThinkAskTwoSettledSixActive
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82813,7 +82813,7 @@ export function isLiveWriteStatStatusApprovalResolvedAnswerAskTwoSettledSixActiv
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 3]) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82836,7 +82836,7 @@ export function isLiveWriteStatStatusApprovalResolvedAnswerDemoAskTwoSettledSixA
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82859,7 +82859,7 @@ export function isLiveWriteStatStatusApprovalResolvedErrorAskTwoSettledSixActive
   return isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82872,7 +82872,7 @@ export function isLiveWriteStatStatusApprovalResolvedThinkAnswerAskTwoSettledSix
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 3]) && isLiveAddedAnswerPair(next[prev!.length + 4]!) && !isLiveErrorAnswer(next[prev!.length + 4]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCancelledTool(next[prev!.length + 14]) && isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82896,7 +82896,7 @@ export function isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskTwoSettle
   return isLiveAddedCompress(next[prev!.length + 16])
 }
 
-/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveWriteStatStatusApprovalResolvedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82920,7 +82920,7 @@ export function isLiveWriteStatStatusApprovalResolvedThinkErrorAskTwoSettledSixA
   return isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** Ask User 作答后同一帧 Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82938,7 +82938,7 @@ export function isLiveAskResolvedAskTwoSettledSixActiveToolCancelCompressAppendC
   return hasLiveAskNeededStoppedHead(next, prev!.length + 2) && isLiveAddedSettledTool(next[prev!.length + 4]) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
 }
 
-/** Ask User 作答后同一帧 think + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 think + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedThinkAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82956,7 +82956,7 @@ export function isLiveAskResolvedThinkAskTwoSettledSixActiveToolCancelCompressAp
   return isLiveAddedThinkPair(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Ask User 作答后同一帧 token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82974,7 +82974,7 @@ export function isLiveAskResolvedAnswerAskTwoSettledSixActiveToolCancelCompressA
   return Boolean(isLiveAddedAnswerPair(next[prev!.length + 2]) && !isLiveErrorAnswer(next[prev!.length + 2]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Ask User 作答后同一帧 ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -82992,7 +82992,7 @@ export function isLiveAskResolvedAnswerDemoAskTwoSettledSixActiveToolCancelCompr
   return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** Ask User 作答后同一帧 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -83010,7 +83010,7 @@ export function isLiveAskResolvedErrorAskTwoSettledSixActiveToolCancelCompressAp
   return isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
 }
 
-/** Ask User 作答后同一帧 think + token + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 think + token + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedThinkAnswerAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -83028,7 +83028,7 @@ export function isLiveAskResolvedThinkAnswerAskTwoSettledSixActiveToolCancelComp
   return Boolean(isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedAnswerPair(next[prev!.length + 3]!) && !isLiveErrorAnswer(next[prev!.length + 3]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
-/** Ask User 作答后同一帧 think + ```demo + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 think + ```demo + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
@@ -83046,7 +83046,7 @@ export function isLiveAskResolvedThinkAnswerDemoAskTwoSettledSixActiveToolCancel
   return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCancelledTool(next[prev!.length + 14]) && isLiveAddedCompress(next[prev!.length + 15])
 }
 
-/** Ask User 作答后同一帧 think + 错误 + Ask User + 下两工具已 complete_call + 再六工具仍 active + Stop + compress */
+/** Ask User 作答后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再六工具仍 active + Stop + compress */
 export function isLiveAskResolvedThinkErrorAskTwoSettledSixActiveToolCancelCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
