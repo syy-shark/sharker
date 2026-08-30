@@ -16,7 +16,7 @@ import {
 } from './live-stream-core'
 import { EMPTY_LIVE_STREAM_UI } from './live-stream-ui'
 import { appendProcessPhaseStepOnToolStart, deriveChronologicalSteps } from './process-phases'
-import { applyStreamChunk } from './turn-segments'
+import { applyStreamChunk, finalizeSegments } from './turn-segments'
 
 function think(content: string): TurnSegment {
   return { id: 'th1', kind: 'thinking', status: 'active', content }
@@ -1795,5 +1795,43 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(process.contentStreaming).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'apply_patch')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'write_file')).toBe(true)
+
+    const finalized = finalizeSegments(prev)
+    expect(shouldSkipLiveStreamDerivation(prev, finalized)).toBeTruthy()
+    const afterFinalize = nextLiveAnswerView(answer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: finalized
+    })
+    expect(afterFinalize.parts.filter((part) => part.type === 'diff')).toHaveLength(3)
+    expect(
+      afterFinalize.parts.some((part) => part.type === 'text' && part.content.includes('Patched'))
+    ).toBe(true)
+  })
+
+  it('skips finalize role assignment on two answer texts without the table', () => {
+    const first: TurnSegment = { id: 'a1', kind: 'text', status: 'done', content: 'Hello' }
+    const second: TurnSegment = { id: 'a2', kind: 'text', status: 'active', content: 'World' }
+    const thought = think('Hmm')
+    const thoughtDone: TurnSegment = { ...thought, status: 'done' }
+    const read = tool('done')
+    const before = [thoughtDone, read, first, second]
+    const finalized = finalizeSegments(before)
+    expect(finalized.some((segment) => segment.kind === 'text' && segment.role === 'narration')).toBe(
+      true
+    )
+    expect(shouldSkipLiveStreamDerivation(before, finalized)).toBe('text')
+    const firstView = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: before
+    })
+    const next = nextLiveAnswerView(firstView, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: finalized
+    })
+    expect(next.parts.filter((part) => part.type === 'text').map((part) => part.content)).toEqual([
+      'Hello',
+      'World'
+    ])
+    expect(next.parts).toBe(firstView.parts)
   })
 })

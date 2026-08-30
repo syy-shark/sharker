@@ -284,8 +284,8 @@ function liveCoreHeldNoFenceAnswerChange(
 
 function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev === next) return true
-  if (prev.id !== next.id || prev.kind !== next.kind) return false
-  if (!isLiveCoreNoFenceAnswer(prev) || !isLiveCoreNoFenceAnswer(next)) return false
+  if (prev.id !== next.id || prev.kind !== 'text' || next.kind !== 'text') return false
+  // 收束 finalize 把先前正文标 narration / 收口无 role token；内容前缀没变就 hold，避免提交帧重挂回答。
   return liveTailContentGrew(prev, next)
 }
 
@@ -308,6 +308,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
  * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
+ * 收束 finalize 给多段正文标 narration / final（可顺带收口思考 / 工具）仍走核心，不在提交帧重拆回答。
  */
 function liveCoreInPlaceProcessToolSkip(
   prev: readonly TurnSegment[],
@@ -322,18 +323,6 @@ function liveCoreInPlaceProcessToolSkip(
     const before = prev[i]!
     const after = next[i]!
     if (before === after) continue
-    if (isLiveCoreDemoAnswer(before) || isLiveCoreDemoAnswer(after)) {
-      if (
-        before.id === after.id &&
-        isLiveCoreStreamText(before) &&
-        isLiveCoreStreamText(after) &&
-        liveTailContentGrew(before, after)
-      ) {
-        textChange = true
-        continue
-      }
-      return null
-    }
     if (isLiveCoreDemoTool(before) || isLiveCoreDemoTool(after)) {
       if (before.id === after.id && isLiveCoreDemoTool(before) && isLiveCoreDemoTool(after)) {
         textChange = true
@@ -341,7 +330,7 @@ function liveCoreInPlaceProcessToolSkip(
       }
       return null
     }
-    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) {
+    if (liveCoreAnswerHolds(before, after)) {
       if (before !== after) textChange = true
       continue
     }
@@ -380,17 +369,6 @@ function liveCoreHeldPrefix(
     const before = prev[i]
     const after = next[i]
     if (!before || !after) return false
-    if (isLiveCoreDemoAnswer(before) || isLiveCoreDemoAnswer(after)) {
-      if (
-        before.id === after.id &&
-        isLiveCoreStreamText(before) &&
-        isLiveCoreStreamText(after) &&
-        liveTailContentGrew(before, after)
-      ) {
-        continue
-      }
-      return false
-    }
     if (isLiveCoreDemoTool(before) || isLiveCoreDemoTool(after)) {
       if (before.id === after.id && isLiveCoreDemoTool(before) && isLiveCoreDemoTool(after)) {
         continue
@@ -1082,7 +1060,7 @@ function findLiveCoreWriteStatTools(
       found.push(after)
       continue
     }
-    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) continue
+    if (liveCoreAnswerHolds(before, after)) continue
     if (
       before.id === after.id &&
       isLiveThinking(before) &&
