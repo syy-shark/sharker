@@ -3,6 +3,7 @@
  * “older history fetched as needed” / scroll-to-top 分页；不预拉全量、不设「加载更早」按钮）。
  * 揭示更早/更新按内容柱 scrollHeight 差补 scrollTop，不按未测行高卸顶。
  * ⌘↑ / 查找命中走独立 `historyHead` 最旧或命中页，禁止把瘦身全文灌进尾页 `messages`。
+ * 靠近顶预取更早页（`TRANSCRIPT_PREFETCH_PX`），揭开套同一页。
  * @see shared/ARCH.md
  */
 
@@ -16,6 +17,9 @@ export const TRANSCRIPT_PAGE = 30
 
 /** 距滚动顶多少像素视为「到顶」，触发揭示 */
 export const TRANSCRIPT_REVEAL_PX = 80
+
+/** 距顶更远就预取更早页并 idle 预热，揭开时不再冷挂载 */
+export const TRANSCRIPT_PREFETCH_PX = 400
 
 /** DOM 最多挂这么多行，避免 ⌘↑ / 读到顶把整段灌进 React（官方分页也不一次铺开） */
 export const TRANSCRIPT_MAX_MOUNTED = TRANSCRIPT_TAIL + TRANSCRIPT_PAGE
@@ -268,6 +272,40 @@ export function shouldFetchOlderHistoryPage(input: {
     canReveal: input.hasOlder && input.windowStart <= 0,
     revealPx: input.revealPx
   })
+}
+
+/** 已锁阅读且靠近顶、盘上还有更早页时，先取页并预热，不进 16ms */
+export function shouldPrefetchOlderHistoryPage(input: {
+  scrollTop: number
+  locked: boolean
+  windowStart: number
+  hasOlder: boolean
+  loading?: boolean
+  prefetchPx?: number
+}): boolean {
+  if (input.loading) return false
+  return shouldFetchOlderHistoryPage({
+    scrollTop: input.scrollTop,
+    locked: input.locked,
+    windowStart: input.windowStart,
+    hasOlder: input.hasOlder,
+    revealPx: input.prefetchPx ?? TRANSCRIPT_PREFETCH_PX
+  })
+}
+
+/** 预取缓存与当前要揭开的页同一对话、同一起点才套用 */
+export function shouldUsePrefetchedOlderPage(input: {
+  cachedConvId?: string | null
+  cachedFromSeq?: number
+  convId?: string | null
+  fromSeq: number
+}): boolean {
+  return Boolean(
+    input.cachedConvId &&
+      input.convId &&
+      input.cachedConvId === input.convId &&
+      input.cachedFromSeq === input.fromSeq
+  )
 }
 
 /**

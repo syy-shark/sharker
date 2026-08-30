@@ -8,6 +8,7 @@
  * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 切对话清掉历史 demo iframe 池与历史回答 hold。
  * 空闲时按切片预热窗口外一页助手行 hold，直播中不跑。
+ * 靠近顶预取更早盘页并 idle 预热，揭开不再冷挂载。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -126,8 +127,6 @@ import {
   LIVE_TAIL_SAFE_PX
 } from '../../shared/live-display'
 import {
-  captureTranscriptScroll,
-  resolveRestoredScrollTop,
   scrollTopToCenterChild,
   shouldDeferScrollRestore,
   type TranscriptScrollSnapshot
@@ -140,6 +139,7 @@ import {
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
   shouldFetchOlderHistoryPage,
+  shouldPrefetchOlderHistoryPage,
   shouldFetchSlimHistoryOnJumpTop,
   shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
@@ -532,6 +532,8 @@ interface Props {
   hasOlderHistory?: boolean
   /** 上滑到顶且内存窗已到头时取更早一页 */
   onLoadOlderHistory?: () => void | Promise<void>
+  /** 靠近顶时预取更早页并 idle 预热，揭开不再冷挂载 */
+  onPrefetchOlderHistory?: () => void
   /** 跳到对话顶时取最旧一页（不灌瘦身全文） */
   onNeedFullHistory?: () => void | Promise<void>
   /** 头页下翻取更新一段，接上尾页则清掉头页 */
@@ -1078,6 +1080,7 @@ export const ChatView = memo(function ChatView({
   keyboardShortcuts,
   hasOlderHistory = false,
   onLoadOlderHistory,
+  onPrefetchOlderHistory,
   onNeedFullHistory,
   onNeedNewerHead,
   onNeedOlderHead,
@@ -1229,6 +1232,8 @@ export const ChatView = memo(function ChatView({
   hasOlderHistoryRef.current = hasOlderHistory
   const onLoadOlderHistoryRef = useRef(onLoadOlderHistory)
   onLoadOlderHistoryRef.current = onLoadOlderHistory
+  const onPrefetchOlderHistoryRef = useRef(onPrefetchOlderHistory)
+  onPrefetchOlderHistoryRef.current = onPrefetchOlderHistory
   const onNeedFullHistoryRef = useRef(onNeedFullHistory)
   onNeedFullHistoryRef.current = onNeedFullHistory
   const onNeedNewerHeadRef = useRef(onNeedNewerHead)
@@ -2104,6 +2109,18 @@ export const ChatView = memo(function ChatView({
       if (viewingHeadRef.current) {
         if (
           !loadOlderBusyRef.current &&
+          shouldPrefetchOlderHistoryPage({
+            scrollTop: top,
+            locked: userScrollLockRef.current,
+            windowStart: currentStart,
+            hasOlder: historyHeadStartSeqRef.current > 0,
+            loading: loadingRef.current
+          })
+        ) {
+          onPrefetchOlderHistoryRef.current?.()
+        }
+        if (
+          !loadOlderBusyRef.current &&
           shouldFetchOlderHistoryPage({
             scrollTop: top,
             locked: userScrollLockRef.current,
@@ -2131,6 +2148,17 @@ export const ChatView = memo(function ChatView({
           })
         }
         return
+      }
+      if (
+        shouldPrefetchOlderHistoryPage({
+          scrollTop: top,
+          locked: userScrollLockRef.current,
+          windowStart: currentStart,
+          hasOlder: hasOlderHistoryRef.current,
+          loading: loadingRef.current
+        })
+      ) {
+        onPrefetchOlderHistoryRef.current?.()
       }
       if (
         shouldRevealOlderTranscript({

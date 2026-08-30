@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   captureTranscriptScroll,
@@ -36,6 +37,8 @@ import {
   restoreTranscriptWindowStart,
   shiftPinnedStartAfterPrepend,
   shouldFetchOlderHistoryPage,
+  shouldPrefetchOlderHistoryPage,
+  shouldUsePrefetchedOlderPage,
   shouldFetchSlimHistoryOnJumpTop,
   shouldRevealNewerTranscript,
   shouldRevealOlderTranscript,
@@ -230,6 +233,62 @@ describe('transcript scroll restore', () => {
         hasOlder: true
       })
     ).toBe(false)
+    expect(
+      shouldPrefetchOlderHistoryPage({
+        scrollTop: 200,
+        locked: true,
+        windowStart: 0,
+        hasOlder: true
+      })
+    ).toBe(true)
+    expect(
+      shouldPrefetchOlderHistoryPage({
+        scrollTop: 200,
+        locked: true,
+        windowStart: 0,
+        hasOlder: true,
+        loading: true
+      })
+    ).toBe(false)
+    expect(
+      shouldPrefetchOlderHistoryPage({
+        scrollTop: 200,
+        locked: true,
+        windowStart: 0,
+        hasOlder: false
+      })
+    ).toBe(false)
+    expect(
+      shouldFetchOlderHistoryPage({
+        scrollTop: 200,
+        locked: true,
+        windowStart: 0,
+        hasOlder: true
+      })
+    ).toBe(false)
+    expect(
+      shouldUsePrefetchedOlderPage({
+        cachedConvId: 'c1',
+        cachedFromSeq: 30,
+        convId: 'c1',
+        fromSeq: 30
+      })
+    ).toBe(true)
+    expect(
+      shouldUsePrefetchedOlderPage({
+        cachedConvId: 'c1',
+        cachedFromSeq: 30,
+        convId: 'c1',
+        fromSeq: 0
+      })
+    ).toBe(false)
+    const chatSrc = readFileSync(new URL('../src/components/ChatView.tsx', import.meta.url), 'utf8')
+    expect(chatSrc).toContain('shouldPrefetchOlderHistoryPage')
+    expect(chatSrc).toContain('onPrefetchOlderHistory')
+    const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
+    expect(appSrc).toContain('ensureOlderHistoryPage')
+    expect(appSrc).toContain('handlePrefetchOlderHistory')
+    expect(appSrc).toContain('scheduleWarmOlderPage')
     expect(prependHistoryPage([{ id: 'b' }, { id: 'c' }], [{ id: 'a' }, { id: 'b' }])).toEqual([
       { id: 'a' },
       { id: 'b' },

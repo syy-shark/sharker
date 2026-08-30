@@ -131,9 +131,17 @@ import {
   nextHeadRange,
   olderPageRangeForTail,
   prevHeadRange,
+  shouldUsePrefetchedOlderPage,
   slideHeadAfterAppend,
   slideHeadAfterPrepend
 } from '../shared/transcript-window'
+import {
+  HISTORICAL_ANSWER_WARM_SLICE,
+  nextHistoricalAnswerWarmMessages,
+  shouldContinueHistoricalAnswerWarm,
+  shouldScheduleHistoricalAnswerWarm,
+  warmHistoricalAnswerHold
+} from '../shared/historical-answer-hold'
 import { mergeHydratedMessage, shouldReloadUnslimmedHistory } from '../shared/transcript-hydrate'
 import { ChatToolbar } from './components/ChatToolbar'
 import {
@@ -501,6 +509,18 @@ export default function App() {
   const [historyHeadStartSeq, setHistoryHeadStartSeq] = useState(0)
   const historyHeadStartSeqRef = useRef(0)
   const historyHeadEndSeqRef = useRef(0)
+  const olderPageCacheRef = useRef<{
+    convId: string
+    fromSeq: number
+    toSeq: number
+    messages: ChatMessage[]
+  } | null>(null)
+  const olderPageInflightRef = useRef<{
+    convId: string
+    fromSeq: number
+    promise: Promise<ChatMessage[] | null>
+  } | null>(null)
+  const olderPageWarmIdleRef = useRef(0)
   const [conversationList, setConversationList] = useState<ConversationSummary[]>([])
   const conversationListRef = useRef<ConversationSummary[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
@@ -1335,32 +1355,151 @@ export default function App() {
     [loadUnslimmedHistoryMessages]
   )
 
+  const scheduleWarmOlderPage = useCallback((messages: ChatMessage[]) => {
+    if (typeof window === 'undefined') return
+    if (olderPageWarmIdleRef.current) {
+      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(olderPageWarmIdleRef.current)
+      else window.clearTimeout(olderPageWarmIdleRef.current)
+      olderPageWarmIdleRef.current = 0
+    }
+    const tick = () => {
+      olderPageWarmIdleRef.current = 0
+      if (!shouldScheduleHistoricalAnswerWarm({ loading: loadingLiveRef.current })) return
+      const toWarm = nextHistoricalAnswerWarmMessages({
+        messages,
+        windowStart: 0,
+        windowEnd: 0,
+        limit: HISTORICAL_ANSWER_WARM_SLICE,
+        skipHeld: true
+      })
+      for (const message of toWarm) {
+        if (message.role !== 'assistant' || !message.meta?.segments?.length) continue
+        warmHistoricalAnswerHold({
+          messageId: message.id,
+          content: message.content,
+          durationSec: message.meta.durationSec,
+          outcome: message.meta.outcome,
+          segments: message.meta.segments
+        })
+      }
+      const remaining = nextHistoricalAnswerWarmMessages({
+        messages,
+        windowStart: 0,
+        windowEnd: 0,
+        limit: 1,
+        skipHeld: true
+      }).length
+      if (!shouldContinueHistoricalAnswerWarm({ remaining })) return
+      if (typeof requestIdleCallback === 'function') {
+        olderPageWarmIdleRef.current = requestIdleCallback(tick)
+      } else {
+        olderPageWarmIdleRef.current = window.setTimeout(tick, LAST_TURN_UI_FLUSH_MS)
+      }
+    }
+    if (typeof requestIdleCallback === 'function') {
+      olderPageWarmIdleRef.current = requestIdleCallback(tick)
+    } else {
+      olderPageWarmIdleRef.current = window.setTimeout(tick, LAST_TURN_UI_FLUSH_MS)
+    }
+  }, [])
+
+  const ensureOlderHistoryPage = useCallback(
+    async (
+      range: { fromSeq: number; toSeq: number },
+      opts?: { allowLegacy?: boolean }
+    ) => {
+      const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
+      const convId = activeConversationIdRef.current
+      if (!workspaceId || !convId) return null
+      if (!window.sharker.loadConversationRange && !opts?.allowLegacy) return null
+      const cached = olderPageCacheRef.current
+      if (
+        cached &&
+        shouldUsePrefetchedOlderPage({
+          cachedConvId: cached.convId,
+          cachedFromSeq: cached.fromSeq,
+          convId,
+          fromSeq: range.fromSeq
+        })
+      ) {
+        return cached.messages
+      }
+      const inflight = olderPageInflightRef.current
+      if (
+        inflight &&
+        shouldUsePrefetchedOlderPage({
+          cachedConvId: inflight.convId,
+          cachedFromSeq: inflight.fromSeq,
+          convId,
+          fromSeq: range.fromSeq
+        })
+      ) {
+        return inflight.promise
+      }
+      const gen = historyLoadGenRef.current
+      const promise = (
+        window.sharker.loadConversationRange
+          ? window.sharker.loadConversationRange(workspaceId, convId, range.fromSeq, range.toSeq)
+          : window.sharker.loadOlderConversation
+            ? window.sharker.loadOlderConversation(
+                workspaceId,
+                convId,
+                historyStartSeqRef.current,
+                TRANSCRIPT_PAGE
+              )
+            : Promise.resolve([] as ChatMessage[])
+      ).then((page) => {
+        if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) {
+          return null
+        }
+        const messages = page ?? []
+        if (messages.length) {
+          olderPageCacheRef.current = {
+            convId,
+            fromSeq: range.fromSeq,
+            toSeq: range.toSeq,
+            messages
+          }
+          scheduleWarmOlderPage(messages)
+        }
+        if (olderPageInflightRef.current?.promise === promise) olderPageInflightRef.current = null
+        return messages
+      })
+      olderPageInflightRef.current = { convId, fromSeq: range.fromSeq, promise }
+      return promise
+    },
+    [popoutRoute?.workspaceId, scheduleWarmOlderPage]
+  )
+
   /** 上滑：更早页只进 historyHead，不 prepend 尾页、不改 historyStartSeq（空页更不能置 0） */
   const handleLoadOlderHistory = useCallback(async () => {
-    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
     const range = olderPageRangeForTail(historyStartSeqRef.current)
-    if (!workspaceId || !convId || !range) return
-    const gen = historyLoadGenRef.current
-    const page = window.sharker.loadConversationRange
-      ? await window.sharker.loadConversationRange(
-          workspaceId,
-          convId,
-          range.fromSeq,
-          range.toSeq
-        )
-      : window.sharker.loadOlderConversation
-        ? await window.sharker.loadOlderConversation(
-            workspaceId,
-            convId,
-            historyStartSeqRef.current,
-            TRANSCRIPT_PAGE
-          )
-        : []
-    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
-    if (!page.length) return
+    if (!convId || !range) return
+    const page = await ensureOlderHistoryPage(range, { allowLegacy: true })
+    if (activeConversationIdRef.current !== convId || !page?.length) return
+    if (
+      olderPageCacheRef.current &&
+      shouldUsePrefetchedOlderPage({
+        cachedConvId: olderPageCacheRef.current.convId,
+        cachedFromSeq: olderPageCacheRef.current.fromSeq,
+        convId,
+        fromSeq: range.fromSeq
+      })
+    ) {
+      olderPageCacheRef.current = null
+    }
     applyHistoryHead(page, range.fromSeq)
-  }, [applyHistoryHead])
+  }, [applyHistoryHead, ensureOlderHistoryPage])
+
+  const handlePrefetchOlderHistory = useCallback(() => {
+    if (!shouldScheduleHistoricalAnswerWarm({ loading: loadingLiveRef.current })) return
+    const range = historyHeadRef.current
+      ? prevHeadRange(historyHeadStartSeqRef.current)
+      : olderPageRangeForTail(historyStartSeqRef.current)
+    if (!range) return
+    void ensureOlderHistoryPage(range, { allowLegacy: !historyHeadRef.current })
+  }, [ensureOlderHistoryPage])
 
   /** ⌘↑：只取最旧一页进 historyHead，不把瘦身全文灌进 messages / 不改 historyStartSeq */
   const handleNeedFullHistory = useCallback(async () => {
@@ -1421,18 +1560,11 @@ export default function App() {
   }, [applyHistoryHead, clearHistoryHead])
 
   const handleNeedOlderHead = useCallback(async () => {
-    const workspaceId = popoutRoute?.workspaceId || settingsRef.current.activeWorkspaceId
     const convId = activeConversationIdRef.current
     const range = prevHeadRange(historyHeadStartSeqRef.current)
-    if (!workspaceId || !convId || !range || !window.sharker.loadConversationRange) return
-    const gen = historyLoadGenRef.current
-    const older = await window.sharker.loadConversationRange(
-      workspaceId,
-      convId,
-      range.fromSeq,
-      range.toSeq
-    )
-    if (historyLoadGenRef.current !== gen || activeConversationIdRef.current !== convId) return
+    if (!convId || !range) return
+    const older = await ensureOlderHistoryPage(range)
+    if (activeConversationIdRef.current !== convId || !older) return
     if (!older.length) {
       applyHistoryHead(historyHeadRef.current, 0)
       return
@@ -1448,8 +1580,19 @@ export default function App() {
       unique.length,
       TRANSCRIPT_MAX_MOUNTED
     )
+    if (
+      olderPageCacheRef.current &&
+      shouldUsePrefetchedOlderPage({
+        cachedConvId: olderPageCacheRef.current.convId,
+        cachedFromSeq: olderPageCacheRef.current.fromSeq,
+        convId,
+        fromSeq: range.fromSeq
+      })
+    ) {
+      olderPageCacheRef.current = null
+    }
     applyHistoryHead(merged.slice(0, slide.keepLen), range.fromSeq)
-  }, [applyHistoryHead])
+  }, [applyHistoryHead, ensureOlderHistoryPage])
 
   const handleLeaveHistoryHead = useCallback(() => {
     clearHistoryHead()
@@ -9376,6 +9519,7 @@ export default function App() {
               historyHead={historyHead}
               historyHeadStartSeq={historyHeadStartSeq}
               onLoadOlderHistory={handleLoadOlderHistory}
+              onPrefetchOlderHistory={handlePrefetchOlderHistory}
               onNeedFullHistory={handleNeedFullHistory}
               onNeedNewerHead={handleNeedNewerHead}
               onNeedOlderHead={handleNeedOlderHead}
