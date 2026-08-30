@@ -3,6 +3,7 @@
  * 不认 `$...$`（官方 tokenizer 也不认）；非法 TeX 回退原文；`trust: false`。
  * 直播 token 中先画原文，收束后再跑 KaTeX；预热命中则同一帧着色，避免先闪原文。
  * 直播中公式闭合后 `shouldWarmLiveChatMath` 开工 `renderChatMathHtml` 写缓存，不着色。
+ * `shouldStartChatMathPaintJob` 缓存命中不再开工；`shouldDeferChatMathPaintJob` 远窗未命中推到下一帧。
  * @see shared/ARCH.md
  */
 import katex from 'katex'
@@ -21,6 +22,19 @@ export function shouldRenderLiveChatMath(options: { streaming?: boolean }): bool
  */
 export function shouldWarmLiveChatMath(options: { streaming?: boolean; tex?: string }): boolean {
   return Boolean(options.streaming) && Boolean(String(options.tex ?? '').trim())
+}
+
+/** 缓存已有 HTML（含失败 null）时重挂不再跑 KaTeX / setHtml。 */
+export function shouldStartChatMathPaintJob(options: {
+  paint: boolean
+  hasCachedHtml?: boolean
+}): boolean {
+  return options.paint && !options.hasCachedHtml
+}
+
+/** 远窗历史揭示帧把未命中成图推到下一帧，避免同步 KaTeX 抢布局。 */
+export function shouldDeferChatMathPaintJob(options: { preferImmediate?: boolean }): boolean {
+  return options.preferImmediate === false
 }
 
 /** 展示公式直播中也占 block 槽，收束着色时不从行内跳成块。 */
