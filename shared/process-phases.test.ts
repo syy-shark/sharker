@@ -1546,6 +1546,83 @@ describe('process phases privacy', () => {
     expect(afterWriteAllowStatusAsk).not.toBeNull()
     expect(afterWriteAllowStatusAsk!.at(-1)?.segment).toBe(askStatus)
     expect(afterWriteAllowStatusAsk!.some((step) => step.segment === askTool)).toBe(true)
+    const afterAllowedSettleThinkDemoAsk = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextThink, denyDemoFence, inlineDemo, askTool, askStatus],
+      true
+    )
+    expect(afterAllowedSettleThinkDemoAsk).not.toBeNull()
+    expect(afterAllowedSettleThinkDemoAsk!.some((step) => step.segment === denyDemoFence)).toBe(false)
+    expect(afterAllowedSettleThinkDemoAsk!.some((step) => step.segment === inlineDemo)).toBe(false)
+    expect(afterAllowedSettleThinkDemoAsk!.some((step) => step.segment === askTool)).toBe(true)
+    expect(afterAllowedSettleThinkDemoAsk!.at(-1)?.segment).toBe(askStatus)
+    const afterAllowedSettleThinkErrorAsk = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, nextThink, denyErrorText, askTool, askStatus],
+      true
+    )
+    expect(afterAllowedSettleThinkErrorAsk).not.toBeNull()
+    expect(afterAllowedSettleThinkErrorAsk!.some((step) => step.segment === denyErrorText)).toBe(false)
+    expect(afterAllowedSettleThinkErrorAsk!.some((step) => step.segment === askTool)).toBe(true)
+    expect(afterAllowedSettleThinkErrorAsk!.at(-1)?.segment).toBe(askStatus)
+    const afterDeniedSettleThinkDemoAsk = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThink, denyDemoFence, inlineDemo, askTool, askStatus],
+      true
+    )
+    expect(afterDeniedSettleThinkDemoAsk).not.toBeNull()
+    expect(afterDeniedSettleThinkDemoAsk!.some((step) => step.segment === denyDemoFence)).toBe(false)
+    expect(afterDeniedSettleThinkDemoAsk!.some((step) => step.segment === askTool)).toBe(true)
+    expect(afterDeniedSettleThinkDemoAsk!.at(-1)?.segment).toBe(askStatus)
+    const afterDeniedSettleThinkErrorAsk = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, nextThink, denyErrorText, askTool, askStatus],
+      true
+    )
+    expect(afterDeniedSettleThinkErrorAsk).not.toBeNull()
+    expect(afterDeniedSettleThinkErrorAsk!.some((step) => step.segment === denyErrorText)).toBe(false)
+    expect(afterDeniedSettleThinkErrorAsk!.some((step) => step.segment === askTool)).toBe(true)
+    expect(afterDeniedSettleThinkErrorAsk!.at(-1)?.segment).toBe(askStatus)
+    const afterAllowedSettleDemoError = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, denyDemoFence, inlineDemo, denyErrorText],
+      true
+    )
+    expect(afterAllowedSettleDemoError).not.toBeNull()
+    expect(afterAllowedSettleDemoError!.some((step) => step.segment === denyDemoFence)).toBe(false)
+    expect(afterAllowedSettleDemoError!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterAllowedSettleErrorDemo = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdAllowedSettled, awaitingDone, denyErrorText, denyDemoFence, inlineDemo],
+      true
+    )
+    expect(afterAllowedSettleErrorDemo).not.toBeNull()
+    expect(afterAllowedSettleErrorDemo!.some((step) => step.segment === denyErrorText)).toBe(false)
+    expect(afterAllowedSettleErrorDemo!.some((step) => step.segment === denyDemoFence)).toBe(false)
+    const afterDeniedSettleDemoError = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, denyDemoFence, inlineDemo, denyErrorText],
+      true
+    )
+    expect(afterDeniedSettleDemoError).not.toBeNull()
+    expect(afterDeniedSettleDemoError!.some((step) => step.segment === denyDemoFence)).toBe(false)
+    expect(afterDeniedSettleDemoError!.some((step) => step.segment === denyErrorText)).toBe(false)
+    const afterDeniedSettleErrorDemo = appendProcessPhaseStepOnToolStart(
+      afterApproval!,
+      [cmdAwaiting, awaitingStatus],
+      [cmdDenied, awaitingDenied, denyErrorText, denyDemoFence, inlineDemo],
+      true
+    )
+    expect(afterDeniedSettleErrorDemo).not.toBeNull()
+    expect(afterDeniedSettleErrorDemo!.some((step) => step.segment === denyErrorText)).toBe(false)
+    expect(afterDeniedSettleErrorDemo!.some((step) => step.segment === denyDemoFence)).toBe(false)
     const appendAsk = appendProcessPhaseStepOnToolStart(
       doneRetargeted!,
       [cmdDone],
