@@ -475,6 +475,56 @@ export function shouldPreserveLiveDiffExpanded(options: {
 }
 
 /**
+ * 跟进 adopt 后仍挂着的上一轮直播行 id。
+ * 先 retired（已冻结），再 handoff（发送后、首枚 chunk 前），再收束后仍藏在直播槽的预留 id。
+ */
+export function pinnedLiveAssistantId(options: {
+  retiredLiveId?: string | null
+  liveHandoffId?: string | null
+  liveAssistantId?: string | null
+  hideReservedLive?: boolean
+}): string | null {
+  const retired = options.retiredLiveId?.trim()
+  if (retired) return retired
+  const handoff = options.liveHandoffId?.trim()
+  if (handoff) return handoff
+  if (options.hideReservedLive) {
+    const live = options.liveAssistantId?.trim()
+    if (live) return live
+  }
+  return null
+}
+
+/** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */
+export function shouldMountActiveLiveSlot(options: {
+  atLatestWindow: boolean
+  loading: boolean
+  hasLiveBody: boolean
+  liveAssistantId?: string | null
+  pinnedLiveId?: string | null
+}): boolean {
+  if (!shouldMountLiveAssistantSlot(options)) return false
+  const live = options.liveAssistantId?.trim()
+  const pinned = options.pinnedLiveId?.trim()
+  if (live && pinned && live === pinned) return false
+  return Boolean(live)
+}
+
+/** 历史列同时藏 pinned / 预留直播 id，避免与冻结槽叠两份。 */
+export function historicalMessagesHidingIds(
+  messages: ChatMessage[],
+  hideIds: Array<string | null | undefined>
+): ChatMessage[] {
+  const ids = new Set<string>()
+  for (const id of hideIds) {
+    const trimmed = id?.trim()
+    if (trimmed) ids.add(trimmed)
+  }
+  if (ids.size === 0) return messages
+  return messages.filter((m) => !ids.has(m.id))
+}
+
+/**
  * 按预留 id 写入或替换助手气泡（直播行收束成历史时同一 id，避免再追加一条）。
  * 没有同 id 时走 `appendAssistantMessage`。
  */

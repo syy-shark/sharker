@@ -14,6 +14,9 @@ import {
   shouldPublishLiveStreamDuringHandoff,
   shouldPreserveLiveDiffExpanded,
   splitTranscriptAroundLiveHandoff,
+  pinnedLiveAssistantId,
+  shouldMountActiveLiveSlot,
+  historicalMessagesHidingIds,
   upsertAssistantMessage,
   cancelQueuedPrompt,
   clearDoneCommitted,
@@ -461,6 +464,61 @@ describe('commitAssistantReply persist targeting', () => {
     expect(splitTranscriptAroundLiveHandoff(liveTranscript, 'missing').before.map((m) => m.id)).toEqual(
       ['u1', 'a-live']
     )
+    expect(
+      pinnedLiveAssistantId({
+        retiredLiveId: 'a-live',
+        liveHandoffId: null,
+        liveAssistantId: 'b-live',
+        hideReservedLive: false
+      })
+    ).toBe('a-live')
+    expect(
+      pinnedLiveAssistantId({
+        retiredLiveId: null,
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'a-live',
+        hideReservedLive: false
+      })
+    ).toBe('a-live')
+    expect(
+      pinnedLiveAssistantId({
+        retiredLiveId: null,
+        liveHandoffId: null,
+        liveAssistantId: 'a-live',
+        hideReservedLive: true
+      })
+    ).toBe('a-live')
+    expect(
+      pinnedLiveAssistantId({
+        retiredLiveId: null,
+        liveHandoffId: null,
+        liveAssistantId: 'a-live',
+        hideReservedLive: false
+      })
+    ).toBeNull()
+    expect(
+      shouldMountActiveLiveSlot({
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: true,
+        liveAssistantId: 'a-live',
+        pinnedLiveId: 'a-live'
+      })
+    ).toBe(false)
+    expect(
+      shouldMountActiveLiveSlot({
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: true,
+        liveAssistantId: 'b-live',
+        pinnedLiveId: 'a-live'
+      })
+    ).toBe(true)
+    expect(
+      historicalMessagesHidingIds([...liveTranscript, followUp], ['a-live', 'b-live']).map(
+        (m) => m.id
+      )
+    ).toEqual(['u1', 'u2'])
     const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
     const upserted = upsertAssistantMessage(liveTranscript, committed)
     expect(upserted).toHaveLength(2)

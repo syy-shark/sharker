@@ -97,7 +97,10 @@ import {
 } from '../shared/live-stream-ui'
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
+  liveAnswerViewFromSnap,
   liveHasAssistantBody,
+  nextLiveAnswerRenderParts,
+  resetLiveAnswerViewHold,
   nextLivePublishedStreaming,
   nextLiveThinkText,
   prefetchLiveStreamTable,
@@ -387,6 +390,10 @@ interface SessionLiveBuffer {
   /** 保住期间直播 store 仍是上一轮体；segmentsRef 已是下一轮 seed */
   pendingTurnSegments?: TurnSegment[]
   heldCompletedSegments?: TurnSegment[]
+  retiredLiveId?: string | null
+  retiredLiveMeta?: AssistantMeta | null
+  retiredLiveStartedAt?: number | null
+  retiredLiveCopyable?: string | null
   /** 当前 messages[0] 在全量中的 seq；>0 还有更早页 */
   historyStartSeq?: number
 }
@@ -512,6 +519,14 @@ export default function App() {
   const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
   const [liveHandoffId, setLiveHandoffId] = useState<string | null>(null)
   const [preserveLiveDiffsId, setPreserveLiveDiffsId] = useState<string | null>(null)
+  const [retiredLiveId, setRetiredLiveId] = useState<string | null>(null)
+  const [retiredLiveParts, setRetiredLiveParts] = useState<
+    readonly import('../shared/turn-segments').AnswerPart[] | null
+  >(null)
+  const [retiredLiveMeta, setRetiredLiveMeta] = useState<AssistantMeta | null>(null)
+  const [retiredLiveStartedAt, setRetiredLiveStartedAt] = useState<number | null>(null)
+  const [retiredLiveCopyable, setRetiredLiveCopyable] = useState<string | null>(null)
+  const retiredLiveIdRef = useRef<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -1026,6 +1041,12 @@ export default function App() {
     })
     liveAssistantIdRef.current = buf.liveAssistantId ?? null
     setLiveAssistantId(buf.liveAssistantId ?? null)
+    retiredLiveIdRef.current = null
+    setRetiredLiveId(null)
+    setRetiredLiveParts(null)
+    setRetiredLiveMeta(null)
+    setRetiredLiveStartedAt(null)
+    setRetiredLiveCopyable(null)
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     if (lastTurnUiTimerRef.current != null) {
       window.clearTimeout(lastTurnUiTimerRef.current)
@@ -1517,6 +1538,15 @@ export default function App() {
     setLiveHandoffId(null)
   }, [])
 
+  const clearRetiredLive = useCallback(() => {
+    retiredLiveIdRef.current = null
+    setRetiredLiveId(null)
+    setRetiredLiveParts(null)
+    setRetiredLiveMeta(null)
+    setRetiredLiveStartedAt(null)
+    setRetiredLiveCopyable(null)
+  }, [])
+
   /**
    * 首枚 harness chunk：同一帧换新 id 并发布下一轮片段，上一轮才进历史列。
    * 不先 beginTurnMeta 空发布，避免回答闪空。
@@ -1524,10 +1554,20 @@ export default function App() {
   const adoptLiveHandoff = useCallback(() => {
     const fromId = liveHandoffIdRef.current
     if (!fromId) return false
+    const priorSnap = getLiveStreamUi()
+    const priorParts = nextLiveAnswerRenderParts(null, priorSnap)
+    const priorCopyable = liveAnswerViewFromSnap(priorSnap).copyable
     heldCompletedSegmentsRef.current = null
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)
     setPreserveLiveDiffsId(fromId)
+    retiredLiveIdRef.current = fromId
+    setRetiredLiveId(fromId)
+    setRetiredLiveParts(priorParts)
+    setRetiredLiveMeta(priorSnap.liveTurnMeta)
+    setRetiredLiveStartedAt(priorSnap.turnStartedAt)
+    setRetiredLiveCopyable(priorCopyable)
+    resetLiveAnswerViewHold()
     const now = Date.now()
     if (!turnStartedAtRef.current) turnStartedAtRef.current = now
     turnHadThinkingRef.current = false
@@ -1678,8 +1718,9 @@ export default function App() {
     liveAssistantIdRef.current = null
     setLiveAssistantId(null)
     clearLiveHandoff(false)
+    clearRetiredLive()
     resetTurnMeta()
-  }, [cancelScheduledStreamPaint, clearLiveHandoff, resetTurnMeta, syncActiveQueueUi])
+  }, [cancelScheduledStreamPaint, clearLiveHandoff, clearRetiredLive, resetTurnMeta, syncActiveQueueUi])
 
   /** 节流将有序片段 ref 刷到 UI */
   const flushSegmentsToUI = useCallback(() => {
@@ -3551,6 +3592,7 @@ export default function App() {
         turnMetaRef.current = { browsedFiles: [], activities: [] }
         turnChangedPathsRef.current = []
       } else {
+        clearRetiredLive()
         beginTurnMeta()
       }
       if (convId) {
@@ -3754,6 +3796,7 @@ export default function App() {
     },
     [
       beginTurnMeta,
+      clearRetiredLive,
       commitAssistantReply,
       ensureActiveConversation,
       historyForModelTurn,
@@ -9187,6 +9230,11 @@ export default function App() {
               liveAssistantId={liveAssistantId}
               liveHandoffId={liveHandoffId}
               preserveLiveDiffsId={preserveLiveDiffsId}
+              retiredLiveId={retiredLiveId}
+              retiredLiveParts={retiredLiveParts}
+              retiredLiveMeta={retiredLiveMeta}
+              retiredLiveStartedAt={retiredLiveStartedAt}
+              retiredLiveCopyable={retiredLiveCopyable}
               loading={loading}
               queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}

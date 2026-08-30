@@ -5,7 +5,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 再换历史重挂（对标 Codex #22860 / preserved streamed activity）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽，不把 A 的 key 换成 B（对标 Codex #22860 / preserved streamed activity）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -67,9 +67,12 @@ import {
   shouldMountLiveAssistantSlot,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
-  splitTranscriptAroundLiveHandoff
+  splitTranscriptAroundLiveHandoff,
+  pinnedLiveAssistantId,
+  shouldMountActiveLiveSlot,
+  historicalMessagesHidingIds
 } from '../../shared/session-runtime'
-import { liveHasAssistantBody } from '../../shared/live-stream-core'
+import { liveHasAssistantBody, type LiveAnswerView } from '../../shared/live-stream-core'
 import { ThinkingIndicator } from './ThinkingIndicator'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
@@ -123,7 +126,7 @@ import {
   windowStartToCoverIndex
 } from '../../shared/transcript-window'
 import { lastCompletedAssistantText, type CopyOutputTarget } from '../../shared/copy-output'
-import { useLiveStreamUiSelect, useLiveStreamUiSelectWhen } from '../hooks/useLiveStreamUi'
+import { useLiveStreamUiSelectWhen } from '../hooks/useLiveStreamUi'
 import { normalizeStreamingText } from '../../shared/streaming-markdown'
 import type { KeymapOverrides } from '../../shared/keymap'
 import type { SlashCommandMeta } from '../../shared/slash-commands'
@@ -411,6 +414,12 @@ interface Props {
   liveHandoffId?: string | null
   /** 刚离开直播槽、历史重挂时保持 diff 展开 */
   preserveLiveDiffsId?: string | null
+  /** adopt 后仍挂着的上一轮直播行，冻结 store 切片以免跟新回合 */
+  retiredLiveId?: string | null
+  retiredLiveParts?: readonly LiveAnswerView['parts'][number][] | null
+  retiredLiveMeta?: import('../../shared/types').AssistantMeta | null
+  retiredLiveStartedAt?: number | null
+  retiredLiveCopyable?: string | null
   queuedPrompts: QueuedPrompt[]
   /** 已接受、下一工具/采样后写入当前回合（对标 Codex pending steer） */
   pendingSteers?: QueuedPrompt[]
@@ -866,6 +875,11 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   liveRowId,
   loading,
   isStreaming,
+  frozen = false,
+  frozenParts = null,
+  frozenMeta = null,
+  frozenStartedAt = null,
+  frozenCopyable,
   historyHasReserved,
   findHit,
   findCurrent,
@@ -883,6 +897,11 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   liveRowId: string
   loading: boolean
   isStreaming: boolean
+  frozen?: boolean
+  frozenParts?: readonly LiveAnswerView['parts'][number][] | null
+  frozenMeta?: import('../../shared/types').AssistantMeta | null
+  frozenStartedAt?: number | null
+  frozenCopyable?: string
   historyHasReserved: boolean
   findHit: boolean
   findCurrent: boolean
@@ -897,12 +916,13 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
 }) {
-  const liveTurnMeta = useLiveStreamUiSelect((snap) => snap.liveTurnMeta)
-  const turnStartedAt = useLiveStreamUiSelect((snap) => snap.turnStartedAt)
-  const liveBody = useLiveStreamUiSelect((snap) =>
+  const liveTurnMeta = useLiveStreamUiSelectWhen(!frozen, (snap) => snap.liveTurnMeta)
+  const turnStartedAt = useLiveStreamUiSelectWhen(!frozen, (snap) => snap.turnStartedAt)
+  const liveBody = useLiveStreamUiSelectWhen(!frozen, (snap) =>
     liveHasAssistantBody(snap, Boolean(approval) || Boolean(userInput))
   )
   if (
+    !frozen &&
     !shouldRenderLiveAssistantRow({
       loading,
       hasLiveBody: liveBody,
@@ -921,18 +941,21 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
     >
       <LiveAssistantArticle
         messageId={liveRowId}
-        meta={liveTurnMeta ?? undefined}
-        liveStartedAt={turnStartedAt ?? undefined}
-        approval={approval}
+        meta={(frozen ? frozenMeta : liveTurnMeta) ?? undefined}
+        liveStartedAt={(frozen ? frozenStartedAt : turnStartedAt) ?? undefined}
+        approval={frozen ? null : approval}
         approvalResponding={approvalResponding}
         onApproval={onApproval}
-        userInput={userInput}
+        userInput={frozen ? null : userInput}
         userInputResponding={userInputResponding}
         onUserInput={onUserInput}
         onOpenSubAgent={onOpenSubAgent}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
         isStreaming={isStreaming}
+        frozen={frozen}
+        frozenParts={frozenParts}
+        frozenCopyable={frozenCopyable}
       />
     </div>
   )
@@ -951,6 +974,11 @@ export const ChatView = memo(function ChatView({
   liveAssistantId = null,
   liveHandoffId = null,
   preserveLiveDiffsId = null,
+  retiredLiveId = null,
+  retiredLiveParts = null,
+  retiredLiveMeta = null,
+  retiredLiveStartedAt = null,
+  retiredLiveCopyable = null,
   queuedPrompts,
   pendingSteers = [],
   loading,
@@ -2382,17 +2410,27 @@ export const ChatView = memo(function ChatView({
     loading,
     handoffId: liveHandoffId
   })
-  const handoffSplit = liveHandoffId
-    ? splitTranscriptAroundLiveHandoff(windowedMessages, liveHandoffId)
+  const pinnedLiveId = pinnedLiveAssistantId({
+    retiredLiveId,
+    liveHandoffId,
+    liveAssistantId,
+    hideReservedLive
+  })
+  const handoffSplit = pinnedLiveId
+    ? splitTranscriptAroundLiveHandoff(windowedMessages, pinnedLiveId)
     : null
   const historicalSource = handoffSplit
-    ? handoffSplit.before
+    ? historicalMessagesHidingIds(handoffSplit.before, [liveAssistantId, retiredLiveId])
     : historicalMessagesDuringLive(
         windowedMessages,
         hideReservedLive ? liveAssistantId : null,
         hideReservedLive
       )
-  const followUpSource = handoffSplit?.after ?? []
+  const followUpSource = historicalMessagesHidingIds(handoffSplit?.after ?? [], [
+    liveAssistantId,
+    retiredLiveId,
+    pinnedLiveId
+  ])
   const historicalRows = useMemo(
     () =>
       historicalSource.map((m, index, rows) => {
@@ -2593,12 +2631,42 @@ export const ChatView = memo(function ChatView({
           <div className="messages" ref={messagesInnerRef}>
             {historicalRows}
 
-            {shouldMountLiveAssistantSlot({
+            {pinnedLiveId ? (
+              <LiveAssistantSlot
+                key={pinnedLiveId}
+                liveRowId={pinnedLiveId}
+                loading={loading}
+                isStreaming={false}
+                frozen={Boolean(retiredLiveId && retiredLiveId === pinnedLiveId)}
+                frozenParts={retiredLiveId === pinnedLiveId ? retiredLiveParts : null}
+                frozenMeta={retiredLiveId === pinnedLiveId ? retiredLiveMeta : null}
+                frozenStartedAt={
+                  retiredLiveId === pinnedLiveId ? retiredLiveStartedAt : null
+                }
+                frozenCopyable={
+                  retiredLiveId === pinnedLiveId ? retiredLiveCopyable ?? undefined : undefined
+                }
+                historyHasReserved={historyHasReserved}
+                findHit={liveMemoryFindHits.length > 0 && liveRowId === pinnedLiveId}
+                findCurrent={currentFindMessageId === pinnedLiveId}
+                modelLabel={modelLabel}
+                approval={retiredLiveId === pinnedLiveId ? null : approval}
+                approvalResponding={approvalResponding}
+                onApproval={onApproval}
+                userInput={retiredLiveId === pinnedLiveId ? null : userInput}
+                userInputResponding={userInputResponding}
+                onUserInput={onUserInput}
+                onOpenSubAgent={onOpenSubAgent}
+                toolOutputDisplay={toolOutputDisplay}
+                onNeedFullMessage={onNeedFullMessage}
+              />
+            ) : shouldMountLiveAssistantSlot({
               atLatestWindow,
               loading,
               hasLiveBody: liveBody
             }) ? (
               <LiveAssistantSlot
+                key={liveRowId}
                 liveRowId={liveRowId}
                 loading={loading}
                 isStreaming={liveStreaming}
@@ -2674,6 +2742,36 @@ export const ChatView = memo(function ChatView({
               >
                 <ThinkingIndicator />
               </div>
+            ) : null}
+
+            {shouldMountActiveLiveSlot({
+              atLatestWindow,
+              loading,
+              hasLiveBody: liveBody,
+              liveAssistantId,
+              pinnedLiveId
+            }) ? (
+              <LiveAssistantSlot
+                key={liveRowId}
+                liveRowId={liveRowId}
+                loading={loading}
+                isStreaming={liveStreaming}
+                historyHasReserved={Boolean(
+                  liveAssistantId && messages.some((m) => m.id === liveAssistantId)
+                )}
+                findHit={liveMemoryFindHits.length > 0}
+                findCurrent={currentFindMessageId === liveRowId}
+                modelLabel={modelLabel}
+                approval={approval}
+                approvalResponding={approvalResponding}
+                onApproval={onApproval}
+                userInput={userInput}
+                userInputResponding={userInputResponding}
+                onUserInput={onUserInput}
+                onOpenSubAgent={onOpenSubAgent}
+                toolOutputDisplay={toolOutputDisplay}
+                onNeedFullMessage={onNeedFullMessage}
+              />
             ) : null}
 
             <div

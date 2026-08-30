@@ -10,6 +10,8 @@ import {
   nextLiveAnswerView,
   nextLivePublishedStreaming,
   nextLiveProcessView,
+  liveAnswerViewFromSnap,
+  resetLiveAnswerViewHold,
   shouldPrefetchLiveStreamTable,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveStreamDerivation,
@@ -1485,6 +1487,26 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe(false)
   })
 
+  it('clears answer grow-hold so the next turn does not reuse the prior view', () => {
+    const reply = prose('Hello world')
+    const snapA = { ...EMPTY_LIVE_STREAM_UI, liveSegments: [reply] }
+    const viewA = liveAnswerViewFromSnap(snapA)
+    expect(viewA.show).toBe(true)
+    resetLiveAnswerViewHold()
+    const seed: TurnSegment = {
+      id: 'status-local',
+      kind: 'status',
+      status: 'active',
+      content: 'Thinking'
+    }
+    const viewB = liveAnswerViewFromSnap({
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [seed]
+    })
+    expect(viewB.show).toBe(false)
+    expect(viewB.parts).toHaveLength(0)
+  })
+
   it('does not prefetch the detector table on first paint or during a live turn', () => {
     expect(shouldPrefetchLiveStreamTable({ loading: false, hadLiveTurn: false })).toBe(false)
     expect(shouldPrefetchLiveStreamTable({ loading: true, hadLiveTurn: true })).toBe(false)
@@ -1516,9 +1538,16 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('splitTranscriptAroundLiveHandoff')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantId')
+    expect(src('../src/components/ChatView.tsx')).toContain('shouldMountActiveLiveSlot')
     expect(src('../src/App.tsx')).toContain('shouldHoldLiveHandoff')
     expect(src('../src/App.tsx')).toContain('shouldAdoptLiveHandoff')
     expect(src('../src/App.tsx')).toContain('adoptLiveHandoff')
+    expect(src('../src/App.tsx')).toContain('nextLiveAnswerRenderParts')
+    expect(src('../src/App.tsx')).toContain('resetLiveAnswerViewHold')
+    expect(src('../src/App.tsx')).toContain('setRetiredLiveId')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenParts')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('useLiveStreamUiSelectWhen')
 
     expect(src('../src/components/TurnFlow.tsx')).toContain(
       "from '../../shared/live-stream-core'"

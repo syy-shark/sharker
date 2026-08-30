@@ -108,6 +108,13 @@ export function registerLiveStreamTable(table: LiveStreamTable): void {
   liveStreamTable = table
 }
 
+/** 跟进 adopt 换新回合前清掉上一轮 answer / process hold，避免 B 接着 A 的 grow-hold。 */
+export function resetLiveAnswerViewHold(): void {
+  answerCache = null
+  answerGrowHold = null
+  processHold = null
+}
+
 export function prefetchLiveStreamTable(): Promise<void> {
   tablePrefetch ??= import('./live-stream-slices').then(() => undefined)
   return tablePrefetch
