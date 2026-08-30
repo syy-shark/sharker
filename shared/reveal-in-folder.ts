@@ -230,6 +230,11 @@ export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'
 export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
+/** Official Settings → Worktrees (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const WORKTREES_SETTINGS_LABEL = 'Worktrees'
+export const WORKTREE_ROOT_LABEL = 'Worktree root'
+export const WORKTREES_SETTINGS_INTRO =
+  'Codex creates managed worktrees under the Worktree root. Change this limit or set it to 0 to turn off automatic deletion.'
 export const MCP_SERVERS_LABEL = 'MCP servers'
 /** Official Settings → MCP servers (learn.chatgpt.com/docs/extend/mcp). No OAuth Authenticate. */
 export const ADD_SERVER_LABEL = 'Add server'

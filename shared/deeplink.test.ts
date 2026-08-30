@@ -76,7 +76,11 @@ describe('deeplink', () => {
     })
     expect(parseDeeplink('sharker://settings/worktrees')).toEqual({
       type: 'settings',
-      tab: 'permissions'
+      tab: 'worktrees'
+    })
+    expect(parseDeeplink('sharker://settings/worktree')).toEqual({
+      type: 'settings',
+      tab: 'worktrees'
     })
     expect(parseDeeplink('sharker://settings/personalization')).toEqual({
       type: 'settings',

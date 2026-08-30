@@ -1,6 +1,6 @@
 /**
- * 设置页壳：权限 / 模型 / MCP servers / General / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Archived chats / Profile
- * Computer Use / Browser Use 入口暂隐藏；`BrowserSettings` 对标 Codex Settings → Browser
+ * 设置页壳：权限 / 模型 / MCP servers / General / Worktrees / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Archived chats / Profile
+ * Computer Use / Browser Use 入口暂隐藏；`WorktreeSettings` 对标 Codex Settings → Worktrees
  * @see src/ARCH.md
  */
 import type { Dispatch, SetStateAction } from 'react'
@@ -18,6 +18,7 @@ import { ShortcutSettings } from '../components/settings/ShortcutSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
 import { McpSettings } from '../components/settings/McpSettings'
 import { BrowserSettings } from '../components/settings/BrowserSettings'
+import { WorktreeSettings } from '../components/settings/WorktreeSettings'
 import {
   APPEARANCE_SETTINGS_LABEL,
   ARCHIVED_CHATS_INTRO,
@@ -35,14 +36,16 @@ import {
   PERSONALIZATION_SETTINGS_INTRO,
   PERSONALIZATION_SETTINGS_LABEL,
   SUGGESTED_PROMPTS_INTRO,
-  SUGGESTED_PROMPTS_SETTINGS_LABEL
+  SUGGESTED_PROMPTS_SETTINGS_LABEL,
+  WORKTREES_SETTINGS_INTRO,
+  WORKTREES_SETTINGS_LABEL
 } from '../../shared/reveal-in-folder'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   permissions: {
     title: '权限',
-    desc: '控制 AI 可访问的文件与系统范围、托管 worktree 保留数与 Git 文案模板；高危操作仍会单独确认。/review 交付在通用。'
+    desc: '控制 AI 可访问的文件与系统范围与 Git 文案模板；高危操作仍会单独确认。Worktree root 在 Worktrees。/review 交付在通用。'
   },
   models: {
     title: '模型',
@@ -55,6 +58,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   general: {
     title: GENERAL_SETTINGS_LABEL,
     desc: GENERAL_SETTINGS_INTRO
+  },
+  worktrees: {
+    title: WORKTREES_SETTINGS_LABEL,
+    desc: WORKTREES_SETTINGS_INTRO
   },
   browser: {
     title: BROWSER_SETTINGS_LABEL,
@@ -122,6 +129,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave, workspacePath = '' 
           {tab === 'mcp' && <McpSettings workspacePath={workspacePath} />}
           {tab === 'general' && (
             <GeneralSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'worktrees' && (
+            <WorktreeSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'browser' && (
             <BrowserSettings draft={draft} setDraft={setDraft} onSave={onSave} />

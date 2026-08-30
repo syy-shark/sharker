@@ -19,6 +19,7 @@ export type DeeplinkAction =
         | 'permissions'
         | 'models'
         | 'general'
+        | 'worktrees'
         | 'browser'
         | 'appearance'
         | 'notifications'
@@ -124,13 +125,10 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   ) {
     return { type: 'settings', tab: 'appearance' }
   }
-  if (
-    key === 'permissions' ||
-    key === 'git' ||
-    key === 'worktree' ||
-    key === 'worktrees' ||
-    key.startsWith('computer-use')
-  ) {
+  if (key === 'worktree' || key === 'worktrees') {
+    return { type: 'settings', tab: 'worktrees' }
+  }
+  if (key === 'permissions' || key === 'git' || key.startsWith('computer-use')) {
     return { type: 'settings', tab: 'permissions' }
   }
   if (key === 'archived') return { type: 'settings', tab: 'archived' }

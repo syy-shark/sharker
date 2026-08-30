@@ -12,6 +12,7 @@ import {
   BellRing,
   ChartNoAxesColumn,
   Folder,
+  GitBranch,
   Globe,
   Inbox,
   ListFilter,
@@ -63,7 +64,8 @@ import {
   threadMenuItems,
   threadRevealFolderPath,
   UNPIN_LABEL,
-  WORKTREE_LABEL
+  WORKTREE_LABEL,
+  WORKTREES_SETTINGS_LABEL
 } from '../../shared/reveal-in-folder'
 import { SCHEDULED_LABEL } from '../../shared/automation'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
@@ -150,6 +152,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'mcp', label: MCP_SERVERS_LABEL, icon: Plug },
   { id: 'general', label: GENERAL_SETTINGS_LABEL, icon: Settings2 },
+  { id: 'worktrees', label: WORKTREES_SETTINGS_LABEL, icon: GitBranch },
   { id: 'browser', label: BROWSER_SETTINGS_LABEL, icon: Globe },
   { id: 'appearance', label: APPEARANCE_SETTINGS_LABEL, icon: Palette },
   { id: 'notifications', label: NOTIFICATIONS_SETTINGS_LABEL, icon: BellRing },
