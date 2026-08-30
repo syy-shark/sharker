@@ -13,6 +13,7 @@ import {
   clearStreamingMarkdownHolds,
   continueCheapInlineMarkdown,
   shouldGrowCheapInlineText,
+  shouldGrowLastListItemInline,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -1175,6 +1176,22 @@ describe('splitStreamingMarkdown', () => {
       expect(manyAfterNl[0].items.slice(0, 12).every((item, i) => item === manyFirst[0].items[i])).toBe(true)
       expect(manyAfterNl[0].items).toHaveLength(13)
     }
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '更长' })).toBe(true)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n' })).toBe(false)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n续行' })).toBe(true)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项\n', suffix: '续行' })).toBe(true)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n- 二项' })).toBe(false)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项\n', suffix: '- 二项' })).toBe(false)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n\n下一段' })).toBe(false)
+    expect(shouldGrowLastListItemInline({ prevNorm: '- 一项', suffix: '\n  - 嵌套' })).toBe(false)
+    const wrapSrc = '- 一项\n- 二项'
+    const wrapFirst = parseCheapProseBlocks(wrapSrc)
+    const wrapNl = continueCheapProseBlocks(wrapSrc, wrapFirst, `${wrapSrc}\n`)
+    const wrapCont = continueCheapProseBlocks(`${wrapSrc}\n`, wrapNl, `${wrapSrc}\n续行仍在项内`)
+    if (wrapFirst[0]?.type === 'list' && wrapCont[0]?.type === 'list') {
+      expect(wrapCont[0].items[0]).toBe(wrapFirst[0].items[0])
+      expect(wrapCont[0].items[1]?.nodes).toEqual([{ type: 'text', text: '二项\n续行仍在项内' }])
+    }
     const pendingSetext = parseCheapProseBlocks('- Title\n  ==')
     const setextLive = continueCheapProseBlocks('- Title\n  ==', pendingSetext, '- Title\n  ===')
     if (setextLive[0]?.type === 'list') {
@@ -2289,6 +2306,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
+    expect(mdSrc).toContain('shouldGrowLastListItemInline')
     expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')

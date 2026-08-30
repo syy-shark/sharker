@@ -3243,6 +3243,41 @@ function growLastListItemInnerBlocks(
   return { ...item, blocks: [...item.blocks.slice(0, -1), grown[0]!] }
 }
 
+/**
+ * 列表后缀只续最后一项行内：同行增长，或换行后续行不另起项 / 块。
+ * 新列表项、空行后的兄弟段、嵌套标记仍走整项窗口。
+ */
+export function shouldGrowLastListItemInline(opts: {
+  prevNorm: string
+  suffix: string
+}): boolean {
+  const { prevNorm, suffix } = opts
+  if (!suffix || suffix.includes(']:')) return false
+  if (!suffix.includes('\n') && !prevNorm.endsWith('\n')) {
+    const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+    return !lastLineNeedsFullProseParse(lastLine)
+  }
+  const continued = prevNorm.endsWith('\n')
+    ? suffix
+    : suffix.startsWith('\n')
+      ? suffix.slice(1)
+      : null
+  if (continued == null) return false
+  if (!continued) return false
+  if (continued.startsWith('\n') || continued.includes('\n\n')) return false
+  const lastPrev = prevNorm.endsWith('\n')
+    ? prevNorm.slice(0, -1).slice(prevNorm.slice(0, -1).lastIndexOf('\n') + 1)
+    : prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+  if (lastLineNeedsFullProseParse(lastPrev)) return false
+  for (const line of continued.split('\n')) {
+    if (!line) continue
+    if (parseListLine(line) || lineOpensNewCheapBlock(line) || lastLineNeedsFullProseParse(line)) {
+      return false
+    }
+  }
+  return true
+}
+
 function continueLastListBlock(
   prev: Extract<CheapProseBlock, { type: 'list' }>,
   prevNorm: string,
@@ -3250,23 +3285,22 @@ function continueLastListBlock(
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
-  if (!suffix.includes('\n') && !suffix.includes(']:') && !prevNorm.endsWith('\n')) {
-    const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
-    if (!lastLineNeedsFullProseParse(lastLine) && prev.items.length) {
-      const lastItem = prev.items[prev.items.length - 1]!
-      const grown = growLastListItemInline(lastItem, suffix, defs)
-      if (grown) {
-        if (grown === lastItem) return [prev]
-        return [
-          {
-            type: 'list',
-            ordered: prev.ordered,
-            items: [...prev.items.slice(0, -1), grown],
-            loose: prev.loose,
-            start: prev.start
-          }
-        ]
-      }
+  if (shouldGrowLastListItemInline({ prevNorm, suffix }) && prev.items.length) {
+    const lastItem = prev.items[prev.items.length - 1]!
+    const inlineSuffix =
+      prevNorm.endsWith('\n') && !suffix.startsWith('\n') ? `\n${suffix}` : suffix
+    const grown = growLastListItemInline(lastItem, inlineSuffix, defs)
+    if (grown) {
+      if (grown === lastItem) return [prev]
+      return [
+        {
+          type: 'list',
+          ordered: prev.ordered,
+          items: [...prev.items.slice(0, -1), grown],
+          loose: prev.loose,
+          start: prev.start
+        }
+      ]
     }
   }
   const start = lastTopLevelListItemStart(prevNorm)
