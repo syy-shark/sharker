@@ -1593,6 +1593,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/AssistantMessage.tsx')).toContain('seedHistoricalAnswerHold')
     expect(src('../src/components/AssistantMessage.tsx')).toContain('frozenSteps={frozenSteps}')
     expect(src('../src/components/ChatView.tsx')).toContain('clearHistoricalAnswerHolds')
+    expect(src('../src/components/ChatView.tsx')).toContain('warmHistoricalAnswerHold')
+    expect(src('../src/components/ChatView.tsx')).toContain('requestIdleCallback')
+    expect(src('historical-answer-hold.ts').includes('live-stream-slices')).toBe(false)
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('liveDiff = true')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('isStreaming={isStreaming}')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain(

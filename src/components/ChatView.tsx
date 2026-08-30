@@ -7,6 +7,7 @@
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 切对话清掉历史 demo iframe 池与历史回答 hold。
+ * 空闲时预热窗口外助手行 hold，直播中不跑。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -80,6 +81,12 @@ import {
   type RetiredLiveArticle
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody, type LiveAnswerView } from '../../shared/live-stream-core'
+import {
+  nextHistoricalAnswerWarmMessages,
+  shouldScheduleHistoricalAnswerWarm,
+  warmHistoricalAnswerHold
+} from '../../shared/historical-answer-hold'
+import { LAST_TURN_UI_FLUSH_MS } from '../../shared/last-turn-flush'
 import { clearHistoricalAnswerHolds } from '../../shared/turn-segments'
 import { ThinkingIndicator } from './ThinkingIndicator'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
@@ -1689,6 +1696,35 @@ export const ChatView = memo(function ChatView({
     [transcriptMessages, windowStart, windowEnd]
   )
   const atLatestWindow = !viewingHead && windowIncludesLatest(transcriptMessages.length, windowEnd)
+
+  useEffect(() => {
+    if (!shouldScheduleHistoricalAnswerWarm({ loading })) return
+    const toWarm = nextHistoricalAnswerWarmMessages({
+      messages: transcriptMessages,
+      windowStart,
+      windowEnd
+    })
+    if (!toWarm.length) return
+    const run = () => {
+      if (loadingRef.current) return
+      for (const message of toWarm) {
+        if (message.role !== 'assistant' || !message.meta?.segments?.length) continue
+        warmHistoricalAnswerHold({
+          messageId: message.id,
+          content: message.content,
+          durationSec: message.meta.durationSec,
+          outcome: message.meta.outcome,
+          segments: message.meta.segments
+        })
+      }
+    }
+    if (typeof requestIdleCallback === 'function') {
+      const idleId = requestIdleCallback(run)
+      return () => cancelIdleCallback(idleId)
+    }
+    const timeoutId = window.setTimeout(run, LAST_TURN_UI_FLUSH_MS)
+    return () => window.clearTimeout(timeoutId)
+  }, [loading, transcriptMessages, windowStart, windowEnd])
 
   useLayoutEffect(() => {
     if (findHitIndex < 0) return

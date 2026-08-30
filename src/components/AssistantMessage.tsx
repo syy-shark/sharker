@@ -21,6 +21,7 @@ import {
   shouldRememberHistoricalAnswerHold,
   writeHistoricalAnswerHold
 } from '../../shared/turn-segments'
+import { historicalProcessForFlow } from '../../shared/historical-answer-hold'
 import {
   deriveProcessPhases,
   snapshotFrozenProcessSteps,
@@ -270,26 +271,17 @@ export const AssistantMessage = memo(function AssistantMessage({
           : [],
     [isStreaming, seededHold, segments, useSegmentFlow]
   )
-  // 过程区不再重复：主区已展示的文字 / 内联演示
-  const answerTextIds = useMemo(
-    () => new Set(answerParts.filter((p) => p.type === 'text').map((p) => p.id)),
-    [answerParts]
-  )
   const processForFlowRef = useRef<TurnSegment[]>([])
   const processForFlow = useMemo(() => {
     if (seededHold) {
       processForFlowRef.current = seededHold.processForFlow
       return seededHold.processForFlow
     }
-    const next = processOnly.filter((s) => {
-      if (s.toolName === 'present_inline_demo') return false
-      if (s.kind === 'text' && answerTextIds.has(s.id)) return false
-      return true
-    })
+    const next = historicalProcessForFlow(processOnly, answerParts)
     if (sameRefList(processForFlowRef.current, next)) return processForFlowRef.current
     processForFlowRef.current = next
     return next
-  }, [processOnly, answerTextIds, seededHold])
+  }, [processOnly, answerParts, seededHold])
   const showFlowPanel = useSegmentFlow && (isStreaming ? true : flowOpen)
   /** 完成后可展开：真实工具 / 未进正文的旁白 / 错误。演示与闲聊不占按钮。 */
   const hasExpandableProcess = processForFlow.some(
