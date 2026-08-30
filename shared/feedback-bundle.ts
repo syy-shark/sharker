@@ -12,8 +12,8 @@ export const FEEDBACK_CLASSIFICATIONS: Array<{
   title: string
   description: string
 }> = [
-  { id: 'bug', title: '问题', description: '出错、卡顿或行为不对。' },
-  { id: 'other', title: '其他', description: '建议或其它反馈。' }
+  { id: 'bug', title: 'Bug', description: 'Something broke, stalled, or behaved incorrectly.' },
+  { id: 'other', title: 'Other', description: 'A suggestion or other feedback.' }
 ]
 
 export function parseFeedbackClassification(raw: unknown): FeedbackClassification {

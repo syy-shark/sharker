@@ -124,6 +124,11 @@ export function quitAppLabel(appName: string): string {
 /** Official Help menu (github.com/openai/codex#26890 Codex Documentation / Send Feedback). */
 export const CODEX_DOCUMENTATION_LABEL = 'Codex Documentation'
 export const SEND_FEEDBACK_LABEL = 'Send Feedback'
+/** Official desktop `/feedback` dialog title (Codex Share feedback). */
+export const SHARE_FEEDBACK_LABEL = 'Share feedback'
+/** Official `/feedback` checkbox (Codex desktop #26654). */
+export const INCLUDE_CURRENT_SESSION_LOGS_LABEL = 'Include current Codex session logs'
+export const RESTORE_LABEL = 'Restore'
 /** Official README / Help target. Do not invent Check for Updates. */
 export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */

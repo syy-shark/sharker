@@ -140,7 +140,7 @@ import {
   paintSelectionHighlight
 } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
-import { FIND_IN_CHAT_LABEL } from '../../shared/reveal-in-folder'
+import { FIND_IN_CHAT_LABEL, RESTORE_LABEL } from '../../shared/reveal-in-folder'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -2554,7 +2554,7 @@ export const ChatView = memo(function ChatView({
               <span>隔离 worktree 已被清理。可从快照恢复后继续。</span>
               {onRestoreWorktree ? (
                 <button type="button" className="composer-worktree-banner-btn" onClick={onRestoreWorktree}>
-                  恢复
+                  {RESTORE_LABEL}
                 </button>
               ) : null}
             </div>

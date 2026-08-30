@@ -10,6 +10,10 @@ import {
   type FeedbackBundleInfo,
   type FeedbackClassification
 } from '../../shared/feedback-bundle'
+import {
+  INCLUDE_CURRENT_SESSION_LOGS_LABEL,
+  SHARE_FEEDBACK_LABEL
+} from '../../shared/reveal-in-folder'
 import './FeedbackDialog.css'
 
 interface Props {
@@ -79,8 +83,8 @@ export function FeedbackDialog({ open, info, onClose }: Props) {
       <button type="button" className="feedback-dialog-backdrop" aria-label="关闭反馈" onClick={onClose} />
       <div className="feedback-dialog glass-popover popover-enter" role="dialog" aria-labelledby="feedback-dialog-title">
         <header className="feedback-dialog-head">
-          <h2 id="feedback-dialog-title">反馈</h2>
-          <p>对标 Codex 桌面 `/feedback`。只复制本机诊断，不会发送到任何服务器。</p>
+          <h2 id="feedback-dialog-title">{SHARE_FEEDBACK_LABEL}</h2>
+          <p>Opens the official `/feedback` form. Copies local diagnostics; does not upload.</p>
         </header>
         <div className="feedback-dialog-kinds" role="radiogroup" aria-label="反馈类型">
           {FEEDBACK_CLASSIFICATIONS.map((item) => (
@@ -113,7 +117,7 @@ export function FeedbackDialog({ open, info, onClose }: Props) {
             checked={includeSession}
             onChange={(event) => setIncludeSession(event.target.checked)}
           />
-          <span>附带当前会话诊断（对标 Codex include session logs）</span>
+          <span>{INCLUDE_CURRENT_SESSION_LOGS_LABEL}</span>
         </label>
         {sessionId ? (
           <p className="feedback-dialog-id">

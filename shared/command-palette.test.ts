@@ -86,7 +86,7 @@ describe('command palette', () => {
       'Start code review mode to review uncommitted changes or compare against a base branch.'
     )
     expect(PALETTE_COMMANDS.find((c) => c.id === 'goal')?.title).toBe(
-      'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.'
+      'Set a persistent goal for Codex to work toward.'
     )
     expect(PALETTE_COMMANDS.find((c) => c.id === 'plan')?.title).toBe(
       'Toggle plan mode for multi-step planning.'

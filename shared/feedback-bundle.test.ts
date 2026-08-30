@@ -29,7 +29,7 @@ describe('feedback bundle', () => {
       classification: 'bug',
       reason: '滚动卡顿'
     })
-    expect(full).toContain('问题')
+    expect(full).toContain('Bug')
     expect(full).toContain('滚动卡顿')
     expect(full).toContain('kimi')
     const slim = formatFeedbackBundle({
@@ -38,7 +38,7 @@ describe('feedback bundle', () => {
       reason: '想要导出',
       includeSession: false
     })
-    expect(slim).toContain('其他')
+    expect(slim).toContain('Other')
     expect(slim).toContain('想要导出')
     expect(slim).toContain('c1')
     expect(slim).not.toContain('kimi')

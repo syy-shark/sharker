@@ -89,6 +89,9 @@ import {
   CODEX_DOCUMENTATION_LABEL,
   CODEX_DOCUMENTATION_URL,
   SEND_FEEDBACK_LABEL,
+  SHARE_FEEDBACK_LABEL,
+  INCLUDE_CURRENT_SESSION_LOGS_LABEL,
+  RESTORE_LABEL,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -261,6 +264,9 @@ describe('reveal in folder', () => {
     expect(CODEX_DOCUMENTATION_LABEL).toBe('Codex Documentation')
     expect(CODEX_DOCUMENTATION_URL).toBe('https://developers.openai.com/codex')
     expect(SEND_FEEDBACK_LABEL).toBe('Send Feedback')
+    expect(SHARE_FEEDBACK_LABEL).toBe('Share feedback')
+    expect(INCLUDE_CURRENT_SESSION_LOGS_LABEL).toBe('Include current Codex session logs')
+    expect(RESTORE_LABEL).toBe('Restore')
     expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
     expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
     expect(FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL).toBe('Focus Browser Address Bar')

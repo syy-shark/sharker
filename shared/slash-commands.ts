@@ -4,17 +4,18 @@
  */
 import { OPEN_KEYBOARD_SHORTCUTS_LABEL, OPEN_SETTINGS_LABEL } from './reveal-in-folder'
 
-/** Official desktop slash copy (learn.chatgpt.com/docs/reference/slash-commands). */
+/** Official IDE / desktop slash copy (learn.chatgpt.com/docs/ide/slash-commands). */
 export const SLASH_PLAN_DESCRIPTION = 'Toggle plan mode for multi-step planning.'
-export const SLASH_GOAL_DESCRIPTION =
-  'Set a persistent goal for ChatGPT to work toward; use /plan first to shape it.'
+export const SLASH_GOAL_DESCRIPTION = 'Set a persistent goal for Codex to work toward.'
 export const SLASH_STATUS_DESCRIPTION = 'Show the chat ID, context usage, and rate limits.'
 export const SLASH_COMPACT_DESCRIPTION = "Compact the current chat's context."
 export const SLASH_TASK_DESCRIPTION = 'Start a chat without a project.'
 export const SLASH_INIT_DESCRIPTION = 'Generate an AGENTS.md scaffold for the current project.'
 export const SLASH_MEMORIES_DESCRIPTION =
   'Configure whether the chat can use or generate memories, when Memories is available.'
-export const SLASH_LOCAL_DESCRIPTION = 'Run the chat in the selected local project.'
+export const SLASH_LOCAL_DESCRIPTION = 'Run the chat in your local workspace.'
+export const SLASH_FEEDBACK_DESCRIPTION =
+  'Open the feedback dialog to submit feedback and optionally include logs.'
 export const SLASH_REVIEW_DESCRIPTION =
   'Start code review mode to review uncommitted changes or compare against a base branch.'
 export const SLASH_PERSONALITY_DESCRIPTION =
@@ -281,7 +282,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'feedback',
-    description: '打开反馈对话框（仅本机复制，不外发）',
+    description: SLASH_FEEDBACK_DESCRIPTION,
     scope: 'ui',
     action: 'show_feedback',
     category: 'other'
