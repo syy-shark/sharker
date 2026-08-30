@@ -206,8 +206,8 @@
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
 | `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、worktree/worktrees→Worktrees（对标 Codex Settings → Worktrees）、browser/history/browser-use→浏览器（对标 Codex `settings/browser-use` Browser settings）、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/computer-use→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications/notify 进通知、general/review 进通用、browser/history/browser-use 进浏览器、personalization/memories 进个性化、mcp/mcp-servers 进 MCP 服务器、worktree/worktrees 进 Worktrees、git/computer-use 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
-| `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接 |
-| `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接 |
+| `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接；失败提示官方 Unable to transcribe audio |
+| `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接；Unable to transcribe audio |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / 无对话 id 仍收口 / persist 目标 / 直播预留 id / 收束空窗 / 首枚 token 不藏尚未入列的预留行 / upsert 保留 hover 时间戳 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`mergeChangedRelPaths` 只在路径新增时扩列表；`liveAssistantMeta` 把已改路径带进直播元信息（写入预览就开始挂「已改」）；`reuseLiveAssistantMeta` 在路径/活动没变时保住同一对象，避免工具心跳重挂直播行 |
 | `turn-meta-write.test.ts` | 写盘相对路径；apply_patch hunk；合并本轮路径只在新增时返回 true；字段相同的直播元信息复用原对象 |
@@ -232,7 +232,7 @@
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | Ask for approval / Full access 文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Approve for me / Auto / 命名 profile） |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork Copy a local chat into a new local chat or worktree、/side [问题]、/project、/chat `/task` Start a chat without a project、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan Toggle plan mode、/plan-mode 同官方 plan 文案、/mcp Open MCP status、/feedback、/share、/local Run the chat in your local workspace、/worktree、/approve、/subagents、/settings Open settings、/keymap Open keyboard shortcuts；官方 IDE 表原文用于 /goal /local /feedback，对话框仍只复制本机、不发明上传 / Safety check / service tier）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork Copy a local chat into a new local chat or worktree、/side [问题]、/project、/chat `/task` Start a chat without a project、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan Toggle plan mode、/plan-mode 同官方 plan 文案、/mcp Open MCP status、/feedback、/share、/local Run the chat in the selected local project、/worktree、/approve、/subagents、/settings Open settings、/keymap Open keyboard shortcuts；官方 IDE 表原文用于 /goal /local /feedback，对话框仍只复制本机、不发明上传 / Safety check / service tier）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览（含 Markdown 富预览）/ 浏览器批注 → Add to chat 芯片或 Ask in side chat：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex desktop / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注；Shift+点选区域、⌘/Ctrl+点立刻写入芯片（对标 Codex Annotation mode / hold Shift and click / Hold Cmd while clicking）。不发明 @Browser / Adjust |

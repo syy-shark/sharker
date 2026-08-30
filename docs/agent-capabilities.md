@@ -53,7 +53,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/delete` | 永久删除当前对话 |
 | `/theme` | 打开外观设置 |
 | `/debug-config` | 打印本机配置摘要（不含密钥） |
-| `/local` `/worktree` | `/local` Run the chat in your local workspace；`/worktree` Run the chat in a new Git worktree（对标 Codex IDE slash；顶栏仍是 Local / Worktree / Hand off，不发明 Hand off to Local） |
+| `/local` `/worktree` | `/local` Run the chat in the selected local project；`/worktree` Run the chat in a new Git worktree（对标 Codex IDE slash；顶栏仍是 Local / Worktree / Hand off，不发明 Hand off to Local） |
 | `/approve` | 批准重试最近一次被拒的高危/越权操作（一次）；空闲时重派上一条用户消息 |
 | `/subagents` | `/agents` 别名 |
 
