@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / Open（worktree IDE）/ Create branch here / Local environment Actions / PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
+ * - 右：Hand off / Open（worktree IDE）/ Create branch here / Local environment Actions（title/aria **Run environment action 1**）/ PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -36,6 +36,7 @@ import {
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
+  RUN_ENVIRONMENT_ACTION_1_LABEL,
   SHARE_LABEL,
   TOGGLE_SIDEBAR_LABEL,
   revealInFolderLabel,
@@ -240,16 +241,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                   runAction(primaryAction)
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title={
-                  environmentActions.length > 1
-                    ? `环境动作（${primaryAction.name} · ⌘⇧D）`
-                    : `${primaryAction.name} ⌘⇧D`
-                }
-                aria-label={
-                  environmentActions.length > 1
-                    ? '打开环境动作'
-                    : `运行 ${primaryAction.name}`
-                }
+                title={RUN_ENVIRONMENT_ACTION_1_LABEL}
+                aria-label={RUN_ENVIRONMENT_ACTION_1_LABEL}
                 aria-expanded={environmentActions.length > 1 ? actionsOpen : undefined}
                 aria-haspopup={environmentActions.length > 1 ? 'menu' : undefined}
               >

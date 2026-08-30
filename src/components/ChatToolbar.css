@@ -209,6 +209,13 @@ html.theme-light .chat-toolbar {
   gap: 5px;
 }
 
+.chat-toolbar-actions .chat-toolbar-pr-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chat-toolbar-actions-menu {
   position: absolute;
   top: calc(100% + 6px);
