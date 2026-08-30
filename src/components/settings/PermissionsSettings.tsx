@@ -13,8 +13,12 @@ import {
 } from '../../../shared/permission-mode'
 import {
   parseToolOutputDisplay,
+  PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION,
+  PROJECT_AND_TERMINAL_BEHAVIOR_LABEL,
   type ToolOutputDisplay
 } from '../../../shared/tool-output-display'
+import { GIT_SETTINGS_DESCRIPTION, GIT_SETTINGS_LABEL } from '../../../shared/git-prompt'
+import { parseFileOpener } from '../../../shared/file-opener'
 import {
   FullModeIcon,
   SandboxModeIcon,
@@ -24,6 +28,7 @@ import {
   SettingsSection,
   SettingsToggle
 } from './SettingsPrimitives'
+import { SettingsSelect } from './SettingsSelect'
 
 /** PermissionsSettings Props：设置草稿与保存回调 */
 interface Props {
@@ -122,11 +127,11 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="Git">
+      <SettingsSection title={GIT_SETTINGS_LABEL} description={GIT_SETTINGS_DESCRIPTION}>
         <SettingsCard>
           <SettingsRow
             title="Commit 文案模板"
-            description="对标 Codex Settings → Git：生成 commit message 时写入 system 与 git-commit skill。"
+            description="生成 commit message 时写入 system 与 git-commit skill。"
           >
             <span className="st-row-badge">模板</span>
           </SettingsRow>
@@ -154,7 +159,7 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
           />
           <SettingsRow
             title="始终 force-with-lease 推送"
-            description="对标 Codex Always force push：审查面板推送使用 git push --force-with-lease，从不 --force。默认关。"
+            description="审查面板推送使用 git push --force-with-lease，从不 --force。默认关。"
           >
             <SettingsToggle
               checked={draft.gitForceWithLease === true}
@@ -168,7 +173,7 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title="分支名前缀"
-            description="对标 Codex Git branch naming：审查面板与 agent 新建分支时自动加上。空则不加。没有 / 会补上。"
+            description="审查面板与 agent 新建分支时自动加上。空则不加。没有 / 会补上。"
             last
           >
             <input
@@ -185,7 +190,30 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="项目与终端">
+      <SettingsSection
+        title={PROJECT_AND_TERMINAL_BEHAVIOR_LABEL}
+        description={PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION}
+      >
+        <SettingsCard>
+          <SettingsRow title="默认打开位置" last>
+            <SettingsSelect
+              id="permissions-file-opener"
+              value={parseFileOpener(draft.fileOpener)}
+              options={[
+                { value: 'none', label: 'Sharker 预览' },
+                { value: 'vscode', label: 'VS Code' },
+                { value: 'vscode-insiders', label: 'VS Code Insiders' },
+                { value: 'cursor', label: 'Cursor' },
+                { value: 'windsurf', label: 'Windsurf' }
+              ]}
+              onChange={(value) => {
+                const next = { ...draftRef.current, fileOpener: parseFileOpener(value) }
+                setDraft(next)
+                void onSave(next)
+              }}
+            />
+          </SettingsRow>
+        </SettingsCard>
         <SettingsCard>
           <SettingsChoiceGroup
             value={parseToolOutputDisplay(draft.toolOutputDisplay)}

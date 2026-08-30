@@ -3,6 +3,12 @@
  * @see shared/ARCH.md
  */
 
+/** Official Settings heading (learn.chatgpt.com/docs/developer-settings). */
+export const PROJECT_AND_TERMINAL_BEHAVIOR_LABEL = 'Project and terminal behavior'
+/** Official section intro. Does not quote Brief / Standard / Verbose option titles. */
+export const PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION =
+  'Choose where files open, how much command output appears in chats, and where terminal tabs open by default.'
+
 /** 简要：不展开；标准：折叠 + 短尾；详细：完成后默认展开、更长尾 */
 export type ToolOutputDisplay = 'brief' | 'standard' | 'verbose'
 

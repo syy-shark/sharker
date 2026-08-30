@@ -93,7 +93,7 @@
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
 | `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；官方选择器文案 Review uncommitted changes / Review against a base branch / Review a commit 与 Choose Review against a base branch or Review uncommitted changes.；Settings Code review / Review delivery 默认 Inline（Run /review in the current chat when possible）与 Detached（Start a separate review chat），here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
-| `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：截断、拼 system 段、接到 `git-commit` skill |
+| `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：官方 Git 分区说明、截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
 | `git-hunk-actions.ts` | hunk 级 `git apply` 暂存 / 还原 |
@@ -122,8 +122,8 @@
 | `git-branch-list.ts` | Composer 隔离起点：解析本地 + 远程跟踪分支并搜索（对标 Codex local branch search）；远程只保留 `origin/…` 完整 ref（对标 #22635） |
 | `composer-branch-list.test.ts` | 本地短名、远程只读完整 ref、按短名搜索 |
 | `settings-git-policy.test.ts` | force-with-lease 参数与分支前缀纯函数 |
-| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；直播中不挂「查看输出」/ 退出码 / 结果摘要 / 秒表心跳 / 命令末行 detail、也不自动展开 verbose；`isLiveStableToolDetail` 只认短路径（对标 Codex command output behind expand / #19260） |
-| `tool-output-display.test.ts` | 默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 / 命令末行 detail |
+| `tool-output-display.ts` | 对话命令输出 brief / standard / verbose：截尾、是否默认展开；官方 Settings 分区 Project and terminal behavior / Choose where files open…；直播中不挂「查看输出」/ 退出码 / 结果摘要 / 秒表心跳 / 命令末行 detail、也不自动展开 verbose；`isLiveStableToolDetail` 只认短路径（对标 Codex command output behind expand / #19260） |
+| `tool-output-display.test.ts` | 官方 Project and terminal behavior 文案、默认 standard、brief 隐藏、verbose 完成后展开、直播中不挂详情 / 退出码 / 进度摘要 / 秒表心跳 / 命令末行 detail |
 | `git-handoff.ts` | 本地 ↔ worktree 交接：快进/合并 HEAD 并拷脏文件 |
 | `git-handoff.test.ts` | 脏文件拷到干净本地、拒绝脏目标 |
 | `thread-search.ts` | 线程内查找（大小写不敏感；一句话多处各算一次）；分页线程盘上命中与内存/直播命中合并（对标 Codex #33907，不回放整段）；`sameThreadSearchHits` 在命中偏移没变时退回同一数组；`nextLiveFindHits` / `shouldRepaintLiveFindHighlight` 直播追加且无新命中时不重扫正文 / 不重画 DOM；`appendLiveFindHits` 把直播命中接在历史后面且空直播不换历史数组；`findHitMessageIds` 给历史行高亮；`seedFindQuery` 把划选收成查找词；`formatFindHitCount` 用官方 x/y 计数（无命中 `0/0`）；`locateFlatRange` 给可见文本高亮；`escapeLikePattern` 给 ILIKE |

@@ -1,5 +1,5 @@
 /**
- * 对话文件引用打开目标（对标 Codex `file_opener` / Settings → General where files open）。
+ * 对话文件引用打开目标（对标 Codex `file_opener` / Settings → Project and terminal behavior）。
  * 不接 `desktop.custom_file_handlers`。
  * @see shared/ARCH.md
  */

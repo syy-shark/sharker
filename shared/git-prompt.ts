@@ -4,6 +4,12 @@
  */
 import { formatBranchPrefix } from './git-branch-create'
 
+/** Official Settings → Git heading (learn.chatgpt.com/docs/developer-settings). */
+export const GIT_SETTINGS_LABEL = 'Git'
+/** Official Git settings intro. Does not invent Always force push as a control title. */
+export const GIT_SETTINGS_DESCRIPTION =
+  'Use Git settings to standardize branch naming and choose whether Codex uses force pushes. You can also set prompts that Codex uses to generate commit messages and pull request descriptions.'
+
 export const GIT_PROMPT_MAX = 4096
 
 /** 去掉首尾空白并截断，避免把超长模板写进 system */

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   clipToolOutput,
   parseToolOutputDisplay,
+  PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION,
+  PROJECT_AND_TERMINAL_BEHAVIOR_LABEL,
   shouldExpandToolOutput,
   shouldMountToolExitCode,
   shouldMountToolOutputDetails,
@@ -12,6 +17,32 @@ import {
 } from './tool-output-display'
 
 describe('tool output display', () => {
+  it('uses official Project and terminal behavior settings copy', () => {
+    expect(PROJECT_AND_TERMINAL_BEHAVIOR_LABEL).toBe('Project and terminal behavior')
+    expect(PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION).toBe(
+      'Choose where files open, how much command output appears in chats, and where terminal tabs open by default.'
+    )
+    const permissionsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PermissionsSettings.tsx'),
+      'utf8'
+    )
+    expect(permissionsSrc).toContain('PROJECT_AND_TERMINAL_BEHAVIOR_LABEL')
+    expect(permissionsSrc).toContain('PROJECT_AND_TERMINAL_BEHAVIOR_DESCRIPTION')
+    expect(permissionsSrc).toContain('parseFileOpener')
+    expect(permissionsSrc).toContain('title: \'简要\'')
+    expect(permissionsSrc).toContain('title: \'标准\'')
+    expect(permissionsSrc).toContain('title: \'详细\'')
+    expect(permissionsSrc).not.toContain('title="项目与终端"')
+    expect(permissionsSrc).not.toContain('title: \'Brief\'')
+    expect(permissionsSrc).not.toContain('title: \'Verbose\'')
+    const generalSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/GeneralSettings.tsx'),
+      'utf8'
+    )
+    expect(generalSrc).not.toContain('文件打开')
+    expect(generalSrc).not.toContain('parseFileOpener')
+  })
+
   it('defaults to standard', () => {
     expect(parseToolOutputDisplay(undefined)).toBe('standard')
     expect(parseToolOutputDisplay('nope')).toBe('standard')
