@@ -27,6 +27,7 @@ import {
   historyStartSeqAfterOlderPage,
   nextHeadRange,
   nextHistoryStartSeq,
+  nextRevealPreserveScrollTop,
   olderPageRangeForTail,
   prependHistoryPage,
   prevHeadRange,
@@ -134,6 +135,34 @@ describe('transcript scroll restore', () => {
     expect(windowIncludesLatest(400, 400)).toBe(true)
     expect(revealNewerWindowStart(0, 400)).toBe(30)
     expect(revealNewerWindowStart(350, 400)).toBe(360)
+    expect(
+      nextRevealPreserveScrollTop({
+        previousHeight: 4000,
+        nextHeight: 2800,
+        scrollTop: 1600
+      })
+    ).toBe(400)
+    expect(
+      nextRevealPreserveScrollTop({
+        previousHeight: 2800,
+        nextHeight: 4000,
+        scrollTop: 400
+      })
+    ).toBe(1600)
+    expect(
+      nextRevealPreserveScrollTop({
+        previousHeight: 2800,
+        nextHeight: 2800,
+        scrollTop: 400
+      })
+    ).toBe(400)
+    expect(
+      nextRevealPreserveScrollTop({
+        previousHeight: 4000,
+        nextHeight: 2000,
+        scrollTop: 100
+      })
+    ).toBe(0)
     expect(
       shouldRevealNewerTranscript({
         distanceFromBottom: 12,

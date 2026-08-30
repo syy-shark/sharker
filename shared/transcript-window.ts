@@ -1,6 +1,7 @@
 /**
  * 长线程只挂最近一段对话，上滑再揭示更早消息（对标 Codex
  * “older history fetched as needed” / scroll-to-top 分页；不预拉全量、不设「加载更早」按钮）。
+ * 揭示更早/更新按内容柱 scrollHeight 差补 scrollTop，不按未测行高卸顶。
  * ⌘↑ / 查找命中走独立 `historyHead` 最旧或命中页，禁止把瘦身全文灌进尾页 `messages`。
  * @see shared/ARCH.md
  */
@@ -83,6 +84,19 @@ export function shouldRevealNewerTranscript(input: {
 }): boolean {
   if (!input.canReveal || !input.locked) return false
   return input.distanceFromBottom <= (input.revealPx ?? TRANSCRIPT_REVEAL_PX)
+}
+
+/**
+ * 揭示更早或更新后，按内容柱 scrollHeight 差补 scrollTop。
+ * 上揭增高则下移镜头，下揭卸顶则上移镜头。估高为 0 时不能跳过补偿。
+ */
+export function nextRevealPreserveScrollTop(input: {
+  previousHeight: number
+  nextHeight: number
+  scrollTop: number
+}): number {
+  const next = input.scrollTop + (input.nextHeight - input.previousHeight)
+  return next > 0 ? next : 0
 }
 
 export function revealNewerWindowStart(

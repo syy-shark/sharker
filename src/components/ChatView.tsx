@@ -119,6 +119,7 @@ import {
 import {
   effectiveTranscriptWindowEnd,
   effectiveTranscriptWindowStart,
+  nextRevealPreserveScrollTop,
   revealNewerWindowStart,
   revealOlderWindowStart,
   restoreTranscriptWindowStart,
@@ -1212,9 +1213,6 @@ export const ChatView = memo(function ChatView({
   historyHeadStartSeqRef.current = historyHeadStartSeq
   const transcriptMessages = viewingHead ? historyHead! : messages
   messagesLengthRef.current = transcriptMessages.length
-  const messagesListRef = useRef(transcriptMessages)
-  messagesListRef.current = transcriptMessages
-  const trimTopIdsRef = useRef<string[]>([])
   const prevHeadRef = useRef<{
     id?: string
     len: number
@@ -1696,7 +1694,6 @@ export const ChatView = memo(function ChatView({
       pendingJumpTopRef.current = false
       pendingHeadJunctionRef.current = false
       revealPreserveHeightRef.current = null
-      trimTopIdsRef.current = []
       programmaticScrollRef.current = true
       el.scrollTop = 0
       programmaticScrollRef.current = false
@@ -1707,7 +1704,6 @@ export const ChatView = memo(function ChatView({
     if (pendingHeadJunctionRef.current) {
       pendingHeadJunctionRef.current = false
       revealPreserveHeightRef.current = null
-      trimTopIdsRef.current = []
       programmaticScrollRef.current = true
       el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
       programmaticScrollRef.current = false
@@ -1715,30 +1711,17 @@ export const ChatView = memo(function ChatView({
       rememberTranscriptSnapshot()
       return
     }
-    const trimmed = trimTopIdsRef.current
-    if (trimmed.length) {
-      trimTopIdsRef.current = []
-      revealPreserveHeightRef.current = null
-      const removedH = trimmed.reduce(
-        (n, id) => n + (measuredRowHeightsRef.current.get(id) ?? 0),
-        0
-      )
-      if (removedH) {
-        programmaticScrollRef.current = true
-        el.scrollTop = Math.max(0, el.scrollTop - removedH)
-        programmaticScrollRef.current = false
-        lastScrollTopRef.current = el.scrollTop
-        rememberTranscriptSnapshot()
-      }
-      return
-    }
     const prev = revealPreserveHeightRef.current
     if (prev == null) return
     revealPreserveHeightRef.current = null
-    const delta = el.scrollHeight - prev
-    if (!delta) return
+    const nextTop = nextRevealPreserveScrollTop({
+      previousHeight: prev,
+      nextHeight: el.scrollHeight,
+      scrollTop: el.scrollTop
+    })
+    if (nextTop === el.scrollTop) return
     programmaticScrollRef.current = true
-    el.scrollTop += delta
+    el.scrollTop = nextTop
     programmaticScrollRef.current = false
     lastScrollTopRef.current = el.scrollTop
     rememberTranscriptSnapshot()
@@ -2096,9 +2079,7 @@ export const ChatView = memo(function ChatView({
       ) {
         const nextStart = revealNewerWindowStart(currentStart, total)
         if (nextStart > currentStart) {
-          trimTopIdsRef.current = messagesListRef.current
-            .slice(currentStart, nextStart)
-            .map((m) => m.id)
+          revealPreserveHeightRef.current = el.scrollHeight
           setPinnedStart(nextStart)
         }
       }
