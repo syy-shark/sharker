@@ -1,14 +1,18 @@
 /**
- * Codex 桌面 Ask User：选项 + Other 自由作答，不发明选项备注或分页问卷。
+ * Codex 桌面 Ask User：选项 + Other 自由作答；眉题 Question requested，提示 Answer the questions to continue.
+ * 不发明选项备注、分页问卷或 60s/90s 空答。
  * @see src/components/ARCH.md
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Check, LoaderCircle, MessageCircleQuestion, Pencil } from 'lucide-react'
 import type { UserInputAnswerPick, UserInputRequest } from '../../shared/types'
 import {
+  ANSWER_THE_QUESTIONS_TO_CONTINUE,
   buildUserInputResponse,
   isUserInputReady,
-  USER_INPUT_OTHER_LABEL
+  summarizeUserInputRequest,
+  USER_INPUT_OTHER_LABEL,
+  USER_INPUT_QUESTION_REQUESTED
 } from '../../shared/user-input'
 import './InlineUserInput.css'
 
@@ -91,14 +95,12 @@ export function InlineUserInput({ request, onRespond, responding = false }: Inli
           <MessageCircleQuestion size={17} strokeWidth={1.9} />
         </span>
         <div className="inline-user-input__title-wrap">
-          <span className="inline-user-input__eyebrow">需要你的选择</span>
-          <h3 id={titleId}>
-            {request.questions.length === 1 ? request.questions[0]!.header : `${request.questions.length} 个问题`}
-          </h3>
+          <span className="inline-user-input__eyebrow">{USER_INPUT_QUESTION_REQUESTED}</span>
+          <h3 id={titleId}>{summarizeUserInputRequest(request.questions)}</h3>
         </div>
       </div>
       <p id={descriptionId} className="inline-user-input__hint">
-        请先回答问题后再继续。
+        {ANSWER_THE_QUESTIONS_TO_CONTINUE}
       </p>
 
       <div className="inline-user-input__questions">

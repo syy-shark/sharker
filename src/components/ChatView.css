@@ -1014,6 +1014,13 @@
   cursor: not-allowed;
 }
 
+.composer-input.is-ask-user,
+.composer-input.is-ask-user::placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .composer-skill-chips {
   display: flex;
   flex-wrap: wrap;

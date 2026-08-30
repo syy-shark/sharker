@@ -138,6 +138,7 @@ import {
   START_VOICE_CHAT_LABEL,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
+import { ANSWER_THE_QUESTIONS_TO_CONTINUE } from '../../shared/user-input'
 import { GoalProgressRow } from './GoalProgressRow'
 import { ContextUsageDonut } from './ContextUsageDonut'
 import './ChatView.css'
@@ -1846,7 +1847,7 @@ export const ComposerDock = memo(
         ) : null}
         <textarea
           ref={textareaRef}
-          className="composer-input"
+          className={userInputOpen ? 'composer-input is-ask-user' : 'composer-input'}
           value={input}
           onChange={(e) => {
             setSlashDismissed(false)
@@ -2181,7 +2182,7 @@ export const ComposerDock = memo(
           disabled={userInputOpen}
           placeholder={
             userInputOpen
-              ? '请先回答问题后再继续。'
+              ? ANSWER_THE_QUESTIONS_TO_CONTINUE
               : dictating
                 ? '正在听写… Ctrl⇧D 结束'
                 : loading

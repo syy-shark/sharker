@@ -6,7 +6,9 @@ import {
   parseRequestUserInput,
   raceWithAbort,
   serializeUserInputResponse,
-  summarizeUserInputRequest
+  summarizeUserInputRequest,
+  ANSWER_THE_QUESTIONS_TO_CONTINUE,
+  USER_INPUT_QUESTION_REQUESTED
 } from './user-input'
 
 describe('request_user_input contract', () => {
@@ -61,7 +63,9 @@ describe('request_user_input contract', () => {
     expect(serializeUserInputResponse(response)).toContain('"GraphQL"')
     expect(summarizeUserInputRequest(parsed.questions)).toBe('2 questions requested')
     expect(summarizeUserInputRequest(parsed.questions.slice(0, 1))).toBe('API style')
-    expect(summarizeUserInputRequest([])).toBe('Question requested')
+    expect(summarizeUserInputRequest([])).toBe(USER_INPUT_QUESTION_REQUESTED)
+    expect(USER_INPUT_QUESTION_REQUESTED).toBe('Question requested')
+    expect(ANSWER_THE_QUESTIONS_TO_CONTINUE).toBe('Answer the questions to continue.')
 
     const empty = parseRequestUserInput({ questions: [] })
     expect(empty.ok).toBe(false)
