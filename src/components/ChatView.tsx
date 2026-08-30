@@ -45,6 +45,7 @@ import { ComposerQueue } from './ComposerQueue'
 import type { ChatSearchItem } from '../../shared/conversation'
 import {
   lastUserMessageId,
+  shouldKeepReadingAfterComposerSubmit,
   shouldStickAfterComposerSubmit,
   type ComposerEnterBehavior
 } from '../../shared/composer-submit'
@@ -1782,14 +1783,24 @@ export const ChatView = memo(function ChatView({
     (mode: PromptSubmitMode, meta?: { hasSelectedText?: boolean }) => {
       // Official #13698: ordinary send jumps to bottom by design.
       // Queue / Steer add no transcript row — keep reading position (#38220).
-      // Add to chat / selected-text send keeps the passage in view (#41391).
-      if (!shouldStickAfterComposerSubmit(mode, meta)) return
-      userScrollLockRef.current = false
-      stickToBottomRef.current = true
-      setStickToBottom(true)
-      pendingFullHistoryAfterLiveRef.current = false
-      setPinnedStart(null)
-      onLeaveHistoryHeadRef.current?.()
+      // Add to chat / selected-text send locks the passage; live tokens must not
+      // restick. Jump to latest / New message is the way to the new turn (#41391).
+      if (shouldStickAfterComposerSubmit(mode, meta)) {
+        userScrollLockRef.current = false
+        stickToBottomRef.current = true
+        setStickToBottom(true)
+        pendingFullHistoryAfterLiveRef.current = false
+        setPinnedStart(null)
+        onLeaveHistoryHeadRef.current?.()
+        return
+      }
+      if (!shouldKeepReadingAfterComposerSubmit(mode, meta)) return
+      lastScrollIntentRef.current = 'up'
+      userScrollLockRef.current = true
+      stickToBottomRef.current = false
+      setStickToBottom(false)
+      setCanJumpToBottom(true)
+      setPinnedStart((p) => p ?? stickTranscriptWindowStart(messagesLengthRef.current))
     },
     []
   )

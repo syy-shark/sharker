@@ -189,6 +189,17 @@ export function shouldStickAfterComposerSubmit(
 }
 
 /**
+ * 划选发送后锁住当前阅读位置（即使当时还贴底或尚未溢出）。
+ * 直播长高只出 Jump to latest / New message，不跟 token 拽走原文（官方 #41391）。
+ */
+export function shouldKeepReadingAfterComposerSubmit(
+  mode: ComposerSubmitMode,
+  options?: ComposerSubmitStickOptions
+): boolean {
+  return mode === 'send' && Boolean(options?.hasSelectedText)
+}
+
+/**
  * 忙时排队：斜杠 / bang 先当跟进文本，等当前回合结束再解析。
  * Steer（jump）仍把原文交给当前回合。
  */

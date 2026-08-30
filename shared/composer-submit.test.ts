@@ -31,6 +31,7 @@ import {
   composerEnterBehaviorLabel,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
+  shouldKeepReadingAfterComposerSubmit,
   shouldStickAfterComposerSubmit,
   STEER_LABEL
 } from './composer-submit'
@@ -67,6 +68,11 @@ describe('composer submit', () => {
     expect(shouldStickAfterComposerSubmit('queue', { hasSelectedText: true })).toBe(false)
     expect(shouldStickAfterComposerSubmit('queue')).toBe(false)
     expect(shouldStickAfterComposerSubmit('jump')).toBe(false)
+    expect(shouldKeepReadingAfterComposerSubmit('send', { hasSelectedText: true })).toBe(true)
+    expect(shouldKeepReadingAfterComposerSubmit('send')).toBe(false)
+    expect(shouldKeepReadingAfterComposerSubmit('send', { hasSelectedText: false })).toBe(false)
+    expect(shouldKeepReadingAfterComposerSubmit('queue', { hasSelectedText: true })).toBe(false)
+    expect(shouldKeepReadingAfterComposerSubmit('jump', { hasSelectedText: true })).toBe(false)
     expect(shouldQueueComposerSlash('queue')).toBe(true)
     expect(shouldQueueComposerSlash('send')).toBe(false)
     expect(shouldQueueComposerSlash('jump')).toBe(false)
