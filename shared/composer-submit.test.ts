@@ -9,6 +9,8 @@ import {
   WAIT_FOR_THE_NEXT_RUN_LABEL,
   STEER_THE_CURRENT_RUN_LABEL,
   formatBusyFollowUpPlaceholder,
+  ASK_FOR_FOLLOW_UP_CHANGES_LABEL,
+  idleComposerPlaceholder,
   formatQueueChipLabel,
   isDoubleEscape,
   lastUserMessageId,
@@ -90,6 +92,9 @@ describe('composer submit', () => {
     expect(STEER_LABEL).toBe('Steer')
     expect(QUEUE_LABEL).toBe('Queue')
     expect(SEND_LABEL).toBe('Send')
+    expect(ASK_FOR_FOLLOW_UP_CHANGES_LABEL).toBe('Ask for follow-up changes')
+    expect(idleComposerPlaceholder(true)).toBe('Ask for follow-up changes')
+    expect(idleComposerPlaceholder(false)).toBeNull()
     expect(STOP_LABEL).toBe('Stop')
     expect(ENTER_ALWAYS_SENDS_LABEL).toBe('Enter always sends')
     expect(REQUIRE_CMD_ENTER_FOR_MULTILINE_PROMPTS_LABEL).toBe(

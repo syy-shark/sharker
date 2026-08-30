@@ -92,6 +92,7 @@ import {
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
   formatBusyFollowUpPlaceholder,
+  idleComposerPlaceholder,
   PLAN_MODE_LABEL,
   SEND_LABEL,
   STEER_LABEL,
@@ -2193,12 +2194,13 @@ export const ComposerDock = memo(
                 ? '正在听写… Ctrl⇧D 结束'
                 : loading
                   ? formatBusyFollowUpPlaceholder({ followUpBehavior, interruptLabel })
-                  : composerEnterBehavior === 'cmdAlways' ||
-                      (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
-                    ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
-                    : composerEnterBehavior === 'cmdIfMultiline'
-                      ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
-                      : '输入消息，/ 命令，! shell，@ 文件/对话/Skill，$ Skill，Ctrl+R 历史，Esc Esc 回编…'
+                  : idleComposerPlaceholder(messages.length > 0) ??
+                    (composerEnterBehavior === 'cmdAlways' ||
+                    (composerEnterBehavior === 'cmdIfMultiline' && input.includes('\n'))
+                      ? '⌘Enter 发送，Enter 换行。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
+                      : composerEnterBehavior === 'cmdIfMultiline'
+                        ? 'Enter 发送，多行后需 ⌘Enter。/ 命令，! shell，@ 文件/对话/Skill，$ Skill…'
+                        : '输入消息，/ 命令，! shell，@ 文件/对话/Skill，$ Skill，Ctrl+R 历史，Esc Esc 回编…')
           }
           rows={1}
         />

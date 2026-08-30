@@ -32,6 +32,12 @@ export const STEER_LABEL = 'Steer'
 export const QUEUE_LABEL = 'Queue'
 /** Official desktop send button when the turn is idle. */
 export const SEND_LABEL = 'Send'
+/** Official idle follow-up composer (openai/codex #27583). Empty new chats keep local hint copy. */
+export const ASK_FOR_FOLLOW_UP_CHANGES_LABEL = 'Ask for follow-up changes'
+
+export function idleComposerPlaceholder(hasMessages: boolean): string | null {
+  return hasMessages ? ASK_FOR_FOLLOW_UP_CHANGES_LABEL : null
+}
 /** Official desktop abort control while a turn is running (`You stopped after`). */
 export const STOP_LABEL = 'Stop'
 /** Official `chatgpt.composerEnterBehavior` / Settings → General copy. */

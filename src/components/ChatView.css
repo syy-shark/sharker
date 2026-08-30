@@ -1008,6 +1008,9 @@
 
 .composer-input::placeholder {
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .composer-input:disabled {
