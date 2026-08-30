@@ -5,7 +5,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles` 仍用冻结 part 画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles` 仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -900,6 +900,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   frozenMeta = null,
   frozenStartedAt = null,
   frozenCopyable,
+  frozenProcess = null,
   historyHasReserved,
   findHit,
   findCurrent,
@@ -922,6 +923,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   frozenMeta?: import('../../shared/types').AssistantMeta | null
   frozenStartedAt?: number | null
   frozenCopyable?: string
+  frozenProcess?: import('../../shared/session-runtime').RetiredLiveProcess | null
   historyHasReserved: boolean
   findHit: boolean
   findCurrent: boolean
@@ -976,6 +978,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         frozen={frozen}
         frozenParts={frozenParts}
         frozenCopyable={frozenCopyable}
+        frozenProcess={frozenProcess}
       />
     </div>
   )
@@ -2545,6 +2548,7 @@ export const ChatView = memo(function ChatView({
           frozen
           frozenParts={article.parts}
           frozenCopyable={article.copyable ?? undefined}
+          frozenProcess={article.process}
           liveDiff={false}
         />
       )
@@ -2781,6 +2785,7 @@ export const ChatView = memo(function ChatView({
                         frozenMeta={article?.meta ?? null}
                         frozenStartedAt={article?.startedAt ?? null}
                         frozenCopyable={article?.copyable ?? undefined}
+                        frozenProcess={article?.process ?? null}
                         historyHasReserved={historyHasReserved}
                         findHit={liveMemoryFindHits.length > 0 && liveRowId === id}
                         findCurrent={currentFindMessageId === id}

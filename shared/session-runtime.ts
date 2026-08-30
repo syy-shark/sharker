@@ -3,10 +3,11 @@
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
  * 再掉出 ejected 环的行进 parts 归档，不抬 `EJECTED_LIVE_LIMIT`。
+ * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
  * @see shared/ARCH.md
  */
 
-import type { AssistantMeta, ChatAttachment, ChatMessage } from './types'
+import type { AssistantMeta, ChatAttachment, ChatMessage, TurnSegment } from './types'
 import type { AnswerPart } from './turn-segments'
 
 /** 排队中的用户消息（归属固定 conversationId） */
@@ -524,12 +525,42 @@ export function historicalMessagesHidingIds(
 }
 
 /** 跟进 adopt 后仍挂着的已完成直播行：冻结 part 引用，避免跟新回合。 */
+export type RetiredLiveProcess = {
+  processForFlow: readonly TurnSegment[]
+  thinkText: string
+  contentStreaming: boolean
+  generatingDemo: boolean
+  answerStreaming: boolean
+  hasThought: boolean
+}
+
 export type RetiredLiveArticle = {
   id: string
   parts: readonly AnswerPart[]
   meta: AssistantMeta | null
   startedAt: number | null
   copyable: string | null
+  process?: RetiredLiveProcess | null
+}
+
+/** 把直播过程切片收成冻结快照；`hasThought` 默认识 thinkText。 */
+export function snapshotRetiredLiveProcess(input: {
+  processForFlow?: readonly TurnSegment[] | null
+  thinkText?: string | null
+  contentStreaming?: boolean
+  generatingDemo?: boolean
+  answerStreaming?: boolean
+  hasThought?: boolean
+}): RetiredLiveProcess {
+  const thinkText = String(input.thinkText ?? '')
+  return {
+    processForFlow: input.processForFlow ? input.processForFlow.slice() : [],
+    thinkText,
+    contentStreaming: Boolean(input.contentStreaming),
+    generatingDemo: Boolean(input.generatingDemo),
+    answerStreaming: Boolean(input.answerStreaming),
+    hasThought: input.hasThought ?? Boolean(thinkText.trim())
+  }
 }
 
 /** 短线程连跟两轮时仍留下上一行；再早的行退出环，但仍用冻结正文画，不重挂 `AssistantMessage`。 */

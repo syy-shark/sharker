@@ -99,6 +99,7 @@ import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks
 import {
   liveAnswerViewFromSnap,
   liveHasAssistantBody,
+  liveProcessViewFromSnap,
   nextLiveAnswerRenderParts,
   resetLiveAnswerViewHold,
   nextLivePublishedStreaming,
@@ -328,6 +329,7 @@ import {
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
   nextArchivedLiveArticles,
+  snapshotRetiredLiveProcess,
   takeEjectedLiveOverflow,
   retireLiveArticle,
   upsertAssistantMessage,
@@ -1583,6 +1585,7 @@ export default function App() {
     const priorSnap = getLiveStreamUi()
     const priorParts = nextLiveAnswerRenderParts(null, priorSnap)
     const priorCopyable = liveAnswerViewFromSnap(priorSnap).copyable
+    const priorProcess = snapshotRetiredLiveProcess(liveProcessViewFromSnap(priorSnap))
     heldCompletedSegmentsRef.current = null
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)
@@ -1598,7 +1601,8 @@ export default function App() {
       parts: priorParts,
       meta: priorSnap.liveTurnMeta,
       startedAt: priorSnap.turnStartedAt,
-      copyable: priorCopyable
+      copyable: priorCopyable,
+      process: priorProcess
     }
     const { retired: nextRetired, ejected } = retireLiveArticle(
       retiredLiveArticlesRef.current,

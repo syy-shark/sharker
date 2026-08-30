@@ -19,6 +19,7 @@ import {
   nextRetiredLiveArticles,
   nextEjectedLiveArticles,
   nextArchivedLiveArticles,
+  snapshotRetiredLiveProcess,
   takeEjectedLiveOverflow,
   retireLiveArticle,
   retiredLiveArticle,
@@ -665,6 +666,27 @@ describe('commitAssistantReply persist targeting', () => {
     expect(frozenHistoricalArticle([], [second], 'b-live')?.copyable).toBe('B')
     expect(frozenHistoricalArticle([first], [first], 'a-live')?.copyable).toBe('A')
     expect(frozenHistoricalArticle([], [], 'missing')).toBeNull()
+    expect(snapshotRetiredLiveProcess({ thinkText: '  ponder  ' }).hasThought).toBe(true)
+    expect(snapshotRetiredLiveProcess({ thinkText: '   ' }).hasThought).toBe(false)
+    expect(
+      snapshotRetiredLiveProcess({ thinkText: '', hasThought: true }).hasThought
+    ).toBe(true)
+    const processSnap = snapshotRetiredLiveProcess({
+      processForFlow: [{ id: 't1', kind: 'thinking', content: 'ponder' }],
+      thinkText: 'ponder',
+      contentStreaming: true
+    })
+    expect(processSnap.processForFlow).toHaveLength(1)
+    expect(processSnap.contentStreaming).toBe(true)
+    expect(
+      nextArchivedLiveArticles([], [{ ...first, process: processSnap }])[0]?.process?.thinkText
+    ).toBe('ponder')
+    expect(
+      takeEjectedLiveOverflow(
+        [{ ...fullEjected[0], process: processSnap }, ...fullEjected.slice(1)],
+        [ninth]
+      ).dropped[0]?.process?.thinkText
+    ).toBe('ponder')
     expect(retiredLiveArticle([first, second], 'a-live')?.copyable).toBe('A')
     expect(retiredLiveArticle([first, second], 'missing')).toBeNull()
     expect(

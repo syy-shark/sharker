@@ -2,7 +2,7 @@
  * 直播助手行：过程与回答分开订 store 切片。
  * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow；闭合与尾同一列表，封口按 part.id 留下 StreamingMarkdown（对标 Codex #22860）。
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
- * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，Thought 仍留在直播行（不整块卸掉），回答 diff 仍 live 以免折 20 行跳；跟进 adopt 后 `frozen` 停订 store，按 adopt 前 part 引用与旁白原文留下树（对标 Codex preserved streamed activity）。
+ * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，Thought 仍留在直播行（不整块卸掉），回答 diff 仍 live 以免折 20 行跳；跟进 adopt 后 `frozen` 停订 store，按 adopt 前 part 引用与旁白原文留下树；历史重挂传入 `frozenProcess` 保住 Thought / 时间线（对标 Codex preserved streamed activity）。
  * 直播 `StreamingMarkdown` 标 `live`，闭合围栏不跑 Prism；`streaming` 跟 loading，收束后再画 mermaid。
  * @see src/components/ARCH.md
  */
@@ -10,6 +10,7 @@ import { memo, useRef } from 'react'
 import type { ApprovalRequest, AssistantMeta, UserInputRequest, UserInputResponse } from '../../shared/types'
 import type { ApprovalDecision } from '../../shared/approval-session'
 import { shouldMountMessageActions } from '../../shared/live-display'
+import type { RetiredLiveProcess } from '../../shared/session-runtime'
 import {
   nextFilesChangedStats,
   type FilesChangedStatsView
@@ -43,7 +44,8 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   messageId,
   onNeedFullMessage,
   isStreaming,
-  frozen = false
+  frozen = false,
+  frozenProcess = null
 }: {
   liveStartedAt?: number
   approvalWaiting: boolean
@@ -53,6 +55,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   onNeedFullMessage?: (messageId: string) => void
   isStreaming: boolean
   frozen?: boolean
+  frozenProcess?: RetiredLiveProcess | null
 }) {
   const held = useRef<LiveProcessTimeline | null>(null)
   const storeView = useLiveStreamUiSelectWhen(
@@ -60,7 +63,15 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
     (snap, prev: LiveProcessTimeline | undefined) => nextLiveProcessTimeline(prev ?? null, snap)
   )
   if (!frozen) held.current = storeView
-  const view = (frozen ? held.current : storeView) ?? storeView
+  const view = frozenProcess
+    ? {
+        processForFlow: frozenProcess.processForFlow as LiveProcessTimeline['processForFlow'],
+        contentStreaming: frozenProcess.contentStreaming,
+        generatingDemo: frozenProcess.generatingDemo,
+        answerStreaming: frozenProcess.answerStreaming,
+        hasThought: frozenProcess.hasThought
+      }
+    : ((frozen ? held.current : storeView) ?? storeView)
   return (
     <div className="assistant-process-below assistant-process-below--live-top">
       <div className="turn-flow-live-panel">
@@ -79,6 +90,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
           messageId={messageId}
           onNeedFullMessage={onNeedFullMessage}
           frozen={frozen}
+          frozenThinkText={frozenProcess?.thinkText}
         />
       </div>
     </div>
@@ -222,6 +234,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   frozen = false,
   frozenParts = null,
   frozenCopyable,
+  frozenProcess = null,
   liveDiff = true
 }: {
   messageId: string
@@ -241,6 +254,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   frozen?: boolean
   frozenParts?: readonly LiveAnswerView['parts'][number][] | null
   frozenCopyable?: string
+  frozenProcess?: RetiredLiveProcess | null
   /** 挤出环后的历史冻结行关 live diff，以免 followTail 抢滚动。 */
   liveDiff?: boolean
 }) {
@@ -256,6 +270,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
         onNeedFullMessage={onNeedFullMessage}
         isStreaming={isStreaming}
         frozen={frozen}
+        frozenProcess={frozenProcess}
       />
       <LiveStoreAnswer
         markdownStreaming={isStreaming}

@@ -105,6 +105,8 @@ interface Props {
   onNeedFullMessage?: (messageId: string) => void
   /** 跟进 adopt 后停订 store，旁白用收束前原文 */
   frozen?: boolean
+  /** 历史冻结行重挂时用快照旁白，不订当前回合 store */
+  frozenThinkText?: string
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -391,16 +393,18 @@ export function ThoughtDisclosure({
   )
 }
 
-/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线；frozen 保住收束前原文 */
+/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线；frozen 保住收束前原文，历史重挂用 frozenThinkText */
 const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
   asLiveHead,
   elapsed,
   frozen = false,
+  frozenThinkText,
   contentStreaming = false
 }: {
   asLiveHead: boolean
   elapsed?: ReactNode
   frozen?: boolean
+  frozenThinkText?: string
   contentStreaming?: boolean
 }) {
   const held = useRef('')
@@ -409,7 +413,7 @@ const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
     (snap) => liveProcessViewFromSnap(snap).thinkText
   )
   if (!frozen) held.current = storeText
-  const text = frozen ? held.current : storeText
+  const text = frozen ? (frozenThinkText ?? held.current) : storeText
   const [open, setOpen] = useState(false)
   const userRef = useRef(false)
   const wasContentStreamingRef = useRef(contentStreaming)
@@ -735,7 +739,8 @@ export const TurnFlow = memo(function TurnFlow({
   toolOutputDisplay,
   messageId,
   onNeedFullMessage,
-  frozen = false
+  frozen = false,
+  frozenThinkText
 }: Props) {
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -1052,6 +1057,7 @@ export const TurnFlow = memo(function TurnFlow({
             asLiveHead={thoughtAsLiveHead}
             elapsed={thoughtElapsed}
             frozen={frozen}
+            frozenThinkText={frozenThinkText}
             contentStreaming={contentStreaming}
           />
         ) : (
