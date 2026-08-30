@@ -74,6 +74,28 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe(true)
   })
 
+  it('classifies an in-place regular tool settle after no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const settled: TurnSegment = { ...reading, status: 'done', toolDetail: '12 lines' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, settled, reply])
+    ).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([thought, reading, reply], [thought, settled, reply])).toBe(
+      true
+    )
+    const demo: TurnSegment = {
+      id: 'd1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: ''
+    }
+    const demoDone: TurnSegment = { ...demo, status: 'done' }
+    expect(shouldSkipLiveStreamDerivation([demo, reply], [demoDone, reply])).toBeNull()
+  })
+
   it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
@@ -94,6 +116,26 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       hasLiveProcessPhaseGrowHold([thought, reading], [thought, reading, reply, nextTool])
     ).toBe(true)
     expect(shouldSkipLiveStreamDerivation([], [reply, nextTool])).toBe('tool')
+  })
+
+  it('classifies think or reconnect status after existing no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const moreThink: TurnSegment = { ...think('Next'), id: 'th2' }
+    const reconnect = status('Reconnecting... 1/5')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, moreThink])
+    ).toBe('think')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, reconnect])
+    ).toBe('status')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, reply, reconnect])
+    ).toBe('status')
+    expect(hasLiveProcessPhaseGrowHold([thought, reading], [thought, reading, reply, reconnect])).toBe(
+      true
+    )
   })
 
   it('classifies first-stream tools without waiting for the table', () => {
@@ -449,6 +491,62 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     })
     expect(nextAnswer.tail?.content).toBe('Hi')
     expect(nextAnswer.show).toBe(true)
+  })
+
+  it('holds the answer tail when reconnect status arrives after no-fence prose', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const reconnect = status('Reconnecting... 1/5')
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const withAnswer = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const next = nextLiveProcessView(withAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, reconnect]
+    })
+    expect(next.processForFlow[0]).toBe(withAnswer.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(reconnect)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const heldAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, reconnect]
+    })
+    expect(heldAnswer).toBe(firstAnswer)
+  })
+
+  it('retargets an in-place tool settle after no-fence prose without rebuilding the answer', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const settled: TurnSegment = { ...reading, status: 'done', toolDetail: '12 lines' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, settled, reply]
+    })
+    expect(next.processForFlow.some((segment) => segment === settled)).toBe(true)
+    expect(next.processForFlow.some((segment) => segment === reading)).toBe(false)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const heldAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, settled, reply]
+    })
+    expect(heldAnswer).toBe(firstAnswer)
   })
 
   it('opens the answer tail from the first prose after tools without the table', () => {

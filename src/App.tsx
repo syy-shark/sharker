@@ -1589,9 +1589,14 @@ export default function App() {
       const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
       // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
       if (skip === 'think' || skip === 'status') {
+        const answerTail = findLastSegment(
+          segments,
+          (s) => s.kind === 'text' && (s.role === 'final' || s.status === 'active')
+        )
         publishLiveStreamUi({
           liveSegments: segments,
-          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments)
+          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
+          streaming: answerTail?.content ?? prevSnap.streaming
         })
       } else if (skip === 'text') {
         const tail = segments[segments.length - 1]

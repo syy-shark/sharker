@@ -163,6 +163,21 @@ function extrasHaveProcessThenFirstAnswerText(extras: readonly TurnSegment[]): b
   return head.every((segment) => isLiveCoreAppendExtra(segment))
 }
 
+/** 同一帧开出恰好一段无 fence 正文，其余只追加思考 / status。 */
+function extrasHaveAnswerThenThinkOrStatus(extras: readonly TurnSegment[]): boolean {
+  if (extras.length < 2) return false
+  let seenText = false
+  for (const extra of extras) {
+    if (isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
+      if (seenText) return false
+      seenText = true
+      continue
+    }
+    if (!(isLiveThinking(extra) || isLiveStatus(extra))) return false
+  }
+  return seenText
+}
+
 /** 同一帧开出恰好一段无 fence 正文，随后再落普通工具。 */
 function extrasHaveAnswerThenProcessTools(extras: readonly TurnSegment[]): boolean {
   let textIndex = -1
@@ -212,13 +227,43 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 只追加思考 / status，或同一帧 status+思考，也走核心，不必等表。
  * 过程前缀后已有无 fence 正文，再开普通工具也走核心。
  * 同一帧首枚无 fence 正文后再落普通工具也标 `'tool'`。
+ * 同一帧首枚无 fence 正文后再落思考 / status 标 `'think'` / `'status'`。
+ * 同长、仅一枚普通工具原地收束 / 改详情（正文可仍在末尾）也标 `'tool'`。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
+function liveCoreInPlaceProcessToolSkip(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): LiveStreamDerivationSkip | null {
+  if (prev.length !== next.length || !prev.length) return null
+  let toolChange = false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]!
+    const after = next[i]!
+    if (before === after) continue
+    if (hasStreamingDemoFence(before.content ?? '') || hasStreamingDemoFence(after.content ?? '')) {
+      return null
+    }
+    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) continue
+    if (before.id !== after.id || before.kind !== after.kind) return null
+    if (isLiveThinking(before) && isLiveThinking(after)) continue
+    if (isLiveStatus(before) && isLiveStatus(after)) continue
+    if (isLiveCoreProcessTool(before) && isLiveCoreProcessTool(after)) {
+      if (toolChange) return null
+      toolChange = true
+      continue
+    }
+    return null
+  }
+  return toolChange ? 'tool' : null
+}
+
 export function liveCoreAppendedProcessToolsSkip(
   prev: readonly TurnSegment[],
   next: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
-  if (next.length <= prev.length) return null
+  if (next.length < prev.length) return null
+  if (next.length === prev.length) return liveCoreInPlaceProcessToolSkip(prev, next)
   const processLen = liveCoreLeadingProcessLength(prev)
   for (let i = 0; i < processLen; i++) {
     const before = prev[i]
@@ -244,6 +289,9 @@ export function liveCoreAppendedProcessToolsSkip(
   if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
   if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
   if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
+  if (extrasHaveAnswerThenThinkOrStatus(extras)) {
+    return extras.some(isLiveStatus) ? 'status' : 'think'
+  }
   if (extras.length && extras.every((segment) => isLiveThinking(segment) || isLiveStatus(segment))) {
     return extras.some(isLiveStatus) ? 'status' : 'think'
   }
@@ -945,10 +993,11 @@ export function nextLiveAnswerView(
     }
   }
   const coreSkip = prevSegments ? liveCoreAppendedProcessToolsSkip(prevSegments, segments) : null
-  if (coreSkip === 'text' || coreSkip === 'tool') {
+  if (coreSkip) {
+    const last = segments[segments.length - 1]
     const extra =
-      coreSkip === 'text'
-        ? segments[segments.length - 1]
+      coreSkip === 'text' && last && isLiveAnswerText(last)
+        ? last
         : liveCoreLastNoFenceAnswer(segments)
     if (extra && isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
       const seed = prev ?? {
@@ -963,7 +1012,7 @@ export function nextLiveAnswerView(
       answerGrowHold = { view, segments, tailPlain: true }
       return view
     }
-    if (coreSkip === 'tool' && prev) {
+    if (prev && coreSkip !== 'text') {
       answerGrowHold = { view: prev, segments, tailPlain: Boolean(prev.tail) }
       return prev
     }
