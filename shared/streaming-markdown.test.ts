@@ -877,6 +877,13 @@ describe('splitStreamingMarkdown', () => {
     }
     expect(
       shouldOpenStreamingFootnotesAfterParagraph({
+        prevNorm: '见注[^1]',
+        suffix: '。\n[^1]: 一',
+        citedIds: new Set(['1'])
+      })
+    ).toBe(true)
+    expect(
+      shouldOpenStreamingFootnotesAfterParagraph({
         prevNorm: '见注[^1]。',
         suffix: '\n[^1]: 一',
         citedIds: new Set(['1'])
@@ -903,7 +910,18 @@ describe('splitStreamingMarkdown', () => {
         citedIds: new Set()
       })
     ).toBe(false)
+    const growingCite = parseCheapProseBlocks('见注[^1]')
+    const openedSameFlush = continueCheapProseBlocks('见注[^1]', growingCite, '见注[^1]。\n[^1]: 一')
+    expect(openedSameFlush.map((b) => b.type)).toEqual(['p', 'footnotes'])
+    if (growingCite[0]?.type === 'p' && openedSameFlush[0]?.type === 'p') {
+      expect(openedSameFlush[0].nodes[0]).toBe(growingCite[0].nodes[0])
+    }
     const citePara = parseCheapProseBlocks('见注[^1]。')
+    const pendingOpen = continueCheapProseBlocks('见注[^1]。', citePara, '见注[^1]。\n[')
+    expect(pendingOpen).toHaveLength(1)
+    expect(pendingOpen[0]).toBe(citePara[0])
+    const pendingId = continueCheapProseBlocks('见注[^1]。', citePara, '见注[^1]。\n[^1]')
+    expect(pendingId[0]).toBe(citePara[0])
     const openedNotes = continueCheapProseBlocks('见注[^1]。', citePara, '见注[^1]。\n[^1]: 一')
     expect(openedNotes[0]).toBe(citePara[0])
     expect(openedNotes.map((b) => b.type)).toEqual(['p', 'footnotes'])
@@ -3193,6 +3211,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteItem')
     expect(mdSrc).toContain('shouldOpenStreamingFootnotesAfterParagraph')
+    expect(mdSrc).toContain('isPendingFootnoteDefinitionLine')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
