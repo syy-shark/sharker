@@ -1542,6 +1542,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
     expect(src('../src/components/ChatMath.tsx')).toContain('liveChatMathClassName')
     expect(src('../src/components/ChatMath.tsx')).toContain('LiveMarkdownStreamingContext')
+    expect(src('../src/components/ChatMath.tsx')).toContain('useEffect')
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {

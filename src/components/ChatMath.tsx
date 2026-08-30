@@ -1,9 +1,9 @@
 /**
  * 对话公式：闭合 `\(...\)` / `\[...\]` / `$$...$$` 画 KaTeX（对标 Codex 桌面）。
- * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后再着色。
+ * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后再在 effect 里着色。
  * @see src/components/ARCH.md
  */
-import { memo, useContext } from 'react'
+import { memo, useContext, useEffect, useState } from 'react'
 import {
   chatMathSource,
   liveChatMathClassName,
@@ -26,14 +26,19 @@ export const ChatMath = memo(function ChatMath({
   fence: ChatMathFence
 }) {
   const streaming = useContext(LiveMarkdownStreamingContext)
-  if (!shouldRenderLiveChatMath({ streaming })) {
-    return (
-      <span className={liveChatMathClassName({ display, raw: true })}>
-        {chatMathSource(tex, fence)}
-      </span>
-    )
-  }
-  const html = renderChatMathHtml(tex, display)
+  const allowPaint = shouldRenderLiveChatMath({ streaming })
+  const [html, setHtml] = useState<string | null>(() =>
+    allowPaint ? renderChatMathHtml(tex, display) : null
+  )
+
+  useEffect(() => {
+    if (!allowPaint) {
+      setHtml(null)
+      return
+    }
+    setHtml(renderChatMathHtml(tex, display))
+  }, [allowPaint, tex, display])
+
   if (!html) {
     return (
       <span className={liveChatMathClassName({ display, raw: true })}>
