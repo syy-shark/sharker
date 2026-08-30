@@ -11,9 +11,11 @@ import { AgentsPanel } from './panel/AgentsPanel'
 import { SUBAGENTS_LABEL } from '../../shared/subagent'
 import {
   BROWSER_SETTINGS_LABEL,
+  FILE_CLOSE_LABEL,
   FILES_LABEL,
   REVIEW_LABEL,
-  TERMINAL_LABEL
+  TERMINAL_LABEL,
+  TOGGLE_FULL_SCREEN_LABEL
 } from '../../shared/reveal-in-folder'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
@@ -403,8 +405,8 @@ export const RightPanel = memo(function RightPanel({
           <button
             type="button"
             className="right-panel-icon-btn"
-            aria-label={fullscreen ? '退出全屏' : '全屏'}
-            title={fullscreen ? '退出全屏' : '全屏'}
+            aria-label={TOGGLE_FULL_SCREEN_LABEL}
+            title={TOGGLE_FULL_SCREEN_LABEL}
             onClick={() => (fullscreen ? exitFullscreen() : setFullscreen(true))}
           >
             {fullscreen ? <Minimize2 size={16} aria-hidden /> : <Expand size={16} aria-hidden />}
@@ -412,8 +414,8 @@ export const RightPanel = memo(function RightPanel({
           <button
             type="button"
             className="right-panel-icon-btn"
-            aria-label="关闭工作区面板"
-            title="关闭"
+            aria-label={FILE_CLOSE_LABEL}
+            title={FILE_CLOSE_LABEL}
             onClick={returnToMain}
           >
             <X size={16} aria-hidden />
@@ -490,7 +492,7 @@ export const RightPanel = memo(function RightPanel({
         <button
           type="button"
           className={`right-panel-backdrop${backdropExiting ? ' right-panel-backdrop--exit' : ''}`}
-          aria-label="关闭工作区面板"
+          aria-label={FILE_CLOSE_LABEL}
           onClick={returnToMain}
           tabIndex={backdropExiting ? -1 : 0}
         />

@@ -24,7 +24,7 @@ import {
   threadTerminalKey
 } from '../../../shared/terminal-tabs'
 import { findHttpLinksInText, resolveChatLinkOpen } from '../../../shared/chat-link'
-import { CLEAR_TERMINAL_LABEL, TERMINAL_LABEL } from '../../../shared/reveal-in-folder'
+import { CLEAR_TERMINAL_LABEL, FILE_CLOSE_LABEL, TERMINAL_LABEL } from '../../../shared/reveal-in-folder'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import { Terminal, type ILink, type ITheme } from '@xterm/xterm'
@@ -562,7 +562,7 @@ export function EmbeddedTerminal({
                   className="embedded-terminal-tab-close"
                   role="button"
                   tabIndex={0}
-                  aria-label={`关闭 ${tab.title}`}
+                  aria-label={FILE_CLOSE_LABEL}
                   onClick={(event) => {
                     event.stopPropagation()
                     const next = closeTerminalTab(tabs, tab.id, activeId)

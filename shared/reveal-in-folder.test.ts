@@ -306,8 +306,10 @@ describe('reveal in folder', () => {
     )
     expect(terminalSrc).toContain('CLEAR_TERMINAL_LABEL')
     expect(terminalSrc).toContain('TERMINAL_LABEL')
+    expect(terminalSrc).toContain('FILE_CLOSE_LABEL')
     expect(terminalSrc).not.toContain('aria-label="清终端"')
     expect(terminalSrc).not.toContain('>清屏<')
+    expect(terminalSrc).not.toContain('aria-label={`关闭 ${tab.title}`}')
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/RightPanel.tsx'),
       'utf8'
@@ -316,8 +318,12 @@ describe('reveal in folder', () => {
     expect(panelSrc).toContain('REVIEW_LABEL')
     expect(panelSrc).toContain('TERMINAL_LABEL')
     expect(panelSrc).toContain('BROWSER_SETTINGS_LABEL')
+    expect(panelSrc).toContain('FILE_CLOSE_LABEL')
+    expect(panelSrc).toContain('TOGGLE_FULL_SCREEN_LABEL')
     expect(panelSrc).not.toContain("['files', '文件']")
     expect(panelSrc).not.toContain("['changes', '变更']")
+    expect(panelSrc).not.toContain('aria-label="关闭工作区面板"')
+    expect(panelSrc).not.toContain("aria-label={fullscreen ? '退出全屏' : '全屏'}")
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
     expect(ADD_SERVER_LABEL).toBe('Add server')
     expect(SAVE_LABEL).toBe('Save')
