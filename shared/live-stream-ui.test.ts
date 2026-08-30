@@ -1366,6 +1366,28 @@ import {
   isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalDeniedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveAskResolvedAnswerDemoAskToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -12391,7 +12413,9 @@ describe('live stream ui snapshot', () => {
       ['error+demo+ask+active+cancel+compress', [{ type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['demo+error+ask+active+cancel+compress', [...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['think+error+demo+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
-      ['think+demo+error+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, ...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
+      ['think+demo+error+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, ...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['demo+ask+settled+cancel+compress', [...liveDemo, ...liveAskStart, ...liveNextSettled, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['think+demo+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
     ]
     const liveTokenAskHelpers = {
       'allow-settle': {
@@ -12470,6 +12494,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveApprovalAllowedSettleAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalAllowedSettleThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveApprovalAllowedSettleThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveApprovalAllowedSettleAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveApprovalAllowedSettleThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'deny-settle': {
         'think+token+ask': isLiveApprovalDeniedThinkAnswerAskAppendChange,
@@ -12547,6 +12573,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveApprovalDeniedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalDeniedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveApprovalDeniedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveApprovalDeniedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveApprovalDeniedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'nosettle-allow': {
         'think+token+ask': isLiveApprovalResolvedThinkAnswerAskAppendChange,
@@ -12636,6 +12664,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       status: {
         'token+ask+cancel': isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -12709,6 +12739,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveStatusApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveStatusApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveStatusApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveStatusApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       writestat: {
         'token+ask+cancel': isLiveWriteStatApprovalResolvedAnswerAskCancelAppendChange,
@@ -12782,6 +12814,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveWriteStatApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'writestat+status': {
         'token+ask+cancel': isLiveWriteStatStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -12855,6 +12889,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveWriteStatStatusApprovalResolvedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       ask: {
         'token+ask+cancel': isLiveAskResolvedAnswerAskCancelAppendChange,
@@ -12940,6 +12976,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveAskResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveAskResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveAskResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveAskResolvedAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveAskResolvedThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
@@ -13115,6 +13153,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'hang-status': {
         'token+ask': isLiveStatusApprovalNeededAnswerAskAppendChange,
@@ -13216,6 +13256,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveStatusApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveStatusApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveStatusApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveStatusApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'write-hang': {
         'token+ask': isLiveWriteStatApprovalNeededAnswerAskAppendChange,
@@ -13317,6 +13359,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveWriteStatApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveWriteStatApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       },
       'write-status-hang': {
         'token+ask': isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
@@ -13418,6 +13462,8 @@ describe('live stream ui snapshot', () => {
         'demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'think+demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+        'demo+ask+settled+cancel+compress': isLiveWriteStatStatusApprovalNeededAnswerDemoAskToolCancelCompressAppendChange,
+        'think+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskActiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
