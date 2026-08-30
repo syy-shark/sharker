@@ -265,6 +265,18 @@ export function stepThinkingLevel(
   return options[next]?.id ?? null
 }
 
+/** Settings → Keyboard Shortcuts Cycle reasoning effort：绕回官方档位，默认不绑 */
+export function cycleThinkingLevel(
+  options: Array<{ id: string }>,
+  current: string
+): string | null {
+  if (!options.length) return null
+  const idx = options.findIndex((o) => o.id === current)
+  const from = idx >= 0 ? idx : -1
+  const next = (from + 1 + options.length) % options.length
+  return options[next]?.id ?? null
+}
+
 const REASONING_ALIASES: Record<string, string[]> = {
   off: ['off', 'none', 'disable', 'disabled'],
   none: ['none', 'off'],

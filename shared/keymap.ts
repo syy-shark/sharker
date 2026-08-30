@@ -56,6 +56,7 @@ const ACTION_SET = new Set<string>([
   'copy_last_output',
   'thinking_lower',
   'thinking_higher',
+  'thinking_cycle',
   'undo_app',
   'redo_app',
   'interrupt_turn',

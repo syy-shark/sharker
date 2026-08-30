@@ -15,13 +15,16 @@ import {
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
   COPY_WORKING_DIRECTORY_LABEL,
+  CYCLE_REASONING_EFFORT_LABEL,
   DECREASE_FONT_SIZE_LABEL,
+  DECREASE_REASONING_EFFORT_LABEL,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
   GO_TO_CHAT_LABEL,
   GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
   INCREASE_FONT_SIZE_LABEL,
+  INCREASE_REASONING_EFFORT_LABEL,
   MARK_CHAT_AS_UNREAD_LABEL,
   NAVIGATE_BACK_LABEL,
   NAVIGATE_FORWARD_LABEL,
@@ -113,6 +116,7 @@ export type WorkbenchShortcutAction =
   | 'copy_last_output'
   | 'thinking_lower'
   | 'thinking_higher'
+  | 'thinking_cycle'
   | 'undo_app'
   | 'redo_app'
   | 'interrupt_turn'
@@ -415,6 +419,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
   { keys: 'Tab', title: '忙时 Queue 下一条' },
   { keys: 'Shift+Tab', title: TOGGLE_PLAN_MODE_LABEL },
+  { keys: '⌥, / ⌥.', title: `${DECREASE_REASONING_EFFORT_LABEL} / ${INCREASE_REASONING_EFFORT_LABEL}` },
   { keys: 'Shift+Enter', title: '换行' }
 ]
 
@@ -562,6 +567,12 @@ export const SHORTCUT_CATALOG: Array<{
     defaultKeys: 'Ctrl+O',
     defaultChord: 'mod+ctrl+o'
   },
-  { action: 'thinking_lower', title: '降低思考档', defaultKeys: '⌥,', defaultChord: 'alt+,' },
-  { action: 'thinking_higher', title: '提高思考档', defaultKeys: '⌥.', defaultChord: 'alt+.' }
+  { action: 'thinking_lower', title: DECREASE_REASONING_EFFORT_LABEL, defaultKeys: '⌥,', defaultChord: 'alt+,' },
+  { action: 'thinking_higher', title: INCREASE_REASONING_EFFORT_LABEL, defaultKeys: '⌥.', defaultChord: 'alt+.' },
+  {
+    action: 'thinking_cycle',
+    title: CYCLE_REASONING_EFFORT_LABEL,
+    defaultKeys: '未指定',
+    defaultChord: ''
+  }
 ]

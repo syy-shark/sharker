@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cycleThinkingLevel,
   formatReasoningStatus,
   parseReasoningArgs,
   stepThinkingLevel,
@@ -22,6 +23,13 @@ describe('stepThinkingLevel', () => {
   it('starts at the first option when current is unknown', () => {
     expect(stepThinkingLevel(opts, '', 1)).toBe('medium')
     expect(stepThinkingLevel([], 'high', 1)).toBeNull()
+  })
+
+  it('cycles reasoning effort and wraps', () => {
+    expect(cycleThinkingLevel(opts, 'low')).toBe('medium')
+    expect(cycleThinkingLevel(opts, 'high')).toBe('low')
+    expect(cycleThinkingLevel(opts, '')).toBe('low')
+    expect(cycleThinkingLevel([], 'high')).toBeNull()
   })
 
   it('parses /reasoning args and lists current options', () => {

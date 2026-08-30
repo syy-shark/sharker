@@ -79,6 +79,7 @@ import {
 import { normalizeExtraFolderPaths, promoteExtraFolderToPrimary } from '../shared/workspace-folders'
 import { knownModelsForProvider } from '../shared/provider-catalog'
 import {
+  cycleThinkingLevel,
   defaultThinkingLevel,
   formatReasoningStatus,
   parseReasoningArgs,
@@ -5042,6 +5043,23 @@ export default function App() {
     await persistSettings(next)
   }, [persistSettings])
 
+  /** 快捷键 / 命令面板升降或循环思考档（Cycle 无默认绑定） */
+  const applyThinkingShortcut = useCallback(
+    (mode: 'lower' | 'higher' | 'cycle') => {
+      const settingsNow = settingsRef.current
+      const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
+      if (!provider) return
+      const options = resolveThinkingOptions(provider)
+      const current = provider.thinkingLevel || defaultThinkingLevel(provider)
+      const next =
+        mode === 'cycle'
+          ? cycleThinkingLevel(options, current)
+          : stepThinkingLevel(options, current, mode === 'higher' ? 1 : -1)
+      if (next && next !== current) void handleThinkingLevelChange(provider.id, next)
+    },
+    [handleThinkingLevelChange]
+  )
+
   /** 切换工作区置顶 */
   const handleTogglePinWorkspace = async (id: string) => {
     const current = settingsRef.current
@@ -6890,6 +6908,20 @@ export default function App() {
         handleRunEnvironmentAction()
         return
       }
+      if (
+        cmd.action === 'thinking_lower' ||
+        cmd.action === 'thinking_higher' ||
+        cmd.action === 'thinking_cycle'
+      ) {
+        applyThinkingShortcut(
+          cmd.action === 'thinking_cycle'
+            ? 'cycle'
+            : cmd.action === 'thinking_higher'
+              ? 'higher'
+              : 'lower'
+        )
+        return
+      }
       if (cmd.id === 'fork-worktree') {
         void handleSlashActionRef.current(
           {
@@ -6915,6 +6947,7 @@ export default function App() {
       )
     },
     [
+      applyThinkingShortcut,
       handleAddWorkspace,
       handleClearTerminal,
       handleClearUnread,
@@ -7105,18 +7138,10 @@ export default function App() {
         }
         return
       }
-      if (action === 'thinking_lower' || action === 'thinking_higher') {
-        const settingsNow = settingsRef.current
-        const provider = settingsNow.providers.find((p) => p.id === settingsNow.activeProviderId)
-        if (!provider) return
-        const options = resolveThinkingOptions(provider)
-        const current = provider.thinkingLevel || defaultThinkingLevel(provider)
-        const next = stepThinkingLevel(
-          options,
-          current,
-          action === 'thinking_higher' ? 1 : -1
+      if (action === 'thinking_lower' || action === 'thinking_higher' || action === 'thinking_cycle') {
+        applyThinkingShortcut(
+          action === 'thinking_cycle' ? 'cycle' : action === 'thinking_higher' ? 'higher' : 'lower'
         )
-        if (next && next !== current) void handleThinkingLevelChange(provider.id, next)
         return
       }
       if (action === 'select_recent') {
@@ -7353,7 +7378,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleRunEnvironmentAction, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleThinkingLevelChange, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+  }, [applyThinkingShortcut, handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleRunEnvironmentAction, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return

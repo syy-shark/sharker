@@ -230,6 +230,18 @@ describe('command palette', () => {
     expect(ids).toContain('task')
     expect(ids).toContain('model')
     expect(ids).toContain('environment-action')
+    expect(ids).toContain('thinking-lower')
+    expect(ids).toContain('thinking-higher')
+    expect(ids).toContain('thinking-cycle')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'thinking-lower')?.title).toBe(
+      'Decrease reasoning effort'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'thinking-higher')?.title).toBe(
+      'Increase reasoning effort'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'thinking-cycle')?.title).toBe(
+      'Cycle reasoning effort'
+    )
   })
 
   it('filters by title and keywords', () => {

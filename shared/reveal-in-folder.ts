@@ -160,6 +160,12 @@ export const NAVIGATE_BACK_LABEL = 'Navigate back'
 export const NAVIGATE_FORWARD_LABEL = 'Navigate forward'
 export const INCREASE_FONT_SIZE_LABEL = 'Increase font size'
 export const DECREASE_FONT_SIZE_LABEL = 'Decrease font size'
+/** 官方 Settings → Keyboard Shortcuts：Decrease reasoning effort（#26819） */
+export const DECREASE_REASONING_EFFORT_LABEL = 'Decrease reasoning effort'
+/** 官方 Settings → Keyboard Shortcuts：Increase reasoning effort（#26819） */
+export const INCREASE_REASONING_EFFORT_LABEL = 'Increase reasoning effort'
+/** 官方 Settings → Keyboard Shortcuts：Cycle reasoning effort（无默认绑定） */
+export const CYCLE_REASONING_EFFORT_LABEL = 'Cycle reasoning effort'
 export const RESET_FONT_SIZE_LABEL = 'Reset font size'
 export const TOGGLE_SIDEBAR_LABEL = 'Toggle sidebar'
 export const TOGGLE_BOTTOM_PANEL_LABEL = 'Toggle bottom panel'

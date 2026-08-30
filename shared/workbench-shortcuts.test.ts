@@ -5,6 +5,7 @@ import {
   isTerminalClearChord,
   matchDefaultWorkbenchShortcut,
   shouldOpenReviewPanel,
+  SHORTCUT_CATALOG,
   WORKBENCH_SHORTCUT_HELP
 } from './workbench-shortcuts'
 import { matchWorkbenchShortcut } from './keymap'
@@ -83,6 +84,24 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true }))).toBe('open_folder')
     expect(matchWorkbenchShortcut(ev({ key: ',', altKey: true }))).toBe('thinking_lower')
     expect(matchWorkbenchShortcut(ev({ key: '.', altKey: true }))).toBe('thinking_higher')
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) =>
+          row.action === 'thinking_cycle' &&
+          row.title === 'Cycle reasoning effort' &&
+          row.defaultKeys === '未指定'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) => row.action === 'thinking_lower' && row.title === 'Decrease reasoning effort'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) => row.action === 'thinking_higher' && row.title === 'Increase reasoning effort'
+      )
+    ).toBe(true)
     expect(matchWorkbenchShortcut(ev({ key: '?', metaKey: true, shiftKey: true }))).toBe(
       'shortcut_help'
     )

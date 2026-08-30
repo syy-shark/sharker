@@ -29,13 +29,16 @@ import {
   COPY_CONVERSATION_PATH_LABEL,
   COPY_SESSION_ID_LABEL,
   COPY_WORKING_DIRECTORY_LABEL,
+  CYCLE_REASONING_EFFORT_LABEL,
   DECREASE_FONT_SIZE_LABEL,
+  DECREASE_REASONING_EFFORT_LABEL,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
   RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   LOCAL_LABEL,
   INCREASE_FONT_SIZE_LABEL,
+  INCREASE_REASONING_EFFORT_LABEL,
   MARK_CHAT_AS_UNREAD_LABEL,
   NAVIGATE_BACK_LABEL,
   NAVIGATE_FORWARD_LABEL,
@@ -258,6 +261,26 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: SLASH_REASONING_DESCRIPTION,
     keywords: 'reasoning thinking effort 查看或设定思考档 思考 推理',
     action: 'set_reasoning'
+  },
+  {
+    id: 'thinking-lower',
+    title: DECREASE_REASONING_EFFORT_LABEL,
+    shortcut: '⌥,',
+    keywords: 'decrease reasoning effort thinking lower 降低 思考',
+    action: 'thinking_lower'
+  },
+  {
+    id: 'thinking-higher',
+    title: INCREASE_REASONING_EFFORT_LABEL,
+    shortcut: '⌥.',
+    keywords: 'increase reasoning effort thinking higher 提高 思考',
+    action: 'thinking_higher'
+  },
+  {
+    id: 'thinking-cycle',
+    title: CYCLE_REASONING_EFFORT_LABEL,
+    keywords: 'cycle reasoning effort thinking 循环 思考',
+    action: 'thinking_cycle'
   },
   {
     id: 'skills',
