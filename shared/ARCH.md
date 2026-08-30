@@ -175,7 +175,7 @@
 | `explore-activity.ts` | 官方探索过程：Read / List / Search + basename（对标 Codex exec_cell parsed Read/List/Search）。不发明 Exploring 分组头，也不发明比官方更长的完整路径 |
 | `explore-activity.test.ts` | Read/List/Search、basename、Search query in path |
 | `mcp-activity.ts` | 官方 MCP 工具调用：Calling / Called + `server.tool({compact})`（对标 Codex `McpToolCall` / #20677）。动态名 `mcp_{server}__{tool}` 与 `mcp_call_tool` 共用；审批条 `formatMcpApprovalLabel`。不发明 Apps / node_repl，也不把 InProgress 标成完成（#22300） |
-| `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定；直播审批摘要不另挂「查看操作参数」 |
+| `mcp-activity.test.ts` | 动态名 / call_tool 解析、Calling/Called、空参 `()`、JSON dump 判定；直播审批 JSX 不另挂「查看操作参数」 |
 | `user-input.test.ts` | 选项 / Other / header 截断 / 最多 3 题 / 中止竞态 / Question requested / Answer the questions to continue. |
 | `pending-steer.ts` | 当前回合注入信箱纯逻辑（对标 Codex Steer）：按会话排队、首轮采样前不排空、排空后写入用户气泡且同 id 不重复；收束残留成功则 consume、中止/未采样则 restore，且 `appendFinishLeftoverSteers` 等助手行落盘后再写（对标 leftover pending input at task finish，不中途 `setMessages`）；排队芯片直播中主操作是注入（`queuedChipPrimaryAction`）；忙时注入失败改排队（`resolveBusyFollowUp`），只有没有进行中回合才新开，不 abort 直播；首轮对话 id 未落库时 `holdBusyFollowUp` 暂存 Steer/Queue（`resolveBusyFollowUpWithoutConversation`），冲进时 `applyHeldBusyFollowUp` 在 `turn_start` 前对 `no_active_turn` 只 retry 不 abort |
 | `pending-steer.test.ts` | 会话隔离、采样前不排空、排空 / 改写 / 取消、历史去重、收束残留 disposition / 收束后再写入、无会话 id 暂存与冲进 retry |
