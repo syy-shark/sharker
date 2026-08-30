@@ -415,7 +415,7 @@ describe('near-live message rows', () => {
     expect(
       nextAboveFoldHeightScrollTop({
         scrollTop: 100,
-        changes: [{ offsetTop: 0, previousSize: 800, nextSize: 160 }]
+        changes: [{ offsetTop: 0, previousSize: 100, nextSize: 0 }]
       })
     ).toBe(0)
     expect(
