@@ -26,24 +26,24 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 |------|------|
 | `/help` | 显示能力与命令列表 |
 | `/clear` | 清空当前对话 |
-| `/changes` | 打开右侧变更审查 |
+| `/changes` | Toggle review panel（对标官方 Commands） |
 | `/review` | 只读评审；空命令先选未提交 / 相对基线 / 指定提交（对标 Codex Choose Review against a base branch or Review uncommitted changes）；官方默认当前对话；Settings → General → **代码审查** 可改独立线程，并可指定审查模型（对标 Codex `review_model`，空则当前会话）；`/review here` / `detached` 单次覆盖；直播中走排队或注入，不 abort；写明 `branch` / `commit` / 关注点则跳过选择器 |
 | `/personality` | 切换 Pragmatic / Friendly / None（对标 Codex Settings → Personalization；无参数则循环） |
 | `/memories` | 空命令先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改 Settings → Personalization 的 Enable memories）；功能关闭时本对话选择会记下，打开后才 Use / Generate；`on|off|use|inherit` 可直接改本对话 |
 | `/mention` | 打开 `@` 文件选择器 |
 | `/skill` `/skills` | 无参打开侧栏 Skills 页（对标 Codex open Skills in the sidebar / `codex://skills`）；带过滤参数时列出匹配项；`$` / `/skill` 仍打开输入框选择器；已安装 Skill 也会出现在 `/` 列表，选中写入 `$name` |
-| `/files` `/terminal` `/browser` `/agents` | 打开右侧对应面板 |
+| `/files` `/terminal` `/browser` `/agents` | Toggle file tree / Toggle terminal / Toggle browser panel（对标官方 Commands）；`/agents` 仍打开子 Agent 活动 |
 | `/fork` | 分叉到新本地线程（拷贝全部消息，不复用源 worktree）；`/fork worktree` 立刻另建隔离 checkout（对标 Codex Copy into a new local chat or worktree）。顶栏分叉按钮走同一条整段路径。历史气泡悬停 **Fork** 只拷到该条（含），省略其后回合（对标 Codex fork from an earlier message / `thread/fork` `lastTurnId`）；直播未完成行不分叉 |
 | `/side` `/btw` `[问题]` | Open side chat 并弹出窗（不切走当前对话）；带问题则在旁路线程立刻发送；划选历史 / 直播已出现正文、文件预览、集成终端或内置浏览器批注可 **Add to chat** 进 composer Selection 芯片（发送收成 `# Selected text:`），或 **Ask in side chat** 把摘录交给旁路（对标 Codex Add to chat / #37560、`/side [question]` 与 Ask in side chat / Annotation mode） |
 | `/status` | 显示对话 ID、模型、权限、Fast、可写根（项目附加文件夹）、线程模式、分支、上下文占用（`used / limit（%）`）与本机今日用量；长线程从库取未瘦身全文再估，不按 UI 尾页（对标 Codex /status chat ID / context usage / writable roots，避免打开历史线程像 0%；不发明供应商额度）。Settings → General可打开输入框旁用量环（对标 Codex Show context window usage，官方默认关；悬停数字与 `/status` 相同，直播增量不重走整段历史） |
-| `/diff` | 打开右侧变更审查看本地 diff |
+| `/diff` | Open review tab（对标官方 Commands；打开右侧审查，不对标 TUI Show the Git diff…） |
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行按钮 **Pause** / **Resume** / **Edit** / **Clear**，状态字 **Active** / **Paused**（对标 Codex desktop goal progress row）；耗时在 Active 走秒表、Paused 冻结，满 24h 显示 `1d 0h 0m`（对标 Codex #29370 / #20558），不发明 complete / blocked / budgetLimited |
 | `/permissions` | 切换 Ask for approval / Full access；无参显示当前值。输入框下方同一控件（对标 Codex permissions control beneath the composer），不发明 Approve for me / Auto / 命名 profile |
 | `/fast` | 开关 Fast：有思考档位时降到 off/none/minimal/low。输入框旁同一芯片（对标 Codex `/fast` + composer 控件），不发明供应商 service tier |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框 **Plan mode** 芯片，快捷键 **Toggle plan mode**，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices / slash：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
 | `/mcp [verbose]` | 命令面板 **Open MCP status**（对标 Codex Open MCP status）：列出已配置 Server；空配置打开 Settings → MCP servers；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | Open the feedback dialog to submit feedback and optionally include logs（官方 IDE 原文）；对话框标题 **Share feedback**，勾选 **Include current Codex session logs**；Help / 命令面板仍是 **Send Feedback**；只复制本机诊断，不外发（对标 Codex #26890 / #26654，不发明上传 / Safety check / Check for Updates） |
-| `/share` | 打开只读快照（对标 Codex 桌面 Share / `/share`）：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。对话框标题 **Share**，说明用官方 “The snapshot doesn't give other people access…” / 收录范围原文，按钮 **Close** / **Copy as Markdown**。打开时拍一帧，之后不跟直播 token 变。不发明官方 Who has access / Copy link 上传。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
+| `/share` | 斜杠说明用官方 **Share a read-only snapshot of a local Codex thread.**（learn.chatgpt.com Use ChatGPT / changelog；`/share` where slash commands are available）。打开只读快照：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。对话框标题 **Share**，说明用官方 “The snapshot doesn't give other people access…” / 收录范围原文，按钮 **Close** / **Copy as Markdown**。打开时拍一帧，之后不跟直播 token 变。不发明官方 Who has access / Copy link 上传。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
 | `/chat` `/task` | Start a chat without a project（对标 Codex `/task`；`/chat` 同义）。空线程侧栏标题默认 **New chat**（旧盘「新对话」仍当占位再推导，对标 Codex Desktop sidebar） |
 | `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示 Compacting context（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
