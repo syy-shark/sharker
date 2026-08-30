@@ -1355,6 +1355,17 @@ import {
   isLiveAskResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
   isLiveAskResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
   isLiveAskResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -12379,7 +12390,8 @@ describe('live stream ui snapshot', () => {
       ['think+demo+error+ask+settled+cancel+compress', [{ type: 'think', content: 'Next' }, ...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextSettled, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['error+demo+ask+active+cancel+compress', [{ type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
       ['demo+error+ask+active+cancel+compress', [...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
-      ['think+error+demo+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
+      ['think+error+demo+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, { type: 'error', error: 'boom' }, ...liveDemo, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]],
+      ['think+demo+error+ask+active+cancel+compress', [{ type: 'think', content: 'Next' }, ...liveDemo, { type: 'error', error: 'boom' }, ...liveAskStart, ...liveNextActive, { type: 'turn_cancelled' }, { type: 'context_compress', contextCompress: compressPayload }]]
     ]
     const liveTokenAskHelpers = {
       'allow-settle': {
@@ -12457,6 +12469,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveApprovalAllowedSettleErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveApprovalAllowedSettleAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalAllowedSettleThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveApprovalAllowedSettleThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'deny-settle': {
         'think+token+ask': isLiveApprovalDeniedThinkAnswerAskAppendChange,
@@ -12533,6 +12546,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveApprovalDeniedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveApprovalDeniedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalDeniedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveApprovalDeniedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'nosettle-allow': {
         'think+token+ask': isLiveApprovalResolvedThinkAnswerAskAppendChange,
@@ -12621,6 +12635,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveApprovalResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       status: {
         'token+ask+cancel': isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -12693,6 +12708,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveStatusApprovalResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveStatusApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveStatusApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       writestat: {
         'token+ask+cancel': isLiveWriteStatApprovalResolvedAnswerAskCancelAppendChange,
@@ -12765,6 +12781,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'writestat+status': {
         'token+ask+cancel': isLiveWriteStatStatusApprovalResolvedAnswerAskCancelAppendChange,
@@ -12837,6 +12854,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       ask: {
         'token+ask+cancel': isLiveAskResolvedAnswerAskCancelAppendChange,
@@ -12921,6 +12939,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveAskResolvedErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveAskResolvedAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveAskResolvedThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveAskResolvedThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
@@ -13095,6 +13114,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveApprovalNeededErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'hang-status': {
         'token+ask': isLiveStatusApprovalNeededAnswerAskAppendChange,
@@ -13195,6 +13215,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveStatusApprovalNeededErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveStatusApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveStatusApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'write-hang': {
         'token+ask': isLiveWriteStatApprovalNeededAnswerAskAppendChange,
@@ -13295,6 +13316,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalNeededErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveWriteStatApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       },
       'write-status-hang': {
         'token+ask': isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
@@ -13395,6 +13417,7 @@ describe('live stream ui snapshot', () => {
         'error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
         'demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
         'think+error+demo+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompressAppendChange,
+        'think+demo+error+ask+active+cancel+compress': isLiveWriteStatStatusApprovalNeededThinkAnswerDemoErrorAskActiveToolCancelCompressAppendChange,
       }
     } as const
     for (const [label, prev, head] of [
