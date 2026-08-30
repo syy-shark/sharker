@@ -1539,6 +1539,17 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('splitTranscriptAroundPinnedLive')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldFlushRowIntrinsicHeight')
+    expect(src('../src/components/ChatView.tsx')).toContain('cachedIdCallback')
+    expect(src('../src/components/ChatView.tsx')).toContain('cachedIdArgCallback')
+    expect(src('../src/components/ChatView.tsx').includes('() => onForkFromMessage(m.id)')).toBe(
+      false
+    )
+    expect(src('../src/components/ChatView.tsx').includes('(text) => onEditUserMessage(m.id, text)')).toBe(
+      false
+    )
+    expect(src('../src/components/TurnFlow.tsx')).toContain(
+      'out.every((step, index) => step === prev[index])'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('nextRevealPreserveScrollTop')
     expect(src('../src/components/ChatView.tsx')).toContain('nextAboveFoldHeightScrollTop')
     expect(src('../src/components/ChatView.tsx').includes('trimTopIdsRef')).toBe(false)

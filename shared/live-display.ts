@@ -878,12 +878,47 @@ export function nextAboveFoldHeightScrollTop(input: {
   return next > 0 ? next : 0
 }
 
+const rowIntrinsicStyleCache = new Map<number, { containIntrinsicSize: string }>()
+
 /** 远离贴底窗口后用实测高度当 content-visibility 内在尺寸，避免从 160px 估高跳变 */
 export function rowIntrinsicSizeStyle(
   height: number | undefined
 ): { containIntrinsicSize: string } | undefined {
   if (height == null || height < 1) return undefined
-  return { containIntrinsicSize: `auto ${Math.round(height)}px` }
+  const rounded = Math.round(height)
+  const cached = rowIntrinsicStyleCache.get(rounded)
+  if (cached) return cached
+  const style = { containIntrinsicSize: `auto ${rounded}px` }
+  rowIntrinsicStyleCache.set(rounded, style)
+  return style
+}
+
+/** 按 id 缓存无参回调，窗口重算不换引用，避免 memo 行整列重绘 */
+export function cachedIdCallback(
+  cache: Map<string, () => void>,
+  id: string,
+  fireRef: { current?: ((id: string) => void) | null }
+): () => void {
+  let fn = cache.get(id)
+  if (!fn) {
+    fn = () => fireRef.current?.(id)
+    cache.set(id, fn)
+  }
+  return fn
+}
+
+/** 按 id 缓存带参回调（用户气泡编辑） */
+export function cachedIdArgCallback<T>(
+  cache: Map<string, (arg: T) => void>,
+  id: string,
+  fireRef: { current?: ((id: string, arg: T) => void) | null }
+): (arg: T) => void {
+  let fn = cache.get(id)
+  if (!fn) {
+    fn = (arg: T) => fireRef.current?.(id, arg)
+    cache.set(id, fn)
+  }
+  return fn
 }
 
 /** 离开贴底窗口的第一帧：state 还没写入时用已测量高度（对标 Codex #38220） */

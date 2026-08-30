@@ -57,6 +57,8 @@ import {
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
+  cachedIdCallback,
+  cachedIdArgCallback,
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
   shouldIgnoreLeaveBottomDuringCommit,
@@ -476,6 +478,40 @@ describe('near-live message rows', () => {
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(0)).toBeUndefined()
     expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })
+    expect(rowIntrinsicSizeStyle(481.6)).toBe(rowIntrinsicSizeStyle(481.6))
+    expect(rowIntrinsicSizeStyle(482)).toBe(rowIntrinsicSizeStyle(481.6))
+    const forkCache = new Map<string, () => void>()
+    let forked = ''
+    const forkRef: { current?: ((id: string) => void) | null } = {
+      current: (id) => {
+        forked = id
+      }
+    }
+    const forkA = cachedIdCallback(forkCache, 'msg-1', forkRef)
+    expect(cachedIdCallback(forkCache, 'msg-1', forkRef)).toBe(forkA)
+    forkA()
+    expect(forked).toBe('msg-1')
+    forkRef.current = (id) => {
+      forked = `next-${id}`
+    }
+    forkA()
+    expect(forked).toBe('next-msg-1')
+    const editCache = new Map<string, (text: string) => void>()
+    let edited = ''
+    const editRef: { current?: ((id: string, text: string) => void) | null } = {
+      current: (id, text) => {
+        edited = `${id}:${text}`
+      }
+    }
+    const editA = cachedIdArgCallback(editCache, 'user-1', editRef)
+    expect(cachedIdArgCallback(editCache, 'user-1', editRef)).toBe(editA)
+    editA('hello')
+    expect(edited).toBe('user-1:hello')
+    editRef.current = (id, text) => {
+      edited = `next-${id}:${text}`
+    }
+    editA('world')
+    expect(edited).toBe('next-user-1:world')
     expect(resolveRowIntrinsicHeight(undefined, 640)).toBe(640)
     expect(resolveRowIntrinsicHeight(200, 640)).toBe(200)
     expect(resolveRowIntrinsicHeight(undefined, undefined)).toBeUndefined()

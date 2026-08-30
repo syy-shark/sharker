@@ -322,6 +322,7 @@ function reuseDisplaySteps(prev: DisplayStep[], next: DisplayStep[]): DisplaySte
     }
   }
   if (next.length > prev.length) out.push(...next.slice(prev.length))
+  if (out.length === prev.length && out.every((step, index) => step === prev[index])) return prev
   return out
 }
 

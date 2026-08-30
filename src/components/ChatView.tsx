@@ -110,6 +110,8 @@ import {
   TRANSCRIPT_NAV_BLOCK,
   clearInlineDemoFramePool,
   mergeSeededRowHeights,
+  cachedIdArgCallback,
+  cachedIdCallback,
   FAR_ROW_INTRINSIC_GUESS,
   nextAboveFoldHeightScrollTop,
   nextRowIntrinsicHeights,
@@ -1121,6 +1123,15 @@ export const ChatView = memo(function ChatView({
     setLiveMemoryFindHits(EMPTY_FIND_HITS)
   }
   const [sideAsk, setSideAsk] = useState<{ text: string; top: number; left: number } | null>(null)
+  const onForkFromMessageRef = useRef(onForkFromMessage)
+  onForkFromMessageRef.current = onForkFromMessage
+  const onRetryRef = useRef(onRetry)
+  onRetryRef.current = onRetry
+  const onEditUserMessageRef = useRef(onEditUserMessage)
+  onEditUserMessageRef.current = onEditUserMessage
+  const forkByIdRef = useRef(new Map<string, () => void>())
+  const retryByIdRef = useRef(new Map<string, () => void>())
+  const editByIdRef = useRef(new Map<string, (text: string) => void>())
 
   useEffect(() => {
     setEditUserMessageId(null)
@@ -1130,6 +1141,9 @@ export const ChatView = memo(function ChatView({
     heightFlushPreserveRef.current = null
     clearInlineDemoFramePool()
     clearHistoricalAnswerHolds()
+    forkByIdRef.current.clear()
+    retryByIdRef.current.clear()
+    editByIdRef.current.clear()
     setIntrinsicHeights(new Map())
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
@@ -2674,8 +2688,16 @@ export const ChatView = memo(function ChatView({
             )}
             editRequested={editUserMessageId === m.id}
             onEditRequestHandled={handleEditRequestHandled}
-            onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
-            onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+            onEdit={
+              onEditUserMessageRef.current
+                ? cachedIdArgCallback(editByIdRef.current, m.id, onEditUserMessageRef)
+                : undefined
+            }
+            onFork={
+              onForkFromMessageRef.current
+                ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                : undefined
+            }
             onRevealSelection={handleRevealSelection}
             selectionSource={selectionSourceId === m.id}
           />
@@ -2712,10 +2734,18 @@ export const ChatView = memo(function ChatView({
                   toolOutputDisplay={toolOutputDisplay}
                   onNeedFullMessage={onNeedFullMessage}
                   preserveLiveDiffs={m.id === preserveLiveDiffsId}
-                  onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                  onFork={
+                    onForkFromMessageRef.current
+                      ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                      : undefined
+                  }
                   onRetry={
-                    index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
-                      ? () => onRetry(m.meta!.retryOfUserMessageId!)
+                    index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetryRef.current
+                      ? cachedIdCallback(
+                          retryByIdRef.current,
+                          m.meta.retryOfUserMessageId,
+                          onRetryRef
+                        )
                       : undefined
                   }
                 />
@@ -2741,9 +2771,6 @@ export const ChatView = memo(function ChatView({
       modelLabel,
       onOpenSubAgent,
       onOpenChangedFiles,
-      onRetry,
-      onEditUserMessage,
-      onForkFromMessage,
       onNeedFullMessage,
       handleRevealSelection,
       selectionSourceId,
@@ -2910,9 +2937,15 @@ export const ChatView = memo(function ChatView({
                             editRequested={editUserMessageId === m.id}
                             onEditRequestHandled={handleEditRequestHandled}
                             onEdit={
-                              onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined
+                              onEditUserMessageRef.current
+                                ? cachedIdArgCallback(editByIdRef.current, m.id, onEditUserMessageRef)
+                                : undefined
                             }
-                            onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                            onFork={
+                              onForkFromMessageRef.current
+                                ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                                : undefined
+                            }
                             onRevealSelection={handleRevealSelection}
                             selectionSource={selectionSourceId === m.id}
                           />
@@ -2939,7 +2972,9 @@ export const ChatView = memo(function ChatView({
                                 onNeedFullMessage={onNeedFullMessage}
                                 preserveLiveDiffs={m.id === preserveLiveDiffsId}
                                 onFork={
-                                  onForkFromMessage ? () => onForkFromMessage(m.id) : undefined
+                                  onForkFromMessageRef.current
+                                    ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                                    : undefined
                                 }
                               />
                             )}
