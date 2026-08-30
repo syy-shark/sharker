@@ -201,6 +201,58 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(nextAnswer.copyable).toContain('Error: boom')
   })
 
+  it('classifies a second no-fence text plus tool or status after existing prose', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const extraText: TurnSegment = {
+      id: 'a2',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Error: boom'
+    }
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const reconnect = status('Reconnecting... 1/5')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply],
+        [thought, reading, reply, extraText, nextTool]
+      )
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply],
+        [thought, reading, reply, extraText, reconnect]
+      )
+    ).toBe('status')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply],
+        [thought, reading, reply, nextTool, extraText]
+      )
+    ).toBe('text')
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const withTool = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, extraText, nextTool]
+    })
+    expect(withTool.tail?.content).toBe('Error: boom')
+    expect(withTool.copyable).toContain('Hi')
+    const firstProcess = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const nextProcess = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, extraText, nextTool]
+    })
+    expect(nextProcess.processForFlow.at(-1)).toBe(nextTool)
+  })
+
   it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(

@@ -232,6 +232,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 同长只改 status / 思考（正文可仍在末尾；重连 n/5 可改写文案）标 `'status'` / `'think'`。
  * 规划下一步改写成 Ask（换 `toolName`）仍等表。
  * 已有无 fence 正文后再开第二段 text 标 `'text'`，先封上一尾再开新尾。
+ * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 写盘 +/- 在 `'tool'` skip 上只换该工具 diff 槽。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
@@ -303,12 +304,10 @@ export function liveCoreAppendedProcessToolsSkip(
   const extras = next.slice(processLen + prevAnswer.length)
   if (!extras.length) return null
   if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
-  if (!prevAnswer.length) {
-    if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
-    if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
-    if (extrasHaveAnswerThenThinkOrStatus(extras)) {
-      return extras.some(isLiveStatus) ? 'status' : 'think'
-    }
+  if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
+  if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
+  if (extrasHaveAnswerThenThinkOrStatus(extras)) {
+    return extras.some(isLiveStatus) ? 'status' : 'think'
   }
   if (extras.length && extras.every((segment) => isLiveThinking(segment) || isLiveStatus(segment))) {
     return extras.some(isLiveStatus) ? 'status' : 'think'
