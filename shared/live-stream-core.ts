@@ -304,7 +304,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 已有无 fence 正文后再开第二段或多段 text 标 `'text'`，先封上一尾再开新尾。
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
- * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽，随后首枚 token 不冲掉 +/-。
+ * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽并翻 contentStreaming，随后首枚 token 不冲掉 +/-。
  * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
  * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
@@ -1012,6 +1012,30 @@ function retargetLiveDemoParts(prev: LiveAnswerView, segment: TurnSegment): Live
   }
 }
 
+/** 首枚写盘 extras / 同一帧正文+工具：翻 contentStreaming，Thought 立刻收起（对标 Codex）。 */
+function applyCoreAnswerStreaming(
+  view: LiveProcessView,
+  prevSegments: readonly TurnSegment[],
+  segments: readonly TurnSegment[]
+): LiveProcessView {
+  if (view.contentStreaming && view.answerStreaming) return view
+  const extras = segments.slice(prevSegments.length)
+  const hasProse =
+    extras.some((segment) => isLiveCoreStreamText(segment) && Boolean((segment.content ?? '').trim())) ||
+    Boolean((liveCoreHeldNoFenceAnswerChange(prevSegments, segments)?.content ?? '').trim())
+  const writeStats = findLiveCoreWriteStatTools(prevSegments, segments)
+  const hasWrite =
+    liveCoreExtraWriteStatTools(prevSegments, segments).length > 0 ||
+    Boolean(writeStats?.length)
+  if (!hasProse && !hasWrite && !view.generatingDemo) return view
+  const next: LiveProcessView = {
+    ...view,
+    contentStreaming: true,
+    answerStreaming: true
+  }
+  return sameProcessView(view, next) ? view : next
+}
+
 function applyCoreDemoStreaming(
   view: LiveProcessView,
   extras: readonly TurnSegment[]
@@ -1217,16 +1241,15 @@ export function nextLiveProcessView(
   if (prev && processHold?.view === prev) {
     const coreSkip = liveCoreAppendedProcessToolsSkip(processHold.segments, segments)
     if (coreSkip === 'text') {
-      const appended = applyCoreDemoStreaming(
-        appendCoreProcessFlow(prev, processHold.segments, segments),
-        segments.slice(processHold.segments.length)
+      const appended = applyCoreAnswerStreaming(
+        applyCoreDemoStreaming(
+          appendCoreProcessFlow(prev, processHold.segments, segments),
+          segments.slice(processHold.segments.length)
+        ),
+        processHold.segments,
+        segments
       )
-      const tail = segments[segments.length - 1]
-      const hasProse = Boolean((tail?.content ?? '').trim())
-      const view: LiveProcessView = hasProse || appended.generatingDemo || appended.contentStreaming
-        ? { ...appended, contentStreaming: true, answerStreaming: true }
-        : appended
-      const held = sameProcessView(prev, view) ? prev : view
+      const held = sameProcessView(prev, appended) ? prev : appended
       processHold = { view: held, segments }
       return held
     }
@@ -1237,17 +1260,22 @@ export function nextLiveProcessView(
         segments
       )
       const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
-      const view =
+      const retargeted =
         processForFlow === prev.processForFlow && thinkText === prev.thinkText
           ? prev
           : { ...prev, processForFlow, thinkText }
+      const view = applyCoreAnswerStreaming(retargeted, processHold.segments, segments)
       processHold = { view, segments }
       return view
     }
     if (coreSkip === 'tool' || coreSkip === 'status') {
-      const view = applyCoreDemoStreaming(
-        appendCoreProcessFlow(prev, processHold.segments, segments),
-        segments.slice(processHold.segments.length)
+      const view = applyCoreAnswerStreaming(
+        applyCoreDemoStreaming(
+          appendCoreProcessFlow(prev, processHold.segments, segments),
+          segments.slice(processHold.segments.length)
+        ),
+        processHold.segments,
+        segments
       )
       processHold = { view, segments }
       return view

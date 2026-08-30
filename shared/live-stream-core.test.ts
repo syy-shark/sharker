@@ -67,6 +67,16 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([streamed], [streamedClosed, nextTool])).toBe('tool')
     expect(hasLiveProcessPhaseGrowHold([streamed], [streamedClosed, nextTool])).toBe(true)
     expect(nextLivePublishedStreaming([streamedClosed, nextTool], '')).toBe('Hello')
+    const firstStream = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [streamed]
+    })
+    const afterTool = nextLiveProcessView(firstStream, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [streamedClosed, nextTool]
+    })
+    expect(afterTool.contentStreaming).toBe(true)
+    expect(afterTool.answerStreaming).toBe(true)
   })
 
   it('classifies a newly appended tool after think, tool, and streaming no-fence prose without the table', () => {
@@ -1329,6 +1339,16 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     }
     expect(shouldSkipLiveStreamDerivation([thought], [thoughtDone, writing])).toBe('tool')
     expect(hasLiveProcessPhaseGrowHold([thought], [thoughtDone, writing])).toBe(true)
+    const firstProcess = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought]
+    })
+    const nextProcess = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thoughtDone, writing]
+    })
+    expect(nextProcess.contentStreaming).toBe(true)
+    expect(nextProcess.answerStreaming).toBe(true)
     const first = nextLiveAnswerView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [thought]
