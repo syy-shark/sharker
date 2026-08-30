@@ -42,6 +42,7 @@ import {
   threadCopyMenuItems,
   type ThreadCopyAction
 } from '../../shared/reveal-in-folder'
+import { OPEN_A_PULL_REQUEST_LABEL } from '../../shared/review-repos'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
 
@@ -357,8 +358,8 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onOpenPullRequest()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="打开审查中的 Pull Request"
-              aria-label={`打开 ${prLabel}`}
+              title={OPEN_A_PULL_REQUEST_LABEL}
+              aria-label={OPEN_A_PULL_REQUEST_LABEL}
             >
               {prLabel}
             </button>

@@ -79,6 +79,12 @@ describe('review repos', () => {
     expect(panelSrc).toContain('CREATE_A_PULL_REQUEST_LABEL')
     expect(panelSrc).toContain('OPEN_A_PULL_REQUEST_LABEL')
     expect(panelSrc).not.toContain('打开 PR')
+    const toolbarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatToolbar.tsx'),
+      'utf8'
+    )
+    expect(toolbarSrc).toContain('OPEN_A_PULL_REQUEST_LABEL')
+    expect(toolbarSrc).not.toContain('打开审查中的 Pull Request')
     expect(panelSrc).not.toContain('换行长 diff')
     expect(panelSrc).not.toContain('全部取消暂存')
   })
