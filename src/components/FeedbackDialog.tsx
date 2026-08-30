@@ -11,6 +11,7 @@ import {
   type FeedbackClassification
 } from '../../shared/feedback-bundle'
 import {
+  FILE_CLOSE_LABEL,
   INCLUDE_CURRENT_SESSION_LOGS_LABEL,
   SHARE_FEEDBACK_LABEL
 } from '../../shared/reveal-in-folder'
@@ -80,7 +81,7 @@ export function FeedbackDialog({ open, info, onClose }: Props) {
 
   return (
     <div className="feedback-dialog-root" role="presentation">
-      <button type="button" className="feedback-dialog-backdrop" aria-label="关闭反馈" onClick={onClose} />
+      <button type="button" className="feedback-dialog-backdrop" aria-label={FILE_CLOSE_LABEL} onClick={onClose} />
       <div className="feedback-dialog glass-popover popover-enter" role="dialog" aria-labelledby="feedback-dialog-title">
         <header className="feedback-dialog-head">
           <h2 id="feedback-dialog-title">{SHARE_FEEDBACK_LABEL}</h2>
@@ -130,7 +131,7 @@ export function FeedbackDialog({ open, info, onClose }: Props) {
         {copyError ? <p className="feedback-dialog-err">{copyError}</p> : null}
         <footer className="feedback-dialog-actions">
           <button type="button" onClick={onClose}>
-            取消
+            {FILE_CLOSE_LABEL}
           </button>
           <button type="button" className="is-primary" disabled={!info} onClick={() => void copy()}>
             {info ? '复制诊断' : '正在收集…'}
