@@ -1139,6 +1139,23 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       liveSegments: [ask]
     })
     expect(next.processForFlow).toEqual([ask])
+    const awaiting: TurnSegment = {
+      ...plan,
+      content: 'Awaiting approval · 执行命令',
+      toolName: 'run_terminal_cmd'
+    }
+    expect(shouldSkipLiveStreamDerivation([plan], [awaiting])).toBe('status')
+    expect(hasLiveProcessPhaseGrowHold([plan], [awaiting])).toBe(true)
+    const running = tool('active')
+    const hung: TurnSegment = { ...running, toolDetail: 'needs approval' }
+    const hungStatus: TurnSegment = {
+      ...plan,
+      content: 'Awaiting approval · 读文件',
+      toolName: 'read_file'
+    }
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), running, plan], [think('Hmm'), hung, hungStatus])
+    ).toBe('tool')
   })
 
   it('does not skip answer identity on prose tokens so the tail can grow', () => {
