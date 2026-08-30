@@ -3190,4 +3190,30 @@ describe('process phases privacy', () => {
     ])
     expect(connectingOfficial[0]?.title).toBe('Thinking')
   })
+
+  it('does not treat an empty first snapshot as token-grow reuse', () => {
+    const thinking: TurnSegment = {
+      id: 'th-first',
+      kind: 'thinking',
+      status: 'active',
+      content: 'Hmm'
+    }
+    expect(remapProcessPhaseStepsOnThinkAppend([], [thinking], [thinking], true)).toBeNull()
+    const toolDone: TurnSegment = {
+      id: 'tool-first',
+      kind: 'tool',
+      toolName: 'read_file',
+      status: 'done',
+      startedAt: 1
+    }
+    const withTool = deriveChronologicalSteps([toolDone, thinking], { isStreaming: true })
+    const grown: TurnSegment = { ...thinking, content: 'Hmm more' }
+    const reused = remapProcessPhaseStepsOnThinkAppend(
+      withTool,
+      [toolDone, thinking],
+      [toolDone, grown],
+      true
+    )
+    expect(reused).toBe(withTool)
+  })
 })

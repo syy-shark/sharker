@@ -631,7 +631,7 @@ export function remapProcessPhaseStepsOnThinkAppend(
   segments: readonly TurnSegment[],
   isStreaming = true
 ): ProcessPhaseStep[] | null {
-  if (isLiveSameLengthTokenGrow(prevSegments, segments)) return prevSteps
+  if (prevSteps.length && isLiveSameLengthTokenGrow(prevSegments, segments)) return prevSteps
   if (!shouldRemapProcessOnThinkAppend(prevSegments, segments)) {
     return null
   }
