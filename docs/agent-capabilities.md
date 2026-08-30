@@ -49,7 +49,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/resume` | 打开历史对话选择器 |
 | `/title` | `/rename` 别名 |
 | `/agent` | `/agents` 别名 |
-| `/copy` | Copy the latest completed Codex output（对标 Codex `/copy` · Ctrl+O）：直播跳过进行中预留行，斜杠确认 / 本机备注不当成模型输出；有代码块或引用时先选整段 / 代码 / 引用（对标 Codex /copy picker）。Ctrl+O 仍静默复制整段 |
+| `/copy` | Copy the latest completed Codex output（对标 Codex `/copy` · Ctrl+O）：直播跳过进行中预留行，斜杠确认 / 本机备注不当成模型输出；有代码块或引用时先选整段 / 代码 / 引用（对标 Codex /copy picker，弹在输入框上不占 composer-stage 高度以免挤直播贴底）。Ctrl+O 仍静默复制整段 |
 | `/delete` | 永久删除当前对话 |
 | `/theme` | 打开外观设置 |
 | `/debug-config` | 打印本机配置摘要（不含密钥） |
