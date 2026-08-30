@@ -1,6 +1,7 @@
 /**
  * 闭合代码围栏与文件预览着色（对标 Codex 桌面 highlight.js / #18966）。
  * 未闭合直播围栏不着色，避免每枚 token 重高亮卡顿。
+ * 直播中围栏闭合后 `shouldWarmLiveFenceHighlight` 在 effect / microtask 写缓存，不着色。
  * 收束后 `schedulePrefetchLiveFenceHighlights` 在 microtask 暖缓存；`hasCachedFenceHighlight` 给直播行同一帧着色，不必先画纯文本。
  * @see shared/ARCH.md
  */
@@ -249,6 +250,22 @@ export function shouldPrefetchLiveFenceHighlight(lang?: string | null): boolean 
   const word = lang?.trim() ?? ''
   if (word && isDemoFenceLangPrefix(word)) return false
   return true
+}
+
+/**
+ * 围栏已闭合但仍在直播 token：effect 里开工 highlight.js 写缓存，不着色。
+ * 收束帧更常命中 `hasCachedFenceHighlight`，不必先闪纯文本。
+ */
+export function shouldWarmLiveFenceHighlight(options: {
+  closed: boolean
+  streaming?: boolean
+  language?: string | null
+}): boolean {
+  return (
+    options.closed &&
+    Boolean(options.streaming) &&
+    shouldPrefetchLiveFenceHighlight(options.language)
+  )
 }
 
 /** 与直播顶层围栏槽同一套已闭合 fence，正文去掉末尾换行以对上 LiveFenceTail。 */

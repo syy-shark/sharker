@@ -8,6 +8,7 @@ import {
   prefetchLiveFenceHighlights,
   resolveHighlightLanguage,
   shouldPrefetchLiveFenceHighlight,
+  shouldWarmLiveFenceHighlight,
   splitHighlightedHtmlLines
 } from './syntax-highlight'
 
@@ -49,6 +50,22 @@ describe('syntax-highlight', () => {
     expect(shouldPrefetchLiveFenceHighlight('ts')).toBe(true)
     expect(shouldPrefetchLiveFenceHighlight('mermaid')).toBe(false)
     expect(shouldPrefetchLiveFenceHighlight('demo')).toBe(false)
+    expect(shouldWarmLiveFenceHighlight({ closed: true, streaming: true, language: 'ts' })).toBe(
+      true
+    )
+    expect(shouldWarmLiveFenceHighlight({ closed: true, streaming: false, language: 'ts' })).toBe(
+      false
+    )
+    expect(shouldWarmLiveFenceHighlight({ closed: false, streaming: true, language: 'ts' })).toBe(
+      false
+    )
+    expect(
+      shouldWarmLiveFenceHighlight({ closed: true, streaming: true, language: 'mermaid' })
+    ).toBe(false)
+    expect(shouldWarmLiveFenceHighlight({ closed: true, streaming: true, language: 'demo' })).toBe(
+      false
+    )
+    expect(shouldWarmLiveFenceHighlight({ closed: true, language: 'ts' })).toBe(false)
     expect(collectClosedHighlightFences('See\n```ts\nconst x = 1\n```\n')).toEqual([
       { lang: 'ts', body: 'const x = 1' }
     ])

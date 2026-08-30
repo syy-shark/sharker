@@ -8,7 +8,8 @@ import {
   readChatMath,
   renderChatMathHtml,
   resolveLiveChatMathHtml,
-  shouldRenderLiveChatMath
+  shouldRenderLiveChatMath,
+  shouldWarmLiveChatMath
 } from './chat-math'
 
 describe('chat-math', () => {
@@ -41,6 +42,10 @@ describe('chat-math', () => {
     expect(shouldRenderLiveChatMath({ streaming: true })).toBe(false)
     expect(shouldRenderLiveChatMath({ streaming: false })).toBe(true)
     expect(shouldRenderLiveChatMath({})).toBe(true)
+    expect(shouldWarmLiveChatMath({ streaming: true, tex: 'E=mc^2' })).toBe(true)
+    expect(shouldWarmLiveChatMath({ streaming: false, tex: 'E=mc^2' })).toBe(false)
+    expect(shouldWarmLiveChatMath({ streaming: true, tex: '  ' })).toBe(false)
+    expect(shouldWarmLiveChatMath({ streaming: true })).toBe(false)
     expect(liveChatMathClassName({ display: true, raw: true })).toBe(
       'chat-math chat-math--raw chat-math--display'
     )

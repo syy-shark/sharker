@@ -1,6 +1,7 @@
 /**
  * 对话公式：闭合 `\(...\)` / `\[...\]` / `$$...$$` 画 KaTeX（对标 Codex 桌面）。
- * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后命中预热缓存则同一帧着色，否则 effect 再着色。
+ * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，闭合后 effect 开工 KaTeX 写缓存；
+ * 收束后命中预热缓存则同一帧着色，否则 effect 再着色。
  * @see src/components/ARCH.md
  */
 import { memo, useContext, useEffect, useState } from 'react'
@@ -11,6 +12,7 @@ import {
   renderChatMathHtml,
   resolveLiveChatMathHtml,
   shouldRenderLiveChatMath,
+  shouldWarmLiveChatMath,
   type ChatMathFence
 } from '../../shared/chat-math'
 import { LiveMarkdownStreamingContext } from './CodeArtifactBlock'
@@ -41,10 +43,17 @@ export const ChatMath = memo(function ChatMath({
   useEffect(() => {
     if (!allowPaint) {
       setHtml(null)
+      if (shouldWarmLiveChatMath({ streaming, tex })) {
+        const nextTex = tex
+        const nextDisplay = display
+        queueMicrotask(() => {
+          renderChatMathHtml(nextTex, nextDisplay)
+        })
+      }
       return
     }
     setHtml(renderChatMathHtml(tex, display))
-  }, [allowPaint, tex, display])
+  }, [allowPaint, tex, display, streaming])
 
   if (!painted) {
     return (

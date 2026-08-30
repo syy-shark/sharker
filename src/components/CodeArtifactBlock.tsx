@@ -5,7 +5,8 @@
  * 直播跟尾只盯滚动壳与一层增高节点，不因 children 每枚 token 重挂
  * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
- * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播 token 中不着色，收束后命中预热缓存则同一帧着色，否则 effect 再着色。
+ * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播 token 中不着色，
+ * 围栏闭合后 effect 开工 highlight.js 写缓存；收束后命中预热缓存则同一帧着色，否则 effect 再着色。
  */
 import { Check, Copy } from 'lucide-react'
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -19,7 +20,11 @@ import {
   shouldHighlightLiveFence,
   shouldPaintLiveFenceHighlight
 } from '../../shared/live-display'
-import { hasCachedFenceHighlight, highlightFenceLines } from '../../shared/syntax-highlight'
+import {
+  hasCachedFenceHighlight,
+  highlightFenceLines,
+  shouldWarmLiveFenceHighlight
+} from '../../shared/syntax-highlight'
 import './CodeArtifactBlock.css'
 import '../styles/syntax-highlight.css'
 
@@ -296,10 +301,17 @@ export function LiveFenceTail({ code, language, followTail = false }: CodeArtifa
   useEffect(() => {
     if (!allowHighlight) {
       setHighlight(false)
+      if (shouldWarmLiveFenceHighlight({ closed, streaming, language })) {
+        const code = normalizedCode
+        const lang = language
+        queueMicrotask(() => {
+          highlightFenceLines(code, lang)
+        })
+      }
       return
     }
     setHighlight(true)
-  }, [allowHighlight])
+  }, [allowHighlight, closed, streaming, language, normalizedCode])
 
   return (
     <CodeArtifactShell
