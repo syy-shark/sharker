@@ -1104,6 +1104,18 @@ describe('splitStreamingMarkdown', () => {
     }
     const afterList = parseCheapProseBlocks('- 一项\n\n下一段')
     expect(afterList.map((b) => b.type)).toEqual(['list', 'p'])
+    const introListText = '前言\n- 一项'
+    const introList = parseCheapProseBlocks(introListText)
+    expect(introList.map((b) => b.type)).toEqual(['p', 'list'])
+    const introListGrown = continueCheapProseBlocks(introListText, introList, '前言\n- 一项更长')
+    expect(introListGrown[0]).toBe(introList[0])
+    const introListGrownAgain = continueCheapProseBlocks(
+      '前言\n- 一项更长',
+      introListGrown,
+      '前言\n- 一项更长了'
+    )
+    expect(introListGrownAgain[0]).toBe(introList[0])
+    expect(introListGrownAgain[1]?.type).toBe('list')
     const tableGrown = continueCheapProseBlocks(tableText, table, `${tableText}\n| 3 | 4 |`)
     if (table[0]?.type === 'table' && tableGrown[0]?.type === 'table') {
       expect(tableGrown[0].header[0]).toBe(table[0].header[0])
@@ -2263,6 +2275,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
+    expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain("nextText.indexOf('\\n\\n', Math.max(0, prevNorm.length - 1))")
     expect(mdSrc).toContain('split.blocks === prevSplit.blocks')
     expect(src).toContain('continueStreamingRenderSlots(prevRef.current.slots, nextSplit, prevSplit)')

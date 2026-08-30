@@ -3889,6 +3889,9 @@ function consumeClosedSingleLinePrefix(text: string, closed: CheapProseBlock[]):
  * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注：只重解析最后一块（对标 Codex #39061 / #34045）。
  * 段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合并栏后再起的后续段、引用内换行后新列表项、脚注缩进续行、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）也走增长段。多块尾跳过已收前缀（单行标题 / HR，或最后一段原文起点，或段落后新起的列表 / 标题 / 引用 / 表 / 脚注 / 围栏）。定义行或前缀对不上时退回全量解析。
  */
+/** 多块尾最后一块起点：同一数组再增长时不再 `lastSingleBlockStart` 全量解析（对标 Codex #22860） */
+const lastCheapBlockStartHold = new WeakMap<readonly CheapProseBlock[], number>()
+
 function tryContinueLastCheapProseBlock(
   prevNorm: string,
   prevBlocks: CheapProseBlock[],
@@ -3903,12 +3906,17 @@ function tryContinueLastCheapProseBlock(
   }
   const closed = prevBlocks.slice(0, -1)
   const last = prevBlocks[prevBlocks.length - 1]!
-  let start = consumeClosedSingleLinePrefix(prevNorm, closed)
-  if (start == null || start <= 0) start = lastBlockSourceStart(prevNorm, last)
-  if (start == null || start <= 0) return null
+  let start = lastCheapBlockStartHold.get(prevBlocks)
+  if (start == null || start <= 0) {
+    start = consumeClosedSingleLinePrefix(prevNorm, closed)
+    if (start == null || start <= 0) start = lastBlockSourceStart(prevNorm, last)
+    if (start == null || start <= 0) return null
+  }
   const grown = continueLastBlockOfType(last, prevNorm.slice(start), nextText.slice(start), defs)
   if (!grown?.length) return null
-  return [...closed, ...grown]
+  const out = [...closed, ...grown]
+  if (grown.length === 1) lastCheapBlockStartHold.set(out, start)
+  return out
 }
 
 /**
