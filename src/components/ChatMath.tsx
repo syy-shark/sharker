@@ -1,10 +1,16 @@
 /**
  * 对话公式：闭合 `\(...\)` / `\[...\]` / `$$...$$` 画 KaTeX（对标 Codex 桌面）。
- * 非法 TeX 回退原文；不认 `$...$`；不订直播 token。
+ * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，收束后再着色。
  * @see src/components/ARCH.md
  */
-import { memo } from 'react'
-import { chatMathSource, renderChatMathHtml, type ChatMathFence } from '../../shared/chat-math'
+import { memo, useContext } from 'react'
+import {
+  chatMathSource,
+  renderChatMathHtml,
+  shouldRenderLiveChatMath,
+  type ChatMathFence
+} from '../../shared/chat-math'
+import { LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import 'katex/dist/katex.min.css'
 import './ChatMath.css'
 
@@ -18,6 +24,10 @@ export const ChatMath = memo(function ChatMath({
   display: boolean
   fence: ChatMathFence
 }) {
+  const streaming = useContext(LiveMarkdownStreamingContext)
+  if (!shouldRenderLiveChatMath({ streaming })) {
+    return <span className="chat-math chat-math--raw">{chatMathSource(tex, fence)}</span>
+  }
   const html = renderChatMathHtml(tex, display)
   if (!html) {
     return <span className="chat-math chat-math--raw">{chatMathSource(tex, fence)}</span>

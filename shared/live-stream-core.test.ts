@@ -1539,6 +1539,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'LiveMarkdownStreamingContext.Provider'
     )
     expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldRenderLiveMermaid')
+    expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
+    expect(src('../src/components/ChatMath.tsx')).toContain('LiveMarkdownStreamingContext')
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {
@@ -2277,5 +2279,192 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(process.processForFlow.some((segment) => segment.toolName === 'git_worktree_add')).toBe(
       true
     )
+  })
+
+  it('keeps git, skills, move, and terminal first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Inspect git and skills' }])
+    flush('git', [
+      { type: 'tool_start', toolName: 'git_status', toolCallId: 'y1' },
+      { type: 'tool_done', toolName: 'git_status', toolCallId: 'y1', resultSummary: 'clean' },
+      { type: 'tool_start', toolName: 'git_diff', toolCallId: 'y2' },
+      { type: 'tool_done', toolName: 'git_diff', toolCallId: 'y2' },
+      { type: 'tool_start', toolName: 'git_log', toolCallId: 'y3' },
+      { type: 'tool_done', toolName: 'git_log', toolCallId: 'y3' },
+      { type: 'tool_start', toolName: 'git_show', toolCallId: 'y4', toolArgs: { rev: 'HEAD' } },
+      { type: 'tool_done', toolName: 'git_show', toolCallId: 'y4' },
+      { type: 'tool_start', toolName: 'git_add', toolCallId: 'y5', toolArgs: { path: 'a.ts' } },
+      { type: 'tool_done', toolName: 'git_add', toolCallId: 'y5' },
+      {
+        type: 'tool_start',
+        toolName: 'git_commit',
+        toolCallId: 'y6',
+        toolArgs: { message: 'polish' }
+      },
+      { type: 'tool_done', toolName: 'git_commit', toolCallId: 'y6' },
+      { type: 'tool_start', toolName: 'git_pull', toolCallId: 'y7' },
+      { type: 'tool_done', toolName: 'git_pull', toolCallId: 'y7' },
+      { type: 'tool_start', toolName: 'git_push', toolCallId: 'y8' },
+      { type: 'tool_done', toolName: 'git_push', toolCallId: 'y8' }
+    ])
+    flush('skills', [
+      { type: 'tool_start', toolName: 'list_skills', toolCallId: 'y9' },
+      { type: 'tool_done', toolName: 'list_skills', toolCallId: 'y9' },
+      { type: 'tool_start', toolName: 'read_skill', toolCallId: 'y10', toolArgs: { name: 'review' } },
+      { type: 'tool_done', toolName: 'read_skill', toolCallId: 'y10' },
+      {
+        type: 'tool_start',
+        toolName: 'run_skill_script',
+        toolCallId: 'y11',
+        toolArgs: { name: 'review' }
+      },
+      { type: 'tool_done', toolName: 'run_skill_script', toolCallId: 'y11' }
+    ])
+    flush('paths', [
+      {
+        type: 'tool_start',
+        toolName: 'move_path',
+        toolCallId: 'y12',
+        toolArgs: { from: 'a.ts', to: 'b.ts' }
+      },
+      { type: 'tool_done', toolName: 'move_path', toolCallId: 'y12' },
+      {
+        type: 'tool_start',
+        toolName: 'create_directory',
+        toolCallId: 'y13',
+        toolArgs: { path: 'tmp' }
+      },
+      { type: 'tool_done', toolName: 'create_directory', toolCallId: 'y13' },
+      { type: 'tool_start', toolName: 'read_thread_terminal', toolCallId: 'y14' },
+      { type: 'tool_done', toolName: 'read_thread_terminal', toolCallId: 'y14' }
+    ])
+    flush('math-close', [
+      { type: 'token', content: 'Energy is \\(E=mc^2' },
+      { type: 'token', content: '\\)' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'text' && part.content.includes('E=mc^2'))).toBe(
+      true
+    )
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'git_status')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'list_skills')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'move_path')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'read_thread_terminal')).toBe(
+      true
+    )
+  })
+
+  it('keeps shell, voice, agent, and catalog leftover first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Finish leftover tools' }])
+    flush('uninstall', [
+      {
+        type: 'tool_start',
+        toolName: 'uninstall_application',
+        toolCallId: 'z1',
+        toolArgs: { name: 'Demo' }
+      },
+      { type: 'tool_done', toolName: 'uninstall_application', toolCallId: 'z1' },
+      { type: 'tool_start', toolName: 'verify_removal', toolCallId: 'z2' },
+      { type: 'tool_done', toolName: 'verify_removal', toolCallId: 'z2' }
+    ])
+    flush('shell', [
+      {
+        type: 'tool_start',
+        toolName: 'run_background_shell',
+        toolCallId: 'z3',
+        toolArgs: { command: 'sleep 1' }
+      },
+      { type: 'tool_done', toolName: 'run_background_shell', toolCallId: 'z3' },
+      { type: 'tool_start', toolName: 'shell_read_output', toolCallId: 'z4' },
+      { type: 'tool_done', toolName: 'shell_read_output', toolCallId: 'z4' },
+      { type: 'tool_start', toolName: 'shell_kill', toolCallId: 'z5' },
+      { type: 'tool_done', toolName: 'shell_kill', toolCallId: 'z5' }
+    ])
+    flush('voice-agent', [
+      { type: 'tool_start', toolName: 'voice_read_aloud', toolCallId: 'z6' },
+      { type: 'tool_done', toolName: 'voice_read_aloud', toolCallId: 'z6' },
+      { type: 'tool_start', toolName: 'voice_stop', toolCallId: 'z7' },
+      { type: 'tool_done', toolName: 'voice_stop', toolCallId: 'z7' },
+      {
+        type: 'tool_start',
+        toolName: 'agent_send_message',
+        toolCallId: 'z8',
+        toolArgs: { message: 'ping' }
+      },
+      { type: 'tool_done', toolName: 'agent_send_message', toolCallId: 'z8' },
+      { type: 'tool_start', toolName: 'agent_get_result', toolCallId: 'z9' },
+      { type: 'tool_done', toolName: 'agent_get_result', toolCallId: 'z9' },
+      { type: 'tool_start', toolName: 'agent_list', toolCallId: 'z10' },
+      { type: 'tool_done', toolName: 'agent_list', toolCallId: 'z10' }
+    ])
+    flush('catalog', [
+      { type: 'tool_start', toolName: 'mcp_list_tools', toolCallId: 'z11' },
+      { type: 'tool_done', toolName: 'mcp_list_tools', toolCallId: 'z11' },
+      {
+        type: 'tool_start',
+        toolName: 'open_url',
+        toolCallId: 'z12',
+        toolArgs: { url: 'https://learn.chatgpt.com' }
+      },
+      { type: 'tool_done', toolName: 'open_url', toolCallId: 'z12' }
+    ])
+    flush('token', [{ type: 'token', content: 'Done.' }])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'text' && part.content.includes('Done'))).toBe(
+      true
+    )
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'run_background_shell')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'voice_read_aloud')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'agent_list')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'open_url')).toBe(true)
   })
 })

@@ -1,12 +1,18 @@
 /**
  * 对话数学：官方已交付的 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX）。
  * 不认 `$...$`（官方 tokenizer 也不认）；非法 TeX 回退原文；`trust: false`。
+ * 直播 token 中先画原文，收束后再跑 KaTeX，避免同步着色卡 16ms 热路径。
  * @see shared/ARCH.md
  */
 import katex from 'katex'
 
 /** 单条公式上限，避免超长 TeX 卡直播 */
 export const CHAT_MATH_MAX_TEX = 4_000
+
+/** 直播 token 中即使公式已闭合也不跑 KaTeX，收束后再着色。 */
+export function shouldRenderLiveChatMath(options: { streaming?: boolean }): boolean {
+  return !options.streaming
+}
 
 export type ChatMathFence = '$$' | 'square' | 'paren'
 

@@ -3,7 +3,8 @@ import {
   CHAT_MATH_MAX_TEX,
   chatMathSource,
   readChatMath,
-  renderChatMathHtml
+  renderChatMathHtml,
+  shouldRenderLiveChatMath
 } from './chat-math'
 
 describe('chat-math', () => {
@@ -30,5 +31,11 @@ describe('chat-math', () => {
     expect(html).not.toContain('<script>')
     expect(renderChatMathHtml('E=mc^2', false)).toBe(html)
     expect(renderChatMathHtml('\\bad{', false)).toBeNull()
+  })
+
+  it('defers KaTeX until the live stream is idle', () => {
+    expect(shouldRenderLiveChatMath({ streaming: true })).toBe(false)
+    expect(shouldRenderLiveChatMath({ streaming: false })).toBe(true)
+    expect(shouldRenderLiveChatMath({})).toBe(true)
   })
 })
