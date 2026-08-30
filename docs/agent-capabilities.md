@@ -38,7 +38,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/status` | 显示对话 ID、模型、权限、Fast、可写根（项目附加文件夹）、线程模式、分支、上下文占用（`used / limit（%）`）与本机今日用量；长线程从库取未瘦身全文再估，不按 UI 尾页（对标 Codex /status chat ID / context usage / writable roots，避免打开历史线程像 0%；不发明供应商额度）。Settings → General可打开输入框旁用量环（对标 Codex Show context window usage，官方默认关；悬停数字与 `/status` 相同，直播增量不重走整段历史） |
 | `/diff` | Open review tab（对标官方 Commands；打开右侧审查，不对标 TUI Show the Git diff…） |
 | `/goal [文本\|edit\|pause\|resume\|clear]` | 设定目标：文本即首轮提示并写入后续 turn 的 system（对标 Codex Goal，不自动多小时循环）；空参查看；`/goal edit` 打开进度行改写（带文本则只改目标、不开新一轮）；进度行按钮 **Pause** / **Resume** / **Edit** / **Clear**，状态字 **Active** / **Paused**（对标 Codex desktop goal progress row）；耗时在 Active 走秒表、Paused 冻结，满 24h 显示 `1d 0h 0m`（对标 Codex #29370 / #20558），不发明 complete / blocked / budgetLimited |
-| `/permissions` | 切换 Ask for approval / Full access；无参显示当前值。输入框下方同一控件（对标 Codex permissions control beneath the composer），不发明 Approve for me / Auto / 命名 profile |
+| `/permissions` | 切换 Ask for approval / Full access；无参显示当前值。输入框下方同一控件；命令面板标题 **Permissions**（对标 Codex permissions control beneath the composer / Settings Permissions），不发明 Approve for me / Auto / 命名 profile |
 | `/fast` | 开关 Fast：有思考档位时降到 off/none/minimal/low。输入框旁同一芯片（对标 Codex `/fast` + composer 控件），不发明供应商 service tier |
 | `/plan` `/plan-mode` | 空参切换本会话计划模式（输入框 **Plan mode** 芯片，快捷键 **Toggle plan mode**，不自动开一轮）；输入框无菜单时 `Shift+Tab` 同样切换（对标 Codex Best practices / slash：`/plan` 或 Shift+Tab，不抢 `/` `@` `$` 补全）。带说明则进入只读规划并开一轮调研。计划按会话隔离，不踩并行线程。产出后出 Proposed Plan 卡，可点 Yes, implement this plan（对标 Codex 桌面 Action Menu / TUI Implement this plan?；不发明 Clear context） |
 | `/mcp [verbose]` | 命令面板 **Open MCP status**（对标 Codex Open MCP status）：列出已配置 Server；空配置打开 Settings → MCP servers；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
@@ -50,7 +50,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/automations` | Scheduled（对标官方侧栏 / `codex://automations`；页说明用官方 inbox 原文，返回 ← Chats） |
 | `/title` | Rename chat（`/rename` 别名，对标官方 Commands） |
 | `/agent` | `/agents` 别名 |
-| `/copy` | Copy the latest completed Codex output（对标 Codex `/copy` · Ctrl+O）：直播跳过进行中预留行，斜杠确认 / 本机备注不当成模型输出；有代码块或引用时先选整段 / 代码 / 引用（对标 Codex /copy picker，弹在输入框上不占 composer-stage 高度以免挤直播贴底）。Ctrl+O 仍静默复制整段 |
+| `/copy` | 斜杠与命令面板标题用官方 **Copy the last response, code block, or quote.**（learn.chatgpt.com slash；不对标 #24073 按消息 id）。直播跳过进行中预留行，斜杠确认 / 本机备注不当成模型输出；有代码块或引用时先选整段 / 代码 / 引用（对标 Codex /copy picker，弹在输入框上不占 composer-stage 高度以免挤直播贴底）。Ctrl+O 仍静默复制整段（官方桌面 ⌘O 是 Open folder） |
 | `/delete` | 永久删除当前对话 |
 | `/theme` | 打开外观设置 |
 | `/debug-config` | 打印本机配置摘要（不含密钥） |
@@ -102,7 +102,7 @@ Settings → Personalization → **Choose a personality**，或 `/personality [p
 
 `/review` 直播中 `review-findings` 围栏一闭合就把发现挂到审查 diff 对应行上，并展开这些文件（对标 Codex review findings appear as inline comments）；半截围栏不挂；闭合后只追加时不重扫围栏、不重 parse JSON。人手收起后不再自动拉开同一文件。收束后再从助手正文补一次。与人手评论一起发送。命令面板 Skills / Scheduled 用官方侧栏与深链标题（`codex://skills` / `codex://automations`）。
 
-当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。本地行内评论可 **发布到 GitHub**（`gh api` 写回 PR）。顶栏会显示 **PR #n** 芯片，点开审查面板。未安装 `gh` / 没有 PR 时不报错、不显示横幅或芯片。
+当前分支若已有 GitHub PR 且本机 `gh` 已登录，审查面板会拉取行内审查评论（对标 Codex PR Chat），可 **打开** PR 或 **处理评论**（把 `@login: 正文` 派进当前线程）。本地行内评论可 **发布到 GitHub**（`gh api` 写回 PR）。顶栏会显示 **PR #n** 芯片（title/aria **Open a pull request**，nowrap），点开审查面板。未安装 `gh` / 没有 PR 时不报错、不显示横幅或芯片。
 
 ### 命令面板
 
