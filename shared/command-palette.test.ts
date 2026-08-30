@@ -117,6 +117,7 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'find')?.title).toBe('Find in chat')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-chats')?.title).toBe('Search chats')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.title).toBe('New standalone chat')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'standalone')?.shortcut).toBe('⌘⌥O')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'search-files')?.title).toBe('Search files')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'general')?.title).toBe('General')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'theme')?.title).toBe('Appearance')

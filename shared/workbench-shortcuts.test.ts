@@ -169,9 +169,15 @@ describe('workbench shortcuts', () => {
     expect(matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true }))).toBe(
       'standalone_conversation'
     )
-    expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true, altKey: true }))).toBe(
-      'standalone_conversation'
-    )
+    expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true, altKey: true }))).toBeNull()
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) =>
+          row.action === 'standalone_conversation' &&
+          row.title === 'New standalone chat' &&
+          row.defaultKeys === '⌘⌥O'
+      )
+    ).toBe(true)
     expect(
       matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, altKey: true, shiftKey: true }))
     ).toBe('open_project_picker')

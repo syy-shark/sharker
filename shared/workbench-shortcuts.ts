@@ -1,5 +1,6 @@
 /**
  * Codex 式工作台快捷键匹配（纯逻辑，供 App 与单测共用）。
+ * New standalone chat 只绑 ⌘⌥O（对标 learn.chatgpt.com Commands；⌘⌥N 是 ChatGPT-only Quick chat）。
  * @see shared/ARCH.md
  */
 import {
@@ -214,8 +215,8 @@ export function matchDefaultWorkbenchShortcut(event: {
   if (key === 'a' && event.altKey && !event.shiftKey) return 'next_attention'
   if (key === 's' && event.altKey && !event.shiftKey) return 'side_conversation'
   if (key === 'o' && event.altKey && event.shiftKey) return 'open_project_picker'
+  // Codex only: New standalone chat is ⌘⌥O. ⌘⌥N is ChatGPT Quick chat — do not bind.
   if (key === 'o' && event.altKey && !event.shiftKey) return 'standalone_conversation'
-  if (key === 'n' && event.altKey && !event.shiftKey) return 'standalone_conversation'
   if (key === 'n' && event.shiftKey && !event.altKey) return 'new_window'
   if (key === 'r' && event.altKey && !event.shiftKey) return 'rename_conversation'
   if (key === 'p' && event.altKey && !event.shiftKey) return 'pin_conversation'
@@ -377,7 +378,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘K', title: OPEN_COMMAND_MENU_LABEL },
   { keys: '⌘N / ⌘⇧O', title: NEW_CHAT_LABEL },
   { keys: '⌘⇧N', title: NEW_WINDOW_LABEL },
-  { keys: '⌘⌥O / ⌘⌥N', title: NEW_STANDALONE_CHAT_LABEL },
+  { keys: '⌘⌥O', title: NEW_STANDALONE_CHAT_LABEL },
   { keys: '⌘⌥⇧O', title: OPEN_PROJECT_PICKER_LABEL },
   { keys: '⌘⌥R', title: RENAME_CHAT_LABEL },
   { keys: '⌘⌥P', title: PIN_OR_UNPIN_CHAT_LABEL },
@@ -514,8 +515,8 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'standalone_conversation',
     title: NEW_STANDALONE_CHAT_LABEL,
-    defaultKeys: '⌘⌥O 或 ⌘⌥N',
-    defaultChord: ['mod+alt+o', 'mod+alt+n']
+    defaultKeys: '⌘⌥O',
+    defaultChord: 'mod+alt+o'
   },
   {
     action: 'open_project_picker',

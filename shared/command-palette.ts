@@ -774,8 +774,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   {
     id: 'standalone',
     title: NEW_STANDALONE_CHAT_LABEL,
-    shortcut: '⌘⌥O / ⌘⌥N',
-    keywords: 'standalone new window quick chat 独立 新对话',
+    shortcut: '⌘⌥O',
+    keywords: 'standalone new window 独立 新对话',
     action: 'standalone_conversation'
   },
   {
