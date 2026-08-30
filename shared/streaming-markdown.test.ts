@@ -1642,6 +1642,55 @@ describe('splitStreamingMarkdown', () => {
     const openFenceClosePara = continueCheapProseBlocks(openFence, openFenceFirst, '```\nx\n```\nafter')
     expect(openFenceClosePara[0]).toBe(openFenceFirst[0])
     expect(openFenceClosePara.map((block) => block.type)).toEqual(['pre', 'p'])
+    const manyOpenFence =
+      '```js\n' + Array.from({ length: 12 }, (_, i) => `const x = ${i}`).join('\n')
+    const manyOpenFenceFirst = parseCheapProseBlocks(manyOpenFence)
+    const manyOpenFenceGrown = continueCheapProseBlocks(
+      manyOpenFence,
+      manyOpenFenceFirst,
+      `${manyOpenFence}0`
+    )
+    if (manyOpenFenceFirst[0]?.type === 'pre' && manyOpenFenceGrown[0]?.type === 'pre') {
+      expect(manyOpenFenceGrown[0].text.endsWith('110')).toBe(true)
+    }
+    const manyOpenFenceClose = continueCheapProseBlocks(
+      `${manyOpenFence}0`,
+      manyOpenFenceGrown,
+      `${manyOpenFence}0\n\`\`\``
+    )
+    expect(manyOpenFenceClose[0]).toBe(manyOpenFenceGrown[0])
+    expect(manyOpenFenceClose.map((block) => block.type)).toEqual(['pre'])
+    const manyOpenFenceCloseAfter = continueCheapProseBlocks(
+      `${manyOpenFence}0`,
+      manyOpenFenceGrown,
+      `${manyOpenFence}0\n\`\`\`\nafter`
+    )
+    expect(manyOpenFenceCloseAfter[0]).toBe(manyOpenFenceGrown[0])
+    expect(manyOpenFenceCloseAfter.map((block) => block.type)).toEqual(['pre', 'p'])
+    const manyItemOpenFence =
+      Array.from({ length: 8 }, (_, i) => `- keep-${i}`).join('\n') +
+      '\n- tail\n   ```js\n   ' +
+      Array.from({ length: 8 }, (_, i) => `const y = ${i}`).join('\n   ')
+    const manyItemOpenFenceFirst = parseCheapProseBlocks(manyItemOpenFence)
+    const manyItemOpenFenceGrown = continueCheapProseBlocks(
+      manyItemOpenFence,
+      manyItemOpenFenceFirst,
+      `${manyItemOpenFence}0`
+    )
+    const manyItemOpenFenceClose = continueCheapProseBlocks(
+      `${manyItemOpenFence}0`,
+      manyItemOpenFenceGrown,
+      `${manyItemOpenFence}0\n   \`\`\``
+    )
+    if (manyItemOpenFenceGrown[0]?.type === 'list' && manyItemOpenFenceClose[0]?.type === 'list') {
+      expect(
+        manyItemOpenFenceClose[0].items.slice(0, 8).every((item, i) => item === manyItemOpenFenceGrown[0].items[i])
+      ).toBe(true)
+      expect(manyItemOpenFenceClose[0].items[8]?.nodes).toBe(manyItemOpenFenceGrown[0].items[8]?.nodes)
+      expect(manyItemOpenFenceClose[0].items[8]?.blocks?.[0]).toBe(
+        manyItemOpenFenceGrown[0].items[8]?.blocks?.[0]
+      )
+    }
     const headingFence = '# t\n```\nx\n```'
     const headingFenceFirst = parseCheapProseBlocks(headingFence)
     const headingFenceThenPara = continueCheapProseBlocks(
@@ -2693,6 +2742,9 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('lastItemInnerStripHold')
     expect(mdSrc).toContain('rememberItemInnerStrip')
     expect(mdSrc).toContain('growStrippedItemInnerWindow')
+    expect(mdSrc).toContain('streamingFenceCloseAfter')
+    expect(mdSrc).toContain('lastFenceOpenHold')
+    expect(mdSrc).toContain('rememberFenceOpen')
     expect(mdSrc).toContain("text.indexOf('\\n', offset)")
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')

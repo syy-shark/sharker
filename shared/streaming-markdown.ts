@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记仍整块拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -3189,26 +3189,77 @@ function suffixAfterClosedTable(prevNorm: string, nextText: string): string | nu
   return after
 }
 
-/** 围栏闭合行后面的原文；未闭合则没有后续块 */
+/** 围栏闭合行后面的原文；`indexOf` 往前走，不 split 全文 */
 function textAfterFenceCloser(text: string): string | null {
-  const lines = text.split('\n')
-  const open = parseFenceLine(lines[0] ?? '')
+  const nl = text.indexOf('\n')
+  if (nl < 0) return null
+  const open = parseFenceLine(text.slice(0, nl))
   if (!open) return null
-  for (let i = 1; i < lines.length; i++) {
-    if (isFenceClose(lines[i]!, open.marker)) return lines.slice(i + 1).join('\n')
+  let offset = nl + 1
+  while (offset <= text.length) {
+    const end = text.indexOf('\n', offset)
+    const lineEnd = end < 0 ? text.length : end
+    if (isFenceClose(text.slice(offset, lineEnd), open.marker)) {
+      return end < 0 ? '' : text.slice(end + 1)
+    }
+    if (end < 0) break
+    offset = end + 1
   }
   return null
 }
 
-/** 已闭合项内围栏后面的原文（含另起的表 / 标题 / 引用） */
-function textAfterClosedFence(prevNorm: string, nextText: string): string | null {
-  const prevLines = prevNorm.split('\n')
-  const open = parseFenceLine(prevLines[0] ?? '') ?? parseFenceLine(nextText.split('\n')[0] ?? '')
-  if (!open) return null
-  for (let i = 1; i < prevLines.length; i++) {
-    if (isFenceClose(prevLines[i]!, open.marker)) return textAfterFenceCloser(nextText)
+/**
+ * 未闭合围栏的后缀是闭合标记（可带后续块）。
+ * 已画正文保持 `prev.text`，不重拆围栏窗口（对标 Codex #22860）。
+ */
+function streamingFenceCloseAfter(prevNorm: string, suffix: string, marker: string): string | null {
+  if (!suffix || suffix.includes(']:')) return null
+  if (isFenceClose(lastCompleteStreamingLine(prevNorm), marker)) return null
+  let closeLine: string
+  let after: string
+  if (suffix.startsWith('\n')) {
+    const rest = suffix.slice(1)
+    const nl = rest.indexOf('\n')
+    closeLine = nl < 0 ? rest : rest.slice(0, nl)
+    after = nl < 0 ? '' : rest.slice(nl + 1)
+  } else if (prevNorm.endsWith('\n')) {
+    const nl = suffix.indexOf('\n')
+    closeLine = nl < 0 ? suffix : suffix.slice(0, nl)
+    after = nl < 0 ? '' : suffix.slice(nl + 1)
+  } else {
+    return null
   }
-  return null
+  if (!isFenceClose(closeLine, marker)) return null
+  return after
+}
+
+/** 已画围栏窗口仍未闭合时记下原文，再增长只看后缀有没有闭合标记 */
+const lastFenceOpenHold = new WeakMap<object, string>()
+
+function rememberFenceOpen(block: object, window: string): void {
+  lastFenceOpenHold.set(block, window)
+}
+
+function readFenceOpen(block: object, window: string): boolean {
+  return lastFenceOpenHold.get(block) === window
+}
+
+/** 已闭合项内围栏后面的原文（含另起的表 / 标题 / 引用） */
+function textAfterClosedFence(
+  prevNorm: string,
+  nextText: string,
+  prevOpen?: boolean
+): string | null {
+  const marker = streamingFenceOpenMarker(prevNorm) ?? streamingFenceOpenMarker(nextText)
+  if (!marker) return null
+  const extra = nextText.slice(prevNorm.length)
+  if (prevOpen) return extra ? streamingFenceCloseAfter(prevNorm, extra, marker) : null
+  if (!isFenceClose(lastCompleteStreamingLine(prevNorm), marker)) {
+    const fromExtra = extra ? streamingFenceCloseAfter(prevNorm, extra, marker) : null
+    if (fromExtra != null) return fromExtra
+    if (textAfterFenceCloser(prevNorm) == null) return null
+  }
+  return textAfterFenceCloser(nextText)
 }
 
 /** 闭合块后的续行：先当 suffix，遇到新块再另起项内块 */
@@ -3318,7 +3369,7 @@ function growLastListItemInnerBlocks(
   const grown = continueLastBlockOfType(last, prevWindow, nextWindow, defs)
   const afterClosed =
     last.type === 'pre'
-      ? textAfterClosedFence(prevWindow, nextWindow)
+      ? textAfterClosedFence(prevWindow, nextWindow, readFenceOpen(last, prevWindow))
       : last.type === 'heading' || last.type === 'hr'
         ? suffixAfterClosedSingleLineBlock(prevWindow, nextWindow)
         : last.type === 'table'
@@ -3353,10 +3404,12 @@ function growLastListItemInnerBlocks(
   if (!grown || grown.length !== 1) return null
   if (grown[0] === last) {
     stampItemInnerHold(item, true)
+    if (last.type === 'pre') rememberFenceOpen(last, nextWindow)
     return item
   }
   const nextItem = { ...item, blocks: [...item.blocks.slice(0, -1), grown[0]!] }
   stampItemInnerHold(nextItem, true)
+  if (grown[0]!.type === 'pre') rememberFenceOpen(grown[0]!, nextWindow)
   return nextItem
 }
 
@@ -4244,17 +4297,25 @@ function continueLastHrBlock(
   return siblings.length ? [prev, ...siblings] : [prev]
 }
 
-/** 围栏窗口正文（去掉开闭行），给项内 / 引用内围栏增量用 */
+/** 围栏窗口正文（去掉开闭行），`indexOf` 往前走，不 split 全文 */
 function fencedPreBody(text: string): string | null {
-  const lines = text.split('\n')
-  const open = parseFenceLine(lines[0] ?? '')
+  const nl = text.indexOf('\n')
+  if (nl < 0) return parseFenceLine(text) ? '' : null
+  const open = parseFenceLine(text.slice(0, nl))
   if (!open) return null
-  const body: string[] = []
-  for (let i = 1; i < lines.length; i++) {
-    if (isFenceClose(lines[i]!, open.marker)) break
-    body.push(lines[i]!)
+  let offset = nl + 1
+  let body = ''
+  while (offset <= text.length) {
+    const end = text.indexOf('\n', offset)
+    const lineEnd = end < 0 ? text.length : end
+    const line = text.slice(offset, lineEnd)
+    if (isFenceClose(line, open.marker)) return body
+    if (body) body += '\n'
+    body += line
+    if (end < 0) break
+    offset = end + 1
   }
-  return body.join('\n')
+  return body
 }
 
 function streamingFenceOpenMarker(text: string): string | null {
@@ -4343,9 +4404,26 @@ function continueLastPreBlock(
   const nl = prevNorm.indexOf('\n')
   const first = nl < 0 ? prevNorm : prevNorm.slice(0, nl)
   if (prev.lang || parseFenceLine(first)) {
-    if (suffix === '\n') return [prev]
+    const marker = parseFenceLine(first)?.marker
+    if (suffix === '\n') {
+      rememberFenceOpen(prev, nextText)
+      return [prev]
+    }
     const lastLineGrow = growStreamingFencedPreLastLine(prev, prevNorm, nextText)
-    if (lastLineGrow) return lastLineGrow
+    if (lastLineGrow) {
+      const block = lastLineGrow[0]
+      if (block?.type === 'pre') rememberFenceOpen(block, nextText)
+      return lastLineGrow
+    }
+    if (marker) {
+      const afterClose = streamingFenceCloseAfter(prevNorm, suffix, marker)
+      if (afterClose != null) {
+        if (!afterClose) return [prev]
+        const siblings = parseCheapProseBlocks(afterClose, defs)
+        if (afterClose.trim() !== '' && !siblings.length) return null
+        return siblings.length ? [prev, ...siblings] : [prev]
+      }
+    }
     const nextBody = fencedPreBody(nextText)
     if (nextBody == null || !nextBody.startsWith(prev.text)) return null
     const pre: CheapProseBlock =
@@ -4356,6 +4434,7 @@ function continueLastPreBlock(
       if (after.trim() !== '' && !siblings.length) return null
       return siblings.length ? [pre, ...siblings] : [pre]
     }
+    rememberFenceOpen(pre, nextText)
     return [pre]
   }
   if (suffix === '\n') return [prev]
