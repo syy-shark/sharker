@@ -9,6 +9,7 @@ import {
   COMMIT_ACTION_LABEL,
   COMMIT_REVIEW_LABEL,
   CREATE_A_PULL_REQUEST_LABEL,
+  OPEN_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
   PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
@@ -66,6 +67,7 @@ describe('review repos', () => {
     expect(COMMIT_ACTION_LABEL).toBe('Commit')
     expect(PUSH_ACTION_LABEL).toBe('Push')
     expect(CREATE_A_PULL_REQUEST_LABEL).toBe('Create a pull request')
+    expect(OPEN_A_PULL_REQUEST_LABEL).toBe('Open a pull request')
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
       'utf8'
@@ -75,6 +77,8 @@ describe('review repos', () => {
     expect(panelSrc).toContain('COMMIT_ACTION_LABEL')
     expect(panelSrc).toContain('PUSH_ACTION_LABEL')
     expect(panelSrc).toContain('CREATE_A_PULL_REQUEST_LABEL')
+    expect(panelSrc).toContain('OPEN_A_PULL_REQUEST_LABEL')
+    expect(panelSrc).not.toContain('打开 PR')
     expect(panelSrc).not.toContain('换行长 diff')
     expect(panelSrc).not.toContain('全部取消暂存')
   })

@@ -33,6 +33,8 @@ export const WRAP_LONG_DIFF_LINES_LABEL = 'Wrap long diff lines'
 export const COMMIT_ACTION_LABEL = 'Commit'
 export const PUSH_ACTION_LABEL = 'Push'
 export const CREATE_A_PULL_REQUEST_LABEL = 'Create a pull request'
+/** Official worktrees: open a pull request on GitHub after create. */
+export const OPEN_A_PULL_REQUEST_LABEL = 'Open a pull request'
 
 /** 审查最多再探几个附加根（含主根一共 cap） */
 export const MAX_REVIEW_REPOS = 8

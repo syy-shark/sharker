@@ -37,6 +37,7 @@ import {
   OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
   SHARE_LABEL,
+  TOGGLE_SIDEBAR_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
   type ThreadCopyAction
@@ -182,8 +183,8 @@ export const ChatToolbar = memo(function ChatToolbar({
         className="chat-toolbar-icon-btn chat-toolbar-sidebar-toggle"
         onClick={handleToggleSidebar}
         onMouseDown={(e) => e.stopPropagation()}
-        title={sidebarCollapsed ? '固定展开边栏 ⌘B' : '收起边栏 ⌘B'}
-        aria-label={sidebarCollapsed ? '固定展开边栏' : '收起边栏'}
+        title={`${TOGGLE_SIDEBAR_LABEL} ⌘B`}
+        aria-label={TOGGLE_SIDEBAR_LABEL}
         aria-pressed={!sidebarCollapsed}
       >
         {sidebarCollapsed ? (

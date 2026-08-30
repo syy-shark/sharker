@@ -56,6 +56,7 @@ import {
   COMMIT_ACTION_LABEL,
   COMMIT_REVIEW_LABEL,
   CREATE_A_PULL_REQUEST_LABEL,
+  OPEN_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
   PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
@@ -1375,7 +1376,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__action"
             onClick={() => void window.sharker.openExternal(prUrl)}
           >
-            打开 PR
+            {OPEN_A_PULL_REQUEST_LABEL}
           </button>
           <span className="changes-panel__path" title={prUrl}>
             {prUrl}

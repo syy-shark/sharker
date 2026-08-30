@@ -219,6 +219,13 @@ describe('reveal in folder', () => {
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
+    const toolbarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatToolbar.tsx'),
+      'utf8'
+    )
+    expect(toolbarSrc).toContain('TOGGLE_SIDEBAR_LABEL')
+    expect(toolbarSrc).not.toContain('固定展开边栏')
+    expect(toolbarSrc).not.toContain('收起边栏')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
     expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
