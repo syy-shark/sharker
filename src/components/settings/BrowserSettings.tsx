@@ -7,11 +7,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Globe, Trash2 } from 'lucide-react'
 import type { AppSettings } from '../../../shared/types'
 import {
+  ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL,
   parseBrowserAskWhereToSave,
   parseBrowserDownloadPath
 } from '../../../shared/browser-downloads'
 import {
   BROWSER_HISTORY_CHANGED_EVENT,
+  CLEAR_BROWSING_DATA_LABEL,
   browserHistoryLabel,
   clearBrowserHistory,
   removeBrowserHistoryUrl,
@@ -165,13 +167,13 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
             </div>
           </SettingsRow>
           <SettingsRow
-            title="每次询问保存位置"
+            title={ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL}
             description="下载前弹出另存为。关闭则直接写入上面的目录。"
             last
           >
             <SettingsToggle
               checked={askWhere}
-              label="每次询问保存位置"
+              label={ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL}
               onChange={(browserAskWhereToSave) => {
                 scheduleSave({ ...draftRef.current, browserAskWhereToSave })
               }}
@@ -231,7 +233,7 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
         )}
       </SettingsSection>
 
-      <SettingsSection title="清除浏览数据">
+      <SettingsSection title={CLEAR_BROWSING_DATA_LABEL}>
         <SettingsCard>
           <SettingsRow title="时间范围" description="历史按此窗口删除；Cookie 与缓存一次清掉该配置内全部。">
             <select
@@ -271,14 +273,18 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
             />
             缓存的图片与文件
           </label>
-          <SettingsRow title="清除" description="只动内置浏览器配置，不影响对话或系统浏览器。" last>
+          <SettingsRow
+            title={CLEAR_BROWSING_DATA_LABEL}
+            description="只动内置浏览器配置，不影响对话或系统浏览器。"
+            last
+          >
             <button
               type="button"
               className="browser-settings-clear"
               disabled={busy || (!clearHistory && !clearCookies && !clearCache)}
               onClick={() => void handleClear()}
             >
-              {busy ? '正在清除…' : '清除数据'}
+              {busy ? '正在清除…' : CLEAR_BROWSING_DATA_LABEL}
             </button>
           </SettingsRow>
         </SettingsCard>

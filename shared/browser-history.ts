@@ -7,6 +7,9 @@
 /** Official built-in browser heading (learn.chatgpt.com/docs/browser). */
 export const SEARCH_FROM_THE_ADDRESS_BAR_LABEL = 'Search from the address bar'
 
+/** Official Settings → Browser control (learn.chatgpt.com/docs/browser: Use Clear browsing data). */
+export const CLEAR_BROWSING_DATA_LABEL = 'Clear browsing data'
+
 export const BROWSER_HISTORY_STORAGE_KEY = 'sharker-browser-history'
 export const BROWSER_HISTORY_CHANGED_EVENT = 'sharker:browser-history-changed'
 export const BROWSER_SESSION_PARTITION = 'persist:sharker-browser'

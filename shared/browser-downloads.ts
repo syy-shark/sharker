@@ -5,6 +5,9 @@
  */
 import path from 'path'
 
+/** Official Settings → Browser toggle (learn.chatgpt.com/docs/browser). */
+export const ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL = 'Ask where to save downloads'
+
 /** 去掉穿越；空串表示系统下载文件夹 */
 export function parseBrowserDownloadPath(raw: unknown): string {
   if (typeof raw !== 'string') return ''

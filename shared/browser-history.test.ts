@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BROWSER_HISTORY_MAX,
   BROWSER_SESSION_PARTITION,
+  CLEAR_BROWSING_DATA_LABEL,
   browserHistoryClearCutoff,
   browserHistoryLabel,
   clearBrowserHistory,
@@ -122,5 +123,13 @@ describe('browser history', () => {
     expect(browserSrc).not.toContain('aria-label="前进"')
     expect(browserSrc).not.toContain('aria-label="地址栏"')
     expect(browserSrc).not.toContain('>主页<')
+    expect(CLEAR_BROWSING_DATA_LABEL).toBe('Clear browsing data')
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/BrowserSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('CLEAR_BROWSING_DATA_LABEL')
+    expect(settingsSrc).not.toContain('title="清除浏览数据"')
+    expect(settingsSrc).not.toContain('>清除数据<')
   })
 })

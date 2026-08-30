@@ -3,6 +3,7 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
+  ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL,
   parseBrowserAskWhereToSave,
   parseBrowserDownloadPath,
   resolveBrowserDownloadDir,
@@ -42,5 +43,13 @@ describe('browser downloads', () => {
     expect(mainSrc).toContain("ses.on('will-download'")
     expect(mainSrc).toContain('setSaveDialogOptions')
     expect(mainSrc).toContain('setSavePath')
+    expect(ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL).toBe('Ask where to save downloads')
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/BrowserSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL')
+    expect(settingsSrc).not.toContain('title="每次询问保存位置"')
+    expect(settingsSrc).not.toContain('label="每次询问保存位置"')
   })
 })
