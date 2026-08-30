@@ -4,7 +4,8 @@
  * 右键：复制/保存图片；工作区图再加打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778 页内菜单）。
  * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，避免 48px 占位再跳。
- * 直播 token 中不挂 `<img>`、不跑 `Image()` 解码，只占位；收束后再成图（对标 KaTeX / mermaid）。
+ * 直播 token 中不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
+ * 收束后再成图（对标 KaTeX / mermaid）。
  * 右侧文件预览图同一套 contain（`filePreviewImageFit`），避免高图只露上半张。
  * @see shared/ARCH.md
  */
@@ -374,9 +375,17 @@ export function peekChatImageSizeFromDataUrl(dataUrl?: string): ChatImageSize | 
   )
 }
 
-/** 直播 token 中即使 dest 已闭合也不挂 `<img>` / 不跑 `Image()` 解码，收束后再成图。 */
+/** 直播 token 中即使 dest 已闭合也不挂 `<img>`，收束后再成图。 */
 export function shouldRenderLiveChatImage(options: { streaming?: boolean }): boolean {
   return !options.streaming
+}
+
+/**
+ * dest 已闭合但仍在直播 token：effect 里开工尺寸 / 工作区 data URL 写缓存，不 setState / 不成图。
+ * 收束帧更常命中缓存，不必先闪 48px 再跳。
+ */
+export function shouldWarmLiveChatImage(options: { streaming?: boolean }): boolean {
+  return Boolean(options.streaming)
 }
 
 /** 收束后才把 src 交给 `<img>`；直播中空串，槽位仍按缓存 / data: 头占高。 */

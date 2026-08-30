@@ -20,6 +20,7 @@ import {
   resolveLiveChatImageSrc,
   resolveWorkspaceChatImagePath,
   shouldRenderLiveChatImage,
+  shouldWarmLiveChatImage,
   suggestedImageFilename,
   writeCachedChatImageSize,
   writeCachedWorkspaceImageDataUrl
@@ -96,6 +97,9 @@ describe('chat-image', () => {
     expect(shouldRenderLiveChatImage({ streaming: true })).toBe(false)
     expect(shouldRenderLiveChatImage({ streaming: false })).toBe(true)
     expect(shouldRenderLiveChatImage({})).toBe(true)
+    expect(shouldWarmLiveChatImage({ streaming: true })).toBe(true)
+    expect(shouldWarmLiveChatImage({ streaming: false })).toBe(false)
+    expect(shouldWarmLiveChatImage({})).toBe(false)
     expect(resolveLiveChatImageSrc({ paint: false, src: 'https://a.test/p.png' })).toBe('')
     expect(resolveLiveChatImageSrc({ paint: true, src: 'https://a.test/p.png' })).toBe(
       'https://a.test/p.png'
@@ -159,6 +163,7 @@ describe('chat-image', () => {
     expect(imageSrc).toContain('FILE_CLOSE_LABEL')
     expect(imageSrc).toContain('prefetchRemoteChatImageSize')
     expect(imageSrc).toContain('shouldRenderLiveChatImage')
+    expect(imageSrc).toContain('shouldWarmLiveChatImage')
     expect(imageSrc).toContain('resolveLiveChatImageSrc')
     expect(imageSrc).toContain('LiveMarkdownStreamingContext')
     expect(imageSrc).not.toContain('aria-label="关闭图片预览"')

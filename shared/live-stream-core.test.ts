@@ -1603,6 +1603,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('live-answer-prefetch.ts')).toContain('collectClosedLiveChatImagesFromAnswer')
     expect(src('../src/components/ChatImage.tsx')).toContain('prefetchRemoteChatImageSize')
     expect(src('../src/components/ChatImage.tsx')).toContain('shouldRenderLiveChatImage')
+    expect(src('../src/components/ChatImage.tsx')).toContain('shouldWarmLiveChatImage')
     expect(src('../src/components/ChatImage.tsx')).toContain('resolveLiveChatImageSrc')
     expect(src('../src/components/ChatImage.tsx')).toContain('LiveMarkdownStreamingContext')
     expect(src('../src/components/TurnFlow.tsx')).toContain('streaming={isStreaming}')

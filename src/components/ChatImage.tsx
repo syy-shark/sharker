@@ -3,7 +3,8 @@
  * 右键页内菜单：复制/保存；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
  * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，命中尺寸缓存则首帧占位。
- * 直播 token 中只占位，不挂 `<img>`、不跑 `Image()` 解码；收束后命中预热则同一帧成图。
+ * 直播 token 中只占位，不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
+ * 收束后命中预热则同一帧成图。
  * @see src/components/ARCH.md
  */
 import {
@@ -33,6 +34,7 @@ import {
   resolveLiveChatImageSrc,
   resolveWorkspaceChatImagePath,
   shouldRenderLiveChatImage,
+  shouldWarmLiveChatImage,
   writeCachedChatImageSize,
   writeCachedWorkspaceImageDataUrl,
   type ChatImageExportInput
@@ -142,15 +144,20 @@ export function ChatImage({
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!allowPaint || !remote || src.startsWith('data:image/')) return
-    let cancelled = false
-    void prefetchRemoteChatImageSize(src).then((size) => {
-      if (!cancelled && size) setSizeTick((n) => n + 1)
-    })
-    return () => {
-      cancelled = true
+    if (!remote || src.startsWith('data:image/')) return
+    if (allowPaint) {
+      let cancelled = false
+      void prefetchRemoteChatImageSize(src).then((size) => {
+        if (!cancelled && size) setSizeTick((n) => n + 1)
+      })
+      return () => {
+        cancelled = true
+      }
     }
-  }, [allowPaint, remote, src])
+    if (shouldWarmLiveChatImage({ streaming: isStreaming })) {
+      void prefetchRemoteChatImageSize(src).catch(() => undefined)
+    }
+  }, [allowPaint, remote, src, isStreaming])
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
@@ -160,27 +167,33 @@ export function ChatImage({
     }
     const cached = readCachedWorkspaceImageDataUrl(absPath)
     if (cached) {
-      setWorkspaceDataUrl(cached)
-      setFailed(false)
+      if (allowPaint) {
+        setWorkspaceDataUrl(cached)
+        setFailed(false)
+      }
       return
     }
     let cancelled = false
-    setWorkspaceDataUrl(null)
-    setFailed(false)
+    if (allowPaint) {
+      setWorkspaceDataUrl(null)
+      setFailed(false)
+    }
     void loadWorkspaceImageDataUrl(absPath).then((dataUrl) => {
       if (cancelled) return
       if (!dataUrl) {
-        setFailed(true)
+        if (allowPaint) setFailed(true)
         return
       }
-      setWorkspaceDataUrl(dataUrl)
+      if (allowPaint) setWorkspaceDataUrl(dataUrl)
     })
     return () => {
       cancelled = true
     }
-  }, [absPath, workspaceSrc])
+  }, [absPath, workspaceSrc, allowPaint])
 
-  const displaySrc = remote ? src : workspaceDataUrl ?? ''
+  const displaySrc = remote
+    ? src
+    : workspaceDataUrl ?? (absPath ? readCachedWorkspaceImageDataUrl(absPath) : null) ?? ''
   const paintedSrc = resolveLiveChatImageSrc({ paint: allowPaint, src: displaySrc })
   const resolvedFilePath = filePath?.trim() || (absPath || undefined)
   const peeked =
