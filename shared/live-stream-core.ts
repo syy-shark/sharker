@@ -2,7 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
- * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具、首枚写盘 extras 开 diff 槽）、首枚或同一帧多段无 fence 正文 / ```demo / present_inline_demo、正文后又夹过工具再开 extras、只追加思考 / status、同长正文收口或错误挂到正文、Allow/Deny / Stop / compress 可在核心判定，不必等表。
+ * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具、首枚写盘 extras 开 diff 槽）、首枚或同一帧多段无 fence 正文 / ```demo / present_inline_demo、正文后又夹过工具再开 extras（harness token 无 role，tool_start 收口后仍 hold）、只追加思考 / status、同长正文收口或错误挂到正文、Allow/Deny / Stop / compress 可在核心判定，不必等表。
  * `nextLiveProcessView` 在这些 skip 上只追加 / 换 processForFlow；首枚普通工具会摘掉思考步（对标 processSegments）。
  * @see shared/ARCH.md
  */
@@ -124,6 +124,12 @@ function isLiveAnswerText(segment: TurnSegment): boolean {
   return segment.kind === 'text' && (segment.role === 'final' || segment.status === 'active')
 }
 
+/** harness token 不写 role；tool_start 收口后仍是回答正文，不是 narration。 */
+function isLiveCoreStreamText(segment: TurnSegment): boolean {
+  if (segment.kind !== 'text' || segment.role === 'narration') return false
+  return isLiveAnswerText(segment) || !segment.role
+}
+
 function isLiveThinking(segment: TurnSegment): boolean {
   return segment.kind === 'thinking'
 }
@@ -160,11 +166,11 @@ function liveCorePrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
 }
 
 function isLiveCoreNoFenceAnswer(segment: TurnSegment): boolean {
-  return isLiveAnswerText(segment) && !hasStreamingDemoFence(segment.content ?? '')
+  return isLiveCoreStreamText(segment) && !hasStreamingDemoFence(segment.content ?? '')
 }
 
 function isLiveCoreDemoAnswer(segment: TurnSegment): boolean {
-  return isLiveAnswerText(segment) && hasStreamingDemoFence(segment.content ?? '')
+  return isLiveCoreStreamText(segment) && hasStreamingDemoFence(segment.content ?? '')
 }
 
 function isLiveCoreDemoTool(segment: TurnSegment): boolean {
@@ -275,7 +281,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 过程前缀后首枚无 fence 正文标 `'text'`，过程步复用、回答另开尾。
  * 同一帧过程 extras + 首枚无 fence 正文也标 `'text'`。
  * 只追加思考 / status，或同一帧 status+思考，也走核心，不必等表。
- * 过程前缀后已有无 fence 正文，再开普通工具也走核心。
+ * 过程前缀后已有无 fence 正文，再开普通工具也走核心（harness token 无 role，tool_start 收口后仍 hold）。
  * 同一帧首枚无 fence 正文后再落普通工具也标 `'tool'`。
  * 同一帧首枚无 fence 正文后再落思考 / status 标 `'think'` / `'status'`。
  * 同长普通工具原地收束 / 改详情（可多枚并行 complete_call，正文可仍在末尾）标 `'tool'`。
@@ -284,7 +290,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 已有无 fence 正文后再开第二段或多段 text 标 `'text'`，先封上一尾再开新尾。
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
- * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽。
+ * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽，随后首枚 token 不冲掉 +/-。
  * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
  * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
@@ -305,8 +311,8 @@ function liveCoreInPlaceProcessToolSkip(
     if (isLiveCoreDemoAnswer(before) || isLiveCoreDemoAnswer(after)) {
       if (
         before.id === after.id &&
-        isLiveAnswerText(before) &&
-        isLiveAnswerText(after) &&
+        isLiveCoreStreamText(before) &&
+        isLiveCoreStreamText(after) &&
         liveTailContentGrew(before, after)
       ) {
         textChange = true
@@ -363,8 +369,8 @@ function liveCoreHeldPrefix(
     if (isLiveCoreDemoAnswer(before) || isLiveCoreDemoAnswer(after)) {
       if (
         before.id === after.id &&
-        isLiveAnswerText(before) &&
-        isLiveAnswerText(after) &&
+        isLiveCoreStreamText(before) &&
+        isLiveCoreStreamText(after) &&
         liveTailContentGrew(before, after)
       ) {
         continue
@@ -899,11 +905,14 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
   const content = tail.content ?? ''
   if (prev.tail?.type === 'text' && prev.tail.content === content) return prev
   const tailPart: AnswerPart = { type: 'text', id: tail.id, content }
-  const parts = prev.closed.length ? [...prev.closed, tailPart] : [tailPart]
-  const copyable = prev.closed.length ? copyableFromAnswerParts(parts) : content.trim()
+  const prefix = prev.closed.length
+    ? prev.closed
+    : prev.parts.filter((part) => part.type !== 'text')
+  const parts = prefix.length ? [...prefix, tailPart] : [tailPart]
+  const copyable = prefix.length ? copyableFromAnswerParts(parts) : content.trim()
   return {
     parts,
-    closed: prev.closed,
+    closed: prefix,
     tail: tailPart,
     show: true,
     copyable,
@@ -1081,7 +1090,7 @@ function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveA
       prev.tail && prev.parts.length && prev.parts[prev.parts.length - 1] === prev.tail
         ? [...prev.parts.slice(0, -1), ...diffs, prev.tail]
         : [...prev.parts, ...diffs]
-    return { ...prev, parts, show: true }
+    return liveAnswerViewFromParts(prev, parts)
   }
   const reused = diffs.map((diff, index) => {
     const old = prev.parts[start + index]
@@ -1095,7 +1104,22 @@ function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveA
     return prev
   }
   const parts = [...prev.parts.slice(0, start), ...reused, ...prev.parts.slice(end)]
-  return { ...prev, parts, show: parts.length > 0 }
+  return liveAnswerViewFromParts(prev, parts)
+}
+
+/** 写盘 extras 开槽后同步 closed/tail，避免下一枚 token 用空 closed 把 +/- 冲掉。 */
+function liveAnswerViewFromParts(prev: LiveAnswerView, parts: AnswerPart[]): LiveAnswerView {
+  const split = splitClosedTail(parts)
+  const copyable = copyableFromAnswerParts(parts)
+  return {
+    ...prev,
+    parts,
+    closed: split.closed,
+    tail: split.tail,
+    show: parts.length > 0,
+    copyable,
+    hasCopyable: Boolean(copyable)
+  }
 }
 
 function rebuildLiveProcessView(

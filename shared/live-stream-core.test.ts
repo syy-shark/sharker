@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import type { TurnSegment } from './types'
+import type { StreamChunk, TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
   isLiveSameLengthTokenGrow,
@@ -15,6 +15,7 @@ import {
 } from './live-stream-core'
 import { EMPTY_LIVE_STREAM_UI } from './live-stream-ui'
 import { appendProcessPhaseStepOnToolStart, deriveChronologicalSteps } from './process-phases'
+import { applyStreamChunk } from './turn-segments'
 
 function think(content: string): TurnSegment {
   return { id: 'th1', kind: 'thinking', status: 'active', content }
@@ -60,6 +61,10 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     const nextTool = tool('active')
     expect(shouldSkipLiveStreamDerivation([hello], [closed, nextTool])).toBe('tool')
     expect(hasLiveProcessPhaseGrowHold([hello], [closed, nextTool])).toBe(true)
+    const streamed: TurnSegment = { id: 'a2', kind: 'text', status: 'active', content: 'Hello' }
+    const streamedClosed: TurnSegment = { ...streamed, status: 'done' }
+    expect(shouldSkipLiveStreamDerivation([streamed], [streamedClosed, nextTool])).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([streamed], [streamedClosed, nextTool])).toBe(true)
   })
 
   it('classifies a newly appended tool after think, tool, and streaming no-fence prose without the table', () => {
@@ -1347,6 +1352,20 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     })
     expect(withDiff.tail).toEqual(afterProse.tail)
     expect(withDiff.parts.some((part) => part.type === 'diff')).toBe(true)
+    const afterWrite = nextLiveAnswerView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thoughtDone, writing]
+    })
+    const hello: TurnSegment = { id: 'a2', kind: 'text', status: 'active', content: 'Hello' }
+    expect(
+      shouldSkipLiveStreamDerivation([thoughtDone, writing], [thoughtDone, writing, hello])
+    ).toBe('text')
+    const afterHello = nextLiveAnswerView(afterWrite, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thoughtDone, writing, hello]
+    })
+    expect(afterHello.parts.some((part) => part.type === 'diff')).toBe(true)
+    expect(afterHello.tail?.type === 'text' && afterHello.tail.content).toBe('Hello')
   })
 
   it('grows a held no-fence tail when think tokens arrive in the same flush', () => {
@@ -1412,5 +1431,116 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
 
     expect(src('process-phases.ts')).toContain("from './live-stream-core'")
     expect(src('process-phases.ts').includes('live-stream-slices')).toBe(false)
+  })
+
+  it('keeps a harness first-stream walk off the combinatorial table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const step = (label: string, chunk: StreamChunk) => {
+      const next = applyStreamChunk(prev, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) misses.push(`${label}: ${prev.map((s) => s.kind).join('+')} → ${next.map((s) => `${s.kind}:${s.toolName ?? s.status}`).join(',')}`)
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    step('turn_start', { type: 'turn_start' })
+    step('think', { type: 'think', content: 'Hmm' })
+    step('think-grow', { type: 'think', content: ' more' })
+    step('read', { type: 'tool_start', toolName: 'read_file', toolCallId: 'c1', toolArgs: { path: 'a.ts' } })
+    step('heartbeat', { type: 'status', content: '执行中… 1s', toolName: 'read_file' })
+    step('read-done', { type: 'tool_done', toolName: 'read_file', toolCallId: 'c1', resultSummary: '12 lines' })
+    step('list', { type: 'tool_start', toolName: 'list_dir', toolCallId: 'c2' })
+    step('list-done', { type: 'tool_done', toolName: 'list_dir', toolCallId: 'c2' })
+    step('write-preview', {
+      type: 'tool_preview',
+      toolName: 'write_file',
+      toolCallId: 'c3',
+      toolArgs: { path: 'a.ts', content: 'hi' }
+    })
+    step('write-grow', {
+      type: 'tool_preview',
+      toolName: 'write_file',
+      toolCallId: 'c3',
+      toolArgs: { path: 'a.ts', content: 'hi there' }
+    })
+    step('write-start', {
+      type: 'tool_start',
+      toolName: 'write_file',
+      toolCallId: 'c3',
+      toolArgs: { path: 'a.ts', content: 'hi there' }
+    })
+    step('write-done', {
+      type: 'tool_done',
+      toolName: 'write_file',
+      toolCallId: 'c3',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi there' }],
+        stats: { added: 1, removed: 0 }
+      }
+    })
+    step('token', { type: 'token', content: 'Hello' })
+    step('token-grow', { type: 'token', content: ' world' })
+    step('run', { type: 'tool_start', toolName: 'run_terminal_cmd', toolCallId: 'c4', toolArgs: { command: 'ls' } })
+    step('await', {
+      type: 'approval_needed',
+      toolName: 'run_terminal_cmd',
+      approval: {
+        id: 'appr-1',
+        title: 'ls',
+        description: '',
+        toolName: 'run_terminal_cmd',
+        args: { command: 'ls' }
+      }
+    })
+    step('allow', { type: 'approval_resolved', toolName: 'run_terminal_cmd', approved: true })
+    step('run-done', { type: 'tool_done', toolName: 'run_terminal_cmd', toolCallId: 'c4', resultSummary: 'ok' })
+    step('token2', { type: 'token', content: ' Next' })
+    step('plan', { type: 'status', content: '根据已完成步骤规划下一步…' })
+    step('ask-tool', { type: 'tool_start', toolName: 'request_user_input', toolCallId: 'c5' })
+    step('ask', {
+      type: 'user_input_needed',
+      toolName: 'request_user_input',
+      userInput: {
+        id: 'ask-1',
+        questions: [
+          {
+            id: 'q1',
+            header: 'API style',
+            question: 'Which style?',
+            options: [{ label: 'REST', description: '' }]
+          }
+        ]
+      }
+    })
+    step('ask-done', { type: 'user_input_resolved', toolName: 'request_user_input' })
+    step('ask-tool-done', { type: 'tool_done', toolName: 'request_user_input', toolCallId: 'c5' })
+    step('compact-status', { type: 'status', content: 'Automatically compacting context' })
+    step('compress', {
+      type: 'context_compress',
+      contextCompress: { removedCount: 3, beforeTokens: 80, afterTokens: 40 }
+    })
+    step('demo-fence', { type: 'token', content: '\n```demo\n<div>' })
+    step('demo-html', { type: 'token', content: 'Hi</div>\n```' })
+    step('inline-demo', {
+      type: 'tool_preview',
+      toolName: 'present_inline_demo',
+      toolCallId: 'c6',
+      content: '<p>card</p>',
+      toolArgs: { caption: 'card' }
+    })
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'diff')).toBe(true)
+    expect(answer.parts.some((part) => part.type === 'demo')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'compress')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')).toBe(
+      false
+    )
   })
 })
