@@ -147,6 +147,9 @@ export const NO_CHATS_LABEL = 'No chats'
 export const SEARCH_CHATS_PLACEHOLDER = 'Search title, message, or branch'
 /** Official worktrees: create a permanent worktree from the three-dot menu. */
 export const CREATE_PERMANENT_WORKTREE_LABEL = 'Create a permanent worktree'
+/** Official worktrees: Select the starting branch below the composer. */
+export const STARTING_BRANCH_LABEL = 'Starting branch'
+export const STARTING_BRANCH_SEARCH_PLACEHOLDER = 'Search local or remote branches'
 /** Official README / Help target. Do not invent Check for Updates. */
 export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */

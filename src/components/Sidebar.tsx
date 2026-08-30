@@ -819,7 +819,7 @@ export const Sidebar = memo(function Sidebar({
                   onClick={(e) => {
                     e.stopPropagation()
                     closeProjectMenu()
-                    const next = window.prompt('重命名项目', ws.label || '')
+                    const next = window.prompt(RENAME_LABEL, ws.label || '')
                     if (next == null) return
                     const label = next.trim()
                     if (!label || label === ws.label) return
@@ -1136,7 +1136,7 @@ export const Sidebar = memo(function Sidebar({
             className="sidebar-back-chat"
             onClick={() => onNavigate('chat')}
           >
-            ← 返回对话
+            ← {CHATS_SECTION_LABEL}
           </button>
         </div>
       ) : null}

@@ -1347,8 +1347,10 @@ html.theme-dark .composer-worktree-banner {
 }
 
 .composer-worktree-base-label {
+  flex-shrink: 0;
   color: var(--text-muted);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .composer-worktree-base-select {

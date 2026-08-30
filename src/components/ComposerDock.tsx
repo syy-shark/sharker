@@ -132,6 +132,8 @@ import {
   LOCAL_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
+  STARTING_BRANCH_LABEL,
+  STARTING_BRANCH_SEARCH_PLACEHOLDER,
   START_DICTATION_LABEL,
   START_VOICE_CHAT_LABEL,
   WORKTREE_LABEL
@@ -1681,7 +1683,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu history-picker popover-enter"
               role="listbox"
-              aria-label="隔离 worktree 起点分支"
+              aria-label={STARTING_BRANCH_LABEL}
               aria-activedescendant={
                 worktreeBranchRows[worktreeBranchIndex]
                   ? `worktree-branch-${worktreeBranchRows[worktreeBranchIndex].ref || 'HEAD'}`
@@ -1692,8 +1694,8 @@ export const ComposerDock = memo(
                 ref={worktreeBranchSearchRef}
                 className="history-picker-search"
                 value={worktreeBranchQuery}
-                placeholder="搜索本地或远程分支…"
-                aria-label="搜索起点分支"
+                placeholder={STARTING_BRANCH_SEARCH_PLACEHOLDER}
+                aria-label={STARTING_BRANCH_SEARCH_PLACEHOLDER}
                 onChange={(e) => {
                   setWorktreeBranchQuery(e.target.value)
                   setWorktreeBranchIndex(0)
@@ -2418,14 +2420,14 @@ export const ComposerDock = memo(
             ) : null}
             {onThreadModeChange && threadMode === 'worktree' ? (
               <div className="composer-worktree-base">
-                <span className="composer-worktree-base-label">起点</span>
+                <span className="composer-worktree-base-label">{STARTING_BRANCH_LABEL}</span>
                 <button
                   type="button"
                   className={`composer-worktree-base-select${showWorktreeBranchPicker ? ' is-open' : ''}`}
-                  aria-label="隔离 worktree 起点分支"
+                  aria-label={STARTING_BRANCH_LABEL}
                   aria-expanded={showWorktreeBranchPicker}
                   aria-haspopup="listbox"
-                  title="搜索本地或远程分支（对标 Codex local branch search）"
+                  title={STARTING_BRANCH_SEARCH_PLACEHOLDER}
                   onClick={() => {
                     setProjectPickerOpen(false)
                     onCloseHistoryPicker?.()

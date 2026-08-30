@@ -32,6 +32,9 @@ describe('slash commands', () => {
     expect(SLASH_COMMANDS.find((c) => c.name === 'plan')?.description).toBe(
       'Toggle plan mode for multi-step planning.'
     )
+    expect(SLASH_COMMANDS.find((c) => c.name === 'plan-mode')?.description).toBe(
+      'Toggle plan mode for multi-step planning.'
+    )
     expect(names).toContain('init')
     expect(names).toContain('permissions')
     expect(names).toContain('archive')

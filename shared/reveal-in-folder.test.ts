@@ -101,6 +101,8 @@ import {
   SEARCH_CHATS_PLACEHOLDER,
   CREATE_PERMANENT_WORKTREE_LABEL,
   WORKTREE_RESTORE_BANNER,
+  STARTING_BRANCH_LABEL,
+  STARTING_BRANCH_SEARCH_PLACEHOLDER,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -197,6 +199,8 @@ describe('reveal in folder', () => {
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
     expect(CREATE_PERMANENT_WORKTREE_LABEL).toBe('Create a permanent worktree')
     expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')
+    expect(STARTING_BRANCH_LABEL).toBe('Starting branch')
+    expect(STARTING_BRANCH_SEARCH_PLACEHOLDER).toBe('Search local or remote branches')
     expect(RESTORE_LABEL).toBe('Restore')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
     expect(KEYBOARD_SHORTCUTS_INTRO).toBe(

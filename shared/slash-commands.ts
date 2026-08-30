@@ -71,7 +71,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'plan-mode',
-    description: '切换计划模式（/plan 别名）',
+    description: SLASH_PLAN_DESCRIPTION,
     scope: 'agent',
     argsHint: '[说明]',
     category: 'mode'
