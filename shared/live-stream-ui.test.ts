@@ -230,6 +230,26 @@ import {
   isLiveApprovalAllowedSettleThinkAnswerDemoAskAppendChange,
   isLiveApprovalAllowedSettleThinkErrorAskAppendChange,
   isLiveApprovalAllowedSettleAnswerDemoAskAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerAskAppendChange,
+  isLiveApprovalAllowedSettleAnswerAskCancelAppendChange,
+  isLiveApprovalAllowedSettleAnswerAskCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerAskCancelAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerAskCompressAppendChange,
+  isLiveApprovalAllowedSettleAskToolAppendChange,
+  isLiveApprovalAllowedSettleAskActiveToolAppendChange,
+  isLiveApprovalAllowedSettleAnswerAskToolAppendChange,
+  isLiveApprovalAllowedSettleAnswerAskActiveToolAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerAskToolAppendChange,
+  isLiveApprovalDeniedThinkAnswerAskAppendChange,
+  isLiveApprovalDeniedAnswerAskCancelAppendChange,
+  isLiveApprovalDeniedAnswerAskCompressAppendChange,
+  isLiveApprovalDeniedThinkAnswerAskCancelAppendChange,
+  isLiveApprovalDeniedThinkAnswerAskCompressAppendChange,
+  isLiveApprovalDeniedAskToolAppendChange,
+  isLiveApprovalDeniedAskActiveToolAppendChange,
+  isLiveApprovalDeniedAnswerAskToolAppendChange,
+  isLiveApprovalDeniedAnswerAskActiveToolAppendChange,
+  isLiveApprovalDeniedThinkAnswerAskToolAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoAskCancelAppendChange,
   isLiveApprovalAllowedSettleAnswerDemoAskCancelAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoAskCompressAppendChange,
@@ -265,6 +285,15 @@ import {
   isLiveWriteStatApprovalResolvedErrorAskCompressAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerDemoAskCompressAppendChange,
   isLiveWriteStatApprovalResolvedAnswerAskAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerAskCancelAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerAskCancelAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerAskCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerAskCompressAppendChange,
+  isLiveWriteStatApprovalResolvedAskToolAppendChange,
+  isLiveWriteStatApprovalResolvedAskActiveToolAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerAskToolAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerAskActiveToolAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerAskToolAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerDemoToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedAnswerDemoCancelAppendChange,
@@ -297,6 +326,15 @@ import {
   isLiveWriteStatStatusApprovalResolvedAnswerDemoAskCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkErrorAskCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedAnswerDemoAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAskToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAskActiveToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerAskToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerAskActiveToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerAskToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkErrorAskCompressAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkErrorAskAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorCancelCompressAppendChange,
@@ -326,6 +364,15 @@ import {
   isLiveStatusApprovalResolvedErrorAskAppendChange,
   isLiveStatusApprovalResolvedAnswerDemoAskCancelAppendChange,
   isLiveStatusApprovalResolvedAnswerAskAppendChange,
+  isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerAskCancelAppendChange,
+  isLiveStatusApprovalResolvedAnswerAskCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerAskCompressAppendChange,
+  isLiveStatusApprovalResolvedAskToolAppendChange,
+  isLiveStatusApprovalResolvedAskActiveToolAppendChange,
+  isLiveStatusApprovalResolvedAnswerAskToolAppendChange,
+  isLiveStatusApprovalResolvedAnswerAskActiveToolAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerAskToolAppendChange,
   isLiveStatusApprovalResolvedToolAppendChange,
   isLiveStatusApprovalResolvedThinkSettledToolAppendChange,
   isLiveStatusApprovalResolvedThinkAnswerCancelAppendChange,
@@ -381,6 +428,25 @@ import {
   isLiveAskResolvedAnswerDemoAskCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoAskCancelAppendChange,
   isLiveAskResolvedAnswerAskAppendChange,
+  isLiveAskResolvedAnswerAskCancelAppendChange,
+  isLiveAskResolvedThinkAnswerAskCancelAppendChange,
+  isLiveAskResolvedAnswerAskCompressAppendChange,
+  isLiveAskResolvedThinkAnswerAskCompressAppendChange,
+  isLiveAskResolvedAskToolAppendChange,
+  isLiveAskResolvedAskActiveToolAppendChange,
+  isLiveAskResolvedAnswerAskToolAppendChange,
+  isLiveAskResolvedAnswerAskActiveToolAppendChange,
+  isLiveAskResolvedThinkAnswerAskToolAppendChange,
+  isLiveApprovalResolvedThinkAnswerAskAppendChange,
+  isLiveApprovalResolvedAnswerAskCancelAppendChange,
+  isLiveApprovalResolvedAnswerAskCompressAppendChange,
+  isLiveApprovalResolvedThinkAnswerAskCancelAppendChange,
+  isLiveApprovalResolvedThinkAnswerAskCompressAppendChange,
+  isLiveApprovalResolvedAskToolAppendChange,
+  isLiveApprovalResolvedAskActiveToolAppendChange,
+  isLiveApprovalResolvedAnswerAskToolAppendChange,
+  isLiveApprovalResolvedAnswerAskActiveToolAppendChange,
+  isLiveApprovalResolvedThinkAnswerAskToolAppendChange,
   isLiveAskResolvedAnswerDemoCompressAppendChange,
   isLiveAskResolvedSettledToolAppendChange,
   isLiveAskResolvedToolAppendChange,
@@ -11271,6 +11337,211 @@ describe('live stream ui snapshot', () => {
     askResolveTokenAsk = applyStreamChunk(askResolveTokenAsk, { ...askNeeded, timestamp: 52.938219 })
     expect(isLiveAskResolvedAnswerAskAppendChange([hello], askResolveTokenAsk)).toBe(true)
     expect(shouldSkipLiveStreamDerivation([hello], askResolveTokenAsk)).toBe('tool')
+    const playLiveChunks = (
+      prev: TurnSegment[],
+      chunks: Parameters<typeof applyStreamChunk>[1][]
+    ) => chunks.reduce((segs, chunk) => applyStreamChunk(segs, chunk), prev)
+    let liveAskTs = 1300
+    const stampLiveChunks = (chunks: Parameters<typeof applyStreamChunk>[1][]) =>
+      chunks.map((chunk, i) => ({ ...chunk, timestamp: liveAskTs++ + i * 0.0001 }))
+    const liveAskStart = [
+      { type: 'tool_start' as const, toolName: REQUEST_USER_INPUT_TOOL },
+      askNeeded
+    ]
+    const liveNextSettled = [
+      { type: 'tool_start' as const, toolName: 'read_file' },
+      { type: 'tool_done' as const, toolName: 'read_file', resultSummary: 'ok' }
+    ]
+    const liveNextActive = [{ type: 'tool_start' as const, toolName: 'read_file' }]
+    const liveSettleAllow = [
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: true },
+      { type: 'tool_done' as const, toolName: 'run_terminal_cmd', resultSummary: 'ok' }
+    ]
+    const liveSettleDeny = [
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: false },
+      {
+        type: 'tool_done' as const,
+        toolName: 'run_terminal_cmd',
+        resultSummary: 'denied',
+        toolStatus: 'error' as const
+      }
+    ]
+    const liveNosettleAllow = [
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: true }
+    ]
+    const liveStatusAllow = [
+      { type: 'status' as const, content: 'Reconnecting... 1/5' },
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang,
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: true }
+    ]
+    const liveWriteAllow = [
+      writeAskDone,
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang,
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: true }
+    ]
+    const liveWriteStatusAllow = [
+      writeAskDone,
+      { type: 'status' as const, content: '根据已完成步骤规划下一步…' },
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang,
+      { type: 'approval_resolved' as const, toolName: 'run_terminal_cmd', approved: true }
+    ]
+    const liveAskResolve = [
+      { type: 'tool_start' as const, toolName: REQUEST_USER_INPUT_TOOL },
+      askNeeded,
+      { type: 'user_input_resolved' as const, toolName: REQUEST_USER_INPUT_TOOL }
+    ]
+    const liveTokenAskExtras: Array<
+      [string, Parameters<typeof applyStreamChunk>[1][]]
+    > = [
+      ['think+token+ask', [{ type: 'think', content: 'Next' }, { type: 'token', content: 'Hi' }, ...liveAskStart]],
+      ['token+ask+cancel', [{ type: 'token', content: 'Hi' }, ...liveAskStart, { type: 'turn_cancelled' }]],
+      [
+        'token+ask+compress',
+        [
+          { type: 'token', content: 'Hi' },
+          ...liveAskStart,
+          { type: 'context_compress', contextCompress: compressPayload }
+        ]
+      ],
+      [
+        'think+token+ask+cancel',
+        [
+          { type: 'think', content: 'Next' },
+          { type: 'token', content: 'Hi' },
+          ...liveAskStart,
+          { type: 'turn_cancelled' }
+        ]
+      ],
+      [
+        'think+token+ask+compress',
+        [
+          { type: 'think', content: 'Next' },
+          { type: 'token', content: 'Hi' },
+          ...liveAskStart,
+          { type: 'context_compress', contextCompress: compressPayload }
+        ]
+      ],
+      ['ask+settled', [...liveAskStart, ...liveNextSettled]],
+      ['ask+active', [...liveAskStart, ...liveNextActive]],
+      ['token+ask+settled', [{ type: 'token', content: 'Hi' }, ...liveAskStart, ...liveNextSettled]],
+      ['token+ask+active', [{ type: 'token', content: 'Hi' }, ...liveAskStart, ...liveNextActive]],
+      [
+        'think+token+ask+settled',
+        [
+          { type: 'think', content: 'Next' },
+          { type: 'token', content: 'Hi' },
+          ...liveAskStart,
+          ...liveNextSettled
+        ]
+      ]
+    ]
+    const liveTokenAskHelpers = {
+      'allow-settle': {
+        'think+token+ask': isLiveApprovalAllowedSettleThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveApprovalAllowedSettleAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveApprovalAllowedSettleAnswerAskCompressAppendChange,
+        'think+token+ask+cancel': isLiveApprovalAllowedSettleThinkAnswerAskCancelAppendChange,
+        'think+token+ask+compress': isLiveApprovalAllowedSettleThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveApprovalAllowedSettleAskToolAppendChange,
+        'ask+active': isLiveApprovalAllowedSettleAskActiveToolAppendChange,
+        'token+ask+settled': isLiveApprovalAllowedSettleAnswerAskToolAppendChange,
+        'token+ask+active': isLiveApprovalAllowedSettleAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveApprovalAllowedSettleThinkAnswerAskToolAppendChange
+      },
+      'deny-settle': {
+        'think+token+ask': isLiveApprovalDeniedThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveApprovalDeniedAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveApprovalDeniedAnswerAskCompressAppendChange,
+        'think+token+ask+cancel': isLiveApprovalDeniedThinkAnswerAskCancelAppendChange,
+        'think+token+ask+compress': isLiveApprovalDeniedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveApprovalDeniedAskToolAppendChange,
+        'ask+active': isLiveApprovalDeniedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveApprovalDeniedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveApprovalDeniedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveApprovalDeniedThinkAnswerAskToolAppendChange
+      },
+      'nosettle-allow': {
+        'think+token+ask': isLiveApprovalResolvedThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveApprovalResolvedAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveApprovalResolvedAnswerAskCompressAppendChange,
+        'think+token+ask+cancel': isLiveApprovalResolvedThinkAnswerAskCancelAppendChange,
+        'think+token+ask+compress': isLiveApprovalResolvedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveApprovalResolvedAskToolAppendChange,
+        'ask+active': isLiveApprovalResolvedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveApprovalResolvedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveApprovalResolvedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveApprovalResolvedThinkAnswerAskToolAppendChange
+      },
+      status: {
+        'token+ask+cancel': isLiveStatusApprovalResolvedAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveStatusApprovalResolvedThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveStatusApprovalResolvedAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveStatusApprovalResolvedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveStatusApprovalResolvedAskToolAppendChange,
+        'ask+active': isLiveStatusApprovalResolvedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveStatusApprovalResolvedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveStatusApprovalResolvedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveStatusApprovalResolvedThinkAnswerAskToolAppendChange
+      },
+      writestat: {
+        'token+ask+cancel': isLiveWriteStatApprovalResolvedAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveWriteStatApprovalResolvedThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveWriteStatApprovalResolvedAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveWriteStatApprovalResolvedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveWriteStatApprovalResolvedAskToolAppendChange,
+        'ask+active': isLiveWriteStatApprovalResolvedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveWriteStatApprovalResolvedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveWriteStatApprovalResolvedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveWriteStatApprovalResolvedThinkAnswerAskToolAppendChange
+      },
+      'writestat+status': {
+        'token+ask+cancel': isLiveWriteStatStatusApprovalResolvedAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveWriteStatStatusApprovalResolvedThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveWriteStatStatusApprovalResolvedAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveWriteStatStatusApprovalResolvedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveWriteStatStatusApprovalResolvedAskToolAppendChange,
+        'ask+active': isLiveWriteStatStatusApprovalResolvedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveWriteStatStatusApprovalResolvedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveWriteStatStatusApprovalResolvedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveWriteStatStatusApprovalResolvedThinkAnswerAskToolAppendChange
+      },
+      ask: {
+        'token+ask+cancel': isLiveAskResolvedAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveAskResolvedThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveAskResolvedAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveAskResolvedThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveAskResolvedAskToolAppendChange,
+        'ask+active': isLiveAskResolvedAskActiveToolAppendChange,
+        'token+ask+settled': isLiveAskResolvedAnswerAskToolAppendChange,
+        'token+ask+active': isLiveAskResolvedAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveAskResolvedThinkAnswerAskToolAppendChange
+      }
+    } as const
+    for (const [label, prev, head] of [
+      ['allow-settle', awaitingLive, liveSettleAllow],
+      ['allow-settle+hello', awaitingWithHello, liveSettleAllow],
+      ['deny-settle', awaitingLive, liveSettleDeny],
+      ['deny-settle+hello', awaitingWithHello, liveSettleDeny],
+      ['nosettle-allow', awaitingLive, liveNosettleAllow],
+      ['nosettle-allow+hello', awaitingWithHello, liveNosettleAllow],
+      ['status', [hello], liveStatusAllow],
+      ['writestat', [hello, running], liveWriteAllow],
+      ['writestat+status', [hello, running], liveWriteStatusAllow],
+      ['ask', [hello], liveAskResolve]
+    ] as const) {
+      const helperKey = label.replace(/\+hello$/, '') as keyof typeof liveTokenAskHelpers
+      const helpers = liveTokenAskHelpers[helperKey]
+      for (const [extra, chunks] of liveTokenAskExtras) {
+        const helper = helpers[extra as keyof typeof helpers]
+        if (!helper) continue
+        const next = playLiveChunks([...prev], stampLiveChunks([...head, ...chunks]))
+        expect(helper(prev, next), `${label}+${extra}`).toBe(true)
+        expect(shouldSkipLiveStreamDerivation(prev, next), `skip ${label}+${extra}`).toBe('tool')
+      }
+    }
     let denySettledThinkErrorCancel = applyStreamChunk(awaitingLive, {
       type: 'approval_resolved',
       toolName: 'run_terminal_cmd',
