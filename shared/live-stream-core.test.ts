@@ -54,7 +54,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([prose('Hello')], [closed, tool('active')])).toBeNull()
   })
 
-  it('classifies a first-turn tool after thinking without waiting for the table', () => {
+  it('classifies first-stream tools without waiting for the table', () => {
     expect(shouldSkipLiveStreamDerivation([think('Hmm')], [think('Hmm'), tool('active')])).toBe(
       'tool'
     )
@@ -62,6 +62,22 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([], [tool('active')])).toBe('tool')
     expect(hasLiveProcessPhaseGrowHold([], [tool('active')])).toBe(true)
     expect(hasLiveProcessPhaseGrowHold(null, [tool('active')])).toBe(false)
+    expect(shouldSkipLiveStreamDerivation([], [think('Hmm'), tool('active')])).toBe('tool')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), nextTool])
+    ).toBe('tool')
+    expect(
+      hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), nextTool])
+    ).toBe(true)
+    const demo: TurnSegment = {
+      id: 'd1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: ''
+    }
+    expect(shouldSkipLiveStreamDerivation([tool('active')], [tool('active'), demo])).toBeNull()
   })
 
   it('does not grow-hold process phases on same-length think tokens', () => {

@@ -2,7 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
- * 例外：首轮只有思考 / status 时新开普通工具可在核心判定，不必等表。
+ * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）可在核心判定，不必等表。
  * @see shared/ARCH.md
  */
 import { isInlineDemoPaintable, liveThinkingText, sameRefList } from './live-display'
@@ -126,42 +126,47 @@ function isLiveStatus(segment: TurnSegment): boolean {
   return segment.kind === 'status'
 }
 
-function isLiveFirstTurnProcessPrefix(segment: TurnSegment): boolean {
-  return isLiveThinking(segment) || isLiveStatus(segment)
-}
-
-function liveFirstTurnPrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
-  if (prev === next) return true
-  if (prev.id !== next.id || prev.kind !== next.kind) return false
-  if (isLiveThinking(prev) && isLiveThinking(next)) return true
-  return isLiveStatus(prev) && isLiveStatus(next)
-}
-
-function isLiveFirstTurnTool(segment: TurnSegment): boolean {
+/** 普通过程工具：不含演示卡，避免无表时把 present_inline_demo 当追加步。 */
+function isLiveCoreProcessTool(segment: TurnSegment): boolean {
   return segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
 }
 
+function isLiveCoreProcessPrefix(segment: TurnSegment): boolean {
+  return isLiveThinking(segment) || isLiveStatus(segment) || isLiveCoreProcessTool(segment)
+}
+
+function liveCorePrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev === next) return true
+  if (prev.id !== next.id || prev.kind !== next.kind) return false
+  if (isLiveThinking(prev) && isLiveThinking(next)) return true
+  if (isLiveStatus(prev) && isLiveStatus(next)) return true
+  return isLiveCoreProcessTool(prev) && isLiveCoreProcessTool(next)
+}
+
+function isLiveCoreAppendExtra(segment: TurnSegment): boolean {
+  return isLiveCoreProcessTool(segment) || isLiveStatus(segment) || isLiveThinking(segment)
+}
+
 /**
- * 无表时：首轮只有思考 / status 时新开普通工具可走 cheap path。
- * 已有工具、闭合散文、或 `present_inline_demo` 仍等表。
+ * 无表时：过程前缀（思考 / status / 普通工具）后新开普通工具可走 cheap path。
+ * 同一帧 `think + tool`、以及首轮第二枚工具也走这条。
+ * 闭合散文、或 `present_inline_demo` 仍等表。
  */
 export function liveCoreAppendedProcessToolsSkip(
   prev: readonly TurnSegment[],
   next: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
   if (next.length <= prev.length) return null
-  if (prev.some((segment) => !isLiveFirstTurnProcessPrefix(segment))) return null
+  if (prev.some((segment) => !isLiveCoreProcessPrefix(segment))) return null
   for (let i = 0; i < prev.length; i++) {
     const before = prev[i]
     const after = next[i]
-    if (!before || !after || !liveFirstTurnPrefixHolds(before, after)) return null
+    if (!before || !after || !liveCorePrefixHolds(before, after)) return null
   }
   const extras = next.slice(prev.length)
   if (!extras.length) return null
-  if (!extras.every((segment) => isLiveFirstTurnTool(segment) || isLiveStatus(segment))) {
-    return null
-  }
-  if (!extras.some((segment) => isLiveFirstTurnTool(segment))) return null
+  if (!extras.every((segment) => isLiveCoreAppendExtra(segment))) return null
+  if (!extras.some((segment) => isLiveCoreProcessTool(segment))) return null
   return 'tool'
 }
 
