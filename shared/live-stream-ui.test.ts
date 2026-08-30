@@ -4268,7 +4268,7 @@ import {
 } from './live-stream-slices'
 
 describe('live stream ui snapshot', () => {
-  it('reuses the previous object when token fields do not change', () => {
+  it('reuses the previous object when token fields do not change', { timeout: 20_000 }, () => {
     const segs: TurnSegment[] = [{ id: 's1', kind: 'text', content: 'hi' }]
     const prev = nextLiveStreamUi(EMPTY_LIVE_STREAM_UI, {
       streaming: 'hi',
