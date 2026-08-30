@@ -873,6 +873,22 @@ export function nextLiveAnswerView(
       return view
     }
   }
+  if (prevSegments && liveCoreAppendedProcessToolsSkip(prevSegments, segments) === 'text') {
+    const extra = segments[segments.length - 1]
+    if (extra && isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
+      const seed = prev ?? {
+        parts: [],
+        closed: [],
+        tail: null,
+        show: false,
+        copyable: '',
+        hasCopyable: false
+      }
+      const view = growLiveAnswerView(seed, extra)
+      answerGrowHold = { view, segments, tailPlain: true }
+      return view
+    }
+  }
   const view = rebuildLiveAnswerView(segments)
   answerGrowHold = { view, segments, tailPlain: Boolean(grow.tail) }
   return view

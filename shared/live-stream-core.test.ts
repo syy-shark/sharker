@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
+  nextLiveAnswerView,
   nextLiveProcessView,
   shouldPrefetchLiveStreamTable,
   shouldSkipLiveAnswerIdentity,
@@ -235,6 +236,24 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     })
     expect(next.processForFlow[0]).toBe(first.processForFlow[0])
     expect(next.processForFlow.at(-1)).toBe(reconnect)
+  })
+
+  it('opens the answer tail from the first prose after tools without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const first = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveAnswerView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    expect(next.tail?.content).toBe('Hi')
+    expect(next.show).toBe(true)
+    expect(next.closed).toEqual([])
+    expect(next.copyable).toBe('Hi')
   })
 
   it('does not grow-hold process phases on same-length think tokens', () => {
