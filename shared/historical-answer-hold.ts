@@ -75,34 +75,34 @@ export function nextHistoricalAnswerWarmMessages<
   const out: T[] = []
   let older = input.windowStart - 1
   let newer = input.windowEnd
+  const takeSide = (from: number, step: 1 | -1): T | undefined => {
+    let index = from
+    while (index >= 0 && index < input.messages.length) {
+      const message = input.messages[index]
+      index += step
+      if (
+        message &&
+        shouldWarmHistoricalAnswerHold({
+          role: message.role,
+          hasSegments: Boolean(message.meta?.segments?.length)
+        })
+      ) {
+        if (step < 0) older = index
+        else newer = index
+        return message
+      }
+    }
+    if (step < 0) older = -1
+    else newer = input.messages.length
+    return undefined
+  }
   while (out.length < limit && (older >= 0 || newer < input.messages.length)) {
-    if (older >= 0) {
-      const message = input.messages[older]
-      if (
-        message &&
-        shouldWarmHistoricalAnswerHold({
-          role: message.role,
-          hasSegments: Boolean(message.meta?.segments?.length)
-        })
-      ) {
-        out.push(message)
-      }
-      older -= 1
-    }
+    const olderMessage = older >= 0 ? takeSide(older, -1) : undefined
+    if (olderMessage) out.push(olderMessage)
     if (out.length >= limit) break
-    if (newer < input.messages.length) {
-      const message = input.messages[newer]
-      if (
-        message &&
-        shouldWarmHistoricalAnswerHold({
-          role: message.role,
-          hasSegments: Boolean(message.meta?.segments?.length)
-        })
-      ) {
-        out.push(message)
-      }
-      newer += 1
-    }
+    const newerMessage = newer < input.messages.length ? takeSide(newer, 1) : undefined
+    if (newerMessage) out.push(newerMessage)
+    if (!olderMessage && !newerMessage) break
   }
   return out
 }
