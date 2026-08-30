@@ -219,6 +219,9 @@ describe('conversation search', () => {
     expect(MARK_ALL_AS_READ_LABEL).toBe('Mark all as read')
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'scheduled')?.label).toBe('Scheduled')
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'pinned')?.label).toBe('Pinned')
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'live')?.label).toBe('Running')
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'waiting')?.label).toBe('Waiting')
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'unread')?.label).toBe('Unread')
     expect(
       collectAttentionConversationIds({
         conversations: items,

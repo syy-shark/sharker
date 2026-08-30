@@ -46,9 +46,12 @@ import {
 } from '../../shared/conversation'
 import {
   APPEARANCE_SETTINGS_LABEL,
+  ACTIVITY_LABEL,
+  ADD_NEW_PROJECT_LABEL,
   ARCHIVE_CHATS_ACTION_LABEL,
   ARCHIVE_LABEL,
   ARCHIVED_CHATS_LABEL,
+  CREATE_PERMANENT_WORKTREE_LABEL,
   EDIT_PROJECT_LABEL,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
@@ -56,6 +59,7 @@ import {
   KEYBOARD_SHORTCUTS_LABEL,
   MCP_SERVERS_LABEL,
   NEW_CHAT_LABEL,
+  OPEN_SETTINGS_LABEL,
   NOTIFICATIONS_SETTINGS_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   PIN_LABEL,
@@ -63,7 +67,11 @@ import {
   RENAME_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
+  NO_CHATS_LABEL,
+  PROJECTS_LABEL,
+  REMOVE_LABEL,
   SEARCH_CHATS_LABEL,
+  SETTINGS_LABEL,
   SKILLS_LABEL,
   revealInFolderLabel,
   threadMenuItems,
@@ -185,7 +193,7 @@ function convTitle(c: ConversationSummary): string {
 /** 侧栏进行中点滚出视口时停脉冲，减轻 GPU（对标 Codex #16857） */
 function SidebarLiveDot() {
   const ref = useOffscreenLiveShimmer<HTMLSpanElement>(true)
-  return <span ref={ref} className="sidebar-live-dot" aria-label="进行中" title="进行中" />
+  return <span ref={ref} className="sidebar-live-dot" aria-label="Running" title="Running" />
 }
 
 function conversationFolderPath(c: ConversationSummary, workspaces: WorkspaceItem[]): string {
@@ -855,7 +863,7 @@ export const Sidebar = memo(function Sidebar({
                       onCreatePermanentWorktree(ws.id)
                     }}
                   >
-                    创建永久 worktree
+                    {CREATE_PERMANENT_WORKTREE_LABEL}
                   </button>
                 ) : null}
                 {onArchiveProjectChats ? (
@@ -879,12 +887,12 @@ export const Sidebar = memo(function Sidebar({
                     e.stopPropagation()
                     closeProjectMenu()
                     const ok = window.confirm(
-                      `确定从侧栏移除项目「${ws.label}」？\n不会删除磁盘上的文件夹。`
+                      `Remove “${ws.label}” from the sidebar?\nThis does not delete the folder on disk.`
                     )
                     if (ok) onDeleteWorkspace(ws.id)
                   }}
                 >
-                  移除项目
+                  {REMOVE_LABEL}
                 </button>
               </div>
             ) : null}
@@ -897,7 +905,7 @@ export const Sidebar = memo(function Sidebar({
   /** 展开态主内容 */
   const expandedBody =
     page === 'settings' ? (
-      <nav ref={settingsNavRef} className="sidebar-nav" aria-label="设置">
+      <nav ref={settingsNavRef} className="sidebar-nav" aria-label={SETTINGS_LABEL}>
         {settingsNavSlide.ready && expanded && (
           <div
             className="sidebar-nav-slide"
@@ -955,7 +963,7 @@ export const Sidebar = memo(function Sidebar({
             onClick={() => onToggleActivity?.()}
           >
             <Bell size={18} className="sidebar-nav-ico" aria-hidden />
-            <span>活动</span>
+            <span>{ACTIVITY_LABEL}</span>
             {unreadChatCount > 0 ? (
               <span className="sidebar-nav-badge" aria-label={`${unreadChatCount} 条未读对话`}>
                 {unreadChatCount}
@@ -994,20 +1002,10 @@ export const Sidebar = memo(function Sidebar({
           ) : null}
 
           <section className="sidebar-section">
-            <div className="sidebar-section-head">
-              <h3 className="sidebar-section-label">项目</h3>
-              <button
-                type="button"
-                className="sidebar-section-action"
-                onClick={onAddWorkspace}
-                title="添加项目"
-              >
-                +
-              </button>
-            </div>
+            <h3 className="sidebar-section-label">{PROJECTS_LABEL}</h3>
             {workspaces.length === 0 ? (
               <button type="button" className="sidebar-row sidebar-row--muted" onClick={onAddWorkspace}>
-                <span className="sidebar-row-text">添加项目文件夹…</span>
+                <span className="sidebar-row-text">{ADD_NEW_PROJECT_LABEL}</span>
               </button>
             ) : (
               workspaces.map((ws) => renderProject(ws))
@@ -1015,8 +1013,8 @@ export const Sidebar = memo(function Sidebar({
           </section>
 
           {groupedChats && liveConvs.length > 0 ? (
-            <section className="sidebar-section" aria-label="进行中">
-              <h3 className="sidebar-section-label">进行中</h3>
+            <section className="sidebar-section" aria-label="Running">
+              <h3 className="sidebar-section-label">Running</h3>
               {liveConvs.map((c) => renderConvRow(c))}
             </section>
           ) : null}
@@ -1035,6 +1033,16 @@ export const Sidebar = memo(function Sidebar({
                   ? CHATS_SECTION_LABEL
                   : `${CHATS_SECTION_LABEL} · ${SIDEBAR_CHAT_FILTERS.find((f) => f.id === chatFilter)?.label ?? ''}`}
               </h3>
+              <div className="sidebar-section-actions">
+              <button
+                type="button"
+                className="sidebar-section-action"
+                onClick={onAddWorkspace}
+                title={ADD_NEW_PROJECT_LABEL}
+                aria-label={ADD_NEW_PROJECT_LABEL}
+              >
+                +
+              </button>
               <div className="sidebar-chat-filter" ref={chatFilterRef}>
                 <button
                   type="button"
@@ -1078,16 +1086,17 @@ export const Sidebar = memo(function Sidebar({
                   </div>
                 ) : null}
               </div>
+              </div>
             </div>
             {dialogConvs.length === 0 ? (
-              <p className="sidebar-section-empty">暂无对话</p>
+              <p className="sidebar-section-empty">{NO_CHATS_LABEL}</p>
             ) : groupedChats ? (
               recentConvs.length === 0 ? null : (
                 recentConvs.map((c) => renderConvRow(c))
               )
             ) : filteredConvs.length === 0 ? (
               <p className="sidebar-section-empty">
-                {`没有匹配的对话。选 ${CHRONOLOGICAL_FILTER_LABEL} 可看到全部。`}
+                {`No matching chats. Select ${CHRONOLOGICAL_FILTER_LABEL} to see all.`}
               </p>
             ) : (
               filteredConvs.map((c) => renderConvRow(c))
@@ -1141,11 +1150,11 @@ export const Sidebar = memo(function Sidebar({
         <button
           type="button"
           className="sidebar-footer-settings"
-          aria-label="设置"
+          aria-label={OPEN_SETTINGS_LABEL}
           onClick={() => onNavigate('settings', 'models')}
         >
           <Settings size={16} aria-hidden />
-          <span>设置</span>
+          <span>{SETTINGS_LABEL}</span>
         </button>
       </div>
 

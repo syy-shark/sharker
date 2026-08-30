@@ -92,6 +92,15 @@ import {
   SHARE_FEEDBACK_LABEL,
   INCLUDE_CURRENT_SESSION_LOGS_LABEL,
   RESTORE_LABEL,
+  ACTIVITY_LABEL,
+  ADD_NEW_PROJECT_LABEL,
+  SETTINGS_LABEL,
+  REMOVE_LABEL,
+  PROJECTS_LABEL,
+  NO_CHATS_LABEL,
+  SEARCH_CHATS_PLACEHOLDER,
+  CREATE_PERMANENT_WORKTREE_LABEL,
+  WORKTREE_RESTORE_BANNER,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -179,6 +188,16 @@ describe('reveal in folder', () => {
     expect(START_DICTATION_LABEL).toBe('Start dictation')
     expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')
     expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
+    expect(ACTIVITY_LABEL).toBe('Activity')
+    expect(ADD_NEW_PROJECT_LABEL).toBe('Add new project')
+    expect(SETTINGS_LABEL).toBe('Settings')
+    expect(REMOVE_LABEL).toBe('Remove')
+    expect(PROJECTS_LABEL).toBe('Projects')
+    expect(NO_CHATS_LABEL).toBe('No chats')
+    expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
+    expect(CREATE_PERMANENT_WORKTREE_LABEL).toBe('Create a permanent worktree')
+    expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')
+    expect(RESTORE_LABEL).toBe('Restore')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
     expect(KEYBOARD_SHORTCUTS_INTRO).toBe(
       'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults.'

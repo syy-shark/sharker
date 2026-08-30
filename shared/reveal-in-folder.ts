@@ -129,6 +129,24 @@ export const SHARE_FEEDBACK_LABEL = 'Share feedback'
 /** Official `/feedback` checkbox (Codex desktop #26654). */
 export const INCLUDE_CURRENT_SESSION_LOGS_LABEL = 'Include current Codex session logs'
 export const RESTORE_LABEL = 'Restore'
+/** Official worktrees FAQ: reopen the chat and restore from the saved snapshot. */
+export const WORKTREE_RESTORE_BANNER = 'Restore this worktree from its snapshot.'
+/** Official Activity view name (learn.chatgpt.com/docs/notifications). */
+export const ACTIVITY_LABEL = 'Activity'
+/** Official troubleshooting: Add new project button next to Chats. */
+export const ADD_NEW_PROJECT_LABEL = 'Add new project'
+/** Official Settings footer / Open settings without the verb. */
+export const SETTINGS_LABEL = 'Settings'
+/** Official project menu: Remove. */
+export const REMOVE_LABEL = 'Remove'
+/** Official Projects view / sidebar section. */
+export const PROJECTS_LABEL = 'Projects'
+/** Official empty chats copy (do not show when chats exist). */
+export const NO_CHATS_LABEL = 'No chats'
+/** Official Search chats: title, phrase, or branch name. */
+export const SEARCH_CHATS_PLACEHOLDER = 'Search title, message, or branch'
+/** Official worktrees: create a permanent worktree from the three-dot menu. */
+export const CREATE_PERMANENT_WORKTREE_LABEL = 'Create a permanent worktree'
 /** Official README / Help target. Do not invent Check for Updates. */
 export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */

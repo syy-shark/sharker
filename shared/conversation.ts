@@ -322,7 +322,7 @@ export function formatUnreadNote(): string {
   return '已将此对话标为未读。打开后会自动清未读。'
 }
 
-/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复 / Scheduled / Pinned） */
+/** 侧栏对话筛选（对标 Codex Activity：Unread / Running / Waiting / Scheduled / Pinned） */
 export type SidebarChatFilter =
   | 'chronological'
   | 'live'
@@ -340,9 +340,9 @@ export const MARK_ALL_AS_READ_LABEL = 'Mark all as read'
 
 export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string }> = [
   { id: 'chronological', label: CHRONOLOGICAL_FILTER_LABEL },
-  { id: 'live', label: '进行中' },
-  { id: 'waiting', label: '等待回复' },
-  { id: 'unread', label: '未读' },
+  { id: 'live', label: 'Running' },
+  { id: 'waiting', label: 'Waiting' },
+  { id: 'unread', label: 'Unread' },
   { id: 'scheduled', label: 'Scheduled' },
   { id: 'pinned', label: 'Pinned' }
 ]

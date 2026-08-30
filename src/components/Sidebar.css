@@ -333,6 +333,13 @@ html.window-rounded .sidebar {
   margin-bottom: 4px;
 }
 
+.sidebar-section-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
 .sidebar-section-head .sidebar-section-label,
 .sidebar-section-label {
   margin: 0 0 4px;

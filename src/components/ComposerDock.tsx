@@ -131,6 +131,7 @@ import {
   HAND_OFF_LABEL,
   LOCAL_LABEL,
   SEARCH_CHATS_LABEL,
+  SEARCH_CHATS_PLACEHOLDER,
   START_DICTATION_LABEL,
   START_VOICE_CHAT_LABEL,
   WORKTREE_LABEL
@@ -1755,7 +1756,7 @@ export const ComposerDock = memo(
                 ref={historySearchRef}
                 className="history-picker-search"
                 value={historyQuery}
-                placeholder="搜索标题、正文或分支…"
+                placeholder={SEARCH_CHATS_PLACEHOLDER}
                 aria-label={SEARCH_CHATS_LABEL}
                 onChange={(e) => {
                   setHistoryQuery(e.target.value)
