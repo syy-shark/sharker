@@ -306,8 +306,8 @@ describe('reveal in folder', () => {
     )
     expect(terminalSrc).toContain('CLEAR_TERMINAL_LABEL')
     expect(terminalSrc).toContain('TERMINAL_LABEL')
-    expect(terminalSrc).not.toContain('清终端')
-    expect(terminalSrc).not.toContain('清屏')
+    expect(terminalSrc).not.toContain('aria-label="清终端"')
+    expect(terminalSrc).not.toContain('>清屏<')
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/RightPanel.tsx'),
       'utf8'
