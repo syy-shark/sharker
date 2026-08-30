@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   buildLiveHead,
@@ -457,6 +460,13 @@ describe('elapsed clock', () => {
     expect(formatStreamingFallbackLabel({})).toBe('Thinking')
     expect(formatStreamingFallbackLabel({ hasStartedWork: true })).toBe('Working')
     expect(formatStreamingFallbackLabel({ approvalWaiting: true })).toBe(AWAITING_APPROVAL_LABEL)
+    const turnFlowSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/TurnFlow.tsx'),
+      'utf8'
+    )
+    expect(turnFlowSrc).toContain('AWAITING_APPROVAL_LABEL')
+    expect(turnFlowSrc).not.toContain('data-phase="approval"')
+    expect(turnFlowSrc).not.toContain('>审批<')
     expect(formatStoppedAfterLabel(0)).toBe('You stopped after 0s')
     expect(stoppedAfterFootnote(2848)).toContain('You stopped after 47m 28s')
     expect(parseStoppedAfterSeconds('hello\n\n_(已停止 · 47m 28s)_')).toBe(2848)

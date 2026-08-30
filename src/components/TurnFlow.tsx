@@ -1,7 +1,7 @@
 /**
  * 一回合过程时间线（安静直播）：
  * - 思考：默认折叠成 Thinking（对标 Codex），点开才看旁白，避免顶着回答长高
- * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯
+ * - 闲聊/连接：一行状态字 + 耗时，无呼吸灯；审批只走官方 Awaiting approval 头，不另挂「审批」芯片以免挤高直播头
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
  * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail / 命令末行直播头；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
@@ -1032,14 +1032,6 @@ export const TurnFlow = memo(function TurnFlow({
             ) : null}
           </div>
           <span className="turn-flow-live-time">{liveClock ?? '0s'}</span>
-          {approvalWaiting ? (
-            <span
-              className="turn-flow-live-phase turn-flow-live-phase--wait-approval"
-              data-phase="approval"
-            >
-              审批
-            </span>
-          ) : null}
         </div>
       ) : null}
       {showWorkedChip ? (
