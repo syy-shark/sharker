@@ -33,6 +33,8 @@ import {
 import { IPC } from '../../shared/ipc'
 import { DEEPLINK_SCHEME } from '../../shared/deeplink'
 import { installApplicationMenu } from './app-menu'
+import { captureAppshot } from './appshot-capture'
+import { syncAppshotGlobalHotkey } from './appshot-hotkey'
 import { loadSettings, saveSettings } from '../settings-store'
 import type {
   AppSettings,
@@ -821,6 +823,9 @@ function registerIpc(): void {
     })
     settings = normalizeSettings({ ...next, providers: mergedProviders }, app.getPath('home'))
     await saveSettings(settings)
+    syncAppshotGlobalHotkey(settings.appshotHotkey, () => {
+      broadcastToRenderers(IPC.APPSHOT_TRIGGER, null)
+    })
     if (prev.uiGlass !== settings.uiGlass || prev.uiTheme !== settings.uiTheme) {
       applyAppearanceToAllWindows(settings)
     }
@@ -1276,6 +1281,8 @@ function registerIpc(): void {
     async (_e, input: { name: string; mimeType: string; dataUrl: string }) =>
       saveChatAttachment(input)
   )
+
+  ipcMain.handle(IPC.APPSHOT_CAPTURE, async () => captureAppshot())
 
   ipcMain.handle(IPC.READ_ATTACHMENT_DATA_URL, async (_e, filePath: string) =>
     readAttachmentDataUrl(filePath)
@@ -2218,6 +2225,9 @@ app.whenReady().then(async () => {
 
   settings = await loadSettings()
   settings = normalizeSettings(settings, app.getPath('home'))
+  syncAppshotGlobalHotkey(settings.appshotHotkey, () => {
+    broadcastToRenderers(IPC.APPSHOT_TRIGGER, null)
+  })
   // 全局对话目录：~/.sharker/global
   try {
     fs.mkdirSync(globalWorkspacePath(app.getPath('home')), { recursive: true })

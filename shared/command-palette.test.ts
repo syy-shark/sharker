@@ -126,6 +126,9 @@ describe('command palette', () => {
     expect(PALETTE_COMMANDS.find((c) => c.id === 'suggested-prompts')?.title).toBe(
       'Suggested prompts'
     )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'appshots')?.title).toBe('Appshots')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'take-appshot')?.title).toBe('Take an Appshot')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'take-appshot')?.shortcut).toBe('⌘+⌘')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'mcp-servers')?.title).toBe('MCP servers')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'settings')?.title).toBe('Open settings')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'sidebar')?.title).toBe('Toggle sidebar')

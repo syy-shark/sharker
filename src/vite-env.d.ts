@@ -180,6 +180,8 @@ export interface SharkerApi {
   getComputerUseStatus: (workspace: string) => Promise<ComputerUseStatus>
   getBrowserUseStatus: (workspace: string) => Promise<BrowserUseStatus>
   clearBrowserData: (input?: { cookies?: boolean; cache?: boolean }) => Promise<{ ok: boolean }>
+  captureAppshot: () => Promise<import('../shared/appshot').AppshotCaptureResult>
+  onAppshotTrigger: (cb: () => void) => () => void
   installBrowserUseManifest: () => Promise<{ ok: boolean; message: string }>
   compressContext: (history: ChatMessage[]) => Promise<import('../shared/context-compress').ContextCompressResult>
   getTokenUsage: (days?: number) => Promise<import('../shared/token-usage-store').DayUsage[]>

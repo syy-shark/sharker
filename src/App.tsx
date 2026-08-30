@@ -185,6 +185,12 @@ import {
   personalitySwitchNote
 } from '../shared/personality'
 import {
+  APPSHOT_ATTACHMENT_NAME,
+  APPSHOT_TEXT_ATTACHMENT_NAME,
+  matchAppshotHotkey,
+  resolveAppshotTarget
+} from '../shared/appshot'
+import {
   attachQueueChangedPaths,
   createPrAfterApprovePush,
   enqueueAutomationRun,
@@ -596,7 +602,13 @@ export default function App() {
     text: string
     mode?: 'replace' | 'append'
     selections?: import('../shared/selected-text-preview').SelectedTextPreview[]
+    attachments?: ChatAttachment[]
   } | null>(null)
+  const lastInteractedAtRef = useRef<number | null>(null)
+  const lastAppshotConversationIdRef = useRef<string | null>(null)
+  const appshotBusyRef = useRef(false)
+  const appshotMetaRef = useRef({ left: false, right: false })
+  const takeAppshotRef = useRef<() => void>(() => undefined)
   const composerSeedNonceRef = useRef(0)
   const [copyPicker, setCopyPicker] = useState<CopyOutputTarget[] | null>(null)
   const popoutRoute = useMemo(
@@ -3826,6 +3838,7 @@ export default function App() {
       attachments: ChatAttachment[] = [],
       extras?: { providerId?: string; thinkingLevel?: string }
     ) => {
+      lastInteractedAtRef.current = Date.now()
       try {
         await flushSettingsDraftIfNeeded()
       } catch (e) {
@@ -4454,6 +4467,7 @@ export default function App() {
 
     setActiveConversationId(conversationId)
     activeConversationIdRef.current = conversationId
+    lastInteractedAtRef.current = Date.now()
     if (lastTurnUiTimerRef.current != null) {
       window.clearTimeout(lastTurnUiTimerRef.current)
       lastTurnUiTimerRef.current = null
@@ -4823,6 +4837,70 @@ export default function App() {
       console.warn('refreshConversationList after new conversation failed', e)
     )
     return conv.id
+  }
+
+  /** 官方 Take an Appshot：截最前窗口，按 60s 互动进当前对话或新开。 */
+  const handleTakeAppshot = async () => {
+    if (appshotBusyRef.current) return
+    if (!window.sharker.captureAppshot) return
+    appshotBusyRef.current = true
+    try {
+      const shot = await window.sharker.captureAppshot()
+      if (!shot.ok || !shot.imageDataUrl) {
+        if (shot.message) appendLocalNote(shot.message)
+        return
+      }
+      const now = Date.now()
+      const route = resolveAppshotTarget({
+        now,
+        lastInteractedAt: lastInteractedAtRef.current,
+        lastAppshotConversationId: lastAppshotConversationIdRef.current,
+        activeConversationId: activeConversationIdRef.current
+      })
+      const ws = settingsRef.current.activeWorkspaceId
+      if (route.target === 'new_chat') {
+        if (!ws) return
+        await handleNewConversation(ws)
+      } else if (route.conversationId && route.conversationId !== activeConversationIdRef.current && ws) {
+        await handleSelectConversation(ws, route.conversationId)
+      }
+      setPage('chat')
+      const attachments: ChatAttachment[] = []
+      const image = await window.sharker.saveAttachment({
+        name: APPSHOT_ATTACHMENT_NAME,
+        mimeType: 'image/png',
+        dataUrl: shot.imageDataUrl
+      })
+      attachments.push(image)
+      if (shot.text?.trim()) {
+        const bytes = new TextEncoder().encode(shot.text)
+        let binary = ''
+        bytes.forEach((b) => {
+          binary += String.fromCharCode(b)
+        })
+        const text = await window.sharker.saveAttachment({
+          name: APPSHOT_TEXT_ATTACHMENT_NAME,
+          mimeType: 'text/plain',
+          dataUrl: `data:text/plain;base64,${btoa(binary)}`
+        })
+        attachments.push(text)
+      }
+      lastInteractedAtRef.current = Date.now()
+      lastAppshotConversationIdRef.current = activeConversationIdRef.current
+      composerSeedNonceRef.current += 1
+      setComposerSeed({
+        nonce: composerSeedNonceRef.current,
+        text: '',
+        attachments
+      })
+    } catch (err) {
+      appendLocalNote(err instanceof Error ? err.message : String(err))
+    } finally {
+      appshotBusyRef.current = false
+    }
+  }
+  takeAppshotRef.current = () => {
+    void handleTakeAppshot()
   }
 
   /** 文件夹选择器添加工作区 */
@@ -6648,6 +6726,12 @@ export default function App() {
           setSkillReloadNonce((n) => n + 1)
           setComposerIntent('reload_skills')
           break
+        case 'take_appshot':
+          takeAppshotRef.current()
+          break
+        case 'open_appshots':
+          void handleNavigate('settings', 'appshots')
+          break
         case 'show_skills': {
           if (!args.trim()) {
             setPage('skills')
@@ -6810,6 +6894,14 @@ export default function App() {
       if (cmd.action === 'force_reload_skills') {
         setSkillReloadNonce((n) => n + 1)
         setComposerIntent('reload_skills')
+        return
+      }
+      if (cmd.action === 'take_appshot') {
+        takeAppshotRef.current()
+        return
+      }
+      if (cmd.action === 'open_appshots') {
+        void handleNavigate('settings', 'appshots')
         return
       }
       if (cmd.action === 'popout_thread') {
@@ -7044,6 +7136,27 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight') {
+        if (e.code === 'MetaLeft' || e.location === 1) appshotMetaRef.current.left = true
+        if (e.code === 'MetaRight' || e.location === 2) appshotMetaRef.current.right = true
+      }
+      if (
+        matchAppshotHotkey(settingsRef.current.appshotHotkey, {
+          key: e.key,
+          code: e.code,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+          shiftKey: e.shiftKey,
+          isComposing: e.isComposing,
+          leftMeta: appshotMetaRef.current.left,
+          rightMeta: appshotMetaRef.current.right
+        })
+      ) {
+        e.preventDefault()
+        takeAppshotRef.current()
+        return
+      }
       const approvalChoice = resolveApprovalHotkey({
         approvalOpen: pageRef.current === 'chat' && Boolean(approvalRef.current),
         responding: approvalBusyRef.current,
@@ -7463,9 +7576,32 @@ export default function App() {
         )
       }
     }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight') {
+        if (e.code === 'MetaLeft' || e.location === 1) appshotMetaRef.current.left = false
+        if (e.code === 'MetaRight' || e.location === 2) appshotMetaRef.current.right = false
+        if (e.key === 'Meta' && e.location === 0) appshotMetaRef.current = { left: false, right: false }
+      }
+    }
+    const onBlur = () => {
+      appshotMetaRef.current = { left: false, right: false }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+    }
   }, [applyThinkingShortcut, handleAbort, handleAddWorkspace, handleApproval, handleArchiveConversation, handleClearTerminal, handleClearUnread, handleNavigate, handleNavStep, handleNewConversation, handleNextAttention, handleOpenBrowserTab, handleRunEnvironmentAction, handleSelectConversation, handleShortcutPanel, handleStandaloneConversation, handleToggleActivity, handleTogglePanel, handleToggleRightPanel, loading, performAppRedo, performAppUndo, persistFontScale, rightPanelOpen, toggleSidebar])
+
+  useEffect(() => {
+    if (!window.sharker.onAppshotTrigger) return
+    return window.sharker.onAppshotTrigger(() => {
+      takeAppshotRef.current()
+    })
+  }, [])
 
   useEffect(() => {
     if (!window.sharker.onMenuAction) return

@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / MCP servers / General / Worktrees / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Archived chats / Profile
+ * 设置页壳：权限 / 模型 / MCP servers / General / Worktrees / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Appshots / Archived chats / Profile
  * Computer Use / Browser Use 入口暂隐藏；`WorktreeSettings` 对标 Codex Settings → Worktrees
  * @see src/ARCH.md
  */
@@ -15,10 +15,16 @@ import { NotificationSettings } from '../components/settings/NotificationSetting
 import { SuggestedPromptSettings } from '../components/settings/SuggestedPromptSettings'
 import { ArchivedSettings } from '../components/settings/ArchivedSettings'
 import { ShortcutSettings } from '../components/settings/ShortcutSettings'
+import { AppshotSettings } from '../components/settings/AppshotSettings'
 import { UsageSettings } from '../components/settings/UsageSettings'
 import { McpSettings } from '../components/settings/McpSettings'
 import { BrowserSettings } from '../components/settings/BrowserSettings'
 import { WorktreeSettings } from '../components/settings/WorktreeSettings'
+import {
+  APPSHOTS_HOTKEY_INTRO,
+  APPSHOTS_SETTINGS_INTRO,
+  APPSHOTS_SETTINGS_LABEL
+} from '../../shared/appshot'
 import {
   APPEARANCE_SETTINGS_LABEL,
   ARCHIVED_CHATS_INTRO,
@@ -88,6 +94,10 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
     title: KEYBOARD_SHORTCUTS_LABEL,
     desc: KEYBOARD_SHORTCUTS_INTRO
   },
+  appshots: {
+    title: APPSHOTS_SETTINGS_LABEL,
+    desc: `${APPSHOTS_SETTINGS_INTRO} ${APPSHOTS_HOTKEY_INTRO}`
+  },
   archived: {
     title: ARCHIVED_CHATS_LABEL,
     desc: ARCHIVED_CHATS_INTRO
@@ -151,6 +161,9 @@ export function SettingsPage({ tab, draft, setDraft, onSave, workspacePath = '' 
           )}
           {tab === 'shortcuts' && (
             <ShortcutSettings draft={draft} setDraft={setDraft} onSave={onSave} />
+          )}
+          {tab === 'appshots' && (
+            <AppshotSettings draft={draft} setDraft={setDraft} onSave={onSave} />
           )}
           {tab === 'archived' && <ArchivedSettings />}
           {tab === 'usage' && <UsageSettings />}

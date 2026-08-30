@@ -13,7 +13,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `index.ts` | 全部 `window.sharker.*` 方法与事件订阅（与 `shared/ipc.ts` / `src/vite-env.d.ts` 对齐） |
+| `index.ts` | 全部 `window.sharker.*` 方法与事件订阅（与 `shared/ipc.ts` / `src/vite-env.d.ts` 对齐；含 `captureAppshot` / `onAppshotTrigger`） |
 | `ARCH.md` | 本层架构说明 |
 
 ## 扩展点

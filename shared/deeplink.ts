@@ -27,6 +27,7 @@ export type DeeplinkAction =
         | 'mcp'
         | 'suggested'
         | 'shortcuts'
+        | 'appshots'
         | 'archived'
         | 'usage'
     }
@@ -130,6 +131,9 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   }
   if (key === 'permissions' || key === 'git' || key.startsWith('computer-use')) {
     return { type: 'settings', tab: 'permissions' }
+  }
+  if (key === 'appshots' || key === 'appshot') {
+    return { type: 'settings', tab: 'appshots' }
   }
   if (key === 'archived') return { type: 'settings', tab: 'archived' }
   if (key === 'usage' || key === 'profile' || key === 'tokens') {

@@ -350,5 +350,12 @@ contextBridge.exposeInMainWorld('sharker', {
     return () => ipcRenderer.removeListener('agents:update', handler)
   },
   clearBrowserData: (input?: { cookies?: boolean; cache?: boolean }) =>
-    ipcRenderer.invoke(IPC.BROWSER_CLEAR_DATA, input)
+    ipcRenderer.invoke(IPC.BROWSER_CLEAR_DATA, input),
+  captureAppshot: (): Promise<import('../../shared/appshot').AppshotCaptureResult> =>
+    ipcRenderer.invoke(IPC.APPSHOT_CAPTURE),
+  onAppshotTrigger: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on(IPC.APPSHOT_TRIGGER, handler)
+    return () => ipcRenderer.removeListener(IPC.APPSHOT_TRIGGER, handler)
+  }
 })

@@ -19,4 +19,6 @@
 | `terminal-manager.ts` | node-pty 会话：创建/读写/关闭；按对话写入输出尾、绑定/激活标签 |
 | `automation-scheduler.ts` | 读取 `~/.sharker/automations.json`（jobs + 审查队列），读写时归一化 `destination` / `conversationId` / `rrule` / `workspaceIds`，按 cron 或 RFC 5545 RRULE 触发任务；`triggerAutomationRun` 立刻跑一条并写 `lastRunAt`（对标 Codex Run now） |
 | `automation-scheduler.test.ts` | cron 通配 / 步进仍从调度器再导出 |
+| `appshot-capture.ts` | 官方 Appshots：desktopCapturer / screencapture 截最前窗口，osascript 读辅助功能文本 |
+| `appshot-hotkey.ts` | Settings → Appshots 自定义全局热键；默认 both-meta 不注册 globalShortcut |
 | `ARCH.md` | 本层架构说明 |

@@ -172,5 +172,9 @@ export const IPC = {
   AGENTS_STOP: 'agents:stop',
   AGENTS_STEER: 'agents:steer',
   /** 清除内置浏览器配置的 Cookie / 缓存（对标 Codex Settings → Browser） */
-  BROWSER_CLEAR_DATA: 'browser:clear-data'
+  BROWSER_CLEAR_DATA: 'browser:clear-data',
+  /** 捕获最前窗口 Appshot（对标 Codex Take an Appshot） */
+  APPSHOT_CAPTURE: 'appshot:capture',
+  /** 主进程全局热键触发 Appshot */
+  APPSHOT_TRIGGER: 'appshot:trigger'
 } as const

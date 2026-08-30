@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest'
+import {
+  APPSHOT_BOTH_META_CHORD,
+  APPSHOT_DEFAULT_KEYS,
+  APPSHOT_RECENT_MS,
+  APPSHOTS_SETTINGS_INTRO,
+  APPSHOTS_SETTINGS_LABEL,
+  TAKE_AN_APPSHOT_LABEL,
+  appshotChordToAccelerator,
+  formatAppshotHotkey,
+  isBothCommandAppshotHotkey,
+  matchAppshotHotkey,
+  parseAppshotHotkey,
+  resolveAppshotTarget
+} from './appshot'
+
+describe('appshot', () => {
+  it('keeps official Settings and Commands copy', () => {
+    expect(APPSHOTS_SETTINGS_LABEL).toBe('Appshots')
+    expect(TAKE_AN_APPSHOT_LABEL).toBe('Take an Appshot')
+    expect(APPSHOTS_SETTINGS_INTRO).toMatch(/frontmost app window/)
+    expect(formatAppshotHotkey(undefined)).toBe(APPSHOT_DEFAULT_KEYS)
+    expect(parseAppshotHotkey('')).toBe(APPSHOT_BOTH_META_CHORD)
+    expect(appshotChordToAccelerator('both-meta')).toBeNull()
+    expect(appshotChordToAccelerator('mod+shift+.')).toBe('CommandOrControl+Shift+.')
+  })
+
+  it('opens a new chat unless the last 60 seconds were in one', () => {
+    expect(
+      resolveAppshotTarget({
+        now: 80_000,
+        lastInteractedAt: 10_000,
+        lastAppshotConversationId: 'old',
+        activeConversationId: 'cur'
+      })
+    ).toEqual({ target: 'new_chat', conversationId: null })
+    expect(
+      resolveAppshotTarget({
+        now: 20_000,
+        lastInteractedAt: 20_000 - APPSHOT_RECENT_MS,
+        lastAppshotConversationId: null,
+        activeConversationId: 'cur'
+      })
+    ).toEqual({ target: 'recent_chat', conversationId: 'cur' })
+    expect(
+      resolveAppshotTarget({
+        now: 20_000,
+        lastInteractedAt: 19_000,
+        lastAppshotConversationId: 'shot-1',
+        activeConversationId: null
+      })
+    ).toEqual({ target: 'recent_chat', conversationId: 'shot-1' })
+  })
+
+  it('matches official both-Command and a custom chord', () => {
+    expect(
+      isBothCommandAppshotHotkey({
+        key: 'Meta',
+        leftMeta: true,
+        rightMeta: true
+      })
+    ).toBe(true)
+    expect(
+      isBothCommandAppshotHotkey({
+        key: 'Meta',
+        leftMeta: true,
+        rightMeta: false
+      })
+    ).toBe(false)
+    expect(
+      matchAppshotHotkey('mod+shift+.', {
+        key: '.',
+        metaKey: true,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: true
+      })
+    ).toBe(true)
+  })
+})

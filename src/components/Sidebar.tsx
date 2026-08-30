@@ -18,6 +18,7 @@ import {
   ListFilter,
   MoreHorizontal,
   Keyboard,
+  Camera,
   Lightbulb,
   Palette,
   Pin,
@@ -83,6 +84,7 @@ import {
   WORKTREE_LABEL,
   WORKTREES_SETTINGS_LABEL
 } from '../../shared/reveal-in-folder'
+import { APPSHOTS_SETTINGS_LABEL } from '../../shared/appshot'
 import { SCHEDULED_LABEL } from '../../shared/automation'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import type { AppSettings, WorkspaceItem } from '../../shared/types'
@@ -178,6 +180,7 @@ const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
   { id: 'personalization', label: PERSONALIZATION_SETTINGS_LABEL, icon: Smile },
   { id: 'suggested', label: SUGGESTED_PROMPTS_SETTINGS_LABEL, icon: Lightbulb },
   { id: 'shortcuts', label: KEYBOARD_SHORTCUTS_LABEL, icon: Keyboard },
+  { id: 'appshots', label: APPSHOTS_SETTINGS_LABEL, icon: Camera },
   { id: 'archived', label: ARCHIVED_CHATS_LABEL, icon: Archive },
   { id: 'usage', label: PROFILE_SETTINGS_LABEL, icon: ChartNoAxesColumn }
 ]

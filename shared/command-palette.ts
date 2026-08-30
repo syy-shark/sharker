@@ -106,6 +106,11 @@ import {
 } from './reveal-in-folder'
 import { PERMISSIONS_LABEL } from './permission-mode'
 import { OPEN_SUBAGENTS_LABEL } from './subagent'
+import {
+  APPSHOT_DEFAULT_KEYS,
+  APPSHOTS_SETTINGS_LABEL,
+  TAKE_AN_APPSHOT_LABEL
+} from './appshot'
 
 /** 命令面板条目 */
 export interface PaletteCommand {
@@ -247,6 +252,19 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     title: SUGGESTED_PROMPTS_SETTINGS_LABEL,
     keywords: 'suggested prompts resume 建议 提示 空对话',
     action: 'open_suggested_prompts'
+  },
+  {
+    id: 'appshots',
+    title: APPSHOTS_SETTINGS_LABEL,
+    keywords: 'appshots appshot screenshot frontmost window 截图',
+    action: 'open_appshots'
+  },
+  {
+    id: 'take-appshot',
+    title: TAKE_AN_APPSHOT_LABEL,
+    shortcut: APPSHOT_DEFAULT_KEYS,
+    keywords: 'take an appshot both command keys screenshot frontmost 截图',
+    action: 'take_appshot'
   },
   {
     id: 'debug-config',

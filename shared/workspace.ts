@@ -18,6 +18,7 @@ import { parseShowContextWindowUsage } from './context-usage-indicator'
 import { parseReduceMotion } from './reduce-motion'
 import { parseBrowserAskWhereToSave, parseBrowserDownloadPath } from './browser-downloads'
 import { parseComposerEnterBehavior } from './composer-submit'
+import { parseAppshotHotkey } from './appshot'
 import { parseReviewDelivery, parseReviewProviderId } from './review-prompt'
 import { normalizeExtraFolderPaths } from './workspace-folders'
 
@@ -179,6 +180,7 @@ export function normalizeSettings(
     preventSleepWhileRunning: raw.preventSleepWhileRunning === true,
     popoutAlwaysOnTop: raw.popoutAlwaysOnTop === true,
     approvalNotify: raw.approvalNotify !== false,
+    appshotHotkey: parseAppshotHotkey(raw.appshotHotkey),
     workspaces: raw.workspaces ?? [],
     activeWorkspaceId: raw.activeWorkspaceId ?? ''
   }

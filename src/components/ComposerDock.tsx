@@ -239,6 +239,8 @@ export type ComposerSeed = {
   mode?: 'replace' | 'append'
   /** 官方 selected-text previews：进芯片，不灌 textarea */
   selections?: SelectedTextPreview[]
+  /** 官方 Appshot 等附件：进 composer 附件条，不自动发送 */
+  attachments?: ChatAttachment[]
 }
 
 export interface ComposerDockProps {
@@ -965,8 +967,17 @@ export const ComposerDock = memo(
           normalizeSelectedTextDraft([...cur, ...composerSeed.selections!])
         )
       }
+      if (composerSeed?.attachments?.length) {
+        setPendingAttachments((cur) => {
+          const seen = new Set(cur.map((a) => a.id || a.path))
+          const extra = composerSeed.attachments!.filter((a) => !seen.has(a.id || a.path))
+          const next = extra.length ? [...cur, ...extra] : cur
+          attachmentsRef.current = next
+          return next
+        })
+      }
       if (!composerSeed?.text) {
-        if (composerSeed?.selections?.length) {
+        if (composerSeed?.selections?.length || composerSeed?.attachments?.length) {
           requestAnimationFrame(() => textareaRef.current?.focus())
         }
         return

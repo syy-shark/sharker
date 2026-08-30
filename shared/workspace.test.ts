@@ -53,6 +53,7 @@ describe('workspace settings', () => {
       true
     )
     expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').browserAskWhereToSave).toBe(false)
+    expect(normalizeSettings(DEFAULT_SETTINGS, '/home/u').appshotHotkey).toBe('both-meta')
   })
 })
 

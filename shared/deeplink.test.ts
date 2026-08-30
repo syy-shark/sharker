@@ -42,6 +42,10 @@ describe('deeplink', () => {
       type: 'settings',
       tab: 'shortcuts'
     })
+    expect(parseDeeplink('sharker://settings/appshots')).toEqual({
+      type: 'settings',
+      tab: 'appshots'
+    })
     expect(parseDeeplink('sharker://settings/browser-use')).toEqual({
       type: 'settings',
       tab: 'browser'
