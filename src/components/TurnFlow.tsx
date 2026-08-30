@@ -5,7 +5,7 @@
  * - 有工具/旁白才展开时间线
  * - 正文上屏或回合结束后收成 Working / Worked for（对标 Codex）；回答刚上屏时收回已展开的 Thought / Worked for
  * - 直播中不挂「查看输出」/ 退出码 / 进度摘要 / 秒表心跳 detail / 命令末行直播头；秒表预留长回合宽度；工具间隙不把头闪成「规划下一步」
- * - 同一工具只改详情、写盘 +/- 或收束时只换该步，写盘收束同时新开工具时 remap 并追加，写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时 remap（status / compress 再追加该行）；前缀没变或只收束散文或无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加这些步并封回答尾、新思考只换旁白（无新写盘的工具收束后同一帧也走这条）、新散文只开回答尾、新 status 只追加一步、审批挂上或收束只换工具步与 Awaiting 行，挂起后同一帧可再夹 think / 首枚 token / ```demo / compress / 错误、Ask User 挂上或单条 status 收口只换工具步与 Question requested 行、Stop 把多条 active 收成 cancelled 只换这些步、错误收口 status 或无新写盘的工具后只开错误回答尾、新演示或正文 ```demo 只开回答槽，不重扫整条时间线（对标 Codex #22860）
+ * - 同一工具只改详情、写盘 +/- 或收束时只换该步，写盘收束同时新开工具时 remap 并追加，写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时 remap（status / compress 再追加该行）；前缀没变或只收束散文或无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加这些步并封回答尾、新思考只换旁白（无新写盘的工具收束后同一帧也走这条）、新散文只开回答尾、新 status 只追加一步、审批挂上或收束只换工具步与 Awaiting 行，挂起后同一帧可再夹 think / 首枚 token / ```demo / compress / 错误、Ask User 挂上或单条 status 收口只换工具步与 Question requested 行、Stop 把多条 active 收成 cancelled 只换这些步、错误收口 status 或无新写盘的工具后只开错误回答尾、新演示或正文 ```demo 只开回答槽；收束关 loading 只 `remapProcessPhaseStepsOnStreamEnd`，不整表重扫（对标 Codex #22860）
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - thinking 原文永不作为时间线标题或主回答
  * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
@@ -23,6 +23,7 @@ import {
   deriveChronologicalSteps,
   appendProcessPhaseStepOnToolStart,
   remapProcessPhaseStepsOnThinkAppend,
+  remapProcessPhaseStepsOnStreamEnd,
   retargetProcessPhaseStepsOnToolMeta,
   reuseProcessPhaseSteps,
   type ProcessPhaseStep
@@ -771,7 +772,8 @@ export const TurnFlow = memo(function TurnFlow({
   const prevStreamingRef = useRef(isStreaming)
   const chronological = useMemo(() => {
     const prevSegments = prevSegmentsRef.current
-    const streamingUnchanged = prevStreamingRef.current === isStreaming
+    const wasStreaming = prevStreamingRef.current
+    const streamingUnchanged = wasStreaming === isStreaming
     prevSegmentsRef.current = segments
     prevStreamingRef.current = isStreaming
     const retargeted =
@@ -794,7 +796,13 @@ export const TurnFlow = memo(function TurnFlow({
             segments,
             isStreaming
           )
-        : null
+        : remapProcessPhaseStepsOnStreamEnd(
+            chronologicalRef.current,
+            prevSegments,
+            segments,
+            wasStreaming,
+            isStreaming
+          )
     const next =
       retargeted ??
       reuseProcessPhaseSteps(

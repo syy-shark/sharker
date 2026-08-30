@@ -1,5 +1,6 @@
 /**
  * 将 TurnSegment 纯派生为前端执行阶段，不改变持久化契约。
+ * 收束关 loading 时 `remapProcessPhaseStepsOnStreamEnd` 只把已有步换成完成后视图，不整表 derive。
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
@@ -547,6 +548,59 @@ function sameReusableSegment(a: TurnSegment, b: TurnSegment): boolean {
       a.exitCode === b.exitCode &&
       a.errorMessage === b.errorMessage)
   )
+}
+
+function sameProcessStepSources(
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[]
+): boolean {
+  if (prevSegments === segments) return true
+  if (!prevSegments || prevSegments.length !== segments.length) return false
+  for (let i = 0; i < prevSegments.length; i++) {
+    const a = prevSegments[i]!
+    const b = segments[i]!
+    if (a.id !== b.id || a.kind !== b.kind) return false
+  }
+  return true
+}
+
+/**
+ * 收束关 loading：同一过程源上只把直播步换成完成后视图，不整表 deriveChronologicalSteps。
+ * 标题/详情/状态没变则退回原步对象（对标 Codex preserved streamed activity）。
+ */
+export function remapProcessPhaseStepsOnStreamEnd(
+  prevSteps: ProcessPhaseStep[],
+  prevSegments: readonly TurnSegment[] | null | undefined,
+  segments: readonly TurnSegment[],
+  wasStreaming: boolean,
+  isStreaming: boolean
+): ProcessPhaseStep[] | null {
+  if (!wasStreaming || isStreaming) return null
+  if (!prevSteps.length) return null
+  if (!sameProcessStepSources(prevSegments, segments)) return null
+
+  const remapped = prevSteps.map((step) => {
+    const index =
+      prevSegments === segments
+        ? -1
+        : prevSegments!.findIndex((item) => item === step.segment || item.id === step.segment.id)
+    const nextSeg =
+      prevSegments === segments || index < 0 ? step.segment : segments[index]!
+    const rebuilt = buildStepsFromSource([nextSeg], false)[0]
+    if (!rebuilt) return step
+    if (
+      rebuilt.title === step.title &&
+      rebuilt.detail === step.detail &&
+      rebuilt.status === step.status
+    ) {
+      return step
+    }
+    return { ...rebuilt, id: step.id, phase: step.phase, segment: nextSeg }
+  })
+  for (let i = 0; i < remapped.length; i++) {
+    if (remapped[i] !== prevSteps[i]) return remapped
+  }
+  return prevSteps
 }
 
 /** 已完成步骤保持同一对象，只换增长中的那一行，避免直播重挂整条时间线 */

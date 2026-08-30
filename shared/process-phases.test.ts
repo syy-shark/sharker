@@ -4,6 +4,7 @@ import {
   appendProcessPhaseStepOnToolStart,
   deriveChronologicalSteps,
   remapProcessPhaseStepsOnThinkAppend,
+  remapProcessPhaseStepsOnStreamEnd,
   retargetProcessPhaseStepsOnToolMeta,
   reuseProcessPhaseSteps
 } from './process-phases'
@@ -3220,5 +3221,65 @@ describe('process phases privacy', () => {
       true
     )
     expect(reused).toBe(withTool)
+  })
+})
+
+describe('stream-end process remap', () => {
+  it('keeps the same step objects when commit only flips isStreaming', () => {
+    const tool: TurnSegment = {
+      id: 'read-1',
+      kind: 'tool',
+      toolName: 'read_file',
+      toolTitle: '读取文件',
+      toolDetail: 'package.json',
+      status: 'done',
+      startedAt: 1,
+      endedAt: 2
+    }
+    const segs = [tool]
+    const live = deriveChronologicalSteps(segs, { isStreaming: true })
+    expect(live).toHaveLength(1)
+    expect(remapProcessPhaseStepsOnStreamEnd(live, segs, segs, false, false)).toBeNull()
+    expect(remapProcessPhaseStepsOnStreamEnd(live, segs, segs, true, true)).toBeNull()
+    expect(
+      remapProcessPhaseStepsOnStreamEnd(
+        live,
+        segs,
+        [{ ...tool, id: 'read-2' }],
+        true,
+        false
+      )
+    ).toBeNull()
+    expect(remapProcessPhaseStepsOnStreamEnd([], segs, segs, true, false)).toBeNull()
+    const remapped = remapProcessPhaseStepsOnStreamEnd(live, segs, segs, true, false)
+    expect(remapped).toBe(live)
+    expect(remapped?.[0]).toBe(live[0])
+    const cloned = [{ ...tool }]
+    const remappedClone = remapProcessPhaseStepsOnStreamEnd(live, segs, cloned, true, false)
+    expect(remappedClone).toBe(live)
+    expect(remappedClone?.[0]).toBe(live[0])
+  })
+
+  it('retargets only the step whose completed view changes', () => {
+    const running: TurnSegment = {
+      id: 'cmd-1',
+      kind: 'tool',
+      toolName: 'run_terminal_cmd',
+      toolArgs: { command: 'npm test' },
+      toolDetail: 'PASS src/a.test.ts',
+      resultSummary: 'PASS src/a.test.ts',
+      status: 'active',
+      startedAt: 8
+    }
+    const done: TurnSegment = { ...running, status: 'done', endedAt: 9 }
+    const live = deriveChronologicalSteps([running], { isStreaming: true })
+    expect(live[0]?.detail).toBeUndefined()
+    const remapped = remapProcessPhaseStepsOnStreamEnd(live, [running], [done], true, false)
+    expect(remapped).not.toBeNull()
+    expect(remapped).not.toBe(live)
+    expect(remapped?.[0]?.id).toBe(live[0]?.id)
+    expect(remapped?.[0]?.phase).toBe(live[0]?.phase)
+    expect(remapped?.[0]).not.toBe(live[0])
+    expect(remapped?.[0]?.detail).toBe('PASS src/a.test.ts')
   })
 })

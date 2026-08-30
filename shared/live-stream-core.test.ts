@@ -1616,6 +1616,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/TurnFlow.tsx')).toContain('streaming={isStreaming}')
     expect(src('../src/components/TurnFlow.tsx')).toContain('shouldShowLiveThought')
     expect(src('../src/components/TurnFlow.tsx')).toContain('shouldKeepCompletedLiveTurnFlow')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('remapProcessPhaseStepsOnStreamEnd')
+    expect(src('process-phases.ts')).toContain('remapProcessPhaseStepsOnStreamEnd')
     expect(src('../src/components/TurnFlow.tsx')).toContain('useLiveStreamUiSelectWhen')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozen={frozen}')
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
