@@ -20,6 +20,7 @@ import {
   quoteSuffixStaysInside,
   shouldGrowStreamingTableLastLine,
   shouldGrowStreamingIndentCodeLastLine,
+  shouldGrowStreamingFencedPreLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -1447,6 +1448,73 @@ describe('splitStreamingMarkdown', () => {
     if (manyIndentFirst[0]?.type === 'pre' && manyIndentNext[0]?.type === 'pre') {
       expect(manyIndentNext[0].text.endsWith('\nconst x = 12')).toBe(true)
     }
+    expect(shouldGrowStreamingFencedPreLastLine({ prevNorm: '```js\nconst x = 1', suffix: '2' })).toBe(
+      true
+    )
+    expect(shouldGrowStreamingFencedPreLastLine({ prevNorm: '```js\nconst x = 1', suffix: '\n' })).toBe(
+      false
+    )
+    expect(
+      shouldGrowStreamingFencedPreLastLine({ prevNorm: '```js\nconst x = 1', suffix: '\nconst y' })
+    ).toBe(true)
+    expect(
+      shouldGrowStreamingFencedPreLastLine({ prevNorm: '```js\nconst x = 1', suffix: '\n```' })
+    ).toBe(false)
+    expect(shouldGrowStreamingFencedPreLastLine({ prevNorm: '```js\n``', suffix: '`' })).toBe(false)
+    expect(
+      shouldGrowStreamingFencedPreLastLine({ prevNorm: '```\nx\n```', suffix: '\nafter' })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingFencedPreLastLine({ prevNorm: '```\nx\n```\n', suffix: 'after' })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingFencedPreLastLine({
+        prevNorm: '```\nx\n```\nafter',
+        suffix: ' more',
+        body: 'x'
+      })
+    ).toBe(false)
+    expect(
+      shouldGrowStreamingFencedPreLastLine({
+        prevNorm: '```js\nconst x = 1',
+        suffix: '2',
+        body: 'const x = 1'
+      })
+    ).toBe(true)
+    const manyFenceBody = `\`\`\`js\n${Array.from({ length: 12 }, (_, i) => `const x = ${i}`).join('\n')}`
+    const manyFenceBodyFirst = parseCheapProseBlocks(manyFenceBody)
+    const manyFenceBodyGrown = continueCheapProseBlocks(
+      manyFenceBody,
+      manyFenceBodyFirst,
+      `${manyFenceBody}0`
+    )
+    if (manyFenceBodyFirst[0]?.type === 'pre' && manyFenceBodyGrown[0]?.type === 'pre') {
+      expect(manyFenceBodyGrown[0].text.endsWith('110')).toBe(true)
+      expect(manyFenceBodyGrown[0].lang).toBe('js')
+    }
+    const manyFenceBodyNl = continueCheapProseBlocks(
+      manyFenceBody,
+      manyFenceBodyFirst,
+      `${manyFenceBody}\n`
+    )
+    expect(manyFenceBodyNl[0]).toBe(manyFenceBodyFirst[0])
+    const manyFenceBodyNext = continueCheapProseBlocks(
+      manyFenceBody,
+      manyFenceBodyFirst,
+      `${manyFenceBody}\nconst x = 12`
+    )
+    if (manyFenceBodyFirst[0]?.type === 'pre' && manyFenceBodyNext[0]?.type === 'pre') {
+      expect(manyFenceBodyNext[0].text.endsWith('\nconst x = 12')).toBe(true)
+    }
+    const quoteFenceLive = parseCheapProseBlocks('> ```ts\n> let y = 2')
+    const quoteFenceGrown = continueCheapProseBlocks(
+      '> ```ts\n> let y = 2',
+      quoteFenceLive,
+      '> ```ts\n> let y = 20'
+    )
+    if (quoteFenceLive[0]?.type === 'quote' && quoteFenceGrown[0]?.type === 'quote') {
+      expect(quoteFenceGrown[0].blocks[0]).toMatchObject({ type: 'pre', text: 'let y = 20', lang: 'ts' })
+    }
     const indentThenHeading = continueCheapProseBlocks(
       '    const x = 1',
       indentPre,
@@ -2493,6 +2561,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('stripQuoteSuffix')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingIndentCodeLastLine')
+    expect(mdSrc).toContain('shouldGrowStreamingFencedPreLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')

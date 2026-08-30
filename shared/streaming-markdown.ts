@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码最后一行 / 新缩进行只改 last line，单独换行保持同一 `pre`（不 `split` 已画正文）；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记仍整块拆；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -4096,6 +4096,63 @@ function fencedPreBody(text: string): string | null {
   return body.join('\n')
 }
 
+function streamingFenceOpenMarker(text: string): string | null {
+  const nl = text.indexOf('\n')
+  const first = nl < 0 ? text : text.slice(0, nl)
+  return parseFenceLine(first)?.marker ?? null
+}
+
+/**
+ * 项内 / 引用内 / 廉价围栏后缀只改正文最后一行：新正文行，或同一行里补字符。
+ * 单独换行、已闭合围栏、闭合后的 suffix、闭合标记仍走整块窗口。
+ */
+export function shouldGrowStreamingFencedPreLastLine(opts: {
+  prevNorm: string
+  suffix: string
+  body?: string
+}): boolean {
+  const { prevNorm, suffix, body } = opts
+  if (!suffix || suffix.includes(']:')) return false
+  if (suffix === '\n') return false
+  const marker = streamingFenceOpenMarker(prevNorm)
+  if (!marker) return false
+  if (isFenceClose(lastCompleteStreamingLine(prevNorm), marker)) return false
+  if (!shouldGrowOpenStreamingFenceTail(prevNorm, suffix)) return false
+  if (body == null) return true
+  const lastSrc = lastStreamingLine(prevNorm)
+  const lastBody = lastStreamingLine(body)
+  if (suffix.startsWith('\n') || prevNorm.endsWith('\n')) {
+    const complete = lastCompleteStreamingLine(prevNorm)
+    if (!body) return Boolean(parseFenceLine(complete)) || complete === ''
+    return complete === lastCompleteStreamingLine(body) || complete === lastBody
+  }
+  return lastSrc === lastBody || (Boolean(lastBody) && lastSrc.endsWith(lastBody))
+}
+
+function growStreamingFencedPreLastLine(
+  prev: Extract<CheapProseBlock, { type: 'pre' }>,
+  prevNorm: string,
+  nextText: string
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!shouldGrowStreamingFencedPreLastLine({ prevNorm, suffix, body: prev.text })) return null
+  const openerNl = prevNorm.indexOf('\n')
+  if (openerNl < 0) {
+    if (!suffix.includes('\n')) return [prev]
+    const line = lastStreamingLine(nextText)
+    if (!line) return [prev]
+    return [{ type: 'pre', text: line, lang: prev.lang }]
+  }
+  const appending = suffix.startsWith('\n') || prevNorm.endsWith('\n')
+  if (appending) {
+    const line = lastStreamingLine(nextText)
+    const nextBody = prev.text ? `${prev.text}\n${line}` : line
+    return nextBody === prev.text ? [prev] : [{ type: 'pre', text: nextBody, lang: prev.lang }]
+  }
+  const nextBody = `${prev.text}${suffix}`
+  return nextBody === prev.text ? [prev] : [{ type: 'pre', text: nextBody, lang: prev.lang }]
+}
+
 function growStreamingIndentCodeLastLine(
   prev: Extract<CheapProseBlock, { type: 'pre' }>,
   prevNorm: string,
@@ -4125,6 +4182,9 @@ function continueLastPreBlock(
   const nl = prevNorm.indexOf('\n')
   const first = nl < 0 ? prevNorm : prevNorm.slice(0, nl)
   if (prev.lang || parseFenceLine(first)) {
+    if (suffix === '\n') return [prev]
+    const lastLineGrow = growStreamingFencedPreLastLine(prev, prevNorm, nextText)
+    if (lastLineGrow) return lastLineGrow
     const nextBody = fencedPreBody(nextText)
     if (nextBody == null || !nextBody.startsWith(prev.text)) return null
     const pre: CheapProseBlock =
