@@ -5,6 +5,8 @@
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，命中尺寸缓存则首帧占位。
  * 直播 token 中只占位，不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
  * 收束后命中预热则同一帧成图。
+ * 尺寸缓存命中重挂不再 setSizeTick；已在画同一工作区 data URL 不再 setState；
+ * 远窗 FenceImmediateHighlightContext 为假时未命中预取推到下一帧。
  * @see src/components/ARCH.md
  */
 import {
@@ -33,13 +35,16 @@ import {
   readCachedWorkspaceImageDataUrl,
   resolveLiveChatImageSrc,
   resolveWorkspaceChatImagePath,
+  shouldApplyCachedWorkspaceImage,
+  shouldDeferChatImagePrefetch,
   shouldRenderLiveChatImage,
+  shouldStartChatImageSizeTick,
   shouldWarmLiveChatImage,
   writeCachedChatImageSize,
   writeCachedWorkspaceImageDataUrl,
   type ChatImageExportInput
 } from '../../shared/chat-image'
-import { LiveMarkdownStreamingContext } from './CodeArtifactBlock'
+import { FenceImmediateHighlightContext, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
 import { FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
 import {
@@ -125,6 +130,7 @@ export function ChatImage({
 }) {
   const { workspacePath, extraRoots } = useContext(ChatImageWorkspaceContext)
   const streamingFromTree = useContext(LiveMarkdownStreamingContext)
+  const preferImmediate = useContext(FenceImmediateHighlightContext)
   const isStreaming = streaming ?? streamingFromTree
   const allowPaint = shouldRenderLiveChatImage({ streaming: isStreaming })
   const remote = isRemoteChatImageSrc(src)
@@ -146,28 +152,53 @@ export function ChatImage({
   useEffect(() => {
     if (!remote || src.startsWith('data:image/')) return
     if (allowPaint) {
+      if (
+        !shouldStartChatImageSizeTick({
+          paint: true,
+          hasCachedSize: Boolean(readCachedChatImageSize(src))
+        })
+      ) {
+        return
+      }
       let cancelled = false
-      void prefetchRemoteChatImageSize(src).then((size) => {
-        if (!cancelled && size) setSizeTick((n) => n + 1)
-      })
+      let raf = 0
+      const start = () => {
+        void prefetchRemoteChatImageSize(src).then((size) => {
+          if (!cancelled && size) setSizeTick((n) => n + 1)
+        })
+      }
+      if (shouldDeferChatImagePrefetch({ preferImmediate })) {
+        raf = requestAnimationFrame(() => {
+          if (!cancelled) start()
+        })
+      } else {
+        start()
+      }
       return () => {
         cancelled = true
+        if (raf) cancelAnimationFrame(raf)
       }
     }
     if (shouldWarmLiveChatImage({ streaming: isStreaming })) {
       void prefetchRemoteChatImageSize(src).catch(() => undefined)
     }
-  }, [allowPaint, remote, src, isStreaming])
+  }, [allowPaint, remote, src, isStreaming, preferImmediate])
 
   useEffect(() => {
     if (!workspaceSrc || !absPath) {
-      setWorkspaceDataUrl(null)
+      if (workspaceDataUrl != null) setWorkspaceDataUrl(null)
       setFailed(false)
       return
     }
     const cached = readCachedWorkspaceImageDataUrl(absPath)
     if (cached) {
-      if (allowPaint) {
+      if (
+        shouldApplyCachedWorkspaceImage({
+          paint: allowPaint,
+          cached,
+          current: workspaceDataUrl
+        })
+      ) {
         setWorkspaceDataUrl(cached)
         setFailed(false)
       }
@@ -175,21 +206,32 @@ export function ChatImage({
     }
     let cancelled = false
     if (allowPaint) {
-      setWorkspaceDataUrl(null)
+      if (workspaceDataUrl != null) setWorkspaceDataUrl(null)
       setFailed(false)
     }
-    void loadWorkspaceImageDataUrl(absPath).then((dataUrl) => {
-      if (cancelled) return
-      if (!dataUrl) {
-        if (allowPaint) setFailed(true)
-        return
-      }
-      if (allowPaint) setWorkspaceDataUrl(dataUrl)
-    })
+    const start = () => {
+      void loadWorkspaceImageDataUrl(absPath).then((dataUrl) => {
+        if (cancelled) return
+        if (!dataUrl) {
+          if (allowPaint) setFailed(true)
+          return
+        }
+        if (allowPaint) setWorkspaceDataUrl(dataUrl)
+      })
+    }
+    let raf = 0
+    if (allowPaint && shouldDeferChatImagePrefetch({ preferImmediate })) {
+      raf = requestAnimationFrame(() => {
+        if (!cancelled) start()
+      })
+    } else {
+      start()
+    }
     return () => {
       cancelled = true
+      if (raf) cancelAnimationFrame(raf)
     }
-  }, [absPath, workspaceSrc, allowPaint])
+  }, [absPath, workspaceSrc, allowPaint, preferImmediate])
 
   const displaySrc = remote
     ? src

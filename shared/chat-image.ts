@@ -6,6 +6,8 @@
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，避免 48px 占位再跳。
  * 直播 token 中不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
  * 收束后再成图（对标 KaTeX / mermaid）。
+ * `shouldStartChatImageSizeTick` 尺寸缓存命中不再 setSizeTick；`shouldApplyCachedWorkspaceImage`
+ * 已在画同一 data URL 时不再 setState；`shouldDeferChatImagePrefetch` 远窗未命中推到下一帧。
  * 右侧文件预览图同一套 contain（`filePreviewImageFit`），避免高图只露上半张。
  * @see shared/ARCH.md
  */
@@ -386,6 +388,28 @@ export function shouldRenderLiveChatImage(options: { streaming?: boolean }): boo
  */
 export function shouldWarmLiveChatImage(options: { streaming?: boolean }): boolean {
   return Boolean(options.streaming)
+}
+
+/** 尺寸缓存已有时重挂不再 prefetch.then(setSizeTick)。 */
+export function shouldStartChatImageSizeTick(options: {
+  paint: boolean
+  hasCachedSize?: boolean
+}): boolean {
+  return options.paint && !options.hasCachedSize
+}
+
+/** 工作区 data URL 已在画同一缓存时不再 setWorkspaceDataUrl。 */
+export function shouldApplyCachedWorkspaceImage(options: {
+  paint: boolean
+  cached?: string | null
+  current?: string | null
+}): boolean {
+  return options.paint && Boolean(options.cached) && options.current !== options.cached
+}
+
+/** 远窗历史揭示帧把未命中预取推到下一帧。 */
+export function shouldDeferChatImagePrefetch(options: { preferImmediate?: boolean }): boolean {
+  return options.preferImmediate === false
 }
 
 /** 收束后才把 src 交给 `<img>`；直播中空串，槽位仍按缓存 / data: 头占高。 */

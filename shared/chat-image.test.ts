@@ -19,7 +19,10 @@ import {
   readCachedWorkspaceImageDataUrl,
   resolveLiveChatImageSrc,
   resolveWorkspaceChatImagePath,
+  shouldApplyCachedWorkspaceImage,
+  shouldDeferChatImagePrefetch,
   shouldRenderLiveChatImage,
+  shouldStartChatImageSizeTick,
   shouldWarmLiveChatImage,
   suggestedImageFilename,
   writeCachedChatImageSize,
@@ -100,6 +103,33 @@ describe('chat-image', () => {
     expect(shouldWarmLiveChatImage({ streaming: true })).toBe(true)
     expect(shouldWarmLiveChatImage({ streaming: false })).toBe(false)
     expect(shouldWarmLiveChatImage({})).toBe(false)
+    expect(shouldStartChatImageSizeTick({ paint: true, hasCachedSize: true })).toBe(false)
+    expect(shouldStartChatImageSizeTick({ paint: true, hasCachedSize: false })).toBe(true)
+    expect(shouldStartChatImageSizeTick({ paint: false, hasCachedSize: false })).toBe(false)
+    expect(
+      shouldApplyCachedWorkspaceImage({
+        paint: true,
+        cached: 'data:image/png;base64,aa',
+        current: 'data:image/png;base64,aa'
+      })
+    ).toBe(false)
+    expect(
+      shouldApplyCachedWorkspaceImage({
+        paint: true,
+        cached: 'data:image/png;base64,aa',
+        current: null
+      })
+    ).toBe(true)
+    expect(
+      shouldApplyCachedWorkspaceImage({
+        paint: false,
+        cached: 'data:image/png;base64,aa',
+        current: null
+      })
+    ).toBe(false)
+    expect(shouldDeferChatImagePrefetch({ preferImmediate: false })).toBe(true)
+    expect(shouldDeferChatImagePrefetch({ preferImmediate: true })).toBe(false)
+    expect(shouldDeferChatImagePrefetch({})).toBe(false)
     expect(resolveLiveChatImageSrc({ paint: false, src: 'https://a.test/p.png' })).toBe('')
     expect(resolveLiveChatImageSrc({ paint: true, src: 'https://a.test/p.png' })).toBe(
       'https://a.test/p.png'
@@ -164,6 +194,10 @@ describe('chat-image', () => {
     expect(imageSrc).toContain('prefetchRemoteChatImageSize')
     expect(imageSrc).toContain('shouldRenderLiveChatImage')
     expect(imageSrc).toContain('shouldWarmLiveChatImage')
+    expect(imageSrc).toContain('shouldStartChatImageSizeTick')
+    expect(imageSrc).toContain('shouldApplyCachedWorkspaceImage')
+    expect(imageSrc).toContain('shouldDeferChatImagePrefetch')
+    expect(imageSrc).toContain('FenceImmediateHighlightContext')
     expect(imageSrc).toContain('resolveLiveChatImageSrc')
     expect(imageSrc).toContain('LiveMarkdownStreamingContext')
     expect(imageSrc).not.toContain('aria-label="关闭图片预览"')
