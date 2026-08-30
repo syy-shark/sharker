@@ -1332,6 +1332,13 @@ html.theme-dark .composer-thread-chip.is-active {
   font-size: 12px;
 }
 
+.composer-worktree-banner > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .composer-worktree-banner-btn {
   flex-shrink: 0;
   height: 24px;

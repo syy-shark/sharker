@@ -124,6 +124,7 @@ import {
 } from '../../shared/composer-dictation'
 import {
   chatSearchMatchHint,
+  DEFAULT_CONVERSATION_TITLE,
   filterChatList,
   type ChatSearchItem
 } from '../../shared/conversation'
@@ -132,6 +133,8 @@ import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import {
   HAND_OFF_LABEL,
   LOCAL_LABEL,
+  NO_CHATS_LABEL,
+  OPEN_PROJECT_PICKER_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   STARTING_BRANCH_LABEL,
@@ -1622,7 +1625,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu history-picker popover-enter"
               role="listbox"
-              aria-label="打开项目"
+              aria-label={OPEN_PROJECT_PICKER_LABEL}
               aria-activedescendant={
                 projectHits[projectActiveIndex]
                   ? `project-option-${projectHits[projectActiveIndex].id}`
@@ -1792,7 +1795,9 @@ export const ComposerDock = memo(
                         }}
                       >
                         <span className="history-picker-hit">
-                          <span className="slash-menu-desc">{c.title || '未命名对话'}</span>
+                          <span className="slash-menu-desc">
+                            {c.customTitle || c.title || DEFAULT_CONVERSATION_TITLE}
+                          </span>
                           {(() => {
                             const hint = chatSearchMatchHint(c, historyQuery)
                             return hint ? (
@@ -1804,7 +1809,7 @@ export const ComposerDock = memo(
                     </li>
                   ))
                 ) : (
-                  <li className="slash-menu-empty">没有匹配的对话</li>
+                  <li className="slash-menu-empty">{NO_CHATS_LABEL}</li>
                 )}
               </ul>
             </div>

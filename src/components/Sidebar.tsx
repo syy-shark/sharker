@@ -68,6 +68,7 @@ import {
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
   NO_CHATS_LABEL,
+  NO_PROJECTS_LABEL,
   PROJECTS_LABEL,
   REMOVE_LABEL,
   SEARCH_CHATS_LABEL,
@@ -761,7 +762,7 @@ export const Sidebar = memo(function Sidebar({
           title={ws.path}
         >
           <Folder size={16} className="sidebar-row-icon" aria-hidden />
-          <span className="sidebar-row-text">{ws.label || '项目'}</span>
+          <span className="sidebar-row-text">{ws.label || ws.path}</span>
         </button>
         <div className="sidebar-project-actions">
           <button
@@ -1004,9 +1005,7 @@ export const Sidebar = memo(function Sidebar({
           <section className="sidebar-section">
             <h3 className="sidebar-section-label">{PROJECTS_LABEL}</h3>
             {workspaces.length === 0 ? (
-              <button type="button" className="sidebar-row sidebar-row--muted" onClick={onAddWorkspace}>
-                <span className="sidebar-row-text">{ADD_NEW_PROJECT_LABEL}</span>
-              </button>
+              <p className="sidebar-section-empty">{NO_PROJECTS_LABEL}</p>
             ) : (
               workspaces.map((ws) => renderProject(ws))
             )}

@@ -145,6 +145,8 @@ export const REMOVE_LABEL = 'Remove'
 export const PROJECTS_LABEL = 'Projects'
 /** Official empty chats copy (do not show when chats exist). */
 export const NO_CHATS_LABEL = 'No chats'
+/** Official empty Projects copy (openai/codex #19290). */
+export const NO_PROJECTS_LABEL = 'No projects'
 /** Official Search chats: title, phrase, or branch name. */
 export const SEARCH_CHATS_PLACEHOLDER = 'Search title, message, or branch'
 /** Official worktrees: create a permanent worktree from the three-dot menu. */

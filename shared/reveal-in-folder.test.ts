@@ -60,6 +60,7 @@ import {
   PROFILE_SETTINGS_LABEL,
   UNARCHIVE_LABEL,
   OPEN_MODEL_PICKER_LABEL,
+  OPEN_PROJECT_PICKER_LABEL,
   START_VOICE_CHAT_LABEL,
   VOICE_LABEL,
   OPEN_SETTINGS_LABEL,
@@ -100,6 +101,7 @@ import {
   REMOVE_LABEL,
   PROJECTS_LABEL,
   NO_CHATS_LABEL,
+  NO_PROJECTS_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   NOT_ASSIGNED_BY_DEFAULT_LABEL,
@@ -202,6 +204,8 @@ describe('reveal in folder', () => {
     expect(REMOVE_LABEL).toBe('Remove')
     expect(PROJECTS_LABEL).toBe('Projects')
     expect(NO_CHATS_LABEL).toBe('No chats')
+    expect(NO_PROJECTS_LABEL).toBe('No projects')
+    expect(OPEN_PROJECT_PICKER_LABEL).toBe('Open project picker')
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
     expect(SEARCH_CHATS_LABEL).toBe('Search chats')
     expect(NOT_ASSIGNED_BY_DEFAULT_LABEL).toBe('Not assigned by default')
