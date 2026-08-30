@@ -610,9 +610,12 @@ export function shouldForceStickScroll(options: {
  * 此时仍贴底且用户没上翻，不把这次距离当成离开（对标 Codex #37849 跳回用户提示）。
  * 高亮/图片晚于短窗再长高时，只要还在贴底且滚动意向不是上翻，同样不锁。
  */
+/** 收束后继续贴底的毫秒短窗（高亮/图片晚长高仍跟得上） */
 export const LIVE_COMMIT_SETTLE_MS = 240
+/** 收束后连写 scrollTop 的动画帧数 */
 export const LIVE_COMMIT_SETTLE_FRAMES = 3
 
+/** loading 从 true 变 false 时进入收束换行短窗 */
 export function shouldStartLiveCommitSettle(options: {
   wasLoading: boolean
   loading: boolean
@@ -620,6 +623,10 @@ export function shouldStartLiveCommitSettle(options: {
   return options.wasLoading && !options.loading
 }
 
+/**
+ * 贴底跟随中距底突然变大：布局收束，不是用户上翻。
+ * 已锁或滚动意向是上翻则不忽略（滚轮 / 拖条仍能离开）。
+ */
 export function shouldIgnoreLeaveBottomDuringCommit(options: {
   commitSettling: boolean
   stickToBottom: boolean
