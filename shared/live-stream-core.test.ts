@@ -1685,6 +1685,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('FenceImmediateHighlightContext')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
     expect(src('../src/components/ChatView.tsx')).toContain('FenceImmediateHighlightContext')
+    expect(src('../src/components/ChatView.tsx')).toContain('rememberNearLiveHighlightPreference')
+    expect(src('../src/components/ChatView.tsx')).toContain('nearLiveImmediateIdsRef')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldAllowLiveFenceHighlight')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldPaintLiveFenceHighlight')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldWarmLiveFenceHighlight')

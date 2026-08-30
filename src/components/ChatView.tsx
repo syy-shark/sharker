@@ -95,6 +95,7 @@ import { ThinkingIndicator } from './ThinkingIndicator'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
+  rememberNearLiveHighlightPreference,
   jumpToBottomAffordance,
   liveProgressGrew,
   liveProgressKey,
@@ -1141,6 +1142,8 @@ export const ChatView = memo(function ChatView({
     heightFlushPreserveRef.current = null
     clearInlineDemoFramePool()
     clearHistoricalAnswerHolds()
+    nearLiveImmediateIdsRef.current.clear()
+    nearLiveImmediateSessionRef.current = sessionKey
     forkByIdRef.current.clear()
     retryByIdRef.current.clear()
     editByIdRef.current.clear()
@@ -1152,6 +1155,12 @@ export const ChatView = memo(function ChatView({
   const messagesInnerRef = useRef<HTMLDivElement>(null)
   const composerStageRef = useRef<HTMLDivElement>(null)
   const measuredRowHeightsRef = useRef(new Map<string, number>())
+  const nearLiveImmediateIdsRef = useRef(new Set<string>())
+  const nearLiveImmediateSessionRef = useRef(sessionKey)
+  if (nearLiveImmediateSessionRef.current !== sessionKey) {
+    nearLiveImmediateSessionRef.current = sessionKey
+    nearLiveImmediateIdsRef.current.clear()
+  }
   mergeSeededRowHeights(measuredRowHeightsRef.current, ejectedLiveHeights)
   const [intrinsicHeights, setIntrinsicHeights] = useState<ReadonlyMap<string, number>>(
     () => new Map()
@@ -2672,6 +2681,11 @@ export const ChatView = memo(function ChatView({
     () =>
       historicalSource.map((m, index, rows) => {
         const nearLive = isNearLiveMessageRow(index, rows.length)
+        const preferImmediate = rememberNearLiveHighlightPreference(
+          nearLiveImmediateIdsRef.current,
+          m.id,
+          nearLive
+        )
         return m.role === 'user' ? (
           <UserMessageRow
             key={m.id}
@@ -2721,7 +2735,7 @@ export const ChatView = memo(function ChatView({
                   )
             }
           >
-            <FenceImmediateHighlightContext.Provider value={nearLive}>
+            <FenceImmediateHighlightContext.Provider value={preferImmediate}>
               {renderFrozenEjectedArticle(m.id) ?? (
                 <AssistantMessage
                   messageId={m.id}

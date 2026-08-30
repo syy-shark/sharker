@@ -855,6 +855,33 @@ export function isNearLiveMessageRow(
   return index >= Math.max(0, total - window)
 }
 
+/**
+ * 贴底窗口一旦进过，本会话就保持立刻着色。
+ * 跟进把行挤出 last-8 后不要把 preferImmediate 打回 false，
+ * 否则 mermaid / 公式 / 图 / 围栏 effect 会再跑一轮。
+ * 从未进过贴底窗的远窗行仍走延后着色（揭示更早历史）。
+ */
+export function nextNearLiveHighlightPreference(opts: {
+  nearLive: boolean
+  wasImmediate: boolean
+}): boolean {
+  return opts.nearLive || Boolean(opts.wasImmediate)
+}
+
+/** 会话内记下进过贴底窗的行，并算出本帧 FenceImmediateHighlightContext */
+export function rememberNearLiveHighlightPreference(
+  seen: Set<string>,
+  id: string,
+  nearLive: boolean
+): boolean {
+  const preferImmediate = nextNearLiveHighlightPreference({
+    nearLive,
+    wasImmediate: seen.has(id)
+  })
+  if (nearLive && id) seen.add(id)
+  return preferImmediate
+}
+
 /** 远窗未写入实测高度时，与 `.chat--active .message-row` 的 contain-intrinsic-size 估高一致 */
 export const FAR_ROW_INTRINSIC_GUESS = 160
 

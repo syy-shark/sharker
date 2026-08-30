@@ -48,6 +48,8 @@ import {
   shouldReusePooledInlineDemoFrame,
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
+  nextNearLiveHighlightPreference,
+  rememberNearLiveHighlightPreference,
   shouldObserveRowIntrinsicHeight,
   shouldFlushRowIntrinsicHeight,
   FAR_ROW_INTRINSIC_GUESS,
@@ -416,6 +418,19 @@ describe('near-live message rows', () => {
     expect(isNearLiveMessageRow(0, 3, 8)).toBe(true)
     expect(isNearLiveMessageRow(-1, 3, 8)).toBe(false)
     expect(isNearLiveMessageRow(0, 0, 8)).toBe(false)
+    expect(nextNearLiveHighlightPreference({ nearLive: true, wasImmediate: false })).toBe(true)
+    expect(nextNearLiveHighlightPreference({ nearLive: false, wasImmediate: true })).toBe(true)
+    expect(nextNearLiveHighlightPreference({ nearLive: false, wasImmediate: false })).toBe(false)
+    const seen = new Set<string>()
+    expect(rememberNearLiveHighlightPreference(seen, 'a', false)).toBe(false)
+    expect(seen.has('a')).toBe(false)
+    expect(rememberNearLiveHighlightPreference(seen, 'a', true)).toBe(true)
+    expect(seen.has('a')).toBe(true)
+    expect(rememberNearLiveHighlightPreference(seen, 'a', false)).toBe(true)
+    expect(rememberNearLiveHighlightPreference(seen, 'older', false)).toBe(false)
+    expect(seen.has('older')).toBe(false)
+    seen.clear()
+    expect(rememberNearLiveHighlightPreference(seen, 'a', false)).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: 'streaming' })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: 'a1', live: true })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: '' })).toBe(false)
