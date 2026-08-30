@@ -374,7 +374,7 @@ export function ThoughtDisclosure({
         {elapsed ? <span className="turn-flow-thought-time">{elapsed}</span> : null}
       </button>
       {open && (body || loading) ? (
-        <div ref={bodyRef} className="turn-flow-thought-body" aria-label="思考过程">
+        <div ref={bodyRef} className="turn-flow-thought-body" aria-label={label}>
           {loading && !body ? (
             <p className="turn-flow-output-deferred">正在载入思考…</p>
           ) : (
@@ -992,7 +992,7 @@ export const TurnFlow = memo(function TurnFlow({
       data-head-label={isStreaming ? displayLiveLabel : undefined}
       data-head-step={isStreaming ? (lastDisplayStep?.title || '') : undefined}
       role="region"
-      aria-label="执行过程"
+      aria-label={formatWorkedForLabel(isStreaming)}
       aria-live="polite"
       aria-busy={isStreaming || undefined}
     >
