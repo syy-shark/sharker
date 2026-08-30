@@ -22,6 +22,7 @@ import {
   isInlineDemoPaintable,
   formatThoughtLabel,
   resolveStoppedAfterLabel,
+  WORKED_FOR_LABEL,
   sameRefList,
   shouldMountMessageActions,
   shouldReserveMessageActions,
@@ -39,6 +40,7 @@ import { InlineApproval } from './InlineApproval'
 import { InlineUserInput } from './InlineUserInput'
 import { StreamingMarkdown } from './StreamingMarkdown'
 import { CodeDiffBlock } from './CodeDiffBlock'
+import { exploreNameFromPath } from '../../shared/explore-activity'
 import { dispatchOpenWorkspaceFile } from '../lib/open-workspace-file'
 import './AssistantMessage.css'
 import './TurnFlow.css'
@@ -141,6 +143,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   const useSegmentFlow = Boolean(segments && segments.length > 0)
 
   const browsedFiles = meta?.browsedFiles ?? []
+  const browsedLeaf = exploreNameFromPath(browsedFiles[0])
   const changedFiles = meta?.changedFiles ?? []
   const changedStats = useMemo(() => nextFilesChangedStats(null, segments), [segments])
   const hadThinking = meta?.hadThinking ?? hadThinkingLive
@@ -317,7 +320,7 @@ export const AssistantMessage = memo(function AssistantMessage({
       : formatThoughtLabel(true)
     : hadThinking
       ? formatThoughtLabel(false)
-      : '已处理'
+      : WORKED_FOR_LABEL
 
   return (
     <article className="assistant-message">
@@ -369,8 +372,8 @@ export const AssistantMessage = memo(function AssistantMessage({
               }}
               aria-expanded={filesOpen}
             >
-              <span>已浏览</span>
-              <span className="assistant-meta-chip-value">{browsedFiles.length} 个文件</span>
+              <span>Read</span>
+              {browsedLeaf ? <span className="assistant-meta-chip-value">{browsedLeaf}</span> : null}
               <ChevronDown
                 size={12}
                 className={`assistant-meta-chevron ${filesOpen ? 'assistant-meta-chevron--open' : ''}`}
@@ -451,7 +454,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 setFlowOpen((o) => !o)
               }}
               aria-expanded={flowOpen}
-              aria-label={`展开过程，${summary}`}
+              aria-label={summary}
             >
               <span>{summary}</span>
               <ChevronDown
@@ -488,7 +491,7 @@ export const AssistantMessage = memo(function AssistantMessage({
               inert={flowOpen ? undefined : true}
             >
               <div className="assistant-process-inner">
-                <div className="assistant-message-meta-panel" role="region" aria-label="处理步骤">
+                <div className="assistant-message-meta-panel" role="region" aria-label={WORKED_FOR_LABEL}>
                   <ProcessTimeline steps={processSteps} onOpenSubAgent={onOpenSubAgent} />
                 </div>
               </div>
@@ -503,7 +506,6 @@ export const AssistantMessage = memo(function AssistantMessage({
           <CircleStop size={15} aria-hidden />
           <div>
             <strong>{stoppedAfterLabel}</strong>
-            <span>{displayContent ? '已保留停止前生成的内容' : '未产生可保留的结果'}</span>
           </div>
         </div>
       ) : null}

@@ -488,6 +488,20 @@ describe('elapsed clock', () => {
     expect(processSrc).not.toContain('浏览 ${model.totals.readFiles} 个文件')
     expect(processSrc).not.toContain('修改 ${model.totals.modifiedFiles} 个文件')
     expect(processSrc).not.toContain('运行 ${model.totals.commands} 个命令')
+    const assistantSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/AssistantMessage.tsx'),
+      'utf8'
+    )
+    expect(assistantSrc).toContain('WORKED_FOR_LABEL')
+    expect(assistantSrc).toContain('exploreNameFromPath')
+    expect(assistantSrc).toContain('<span>Read</span>')
+    expect(assistantSrc).not.toContain("'已处理'")
+    expect(assistantSrc).not.toContain('<span>已浏览</span>')
+    expect(assistantSrc).not.toContain('{browsedFiles.length} 个文件')
+    expect(assistantSrc).not.toContain('已保留停止前生成的内容')
+    expect(assistantSrc).not.toContain('未产生可保留的结果')
+    expect(assistantSrc).not.toContain('展开过程')
+    expect(assistantSrc).not.toContain('处理步骤')
   })
 })
 

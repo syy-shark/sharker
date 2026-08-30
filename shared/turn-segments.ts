@@ -10,7 +10,8 @@ import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment 
 import {
   formatAwaitingApprovalLabel,
   isAwaitingApprovalText,
-  TURN_START_LIVE_STATUS
+  TURN_START_LIVE_STATUS,
+  WORKED_FOR_LABEL
 } from './live-display'
 import { toolTitle } from './process-steps'
 import { isToolProgressSummary } from './tool-output-display'
@@ -1397,7 +1398,7 @@ export function summarizeSegments(segments: TurnSegment[], durationSec?: number)
   const narrations = segments.filter((s) => s.kind === 'text' && s.role === 'narration').length
   if (narrations > 0 && parts.length === 0) parts.push(`${narrations} 步说明`)
 
-  return parts.length > 0 ? parts.join(' · ') : '已处理'
+  return parts.length > 0 ? parts.join(' · ') : WORKED_FOR_LABEL
 }
 
 /** 直播阶段的高层进度摘要：隐藏推理细节，只描述已做与正在做 */
