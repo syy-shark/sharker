@@ -277,6 +277,11 @@ describe('workbench shortcuts', () => {
     ).toBe(true)
     expect(
       WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === 'Hold Ctrl+M' && row.title === 'Start dictation'
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
         (row) => row.keys === '⌘⌥U' && row.title === 'Toggle Activity view'
       )
     ).toBe(true)

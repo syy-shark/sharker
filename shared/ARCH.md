@@ -209,8 +209,8 @@
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
 | `deeplink.ts` | `sharker://` 解析：新对话 / 打开线程 / 设置（含 notifications/notify→通知、code-font→外观、general/review→通用、worktree/worktrees→Worktrees（对标 Codex Settings → Worktrees）、browser/history/browser-use→浏览器（对标 Codex `settings/browser-use` Browser settings）、personalization/personality/memories→个性化、mcp/mcp-servers→MCP 服务器、suggested-prompts/suggested/prompts→建议提示、git/computer-use→权限、usage/profile/tokens→用量） / Skills / 自动化（打开创建流）；不解析 plugins、pets、SSH |
 | `deeplink.test.ts` | `new?` 必须带参、路径与 git remote 匹配、notifications/notify 进通知、general/review 进通用、browser/history/browser-use 进浏览器、personalization/memories 进个性化、mcp/mcp-servers 进 MCP 服务器、worktree/worktrees 进 Worktrees、git/computer-use 进权限、usage/profile/tokens 进用量、不支持的 host 为 noop |
-| `composer-dictation.ts` | 听写快捷键（Ctrl+Shift+D）与转写拼接；失败提示官方 Unable to transcribe audio |
-| `composer-dictation.test.ts` | 不认 ⌘⇧D；空串/标点拼接；Unable to transcribe audio |
+| `composer-dictation.ts` | 听写：Ctrl+Shift+D 开关；`isDictationHoldKey` 按住 Ctrl+M（官方 Hold Ctrl+M while the composer is visible）；失败提示官方 Unable to transcribe audio |
+| `composer-dictation.test.ts` | 不认 ⌘⇧D；Hold Ctrl+M 不认 Ctrl+Shift+M；空串/标点拼接；Unable to transcribe audio |
 | `session-runtime.test.ts` | 队列隔离 / 编辑重排取出 / Stop-while-queued / 无对话 id 仍收口 / persist 目标 / 直播预留 id / 收束空窗 / 首枚 token 不藏尚未入列的预留行 / upsert 保留 hover 时间戳 |
 | `turn-meta.ts` | 工具活动 label（含子 Agent prompt / id）；写盘工具相对路径（本轮审查）；`mergeChangedRelPaths` 只在路径新增时扩列表；`liveAssistantMeta` 把已改路径带进直播元信息（写入预览就开始挂「已改」）；`reuseLiveAssistantMeta` 在路径/活动没变时保住同一对象，避免工具心跳重挂直播行 |
 | `turn-meta-write.test.ts` | 写盘相对路径；apply_patch hunk；合并本轮路径只在新增时返回 true；字段相同的直播元信息复用原对象 |

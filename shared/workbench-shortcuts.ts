@@ -413,6 +413,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘G / ⌘⇧G', title: `${FIND_NEXT_MATCH_LABEL} / ${FIND_PREVIOUS_MATCH_LABEL}` },
   { keys: 'Ctrl⇧M', title: OPEN_MODEL_PICKER_LABEL },
   { keys: 'Ctrl⇧D', title: START_DICTATION_LABEL },
+  { keys: 'Hold Ctrl+M', title: START_DICTATION_LABEL },
   { keys: 'Ctrl⇧V', title: START_VOICE_CHAT_LABEL },
   { keys: '↑', title: RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL },
   { keys: 'Enter', title: APPROVE_REQUEST_LABEL },

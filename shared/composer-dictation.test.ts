@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   UNABLE_TO_TRANSCRIBE_AUDIO,
   appendDictationTranscript,
+  isDictationHoldKey,
   isDictationShortcut,
   isVoiceChatShortcut,
   textForSpeech
@@ -10,6 +14,14 @@ import {
 describe('composer dictation', () => {
   it('uses official Unable to transcribe audio copy', () => {
     expect(UNABLE_TO_TRANSCRIBE_AUDIO).toBe('Unable to transcribe audio')
+  })
+
+  it('matches official Hold Ctrl+M without treating Ctrl+Shift+M as hold', () => {
+    expect(isDictationHoldKey({ key: 'm', ctrlKey: true })).toBe(true)
+    expect(isDictationHoldKey({ key: 'M', ctrlKey: true })).toBe(true)
+    expect(isDictationHoldKey({ key: 'm', ctrlKey: true, shiftKey: true })).toBe(false)
+    expect(isDictationHoldKey({ key: 'm', ctrlKey: false, metaKey: true })).toBe(false)
+    expect(isDictationHoldKey({ key: 'm', ctrlKey: true, isComposing: true })).toBe(false)
   })
 
   it('matches Codex Ctrl+Shift+D only', () => {
@@ -44,5 +56,15 @@ describe('composer dictation', () => {
 
   it('strips fences before speech', () => {
     expect(textForSpeech('好的\n```ts\nconst x = 1\n```\n已修好')).toBe('好的 已修好')
+  })
+
+  it('wires Hold Ctrl+M press-to-talk in the composer', () => {
+    const dock = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
+      'utf8'
+    )
+    expect(dock).toContain('isDictationHoldKey')
+    expect(dock).toContain('holdDictationRef')
+    expect(dock).toContain("addEventListener('keyup'")
   })
 })

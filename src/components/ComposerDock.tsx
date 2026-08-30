@@ -128,6 +128,7 @@ import {
 import {
   UNABLE_TO_TRANSCRIBE_AUDIO,
   appendDictationTranscript,
+  isDictationHoldKey,
   isDictationShortcut,
   isVoiceChatShortcut,
   textForSpeech
@@ -423,6 +424,9 @@ export const ComposerDock = memo(
     const projectActiveIndexRef = useRef(0)
     const recognitionRef = useRef<SpeechRec | null>(null)
     const toggleDictationRef = useRef<() => void>(() => {})
+    const startDictationRef = useRef<() => void>(() => {})
+    const stopDictationRef = useRef<() => void>(() => {})
+    const holdDictationRef = useRef(false)
     const toggleVoiceChatRef = useRef<() => void>(() => {})
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const composerFocusOriginRef = useRef<'pointer' | 'keyboard'>('pointer')
@@ -970,6 +974,23 @@ export const ComposerDock = memo(
       const onKey = (e: KeyboardEvent) => {
         if (e.isComposing) return
         if (
+          isDictationHoldKey({
+            key: e.key,
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey,
+            altKey: e.altKey,
+            shiftKey: e.shiftKey,
+            isComposing: e.isComposing
+          })
+        ) {
+          e.preventDefault()
+          if (e.repeat || voiceChatRef.current || recognitionRef.current) return
+          if (holdDictationRef.current) return
+          holdDictationRef.current = true
+          startDictationRef.current()
+          return
+        }
+        if (
           isDictationShortcut({
             key: e.key,
             ctrlKey: e.ctrlKey,
@@ -997,8 +1018,26 @@ export const ComposerDock = memo(
           toggleVoiceChatRef.current()
         }
       }
+      const onHoldUp = (e: KeyboardEvent) => {
+        if (e.key.toLowerCase() !== 'm') return
+        if (!holdDictationRef.current) return
+        holdDictationRef.current = false
+        e.preventDefault()
+        stopDictationRef.current()
+      }
+      const onBlur = () => {
+        if (!holdDictationRef.current) return
+        holdDictationRef.current = false
+        stopDictationRef.current()
+      }
       window.addEventListener('keydown', onKey)
-      return () => window.removeEventListener('keydown', onKey)
+      window.addEventListener('keyup', onHoldUp)
+      window.addEventListener('blur', onBlur)
+      return () => {
+        window.removeEventListener('keydown', onKey)
+        window.removeEventListener('keyup', onHoldUp)
+        window.removeEventListener('blur', onBlur)
+      }
     }, [])
 
     const pickSlashCommand = (cmd: SlashCommandMeta) => {
@@ -1182,6 +1221,8 @@ export const ComposerDock = memo(
       else startDictation()
     }, [startDictation, stopDictation])
     toggleDictationRef.current = toggleDictation
+    startDictationRef.current = startDictation
+    stopDictationRef.current = stopDictation
 
     const toggleVoiceChat = useCallback(() => {
       const next = !voiceChatRef.current
