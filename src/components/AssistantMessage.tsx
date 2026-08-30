@@ -79,7 +79,7 @@ interface Props {
   children?: React.ReactNode
 }
 
-/** 直播文件 diff：写入一开始占槽，参数流填 +/-；直播中不折行，内层跟尾 */
+/** 直播文件 diff：写入一开始占槽，参数流填 +/-；直播中不折行、内层跟尾 */
 export const LiveFileDiff = memo(function LiveFileDiff({
   diff,
   streaming = false
@@ -93,7 +93,7 @@ export const LiveFileDiff = memo(function LiveFileDiff({
         diff={diff}
         live={streaming}
         showHeader
-        wrapLines
+        wrapLines={!streaming}
         maxPreviewLines={20}
         onOpenLine={(line) => dispatchOpenWorkspaceFile({ path: diff.path, line })}
       />

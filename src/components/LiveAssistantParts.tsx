@@ -1,6 +1,7 @@
 /**
  * 直播助手行：过程与回答分开订 store 切片。
  * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
+ * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'
@@ -89,11 +90,11 @@ function renderLiveAnswerPart(part: LiveAnswerView['parts'][number], streaming: 
   return <StreamingMarkdown key={part.id} text={part.content} />
 }
 
-/** 已闭合回答：只在新块封口时重绘 */
+/** 已闭合回答：只在新块封口时重绘。写盘 +/- 即使被正文挤进 closed 也保持 live，避免首挂就折 20 行、内层停跟尾。 */
 const LiveStoreClosedAnswer = memo(function LiveStoreClosedAnswer() {
   const closed = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).closed)
   if (!closed.length) return null
-  return <>{closed.map((part) => renderLiveAnswerPart(part, false))}</>
+  return <>{closed.map((part) => renderLiveAnswerPart(part, true))}</>
 })
 
 /** 增长中的尾块：跟 token */
