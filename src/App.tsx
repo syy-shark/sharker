@@ -326,8 +326,10 @@ import {
   shouldCancelLiveHandoffWithoutCommit,
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
+  nextRetiredLiveArticles,
   upsertAssistantMessage,
   type DoneCommittedMap,
+  type RetiredLiveArticle,
   type SessionQueueMap
 } from '../shared/session-runtime'
 import {
@@ -526,7 +528,9 @@ export default function App() {
   const [retiredLiveMeta, setRetiredLiveMeta] = useState<AssistantMeta | null>(null)
   const [retiredLiveStartedAt, setRetiredLiveStartedAt] = useState<number | null>(null)
   const [retiredLiveCopyable, setRetiredLiveCopyable] = useState<string | null>(null)
+  const [retiredLiveArticles, setRetiredLiveArticles] = useState<RetiredLiveArticle[]>([])
   const retiredLiveIdRef = useRef<string | null>(null)
+  const retiredLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -1042,11 +1046,13 @@ export default function App() {
     liveAssistantIdRef.current = buf.liveAssistantId ?? null
     setLiveAssistantId(buf.liveAssistantId ?? null)
     retiredLiveIdRef.current = null
+    retiredLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
     setRetiredLiveStartedAt(null)
     setRetiredLiveCopyable(null)
+    setRetiredLiveArticles([])
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     if (lastTurnUiTimerRef.current != null) {
       window.clearTimeout(lastTurnUiTimerRef.current)
@@ -1540,11 +1546,13 @@ export default function App() {
 
   const clearRetiredLive = useCallback(() => {
     retiredLiveIdRef.current = null
+    retiredLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
     setRetiredLiveStartedAt(null)
     setRetiredLiveCopyable(null)
+    setRetiredLiveArticles([])
   }, [])
 
   /**
@@ -1567,6 +1575,16 @@ export default function App() {
     setRetiredLiveMeta(priorSnap.liveTurnMeta)
     setRetiredLiveStartedAt(priorSnap.turnStartedAt)
     setRetiredLiveCopyable(priorCopyable)
+    const article: RetiredLiveArticle = {
+      id: fromId,
+      parts: priorParts,
+      meta: priorSnap.liveTurnMeta,
+      startedAt: priorSnap.turnStartedAt,
+      copyable: priorCopyable
+    }
+    const nextRetired = nextRetiredLiveArticles(retiredLiveArticlesRef.current, article)
+    retiredLiveArticlesRef.current = nextRetired
+    setRetiredLiveArticles(nextRetired)
     resetLiveAnswerViewHold()
     const now = Date.now()
     if (!turnStartedAtRef.current) turnStartedAtRef.current = now
@@ -9235,6 +9253,7 @@ export default function App() {
               retiredLiveMeta={retiredLiveMeta}
               retiredLiveStartedAt={retiredLiveStartedAt}
               retiredLiveCopyable={retiredLiveCopyable}
+              retiredLiveArticles={retiredLiveArticles}
               loading={loading}
               queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}

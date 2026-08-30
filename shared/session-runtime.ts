@@ -4,7 +4,8 @@
  * @see shared/ARCH.md
  */
 
-import type { ChatAttachment, ChatMessage } from './types'
+import type { AssistantMeta, ChatAttachment, ChatMessage } from './types'
+import type { AnswerPart } from './turn-segments'
 
 /** 排队中的用户消息（归属固定 conversationId） */
 export interface SessionQueuedPrompt {
@@ -476,23 +477,16 @@ export function shouldPreserveLiveDiffExpanded(options: {
 
 /**
  * 跟进 adopt 后仍挂着的上一轮直播行 id。
- * 先 retired（已冻结），再 handoff（发送后、首枚 chunk 前），再收束后仍藏在直播槽的预留 id。
+ * 先 retired 环，再 handoff，再收束后仍藏在直播槽的预留 id。
  */
 export function pinnedLiveAssistantId(options: {
   retiredLiveId?: string | null
+  retiredLiveIds?: readonly string[]
   liveHandoffId?: string | null
   liveAssistantId?: string | null
   hideReservedLive?: boolean
 }): string | null {
-  const retired = options.retiredLiveId?.trim()
-  if (retired) return retired
-  const handoff = options.liveHandoffId?.trim()
-  if (handoff) return handoff
-  if (options.hideReservedLive) {
-    const live = options.liveAssistantId?.trim()
-    if (live) return live
-  }
-  return null
+  return pinnedLiveAssistantIds(options)[0] ?? null
 }
 
 /** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */
@@ -502,12 +496,15 @@ export function shouldMountActiveLiveSlot(options: {
   hasLiveBody: boolean
   liveAssistantId?: string | null
   pinnedLiveId?: string | null
+  pinnedLiveIds?: readonly string[]
 }): boolean {
   if (!shouldMountLiveAssistantSlot(options)) return false
   const live = options.liveAssistantId?.trim()
+  if (!live) return false
+  if (options.pinnedLiveIds?.some((id) => id.trim() === live)) return false
   const pinned = options.pinnedLiveId?.trim()
-  if (live && pinned && live === pinned) return false
-  return Boolean(live)
+  if (pinned && live === pinned) return false
+  return true
 }
 
 /** 历史列同时藏 pinned / 预留直播 id，避免与冻结槽叠两份。 */
@@ -522,6 +519,94 @@ export function historicalMessagesHidingIds(
   }
   if (ids.size === 0) return messages
   return messages.filter((m) => !ids.has(m.id))
+}
+
+/** 跟进 adopt 后仍挂着的已完成直播行：冻结 part 引用，避免跟新回合。 */
+export type RetiredLiveArticle = {
+  id: string
+  parts: readonly AnswerPart[]
+  meta: AssistantMeta | null
+  startedAt: number | null
+  copyable: string | null
+}
+
+/** 短线程连跟两轮时仍留下上一行；再早的行才退回历史 `AssistantMessage`。 */
+export const RETIRED_LIVE_LIMIT = 2
+
+/** 把刚 adopt 的行推进环；同 id 覆盖，超出上限丢掉最早的。 */
+export function nextRetiredLiveArticles(
+  prev: readonly RetiredLiveArticle[],
+  article: RetiredLiveArticle
+): RetiredLiveArticle[] {
+  const id = article.id.trim()
+  if (!id) return prev.slice()
+  const next = [...prev.filter((item) => item.id !== id), { ...article, id }]
+  return next.length > RETIRED_LIVE_LIMIT ? next.slice(-RETIRED_LIVE_LIMIT) : next
+}
+
+/** 按 id 取冻结行。 */
+export function retiredLiveArticle(
+  articles: readonly RetiredLiveArticle[],
+  id?: string | null
+): RetiredLiveArticle | null {
+  const key = id?.trim()
+  if (!key) return null
+  return articles.find((item) => item.id === key) ?? null
+}
+
+/**
+ * 直播槽要按时间顺序挂住的 id：先 retired 环，再 handoff，再收束后仍藏着的预留 id。
+ * 去重且保序，让 A 在跟进 B / C 时 key 不丢。
+ */
+export function pinnedLiveAssistantIds(options: {
+  retiredLiveIds?: readonly string[]
+  retiredLiveId?: string | null
+  liveHandoffId?: string | null
+  liveAssistantId?: string | null
+  hideReservedLive?: boolean
+}): string[] {
+  const ids: string[] = []
+  const seen = new Set<string>()
+  const push = (id?: string | null) => {
+    const trimmed = id?.trim()
+    if (!trimmed || seen.has(trimmed)) return
+    seen.add(trimmed)
+    ids.push(trimmed)
+  }
+  for (const id of options.retiredLiveIds ?? []) push(id)
+  push(options.retiredLiveId)
+  push(options.liveHandoffId)
+  if (options.hideReservedLive) push(options.liveAssistantId)
+  return ids
+}
+
+/**
+ * 按多个 pinned id 切开对话柱：`gaps.length === pinnedIds.length + 1`。
+ * 历史列不在清单里的 pin（仍只挂在直播槽）吃掉当时剩下的消息，以免把回答画进历史。
+ */
+export function splitTranscriptAroundPinnedLive(
+  messages: ChatMessage[],
+  pinnedIds: readonly string[]
+): { gaps: ChatMessage[][]; pinnedIds: string[] } {
+  const pins: string[] = []
+  const gaps: ChatMessage[][] = []
+  let rest = messages
+  for (const raw of pinnedIds) {
+    const id = raw.trim()
+    if (!id) continue
+    const idx = rest.findIndex((m) => m.id === id)
+    if (idx < 0) {
+      gaps.push(rest)
+      pins.push(id)
+      rest = []
+      continue
+    }
+    gaps.push(rest.slice(0, idx))
+    pins.push(id)
+    rest = rest.slice(idx + 1)
+  }
+  gaps.push(rest)
+  return { gaps, pinnedIds: pins }
 }
 
 /**

@@ -15,6 +15,11 @@ import {
   shouldPreserveLiveDiffExpanded,
   splitTranscriptAroundLiveHandoff,
   pinnedLiveAssistantId,
+  pinnedLiveAssistantIds,
+  nextRetiredLiveArticles,
+  retiredLiveArticle,
+  RETIRED_LIVE_LIMIT,
+  splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
   historicalMessagesHidingIds,
   upsertAssistantMessage,
@@ -514,6 +519,83 @@ describe('commitAssistantReply persist targeting', () => {
         pinnedLiveId: 'a-live'
       })
     ).toBe(true)
+    expect(
+      shouldMountActiveLiveSlot({
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: true,
+        liveAssistantId: 'b-live',
+        pinnedLiveIds: ['a-live', 'b-live']
+      })
+    ).toBe(false)
+    expect(
+      pinnedLiveAssistantIds({
+        retiredLiveIds: ['a-live', 'b-live'],
+        liveHandoffId: 'b-live',
+        liveAssistantId: 'c-live',
+        hideReservedLive: true
+      })
+    ).toEqual(['a-live', 'b-live', 'c-live'])
+    expect(
+      pinnedLiveAssistantId({
+        retiredLiveIds: ['a-live', 'b-live'],
+        liveAssistantId: 'c-live',
+        hideReservedLive: false
+      })
+    ).toBe('a-live')
+    const thread = [
+      { id: 'u1', role: 'user' as const, content: 'one' },
+      { id: 'a-live', role: 'assistant' as const, content: 'A' },
+      { id: 'u2', role: 'user' as const, content: 'two' },
+      { id: 'b-live', role: 'assistant' as const, content: 'B' },
+      { id: 'u3', role: 'user' as const, content: 'three' }
+    ]
+    const pinnedSplit = splitTranscriptAroundPinnedLive(thread, ['a-live', 'b-live'])
+    expect(pinnedSplit.pinnedIds).toEqual(['a-live', 'b-live'])
+    expect(pinnedSplit.gaps.map((gap) => gap.map((m) => m.id))).toEqual([['u1'], ['u2'], ['u3']])
+    expect(
+      splitTranscriptAroundPinnedLive(
+        [
+          { id: 'u1', role: 'user' as const, content: 'one' },
+          { id: 'a-live', role: 'assistant' as const, content: 'A' },
+          { id: 'u2', role: 'user' as const, content: 'two' }
+        ],
+        ['a-live', 'b-live']
+      ).gaps.map((gap) => gap.map((m) => m.id))
+    ).toEqual([['u1'], ['u2'], []])
+    const first = {
+      id: 'a-live',
+      parts: [],
+      meta: null,
+      startedAt: 1,
+      copyable: 'A'
+    }
+    const second = {
+      id: 'b-live',
+      parts: [],
+      meta: null,
+      startedAt: 2,
+      copyable: 'B'
+    }
+    const third = {
+      id: 'c-live',
+      parts: [],
+      meta: null,
+      startedAt: 3,
+      copyable: 'C'
+    }
+    expect(nextRetiredLiveArticles([], first).map((a) => a.id)).toEqual(['a-live'])
+    expect(nextRetiredLiveArticles([first], second).map((a) => a.id)).toEqual([
+      'a-live',
+      'b-live'
+    ])
+    expect(nextRetiredLiveArticles([first, second], third).map((a) => a.id)).toEqual([
+      'b-live',
+      'c-live'
+    ])
+    expect(RETIRED_LIVE_LIMIT).toBe(2)
+    expect(retiredLiveArticle([first, second], 'a-live')?.copyable).toBe('A')
+    expect(retiredLiveArticle([first, second], 'missing')).toBeNull()
     expect(
       historicalMessagesHidingIds([...liveTranscript, followUp], ['a-live', 'b-live']).map(
         (m) => m.id
