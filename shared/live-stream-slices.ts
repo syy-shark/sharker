@@ -101,6 +101,65 @@ function anyLiveChangeFns(
   return false
 }
 
+/** Same-length prefix-stable tail: token / last-line tool, no 7k detector scan (对标 Codex #22860). */
+function liveSameLengthPrefixTail(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): { prevTail: TurnSegment; nextTail: TurnSegment } | null {
+  if (prev.length !== next.length) return null
+  const last = next.length - 1
+  for (let i = 0; i < last; i++) {
+    if (prev[i] !== next[i]) return null
+  }
+  const prevTail = prev[last]
+  const nextTail = next[last]
+  if (!prevTail || !nextTail) return null
+  if (prevTail.id !== nextTail.id || prevTail.kind !== nextTail.kind) return null
+  return { prevTail, nextTail }
+}
+
+function liveSameLengthDerivationSkip(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): LiveStreamDerivationSkip | undefined {
+  const tails = liveSameLengthPrefixTail(prev, next)
+  if (!tails) return undefined
+  if (tails.prevTail !== tails.nextTail && tails.prevTail.status !== tails.nextTail.status) {
+    return undefined
+  }
+  if (isLiveThinking(tails.nextTail)) return 'think'
+  if (isLiveStatus(tails.nextTail)) return 'status'
+  if (isLiveToolMetaOnlyChange(tails.prevTail, tails.nextTail)) return 'tool'
+  if (findLiveToolInPlaceChange(prev, next)) return 'tool'
+  if (
+    isLiveAnswerText(tails.nextTail) &&
+    !hasStreamingDemoFenceGrowth(tails.prevTail.content ?? '', tails.nextTail.content ?? '')
+  ) {
+    return 'text'
+  }
+  return undefined
+}
+
+function liveSameLengthAnswerIdentityHold(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): boolean | undefined {
+  const tails = liveSameLengthPrefixTail(prev, next)
+  if (!tails) return undefined
+  if (tails.prevTail === tails.nextTail) return true
+  if (tails.prevTail.status !== tails.nextTail.status) return undefined
+  if (tails.nextTail.kind === 'thinking' || tails.nextTail.kind === 'status') return true
+  if (tails.nextTail.kind === 'tool') return isLiveToolMetaOnlyChange(tails.prevTail, tails.nextTail)
+  if (
+    isLiveAnswerText(tails.nextTail) &&
+    !hasStreamingDemoFenceGrowth(tails.prevTail.content ?? '', tails.nextTail.content ?? '')
+  ) {
+    return true
+  }
+  return undefined
+}
+
+
 /** 同一工具只改详情 / 摘要：预览与参数引用没变，不必重拆回答 */
 function isLiveToolMetaOnlyChange(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev.kind !== 'tool' || next.kind !== 'tool') return false
@@ -145568,6 +145627,11 @@ export function hasLiveProcessPhaseGrowHold(
   prev: readonly TurnSegment[] | null | undefined,
   next: readonly TurnSegment[]
 ): boolean {
+  if (prev && liveSameLengthPrefixTail(prev, next)) {
+    const last = next[next.length - 1]!
+    const before = prev[prev.length - 1]!
+    if (before.status === last.status) return false
+  }
   return anyLiveChangeFns(prev, next, LIVE_PROCESS_PHASE_GROW_HOLDS)
 }
 
@@ -145576,6 +145640,8 @@ export function shouldSkipLiveStreamDerivation(
   segments: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
   if (!prevSegments) return null
+  const sameLengthSkip = liveSameLengthDerivationSkip(prevSegments, segments)
+  if (sameLengthSkip !== undefined) return sameLengthSkip
   if (anyLiveChangeFns(prevSegments, segments, [isLiveToolAppendChange, isLiveSettledToolAppendChange, isLiveThinkSettledToolAppendChange, isLiveStatusThinkSettledToolAppendChange])) return 'tool'
   if (isLiveAnswerSettledToolAppendChange(prevSegments, segments)) return 'text'
   if (anyLiveChangeFns(prevSegments, segments, [isLiveWriteStatSettledToolAppendChange, isLiveAnswerDemoAppendChange])) return 'tool'
@@ -158215,6 +158281,8 @@ export function shouldSkipLiveAnswerIdentity(input: {
   segments: readonly TurnSegment[]
 }): boolean {
   if (!input.prev || !input.prevSegments) return false
+  const sameLengthHold = liveSameLengthAnswerIdentityHold(input.prevSegments, input.segments)
+  if (sameLengthHold !== undefined) return sameLengthHold
   if (
     (isLiveSettledToolAppendChange(input.prevSegments, input.segments) ||
       isLiveThinkSettledToolAppendChange(input.prevSegments, input.segments) ||
