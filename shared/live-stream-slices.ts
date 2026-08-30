@@ -13,6 +13,7 @@ import { isLiveStableToolDetail } from './tool-output-display'
 import { COMPRESS_TOOL } from './compact-activity'
 import { REQUEST_USER_INPUT_TOOL } from './user-input'
 import { hasLiveAssistantBody } from './session-runtime'
+import { registerLiveStreamTable } from './live-stream-core'
 import type { TurnSegment } from './types'
 import {
   buildAnswerParts,
@@ -166975,3 +166976,45 @@ export function liveHasAssistantBody(
     approvalWaiting
   })
 }
+
+registerLiveStreamTable({
+  shouldSkipLiveStreamDerivation,
+  shouldSkipLiveAnswerIdentity,
+  hasLiveProcessPhaseGrowHold,
+  nextLiveThinkText,
+  nextLiveProcessView,
+  nextLiveAnswerView,
+  shouldRemapProcessOnThinkAppend(prev, next) {
+    return Boolean(
+      isLiveThinkAppendChange(prev, next) ||
+      isLiveWriteStatThinkAppendChange(prev, next) ||
+      isLiveApprovalAllowedThinkAppendChange(prev, next) ||
+      isLiveApprovalAllowedWriteStatThinkAppendChange(prev, next) ||
+      isLiveApprovalAllowedWriteStatAnswerAppendChange(prev, next) ||
+      isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(prev, next) ||
+      isLiveApprovalResolvedThinkAppendChange(prev, next) ||
+      isLiveApprovalDeniedThinkAppendChange(prev, next) ||
+      isLiveAnswerAppendChange(prev, next) ||
+      isLiveApprovalAllowedAnswerAppendChange(prev, next) ||
+      isLiveApprovalAllowedThinkAnswerAppendChange(prev, next) ||
+      isLiveApprovalDeniedAnswerAppendChange(prev, next) ||
+      isLiveWriteStatAnswerAppendChange(prev, next) ||
+      isLiveWriteStatThinkAnswerAppendChange(prev, next) ||
+      isLiveThinkAnswerAppendChange(prev, next) ||
+      isLiveDemoAppendChange(prev, next) ||
+      isLiveWriteStatDemoAppendChange(prev, next) ||
+      isLiveThinkDemoAppendChange(prev, next) ||
+      isLiveWriteStatThinkDemoAppendChange(prev, next) ||
+      isLiveWriteStatDemoFenceAppendChange(prev, next) ||
+      isLiveThinkDemoFenceAppendChange(prev, next) ||
+      isLiveWriteStatThinkDemoFenceAppendChange(prev, next) ||
+      findLiveDemoHtmlChange(prev, next) ||
+      isLiveDemoFenceAppendChange(prev, next) ||
+      findLiveDemoFenceChange(prev, next) ||
+      isLiveErrorAppendChange(prev, next) ||
+      isLiveThinkErrorAppendChange(prev, next) ||
+      isLiveWriteStatThinkErrorAppendChange(prev, next) ||
+      isLiveWriteStatErrorAppendChange(prev, next)
+    )
+  }
+})

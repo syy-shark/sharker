@@ -65,7 +65,7 @@ import {
   shouldHideReservedDuringLive,
   shouldRenderLiveAssistantRow
 } from '../../shared/session-runtime'
-import { liveHasAssistantBody } from '../../shared/live-stream-slices'
+import { liveHasAssistantBody } from '../../shared/live-stream-core'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,

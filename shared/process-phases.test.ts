@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import './live-stream-slices'
 import {
   appendProcessPhaseStepOnToolStart,
   deriveChronologicalSteps,

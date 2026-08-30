@@ -25,40 +25,13 @@ import {
   resolveReconnectLiveStatus
 } from './stream-reconnect'
 import {
-  hasLiveProcessPhaseGrowHold,
-  findLiveDemoHtmlChange,
   findLiveToolRetargetChange,
+  hasLiveProcessPhaseGrowHold,
   isLiveMultiToolSettleChange,
-  findLiveDemoFenceChange,
-  isLiveThinkAppendChange,
-  isLiveWriteStatThinkAppendChange,
-  isLiveApprovalAllowedThinkAppendChange,
-  isLiveApprovalAllowedWriteStatThinkAppendChange,
-  isLiveApprovalAllowedWriteStatAnswerAppendChange,
-  isLiveApprovalAllowedWriteStatThinkAnswerAppendChange,
-  isLiveApprovalResolvedThinkAppendChange,
-  isLiveApprovalDeniedThinkAppendChange,
-  isLiveAnswerAppendChange,
-  isLiveApprovalAllowedAnswerAppendChange,
-  isLiveApprovalAllowedThinkAnswerAppendChange,
-  isLiveApprovalDeniedAnswerAppendChange,
-  isLiveWriteStatAnswerAppendChange,
-  isLiveWriteStatThinkAnswerAppendChange,
-  isLiveThinkAnswerAppendChange,
-  isLiveDemoAppendChange,
-  isLiveWriteStatDemoAppendChange,
-  isLiveThinkDemoAppendChange,
-  isLiveWriteStatThinkDemoAppendChange,
-  isLiveWriteStatDemoFenceAppendChange,
-  isLiveThinkDemoFenceAppendChange,
-  isLiveWriteStatThinkDemoFenceAppendChange,
-  isLiveDemoFenceAppendChange,
-  isLiveErrorAppendChange,
-  isLiveThinkErrorAppendChange,
-  isLiveWriteStatThinkErrorAppendChange,
-  isLiveWriteStatErrorAppendChange,
-  isLiveToolWriteStatChange
-} from './live-stream-slices'
+  isLiveSameLengthTokenGrow,
+  isLiveToolWriteStatChange,
+  shouldRemapProcessOnThinkAppend
+} from './live-stream-core'
 import { isLiveStableToolDetail, isToolProgressSummary } from './tool-output-display'
 import { formatUpdatePlanActivity } from './update-plan'
 import {
@@ -658,37 +631,8 @@ export function remapProcessPhaseStepsOnThinkAppend(
   segments: readonly TurnSegment[],
   isStreaming = true
 ): ProcessPhaseStep[] | null {
-  if (
-    !isLiveThinkAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatThinkAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedThinkAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedWriteStatThinkAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedWriteStatAnswerAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedWriteStatThinkAnswerAppendChange(prevSegments, segments) &&
-    !isLiveApprovalResolvedThinkAppendChange(prevSegments, segments) &&
-    !isLiveApprovalDeniedThinkAppendChange(prevSegments, segments) &&
-    !isLiveAnswerAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedAnswerAppendChange(prevSegments, segments) &&
-    !isLiveApprovalAllowedThinkAnswerAppendChange(prevSegments, segments) &&
-    !isLiveApprovalDeniedAnswerAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatAnswerAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatThinkAnswerAppendChange(prevSegments, segments) &&
-    !isLiveThinkAnswerAppendChange(prevSegments, segments) &&
-    !isLiveDemoAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatDemoAppendChange(prevSegments, segments) &&
-    !isLiveThinkDemoAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatThinkDemoAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatDemoFenceAppendChange(prevSegments, segments) &&
-    !isLiveThinkDemoFenceAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatThinkDemoFenceAppendChange(prevSegments, segments) &&
-    !findLiveDemoHtmlChange(prevSegments, segments) &&
-    !isLiveDemoFenceAppendChange(prevSegments, segments) &&
-    !findLiveDemoFenceChange(prevSegments, segments) &&
-    !isLiveErrorAppendChange(prevSegments, segments) &&
-    !isLiveThinkErrorAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatThinkErrorAppendChange(prevSegments, segments) &&
-    !isLiveWriteStatErrorAppendChange(prevSegments, segments)
-  ) {
+  if (isLiveSameLengthTokenGrow(prevSegments, segments)) return prevSteps
+  if (!shouldRemapProcessOnThinkAppend(prevSegments, segments)) {
     return null
   }
   const remapped = prevSteps.map((step) => {

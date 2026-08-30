@@ -96,9 +96,10 @@ import {
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
   nextLiveThinkText,
+  prefetchLiveStreamTable,
   shouldSkipLiveStreamDerivation,
   shouldSkipLiveStreamPublish
-} from '../shared/live-stream-slices'
+} from '../shared/live-stream-core'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import {
@@ -434,6 +435,13 @@ export default function App() {
     const customChrome = window.sharker?.platform !== 'darwin'
     document.documentElement.classList.toggle('window-rounded', customChrome)
     return () => document.documentElement.classList.remove('window-rounded')
+  }, [])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void prefetchLiveStreamTable()
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [])
 
   useEffect(() => bindLiveShimmerVisibility(document), [])

@@ -18,7 +18,7 @@ import {
   nextLiveProcessTimeline,
   type LiveAnswerView,
   type LiveProcessTimeline
-} from '../../shared/live-stream-slices'
+} from '../../shared/live-stream-core'
 import { getLiveStreamUi, useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { InlineApproval } from './InlineApproval'
 import { InlineUserInput } from './InlineUserInput'

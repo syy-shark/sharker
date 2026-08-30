@@ -13,7 +13,7 @@
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { liveProcessViewFromSnap } from '../../shared/live-stream-slices'
+import { liveProcessViewFromSnap } from '../../shared/live-stream-core'
 import { useLiveStreamUiSelect } from '../hooks/useLiveStreamUi'
 import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { ChevronDown } from 'lucide-react'
