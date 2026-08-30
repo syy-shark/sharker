@@ -132,12 +132,19 @@ function isLiveCoreProcessTool(segment: TurnSegment): boolean {
   return segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
 }
 
+/** 规划下一步改写成 Ask User：同一 status 挂上 `request_user_input`（对标 request_user_input / Question requested） */
+function isLiveCorePlanToAskRewrite(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev === next) return false
+  if (prev.id !== next.id || prev.kind !== 'status' || next.kind !== 'status') return false
+  return (prev.toolName ?? '') === '' && next.toolName === 'request_user_input'
+}
+
 function liveCorePrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev === next) return true
   if (prev.id !== next.id || prev.kind !== next.kind) return false
   if (isLiveThinking(prev) && isLiveThinking(next)) return true
   if (isLiveStatus(prev) && isLiveStatus(next)) {
-    return (prev.toolName ?? '') === (next.toolName ?? '')
+    return (prev.toolName ?? '') === (next.toolName ?? '') || isLiveCorePlanToAskRewrite(prev, next)
   }
   return isLiveCoreProcessTool(prev) && isLiveCoreProcessTool(next)
 }
@@ -243,7 +250,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 同一帧首枚无 fence 正文后再落思考 / status 标 `'think'` / `'status'`。
  * 同长普通工具原地收束 / 改详情（可多枚并行 complete_call，正文可仍在末尾）标 `'tool'`。
  * 同长只改 status / 思考（正文可仍在末尾；重连 n/5 可改写文案）标 `'status'` / `'think'`。
- * 规划下一步改写成 Ask（换 `toolName`）仍等表。
+ * 规划下一步改写成 Ask（空 `toolName` → `request_user_input`）标 `'status'`，只换该行。
  * 已有无 fence 正文后再开第二段或多段 text 标 `'text'`，先封上一尾再开新尾。
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
@@ -290,7 +297,9 @@ function liveCoreInPlaceProcessToolSkip(
       continue
     }
     if (isLiveStatus(before) && isLiveStatus(after)) {
-      if ((before.toolName ?? '') !== (after.toolName ?? '')) return null
+      if ((before.toolName ?? '') !== (after.toolName ?? '')) {
+        if (!isLiveCorePlanToAskRewrite(before, after)) return null
+      }
       statusChange = true
       continue
     }
@@ -424,6 +433,9 @@ export function isLiveSameLengthTokenGrow(
   if (tails.prevTail.status !== tails.nextTail.status) return false
   if (!liveTailContentGrew(tails.prevTail, tails.nextTail)) return false
   const kind = tails.nextTail.kind
+  if (kind === 'status' && (tails.prevTail.toolName ?? '') !== (tails.nextTail.toolName ?? '')) {
+    return false
+  }
   return kind === 'thinking' || kind === 'status' || isLiveAnswerText(tails.nextTail)
 }
 
@@ -614,6 +626,7 @@ function liveSameLengthDerivationSkip(
     return liveTailContentGrew(tails.prevTail, tails.nextTail) ? 'think' : undefined
   }
   if (isLiveStatus(tails.nextTail)) {
+    if ((tails.prevTail.toolName ?? '') !== (tails.nextTail.toolName ?? '')) return undefined
     return liveTailContentGrew(tails.prevTail, tails.nextTail) ? 'status' : undefined
   }
   if (isLiveToolMetaOnlyChange(tails.prevTail, tails.nextTail)) return 'tool'
@@ -1000,7 +1013,7 @@ function findLiveCoreWriteStatTools(
       before.id === after.id &&
       isLiveStatus(before) &&
       isLiveStatus(after) &&
-      (before.toolName ?? '') === (after.toolName ?? '')
+      ((before.toolName ?? '') === (after.toolName ?? '') || isLiveCorePlanToAskRewrite(before, after))
     ) {
       continue
     }

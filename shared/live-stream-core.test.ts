@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
+  isLiveSameLengthTokenGrow,
   nextLiveAnswerView,
   nextLiveProcessView,
   shouldPrefetchLiveStreamTable,
@@ -127,7 +128,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     )
     expect(hasLiveProcessPhaseGrowHold([thought, plan, reply], [thought, done, reply])).toBe(true)
     const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
-    expect(shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply])).toBeNull()
+    expect(shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply])).toBe(
+      'status'
+    )
     const reconnect = status('Reconnecting... 1/5')
     const reconnect2: TurnSegment = { ...reconnect, content: 'Reconnecting... 2/5' }
     expect(shouldSkipLiveStreamDerivation([reconnect], [reconnect2])).toBe('status')
@@ -315,7 +318,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
     expect(
       shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply, extraText])
-    ).toBeNull()
+    ).toBe('text')
     const firstAnswer = nextLiveAnswerView(null, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [thought, reading, reply, nextTool]
@@ -1114,7 +1117,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm more')])).toBe(false)
   })
 
-  it('does not treat in-place plan status rewrite as a token', () => {
+  it('classifies an in-place plan-to-Ask rewrite without treating it as a token grow', () => {
     const plan: TurnSegment = {
       id: 'st-plan',
       kind: 'status',
@@ -1122,8 +1125,20 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       content: '根据已完成步骤规划下一步…'
     }
     const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
-    expect(shouldSkipLiveStreamDerivation([plan], [ask])).not.toBe('status')
+    expect(shouldSkipLiveStreamDerivation([plan], [ask])).toBe('status')
     expect(hasLiveProcessPhaseGrowHold([plan], [ask])).toBe(true)
+    expect(isLiveSameLengthTokenGrow([plan], [ask])).toBe(false)
+    const renamed: TurnSegment = { ...plan, toolName: 'compress' }
+    expect(shouldSkipLiveStreamDerivation([plan], [renamed])).toBeNull()
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [plan]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [ask]
+    })
+    expect(next.processForFlow).toEqual([ask])
   })
 
   it('does not skip answer identity on prose tokens so the tail can grow', () => {
