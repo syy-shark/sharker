@@ -64,7 +64,7 @@
 | `syntax-highlight.ts` | 闭合围栏 / 文件预览 highlight.js 着色（对标 Codex 桌面 / #18966）：未知语言与超大文件保持纯文本；未闭合直播围栏不调用；`.tex` 不发明语法 |
 | `syntax-highlight.test.ts` | 语言别名、扩展名、keyword / diff +/-、转义 `<script>`、超大跳过、跨行 span 拆行 |
 | `chat-math.ts` | 对话公式：只认闭合 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX / #14985）；不认 `$...$`；非法 TeX 回退原文；`trust: false`；`shouldRenderLiveChatMath` 直播 token 中先画原文，收束后再跑 KaTeX；`liveChatMathClassName` 展示公式直播中也占 block 槽 |
-| `chat-math.test.ts` | 三种围栏、拒绝 `$...$` / 未闭合 / 超长、KaTeX HTML 缓存与失败回退；直播中不着色、收束后再画 |
+| `chat-math.test.ts` | 三种围栏、拒绝 `$...$` / 未闭合 / 超长、KaTeX HTML 缓存与失败回退；直播中不着色、收束后再画；展示公式直播中也占 block 槽 |
 | `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高、右键菜单项、灯箱与文件预览 fit-to-window、灯箱 Close |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀、百分号解码、空格目录路径、复制路径、引用与文件树右键菜单 |
 | `file-opener.test.ts` | 官方枚举、Windows 盘符段、`none` 不产出 URI、行号/列号 |
