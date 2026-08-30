@@ -27,7 +27,7 @@
 | `WorktreeSettings.tsx` | 设置 → Worktrees：Worktree root 与托管保留数（默认 15，0 关闭自动删除；对标 Codex Settings → Worktrees）。不发明环境编辑器或单独未落盘的自动删除开关 |
 | `ArchivedSettings.tsx` / `.css` | Archived chats：Unarchive 或彻底删除（含项目菜单一并归档的对话） |
 | `UsageSettings.tsx` / `.css` | Profile：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Settings → Profile，不假装最长任务或供应商额度） |
-| `McpSettings.tsx` / `.css` | MCP servers：列表、开关、Add server（STDIO / Streamable HTTP 用官方传输说明）、Restart（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |
+| `McpSettings.tsx` / `.css` | MCP servers：列表、开关、空态用官方 Select Add server… / Save the server, then select Restart / type /mcp；Add server 表单 Name / Command / Save / Remove（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |
 | `ComputerUseSettings.tsx` | Computer Use 开关与就绪（设置入口暂隐藏） |
 | `BrowserUseSettings.tsx` | Browser Use 开关与就绪（设置入口暂隐藏） |
 | `FeatureStatusPanel.tsx` / `.css` | 功能检查列表（共用）；项进入 list-item-in |
