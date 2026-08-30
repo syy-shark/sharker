@@ -7,11 +7,12 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import {
+  FOLLOW_UP_BEHAVIOR_INTRO,
   FOLLOW_UP_BEHAVIOR_LABEL,
   QUEUE_LABEL,
+  QUEUE_SAVES_THE_MESSAGE_LABEL,
+  STEER_ADDS_THE_MESSAGE_LABEL,
   STEER_LABEL,
-  STEER_THE_CURRENT_RUN_LABEL,
-  WAIT_FOR_THE_NEXT_RUN_LABEL,
   CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
   composerEnterBehaviorLabel,
   parseComposerEnterBehavior,
@@ -73,7 +74,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title={FOLLOW_UP_BEHAVIOR_LABEL}>
+      <SettingsSection title={FOLLOW_UP_BEHAVIOR_LABEL} description={FOLLOW_UP_BEHAVIOR_INTRO}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={draft.followUpBehavior === 'steer' ? 'steer' : 'queue'}
@@ -84,13 +85,13 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
               {
                 value: 'queue',
                 title: QUEUE_LABEL,
-                description: WAIT_FOR_THE_NEXT_RUN_LABEL,
+                description: QUEUE_SAVES_THE_MESSAGE_LABEL,
                 icon: <span aria-hidden>Q</span>
               },
               {
                 value: 'steer',
                 title: STEER_LABEL,
-                description: STEER_THE_CURRENT_RUN_LABEL,
+                description: STEER_ADDS_THE_MESSAGE_LABEL,
                 icon: <span aria-hidden>S</span>
               }
             ]}

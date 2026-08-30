@@ -232,6 +232,13 @@ export function resolveFindHitIndex(
   return Math.min(Math.max(0, fallback), hits.length - 1)
 }
 
+/** Official find bar x/y counter (openai/codex #26878). Empty query stays blank. */
+export function formatFindHitCount(hitIndex: number, total: number): string {
+  if (total <= 0) return '0/0'
+  const index = Number.isFinite(hitIndex) ? Math.floor(hitIndex) : 0
+  return `${Math.min(Math.max(0, index), total - 1) + 1}/${total}`
+}
+
 /** ⌘F 用当前划选预填查找（对标 Codex Find starts with current text selection） */
 export function seedFindQuery(selected: string, max = 200): string {
   const cap = Number.isFinite(max) && max > 0 ? Math.floor(max) : 200

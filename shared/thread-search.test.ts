@@ -14,6 +14,7 @@ import {
   findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
+  formatFindHitCount,
   liveFindSuffixMayAddHit,
   locateFlatRange,
   mergeThreadSearchHits,
@@ -150,5 +151,8 @@ describe('thread search', () => {
       { text: 'HELLO', hit: true, start: 6 }
     ])
     expect(isReviewFindFocus(null)).toBe(false)
+    expect(formatFindHitCount(0, 0)).toBe('0/0')
+    expect(formatFindHitCount(2, 5)).toBe('3/5')
+    expect(formatFindHitCount(-1, 2)).toBe('1/2')
   })
 })

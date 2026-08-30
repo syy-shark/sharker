@@ -16,8 +16,16 @@ export const TOGGLE_PLAN_MODE_LABEL = 'Toggle plan mode'
 
 /** Official desktop Settings → General → Follow-up behavior (#17285 / #33416). */
 export const FOLLOW_UP_BEHAVIOR_LABEL = 'Follow-up behavior'
+/** Official Settings → General short option lines. */
 export const WAIT_FOR_THE_NEXT_RUN_LABEL = 'Wait for the next run'
 export const STEER_THE_CURRENT_RUN_LABEL = 'Steer the current run'
+/** Official prompting copy for Settings → General → Follow-up behavior. */
+export const FOLLOW_UP_BEHAVIOR_INTRO =
+  'Queued messages appear above the composer, where you can edit, reorder, send, or delete them. The setting also shows the shortcut for using the other behavior for one message without changing your default.'
+export const QUEUE_SAVES_THE_MESSAGE_LABEL =
+  'Queue saves the message for the next run. Use it for a follow-up that should wait until the current work finishes.'
+export const STEER_ADDS_THE_MESSAGE_LABEL =
+  'Steer adds the message to the current run. Use it to change direction, add a missing detail, or share new information.'
 /** Official desktop composer action while a turn is running. */
 export const STEER_LABEL = 'Steer'
 /** Official desktop queued follow-up chip / settings option. */

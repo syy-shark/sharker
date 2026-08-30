@@ -124,6 +124,7 @@ import {
   findHitMessageIds,
   findHitNeedsHistory,
   findInThread,
+  formatFindHitCount,
   mergeThreadSearchHits,
   resolveFindHitIndex,
   seedFindQuery,
@@ -2436,11 +2437,7 @@ export const ChatView = memo(function ChatView({
             }}
           />
           <span className="chat-find__count">
-            {findQuery.trim()
-              ? findHits.length
-                ? `${findHit + 1}/${findHits.length}`
-                : '无结果'
-              : ''}
+            {findQuery.trim() ? formatFindHitCount(findHit, findHits.length) : ''}
           </span>
           <button
             type="button"

@@ -27,7 +27,7 @@ import { localCommentsForGithub } from '../../../shared/git-pr-review'
 import { isDeletedGitChange, isNewGitChange } from '../../../shared/git-change-diff'
 import { formatBranchPrefix } from '../../../shared/git-branch-create'
 import { CodeDiffBlock } from '../CodeDiffBlock'
-import { seedFindQuery } from '../../../shared/thread-search'
+import { formatFindHitCount, seedFindQuery } from '../../../shared/thread-search'
 import {
   findInReviewDiffs,
   isReviewFindFocus,
@@ -1026,11 +1026,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             }}
           />
           <span className="changes-panel__find-count">
-            {findQuery.trim()
-              ? findMatches.length
-                ? `${findHit + 1}/${findMatches.length}`
-                : '无结果'
-              : ''}
+            {findQuery.trim() ? formatFindHitCount(findHit, findMatches.length) : ''}
           </span>
           <button
             type="button"

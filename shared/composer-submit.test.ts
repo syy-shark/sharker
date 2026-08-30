@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   collectUserPrompts,
   filterPromptHistory,
+  FOLLOW_UP_BEHAVIOR_INTRO,
   FOLLOW_UP_BEHAVIOR_LABEL,
   PLAN_MODE_LABEL,
   TOGGLE_PLAN_MODE_LABEL,
@@ -13,6 +14,8 @@ import {
   lastUserMessageId,
   lastUserPrompt,
   QUEUE_LABEL,
+  QUEUE_SAVES_THE_MESSAGE_LABEL,
+  STEER_ADDS_THE_MESSAGE_LABEL,
   rememberSubmittedComposerPrompt,
   resetRememberedSubmittedComposerPrompt,
   isFollowUpInvertChord,
@@ -79,6 +82,9 @@ describe('composer submit', () => {
     expect(PLAN_MODE_LABEL).toBe('Plan mode')
     expect(TOGGLE_PLAN_MODE_LABEL).toBe('Toggle plan mode')
     expect(FOLLOW_UP_BEHAVIOR_LABEL).toBe('Follow-up behavior')
+    expect(FOLLOW_UP_BEHAVIOR_INTRO).toMatch(/Queued messages appear above the composer/)
+    expect(QUEUE_SAVES_THE_MESSAGE_LABEL).toMatch(/wait until the current work finishes/)
+    expect(STEER_ADDS_THE_MESSAGE_LABEL).toMatch(/change direction/)
     expect(WAIT_FOR_THE_NEXT_RUN_LABEL).toBe('Wait for the next run')
     expect(STEER_THE_CURRENT_RUN_LABEL).toBe('Steer the current run')
     expect(STEER_LABEL).toBe('Steer')
