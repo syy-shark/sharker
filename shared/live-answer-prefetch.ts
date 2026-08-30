@@ -1,11 +1,11 @@
 /**
- * 收束后预热直播回答里的围栏着色、KaTeX 缓存，并开工 mermaid 模块。
- * microtask 排在 done 栈之后、React 收束帧之前，立刻跟进的下一轮不必当场跑 highlight.js / katex / import('mermaid')；
+ * 收束后预热直播回答里的围栏着色、KaTeX 缓存，并开工 mermaid 模块与 SVG 成图。
+ * microtask 排在 done 栈之后、React 收束帧之前，立刻跟进的下一轮不必当场跑 highlight.js / katex / import('mermaid') / mermaid.render；
  * 同一直播实例命中缓存则收束帧直接着色 / 成图，不必先闪纯文本。
  * @see shared/ARCH.md
  */
 import { collectClosedChatMath, renderChatMathHtml } from './chat-math'
-import { isMermaidLang, prefetchMermaidModule } from './mermaid-fence'
+import { isMermaidLang, prefetchMermaidSvgs } from './mermaid-fence'
 import {
   finalizeStreamingMarkdownSplit,
   splitStreamingMarkdown,
@@ -30,7 +30,7 @@ export function collectClosedLiveChatMathFromAnswer(
   return hits
 }
 
-/** 只收已闭合 mermaid / mmd 源码，给模块预取计数。 */
+/** 只收已闭合 mermaid / mmd 源码，给模块与 SVG 预取计数。 */
 export function collectClosedLiveMermaidFromAnswer(text: string): string[] {
   const src = String(text ?? '')
   if (!src.trim()) return []
@@ -44,7 +44,7 @@ export function collectClosedLiveMermaidFromAnswer(text: string): string[] {
   return sources
 }
 
-/** 把收束正文里的闭合围栏与公式写入缓存，并开工 mermaid 模块。 */
+/** 把收束正文里的闭合围栏与公式写入缓存，并开工 mermaid 模块与 SVG 成图。 */
 export function prefetchLiveAnswerPaint(text: string): {
   fences: number
   math: number
@@ -59,7 +59,7 @@ export function prefetchLiveAnswerPaint(text: string): {
     math += 1
   }
   const mermaid = collectClosedLiveMermaidFromAnswer(src)
-  if (mermaid.length) prefetchMermaidModule()
+  if (mermaid.length) prefetchMermaidSvgs(mermaid)
   return { fences, math, mermaid: mermaid.length }
 }
 

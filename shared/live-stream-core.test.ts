@@ -1544,8 +1544,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'LiveMarkdownStreamingContext.Provider'
     )
     expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldRenderLiveMermaid')
-    expect(src('../src/components/MermaidBlock.tsx')).toContain('loadMermaidApi')
+    expect(src('../src/components/MermaidBlock.tsx')).toContain('renderMermaidSvg')
     expect(src('../src/components/MermaidBlock.tsx')).toContain('resolveLiveMermaidSvg')
+    expect(src('live-answer-prefetch.ts')).toContain('prefetchMermaidSvgs')
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
     expect(src('../src/components/ChatMath.tsx')).toContain('liveChatMathClassName')
     expect(src('../src/components/ChatMath.tsx')).toContain('peekChatMathHtml')

@@ -1,35 +1,32 @@
 /**
  * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合或直播 token 中不解析。
  * 成图前继续代码尾，避免闭合瞬间卸掉再挂一套，也不在 16ms 热路径跑 mermaid.render。
- * 收束后若 SVG 缓存已暖，同一帧成图，不必先闪源码再等 effect。
+ * 收束后若 SVG 缓存已暖，同一帧成图；否则与收束预取共用 `renderMermaidSvg`，
+ * 立刻跟进的重挂不取消已开工的成图。
  * @see src/components/ARCH.md
  */
-import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   isMermaidLang,
-  loadMermaidApi,
   mermaidSlotHeight,
+  readUiMermaidTheme,
+  renderMermaidSvg,
   resolveLiveMermaidSvg,
   shouldRenderLiveMermaid,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
-  writeCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
 import { ArtifactCodeLines, CodeArtifactShell, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
-function readUiTheme(): MermaidUiTheme {
-  return document.documentElement.classList.contains('theme-dark') ? 'dark' : 'default'
-}
-
 function useUiMermaidTheme(): MermaidUiTheme {
   const [theme, setTheme] = useState<MermaidUiTheme>(() =>
-    typeof document === 'undefined' ? 'default' : readUiTheme()
+    typeof document === 'undefined' ? 'default' : readUiMermaidTheme()
   )
   useEffect(() => {
     const root = document.documentElement
-    const sync = () => setTheme(readUiTheme())
+    const sync = () => setTheme(readUiMermaidTheme())
     sync()
     const observer = new MutationObserver(sync)
     observer.observe(root, { attributes: true, attributeFilter: ['class'] })
@@ -51,11 +48,8 @@ export function MermaidBlock({
   /** 直播 token 中即使已闭合也不成图 */
   streaming?: boolean
 }) {
-  const reactId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const theme = useUiMermaidTheme()
   const source = code.replace(/\n$/, '')
-  const paintedSource = useRef(source.trim())
-  const renderGen = useRef(0)
   const streamingFromTree = useContext(LiveMarkdownStreamingContext)
   const stream = streaming || streamingFromTree
   const paint = shouldRenderLiveMermaid({ closed, streaming: stream })
@@ -83,37 +77,15 @@ export function MermaidBlock({
     }
     const text = source.trim()
     if (!text) {
-      paintedSource.current = ''
       setSvg('')
       setFailed(false)
       return
     }
-    const cached = readCachedMermaidSvg(text, theme)
-    if (cached) {
-      paintedSource.current = text
-      setSvg(cached)
-      setFailed(false)
-      return
-    }
-    // 源码改了仍先留着上一张 SVG，避免闪回源码再跳成图（贴底会跟着跳）
     let cancelled = false
-    setFailed(false)
-    renderGen.current += 1
-    const renderId = `sharker-mermaid-${reactId}-${renderGen.current}`
-    void loadMermaidApi()
-      .then((mermaid) => {
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: 'strict',
-          theme
-        })
-        return mermaid.render(renderId, text)
-      })
-      .then((result) => {
+    void renderMermaidSvg(text, theme)
+      .then((next) => {
         if (!cancelled) {
-          writeCachedMermaidSvg(text, theme, result.svg)
-          paintedSource.current = text
-          setSvg(result.svg)
+          setSvg(next)
           setFailed(false)
         }
       })
@@ -126,7 +98,7 @@ export function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [paint, source, theme, reactId])
+  }, [paint, source, theme])
 
   const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
     <CodeArtifactShell

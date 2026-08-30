@@ -1,7 +1,8 @@
 /**
  * ```mermaid / ```mmd 围栏判定。直播开闭都挂 MermaidBlock，闭合且不在直播 token 时才画图。
  * SVG 缓存避免收束 / 廉价尾 → 稳定块重挂时先闪回源码；`resolveLiveMermaidSvg` 收束后命中缓存则同一帧成图。
- * `loadMermaidApi` 给收束预取与成图共用同一动态 import，立刻跟进的下一轮不必再等模块。
+ * `loadMermaidApi` 给收束预取与成图共用同一动态 import；`takeMermaidRenderJob` /
+ * `renderMermaidSvg` 让预取与组件共用同一次 `mermaid.render`，立刻跟进的重挂不取消已开工的成图。
  * @see shared/ARCH.md
  */
 
@@ -30,6 +31,79 @@ export function prefetchMermaidModule(): void {
 }
 
 export type MermaidUiTheme = 'dark' | 'default'
+
+/** 当前界面主题：深色金属走 mermaid `dark`，浅色走 `default`。 */
+export function readUiMermaidTheme(): MermaidUiTheme {
+  if (typeof document === 'undefined') return 'default'
+  return document.documentElement.classList.contains('theme-dark') ? 'dark' : 'default'
+}
+
+const mermaidRenderJobs = new Map<string, Promise<string>>()
+
+/**
+ * 同一源码+主题共用一次成图。缓存命中立刻返回；进行中的 Promise 给预取与
+ * MermaidBlock 共用，重挂不另开、不取消。
+ */
+export function takeMermaidRenderJob(
+  source: string,
+  theme: MermaidUiTheme,
+  start: () => Promise<string>
+): Promise<string> {
+  const text = source.replace(/\n$/, '').trim()
+  if (!text) return Promise.reject(new Error('empty mermaid source'))
+  const cached = readCachedMermaidSvg(text, theme)
+  if (cached) return Promise.resolve(cached)
+  const key = mermaidSvgCacheKey(text, theme)
+  const existing = mermaidRenderJobs.get(key)
+  if (existing) return existing
+  const job = start()
+    .then((svg) => {
+      const out = String(svg ?? '').trim()
+      if (!out) throw new Error('empty mermaid svg')
+      writeCachedMermaidSvg(text, theme, out)
+      return out
+    })
+    .finally(() => {
+      mermaidRenderJobs.delete(key)
+    })
+  mermaidRenderJobs.set(key, job)
+  return job
+}
+
+/** 装模块并成图；与收束预取共用 in-flight。不在 16ms 热路径调用。 */
+export function renderMermaidSvg(source: string, theme: MermaidUiTheme): Promise<string> {
+  const text = source.replace(/\n$/, '').trim()
+  return takeMermaidRenderJob(text, theme, async () => {
+    const mermaid = await loadMermaidApi()
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme
+    })
+    const renderId = `sharker-mermaid-${Math.random().toString(36).slice(2, 10)}`
+    const result = await mermaid.render(renderId, text)
+    return result.svg
+  })
+}
+
+/**
+ * 收束后开工模块，并在有 `document` 时异步成图写入 SVG 缓存。
+ * 不 await，以免卡住 prefetch microtask / 收束帧。
+ */
+export function prefetchMermaidSvgs(
+  sources: readonly string[],
+  theme?: MermaidUiTheme
+): number {
+  prefetchMermaidModule()
+  const usable = sources.map((source) => source.replace(/\n$/, '').trim()).filter(Boolean)
+  if (typeof document !== 'undefined') {
+    const ui = theme ?? readUiMermaidTheme()
+    for (const source of usable) {
+      void renderMermaidSvg(source, ui).catch(() => undefined)
+    }
+  }
+  return usable.length
+}
 
 export function isMermaidLang(lang?: string | null): boolean {
   const value = lang?.trim().toLowerCase() ?? ''

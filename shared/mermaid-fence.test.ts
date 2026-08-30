@@ -7,6 +7,9 @@ import {
   isMermaidLangPrefix,
   shouldRenderLiveMermaid,
   resolveLiveMermaidSvg,
+  takeMermaidRenderJob,
+  prefetchMermaidSvgs,
+  readUiMermaidTheme,
   mermaidSlotHeight,
   mermaidSvgAspectStyle,
   mermaidSvgCacheKey,
@@ -46,6 +49,9 @@ describe('mermaid-fence', () => {
       '<svg>s</svg>'
     )
     expect(resolveLiveMermaidSvg({ paint: true, svg: '' })).toBe('')
+    expect(readUiMermaidTheme()).toBe('default')
+    expect(prefetchMermaidSvgs(['', '  '])).toBe(0)
+    expect(prefetchMermaidSvgs(['graph TD\nA-->B'])).toBe(1)
 
     clearMermaidSvgCache()
     expect(mermaidSvgCacheKey('graph TD\nA-->B\n', 'dark')).toBe('dark\ngraph TD\nA-->B')
@@ -94,5 +100,40 @@ describe('mermaid-fence', () => {
     expect(readCachedMermaidHeight('flow', 'default')).toBe(120)
     clearMermaidHeightCache()
     expect(readCachedMermaidHeight('flow', 'default')).toBeNull()
+  })
+
+  it('shares one mermaid render job and writes the svg cache', async () => {
+    clearMermaidSvgCache()
+    let starts = 0
+    const start = () => {
+      starts += 1
+      return Promise.resolve('<svg viewBox="0 0 10 20"></svg>')
+    }
+    const first = takeMermaidRenderJob('graph TD\nJob-->Hold', 'default', start)
+    const second = takeMermaidRenderJob('graph TD\nJob-->Hold', 'default', start)
+    expect(starts).toBe(1)
+    expect(await first).toBe('<svg viewBox="0 0 10 20"></svg>')
+    expect(await second).toBe('<svg viewBox="0 0 10 20"></svg>')
+    expect(readCachedMermaidSvg('graph TD\nJob-->Hold', 'default')).toBe(
+      '<svg viewBox="0 0 10 20"></svg>'
+    )
+    expect(await takeMermaidRenderJob('graph TD\nJob-->Hold', 'default', start)).toBe(
+      '<svg viewBox="0 0 10 20"></svg>'
+    )
+    expect(starts).toBe(1)
+
+    let fails = 0
+    const boom = () => {
+      fails += 1
+      return Promise.reject(new Error('boom'))
+    }
+    await expect(takeMermaidRenderJob('graph TD\nFail-->Retry', 'dark', boom)).rejects.toThrow(
+      'boom'
+    )
+    await expect(takeMermaidRenderJob('graph TD\nFail-->Retry', 'dark', boom)).rejects.toThrow(
+      'boom'
+    )
+    expect(fails).toBe(2)
+    clearMermaidSvgCache()
   })
 })
