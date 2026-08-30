@@ -60,6 +60,30 @@ export function chatMathSource(tex: string, fence: ChatMathFence): string {
 }
 
 /**
+ * 扫一段原文里的闭合公式。调用方应只喂散文槽，避免代码围栏里的 `\\(` 被当成公式。
+ */
+export function collectClosedChatMath(text: string): ChatMathHit[] {
+  const src = String(text ?? '')
+  const hits: ChatMathHit[] = []
+  let i = 0
+  while (i < src.length) {
+    const ch = src.charCodeAt(i)
+    if (ch !== 92 && ch !== 36) {
+      i += 1
+      continue
+    }
+    const hit = readChatMath(src, i)
+    if (hit) {
+      hits.push(hit)
+      i = hit.end
+      continue
+    }
+    i += 1
+  }
+  return hits
+}
+
+/**
  * 从 `start` 读一条已闭合公式。未闭合或 `$...$` 返回 null，留给后继 token。
  */
 export function readChatMath(src: string, start: number): ChatMathHit | null {

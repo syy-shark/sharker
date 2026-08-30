@@ -1502,7 +1502,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('nextLivePublishedStreaming')
     expect(src('../src/App.tsx')).toContain('LAST_TURN_UI_FLUSH_MS')
     expect(src('../src/App.tsx')).toContain('shouldResetLiveStreamUiWhenLoadingStops')
-    expect(src('../src/App.tsx')).toContain('schedulePrefetchLiveFenceHighlights')
+    expect(src('../src/App.tsx')).toContain('schedulePrefetchLiveAnswerPaint')
     expect(src('../src/App.tsx')).toContain('liveSegments: []')
     expect(shouldResetLiveStreamUiWhenLoadingStops()).toBe(false)
 

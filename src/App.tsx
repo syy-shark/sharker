@@ -67,7 +67,7 @@ import {
   finalizeSegments,
   thinkingPreviewFromSegments
 } from '../shared/turn-segments'
-import { schedulePrefetchLiveFenceHighlights } from '../shared/syntax-highlight'
+import { schedulePrefetchLiveAnswerPaint } from '../shared/live-answer-prefetch'
 import { DEFAULT_SETTINGS } from '../shared/types'
 import {
   GLOBAL_WORKSPACE_ID,
@@ -1779,7 +1779,7 @@ export default function App() {
 
       let text = (extractFinalContent(finalized) || content).trim()
       if (suffix) text = (text + suffix).trim()
-      schedulePrefetchLiveFenceHighlights(text)
+      schedulePrefetchLiveAnswerPaint(text)
       const startedAt = useActiveUi
         ? turnStartedAtRef.current
         : (sessionBuffersRef.current.get(targetId ?? '')?.turnStartedAt ?? Date.now())
@@ -2644,7 +2644,7 @@ export default function App() {
           buf.userInput = null
           buf.segments = finalizeSegments(buf.segments)
           const text = extractFinalContent(buf.segments) || buf.streaming
-          schedulePrefetchLiveFenceHighlights(text)
+          schedulePrefetchLiveAnswerPaint(text)
           const durationSec = Math.max(
             0,
             Math.round((Date.now() - (buf.turnStartedAt ?? Date.now())) / 1000)
@@ -2948,7 +2948,7 @@ export default function App() {
             buf.userInput = null
             buf.segments = finalizeSegments(buf.segments)
             const text = extractFinalContent(buf.segments) || buf.streaming
-            schedulePrefetchLiveFenceHighlights(text)
+            schedulePrefetchLiveAnswerPaint(text)
             const durationSec = Math.max(
               0,
               Math.round((Date.now() - (buf.turnStartedAt ?? Date.now())) / 1000)

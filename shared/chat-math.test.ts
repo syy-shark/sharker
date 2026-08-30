@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHAT_MATH_MAX_TEX,
   chatMathSource,
+  collectClosedChatMath,
   liveChatMathClassName,
   readChatMath,
   renderChatMathHtml,
@@ -43,5 +44,10 @@ describe('chat-math', () => {
     )
     expect(liveChatMathClassName({ display: true })).toBe('chat-math chat-math--display')
     expect(liveChatMathClassName({ raw: true })).toBe('chat-math chat-math--raw')
+    expect(collectClosedChatMath('If \\(E=mc^2\\) and $$a+b$$.').map((hit) => hit.tex)).toEqual([
+      'E=mc^2',
+      'a+b'
+    ])
+    expect(collectClosedChatMath('$x$')).toEqual([])
   })
 })
