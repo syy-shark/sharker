@@ -103,6 +103,9 @@ import {
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
   SEARCH_CHATS_LABEL,
+  FIND_IN_CHAT_LABEL,
+  FIND_NEXT_MATCH_LABEL,
+  FIND_PREVIOUS_MATCH_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   NOT_ASSIGNED_BY_DEFAULT_LABEL,
   CREATE_PERMANENT_WORKTREE_LABEL,
@@ -208,6 +211,10 @@ describe('reveal in folder', () => {
     expect(OPEN_PROJECT_PICKER_LABEL).toBe('Open project picker')
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
     expect(SEARCH_CHATS_LABEL).toBe('Search chats')
+    expect(FIND_IN_CHAT_LABEL).toBe('Find in chat')
+    expect(FIND_NEXT_MATCH_LABEL).toBe('Find next match')
+    expect(FIND_PREVIOUS_MATCH_LABEL).toBe('Find previous match')
+    expect(FILE_CLOSE_LABEL).toBe('Close')
     expect(NOT_ASSIGNED_BY_DEFAULT_LABEL).toBe('Not assigned by default')
     expect(CREATE_PERMANENT_WORKTREE_LABEL).toBe('Create a permanent worktree')
     expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')

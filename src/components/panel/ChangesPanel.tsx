@@ -37,7 +37,12 @@ import {
 } from '../../../shared/review-diff-search'
 import { maxDiffGotoLine, parseGoToLineInput } from '../../../shared/file-preview'
 import { dispatchOpenWorkspaceFile } from '../../lib/open-workspace-file'
-import { reviewFileRevealPath } from '../../../shared/reveal-in-folder'
+import {
+  FILE_CLOSE_LABEL,
+  FIND_NEXT_MATCH_LABEL,
+  FIND_PREVIOUS_MATCH_LABEL,
+  reviewFileRevealPath
+} from '../../../shared/reveal-in-folder'
 import {
   clampReviewMenuPosition,
   resolveReviewFileClick,
@@ -1032,7 +1037,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__find-nav"
             disabled={findMatches.length === 0}
             onClick={() => stepReviewFind(-1)}
-            aria-label="上一条"
+            aria-label={FIND_PREVIOUS_MATCH_LABEL}
           >
             ↑
           </button>
@@ -1041,7 +1046,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__find-nav"
             disabled={findMatches.length === 0}
             onClick={() => stepReviewFind(1)}
-            aria-label="下一条"
+            aria-label={FIND_NEXT_MATCH_LABEL}
           >
             ↓
           </button>
@@ -1049,7 +1054,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             type="button"
             className="changes-panel__find-nav"
             onClick={() => setFindOpen(false)}
-            aria-label="关闭查找"
+            aria-label={FILE_CLOSE_LABEL}
           >
             ×
           </button>

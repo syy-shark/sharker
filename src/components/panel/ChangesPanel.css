@@ -459,6 +459,7 @@ html.theme-dark .changes-panel__file-menu {
   color: var(--text-secondary);
   font-size: 11px;
   text-align: right;
+  white-space: nowrap;
 }
 
 .changes-panel__find-nav {

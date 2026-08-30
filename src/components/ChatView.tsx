@@ -140,7 +140,14 @@ import {
   paintSelectionHighlight
 } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
-import { FIND_IN_CHAT_LABEL, RESTORE_LABEL, WORKTREE_RESTORE_BANNER } from '../../shared/reveal-in-folder'
+import {
+  FILE_CLOSE_LABEL,
+  FIND_IN_CHAT_LABEL,
+  FIND_NEXT_MATCH_LABEL,
+  FIND_PREVIOUS_MATCH_LABEL,
+  RESTORE_LABEL,
+  WORKTREE_RESTORE_BANNER
+} from '../../shared/reveal-in-folder'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -2440,7 +2447,7 @@ export const ChatView = memo(function ChatView({
             className="chat-find__nav"
             disabled={findHits.length === 0}
             onClick={() => stepFindHit(-1)}
-            aria-label="上一条"
+            aria-label={FIND_PREVIOUS_MATCH_LABEL}
           >
             ↑
           </button>
@@ -2449,7 +2456,7 @@ export const ChatView = memo(function ChatView({
             className="chat-find__nav"
             disabled={findHits.length === 0}
             onClick={() => stepFindHit(1)}
-            aria-label="下一条"
+            aria-label={FIND_NEXT_MATCH_LABEL}
           >
             ↓
           </button>
@@ -2459,7 +2466,7 @@ export const ChatView = memo(function ChatView({
             onClick={() => {
               setFindOpen(false)
             }}
-            aria-label="关闭查找"
+            aria-label={FILE_CLOSE_LABEL}
           >
             ×
           </button>
