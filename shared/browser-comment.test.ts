@@ -3,6 +3,7 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
+  ANNOTATION_MODE_LABEL,
   BROWSER_COMMENT_PREFIX,
   browserCommentAnnotateScript,
   browserCommentSetScript,
@@ -110,5 +111,10 @@ describe('browser comment', () => {
     expect(browserSrc).toContain('isBrowserAnnotateToggleChord')
     expect(browserSrc).toContain('toggleAnnotate')
     expect(browserSrc).toContain('parsed.immediate')
+    expect(ANNOTATION_MODE_LABEL).toBe('Annotation mode')
+    expect(browserSrc).toContain('ANNOTATION_MODE_LABEL')
+    expect(browserSrc).toContain('TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL')
+    expect(browserSrc).not.toContain('>批注<')
+    expect(browserSrc).not.toContain('aria-label="批注页面"')
   })
 })

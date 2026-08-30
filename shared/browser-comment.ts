@@ -5,6 +5,9 @@
  * @see shared/ARCH.md
  */
 
+/** Official built-in browser mode (learn.chatgpt.com/docs/browser: Turn on Annotation mode). */
+export const ANNOTATION_MODE_LABEL = 'Annotation mode'
+
 export const BROWSER_COMMENT_PREFIX = '__SHARKER_BROWSER_COMMENT__'
 
 export type BrowserCommentKind = 'element' | 'area'

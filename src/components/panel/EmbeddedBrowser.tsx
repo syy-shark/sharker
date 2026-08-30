@@ -12,6 +12,7 @@ import {
   type BrowserStartTheme
 } from './browser-start-page'
 import {
+  ANNOTATION_MODE_LABEL,
   browserCommentSetScript,
   canAnnotateBrowserUrl,
   formatBrowserCommentExcerpt,
@@ -24,6 +25,7 @@ import {
 import {
   BROWSER_HISTORY_CHANGED_EVENT,
   BROWSER_SESSION_PARTITION,
+  SEARCH_FROM_THE_ADDRESS_BAR_LABEL,
   browserHistoryLabel,
   inAppBrowserPopupUrl,
   recordBrowserHistoryVisit,
@@ -32,6 +34,13 @@ import {
   suggestBrowserOmnibox,
   type BrowserHistoryEntry
 } from '../../../shared/browser-history'
+import {
+  BROWSER_BACK_LABEL,
+  BROWSER_FORWARD_LABEL,
+  OPEN_BROWSER_TAB_LABEL,
+  RELOAD_BROWSER_PAGE_LABEL,
+  TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL
+} from '../../../shared/reveal-in-folder'
 import { loadBrowserHistory, saveBrowserHistory } from '../../lib/browser-history-store'
 import { PAGE_GLASS_INJECT_CSS, shouldInjectGlass } from './browser-glass-css'
 import type { SideChatSource } from '../../../shared/side-chat-quote'
@@ -554,8 +563,8 @@ export function EmbeddedBrowser({
             className="embedded-browser-icon-btn"
             onClick={goBack}
             disabled={!canBack}
-            aria-label="后退"
-            title="后退"
+            aria-label={BROWSER_BACK_LABEL}
+            title={BROWSER_BACK_LABEL}
           >
             <ArrowLeft size={15} strokeWidth={2} aria-hidden />
           </button>
@@ -564,8 +573,8 @@ export function EmbeddedBrowser({
             className="embedded-browser-icon-btn"
             onClick={goForward}
             disabled={!canForward}
-            aria-label="前进"
-            title="前进"
+            aria-label={BROWSER_FORWARD_LABEL}
+            title={BROWSER_FORWARD_LABEL}
           >
             <ArrowRight size={15} strokeWidth={2} aria-hidden />
           </button>
@@ -573,8 +582,8 @@ export function EmbeddedBrowser({
             type="button"
             className="embedded-browser-icon-btn"
             onClick={reload}
-            aria-label={loading ? '停止' : '刷新'}
-            title={loading ? '停止' : '刷新'}
+            aria-label={loading ? '停止' : RELOAD_BROWSER_PAGE_LABEL}
+            title={loading ? '停止' : RELOAD_BROWSER_PAGE_LABEL}
           >
             <RotateCw
               size={14}
@@ -633,7 +642,7 @@ export function EmbeddedBrowser({
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
-            aria-label="地址栏"
+            aria-label={SEARCH_FROM_THE_ADDRESS_BAR_LABEL}
             aria-autocomplete="list"
             aria-expanded={suggestOpen && suggestions.length > 0}
           />
@@ -664,27 +673,21 @@ export function EmbeddedBrowser({
           type="button"
           className="embedded-browser-home-btn"
           onClick={goHome}
-          title="新标签页"
-          aria-label="新标签页"
+          title={OPEN_BROWSER_TAB_LABEL}
+          aria-label={OPEN_BROWSER_TAB_LABEL}
         >
-          主页
+          {OPEN_BROWSER_TAB_LABEL}
         </button>
         <button
           type="button"
           className={`embedded-browser-annotate-btn${annotating ? ' is-on' : ''}`}
           aria-pressed={annotating}
-          aria-label={annotating ? '关闭批注' : '批注页面'}
-          title={
-            canAnnotateBrowserUrl(url)
-              ? annotating
-                ? '关闭批注 ⌘.'
-                : '批注：点元素或拖选区域 · Shift+点选区域 · ⌘/Ctrl+点立刻加入 ⌘.'
-              : '打开网页后再批注'
-          }
+          aria-label={TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL}
+          title={TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL}
           onClick={toggleAnnotate}
         >
           <PenLine size={14} strokeWidth={2} aria-hidden />
-          批注
+          {ANNOTATION_MODE_LABEL}
         </button>
       </div>
 
