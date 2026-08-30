@@ -77,7 +77,7 @@
 | `workbench-shortcuts.test.ts` | 默认和弦，含 ⌘J 开关面板 / Ctrl+` 终端、⌘G / ⌘⇧G 不绑 Search chats（Not assigned by default）、⌘⌥U 活动视图 / ⌘⌥⇧U 子 Agent、⌘⌥O / ⌘⌥N 独立新对话、⌘⌥1–6 / ⌘⌥← / ⌘⌥⇧O / ⌘⌥⇧C / ⌘Z / Ctrl+Y / Numpad / ⌘⌥B 开关审查 / ⌃⇧G 打开审查（⌘⇧G 不打开审查）、⌃⇧M 打开模型选择（⌘⇧M 不打开）、⌃Tab / ⌃⇧Tab |
 | `app-undo.ts` | 应用操作撤销栈（归档 / 项目批量归档 / 置顶 / 重命名 / 未读）；输入框 / 浏览器 / 终端不拦截 |
 | `app-undo.test.ts` | 撤销/重做栈与上限 |
-| `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串解绑；`shouldInterruptTurn` 默认裸 Esc（可改绑 / 解绑；IME 选词与 keyCode 229 不触发）；F1–F24 可单独成键（对标 Codex `interrupt_turn = "f12"`） |
+| `keymap.ts` | 用户覆盖：编码和弦、先覆盖后默认、空串 / 空数组解绑；一条命令可存多条和弦（对标官方桌面 `keybindings.json` 重复 command 行）；`shouldInterruptTurn` 默认裸 Esc（可改绑 / 解绑；IME 选词与 keyCode 229 不触发）；F1–F24 可单独成键（对标 Codex `interrupt_turn = "f12"`） |
 | `keymap.test.ts` | 改绑后默认失效 |
 | `debug-config.ts` | `/debug-config` 本机设置摘要（不含 Key；记忆行含功能总开关） |
 | `debug-config.test.ts` | 密钥打码 |
