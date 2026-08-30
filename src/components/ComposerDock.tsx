@@ -49,6 +49,7 @@ import {
   BANG_SLASH_COMMAND,
   composerSlashLine,
   SLASH_COMMANDS,
+  SLASH_COMMANDS_LABEL,
   slashItemsWithSkills,
   type SlashCommandMeta
 } from '../../shared/slash-commands'
@@ -1559,7 +1560,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="引用 Skill"
+              aria-label={SKILLS_LABEL}
               aria-activedescendant={
                 skillHits[skillActiveIndex] ? `skill-option-${skillHits[skillActiveIndex].name}` : undefined
               }
@@ -1596,7 +1597,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="斜杠命令"
+              aria-label={SLASH_COMMANDS_LABEL}
               aria-activedescendant={
                 slashItems[slashActiveIndex] ? `slash-option-${slashItems[slashActiveIndex].name}` : undefined
               }

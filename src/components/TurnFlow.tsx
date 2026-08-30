@@ -36,6 +36,7 @@ import {
   formatStreamingFallbackLabel,
   isOfficialActivityHeadTitle,
   THINKING_LABEL,
+  WORKING_LABEL,
   liveThoughtBody,
   liveThinkingText,
   processElapsedSeconds,
@@ -881,7 +882,7 @@ export const TurnFlow = memo(function TurnFlow({
   })
   const headStep = liveHead.step
 
-  const liveLabel = isStreaming ? liveHead.label : '处理中'
+  const liveLabel = isStreaming ? liveHead.label : WORKING_LABEL
 
   let liveDetail: string | undefined
   if (isStreaming) {
@@ -892,7 +893,7 @@ export const TurnFlow = memo(function TurnFlow({
   }
 
   // 文案粘滞：同相位内 280ms 内不来回跳；真正阶段切换时带 swap 动画
-  const rawLiveLabel = isStreaming ? liveLabel : '处理中'
+  const rawLiveLabel = isStreaming ? liveLabel : WORKING_LABEL
   const rawLiveDetail = isStreaming ? liveDetail : undefined
   // hooks 必须在任何 early return 之前调用；layout 阶段同步，避免首帧先闪「处理中」
   useLayoutEffect(() => {
@@ -940,7 +941,7 @@ export const TurnFlow = memo(function TurnFlow({
   if (!isStreaming && chronological.length === 0) return null
   if (!isStreaming && steps.length === 0) return null
 
-  const displayLiveLabel = isStreaming ? stickyLive.label : '处理中'
+  const displayLiveLabel = isStreaming ? stickyLive.label : WORKING_LABEL
   const displayLiveDetail = isStreaming ? stickyLive.detail : undefined
   const listSteps = displaySteps.filter(
     (s) =>

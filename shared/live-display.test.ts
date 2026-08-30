@@ -465,8 +465,10 @@ describe('elapsed clock', () => {
       'utf8'
     )
     expect(turnFlowSrc).toContain('AWAITING_APPROVAL_LABEL')
+    expect(turnFlowSrc).toContain('WORKING_LABEL')
     expect(turnFlowSrc).not.toContain('data-phase="approval"')
     expect(turnFlowSrc).not.toContain('>审批<')
+    expect(turnFlowSrc).not.toContain(": '处理中'")
     expect(formatStoppedAfterLabel(0)).toBe('You stopped after 0s')
     expect(stoppedAfterFootnote(2848)).toContain('You stopped after 47m 28s')
     expect(parseStoppedAfterSeconds('hello\n\n_(已停止 · 47m 28s)_')).toBe(2848)

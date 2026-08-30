@@ -206,13 +206,13 @@
 .inline-user-input__status {
   display: inline-flex;
   min-width: 0;
-  min-height: 18px;
   margin-right: auto;
   align-items: center;
-  gap: 6px;
   color: var(--text-muted);
-  font-size: 11px;
-  line-height: 18px;
+}
+
+.inline-user-input__status:empty {
+  display: none;
 }
 
 .inline-user-input__status svg {

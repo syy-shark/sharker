@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   buildUserInputResponse,
@@ -66,6 +67,13 @@ describe('request_user_input contract', () => {
     expect(summarizeUserInputRequest([])).toBe(USER_INPUT_QUESTION_REQUESTED)
     expect(USER_INPUT_QUESTION_REQUESTED).toBe('Question requested')
     expect(ANSWER_THE_QUESTIONS_TO_CONTINUE).toBe('Answer the questions to continue.')
+    const askSrc = readFileSync(
+      new URL('../src/components/InlineUserInput.tsx', import.meta.url),
+      'utf8'
+    )
+    expect(askSrc).toContain('USER_INPUT_OTHER_LABEL')
+    expect(askSrc).not.toContain('              正在提交')
+    expect(askSrc).not.toContain('写下你的选择')
 
     const empty = parseRequestUserInput({ questions: [] })
     expect(empty.ok).toBe(false)

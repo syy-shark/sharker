@@ -1,6 +1,6 @@
 /**
  * Codex 桌面 Ask User：选项 + Other；眉题 Question requested，提示 Answer the questions to continue.
- * 不发明选项备注、分页问卷或 60s/90s 空答。
+ * 提交中只转 spinner，不另挂「正在提交」以免挤高直播卡。不发明选项备注、分页问卷或 60s/90s 空答。
  * @see src/components/ARCH.md
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -160,7 +160,7 @@ export function InlineUserInput({ request, onRespond, responding = false }: Inli
                       type="text"
                       aria-label={USER_INPUT_OTHER_LABEL}
                       value={otherValue}
-                      placeholder="写下你的选择…"
+                      placeholder=""
                       onChange={(event) => typeOther(question.id, event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' && !event.shiftKey) {
@@ -179,12 +179,7 @@ export function InlineUserInput({ request, onRespond, responding = false }: Inli
 
       <div className="inline-user-input__actions">
         <span className="inline-user-input__status" role="status" aria-live="polite">
-          {busy ? (
-            <>
-              <LoaderCircle size={14} aria-hidden="true" />
-              正在提交
-            </>
-          ) : null}
+          {busy ? <LoaderCircle size={14} aria-hidden="true" /> : null}
         </span>
         <button
           type="button"

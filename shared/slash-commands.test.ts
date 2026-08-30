@@ -1,10 +1,12 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   composerSlashLine,
   filterSlashCommands,
   matchUiSlashCommand,
   slashItemsWithSkills,
-  SLASH_COMMANDS
+  SLASH_COMMANDS,
+  SLASH_COMMANDS_LABEL
 } from './slash-commands'
 import {
   formatPermissionChanged,
@@ -216,5 +218,17 @@ describe('slash commands', () => {
     expect(items.some((c) => c.name === 'review' && c.action === 'review_working_tree')).toBe(true)
     expect(items.some((c) => c.name === 'review-notes' && c.action === 'insert_skill')).toBe(true)
     expect(items.filter((c) => c.name === 'review')).toHaveLength(1)
+  })
+
+  it('uses official Slash commands on the live composer popup', () => {
+    expect(SLASH_COMMANDS_LABEL).toBe('Slash commands')
+    const composerSrc = readFileSync(
+      new URL('../src/components/ComposerDock.tsx', import.meta.url),
+      'utf8'
+    )
+    expect(composerSrc).toContain('SLASH_COMMANDS_LABEL')
+    expect(composerSrc).toContain('SKILLS_LABEL')
+    expect(composerSrc).not.toContain('aria-label="斜杠命令"')
+    expect(composerSrc).not.toContain('aria-label="引用 Skill"')
   })
 })
