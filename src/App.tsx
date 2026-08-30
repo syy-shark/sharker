@@ -109,6 +109,7 @@ import {
   shouldSkipLiveStreamDerivation,
   shouldSkipLiveStreamPublish
 } from '../shared/live-stream-core'
+import { snapshotFrozenProcessSteps } from '../shared/process-phases'
 import { LAST_TURN_UI_FLUSH_MS, shouldDeferLastTurnUi } from '../shared/last-turn-flush'
 import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import {
@@ -1585,7 +1586,11 @@ export default function App() {
     const priorSnap = getLiveStreamUi()
     const priorParts = nextLiveAnswerRenderParts(null, priorSnap)
     const priorCopyable = liveAnswerViewFromSnap(priorSnap).copyable
-    const priorProcess = snapshotRetiredLiveProcess(liveProcessViewFromSnap(priorSnap))
+    const priorView = liveProcessViewFromSnap(priorSnap)
+    const priorProcess = snapshotRetiredLiveProcess({
+      ...priorView,
+      steps: snapshotFrozenProcessSteps(priorView.processForFlow, { isStreaming: false })
+    })
     heldCompletedSegmentsRef.current = null
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)

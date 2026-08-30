@@ -6,12 +6,28 @@ import {
   remapProcessPhaseStepsOnThinkAppend,
   remapProcessPhaseStepsOnStreamEnd,
   retargetProcessPhaseStepsOnToolMeta,
-  reuseProcessPhaseSteps
+  reuseProcessPhaseSteps,
+  snapshotFrozenProcessSteps,
+  shouldUseFrozenProcessSteps
 } from './process-phases'
 import type { TurnSegment } from './types'
 
 describe('process phases privacy', () => {
   it('never exposes raw thinking content as step title', () => {
+    expect(shouldUseFrozenProcessSteps(undefined)).toBe(false)
+    expect(shouldUseFrozenProcessSteps(null)).toBe(false)
+    expect(shouldUseFrozenProcessSteps([])).toBe(true)
+    expect(snapshotFrozenProcessSteps([])).toEqual([])
+    const frozenThink = snapshotFrozenProcessSteps([
+      {
+        id: 't-frozen',
+        kind: 'thinking',
+        content: 'ponder',
+        status: 'done'
+      }
+    ])
+    expect(frozenThink.length).toBeGreaterThan(0)
+    expect(shouldUseFrozenProcessSteps(frozenThink)).toBe(true)
     const segments: TurnSegment[] = [
       {
         id: 't1',

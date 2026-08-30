@@ -8,6 +8,7 @@
  */
 
 import type { AssistantMeta, ChatAttachment, ChatMessage, TurnSegment } from './types'
+import type { ProcessPhaseStep } from './process-phases'
 import type { AnswerPart } from './turn-segments'
 
 /** 排队中的用户消息（归属固定 conversationId） */
@@ -532,6 +533,7 @@ export type RetiredLiveProcess = {
   generatingDemo: boolean
   answerStreaming: boolean
   hasThought: boolean
+  steps?: readonly ProcessPhaseStep[] | null
 }
 
 export type RetiredLiveArticle = {
@@ -551,6 +553,7 @@ export function snapshotRetiredLiveProcess(input: {
   generatingDemo?: boolean
   answerStreaming?: boolean
   hasThought?: boolean
+  steps?: readonly ProcessPhaseStep[] | null
 }): RetiredLiveProcess {
   const thinkText = String(input.thinkText ?? '')
   return {
@@ -559,7 +562,8 @@ export function snapshotRetiredLiveProcess(input: {
     contentStreaming: Boolean(input.contentStreaming),
     generatingDemo: Boolean(input.generatingDemo),
     answerStreaming: Boolean(input.answerStreaming),
-    hasThought: input.hasThought ?? Boolean(thinkText.trim())
+    hasThought: input.hasThought ?? Boolean(thinkText.trim()),
+    steps: input.steps ? input.steps.slice() : input.steps === null ? null : undefined
   }
 }
 

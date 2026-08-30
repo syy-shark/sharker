@@ -91,6 +91,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
           onNeedFullMessage={onNeedFullMessage}
           frozen={frozen}
           frozenThinkText={frozenProcess?.thinkText}
+          frozenSteps={frozenProcess?.steps}
         />
       </div>
     </div>

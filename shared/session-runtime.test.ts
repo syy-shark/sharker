@@ -674,10 +674,12 @@ describe('commitAssistantReply persist targeting', () => {
     const processSnap = snapshotRetiredLiveProcess({
       processForFlow: [{ id: 't1', kind: 'thinking', content: 'ponder' }],
       thinkText: 'ponder',
-      contentStreaming: true
+      contentStreaming: true,
+      steps: [{ id: 's1' } as never]
     })
     expect(processSnap.processForFlow).toHaveLength(1)
     expect(processSnap.contentStreaming).toBe(true)
+    expect(processSnap.steps).toHaveLength(1)
     expect(
       nextArchivedLiveArticles([], [{ ...first, process: processSnap }])[0]?.process?.thinkText
     ).toBe('ponder')

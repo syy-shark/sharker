@@ -1555,6 +1555,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('retireLiveArticle')
     expect(src('../src/App.tsx')).toContain('snapshotRetiredLiveProcess')
     expect(src('../src/App.tsx')).toContain('liveProcessViewFromSnap')
+    expect(src('../src/App.tsx')).toContain('snapshotFrozenProcessSteps')
     expect(src('../src/App.tsx')).toContain('takeEjectedLiveOverflow')
     expect(src('../src/App.tsx')).toContain('nextArchivedLiveArticles')
     expect(src('../src/App.tsx')).toContain('readMountedMessageRowHeight')
@@ -1567,6 +1568,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenProcess')
     expect(src('../src/components/ChatView.tsx')).toContain('frozenProcess')
     expect(src('../src/components/TurnFlow.tsx')).toContain('frozenThinkText')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('frozenSteps')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('shouldUseFrozenProcessSteps')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenSteps')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('useLiveStreamUiSelectWhen')
 
     expect(src('../src/components/TurnFlow.tsx')).toContain(

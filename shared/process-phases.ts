@@ -1,6 +1,7 @@
 /**
  * 将 TurnSegment 纯派生为前端执行阶段，不改变持久化契约。
  * 收束关 loading 时 `remapProcessPhaseStepsOnStreamEnd` 只把已有步换成完成后视图，不整表 derive。
+ * 历史冻结行用 `snapshotFrozenProcessSteps`；`shouldUseFrozenProcessSteps` 为真时重挂不再 derive。
  * @see shared/ARCH.md
  */
 import type { TurnSegment } from './types'
@@ -533,6 +534,23 @@ export function deriveChronologicalSteps(
   const isStreaming = options?.isStreaming ?? false
   const source = sourceSegments(segments, isStreaming)
   return buildStepsFromSource(source, isStreaming)
+}
+
+/** adopt 时收成完成后步骤；历史重挂复用同一对象，不再现场 derive。 */
+export function snapshotFrozenProcessSteps(
+  segments: readonly TurnSegment[],
+  options?: { isStreaming?: boolean }
+): ProcessPhaseStep[] {
+  return deriveChronologicalSteps(segments as TurnSegment[], {
+    isStreaming: Boolean(options?.isStreaming)
+  })
+}
+
+/** 有冻结步骤快照时重挂不再 derive；空数组也算快照。 */
+export function shouldUseFrozenProcessSteps(
+  frozenSteps?: readonly ProcessPhaseStep[] | null
+): boolean {
+  return frozenSteps != null
 }
 
 function sameReusableSegment(a: TurnSegment, b: TurnSegment): boolean {
