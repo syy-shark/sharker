@@ -49,9 +49,19 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([prose('Hello')], [prose('Hello world')])).toBe('text')
   })
 
-  it('does not classify a newly appended tool until the table is registered', () => {
+  it('does not classify a newly appended tool after closed prose until the table is registered', () => {
     const closed: TurnSegment = { ...prose('Hello'), status: 'done' }
     expect(shouldSkipLiveStreamDerivation([prose('Hello')], [closed, tool('active')])).toBeNull()
+  })
+
+  it('classifies a first-turn tool after thinking without waiting for the table', () => {
+    expect(shouldSkipLiveStreamDerivation([think('Hmm')], [think('Hmm'), tool('active')])).toBe(
+      'tool'
+    )
+    expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm'), tool('active')])).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([], [tool('active')])).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([], [tool('active')])).toBe(true)
+    expect(hasLiveProcessPhaseGrowHold(null, [tool('active')])).toBe(false)
   })
 
   it('does not grow-hold process phases on same-length think tokens', () => {

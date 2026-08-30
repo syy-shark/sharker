@@ -2,6 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
+ * 例外：首轮只有思考 / status 时新开普通工具可在核心判定，不必等表。
  * @see shared/ARCH.md
  */
 import { isInlineDemoPaintable, liveThinkingText, sameRefList } from './live-display'
@@ -123,6 +124,45 @@ function isLiveThinking(segment: TurnSegment): boolean {
 
 function isLiveStatus(segment: TurnSegment): boolean {
   return segment.kind === 'status'
+}
+
+function isLiveFirstTurnProcessPrefix(segment: TurnSegment): boolean {
+  return isLiveThinking(segment) || isLiveStatus(segment)
+}
+
+function liveFirstTurnPrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev === next) return true
+  if (prev.id !== next.id || prev.kind !== next.kind) return false
+  if (isLiveThinking(prev) && isLiveThinking(next)) return true
+  return isLiveStatus(prev) && isLiveStatus(next)
+}
+
+function isLiveFirstTurnTool(segment: TurnSegment): boolean {
+  return segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
+}
+
+/**
+ * 无表时：首轮只有思考 / status 时新开普通工具可走 cheap path。
+ * 已有工具、闭合散文、或 `present_inline_demo` 仍等表。
+ */
+export function liveCoreAppendedProcessToolsSkip(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): LiveStreamDerivationSkip | null {
+  if (next.length <= prev.length) return null
+  if (prev.some((segment) => !isLiveFirstTurnProcessPrefix(segment))) return null
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after || !liveFirstTurnPrefixHolds(before, after)) return null
+  }
+  const extras = next.slice(prev.length)
+  if (!extras.length) return null
+  if (!extras.every((segment) => isLiveFirstTurnTool(segment) || isLiveStatus(segment))) {
+    return null
+  }
+  if (!extras.some((segment) => isLiveFirstTurnTool(segment))) return null
+  return 'tool'
 }
 
 /** Same-length prefix-stable tail: token / last-line tool, no 7k detector scan (对标 Codex #22860). */
@@ -391,6 +431,8 @@ export function shouldSkipLiveStreamDerivation(
   if (!prevSegments) return null
   const sameLengthSkip = liveSameLengthDerivationSkip(prevSegments, segments)
   if (sameLengthSkip !== undefined) return sameLengthSkip
+  const coreToolSkip = liveCoreAppendedProcessToolsSkip(prevSegments, segments)
+  if (coreToolSkip) return coreToolSkip
   return liveStreamTable?.shouldSkipLiveStreamDerivation(prevSegments, segments) ?? null
 }
 
@@ -416,6 +458,7 @@ export function hasLiveProcessPhaseGrowHold(
     if (before.status === last.status && liveTailContentGrew(before, last)) return false
     return liveStreamTable?.hasLiveProcessPhaseGrowHold(prev, next) ?? true
   }
+  if (prev && liveCoreAppendedProcessToolsSkip(prev, next) === 'tool') return true
   return liveStreamTable?.hasLiveProcessPhaseGrowHold(prev, next) ?? false
 }
 
