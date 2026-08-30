@@ -249,6 +249,7 @@ import {
   type MemoryChatPick
 } from '../shared/memory-command'
 import {
+  copySkipLiveMessageId,
   lastCompletedAssistantText,
   listCopyOutputTargets,
   type CopyOutputTarget
@@ -6526,7 +6527,15 @@ export default function App() {
           break
         }
         case 'copy_last_output': {
-          const text = lastCompletedAssistantText(messagesRef.current)
+          const text = lastCompletedAssistantText(messagesRef.current, {
+            skipMessageId: copySkipLiveMessageId({
+              liveAssistantId: liveAssistantIdRef.current,
+              turnInFlight:
+                sendInFlightRef.current ||
+                loading ||
+                Boolean(streamingRef.current.trim())
+            })
+          })
           if (!text) {
             appendLocalNote('还没有可复制的助手回复。')
             break
@@ -7153,7 +7162,15 @@ export default function App() {
         return
       }
       if (action === 'copy_last_output') {
-        const text = lastCompletedAssistantText(messagesRef.current)
+        const text = lastCompletedAssistantText(messagesRef.current, {
+          skipMessageId: copySkipLiveMessageId({
+            liveAssistantId: liveAssistantIdRef.current,
+            turnInFlight:
+              sendInFlightRef.current ||
+              loading ||
+              Boolean(streamingRef.current.trim())
+          })
+        })
         if (text) {
           try {
             void navigator.clipboard.writeText(text)

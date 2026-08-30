@@ -78,7 +78,9 @@ describe('slash commands', () => {
     )
     expect(SLASH_COMMANDS.find((c) => c.name === 'title')?.action).toBe('rename_conversation')
     expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.action).toBe('copy_last_output')
-    expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.description).toContain('先选目标')
+    expect(SLASH_COMMANDS.find((c) => c.name === 'copy')?.description).toContain(
+      'latest completed Codex output'
+    )
     expect(SLASH_COMMANDS.find((c) => c.name === 'fast')?.action).toBe('set_fast')
     expect(SLASH_COMMANDS.find((c) => c.name === 'fast')?.description).toContain('输入框旁')
     expect(SLASH_COMMANDS.find((c) => c.name === 'skills')?.action).toBe('show_skills')

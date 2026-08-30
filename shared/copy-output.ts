@@ -1,20 +1,66 @@
 /**
  * `/copy`：复制最近一条已完成的助手正文（对标 Codex /copy · Ctrl+O）。
+ * 直播中跳过进行中预留行；斜杠确认 / 本机备注不当成模型输出。
  * 有围栏或引用时列出可选目标（对标 Codex /copy picker：整段 / 代码块 / 引用）。
  * @see shared/ARCH.md
  */
 
-/** 从后往前找非空助手消息 */
+type CopyableMessage = {
+  id?: string
+  role: string
+  content: string
+  meta?: {
+    outcome?: string
+    model?: string
+    durationSec?: number
+    hadThinking?: boolean
+    thinkingPreview?: string
+    segments?: unknown[]
+    activities?: unknown[]
+    changedFiles?: unknown[]
+  } | null
+}
+
+/** 模型回合留下的助手行（有过程 / 结果），不是 `/copy` 确认或本机备注 */
+export function isCompletedAssistantTurn(message: CopyableMessage): boolean {
+  if (message.role !== 'assistant') return false
+  const meta = message.meta
+  if (!meta) return false
+  if (meta.outcome || meta.model || meta.hadThinking) return true
+  if (meta.durationSec != null && meta.durationSec > 0) return true
+  if (Array.isArray(meta.segments) && meta.segments.length > 0) return true
+  if (Array.isArray(meta.activities) && meta.activities.length > 0) return true
+  if (String(meta.thinkingPreview || '').trim()) return true
+  if (Array.isArray(meta.changedFiles) && meta.changedFiles.length > 0) return true
+  return false
+}
+
+/** 直播未收束时不要把预留行当成已完成输出 */
+export function copySkipLiveMessageId(input: {
+  liveAssistantId?: string | null
+  turnInFlight?: boolean
+}): string | null {
+  if (!input.turnInFlight) return null
+  return input.liveAssistantId ?? null
+}
+
+/** 从后往前找最近一条已完成助手正文 */
 export function lastCompletedAssistantText(
-  messages: Array<{ role: string; content: string }>
+  messages: Array<CopyableMessage>,
+  options?: { skipMessageId?: string | null }
 ): string {
+  const skip = options?.skipMessageId || null
+  let fallback = ''
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i]
     if (m.role !== 'assistant') continue
+    if (skip && m.id === skip) continue
     const text = (m.content || '').trim()
-    if (text) return text
+    if (!text) continue
+    if (!fallback) fallback = text
+    if (isCompletedAssistantTurn(m)) return text
   }
-  return ''
+  return fallback
 }
 
 /** `/copy` 可选目标 */

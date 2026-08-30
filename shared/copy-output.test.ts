@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { lastCompletedAssistantText, listCopyOutputTargets } from './copy-output'
+import {
+  copySkipLiveMessageId,
+  lastCompletedAssistantText,
+  listCopyOutputTargets
+} from './copy-output'
 
 describe('copy output', () => {
   it('returns the latest completed assistant text', () => {
@@ -11,6 +15,23 @@ describe('copy output', () => {
         { role: 'assistant', content: '  two  ' }
       ])
     ).toBe('two')
+    expect(
+      lastCompletedAssistantText([
+        { role: 'assistant', content: 'keep', meta: { outcome: 'success' } },
+        { role: 'assistant', content: '已复制上一条助手回复。' }
+      ])
+    ).toBe('keep')
+    expect(
+      lastCompletedAssistantText(
+        [
+          { id: 'done', role: 'assistant', content: 'keep', meta: { model: 'kimi' } },
+          { id: 'live', role: 'assistant', content: 'partial stream' }
+        ],
+        { skipMessageId: 'live' }
+      )
+    ).toBe('keep')
+    expect(copySkipLiveMessageId({ liveAssistantId: 'a1', turnInFlight: true })).toBe('a1')
+    expect(copySkipLiveMessageId({ liveAssistantId: 'a1', turnInFlight: false })).toBeNull()
   })
 
   it('skips empty assistant rows', () => {
