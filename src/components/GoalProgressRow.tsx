@@ -1,5 +1,5 @@
 /**
- * 线程目标进度行：对标 Codex Goal 模式，放在输入框上方。
+ * Goal mode 进度行：对标 Codex Goal 模式，放在输入框上方。
  * 耗时用独立秒表；Paused 冻结；不接收直播 token，避免跟流式重绘。
  * @see src/components/ARCH.md
  */

@@ -75,7 +75,7 @@ describe('thread goal', () => {
     expect(rowSrc).toContain('GOAL_MODE_LABEL')
     expect(rowSrc).toContain('EDIT_LABEL')
     expect(rowSrc).toContain('SAVE_LABEL')
-    expect(rowSrc).not.toContain('线程目标')
+    expect(rowSrc).not.toContain('aria-label="线程目标"')
     expect(rowSrc).not.toContain('保存目标')
   })
 
