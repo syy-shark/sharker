@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
   canExportChatImage,
@@ -134,5 +137,11 @@ describe('chat-image', () => {
       height: 40,
       scale: 1
     })
+    const imageSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatImage.tsx'),
+      'utf8'
+    )
+    expect(imageSrc).toContain('FILE_CLOSE_LABEL')
+    expect(imageSrc).not.toContain('aria-label="关闭图片预览"')
   })
 })

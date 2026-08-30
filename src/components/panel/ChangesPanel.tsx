@@ -1,6 +1,6 @@
 /**
  * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
- * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line）。
+ * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line or focus browser address bar）。
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
  * 行内评论「插入输入框」只接草稿，不自动开一轮（对标 Codex send a follow-up after comments）。
@@ -41,6 +41,7 @@ import {
   FILE_CLOSE_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
+  GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
   reviewFileRevealPath
 } from '../../../shared/reveal-in-folder'
 import {
@@ -1099,7 +1100,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                   panelRef.current?.focus()
                 }
               }}
-              aria-label="跳到行"
+              aria-label={GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL}
               placeholder="行号"
             />
           </label>

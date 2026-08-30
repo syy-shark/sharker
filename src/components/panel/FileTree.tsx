@@ -1,6 +1,6 @@
 /**
  * 工作区文件树（右侧面板）：Home 仅目录；项目可打开文件预览并跳到引用行；HTML 无行号进内置浏览器；Markdown 默认可切富预览。
- * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line）；划选出加入对话 / 旁路提问。
+ * 文本预览聚焦时 ⌘L 打开跳行框（对标 Codex Go to line or focus browser address bar）；划选出加入对话 / 旁路提问。
  * 图片预览按预览窗 CSS 像素 contain（对标 Codex #26851 / #31112），不订直播 token。
  * 源码预览按扩展名 highlight.js 着色（对标 Codex 文件查看器 / #18966），不发明 .tex 语法。
  * 文件右键打开 / Open in Finder / Copy path，目录只揭示 / 复制（对标 Codex file tree Open menu）。
@@ -44,6 +44,7 @@ import {
   dispatchCopyWorkspaceFilePath,
   dispatchRevealWorkspaceFile
 } from '../../lib/open-workspace-file'
+import { FILE_CLOSE_LABEL, GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL } from '../../../shared/reveal-in-folder'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -590,7 +591,9 @@ export const FileTree = memo(function FileTree({
             <span
               className="file-tree-viewer-name"
               title={
-                openFile.kind === 'text' ? `${openFile.path} · ⌘L 跳到行` : openFile.path
+                openFile.kind === 'text'
+                  ? `${openFile.path} · ${GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL}`
+                  : openFile.path
               }
             >
               {openFile.path.split('/').pop()}
@@ -616,7 +619,7 @@ export const FileTree = memo(function FileTree({
                 </button>
               ) : null}
               <button type="button" className="file-tree-viewer-close" onClick={() => setOpenFile(null)}>
-                关闭
+                {FILE_CLOSE_LABEL}
               </button>
             </div>
           </div>
@@ -644,7 +647,7 @@ export const FileTree = memo(function FileTree({
                       viewerBodyRef.current?.focus({ preventScroll: true })
                     }
                   }}
-                  aria-label="跳到行"
+                  aria-label={GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL}
                   placeholder="行号"
                 />
               </label>

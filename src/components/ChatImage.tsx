@@ -33,6 +33,7 @@ import {
   type ChatImageExportInput
 } from '../../shared/chat-image'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
+import { FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
 import {
   dispatchCopyWorkspaceFilePath,
   dispatchOpenWorkspaceFile,
@@ -375,7 +376,7 @@ export function ChatImage({
               <button
                 type="button"
                 className="chat-image-lightbox-backdrop"
-                aria-label="关闭图片预览"
+                aria-label={FILE_CLOSE_LABEL}
                 onClick={closeLightbox}
               />
               <div
@@ -436,8 +437,8 @@ export function ChatImage({
                 <button
                   type="button"
                   className="message-actions-btn"
-                  title="关闭"
-                  aria-label="关闭图片预览"
+                  title={FILE_CLOSE_LABEL}
+                  aria-label={FILE_CLOSE_LABEL}
                   onClick={closeLightbox}
                 >
                   <X size={16} aria-hidden />
