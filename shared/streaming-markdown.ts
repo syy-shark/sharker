@@ -3783,9 +3783,18 @@ function firstMatchingLineStart(text: string, match: (line: string) => boolean):
   return null
 }
 
+function lineCouldStartLastBlock(line: string, type: CheapProseBlock['type']): boolean {
+  if (type === 'list') return Boolean(parseListLine(line))
+  if (type === 'quote') return parseQuoteLine(line) !== null
+  if (type === 'table') return isGfmTableRow(line) || looksLikeGfmTableCells(line)
+  if (type === 'pre') return Boolean(parseFenceLine(line)) || isIndentCodeLine(line)
+  return true
+}
+
 /**
  * 最后一块窗口：从文末往前扩，取仍只解析成一块且类型对得上的最长后缀
  * （前面已有同型引用 / 列表 / 表 / 围栏时不要指到第一处）。
+ * 只在可能开块的行上 `parseCheapProseBlocks`，续行不扫（对标 Codex #22860）。
  */
 function lastSingleBlockStart(text: string, last: CheapProseBlock): number | null {
   const lines = text.split('\n')
@@ -3797,6 +3806,7 @@ function lastSingleBlockStart(text: string, last: CheapProseBlock): number | nul
   }
   let found: number | null = null
   for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lineCouldStartLastBlock(lines[i]!, last.type)) continue
     const suffix = text.slice(starts[i]!)
     if (!suffix) continue
     const parsed = parseCheapProseBlocks(suffix)
