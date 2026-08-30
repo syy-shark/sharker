@@ -713,6 +713,13 @@ describe('historical answer remount holds', () => {
     }
     expect(seedHistoricalAnswerHold('msg-hold', stamp)).toBeUndefined()
 
+    const holdSrc = readFileSync(fileURLToPath(new URL('./turn-segments.ts', import.meta.url)), 'utf8')
+    expect(holdSrc).toContain(
+      "import type { ProcessPhaseModel, ProcessPhaseStep } from './process-phases'"
+    )
+    expect(holdSrc).not.toMatch(/import \{[^}]*\} from '\.\/process-phases'/)
+    expect(holdSrc.includes('live-stream-slices')).toBe(false)
+
     const src = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/AssistantMessage.tsx'),
       'utf8'
