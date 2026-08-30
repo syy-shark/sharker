@@ -8,6 +8,8 @@ import {
   shouldRenderLiveMermaid,
   shouldWarmLiveMermaid,
   resolveLiveMermaidSvg,
+  shouldStartMermaidPaintJob,
+  shouldDeferMermaidPaintJob,
   takeMermaidRenderJob,
   prefetchMermaidSvgs,
   readUiMermaidTheme,
@@ -54,6 +56,12 @@ describe('mermaid-fence', () => {
       '<svg>s</svg>'
     )
     expect(resolveLiveMermaidSvg({ paint: true, svg: '' })).toBe('')
+    expect(shouldStartMermaidPaintJob({ paint: true, hasCachedSvg: true })).toBe(false)
+    expect(shouldStartMermaidPaintJob({ paint: true, hasCachedSvg: false })).toBe(true)
+    expect(shouldStartMermaidPaintJob({ paint: false, hasCachedSvg: false })).toBe(false)
+    expect(shouldDeferMermaidPaintJob({ preferImmediate: false })).toBe(true)
+    expect(shouldDeferMermaidPaintJob({ preferImmediate: true })).toBe(false)
+    expect(shouldDeferMermaidPaintJob({})).toBe(false)
     expect(readUiMermaidTheme()).toBe('default')
     expect(prefetchMermaidSvgs(['', '  '])).toBe(0)
     expect(prefetchMermaidSvgs(['graph TD\nA-->B'])).toBe(1)

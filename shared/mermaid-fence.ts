@@ -4,6 +4,7 @@
  * SVG 缓存避免收束 / 廉价尾 → 稳定块重挂时先闪回源码；`resolveLiveMermaidSvg` 收束后命中缓存则同一帧成图。
  * `loadMermaidApi` 给收束预取与成图共用同一动态 import；`takeMermaidRenderJob` /
  * `renderMermaidSvg` 让预取与组件共用同一次 `mermaid.render`，立刻跟进的重挂不取消已开工的成图。
+ * `shouldStartMermaidPaintJob` 缓存命中不再开工；`shouldDeferMermaidPaintJob` 远窗未命中推到下一帧。
  * @see shared/ARCH.md
  */
 
@@ -135,6 +136,19 @@ export function resolveLiveMermaidSvg(options: {
 }): string {
   if (!options.paint) return ''
   return options.svg || options.cached || ''
+}
+
+/** 缓存已有 SVG 时重挂不再开工 mermaid.render / setState。 */
+export function shouldStartMermaidPaintJob(options: {
+  paint: boolean
+  hasCachedSvg?: boolean
+}): boolean {
+  return options.paint && !options.hasCachedSvg
+}
+
+/** 远窗历史揭示帧把成图推到下一帧，避免跟 scrollHeight 补偿抢布局。 */
+export function shouldDeferMermaidPaintJob(options: { preferImmediate?: boolean }): boolean {
+  return options.preferImmediate === false
 }
 
 /** 直播未写完 `mermaid`：`mer` 起就挂 MermaidBlock，不认 `md` / `mm` */

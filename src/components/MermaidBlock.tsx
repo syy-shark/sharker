@@ -3,6 +3,7 @@
  * 成图前继续代码尾，避免闭合瞬间卸掉再挂一套，也不在 16ms 热路径跑 mermaid.render。
  * 直播中围栏闭合后 effect 开工成图写缓存（不 setSvg）；收束后若 SVG 缓存已暖，同一帧成图；
  * 否则与收束预取共用 `renderMermaidSvg`，立刻跟进的重挂不取消已开工的成图。
+ * 缓存命中重挂不再 render / setSvg；远窗 FenceImmediateHighlightContext 为假时未命中成图推到下一帧。
  * @see src/components/ARCH.md
  */
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -13,12 +14,19 @@ import {
   renderMermaidSvg,
   resolveLiveMermaidSvg,
   shouldRenderLiveMermaid,
+  shouldStartMermaidPaintJob,
+  shouldDeferMermaidPaintJob,
   shouldWarmLiveMermaid,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
-import { ArtifactCodeLines, CodeArtifactShell, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
+import {
+  ArtifactCodeLines,
+  CodeArtifactShell,
+  FenceImmediateHighlightContext,
+  LiveMarkdownStreamingContext
+} from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
 function useUiMermaidTheme(): MermaidUiTheme {
@@ -52,6 +60,7 @@ export function MermaidBlock({
   const theme = useUiMermaidTheme()
   const source = code.replace(/\n$/, '')
   const streamingFromTree = useContext(LiveMarkdownStreamingContext)
+  const preferImmediate = useContext(FenceImmediateHighlightContext)
   const stream = streaming || streamingFromTree
   const paint = shouldRenderLiveMermaid({ closed, streaming: stream })
   const [svg, setSvg] = useState(() =>
@@ -85,24 +94,43 @@ export function MermaidBlock({
       setFailed(false)
       return
     }
+    if (
+      !shouldStartMermaidPaintJob({
+        paint,
+        hasCachedSvg: Boolean(readCachedMermaidSvg(source, theme))
+      })
+    ) {
+      return
+    }
     let cancelled = false
-    void renderMermaidSvg(text, theme)
-      .then((next) => {
-        if (!cancelled) {
-          setSvg(next)
-          setFailed(false)
-        }
+    let raf = 0
+    const start = () => {
+      void renderMermaidSvg(text, theme)
+        .then((next) => {
+          if (!cancelled) {
+            setSvg(next)
+            setFailed(false)
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setSvg('')
+            setFailed(true)
+          }
+        })
+    }
+    if (shouldDeferMermaidPaintJob({ preferImmediate })) {
+      raf = requestAnimationFrame(() => {
+        if (!cancelled) start()
       })
-      .catch(() => {
-        if (!cancelled) {
-          setSvg('')
-          setFailed(true)
-        }
-      })
+    } else {
+      start()
+    }
     return () => {
       cancelled = true
+      if (raf) cancelAnimationFrame(raf)
     }
-  }, [paint, source, theme, closed, stream])
+  }, [paint, source, theme, closed, stream, preferImmediate])
 
   const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
     <CodeArtifactShell
