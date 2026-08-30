@@ -3,9 +3,11 @@
  * 末段已是增长中的思考 / 正文时只续尾，不扫「准备中」status（对标 Codex #22860）。
  * 进度心跳 / 相同详情退回同一数组，避免每秒打穿过程切片（对标 Codex #19260）。
  * 自动压缩 status 在 `context_compress` 时收成 done，避免准备中卡到摘要结束。
+ * 收束后历史行把 answer / process 派生写入 hold，窗口重挂 `seedHistoricalAnswerHold` 同一对象回来。
  * @see shared/ARCH.md
  */
 import { formatCompactActivity } from './compact-activity'
+import type { ProcessPhaseModel, ProcessPhaseStep } from './process-phases'
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
 import {
   formatAwaitingApprovalLabel,
@@ -1486,4 +1488,79 @@ export function thinkingPreviewFromSegments(segments: TurnSegment[]): string {
     .map((s) => s.content?.trim() ?? '')
     .filter(Boolean)
     .join('\n\n')
+}
+
+/** 历史助手行重挂：正文部件 / 过程片段 / 阶段摘要 / 冻结步骤同一对象回来 */
+export type HistoricalAnswerHold = {
+  stamp: string
+  extractedFinal: string
+  answerParts: AnswerPart[]
+  processOnly: TurnSegment[]
+  processForFlow: TurnSegment[]
+  processPhases: ProcessPhaseModel | null
+  processSummary: string | null
+  frozenSteps: ProcessPhaseStep[]
+}
+
+export const HISTORICAL_ANSWER_HOLD_LIMIT = 64
+
+const historicalAnswerHolds = new Map<string, HistoricalAnswerHold>()
+
+/** 直播中不写；收束后的历史行才记住派生结果 */
+export function shouldRememberHistoricalAnswerHold(input: { streaming?: boolean }): boolean {
+  return !input.streaming
+}
+
+/** 消息 id + 末段指纹；全文补载或结果变化会换 stamp */
+export function historicalAnswerHoldStamp(input: {
+  messageId: string
+  content: string
+  durationSec?: number
+  outcome?: string
+  segments?: readonly TurnSegment[] | null
+}): string {
+  const segs = input.segments
+  const last = segs?.length ? segs[segs.length - 1] : undefined
+  return [
+    input.messageId,
+    input.content.length,
+    input.durationSec ?? '',
+    input.outcome ?? '',
+    segs?.length ?? 0,
+    last?.id ?? '',
+    last?.content.length ?? 0,
+    last?.status ?? '',
+    last?.kind ?? ''
+  ].join(':')
+}
+
+export function writeHistoricalAnswerHold(
+  messageId: string,
+  hold: HistoricalAnswerHold
+): HistoricalAnswerHold {
+  if (!messageId) return hold
+  historicalAnswerHolds.delete(messageId)
+  historicalAnswerHolds.set(messageId, hold)
+  while (historicalAnswerHolds.size > HISTORICAL_ANSWER_HOLD_LIMIT) {
+    const oldest = historicalAnswerHolds.keys().next().value
+    if (oldest === undefined) break
+    historicalAnswerHolds.delete(oldest)
+  }
+  return hold
+}
+
+export function seedHistoricalAnswerHold(
+  messageId: string,
+  stamp: string
+): HistoricalAnswerHold | undefined {
+  if (!messageId || !stamp) return undefined
+  const hit = historicalAnswerHolds.get(messageId)
+  if (!hit || hit.stamp !== stamp) return undefined
+  historicalAnswerHolds.delete(messageId)
+  historicalAnswerHolds.set(messageId, hit)
+  return hit
+}
+
+export function clearHistoricalAnswerHolds(): void {
+  historicalAnswerHolds.clear()
 }

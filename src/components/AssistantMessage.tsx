@@ -1,5 +1,6 @@
 /**
  * AI 助手消息：有序过程流（思考/旁白/工具）+ 最终回答
+ * 收束后历史行写入 hold；窗口重挂复用正文部件 / 过程切片 / frozenSteps。
  * @see src/ARCH.md
  */
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
@@ -12,11 +13,19 @@ import {
   buildAnswerParts,
   extractFinalContent,
   hasProcessFlow,
+  historicalAnswerHoldStamp,
   processSegments,
   reuseAnswerParts,
-  shouldDisplayFinalBody
+  seedHistoricalAnswerHold,
+  shouldDisplayFinalBody,
+  shouldRememberHistoricalAnswerHold,
+  writeHistoricalAnswerHold
 } from '../../shared/turn-segments'
-import { deriveProcessPhases, summarizeProcessPhases } from '../../shared/process-phases'
+import {
+  deriveProcessPhases,
+  snapshotFrozenProcessSteps,
+  summarizeProcessPhases
+} from '../../shared/process-phases'
 import {
   liveThinkingText,
   isInlineDemoPaintable,
@@ -148,6 +157,16 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   const segments = liveSegments ?? meta?.segments
   const useSegmentFlow = Boolean(segments && segments.length > 0)
+  const rememberHold = shouldRememberHistoricalAnswerHold({ streaming: isStreaming })
+  const holdStamp = historicalAnswerHoldStamp({
+    messageId,
+    content,
+    durationSec: meta?.durationSec,
+    outcome: meta?.outcome,
+    segments
+  })
+  const seededHold =
+    rememberHold && useSegmentFlow ? seedHistoricalAnswerHold(messageId, holdStamp) : undefined
 
   const browsedFiles = meta?.browsedFiles ?? []
   const browsedLeaf = exploreNameFromPath(browsedFiles[0])
@@ -195,8 +214,13 @@ export const AssistantMessage = memo(function AssistantMessage({
   }, [isStreaming, useSegmentFlow, segments?.length])
 
   const extractedFinal = useMemo(
-    () => (useSegmentFlow ? extractFinalContent(segments!, { isStreaming }) : ''),
-    [isStreaming, segments, useSegmentFlow]
+    () =>
+      seededHold
+        ? seededHold.extractedFinal
+        : useSegmentFlow
+          ? extractFinalContent(segments!, { isStreaming })
+          : '',
+    [isStreaming, seededHold, segments, useSegmentFlow]
   )
   // 错误/中止时 segment 可能只有 tool/status 而无 final 文本：回退到 message.content
   const finalContentRaw = (
@@ -224,6 +248,10 @@ export const AssistantMessage = memo(function AssistantMessage({
   // 文字 + 内联演示按时间顺序交错（可在 demo 上/下）
   const answerPartsRef = useRef<ReturnType<typeof buildAnswerParts>>([])
   const answerParts = useMemo(() => {
+    if (seededHold) {
+      answerPartsRef.current = seededHold.answerParts
+      return seededHold.answerParts
+    }
     if (!useSegmentFlow || !segments?.length || isError || isAborted) {
       answerPartsRef.current = []
       return []
@@ -231,11 +259,16 @@ export const AssistantMessage = memo(function AssistantMessage({
     const next = reuseAnswerParts(answerPartsRef.current, buildAnswerParts(segments, { isStreaming }))
     answerPartsRef.current = next
     return next
-  }, [useSegmentFlow, segments, isStreaming, isError, isAborted])
+  }, [useSegmentFlow, segments, isStreaming, isError, isAborted, seededHold])
 
   const processOnly = useMemo(
-    () => (useSegmentFlow ? processSegments(segments!, { isStreaming }) : []),
-    [isStreaming, segments, useSegmentFlow]
+    () =>
+      seededHold
+        ? seededHold.processOnly
+        : useSegmentFlow
+          ? processSegments(segments!, { isStreaming })
+          : [],
+    [isStreaming, seededHold, segments, useSegmentFlow]
   )
   // 过程区不再重复：主区已展示的文字 / 内联演示
   const answerTextIds = useMemo(
@@ -244,6 +277,10 @@ export const AssistantMessage = memo(function AssistantMessage({
   )
   const processForFlowRef = useRef<TurnSegment[]>([])
   const processForFlow = useMemo(() => {
+    if (seededHold) {
+      processForFlowRef.current = seededHold.processForFlow
+      return seededHold.processForFlow
+    }
     const next = processOnly.filter((s) => {
       if (s.toolName === 'present_inline_demo') return false
       if (s.kind === 'text' && answerTextIds.has(s.id)) return false
@@ -252,7 +289,7 @@ export const AssistantMessage = memo(function AssistantMessage({
     if (sameRefList(processForFlowRef.current, next)) return processForFlowRef.current
     processForFlowRef.current = next
     return next
-  }, [processOnly, answerTextIds])
+  }, [processOnly, answerTextIds, seededHold])
   const showFlowPanel = useSegmentFlow && (isStreaming ? true : flowOpen)
   /** 完成后可展开：真实工具 / 未进正文的旁白 / 错误。演示与闲聊不占按钮。 */
   const hasExpandableProcess = processForFlow.some(
@@ -288,20 +325,47 @@ export const AssistantMessage = memo(function AssistantMessage({
   const showCompletedProcess =
     !isStreaming && (hasExpandableProcess || (!useSegmentFlow && legacyExpandable))
   const phaseModel = useMemo(
-    () => (useSegmentFlow ? deriveProcessPhases(segments!, { isStreaming }) : null),
-    [isStreaming, segments, useSegmentFlow]
+    () =>
+      seededHold
+        ? seededHold.processPhases
+        : useSegmentFlow
+          ? deriveProcessPhases(segments!, { isStreaming })
+          : null,
+    [isStreaming, seededHold, segments, useSegmentFlow]
   )
-  const summary = phaseModel
-    ? summarizeProcessPhases(
-        phaseModel,
-        meta?.durationSec ?? shownDuration,
-        meta?.outcome === 'error' || meta?.outcome === 'aborted'
-          ? meta.outcome
-          : /^\*\*错误\*\*:?/u.test((content || '').trim())
-            ? 'error'
-            : 'success'
-      )
-    : null
+  const summary = seededHold
+    ? seededHold.processSummary
+    : phaseModel
+      ? summarizeProcessPhases(
+          phaseModel,
+          meta?.durationSec ?? shownDuration,
+          meta?.outcome === 'error' || meta?.outcome === 'aborted'
+            ? meta.outcome
+            : /^\*\*错误\*\*:?/u.test((content || '').trim())
+              ? 'error'
+              : 'success'
+        )
+      : null
+  const frozenSteps = useMemo(() => {
+    if (seededHold) return seededHold.frozenSteps
+    if (!rememberHold || !useSegmentFlow) return null
+    return snapshotFrozenProcessSteps(processForFlow, { isStreaming: false })
+  }, [processForFlow, rememberHold, seededHold, useSegmentFlow])
+  if (rememberHold && useSegmentFlow && holdStamp) {
+    writeHistoricalAnswerHold(
+      messageId,
+      seededHold ?? {
+        stamp: holdStamp,
+        extractedFinal,
+        answerParts,
+        processOnly,
+        processForFlow,
+        processPhases: phaseModel,
+        processSummary: summary,
+        frozenSteps: frozenSteps ?? []
+      }
+    )
+  }
   const showMetaRow =
     shownDuration != null ||
     browsedFiles.length > 0 ||
@@ -482,6 +546,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 <TurnFlow
                   segments={processForFlow}
                   isStreaming={false}
+                  frozenSteps={frozenSteps}
                   onOpenSubAgent={onOpenSubAgent}
                   toolOutputDisplay={toolOutputDisplay}
                   messageId={messageId}

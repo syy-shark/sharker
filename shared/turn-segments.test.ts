@@ -1,16 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   applyStreamChunk,
   buildAnswerParts,
+  clearHistoricalAnswerHolds,
   extractFinalContent,
   finalizeSegments,
   hasProcessFlow,
   hasStreamingDemoFence,
   hasStreamingDemoFenceGrowth,
+  historicalAnswerHoldStamp,
+  HISTORICAL_ANSWER_HOLD_LIMIT,
   isDemoFenceLangPrefix,
   processSegments,
-  reuseAnswerParts
+  reuseAnswerParts,
+  seedHistoricalAnswerHold,
+  shouldRememberHistoricalAnswerHold,
+  writeHistoricalAnswerHold
 } from './turn-segments'
 import { deriveProcessPhases } from './process-phases'
 import { TURN_START_LIVE_STATUS } from './live-display'
@@ -628,5 +637,97 @@ describe('process flow visibility', () => {
     ]
     const next = applyStreamChunk(segments, { type: 'harness_mode', harnessPhase: 'plan' })
     expect(next).toBe(segments)
+  })
+})
+
+describe('historical answer remount holds', () => {
+  afterEach(() => {
+    clearHistoricalAnswerHolds()
+  })
+
+  it('seeds the same committed parts and process slices on remount', () => {
+    expect(shouldRememberHistoricalAnswerHold({ streaming: true })).toBe(false)
+    expect(shouldRememberHistoricalAnswerHold({ streaming: false })).toBe(true)
+    expect(shouldRememberHistoricalAnswerHold({})).toBe(true)
+
+    const segments: TurnSegment[] = [
+      { id: 'think', kind: 'thinking', content: '分析', status: 'done' },
+      { id: 'read', kind: 'tool', toolName: 'read_file', status: 'done', content: '' },
+      { id: 'final', kind: 'text', role: 'final', content: '完成。', status: 'done' }
+    ]
+    const stamp = historicalAnswerHoldStamp({
+      messageId: 'msg-hold',
+      content: '完成。',
+      durationSec: 4,
+      outcome: 'success',
+      segments
+    })
+    expect(
+      historicalAnswerHoldStamp({
+        messageId: 'msg-hold',
+        content: '完成。补一句',
+        durationSec: 4,
+        outcome: 'success',
+        segments
+      })
+    ).not.toBe(stamp)
+    const grown = segments.map((s) =>
+      s.id === 'final' ? { ...s, content: '完成。补一句' } : s
+    )
+    expect(
+      historicalAnswerHoldStamp({
+        messageId: 'msg-hold',
+        content: '完成。',
+        durationSec: 4,
+        outcome: 'success',
+        segments: grown
+      })
+    ).not.toBe(stamp)
+
+    const answerParts = buildAnswerParts(segments, { isStreaming: false })
+    const processOnly = processSegments(segments, { isStreaming: false })
+    const hold = writeHistoricalAnswerHold('msg-hold', {
+      stamp,
+      extractedFinal: '完成。',
+      answerParts,
+      processOnly,
+      processForFlow: processOnly,
+      processPhases: null,
+      processSummary: 'Worked for · 4s',
+      frozenSteps: []
+    })
+    const seeded = seedHistoricalAnswerHold('msg-hold', stamp)
+    expect(seeded).toBe(hold)
+    expect(seeded?.answerParts).toBe(answerParts)
+    expect(seeded?.processOnly).toBe(processOnly)
+    expect(seeded?.frozenSteps).toBe(hold.frozenSteps)
+    expect(seedHistoricalAnswerHold('msg-hold', `${stamp}:mismatch`)).toBeUndefined()
+    expect(seedHistoricalAnswerHold('', stamp)).toBeUndefined()
+    expect(writeHistoricalAnswerHold('', hold)).toBe(hold)
+
+    for (let i = 0; i < HISTORICAL_ANSWER_HOLD_LIMIT + 1; i++) {
+      writeHistoricalAnswerHold(`hold-${i}`, {
+        ...hold,
+        stamp: `stamp-${i}`
+      })
+    }
+    expect(seedHistoricalAnswerHold('msg-hold', stamp)).toBeUndefined()
+
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/AssistantMessage.tsx'),
+      'utf8'
+    )
+    expect(src).toContain('seedHistoricalAnswerHold')
+    expect(src).toContain('writeHistoricalAnswerHold')
+    expect(src).toContain('shouldRememberHistoricalAnswerHold')
+    expect(src).toContain('snapshotFrozenProcessSteps')
+    expect(src).toContain('frozenSteps={frozenSteps}')
+    expect(src.includes('live-stream-slices')).toBe(false)
+
+    const chat = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
+      'utf8'
+    )
+    expect(chat).toContain('clearHistoricalAnswerHolds')
   })
 })
