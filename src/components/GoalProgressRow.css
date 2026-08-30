@@ -41,6 +41,8 @@
 
 .goal-progress-row-elapsed {
   flex-shrink: 0;
+  box-sizing: content-box;
+  min-width: 12ch;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);

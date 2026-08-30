@@ -24,6 +24,12 @@ export function loadThreadGoal(conversationId: string | null | undefined): Threa
       startedAt:
         typeof parsed.startedAt === 'number' && Number.isFinite(parsed.startedAt)
           ? parsed.startedAt
+          : undefined,
+      pausedAt:
+        parsed.status === 'paused' &&
+        typeof parsed.pausedAt === 'number' &&
+        Number.isFinite(parsed.pausedAt)
+          ? parsed.pausedAt
           : undefined
     }
   } catch {

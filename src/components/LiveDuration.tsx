@@ -14,25 +14,41 @@ export function formatLiveDuration(seconds: number): string {
   return formatElapsedClock(seconds)
 }
 
-function liveClockLabel(startedAt: number | null | undefined, fallback: string, now: number): string {
+function liveClockLabel(
+  startedAt: number | null | undefined,
+  endedAt: number | null | undefined,
+  fallback: string,
+  now: number
+): string {
   if (startedAt == null) return fallback
-  return formatElapsedClock(elapsedClockSeconds(startedAt, now))
+  return formatElapsedClock(elapsedClockSeconds(startedAt, endedAt ?? now))
 }
 
-/** 仅刷新自身的直播秒表 */
+/** 仅刷新自身的直播秒表；`endedAt` / `paused` 冻结（对标 Codex #29370） */
 export const LiveDuration = memo(function LiveDuration({
   startedAt,
+  endedAt,
+  paused = false,
   className,
   fallback = '0s'
 }: {
   startedAt?: number | null
+  endedAt?: number | null
+  paused?: boolean
   className?: string
   fallback?: string
 }) {
-  const [label, setLabel] = useState(() => liveClockLabel(startedAt, fallback, Date.now()))
+  const frozen = paused || endedAt != null
+  const [label, setLabel] = useState(() =>
+    liveClockLabel(startedAt, endedAt, fallback, Date.now())
+  )
   useEffect(() => {
     if (startedAt == null) {
       setLabel(fallback)
+      return
+    }
+    if (frozen) {
+      setLabel(liveClockLabel(startedAt, endedAt, fallback, Date.now()))
       return
     }
     let id = 0
@@ -45,6 +61,6 @@ export const LiveDuration = memo(function LiveDuration({
     }
     schedule()
     return () => window.clearTimeout(id)
-  }, [fallback, startedAt])
+  }, [endedAt, fallback, frozen, startedAt])
   return <span className={className}>{label}</span>
 })

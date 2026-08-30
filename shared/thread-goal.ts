@@ -16,6 +16,8 @@ export interface ThreadGoal {
   status: ThreadGoalStatus
   /** 设定时刻，进度行显示耗时；不表示自动多小时循环 */
   startedAt?: number
+  /** 暂停时刻；有值时秒表冻结，继续时从暂停前累计接上（对标 Codex #29370） */
+  pausedAt?: number
 }
 
 /** 官方：目标正文最多 4000 字 */
@@ -50,10 +52,17 @@ function clampGoalText(text: string): string {
   return next.length > GOAL_TEXT_MAX ? next.slice(0, GOAL_TEXT_MAX) : next
 }
 
+/** Paused 进度行冻结秒表的截止时刻；Active 继续走 `startedAt` */
+export function goalClockEndedAt(goal: ThreadGoal | null | undefined): number | undefined {
+  if (!goal || goal.status !== 'paused') return undefined
+  return goal.pausedAt
+}
+
 /** 把命令应用到当前目标，返回下一状态与助手说明 */
 export function applyGoalCommand(
   current: ThreadGoal | null,
-  command: GoalCommand
+  command: GoalCommand,
+  now = Date.now()
 ): { goal: ThreadGoal | null; note: string } {
   if (command.type === 'show') {
     if (!current?.text.trim()) {
@@ -73,7 +82,12 @@ export function applyGoalCommand(
       return { goal: current, note: '没有可暂停的目标。先用 `/goal 文本` 设定。' }
     }
     return {
-      goal: { ...current, status: 'paused', startedAt: current.startedAt },
+      goal: {
+        ...current,
+        status: 'paused',
+        startedAt: current.startedAt,
+        pausedAt: current.status === 'paused' ? current.pausedAt ?? now : now
+      },
       note: `已暂停线程目标：${current.text}`
     }
   }
@@ -81,8 +95,13 @@ export function applyGoalCommand(
     if (!current?.text.trim()) {
       return { goal: current, note: '没有可继续的目标。先用 `/goal 文本` 设定。' }
     }
+    let startedAt = current.startedAt
+    if (current.status === 'paused' && startedAt != null) {
+      const pausedAt = current.pausedAt ?? now
+      startedAt = now - (pausedAt - startedAt)
+    }
     return {
-      goal: { ...current, status: 'active', startedAt: current.startedAt },
+      goal: { ...current, status: 'active', startedAt, pausedAt: undefined },
       note: `已继续线程目标：${current.text}`
     }
   }
@@ -101,7 +120,7 @@ export function applyGoalCommand(
   }
   const text = clampGoalText(command.text)
   return {
-    goal: { text, status: 'active', startedAt: current?.startedAt ?? Date.now() },
+    goal: { text, status: 'active', startedAt: current?.startedAt ?? now, pausedAt: undefined },
     note: `已设定线程目标：${text}`
   }
 }

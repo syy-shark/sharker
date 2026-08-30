@@ -3,6 +3,7 @@ import {
   buildLiveHead,
   clampLockedScrollTop,
   ELAPSED_CLOCK_RESERVE_CH,
+  GOAL_ELAPSED_CLOCK_RESERVE_CH,
   formatElapsedClock,
   nextElapsedClockDelayMs,
   formatStoppedAfterClock,
@@ -433,8 +434,13 @@ describe('elapsed clock', () => {
     expect(formatElapsedClock(240)).toBe('4m')
     expect(formatElapsedClock(4140)).toBe('1h 9m')
     expect(formatElapsedClock(36000)).toBe('10h')
+    expect(formatElapsedClock(86340)).toBe('23h 59m')
+    expect(formatElapsedClock(86400)).toBe('1d 0h 0m')
+    expect(formatElapsedClock(258120)).toBe('2d 23h 42m')
     expect(formatElapsedClock(4140).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
     expect(formatElapsedClock(3599).length).toBeLessThanOrEqual(ELAPSED_CLOCK_RESERVE_CH)
+    expect(formatElapsedClock(86400).length).toBeLessThanOrEqual(GOAL_ELAPSED_CLOCK_RESERVE_CH)
+    expect(formatElapsedClock(258120).length).toBeLessThanOrEqual(GOAL_ELAPSED_CLOCK_RESERVE_CH)
     expect(nextElapsedClockDelayMs(0)).toBe(1000)
     expect(nextElapsedClockDelayMs(23)).toBe(1000)
     expect(nextElapsedClockDelayMs(59)).toBe(1000)

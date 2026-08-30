@@ -376,7 +376,10 @@ export function processElapsedSeconds(options: {
 /** 直播头 / Worked for 秒表预留「1h 59m」，避免跨分钟换行挤过程区 */
 export const ELAPSED_CLOCK_RESERVE_CH = 7
 
-/** 对标 Codex Goal / 长回合秒表：23s · 4m · 1h 9m */
+/** Goal 进度行预留「99d 23h 59m」，跨日换文案不抬 composer-stage（对标 Codex #20558） */
+export const GOAL_ELAPSED_CLOCK_RESERVE_CH = 12
+
+/** 对标 Codex Goal / 长回合秒表：23s · 4m · 1h 9m；满 24h 起 `1d 0h 0m` */
 export function formatElapsedClock(seconds: number): string {
   if (seconds < 1) return '<1s'
   if (seconds < 60) return `${Math.round(seconds)}s`
@@ -384,7 +387,9 @@ export function formatElapsedClock(seconds: number): string {
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   const rem = minutes % 60
-  return rem ? `${hours}h ${rem}m` : `${hours}h`
+  if (hours < 24) return rem ? `${hours}h ${rem}m` : `${hours}h`
+  const days = Math.floor(hours / 24)
+  return `${days}d ${hours % 24}h ${rem}m`
 }
 
 export function elapsedClockSeconds(startedAt: number, now: number): number {

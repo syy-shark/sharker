@@ -5,6 +5,7 @@ import {
   formatGoalProgressLabel,
   GOAL_ACTIVE_LABEL,
   GOAL_PAUSED_LABEL,
+  goalClockEndedAt,
   goalPromptBlock,
   parseGoalCommand,
   shouldStartGoalTurn
@@ -33,8 +34,13 @@ describe('thread goal', () => {
     const paused = applyGoalCommand(set.goal, { type: 'pause' })
     expect(paused.goal?.status).toBe('paused')
     expect(paused.goal?.startedAt).toBe(set.goal?.startedAt)
+    expect(typeof paused.goal?.pausedAt).toBe('number')
+    expect(goalClockEndedAt(paused.goal)).toBe(paused.goal?.pausedAt)
     expect(goalPromptBlock(paused.goal)).toBeNull()
     const resumed = applyGoalCommand(paused.goal, { type: 'resume' })
+    expect(resumed.goal?.status).toBe('active')
+    expect(resumed.goal?.pausedAt).toBeUndefined()
+    expect(goalClockEndedAt(resumed.goal)).toBeUndefined()
     expect(goalPromptBlock(resumed.goal)).toContain('修好滚动')
     expect(applyGoalCommand(resumed.goal, { type: 'clear' }).goal).toBeNull()
     const edited = applyGoalCommand(set.goal, { type: 'edit', text: '改成审查栏' })
@@ -57,5 +63,17 @@ describe('thread goal', () => {
     expect(formatGoalProgressLabel(null)).toBeNull()
     expect(GOAL_ACTIVE_LABEL).toBe('Active')
     expect(GOAL_PAUSED_LABEL).toBe('Paused')
+  })
+
+  it('freezes elapsed across pause and continues after resume', () => {
+    const started = applyGoalCommand(null, { type: 'set', text: '修好滚动' }, 1_000)
+    const paused = applyGoalCommand(started.goal, { type: 'pause' }, 5_000)
+    expect(paused.goal?.pausedAt).toBe(5_000)
+    expect(goalClockEndedAt(paused.goal)).toBe(5_000)
+    const stillPaused = applyGoalCommand(paused.goal, { type: 'pause' }, 9_000)
+    expect(stillPaused.goal?.pausedAt).toBe(5_000)
+    const resumed = applyGoalCommand(paused.goal, { type: 'resume' }, 12_000)
+    expect(resumed.goal?.startedAt).toBe(8_000)
+    expect(resumed.goal?.pausedAt).toBeUndefined()
   })
 })

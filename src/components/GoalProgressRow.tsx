@@ -1,6 +1,6 @@
 /**
  * 线程目标进度行：对标 Codex Goal 模式，放在输入框上方。
- * 耗时用独立秒表；不接收直播 token，避免跟流式重绘。
+ * 耗时用独立秒表；Paused 冻结；不接收直播 token，避免跟流式重绘。
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
@@ -13,6 +13,7 @@ import {
 } from '../../shared/reveal-in-folder'
 import {
   formatGoalProgressLabel,
+  goalClockEndedAt,
   type GoalCommand,
   type ThreadGoal
 } from '../../shared/thread-goal'
@@ -68,7 +69,12 @@ export const GoalProgressRow = memo(function GoalProgressRow({
       <div className="goal-progress-row-main">
         <span className="goal-progress-row-status">{status}</span>
         {goal.startedAt ? (
-          <LiveDuration startedAt={goal.startedAt} className="goal-progress-row-elapsed" />
+          <LiveDuration
+            startedAt={goal.startedAt}
+            endedAt={goalClockEndedAt(goal)}
+            paused={goal.status === 'paused'}
+            className="goal-progress-row-elapsed"
+          />
         ) : null}
         {editing ? (
           <input

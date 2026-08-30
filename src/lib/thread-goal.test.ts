@@ -41,4 +41,21 @@ describe('thread goal storage', () => {
     saveThreadGoal('a', { text: '修好滚动', status: 'active', startedAt: 1_700_000_000_000 })
     expect(loadThreadGoal('a')?.startedAt).toBe(1_700_000_000_000)
   })
+
+  it('persists pausedAt only while the goal is paused', () => {
+    saveThreadGoal('a', {
+      text: '修好滚动',
+      status: 'paused',
+      startedAt: 1_700_000_000_000,
+      pausedAt: 1_700_000_120_000
+    })
+    expect(loadThreadGoal('a')?.pausedAt).toBe(1_700_000_120_000)
+    saveThreadGoal('a', {
+      text: '修好滚动',
+      status: 'active',
+      startedAt: 1_700_000_000_000,
+      pausedAt: 1_700_000_120_000
+    })
+    expect(loadThreadGoal('a')?.pausedAt).toBeUndefined()
+  })
 })
