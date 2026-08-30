@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CHATS_SECTION_LABEL,
+  CHRONOLOGICAL_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
+  MARK_ALL_AS_READ_LABEL,
+  SIDEBAR_CHAT_FILTERS,
   applyCustomTitle,
   buildForkedConversation,
   canForkThroughMessage,
@@ -207,6 +211,14 @@ describe('conversation search', () => {
     expect(nextActivitySidebarFilter('unread')).toBe('chronological')
     expect(nextActivitySidebarFilter('scheduled')).toBe('chronological')
     expect(filterSidebarChats(items, 'scheduled', [], [], ['c']).map((c) => c.id)).toEqual(['c'])
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'chronological')?.label).toBe(
+      CHRONOLOGICAL_FILTER_LABEL
+    )
+    expect(CHRONOLOGICAL_FILTER_LABEL).toBe('Chronological')
+    expect(CHATS_SECTION_LABEL).toBe('Chats')
+    expect(MARK_ALL_AS_READ_LABEL).toBe('Mark all as read')
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'scheduled')?.label).toBe('Scheduled')
+    expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'pinned')?.label).toBe('Pinned')
     expect(
       collectAttentionConversationIds({
         conversations: items,

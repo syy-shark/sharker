@@ -322,7 +322,7 @@ export function formatUnreadNote(): string {
   return '已将此对话标为未读。打开后会自动清未读。'
 }
 
-/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复 / 定时 / 置顶） */
+/** 侧栏对话筛选（对标 Codex Activity：未读 / 进行中 / 等待回复 / Scheduled / Pinned） */
 export type SidebarChatFilter =
   | 'chronological'
   | 'live'
@@ -331,13 +331,20 @@ export type SidebarChatFilter =
   | 'pinned'
   | 'scheduled'
 
+/** 侧栏对话区标题（对标 Codex filter icon next to Chats） */
+export const CHATS_SECTION_LABEL = 'Chats'
+/** 官方 troubleshooting：找不到聊天时选 Chronological */
+export const CHRONOLOGICAL_FILTER_LABEL = 'Chronological'
+/** 官方 Activity：Mark all as read */
+export const MARK_ALL_AS_READ_LABEL = 'Mark all as read'
+
 export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string }> = [
-  { id: 'chronological', label: '按时间' },
+  { id: 'chronological', label: CHRONOLOGICAL_FILTER_LABEL },
   { id: 'live', label: '进行中' },
   { id: 'waiting', label: '等待回复' },
   { id: 'unread', label: '未读' },
-  { id: 'scheduled', label: '定时' },
-  { id: 'pinned', label: '置顶' }
+  { id: 'scheduled', label: 'Scheduled' },
+  { id: 'pinned', label: 'Pinned' }
 ]
 
 export function isActivitySidebarFilter(filter: SidebarChatFilter): boolean {

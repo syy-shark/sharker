@@ -31,9 +31,12 @@ import {
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
 import {
+  CHATS_SECTION_LABEL,
+  CHRONOLOGICAL_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
   filterSidebarChats,
   isActivitySidebarFilter,
+  MARK_ALL_AS_READ_LABEL,
   nextActivitySidebarFilter,
   SIDEBAR_CHAT_FILTERS,
   splitLiveConversations,
@@ -112,7 +115,7 @@ interface Props {
   renameRequestId?: string | null
   onRenameRequestHandled?: () => void
   onNavigate: (page: AppPage, tab?: SettingsTab) => void
-  /** Activity「全部标为已读」：只清对话未读，不动审查队列 */
+  /** Activity Mark all as read：只清对话未读，不动审查队列 */
   onClearUnread?: () => void
   /** 侧栏铃铛：开关 Activity（对标 Codex 铃铛 / ⌘⌥U） */
   onToggleActivity?: () => void
@@ -1013,15 +1016,15 @@ export const Sidebar = memo(function Sidebar({
             <div className="sidebar-section-head">
               <h3 className="sidebar-section-label">
                 {groupedChats
-                  ? '对话'
-                  : `对话 · ${SIDEBAR_CHAT_FILTERS.find((f) => f.id === chatFilter)?.label ?? ''}`}
+                  ? CHATS_SECTION_LABEL
+                  : `${CHATS_SECTION_LABEL} · ${SIDEBAR_CHAT_FILTERS.find((f) => f.id === chatFilter)?.label ?? ''}`}
               </h3>
               <div className="sidebar-chat-filter" ref={chatFilterRef}>
                 <button
                   type="button"
                   className={`sidebar-section-action${chatFilterOpen || !groupedChats ? ' sidebar-section-action--active' : ''}`}
-                  title="筛选对话（对标 Codex：找不到时选「按时间」）"
-                  aria-label="筛选对话"
+                  title={`If chats are missing, select ${CHRONOLOGICAL_FILTER_LABEL}.`}
+                  aria-label="Filter chats"
                   aria-expanded={chatFilterOpen}
                   onClick={() => setChatFilterOpen((open) => !open)}
                 >
@@ -1052,7 +1055,7 @@ export const Sidebar = memo(function Sidebar({
                             setChatFilterOpen(false)
                           }}
                         >
-                          全部标为已读
+                          {MARK_ALL_AS_READ_LABEL}
                         </button>
                       </>
                     ) : null}
@@ -1067,7 +1070,9 @@ export const Sidebar = memo(function Sidebar({
                 recentConvs.map((c) => renderConvRow(c))
               )
             ) : filteredConvs.length === 0 ? (
-              <p className="sidebar-section-empty">没有匹配的对话。选「按时间」可看到全部。</p>
+              <p className="sidebar-section-empty">
+                {`没有匹配的对话。选 ${CHRONOLOGICAL_FILTER_LABEL} 可看到全部。`}
+              </p>
             ) : (
               filteredConvs.map((c) => renderConvRow(c))
             )}
