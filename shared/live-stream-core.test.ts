@@ -188,6 +188,55 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(next.thinkText).toBe(`${thought.content}${moreThink.content}`)
   })
 
+  it('appends a later tool to processForFlow without rebuilding', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, nextTool]
+    })
+    expect(next.processForFlow[0]).toBe(first.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(nextTool)
+    expect(next.processForFlow).toHaveLength(first.processForFlow.length + 1)
+  })
+
+  it('drops thinking from processForFlow when the first tool arrives', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought]
+    })
+    expect(first.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(true)
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    expect(next.processForFlow.some((segment) => segment.kind === 'thinking')).toBe(false)
+    expect(next.processForFlow.at(-1)).toBe(reading)
+  })
+
+  it('appends reconnect status after tools without rebuilding the prefix', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reconnect = status('Reconnecting... 1/5')
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reconnect]
+    })
+    expect(next.processForFlow[0]).toBe(first.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(reconnect)
+  })
+
   it('does not grow-hold process phases on same-length think tokens', () => {
     expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm more')])).toBe(false)
   })

@@ -3,6 +3,7 @@
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
  * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）、首枚无 fence 正文、或只追加思考 / status 可在核心判定，不必等表。
+ * `nextLiveProcessView` 在这些 skip 上只追加 / 换 processForFlow；首枚普通工具会摘掉思考步（对标 processSegments）。
  * @see shared/ARCH.md
  */
 import { isInlineDemoPaintable, liveThinkingText, sameRefList } from './live-display'
@@ -179,6 +180,47 @@ export function liveCoreAppendedProcessToolsSkip(
   if (!extras.every((segment) => isLiveCoreAppendExtra(segment))) return null
   if (!extras.some((segment) => isLiveCoreProcessTool(segment))) return null
   return 'tool'
+}
+
+function retargetLiveProcessFlow(
+  prevFlow: TurnSegment[],
+  prevSegments: readonly TurnSegment[],
+  nextSegments: readonly TurnSegment[]
+): TurnSegment[] {
+  let changed = false
+  const mapped = prevFlow.map((segment) => {
+    const index = prevSegments.indexOf(segment)
+    if (index < 0) return segment
+    const nextSeg = nextSegments[index]
+    if (!nextSeg || nextSeg === segment) return segment
+    changed = true
+    return nextSeg
+  })
+  return changed ? mapped : prevFlow
+}
+
+/** 无表时把新开的普通工具 / status 接到过程流；首枚工具摘掉思考步。 */
+function appendCoreProcessFlow(
+  prev: LiveProcessView,
+  prevSegments: readonly TurnSegment[],
+  segments: readonly TurnSegment[]
+): LiveProcessView {
+  const extras = segments.slice(prevSegments.length)
+  const extraTools = extras.filter(isLiveCoreProcessTool)
+  const extraStatus = extras.filter(isLiveStatus)
+  const extraThink = extras.filter((segment) => isLiveThinking(segment) && segment.status === 'active')
+  const prevHasTool = prev.processForFlow.some(isLiveCoreProcessTool)
+  let base = retargetLiveProcessFlow(prev.processForFlow, prevSegments, segments)
+  if (!prevHasTool && extraTools.length) {
+    const withoutThink = base.filter((segment) => !isLiveThinking(segment))
+    if (withoutThink.length !== base.length) base = withoutThink
+  }
+  const addThink = !prevHasTool && extraTools.length === 0 ? extraThink : []
+  const add = [...addThink, ...extraStatus, ...extraTools]
+  const processForFlow = add.length ? [...base, ...add] : base
+  const thinkText = nextLiveThinkText(prev.thinkText, prevSegments, segments)
+  const view: LiveProcessView = { ...prev, processForFlow, thinkText }
+  return sameProcessView(prev, view) ? prev : view
 }
 
 /** Same-length prefix-stable tail: token / last-line tool, no 7k detector scan (对标 Codex #22860). */
@@ -746,6 +788,11 @@ export function nextLiveProcessView(
     if (coreSkip === 'think') {
       const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
       const view = thinkText === prev.thinkText ? prev : { ...prev, thinkText }
+      processHold = { view, segments }
+      return view
+    }
+    if (coreSkip === 'tool' || coreSkip === 'status') {
+      const view = appendCoreProcessFlow(prev, processHold.segments, segments)
       processHold = { view, segments }
       return view
     }
