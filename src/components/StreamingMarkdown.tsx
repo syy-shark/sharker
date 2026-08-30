@@ -5,6 +5,7 @@
  * 闭合 `\\(...\\)` / `$$` / `\\[` 画 ChatMath（对标 Codex 桌面 KaTeX）；未闭合不吃；不认 `$...$`。
  * 增长尾最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用 / 段落、标题后另起的项内表、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、缩进代码后另起的标题、缩进代码 / 脚注续行 / 引用内换行后的列表项、围栏 / 表 / 列表 / 引用 / 段落后的增长段）只重解析增长段；前面的标题 / 段落保持不动（对标 Codex #39061 / #34045）。
  * 直播实例闭合围栏也不跑 Prism，历史气泡再着色（对标 Codex #22860）。
+ * ```demo 继承 `live` / `streaming` 上下文：直播实例不重写 srcDoc，历史重挂再灌套壳。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -274,7 +275,7 @@ function renderCheapBlock(block: CheapProseBlock, key: string): ReactNode {
       return <MermaidBlock key={key} code={block.text} />
     }
     if (isInlineDemoLang(block.lang)) {
-      return <InlineDemo key={key} html={block.text} streaming />
+      return <InlineDemo key={key} html={block.text} />
     }
     return <LiveFenceTail key={key} code={block.text} language={block.lang} />
   }
@@ -344,7 +345,7 @@ function renderLiveFenceSlot(
   closed: boolean
 ) {
   if (isInlineDemoLang(lang)) {
-    return <InlineDemo key={key} html={body} streaming />
+    return <InlineDemo key={key} html={body} />
   }
   if (isMermaidLangPrefix(lang)) {
     return <MermaidBlock key={key} code={body} closed={closed} language={lang} />

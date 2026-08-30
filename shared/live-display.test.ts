@@ -243,9 +243,14 @@ describe('inline demo paintability', () => {
     expect(isInlineDemoPaintable(scene)).toBe(true)
     expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: true })).toBe(false)
     expect(shouldMeasureInlineDemoInParent({ paintable: true, streaming: false })).toBe(true)
+    expect(shouldMeasureInlineDemoInParent({ paintable: true, live: true, streaming: false })).toBe(
+      false
+    )
     expect(shouldMeasureInlineDemoInParent({ paintable: false, streaming: false })).toBe(false)
     expect(shouldWalkInlineDemoTree({ streaming: true })).toBe(false)
     expect(shouldWalkInlineDemoTree({ streaming: false })).toBe(true)
+    expect(shouldWalkInlineDemoTree({ live: true, streaming: false })).toBe(false)
+    expect(shouldWalkInlineDemoTree({ live: true, streaming: true })).toBe(false)
     expect(shouldWalkInlineDemoTree({})).toBe(true)
     expect(shouldMountInlineDemoFrame({ paintable: false })).toBe(false)
     expect(shouldMountInlineDemoFrame({ paintable: true })).toBe(true)

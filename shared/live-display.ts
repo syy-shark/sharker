@@ -176,13 +176,15 @@ export function clearInlineDemoHeightCache(): void {
 
 /**
  * 父页才对 iframe 做全树 getBoundingClientRect。
- * 直播中只信估高与 iframe postMessage，避免 srcDoc 每 40–120ms 重挂 RO 扫整棵（对标 Codex #22860 / #39120）。
+ * 直播实例（含收束后留下的那行）只信估高与 iframe postMessage，避免收束把 streaming
+ * 关掉后重挂 RO 扫整棵（对标 Codex #22860 / #39120）。历史重挂再量。
  */
 export function shouldMeasureInlineDemoInParent(options: {
   paintable: boolean
+  live?: boolean
   streaming?: boolean
 }): boolean {
-  return options.paintable && !options.streaming
+  return options.paintable && !options.live && !options.streaming
 }
 
 /** 未可绘不挂空 iframe，直播先骨架，可绘再 srcDoc（对标 Codex #22860 / #39120） */
@@ -191,11 +193,13 @@ export function shouldMountInlineDemoFrame(options: { paintable: boolean }): boo
 }
 
 /**
- * iframe 内全树 getBoundingClientRect / getComputedStyle。
- * 直播中只用量 range + body 底边，避免 srcDoc 每 40–200ms 扫整棵（对标 Codex #22860 / #39120）。
+ * iframe 内全树 getBoundingClientRect / getComputedStyle、终端套壳与 KaTeX CDN。
+ * 直播实例（含收束后留下的那行）只用量 range + body 底边，避免收束重写 srcDoc
+ * 把 iframe 整页重挂（对标 Codex #22860 / #39120，拆法同 Prism：`live` 管实例寿命）。
+ * 历史重挂（`live` 假）再灌完整套壳。
  */
-export function shouldWalkInlineDemoTree(options: { streaming?: boolean }): boolean {
-  return !options.streaming
+export function shouldWalkInlineDemoTree(options: { live?: boolean; streaming?: boolean }): boolean {
+  return !options.live && !options.streaming
 }
 
 /** 直播 srcDoc 首帧立刻画；大段增长 80ms，其余 200ms，避免每 token 重挂整页脚本 */

@@ -1,10 +1,10 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切。
+ * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。直播实例（含收束后留下的那行）父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切；历史重挂再灌套壳。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   isInlineDemoPaintable,
   liveInlineDemoPaintDelay,
@@ -14,6 +14,7 @@ import {
   shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
+import { LiveMarkdownLiveContext, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import './InlineDemo.css'
 
 export interface InlineDemoProps {
@@ -23,6 +24,8 @@ export interface InlineDemoProps {
   caption?: string
   /** 工具参数 / 围栏仍在生成：节流刷新 iframe，做多少显示多少 */
   streaming?: boolean
+  /** 直播实例（含收束后留下的那行）：不重写 srcDoc 灌套壳 */
+  live?: boolean
 }
 
 type ThemeVars = Record<string, string>
@@ -56,7 +59,7 @@ function readHostTheme(): ThemeVars {
   }
 }
 
-/** 直播 srcDoc 只报高度，不灌终端套壳 / KaTeX / ResizeObserver（对标 Codex #22860 / #39120） */
+/** 直播实例 srcDoc 只报高度，不灌终端套壳 / KaTeX / ResizeObserver（对标 Codex #22860 / #39120） */
 function buildLiveHeightScript(demoId: string): string {
   return `
 <script>
@@ -110,7 +113,7 @@ function buildSrcDoc(
   html: string,
   theme: ThemeVars,
   demoId: string,
-  streaming = false
+  walkTree = false
 ): string {
   const isDark = theme.isDark === '1'
 
@@ -120,7 +123,7 @@ function buildSrcDoc(
    * - 默认深色炭黑窗（浅色聊天里也用，命令色才好看）
    * - 浅色主题另有 .sharker-term--glass 水滴玻璃变体
    */
-  const hostThemeCss = shouldWalkInlineDemoTree({ streaming })
+  const hostThemeCss = walkTree
     ? `
 :root {
   color-scheme: ${isDark ? 'dark' : 'light'};
@@ -254,8 +257,8 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
   overflow: visible !important;
 }
 `
-  /** 闭合后才灌终端窗 / 历史看板 CSS；直播 srcDoc 只留主题与解锁裁切 */
-  const hostTermCss = shouldWalkInlineDemoTree({ streaming })
+  /** 历史重挂才灌终端窗 / 看板 CSS；直播实例 srcDoc 只留主题与解锁裁切 */
+  const hostTermCss = walkTree
     ? `
 /* —— macOS 终端窗：三色灯 + 居中标题 —— */
 .sharker-term {
@@ -443,13 +446,13 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
     : ''
   const hostCss = `${hostThemeCss}${hostTermCss}`
 
-  // 闭合后才灌终端套壳；直播 srcDoc 只报高度（对标 Codex #22860 / #39120）
-  const injectedScript = shouldWalkInlineDemoTree({ streaming })
+  // 历史重挂才灌终端套壳；直播实例 srcDoc 只报高度（对标 Codex #22860 / #39120）
+  const injectedScript = walkTree
     ? `
 <script>
 (function () {
   var id = ${JSON.stringify(demoId)};
-  var walkTree = ${shouldWalkInlineDemoTree({ streaming }) ? 'true' : 'false'};
+  var walkTree = ${walkTree ? 'true' : 'false'};
   var isDark = ${isDark ? 'true' : 'false'};
 
   function parseRgb(color) {
@@ -1273,8 +1276,8 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
 
   const trimmed = html.trim()
   const isFullDoc = /<!DOCTYPE|<\s*html[\s>]/i.test(trimmed)
-  /** 闭合后才灌 KaTeX CDN；直播 srcDoc 刷新不拉远程脚本（对标 Codex #22860 / #39120） */
-  const mathHead = shouldWalkInlineDemoTree({ streaming })
+  /** 历史重挂才灌 KaTeX CDN；直播实例 srcDoc 不拉远程脚本（对标 Codex #22860 / #39120） */
+  const mathHead = walkTree
     ? `
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"><\/script>
@@ -1308,18 +1311,23 @@ body > *:not(canvas):not(svg):not(script):not(style):not(link) {
  * 对话流内无缝演示：默认展开、无外框/标题栏；iframe 高度只升不降。
  * 可选「收起演示」是演示后的一行小字，不包一层卡片。
  */
-export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps) {
+export function InlineDemo({ html, caption, streaming, live }: InlineDemoProps) {
+  const liveFromTree = useContext(LiveMarkdownLiveContext)
+  const streamingFromTree = useContext(LiveMarkdownStreamingContext)
+  const isLive = live ?? liveFromTree
+  const isStreaming = streaming ?? streamingFromTree
+  const walkTree = shouldWalkInlineDemoTree({ live: isLive, streaming: isStreaming })
   const reactId = useId()
   const demoId = useMemo(() => `demo-${reactId.replace(/:/g, '')}`, [reactId])
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [height, setHeight] = useState(() => seedInlineDemoHeight(html, streaming))
+  const [height, setHeight] = useState(() => seedInlineDemoHeight(html, isStreaming))
   const [expanded, setExpanded] = useState(true)
   const [theme, setTheme] = useState<ThemeVars>(() => readHostTheme())
   /** 流式时节流刷新，避免每个字符都 reload iframe */
   const [paintHtml, setPaintHtml] = useState(html)
   const lastPaintLen = useRef(0)
   /** 本轮 srcDoc 内高度只升不降，避免 parent scrollHeight 把标签裁回去 */
-  const highWaterRef = useRef(seedInlineDemoHeight(html, streaming))
+  const highWaterRef = useRef(seedInlineDemoHeight(html, isStreaming))
   const heightSourceRef = useRef(html)
 
   /** iframe 报的内容高度：只抬高，永不压低 */
@@ -1334,11 +1342,11 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
 
   useEffect(() => {
     heightSourceRef.current = paintHtml || html
-    raiseHeight(seedInlineDemoHeight(paintHtml || html, streaming))
-  }, [html, paintHtml, streaming])
+    raiseHeight(seedInlineDemoHeight(paintHtml || html, isStreaming))
+  }, [html, paintHtml, isStreaming])
 
   useEffect(() => {
-    if (!streaming) {
+    if (!isStreaming) {
       setPaintHtml(html)
       lastPaintLen.current = html.length
       return
@@ -1352,7 +1360,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       lastPaintLen.current = html.length
     }, delay)
     return () => window.clearTimeout(t)
-  }, [html, streaming])
+  }, [html, isStreaming])
 
   useEffect(() => {
     const refresh = () => setTheme(readHostTheme())
@@ -1368,8 +1376,8 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
   const paintable = isInlineDemoPaintable(paintHtml)
   const showFrame = shouldMountInlineDemoFrame({ paintable })
   const srcDoc = useMemo(
-    () => (showFrame ? buildSrcDoc(paintHtml, theme, demoId, streaming) : ''),
-    [paintHtml, theme, demoId, showFrame, streaming]
+    () => (showFrame ? buildSrcDoc(paintHtml, theme, demoId, walkTree) : ''),
+    [paintHtml, theme, demoId, showFrame, walkTree]
   )
 
   useEffect(() => {
@@ -1387,7 +1395,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
 
   useEffect(() => {
     const frame = frameRef.current
-    if (!frame || !shouldMeasureInlineDemoInParent({ paintable, streaming })) return
+    if (!frame || !shouldMeasureInlineDemoInParent({ paintable, live: isLive, streaming: isStreaming })) return
     let ro: ResizeObserver | null = null
     const measure = () => {
       try {
@@ -1440,17 +1448,17 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
       frame.removeEventListener('load', attach)
       ro?.disconnect()
     }
-  }, [srcDoc, paintable, streaming])
+  }, [srcDoc, paintable, isLive, isStreaming])
 
   const label = caption?.trim() || '内联演示'
-  const frameH = expanded ? Math.max(height, streaming ? 96 : 48) : 0
+  const frameH = expanded ? Math.max(height, isStreaming ? 96 : 48) : 0
 
   return (
     <div
       className={[
         'inline-demo',
         expanded ? 'inline-demo--expanded' : 'inline-demo--collapsed',
-        streaming ? 'inline-demo--streaming' : ''
+        isStreaming ? 'inline-demo--streaming' : ''
       ]
         .filter(Boolean)
         .join(' ')}
@@ -1460,7 +1468,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         className="inline-demo-body"
         hidden={!expanded}
         aria-hidden={!expanded}
-        style={expanded && (showFrame || streaming) ? { minHeight: frameH } : undefined}
+        style={expanded && (showFrame || isStreaming) ? { minHeight: frameH } : undefined}
       >
         {showFrame ? (
           <iframe
@@ -1473,7 +1481,7 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
             style={{ height: frameH }}
           />
         ) : null}
-        {streaming && !paintable ? (
+        {isStreaming && !paintable ? (
           <div className="inline-demo-skeleton" aria-hidden>
             <span className="inline-demo-skeleton-bar" />
             <span className="inline-demo-skeleton-bar inline-demo-skeleton-bar--short" />
@@ -1482,13 +1490,13 @@ export function InlineDemo({ html, caption, streaming = false }: InlineDemoProps
         ) : null}
       </div>
       {caption?.trim() && expanded ? <p className="inline-demo-caption">{caption.trim()}</p> : null}
-      {streaming && expanded ? (
+      {isStreaming && expanded ? (
         <p className="inline-demo-live" aria-live="polite">
           <span className="inline-demo-live-dot" aria-hidden />
           {paintable ? '生成中' : '准备演示…'}
         </p>
       ) : null}
-      {!streaming ? (
+      {!isStreaming ? (
         <button
           type="button"
           className="inline-demo-fold"

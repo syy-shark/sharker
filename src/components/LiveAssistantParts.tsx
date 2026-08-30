@@ -87,6 +87,7 @@ function renderLiveAnswerPart(
         key={part.id}
         html={part.html}
         caption={part.caption}
+        live
         streaming={Boolean(options.markdownStreaming && part.streaming)}
       />
     )
