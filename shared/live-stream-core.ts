@@ -2,7 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
- * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）可在核心判定，不必等表。
+ * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）、首枚无 fence 正文、或只追加思考 / status 可在核心判定，不必等表。
  * @see shared/ARCH.md
  */
 import { isInlineDemoPaintable, liveThinkingText, sameRefList } from './live-display'
@@ -147,9 +147,17 @@ function isLiveCoreAppendExtra(segment: TurnSegment): boolean {
   return isLiveCoreProcessTool(segment) || isLiveStatus(segment) || isLiveThinking(segment)
 }
 
+function extrasHaveOnlyFirstAnswerText(extras: readonly TurnSegment[]): boolean {
+  if (extras.length !== 1) return false
+  const extra = extras[0]!
+  return isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')
+}
+
 /**
  * 无表时：过程前缀（思考 / status / 普通工具）后新开普通工具可走 cheap path。
  * 同一帧 `think + tool`、以及首轮第二枚工具也走这条。
+ * 过程前缀后首枚无 fence 正文标 `'text'`，过程步复用、回答另开尾。
+ * 只追加思考 / status 也走核心，不必等表。
  * 闭合散文、或 `present_inline_demo` 仍等表。
  */
 export function liveCoreAppendedProcessToolsSkip(
@@ -165,6 +173,9 @@ export function liveCoreAppendedProcessToolsSkip(
   }
   const extras = next.slice(prev.length)
   if (!extras.length) return null
+  if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
+  if (extras.every((segment) => isLiveThinking(segment))) return 'think'
+  if (extras.every((segment) => isLiveStatus(segment))) return 'status'
   if (!extras.every((segment) => isLiveCoreAppendExtra(segment))) return null
   if (!extras.some((segment) => isLiveCoreProcessTool(segment))) return null
   return 'tool'
@@ -463,7 +474,10 @@ export function hasLiveProcessPhaseGrowHold(
     if (before.status === last.status && liveTailContentGrew(before, last)) return false
     return liveStreamTable?.hasLiveProcessPhaseGrowHold(prev, next) ?? true
   }
-  if (prev && liveCoreAppendedProcessToolsSkip(prev, next) === 'tool') return true
+  if (prev) {
+    const coreSkip = liveCoreAppendedProcessToolsSkip(prev, next)
+    if (coreSkip) return true
+  }
   return liveStreamTable?.hasLiveProcessPhaseGrowHold(prev, next) ?? false
 }
 
@@ -718,6 +732,16 @@ export function nextLiveProcessView(
     return view
   }
   if (prev && processHold?.view === prev) {
+    if (liveCoreAppendedProcessToolsSkip(processHold.segments, segments) === 'text') {
+      const tail = segments[segments.length - 1]
+      const hasProse = Boolean((tail?.content ?? '').trim())
+      const view: LiveProcessView = hasProse
+        ? { ...prev, contentStreaming: true, answerStreaming: true }
+        : prev
+      const held = sameProcessView(prev, view) ? prev : view
+      processHold = { view: held, segments }
+      return held
+    }
     if (isLiveMultiToolSettleChange(processHold.segments, segments)) {
       const processForFlow = prev.processForFlow.map((segment) => {
         const index = processHold!.segments.indexOf(segment)

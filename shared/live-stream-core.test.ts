@@ -80,6 +80,48 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([tool('active')], [tool('active'), demo])).toBeNull()
   })
 
+  it('skips process derivation for the first answer token after tools without the table', () => {
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [think('Hmm'), tool('active')],
+        [think('Hmm'), tool('active'), prose('Hi')]
+      )
+    ).toBe('text')
+    expect(
+      hasLiveProcessPhaseGrowHold(
+        [think('Hmm'), tool('active')],
+        [think('Hmm'), tool('active'), prose('Hi')]
+      )
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([], [prose('Hi')])).toBe('text')
+    expect(hasLiveProcessPhaseGrowHold([], [prose('Hi')])).toBe(true)
+    expect(hasLiveProcessPhaseGrowHold(null, [prose('Hi')])).toBe(false)
+    const moreThink: TurnSegment = { ...think('Next'), id: 'th2' }
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), moreThink])
+    ).toBe('think')
+    expect(
+      hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), moreThink])
+    ).toBe(true)
+    const reconnect = status('Reconnecting... 1/5')
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), reconnect])
+    ).toBe('status')
+    expect(
+      hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), reconnect])
+    ).toBe(true)
+  })
+
+  it('does not skip a first demo-fence answer after tools without the table', () => {
+    const demoFence = prose('```demo\n<div>demo</div>\n```')
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), demoFence])
+    ).toBeNull()
+    expect(
+      hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), demoFence])
+    ).toBe(false)
+  })
+
   it('does not grow-hold process phases on same-length think tokens', () => {
     expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm more')])).toBe(false)
   })
