@@ -115,6 +115,7 @@ import {
   type GitBranchRef
 } from '../../shared/git-branch-list'
 import {
+  UNABLE_TO_TRANSCRIBE_AUDIO,
   appendDictationTranscript,
   isDictationShortcut,
   isVoiceChatShortcut,
@@ -1103,7 +1104,7 @@ export const ComposerDock = memo(
     const startDictation = useCallback(() => {
       const Ctor = speechRecognitionCtor()
       if (!Ctor) {
-        setDictateError('当前环境不支持听写')
+        setDictateError(UNABLE_TO_TRANSCRIBE_AUDIO)
         return
       }
       setDictateError('')
@@ -1131,7 +1132,7 @@ export const ComposerDock = memo(
       }
       rec.onerror = (ev) => {
         if (ev.error === 'aborted' || ev.error === 'no-speech') return
-        setDictateError(ev.error === 'not-allowed' ? '需要麦克风权限才能听写' : '听写失败')
+        setDictateError(UNABLE_TO_TRANSCRIBE_AUDIO)
         setDictating(false)
         setDictateInterim('')
         recognitionRef.current = null
@@ -1149,7 +1150,7 @@ export const ComposerDock = memo(
         requestAnimationFrame(() => textareaRef.current?.focus())
       } catch {
         recognitionRef.current = null
-        setDictateError('无法开始听写')
+        setDictateError(UNABLE_TO_TRANSCRIBE_AUDIO)
       }
     }, [])
 

@@ -1,7 +1,11 @@
 /**
  * Composer 听写：快捷键与转写拼接（对标 Codex Ctrl+Shift+D）。
+ * 失败提示用官方 Unable to transcribe audio，不发明权限/环境分句。
  * @see shared/ARCH.md
  */
+
+/** Official desktop composer toast when dictation cannot produce text. */
+export const UNABLE_TO_TRANSCRIBE_AUDIO = 'Unable to transcribe audio'
 
 /** Codex 听写和弦：两端都是 Ctrl+Shift+D，不用 ⌘ */
 export function isDictationShortcut(event: {

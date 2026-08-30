@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  UNABLE_TO_TRANSCRIBE_AUDIO,
   appendDictationTranscript,
   isDictationShortcut,
   isVoiceChatShortcut,
@@ -7,6 +8,10 @@ import {
 } from './composer-dictation'
 
 describe('composer dictation', () => {
+  it('uses official Unable to transcribe audio copy', () => {
+    expect(UNABLE_TO_TRANSCRIBE_AUDIO).toBe('Unable to transcribe audio')
+  })
+
   it('matches Codex Ctrl+Shift+D only', () => {
     expect(
       isDictationShortcut({ key: 'd', ctrlKey: true, shiftKey: true })
