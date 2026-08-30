@@ -4,6 +4,7 @@
  */
 import {
   SLASH_APPROVE_DESCRIPTION,
+  SLASH_COPY_DESCRIPTION,
   SLASH_FORK_DESCRIPTION,
   SLASH_COMPACT_DESCRIPTION,
   SLASH_GOAL_DESCRIPTION,
@@ -102,6 +103,7 @@ import {
   UNDO_LAST_APP_ACTION_LABEL,
   WORKTREE_LABEL
 } from './reveal-in-folder'
+import { PERMISSIONS_LABEL } from './permission-mode'
 import { OPEN_SUBAGENTS_LABEL } from './subagent'
 
 /** 命令面板条目 */
@@ -192,8 +194,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'permissions',
-    title: '切换权限模式',
-    keywords: 'permissions sandbox full 权限 沙箱',
+    title: PERMISSIONS_LABEL,
+    keywords: 'permissions sandbox full 切换权限模式 权限 沙箱',
     action: 'set_permissions'
   },
   {
@@ -204,9 +206,9 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'copy',
-    title: '复制上一条助手回复',
+    title: SLASH_COPY_DESCRIPTION,
     shortcut: 'Ctrl+O',
-    keywords: 'copy output 复制 回复',
+    keywords: 'copy output 复制上一条助手回复 复制 回复',
     action: 'copy_last_output'
   },
   {
@@ -334,8 +336,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'diff',
-    title: '查看本地 diff',
-    keywords: 'diff changes 变更 差异',
+    title: OPEN_REVIEW_TAB_LABEL,
+    keywords: 'diff changes 查看本地 diff 变更 差异',
     action: 'show_diff'
   },
   {

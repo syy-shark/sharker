@@ -38,6 +38,8 @@ export const SLASH_APPROVE_DESCRIPTION =
 export const SLASH_FORK_DESCRIPTION = 'Copy a local chat into a new local chat or worktree.'
 /** Official desktop Share / `/share` (learn.chatgpt.com Use ChatGPT + changelog). Local copy only; do not invent Who has access / Copy link. */
 export const SLASH_SHARE_DESCRIPTION = 'Share a read-only snapshot of a local Codex thread.'
+/** Official desktop `/copy` (learn.chatgpt.com/docs/reference/slash-commands). Not message-id targeting (#24073). */
+export const SLASH_COPY_DESCRIPTION = 'Copy the last response, code block, or quote.'
 
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
@@ -384,7 +386,7 @@ export const SLASH_COMMANDS: SlashCommandMeta[] = [
   },
   {
     name: 'copy',
-    description: 'Copy the last response, code block, or quote.',
+    description: SLASH_COPY_DESCRIPTION,
     scope: 'ui',
     action: 'copy_last_output',
     category: 'session'

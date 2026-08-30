@@ -68,7 +68,9 @@ import {
   TOGGLE_TERMINAL_LABEL,
   UNDO_LAST_APP_ACTION_LABEL
 } from './reveal-in-folder'
-import { TOGGLE_PLAN_MODE_LABEL } from './composer-submit'
+import { STOP_LABEL, TOGGLE_PLAN_MODE_LABEL } from './composer-submit'
+import { SLASH_COPY_DESCRIPTION } from './slash-commands'
+import { OPEN_SUBAGENTS_LABEL } from './subagent'
 
 /** 快捷键对应的工作台动作 */
 export type WorkbenchShortcutAction =
@@ -364,7 +366,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌃⇧G', title: OPEN_REVIEW_TAB_LABEL },
   { keys: '⌘Z / ⌘⇧Z', title: `${UNDO_LAST_APP_ACTION_LABEL} / ${REDO_LAST_APP_ACTION_LABEL}` },
   { keys: '⌘⌥U', title: TOGGLE_ACTIVITY_VIEW_LABEL },
-  { keys: '⌘⌥⇧U', title: '子 Agent 活动' },
+  { keys: '⌘⌥⇧U', title: OPEN_SUBAGENTS_LABEL },
   { keys: '⌘J', title: TOGGLE_BOTTOM_PANEL_LABEL },
   { keys: 'Ctrl+`', title: TOGGLE_TERMINAL_LABEL },
   { keys: '⌘⇧E', title: TOGGLE_FILE_TREE_LABEL },
@@ -416,7 +418,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: 'Enter', title: APPROVE_REQUEST_LABEL },
   { keys: 'Esc', title: DECLINE_REQUEST_LABEL },
   { keys: 'Enter', title: '发送；忙时按设置 Queue 或 Steer' },
-  { keys: 'Esc', title: '停止当前回合（可改绑；IME 选词不触发）' },
+  { keys: 'Esc', title: `${STOP_LABEL}（可改绑；IME 选词不触发）` },
   { keys: '⌘⇧Enter', title: '忙时使用另一种后续行为' },
   { keys: 'Tab', title: '忙时 Queue 下一条' },
   { keys: 'Shift+Tab', title: TOGGLE_PLAN_MODE_LABEL },
@@ -495,7 +497,7 @@ export const SHORTCUT_CATALOG: Array<{
   },
   {
     action: 'toggle_agents',
-    title: '子 Agent 活动',
+    title: OPEN_SUBAGENTS_LABEL,
     defaultKeys: '⌘⌥⇧U',
     defaultChord: 'mod+alt+shift+u'
   },
@@ -526,7 +528,7 @@ export const SHORTCUT_CATALOG: Array<{
   { action: 'clear_unread', title: CLEAR_ALL_UNREAD_INDICATORS_LABEL, defaultKeys: '⇧Esc', defaultChord: 'shift+escape' },
   {
     action: 'interrupt_turn',
-    title: '停止当前回合',
+    title: STOP_LABEL,
     defaultKeys: 'Esc',
     defaultChord: 'escape'
   },
@@ -569,7 +571,7 @@ export const SHORTCUT_CATALOG: Array<{
   },
   {
     action: 'copy_last_output',
-    title: '复制上一条助手回复',
+    title: SLASH_COPY_DESCRIPTION,
     defaultKeys: 'Ctrl+O',
     defaultChord: 'mod+ctrl+o'
   },

@@ -32,6 +32,11 @@ describe('command palette', () => {
     )
     expect(ids).toContain('agents')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'agents')?.title).toBe('Open Subagents')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'permissions')?.title).toBe('Permissions')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'copy')?.title).toBe(
+      'Copy the last response, code block, or quote.'
+    )
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'diff')?.title).toBe('Open review tab')
     expect(ids).toContain('activity')
     expect(ids).toContain('personality')
     expect(ids).toContain('plan')
@@ -361,6 +366,10 @@ describe('command palette', () => {
     expect(filterPaletteCommands('Toggle review panel').some((c) => c.id === 'toggle-review')).toBe(
       true
     )
+    expect(filterPaletteCommands('Permissions').some((c) => c.id === 'permissions')).toBe(true)
+    expect(filterPaletteCommands('Copy the last response').some((c) => c.id === 'copy')).toBe(true)
+    expect(filterPaletteCommands('Open review tab').some((c) => c.id === 'diff')).toBe(true)
+    expect(filterPaletteCommands('Open Subagents').some((c) => c.id === 'agents')).toBe(true)
     expect(filterPaletteCommands('Archive chat').some((c) => c.action === 'archive_thread')).toBe(
       true
     )

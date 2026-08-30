@@ -282,6 +282,26 @@ describe('workbench shortcuts', () => {
     ).toBe(true)
     expect(
       WORKBENCH_SHORTCUT_HELP.some(
+        (row) => row.keys === '⌘⌥⇧U' && row.title === 'Open Subagents'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) => row.action === 'toggle_agents' && row.title === 'Open Subagents'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some((row) => row.action === 'interrupt_turn' && row.title === 'Stop')
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) =>
+          row.action === 'copy_last_output' &&
+          row.title === 'Copy the last response, code block, or quote.'
+      )
+    ).toBe(true)
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some(
         (row) =>
           row.keys === '⌘G / ⌘⇧G' &&
           row.title.includes('Find next match') &&
