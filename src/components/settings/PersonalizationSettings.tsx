@@ -1,5 +1,5 @@
 /**
- * 个性化：启用记忆（官方默认关）、Choose a personality 与个人 AGENTS.md（对标 Codex Settings → Personalization）。
+ * 个性化：启用记忆（官方默认关）、Choose a personality 与 Custom instructions（对标 Codex Settings → Personalization）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -7,7 +7,10 @@ import type { AppSettings } from '../../../shared/types'
 import type { AgentPersonality } from '../../../shared/personality'
 import {
   CHOOSE_A_PERSONALITY_LABEL,
+  CUSTOM_INSTRUCTIONS_DESCRIPTION,
+  CUSTOM_INSTRUCTIONS_HINT,
   CUSTOM_INSTRUCTIONS_LABEL,
+  PERSONALITY_INTRO,
   PERSONALITY_OPTIONS,
   parsePersonality
 } from '../../../shared/personality'
@@ -120,7 +123,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title={CHOOSE_A_PERSONALITY_LABEL}>
+      <SettingsSection title={CHOOSE_A_PERSONALITY_LABEL} description={PERSONALITY_INTRO}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={parsePersonality(draft.personality)}
@@ -136,14 +139,14 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
           />
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title={CUSTOM_INSTRUCTIONS_LABEL}>
+      <SettingsSection title={CUSTOM_INSTRUCTIONS_LABEL} description={CUSTOM_INSTRUCTIONS_DESCRIPTION}>
         <SettingsCard>
           <SettingsRow
-            title="个人 AGENTS.md"
+            title={CUSTOM_INSTRUCTIONS_LABEL}
             description={
               overrideActive
                 ? `写入 ${instructionsPath || '~/.sharker/AGENTS.md'}。当前有 AGENTS.override.md，注入会优先用 override。`
-                : `对标 Codex Settings → Personalization：写入 ${instructionsPath || '~/.sharker/AGENTS.md'}，所有项目都会注入。`
+                : CUSTOM_INSTRUCTIONS_HINT
             }
             last
           >
@@ -153,8 +156,8 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
             className="personalization-instructions"
             value={instructions}
             spellCheck={false}
-            placeholder="跨项目都要遵守的约定，例如：改 JS 后跑 npm test；优先 pnpm。"
-            aria-label="个人自定义说明"
+            placeholder={CUSTOM_INSTRUCTIONS_HINT}
+            aria-label={CUSTOM_INSTRUCTIONS_LABEL}
             onChange={(e) => {
               const content = e.target.value
               setInstructions(content)

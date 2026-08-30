@@ -81,6 +81,11 @@ export const PINNED_LABEL = 'Pinned'
 export const ARCHIVED_CHATS_LABEL = 'Archived chats'
 /** 官方项目菜单（对标 learn.chatgpt.com/docs/projects） */
 export const EDIT_PROJECT_LABEL = 'Edit project'
+/** Official Edit project copy (learn.chatgpt.com/docs/projects). */
+export const EDIT_PROJECT_INTRO =
+  "New chats start in the primary folder. Codex also uses that folder as the default for Git operations and automatic discovery of AGENTS.md, skills, and config.toml. Secondary folders remain available for file search, reading, and editing, but Codex doesn't automatically discover those project files from secondary folders."
+export const PRIMARY_FOLDER_LABEL = 'Primary folder'
+export const SECONDARY_FOLDERS_LABEL = 'Secondary folders'
 export const ARCHIVE_CHATS_ACTION_LABEL = 'Archive chats'
 export const ADD_FOLDER_LABEL = 'Add folder'
 export const MAKE_PRIMARY_LABEL = 'Make primary'
@@ -147,6 +152,8 @@ export const PROJECTS_LABEL = 'Projects'
 export const NO_CHATS_LABEL = 'No chats'
 /** Official empty Projects copy (openai/codex #19290). */
 export const NO_PROJECTS_LABEL = 'No projects'
+/** Official Projects view search (learn.chatgpt.com/docs/projects). */
+export const SEARCH_PROJECTS_LABEL = 'Search projects'
 /** Official Search chats: title, phrase, or branch name. */
 export const SEARCH_CHATS_PLACEHOLDER = 'Search title, message, or branch'
 /** Official worktrees: create a permanent worktree from the three-dot menu. */
@@ -154,6 +161,8 @@ export const CREATE_PERMANENT_WORKTREE_LABEL = 'Create a permanent worktree'
 /** Official worktrees: Select the starting branch below the composer. */
 export const STARTING_BRANCH_LABEL = 'Starting branch'
 export const STARTING_BRANCH_SEARCH_PLACEHOLDER = 'Search local or remote branches'
+/** Official starting-branch search: local or remote branches. */
+export const REMOTE_BRANCH_HINT = 'remote'
 /** Official README / Help target. Do not invent Check for Updates. */
 export const CODEX_DOCUMENTATION_URL = 'https://developers.openai.com/codex'
 /** Official File / View items (github.com/openai/codex#26890 Close / Toggle Full Screen). */

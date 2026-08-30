@@ -1,5 +1,5 @@
 /**
- * Codex 桌面 Ask User：选项 + Other 自由作答；眉题 Question requested，提示 Answer the questions to continue.
+ * Codex 桌面 Ask User：选项 + Other；眉题 Question requested，提示 Answer the questions to continue.
  * 不发明选项备注、分页问卷或 60s/90s 空答。
  * @see src/components/ARCH.md
  */
@@ -152,7 +152,6 @@ export function InlineUserInput({ request, onRespond, responding = false }: Inli
                   </span>
                   <span className="inline-user-input__option-copy">
                     <span className="inline-user-input__option-label">{USER_INPUT_OTHER_LABEL}</span>
-                    <span className="inline-user-input__option-desc">自由作答</span>
                   </span>
                 </button>
                 {otherSelected ? (

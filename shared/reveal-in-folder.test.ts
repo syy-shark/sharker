@@ -56,6 +56,9 @@ import {
   APPROVE_REQUEST_LABEL,
   DECLINE_REQUEST_LABEL,
   EDIT_PROJECT_LABEL,
+  EDIT_PROJECT_INTRO,
+  PRIMARY_FOLDER_LABEL,
+  SECONDARY_FOLDERS_LABEL,
   ARCHIVE_CHATS_ACTION_LABEL,
   ADD_FOLDER_LABEL,
   MAKE_PRIMARY_LABEL,
@@ -108,6 +111,7 @@ import {
   PROJECTS_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
+  SEARCH_PROJECTS_LABEL,
   SEARCH_CHATS_LABEL,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
@@ -118,6 +122,7 @@ import {
   WORKTREE_RESTORE_BANNER,
   STARTING_BRANCH_LABEL,
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
+  REMOTE_BRANCH_HINT,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -219,6 +224,7 @@ describe('reveal in folder', () => {
     expect(PROJECTS_LABEL).toBe('Projects')
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(NO_PROJECTS_LABEL).toBe('No projects')
+    expect(SEARCH_PROJECTS_LABEL).toBe('Search projects')
     expect(OPEN_PROJECT_PICKER_LABEL).toBe('Open project picker')
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
     expect(SEARCH_CHATS_LABEL).toBe('Search chats')
@@ -231,6 +237,7 @@ describe('reveal in folder', () => {
     expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')
     expect(STARTING_BRANCH_LABEL).toBe('Starting branch')
     expect(STARTING_BRANCH_SEARCH_PLACEHOLDER).toBe('Search local or remote branches')
+    expect(REMOTE_BRANCH_HINT).toBe('remote')
     expect(RESTORE_LABEL).toBe('Restore')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
     expect(KEYBOARD_SHORTCUTS_INTRO).toBe(
@@ -290,9 +297,33 @@ describe('reveal in folder', () => {
     expect(APPROVE_REQUEST_LABEL).toBe('Approve request')
     expect(DECLINE_REQUEST_LABEL).toBe('Decline request')
     expect(EDIT_PROJECT_LABEL).toBe('Edit project')
+    expect(EDIT_PROJECT_INTRO).toMatch(/New chats start in the primary folder/)
+    expect(EDIT_PROJECT_INTRO).toMatch(/Secondary folders remain available/)
+    expect(PRIMARY_FOLDER_LABEL).toBe('Primary folder')
+    expect(SECONDARY_FOLDERS_LABEL).toBe('Secondary folders')
     expect(ARCHIVE_CHATS_ACTION_LABEL).toBe('Archive chats')
     expect(ADD_FOLDER_LABEL).toBe('Add folder')
     expect(MAKE_PRIMARY_LABEL).toBe('Make primary')
+    const composerSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
+      'utf8'
+    )
+    expect(composerSrc).toContain('SEARCH_PROJECTS_LABEL')
+    expect(composerSrc).toContain('NO_PROJECTS_LABEL')
+    expect(composerSrc).toContain('REMOTE_BRANCH_HINT')
+    const foldersSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ProjectFoldersDialog.tsx'),
+      'utf8'
+    )
+    expect(foldersSrc).toContain('EDIT_PROJECT_INTRO')
+    expect(foldersSrc).toContain('PRIMARY_FOLDER_LABEL')
+    expect(foldersSrc).toContain('SECONDARY_FOLDERS_LABEL')
+    const askSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/InlineUserInput.tsx'),
+      'utf8'
+    )
+    expect(askSrc).toContain('USER_INPUT_OTHER_LABEL')
+    expect(askSrc).not.toContain('自由作答')
     expect(FORK_LABEL).toBe('Fork')
     expect(PAUSE_LABEL).toBe('Pause')
     expect(RESUME_LABEL).toBe('Resume')

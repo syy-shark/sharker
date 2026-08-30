@@ -15,7 +15,7 @@ import type {
 /** 官方工具名 */
 export const REQUEST_USER_INPUT_TOOL = 'request_user_input'
 
-/** 客户端补上的自由作答选项标签（模型不得自带） */
+/** 客户端补上的 Other 选项标签（模型不得自带） */
 export const USER_INPUT_OTHER_LABEL = 'Other'
 
 /** 官方：最多 3 题 */

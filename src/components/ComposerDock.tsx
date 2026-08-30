@@ -135,9 +135,12 @@ import {
   HAND_OFF_LABEL,
   LOCAL_LABEL,
   NO_CHATS_LABEL,
+  NO_PROJECTS_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
+  REMOTE_BRANCH_HINT,
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
+  SEARCH_PROJECTS_LABEL,
   STARTING_BRANCH_LABEL,
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
   START_DICTATION_LABEL,
@@ -1637,8 +1640,8 @@ export const ComposerDock = memo(
                 ref={projectSearchRef}
                 className="history-picker-search"
                 value={projectQuery}
-                placeholder="搜索项目名称或路径…"
-                aria-label="搜索项目"
+                placeholder={SEARCH_PROJECTS_LABEL}
+                aria-label={SEARCH_PROJECTS_LABEL}
                 onChange={(e) => {
                   setProjectQuery(e.target.value)
                   setProjectActiveIndex(0)
@@ -1678,7 +1681,7 @@ export const ComposerDock = memo(
                     </li>
                   ))
                 ) : (
-                  <li className="slash-menu-empty">没有匹配的项目</li>
+                  <li className="slash-menu-empty">{NO_PROJECTS_LABEL}</li>
                 )}
               </ul>
             </div>
@@ -1735,7 +1738,7 @@ export const ComposerDock = memo(
                         <span className="history-picker-hit">
                           <span className="slash-menu-name">{row.label}</span>
                           {row.source === 'remote' ? (
-                            <span className="history-picker-hint">远程</span>
+                            <span className="history-picker-hint">{REMOTE_BRANCH_HINT}</span>
                           ) : null}
                         </span>
                       </button>

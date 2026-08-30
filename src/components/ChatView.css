@@ -1296,6 +1296,7 @@
   font-size: 11px;
   font-weight: 560;
   letter-spacing: 0.01em;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     color var(--motion-duration-fast) var(--motion-ease-soft),
@@ -2211,11 +2212,14 @@ html.theme-light .composer-send:not(.composer-send--active):not(.composer-send--
   min-height: 30px;
   margin: 0 0 6px;
   padding: 0 10px;
+  overflow: hidden;
   color: var(--text);
   background: var(--glass-fill-nested);
   border: 0.5px solid var(--glass-edge-soft);
   border-radius: 10px;
   font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-picker-search:focus {
@@ -2224,9 +2228,12 @@ html.theme-light .composer-send:not(.composer-send--active):not(.composer-send--
 }
 
 .slash-menu-empty {
+  overflow: hidden;
   padding: 10px 12px;
   color: var(--text-muted);
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .slash-menu,

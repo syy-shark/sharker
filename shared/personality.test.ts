@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   nextPersonality,
@@ -8,7 +11,10 @@ import {
   FRIENDLY_LABEL,
   NONE_PERSONALITY_LABEL,
   CHOOSE_A_PERSONALITY_LABEL,
+  CUSTOM_INSTRUCTIONS_DESCRIPTION,
+  CUSTOM_INSTRUCTIONS_HINT,
   CUSTOM_INSTRUCTIONS_LABEL,
+  PERSONALITY_INTRO,
   PERSONALITY_OPTIONS,
   PRAGMATIC_LABEL
 } from './personality'
@@ -42,6 +48,16 @@ describe('personality', () => {
     expect(FRIENDLY_LABEL).toBe('Friendly')
     expect(NONE_PERSONALITY_LABEL).toBe('None')
     expect(CUSTOM_INSTRUCTIONS_LABEL).toBe('Custom instructions')
+    expect(CUSTOM_INSTRUCTIONS_DESCRIPTION).toMatch(/personal instructions in AGENTS.md/)
+    expect(CUSTOM_INSTRUCTIONS_HINT).toMatch(/preferences you want ChatGPT to follow/)
     expect(CHOOSE_A_PERSONALITY_LABEL).toBe('Choose a personality')
+    expect(PERSONALITY_INTRO).toMatch(/doesn't change what the model can do/)
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PersonalizationSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('PERSONALITY_INTRO')
+    expect(settingsSrc).toContain('CUSTOM_INSTRUCTIONS_DESCRIPTION')
+    expect(settingsSrc).toContain('CUSTOM_INSTRUCTIONS_HINT')
   })
 })

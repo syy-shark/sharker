@@ -13,8 +13,17 @@ export const FRIENDLY_LABEL = 'Friendly'
 export const NONE_PERSONALITY_LABEL = 'None'
 /** Official Settings → Personalization heading (learn.chatgpt.com/docs/personalize). */
 export const CHOOSE_A_PERSONALITY_LABEL = 'Choose a personality'
+/** Official Settings → Personalization (learn.chatgpt.com/docs/personalize). */
+export const PERSONALITY_INTRO =
+  "A personality changes how ChatGPT communicates; it doesn't change what the model can do."
 /** Official Settings → Personalization heading (learn.chatgpt.com/docs/reference/settings). */
 export const CUSTOM_INSTRUCTIONS_LABEL = 'Custom instructions'
+/** Official Settings → Personalization (learn.chatgpt.com/docs/reference/settings). */
+export const CUSTOM_INSTRUCTIONS_DESCRIPTION =
+  'Editing custom instructions updates your personal instructions in AGENTS.md.'
+/** Official Settings → Personalization (learn.chatgpt.com/docs/personalize). */
+export const CUSTOM_INSTRUCTIONS_HINT =
+  'Use custom instructions for preferences you want ChatGPT to follow across chats, such as your preferred response style.'
 
 /** 桌面端默认：Pragmatic */
 export const DEFAULT_PERSONALITY: AgentPersonality = 'pragmatic'

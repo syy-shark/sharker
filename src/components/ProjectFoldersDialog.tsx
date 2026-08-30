@@ -5,8 +5,11 @@
 import { useEffect } from 'react'
 import {
   ADD_FOLDER_LABEL,
+  EDIT_PROJECT_INTRO,
   EDIT_PROJECT_LABEL,
-  MAKE_PRIMARY_LABEL
+  MAKE_PRIMARY_LABEL,
+  PRIMARY_FOLDER_LABEL,
+  SECONDARY_FOLDERS_LABEL
 } from '../../shared/reveal-in-folder'
 import type { WorkspaceItem } from '../../shared/types'
 import './ProjectFoldersDialog.css'
@@ -54,10 +57,10 @@ export function ProjectFoldersDialog({
       >
         <div className="project-folders-head">
           <h2 id="project-folders-title">{EDIT_PROJECT_LABEL}</h2>
-          <p>新对话、Git、AGENTS.md 与 Skill 用主文件夹。附加文件夹可供搜索与读写，也可设为主文件夹。</p>
+          <p>{EDIT_PROJECT_INTRO}</p>
         </div>
         <div className="project-folders-block">
-          <span className="project-folders-label">主文件夹</span>
+          <span className="project-folders-label">{PRIMARY_FOLDER_LABEL}</span>
           <div className="project-folders-row">
             <code title={workspace.path}>{workspace.path}</code>
             {workspace.isHome ? null : (
@@ -68,7 +71,7 @@ export function ProjectFoldersDialog({
           </div>
         </div>
         <div className="project-folders-block">
-          <span className="project-folders-label">附加文件夹</span>
+          <span className="project-folders-label">{SECONDARY_FOLDERS_LABEL}</span>
           {(workspace.extraPaths ?? []).length === 0 ? (
             <p className="project-folders-empty">还没有附加文件夹。</p>
           ) : (
