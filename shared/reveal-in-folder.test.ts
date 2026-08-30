@@ -74,6 +74,7 @@ import {
   VOICE_LABEL,
   OPEN_SETTINGS_LABEL,
   SKILLS_LABEL,
+  SKILLS_INTRO,
   revealInFolderLabel,
   reviewFileRevealPath,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
@@ -202,6 +203,13 @@ describe('reveal in folder', () => {
     expect(OPEN_COMMAND_MENU_LABEL).toBe('Open command menu')
     expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
     expect(SKILLS_LABEL).toBe('Skills')
+    expect(SKILLS_INTRO).toMatch(/view and explore skills created across your projects/)
+    const skillsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SkillsPage.tsx'),
+      'utf8'
+    )
+    expect(skillsSrc).toContain('SKILLS_INTRO')
+    expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')

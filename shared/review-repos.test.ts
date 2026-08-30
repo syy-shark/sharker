@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   ALL_REPOS_ID,
@@ -14,6 +17,7 @@ import {
   STAGED_LABEL,
   UNSTAGE_LABEL,
   UNSTAGED_LABEL,
+  WRAP_LONG_DIFF_LINES_LABEL,
   fileInLastTurnForRepo,
   lastTurnPendingRelPath,
   lastTurnPendingRelPaths,
@@ -53,6 +57,13 @@ describe('review repos', () => {
       'The review pane requires a project inside a Git repository.'
     )
     expect(REVIEW_CREATE_ONE_HINT).toMatch(/create one/)
+    expect(WRAP_LONG_DIFF_LINES_LABEL).toBe('Wrap long diff lines')
+    const panelSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
+      'utf8'
+    )
+    expect(panelSrc).toContain('WRAP_LONG_DIFF_LINES_LABEL')
+    expect(panelSrc).not.toContain('换行长 diff')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

@@ -4,6 +4,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { WorkspaceItem } from '../../shared/types'
+import { CHATS_SECTION_LABEL } from '../../shared/conversation'
+import { SKILLS_INTRO, SKILLS_LABEL } from '../../shared/reveal-in-folder'
 import {
   filterSkillExplorerItems,
   mergeSkillsAcrossProjects,
@@ -65,13 +67,10 @@ export function SkillsPage({ workspaces, onBack, onUseSkill }: Props) {
       <div className="skills-inner">
         <header className="skills-head">
           <button type="button" className="skills-back" onClick={onBack}>
-            ← 返回
+            ← {CHATS_SECTION_LABEL}
           </button>
-          <h1>Skills</h1>
-          <p>
-            浏览各项目已安装的 Skill。点选后写入 <code>$技能名</code>，也可在输入框用{' '}
-            <code>$</code> 或 <code>@</code> 引用（对标 Codex open Skills in the sidebar）。
-          </p>
+          <h1>{SKILLS_LABEL}</h1>
+          <p>{SKILLS_INTRO}</p>
         </header>
 
         <label className="skills-search">

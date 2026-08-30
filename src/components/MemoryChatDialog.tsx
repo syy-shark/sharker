@@ -5,8 +5,14 @@
  */
 import { useEffect } from 'react'
 import {
-  ENABLE_MEMORIES_LABEL,
+  DISABLED_MEMORIES_CHAT_HINT,
+  DISABLED_MEMORIES_LABEL,
+  GENERATE_MEMORIES_CHAT_HINT,
   GENERATE_MEMORIES_LABEL,
+  INHERIT_MEMORIES_CHAT_HINT,
+  INHERIT_MEMORIES_LABEL,
+  MEMORIES_CHAT_INTRO,
+  USE_MEMORIES_CHAT_HINT,
   USE_MEMORIES_LABEL,
   type MemoryChatPick
 } from '../../shared/memory-command'
@@ -49,28 +55,25 @@ export function MemoryChatDialog({ open, onClose, onPick }: Props) {
         aria-labelledby="memory-chat-title"
       >
         <div className="memory-chat-head">
-          <h2 id="memory-chat-title">本对话记忆</h2>
-          <p>
-            对标 Codex <code>/memories</code>
-            ：只改当前对话，不改设置 → 个性化的 {ENABLE_MEMORIES_LABEL}。功能关闭时本对话选择会记下，打开后才 Use / Generate。
-          </p>
+          <h2 id="memory-chat-title">/memories</h2>
+          <p>{MEMORIES_CHAT_INTRO}</p>
         </div>
         <div className="memory-chat-choices">
           <button type="button" onClick={() => onPick('use')}>
             <strong>{USE_MEMORIES_LABEL}</strong>
-            <span>本对话使用已有条目，不把本轮写成新记忆</span>
+            <span>{USE_MEMORIES_CHAT_HINT}</span>
           </button>
           <button type="button" onClick={() => onPick('generate')}>
             <strong>{GENERATE_MEMORIES_LABEL}</strong>
-            <span>使用已有条目，并允许本对话贡献新记忆</span>
+            <span>{GENERATE_MEMORIES_CHAT_HINT}</span>
           </button>
           <button type="button" onClick={() => onPick('off')}>
-            <strong>Disabled</strong>
-            <span>本对话不 Use、不 Generate（官方 disabled）</span>
+            <strong>{DISABLED_MEMORIES_LABEL}</strong>
+            <span>{DISABLED_MEMORIES_CHAT_HINT}</span>
           </button>
           <button type="button" onClick={() => onPick('inherit')}>
-            <strong>Inherit</strong>
-            <span>清掉本对话覆盖，回到设置 → Personalization</span>
+            <strong>{INHERIT_MEMORIES_LABEL}</strong>
+            <span>{INHERIT_MEMORIES_CHAT_HINT}</span>
           </button>
         </div>
       </div>

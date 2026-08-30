@@ -64,6 +64,7 @@ import {
   STAGED_LABEL,
   UNSTAGE_LABEL,
   UNSTAGED_LABEL,
+  WRAP_LONG_DIFF_LINES_LABEL,
   expandAllReviewDiffKeys,
   mergeReviewExpandedKeys,
   reviewDiffKeysForFindings,
@@ -987,8 +988,8 @@ export const ChangesPanel = memo(function ChangesPanel({
             type="button"
             className={`changes-panel__refresh changes-panel__wrap${wrapLines ? ' is-pressed' : ''}`}
             aria-pressed={wrapLines}
-            title={wrapLines ? '不换行长 diff' : '换行长 diff'}
-            aria-label={wrapLines ? '关闭长 diff 换行' : '换行长 diff'}
+            title={WRAP_LONG_DIFF_LINES_LABEL}
+            aria-label={WRAP_LONG_DIFF_LINES_LABEL}
             onClick={() => {
               setWrapLines((on) => {
                 const next = !on
@@ -1001,7 +1002,7 @@ export const ChangesPanel = memo(function ChangesPanel({
               })
             }}
           >
-            换行
+            {WRAP_LONG_DIFF_LINES_LABEL}
           </button>
           <button
             type="button"

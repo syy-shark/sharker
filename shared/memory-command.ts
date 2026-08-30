@@ -17,11 +17,22 @@ export const USE_MEMORIES_LABEL = 'Use memories'
 export const GENERATE_MEMORIES_LABEL = 'Generate memories'
 /** Official Memories copy (learn.chatgpt.com/docs/customization/memories). */
 export const ENABLE_MEMORIES_DESCRIPTION =
-  "Local Codex memories are off by default. Chat-level choices don't change your global memory settings."
+  "Local Codex memories are off by default. Chat-level choices don't change your global memory settings. Don't store secrets in memories."
 export const USE_MEMORIES_DESCRIPTION =
   'When off, Codex skips injecting existing memories into future sessions.'
 export const GENERATE_MEMORIES_DESCRIPTION =
   'When off, newly created chats are not stored as memory-generation inputs.'
+/** Official desktop / TUI `/memories` picker (learn.chatgpt.com/docs/customization/memories). */
+export const MEMORIES_CHAT_INTRO =
+  "Use /memories to choose whether a chat can use local memories or contribute to future memories. Chat-level choices don't change your global memory settings."
+export const USE_MEMORIES_CHAT_HINT = 'Whether the current chat can use existing memories.'
+export const GENERATE_MEMORIES_CHAT_HINT =
+  'Whether Codex can use the chat to generate future memories.'
+export const DISABLED_MEMORIES_LABEL = 'Disabled'
+export const DISABLED_MEMORIES_CHAT_HINT = 'Keep memory behavior disabled.'
+export const INHERIT_MEMORIES_LABEL = 'Inherit'
+export const INHERIT_MEMORIES_CHAT_HINT =
+  "Chat-level choices don't change your global memory settings."
 
 export interface MemoryListItem {
   id: string
