@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行（可多行）只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加（一次冲洗可多行，`streamingSuffixLines` 不 split 已画正文）、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；单块引用不再 `lastSingleBlockStart`，多块记下 `lastQuoteInnerStartHold`；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀（`suffixOpensNewCheapBlock` / `closedAfterSiblingStart` / `streamingFirstLine` 只扫 after 新行，不 split 全文；Setext 下划线窗 `lastIndexOf`）、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫；未收束散文软换行只换 tail（`shouldGrowOpenStreamingProseTail` / `streamingOpenProseTail`），空行收段 / 围栏开标仍全量拆（对标 Codex #39061 / #34045 / #22860）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行（可多行）只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加（一次冲洗可多行，`streamingSuffixLines` 不 split 已画正文）、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；单块引用不再 `lastSingleBlockStart`，多块记下 `lastQuoteInnerStartHold`；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀（`suffixOpensNewCheapBlock` / `closedAfterSiblingStart` / `streamingFirstLine` 只扫 after 新行，不 split 全文；Setext 下划线窗 `lastIndexOf`）、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`，一次冲洗可多行）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫；未收束散文软换行只换 tail（`shouldGrowOpenStreamingProseTail` / `streamingOpenProseTail`），空行收段 / 围栏开标仍全量拆（对标 Codex #39061 / #34045 / #22860）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -4319,7 +4319,7 @@ export function shouldAppendStreamingFootnoteParagraph(opts: {
 }
 
 /**
- * 脚注末项后缀只改正文最后一段：同一行补字符，或换行后的缩进续行。
+ * 脚注末项后缀只改正文最后一段：同一行补字符，或换行后的缩进续行（可多行）。
  * 单独换行、新定义仍走整块窗口；空行后新段走 `shouldAppendStreamingFootnoteParagraph`。
  */
 export function shouldGrowStreamingFootnoteLastLine(opts: {
@@ -4330,19 +4330,15 @@ export function shouldGrowStreamingFootnoteLastLine(opts: {
   const { prevNorm, suffix, lastId } = opts
   if (!suffix || suffix.includes(']:')) return false
   if (suffix === '\n') return false
-  if (suffix.startsWith('\n')) {
-    if (suffix.slice(1).includes('\n')) return false
-    return isFootnoteContLine(suffix.slice(1))
+  if (!suffix.includes('\n') && !prevNorm.endsWith('\n')) {
+    const last = lastStreamingLine(prevNorm)
+    const def = parseFootnoteDefinitionLine(last)
+    if (def) return !lastId || def.id === lastId
+    return isFootnoteContLine(last)
   }
-  if (prevNorm.endsWith('\n')) {
-    if (suffix.includes('\n')) return false
-    return isFootnoteContLine(suffix)
-  }
-  if (suffix.includes('\n')) return false
-  const last = lastStreamingLine(prevNorm)
-  const def = parseFootnoteDefinitionLine(last)
-  if (def) return !lastId || def.id === lastId
-  return isFootnoteContLine(last)
+  const lines = streamingSuffixLines(prevNorm, suffix)
+  if (!lines) return false
+  return eachStreamingSuffixLine(lines, (line) => isFootnoteContLine(line))
 }
 
 function growStreamingFootnoteLastLine(
@@ -4359,9 +4355,17 @@ function growStreamingFootnoteLastLine(
   const lastPara = paras[paras.length - 1] ?? []
   const prevSrc = cheapInlineSourceAll(lastPara)
   const appending = suffix.startsWith('\n') || prevNorm.endsWith('\n')
-  const add = appending
-    ? `\n${lastStreamingLine(nextText).replace(/^(?:    |\t)/, '')}`
-    : suffix
+  let add = suffix
+  if (appending) {
+    const lines = streamingSuffixLines(prevNorm, suffix)
+    if (!lines) return null
+    add = ''
+    for (const line of lines) {
+      if (!line) continue
+      add += `\n${line.replace(/^(?:    |\t)/, '')}`
+    }
+    if (!add) return [prev]
+  }
   const nodes = continueCheapInlineMarkdown(prevSrc, lastPara, prevSrc + add, defs)
   if (nodes === lastPara) return [prev]
   return [

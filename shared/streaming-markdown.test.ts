@@ -676,6 +676,21 @@ describe('splitStreamingMarkdown', () => {
         noteContLive[1].items[0]?.paragraphs[0]?.some((n) => n.type === 'text' && n.text.includes('续行'))
       ).toBe(true)
     }
+    const noteContTwo = continueCheapProseBlocks(
+      '见注[^1]。\n[^1]: 说明',
+      notes,
+      '见注[^1]。\n[^1]: 说明\n    续行\n    再续'
+    )
+    expect(noteContTwo[0]).toBe(notes[0])
+    if (notes[1]?.type === 'footnotes' && noteContTwo[1]?.type === 'footnotes') {
+      expect(noteContTwo[1].items[0]?.paragraphs).toHaveLength(1)
+      const body = noteContTwo[1].items[0]?.paragraphs[0]
+        ?.filter((n) => n.type === 'text')
+        .map((n) => n.text)
+        .join('')
+      expect(body).toContain('续行')
+      expect(body).toContain('再续')
+    }
     const noteParaLive = continueCheapProseBlocks(
       '见注[^1]。\n[^1]: 第一段',
       parseCheapProseBlocks('见注[^1]。\n[^1]: 第一段'),
@@ -703,6 +718,12 @@ describe('splitStreamingMarkdown', () => {
       shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明', suffix: '\n    续行' })
     ).toBe(true)
     expect(
+      shouldGrowStreamingFootnoteLastLine({
+        prevNorm: '[^1]: 说明',
+        suffix: '\n    续行\n    再续'
+      })
+    ).toBe(true)
+    expect(
       shouldGrowStreamingFootnoteLastLine({ prevNorm: '[^1]: 说明\n', suffix: '    续行' })
     ).toBe(true)
     expect(
@@ -723,6 +744,17 @@ describe('splitStreamingMarkdown', () => {
       expect(
         manyNotesGrown[1].items.slice(0, 12).every((item, i) => item === manyNotesFirst[1].items[i])
       ).toBe(true)
+    }
+    const manyNotesWrapTwo = continueCheapProseBlocks(
+      manyNotes,
+      manyNotesFirst,
+      `${manyNotes}\n    wrap-a\n    wrap-b`
+    )
+    if (manyNotesFirst[1]?.type === 'footnotes' && manyNotesWrapTwo[1]?.type === 'footnotes') {
+      expect(
+        manyNotesWrapTwo[1].items.slice(0, 12).every((item, i) => item === manyNotesFirst[1].items[i])
+      ).toBe(true)
+      expect(manyNotesWrapTwo[1].items[12]?.paragraphs).toHaveLength(1)
     }
     expect(
       shouldAppendStreamingFootnoteParagraph({ prevNorm: `${manyNotes}更`, suffix: '\n\n    第二段' })
