@@ -7,6 +7,7 @@
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 历史列只在预留行真进 messages 后才订直播体布尔（对标 Codex #22860）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
+ * 收束换行短窗内忽略误判上翻锁，继续贴底（对标 Codex #37849 跳回用户提示）。
  * @see src/ARCH.md
  */
 import {
@@ -88,6 +89,10 @@ import {
   shouldObserveRowIntrinsicHeight,
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
+  shouldIgnoreLeaveBottomDuringCommit,
+  shouldStartLiveCommitSettle,
+  LIVE_COMMIT_SETTLE_FRAMES,
+  LIVE_COMMIT_SETTLE_MS,
   LIVE_TAIL_SAFE_PX
 } from '../../shared/live-display'
 import {
@@ -1121,6 +1126,14 @@ export const ChatView = memo(function ChatView({
   const pendingFullHistoryAfterLiveRef = useRef(false)
   const loadingRef = useRef(loading)
   loadingRef.current = loading
+  /** 收束换行短窗：直播行卸下时长高不锁贴底（对标 Codex #37849） */
+  const commitSettleRef = useRef(false)
+  const prevLoadingForCommitRef = useRef(loading)
+  if (shouldStartLiveCommitSettle({ wasLoading: prevLoadingForCommitRef.current, loading })) {
+    commitSettleRef.current = true
+  } else if (loading) {
+    commitSettleRef.current = false
+  }
   const loadOlderBusyRef = useRef(false)
   const hasOlderHistoryRef = useRef(hasOlderHistory)
   hasOlderHistoryRef.current = hasOlderHistory
@@ -1525,6 +1538,16 @@ export const ChatView = memo(function ChatView({
       return
     }
     if (distance > LEAVE_BOTTOM_PX) {
+      if (
+        shouldIgnoreLeaveBottomDuringCommit({
+          commitSettling: commitSettleRef.current,
+          stickToBottom: stickToBottomRef.current,
+          userLocked: userScrollLockRef.current,
+          scrollIntent: lastScrollIntentRef.current
+        })
+      ) {
+        return
+      }
       userScrollLockRef.current = true
       stickToBottomRef.current = false
       setStickToBottom(false)
@@ -2229,6 +2252,40 @@ export const ChatView = memo(function ChatView({
       )
     )
   }, [isEmpty, windowedMessages])
+
+  useLayoutEffect(() => {
+    const started = shouldStartLiveCommitSettle({
+      wasLoading: prevLoadingForCommitRef.current,
+      loading
+    })
+    prevLoadingForCommitRef.current = loading
+    if (!started) return
+    const stick = () => {
+      const node = messagesRef.current
+      if (!node || !stickToBottomRef.current || userScrollLockRef.current) return
+      programmaticScrollRef.current = true
+      node.scrollTop = liveStickScrollTop(node.scrollHeight, node.clientHeight)
+      programmaticScrollRef.current = false
+    }
+    stick()
+    let frames = 0
+    let raf = window.requestAnimationFrame(function tick() {
+      frames += 1
+      stick()
+      if (frames < LIVE_COMMIT_SETTLE_FRAMES) {
+        raf = window.requestAnimationFrame(tick)
+      }
+    })
+    const timer = window.setTimeout(() => {
+      commitSettleRef.current = false
+      stick()
+    }, LIVE_COMMIT_SETTLE_MS)
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+      commitSettleRef.current = false
+    }
+  }, [loading])
 
   useEffect(() => {
     if (isEmpty || loading || viewingHead) return

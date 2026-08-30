@@ -605,6 +605,32 @@ export function shouldForceStickScroll(options: {
   return options.distanceFromBottom <= (options.atBottomPx ?? 16)
 }
 
+/**
+ * 收束换行短窗：直播行卸下、历史气泡后挂长高时距底会突然超过 48px。
+ * 此时仍贴底且用户没上翻，不把这次距离当成离开（对标 Codex #37849 跳回用户提示）。
+ * 高亮/图片晚于短窗再长高时，只要还在贴底且滚动意向不是上翻，同样不锁。
+ */
+export const LIVE_COMMIT_SETTLE_MS = 240
+export const LIVE_COMMIT_SETTLE_FRAMES = 3
+
+export function shouldStartLiveCommitSettle(options: {
+  wasLoading: boolean
+  loading: boolean
+}): boolean {
+  return options.wasLoading && !options.loading
+}
+
+export function shouldIgnoreLeaveBottomDuringCommit(options: {
+  commitSettling: boolean
+  stickToBottom: boolean
+  userLocked: boolean
+  scrollIntent?: 'up' | 'down' | null
+}): boolean {
+  if (!options.stickToBottom || options.userLocked) return false
+  if (options.scrollIntent === 'up') return false
+  return options.commitSettling || options.scrollIntent !== 'up'
+}
+
 /** 审批出现：已贴底才跟；读历史不解锁、不抢镜头（对标 Codex #38220，Enter/Esc 仍走输入框） */
 export function shouldFollowApprovalIntoView(options: {
   userLocked: boolean

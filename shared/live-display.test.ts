@@ -40,6 +40,10 @@ import {
   rowIntrinsicSizeStyle,
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
+  shouldIgnoreLeaveBottomDuringCommit,
+  shouldStartLiveCommitSettle,
+  LIVE_COMMIT_SETTLE_FRAMES,
+  LIVE_COMMIT_SETTLE_MS,
   liveThoughtBody,
   liveThinkingText,
   rollingThinkPreview,
@@ -312,6 +316,56 @@ describe('near-live message rows', () => {
         atBottomPx: 16
       })
     ).toBe(false)
+    expect(shouldStartLiveCommitSettle({ wasLoading: true, loading: false })).toBe(true)
+    expect(shouldStartLiveCommitSettle({ wasLoading: false, loading: false })).toBe(false)
+    expect(shouldStartLiveCommitSettle({ wasLoading: true, loading: true })).toBe(false)
+    expect(shouldStartLiveCommitSettle({ wasLoading: false, loading: true })).toBe(false)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: true,
+        stickToBottom: true,
+        userLocked: false
+      })
+    ).toBe(true)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: true,
+        stickToBottom: true,
+        userLocked: true
+      })
+    ).toBe(false)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: false,
+        stickToBottom: true,
+        userLocked: false,
+        scrollIntent: 'down'
+      })
+    ).toBe(true)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: false,
+        stickToBottom: true,
+        userLocked: false,
+        scrollIntent: 'up'
+      })
+    ).toBe(false)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: true,
+        stickToBottom: false,
+        userLocked: false
+      })
+    ).toBe(false)
+    expect(LIVE_COMMIT_SETTLE_MS).toBe(240)
+    expect(LIVE_COMMIT_SETTLE_FRAMES).toBe(3)
+    const chatView = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
+      'utf8'
+    )
+    expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
+    expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
+    expect(chatView).toContain('shouldStartLiveCommitSettle')
     expect(shouldFollowApprovalIntoView({ userLocked: false, stickToBottom: true })).toBe(true)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: false })).toBe(false)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: true })).toBe(false)
