@@ -9,10 +9,12 @@ import {
   CLEAR_LABEL,
   EDIT_LABEL,
   PAUSE_LABEL,
-  RESUME_LABEL
+  RESUME_LABEL,
+  SAVE_LABEL
 } from '../../shared/reveal-in-folder'
 import {
   formatGoalProgressLabel,
+  GOAL_MODE_LABEL,
   goalClockEndedAt,
   type GoalCommand,
   type ThreadGoal
@@ -64,7 +66,7 @@ export const GoalProgressRow = memo(function GoalProgressRow({
     <div
       className={`goal-progress-row${goal.status === 'paused' ? ' is-paused' : ' is-active'}`}
       role="region"
-      aria-label="线程目标"
+      aria-label={GOAL_MODE_LABEL}
     >
       <div className="goal-progress-row-main">
         <span className="goal-progress-row-status">{status}</span>
@@ -80,7 +82,7 @@ export const GoalProgressRow = memo(function GoalProgressRow({
           <input
             className="goal-progress-row-input"
             value={draft}
-            aria-label="编辑线程目标"
+            aria-label={EDIT_LABEL}
             autoFocus
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -107,8 +109,8 @@ export const GoalProgressRow = memo(function GoalProgressRow({
             type="button"
             className="goal-progress-row-btn"
             onClick={saveEdit}
-            aria-label="保存目标"
-            title="保存"
+            aria-label={SAVE_LABEL}
+            title={SAVE_LABEL}
           >
             <Check size={14} strokeWidth={2} aria-hidden />
           </button>

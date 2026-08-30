@@ -9,6 +9,8 @@ export type ThreadGoalStatus = 'active' | 'paused'
 /** Official Goal states (desktop progress row / cookbook active · paused). */
 export const GOAL_ACTIVE_LABEL = 'Active'
 export const GOAL_PAUSED_LABEL = 'Paused'
+/** Official desktop `/goal` (learn.chatgpt.com/docs/reference/slash-commands). */
+export const GOAL_MODE_LABEL = 'Goal mode'
 
 /** 一条对话上的持久目标 */
 export interface ThreadGoal {

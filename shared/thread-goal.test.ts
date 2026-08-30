@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   applyGoalCommand,
   formatGoalChip,
   formatGoalProgressLabel,
   GOAL_ACTIVE_LABEL,
+  GOAL_MODE_LABEL,
   GOAL_PAUSED_LABEL,
   goalClockEndedAt,
   goalPromptBlock,
@@ -63,6 +67,16 @@ describe('thread goal', () => {
     expect(formatGoalProgressLabel(null)).toBeNull()
     expect(GOAL_ACTIVE_LABEL).toBe('Active')
     expect(GOAL_PAUSED_LABEL).toBe('Paused')
+    expect(GOAL_MODE_LABEL).toBe('Goal mode')
+    const rowSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/GoalProgressRow.tsx'),
+      'utf8'
+    )
+    expect(rowSrc).toContain('GOAL_MODE_LABEL')
+    expect(rowSrc).toContain('EDIT_LABEL')
+    expect(rowSrc).toContain('SAVE_LABEL')
+    expect(rowSrc).not.toContain('线程目标')
+    expect(rowSrc).not.toContain('保存目标')
   })
 
   it('freezes elapsed across pause and continues after resume', () => {
