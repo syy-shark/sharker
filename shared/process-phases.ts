@@ -143,6 +143,12 @@ import {
   isLiveApprovalDeniedErrorAnswerDemoAskAppendChange,
   isLiveApprovalDeniedThinkAnswerDemoAskCancelAppendChange,
   isLiveApprovalDeniedThinkErrorAskCancelAppendChange,
+  isLiveApprovalDeniedAnswerDemoAskCancelAppendChange,
+  isLiveApprovalDeniedErrorAskCancelAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoErrorAskCancelAppendChange,
+  isLiveApprovalDeniedAnswerDemoErrorAskCancelAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoAskCompressAppendChange,
+  isLiveApprovalDeniedAnswerDemoAskCompressAppendChange,
   isLiveApprovalDeniedThinkErrorCancelAppendChange,
   isLiveApprovalDeniedAnswerDemoAppendChange,
   isLiveApprovalDeniedAnswerDemoCompressAppendChange,
@@ -173,6 +179,12 @@ import {
   isLiveApprovalAllowedSettleErrorAnswerDemoAskAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoAskCancelAppendChange,
   isLiveApprovalAllowedSettleThinkErrorAskCancelAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoAskCancelAppendChange,
+  isLiveApprovalAllowedSettleErrorAskCancelAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoErrorAskCancelAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoErrorAskCancelAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoAskCompressAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoAskCompressAppendChange,
   isLiveApprovalAllowedSettleThinkAnswerDemoCompressAppendChange,
   isLiveApprovalAllowedSettleToolAppendChange,
   isLiveApprovalAllowedSettleThinkCancelAppendChange,
@@ -194,6 +206,14 @@ import {
   isLiveWriteStatApprovalResolvedAnswerDemoErrorAppendChange,
   isLiveWriteStatApprovalResolvedErrorAnswerDemoAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerDemoAskAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoAskAppendChange,
+  isLiveWriteStatApprovalResolvedErrorAskAppendChange,
+  isLiveWriteStatApprovalResolvedThinkErrorAskAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskAppendChange,
+  isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoAskAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoErrorAskAppendChange,
+  isLiveWriteStatApprovalResolvedErrorAnswerDemoAskAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerDemoAskCancelAppendChange,
   isLiveWriteStatApprovalResolvedThinkAnswerDemoToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedAnswerDemoCancelAppendChange,
@@ -224,6 +244,12 @@ import {
   isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedAnswerDemoAskAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerDemoErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoAskAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskCancelAppendChange,
   isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorCancelCompressAppendChange,
   isLiveWriteStatStatusApprovalResolvedToolAppendChange,
   isLiveWriteStatStatusApprovalResolvedAskAppendChange,
@@ -295,6 +321,10 @@ import {
   isLiveAskResolvedAnswerDemoErrorCancelAppendChange,
   isLiveAskResolvedErrorAnswerDemoCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoAskAppendChange,
+  isLiveAskResolvedAnswerDemoAskAppendChange,
+  isLiveAskResolvedErrorAskAppendChange,
+  isLiveAskResolvedThinkErrorAskAppendChange,
+  isLiveAskResolvedThinkAnswerDemoErrorAskAppendChange,
   isLiveAskResolvedAnswerDemoErrorCompressAppendChange,
   isLiveAskResolvedThinkAnswerDemoErrorAppendChange,
   isLiveAskResolvedThinkErrorAnswerDemoAppendChange,
@@ -1142,6 +1172,12 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveApprovalDeniedErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedThinkAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedThinkErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAnswerDemoErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAnswerDemoAskCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoAskCompressAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedThinkErrorCancelAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveApprovalDeniedAnswerDemoCompressAppendChange(prevSegments, segments) &&
@@ -1172,6 +1208,12 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveApprovalAllowedSettleErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleThinkAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleThinkErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkAnswerDemoErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoErrorAskCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkAnswerDemoAskCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoAskCompressAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleThinkAnswerDemoCompressAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleToolAppendChange(prevSegments, segments) &&
     !isLiveApprovalAllowedSettleThinkCancelAppendChange(prevSegments, segments) &&
@@ -1190,6 +1232,14 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatApprovalResolvedAnswerDemoErrorAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedErrorAnswerDemoAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedThinkAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedThinkAnswerDemoToolAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedThinkAnswerCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedAnswerDemoCancelAppendChange(prevSegments, segments) &&
@@ -1220,6 +1270,12 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedAnswerDemoAskAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedThinkErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoErrorCancelCompressAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedToolAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalResolvedAskAppendChange(prevSegments, segments) &&
@@ -1310,6 +1366,10 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveAskResolvedAnswerDemoErrorCancelAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedErrorAnswerDemoCompressAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedThinkAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedAnswerDemoErrorCompressAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedThinkAnswerDemoErrorAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedThinkErrorAnswerDemoAppendChange(prevSegments, segments) &&
