@@ -228,7 +228,8 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 过程前缀后已有无 fence 正文，再开普通工具也走核心。
  * 同一帧首枚无 fence 正文后再落普通工具也标 `'tool'`。
  * 同一帧首枚无 fence 正文后再落思考 / status 标 `'think'` / `'status'`。
- * 同长、仅一枚普通工具原地收束 / 改详情（正文可仍在末尾）也标 `'tool'`。
+ * 同长普通工具原地收束 / 改详情（可多枚并行 complete_call，正文可仍在末尾）标 `'tool'`。
+ * 同长只改 status / 思考（正文可仍在末尾）标 `'status'` / `'think'`。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
 function liveCoreInPlaceProcessToolSkip(
@@ -237,6 +238,8 @@ function liveCoreInPlaceProcessToolSkip(
 ): LiveStreamDerivationSkip | null {
   if (prev.length !== next.length || !prev.length) return null
   let toolChange = false
+  let statusChange = false
+  let thinkChange = false
   for (let i = 0; i < prev.length; i++) {
     const before = prev[i]!
     const after = next[i]!
@@ -246,16 +249,30 @@ function liveCoreInPlaceProcessToolSkip(
     }
     if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) continue
     if (before.id !== after.id || before.kind !== after.kind) return null
-    if (isLiveThinking(before) && isLiveThinking(after)) continue
-    if (isLiveStatus(before) && isLiveStatus(after)) continue
+    if (isLiveThinking(before) && isLiveThinking(after)) {
+      if (!liveTailContentGrew(before, after)) return null
+      thinkChange = true
+      continue
+    }
+    if (isLiveStatus(before) && isLiveStatus(after)) {
+      const settled =
+        before.status === 'active' &&
+        after.status !== before.status &&
+        (after.content ?? '') === (before.content ?? '')
+      if (!liveTailContentGrew(before, after) && !settled) return null
+      statusChange = true
+      continue
+    }
     if (isLiveCoreProcessTool(before) && isLiveCoreProcessTool(after)) {
-      if (toolChange) return null
       toolChange = true
       continue
     }
     return null
   }
-  return toolChange ? 'tool' : null
+  if (toolChange) return 'tool'
+  if (statusChange) return 'status'
+  if (thinkChange) return 'think'
+  return null
 }
 
 export function liveCoreAppendedProcessToolsSkip(
@@ -907,8 +924,16 @@ export function nextLiveProcessView(
       return held
     }
     if (coreSkip === 'think') {
+      const processForFlow = retargetLiveProcessFlow(
+        prev.processForFlow,
+        processHold.segments,
+        segments
+      )
       const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
-      const view = thinkText === prev.thinkText ? prev : { ...prev, thinkText }
+      const view =
+        processForFlow === prev.processForFlow && thinkText === prev.thinkText
+          ? prev
+          : { ...prev, processForFlow, thinkText }
       processHold = { view, segments }
       return view
     }

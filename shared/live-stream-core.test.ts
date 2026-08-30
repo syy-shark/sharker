@@ -96,6 +96,72 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([demo, reply], [demoDone, reply])).toBeNull()
   })
 
+  it('classifies parallel in-place tool settles after no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const listing: TurnSegment = { ...tool('active'), id: 't2', toolName: 'list_dir' }
+    const reply = prose('Hi')
+    const readingDone: TurnSegment = { ...reading, status: 'done' }
+    const listingDone: TurnSegment = { ...listing, status: 'done' }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, listing, reply],
+        [thought, readingDone, listingDone, reply]
+      )
+    ).toBe('tool')
+    expect(
+      hasLiveProcessPhaseGrowHold(
+        [thought, reading, listing, reply],
+        [thought, readingDone, listingDone, reply]
+      )
+    ).toBe(true)
+  })
+
+  it('classifies an in-place status settle after no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const plan = status('根据已完成步骤规划下一步…')
+    const reply = prose('Hi')
+    const done: TurnSegment = { ...plan, status: 'done' }
+    expect(shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, done, reply])).toBe(
+      'status'
+    )
+    expect(hasLiveProcessPhaseGrowHold([thought, plan, reply], [thought, done, reply])).toBe(true)
+    const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
+    expect(shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply])).toBeNull()
+  })
+
+  it('classifies a settled prefix tool plus a newly appended tool after no-fence prose', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const settled: TurnSegment = { ...reading, status: 'done' }
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, settled, reply, nextTool])
+    ).toBe('tool')
+  })
+
+  it('classifies Awaiting approval or Ask User extras after no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const awaiting = status('Awaiting approval')
+    const ask: TurnSegment = {
+      id: 'ask1',
+      kind: 'tool',
+      toolName: 'request_user_input',
+      status: 'active',
+      content: '',
+      toolTitle: 'Question requested'
+    }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, awaiting])
+    ).toBe('status')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, ask])
+    ).toBe('tool')
+  })
+
   it('does not classify a second no-fence text after existing prose until the table is registered', () => {
     const thought = think('Hmm')
     const reading = tool('active')
@@ -564,6 +630,37 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     const heldAnswer = nextLiveAnswerView(firstAnswer, {
       ...EMPTY_LIVE_STREAM_UI,
       liveSegments: [thought, settled, reply]
+    })
+    expect(heldAnswer).toBe(firstAnswer)
+  })
+
+  it('retargets parallel tool settles after no-fence prose without rebuilding the answer', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const listing: TurnSegment = { ...tool('active'), id: 't2', toolName: 'list_dir' }
+    const reply = prose('Hi')
+    const readingDone: TurnSegment = { ...reading, status: 'done' }
+    const listingDone: TurnSegment = { ...listing, status: 'done' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, listing, reply]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, readingDone, listingDone, reply]
+    })
+    expect(next.processForFlow).toEqual(
+      first.processForFlow.map((segment) =>
+        segment === reading ? readingDone : segment === listing ? listingDone : segment
+      )
+    )
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, listing, reply]
+    })
+    const heldAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, readingDone, listingDone, reply]
     })
     expect(heldAnswer).toBe(firstAnswer)
   })
