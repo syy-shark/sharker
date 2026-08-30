@@ -14,7 +14,6 @@
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { liveProcessViewFromSnap } from '../../shared/live-stream-core'
 import { useLiveStreamUiSelectWhen } from '../hooks/useLiveStreamUi'
 import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import { ChevronDown } from 'lucide-react'
@@ -398,7 +397,7 @@ export function ThoughtDisclosure({
   )
 }
 
-/** 直播思考旁白：只订 thinkText，折叠时不跑 liveThoughtBody、不抬时间线；frozen 保住收束前原文，历史重挂用 frozenThinkText */
+/** 直播思考旁白：只订已发布的 turnThinking，折叠时不跑过程推导 / liveThoughtBody；frozen 保住收束前原文，历史重挂用 frozenThinkText */
 const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
   asLiveHead,
   elapsed,
@@ -413,10 +412,7 @@ const LiveThoughtFromStore = memo(function LiveThoughtFromStore({
   contentStreaming?: boolean
 }) {
   const held = useRef('')
-  const storeText = useLiveStreamUiSelectWhen(
-    !frozen,
-    (snap) => liveProcessViewFromSnap(snap).thinkText
-  )
+  const storeText = useLiveStreamUiSelectWhen(!frozen, (snap) => snap.turnThinking)
   if (!frozen) held.current = storeText
   const text = frozen ? (frozenThinkText ?? held.current) : storeText
   const [open, setOpen] = useState(false)

@@ -106,6 +106,7 @@ import {
   nextLiveThinkText,
   prefetchLiveStreamTable,
   shouldPrefetchLiveStreamTable,
+  shouldReusePublishedActiveTool,
   shouldSkipLiveStreamDerivation,
   shouldSkipLiveStreamPublish
 } from '../shared/live-stream-core'
@@ -1944,22 +1945,11 @@ export default function App() {
       lastStreamRenderAt.current = performance.now()
       const skip = shouldSkipLiveStreamDerivation(prevSnap.liveSegments, segments)
       // 思考 / 状态 / 散文只加长：不扫 extractFinalContent / 思考预览 / active tool（对标 Codex #22860）
-      if (skip === 'think' || skip === 'status') {
+      if (shouldReusePublishedActiveTool(skip)) {
         publishLiveStreamUi({
           liveSegments: segments,
           turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
           streaming: nextLivePublishedStreaming(segments, prevSnap.streaming)
-        })
-      } else if (skip === 'text') {
-        const activeToolSeg = findLastSegment(
-          segments,
-          (s) => s.kind === 'tool' && s.status === 'active'
-        )
-        publishLiveStreamUi({
-          liveSegments: segments,
-          streaming: nextLivePublishedStreaming(segments, prevSnap.streaming),
-          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments),
-          activeTool: activeToolSeg?.toolName ?? null
         })
       } else if (skip === 'tool') {
         const activeToolSeg = findLastSegment(

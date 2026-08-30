@@ -63,6 +63,11 @@ export interface LiveAnswerActions {
 /** 16ms flush：前缀没变时不必整表 extract / 思考预览 / 找 active tool */
 export type LiveStreamDerivationSkip = 'think' | 'status' | 'text' | 'tool'
 
+/** 思考 / 状态 / 散文 skip 不扫片段找 active tool，沿用上一帧（对标 Codex #22860） */
+export function shouldReusePublishedActiveTool(skip: LiveStreamDerivationSkip | null): boolean {
+  return skip === 'think' || skip === 'status' || skip === 'text'
+}
+
 export interface LiveStreamTable {
   shouldSkipLiveStreamDerivation: (
     prev: readonly TurnSegment[],

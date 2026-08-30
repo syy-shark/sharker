@@ -13,6 +13,7 @@ import {
   liveAnswerViewFromSnap,
   resetLiveAnswerViewHold,
   shouldPrefetchLiveStreamTable,
+  shouldReusePublishedActiveTool,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveStreamDerivation,
   type LiveAnswerView
@@ -57,6 +58,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'status'
     )
     expect(shouldSkipLiveStreamDerivation([prose('Hello')], [prose('Hello world')])).toBe('text')
+    expect(shouldReusePublishedActiveTool('think')).toBe(true)
+    expect(shouldReusePublishedActiveTool('status')).toBe(true)
+    expect(shouldReusePublishedActiveTool('text')).toBe(true)
+    expect(shouldReusePublishedActiveTool('tool')).toBe(false)
+    expect(shouldReusePublishedActiveTool(null)).toBe(false)
   })
 
   it('classifies a newly appended tool after closed no-fence prose without the table', () => {
@@ -1523,6 +1529,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('prefetchLiveStreamTable')
     expect(src('../src/App.tsx')).toContain('shouldPrefetchLiveStreamTable')
     expect(src('../src/App.tsx')).toContain('nextLivePublishedStreaming')
+    expect(src('../src/App.tsx')).toContain('shouldReusePublishedActiveTool')
     expect(src('../src/App.tsx')).toContain('LAST_TURN_UI_FLUSH_MS')
     expect(src('../src/App.tsx')).toContain('shouldResetLiveStreamUiWhenLoadingStops')
     expect(src('../src/App.tsx')).toContain('schedulePrefetchLiveAnswerPaint')
@@ -1673,6 +1680,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/TurnFlow.tsx')).toContain('remapProcessPhaseStepsOnStreamEnd')
     expect(src('process-phases.ts')).toContain('remapProcessPhaseStepsOnStreamEnd')
     expect(src('../src/components/TurnFlow.tsx')).toContain('useLiveStreamUiSelectWhen')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('(snap) => snap.turnThinking')
+    expect(src('../src/components/TurnFlow.tsx').includes('liveProcessViewFromSnap')).toBe(false)
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozen={frozen}')
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldWarmLiveChatMath')
