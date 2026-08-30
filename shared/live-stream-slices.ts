@@ -102818,7 +102818,11 @@ function hasLiveApprovalDeniedPrefixClose(
       statusResolved += 1
       continue
     }
-    if (isLiveToolSettleChange(before, after) && after.status === 'error') {
+    // Stop with no leftover active extras rewrites the latest error tool to cancelled.
+    if (
+      isLiveToolSettleChange(before, after) &&
+      (after.status === 'error' || after.status === 'cancelled')
+    ) {
       toolSettled += 1
       continue
     }
