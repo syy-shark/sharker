@@ -1078,6 +1078,83 @@ import {
   isLiveAskResolvedAnswerAskActiveToolCancelCompressAppendChange,
   isLiveAskResolvedThinkAnswerAskToolCancelCompressAppendChange,
   isLiveAskResolvedThinkAnswerAskActiveToolCancelCompressAppendChange,
+  isLiveApprovalNeededAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalNeededErrorActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededAskTwoToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkAskTwoToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalNeededErrorActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalNeededErrorActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededErrorActiveToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalAllowedSettleErrorActiveToolCancelCompressAppendChange,
+  isLiveApprovalDeniedAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalDeniedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalDeniedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalDeniedErrorActiveToolCancelCompressAppendChange,
+  isLiveApprovalResolvedAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveApprovalResolvedErrorActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedAskTwoToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveStatusApprovalResolvedErrorActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatApprovalResolvedErrorActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveWriteStatStatusApprovalResolvedErrorActiveToolCancelCompressAppendChange,
+  isLiveAskResolvedAskTwoToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkAskTwoToolCancelCompressAppendChange,
+  isLiveAskResolvedErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange,
+  isLiveAskResolvedAnswerDemoActiveToolCancelCompressAppendChange,
+  isLiveAskResolvedThinkAnswerDemoToolCancelCompressAppendChange,
+  isLiveAskResolvedErrorActiveToolCancelCompressAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -3343,6 +3420,83 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveAskResolvedAnswerAskActiveToolCancelCompressAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedThinkAnswerAskToolCancelCompressAppendChange(prevSegments, segments) &&
     !isLiveAskResolvedThinkAnswerAskActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalNeededErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalNeededErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalNeededErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalNeededErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkAskTwoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkErrorAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerDemoActiveToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkAnswerDemoToolCancelCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedErrorActiveToolCancelCompressAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedCompressAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusApprovalResolvedCompressAppendChange(prevSegments, segments) &&
