@@ -210,8 +210,17 @@ export const GO_TO_CHAT_LABEL = 'Go to chat 1–9'
 export const OPEN_MODEL_PICKER_LABEL = 'Open model picker'
 export const OPEN_PROJECT_PICKER_LABEL = 'Open project picker'
 export const START_VOICE_CHAT_LABEL = 'Start voice chat'
+/** Official Voice docs: empty new chats start with Start new voice chat. */
+export const START_NEW_VOICE_CHAT_LABEL = 'Start new voice chat'
+/** Official Voice docs: Select End when you finish. Visible chip stays Voice. */
+export const END_VOICE_CHAT_LABEL = 'End'
 /** Official composer Voice control (learn.chatgpt.com Start voice chat; desktop issues call the chip Voice). */
 export const VOICE_LABEL = 'Voice'
+
+export function voiceChatControlLabel(opts: { active: boolean; hasMessages: boolean }): string {
+  if (opts.active) return END_VOICE_CHAT_LABEL
+  return opts.hasMessages ? START_VOICE_CHAT_LABEL : START_NEW_VOICE_CHAT_LABEL
+}
 export const START_DICTATION_LABEL = 'Start dictation'
 export const RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL = 'Restore previous composer prompt'
 /** 官方 Commands：审批打开时 Enter / Esc（对标 learn.chatgpt.com/docs/reference/commands） */

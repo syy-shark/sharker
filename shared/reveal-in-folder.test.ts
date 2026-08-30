@@ -61,7 +61,10 @@ import {
   UNARCHIVE_LABEL,
   OPEN_MODEL_PICKER_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
+  START_NEW_VOICE_CHAT_LABEL,
   START_VOICE_CHAT_LABEL,
+  END_VOICE_CHAT_LABEL,
+  voiceChatControlLabel,
   VOICE_LABEL,
   OPEN_SETTINGS_LABEL,
   SKILLS_LABEL,
@@ -197,6 +200,11 @@ describe('reveal in folder', () => {
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
     expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
     expect(START_VOICE_CHAT_LABEL).toBe('Start voice chat')
+    expect(START_NEW_VOICE_CHAT_LABEL).toBe('Start new voice chat')
+    expect(END_VOICE_CHAT_LABEL).toBe('End')
+    expect(voiceChatControlLabel({ active: false, hasMessages: false })).toBe('Start new voice chat')
+    expect(voiceChatControlLabel({ active: false, hasMessages: true })).toBe('Start voice chat')
+    expect(voiceChatControlLabel({ active: true, hasMessages: true })).toBe('End')
     expect(VOICE_LABEL).toBe('Voice')
     expect(START_DICTATION_LABEL).toBe('Start dictation')
     expect(RUN_ENVIRONMENT_ACTION_1_LABEL).toBe('Run environment action 1')

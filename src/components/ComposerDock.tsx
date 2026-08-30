@@ -141,7 +141,7 @@ import {
   STARTING_BRANCH_LABEL,
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
   START_DICTATION_LABEL,
-  START_VOICE_CHAT_LABEL,
+  voiceChatControlLabel,
   VOICE_LABEL,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
@@ -2470,8 +2470,11 @@ export const ComposerDock = memo(
               type="button"
               className={`composer-jump${voiceChat ? ' is-active' : ''}`}
               onClick={() => toggleVoiceChat()}
-              title={`${START_VOICE_CHAT_LABEL} (Ctrl⇧V)`}
-              aria-label={START_VOICE_CHAT_LABEL}
+              title={`${voiceChatControlLabel({ active: voiceChat, hasMessages: messages.length > 0 })} (Ctrl⇧V)`}
+              aria-label={voiceChatControlLabel({
+                active: voiceChat,
+                hasMessages: messages.length > 0
+              })}
               aria-pressed={voiceChat}
             >
               {VOICE_LABEL}
