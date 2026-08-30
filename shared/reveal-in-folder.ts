@@ -332,8 +332,6 @@ export const WORKTREE_LABEL = 'Worktree'
 export const CREATE_BRANCH_HERE_LABEL = 'Create branch here'
 /** Official worktrees header: open your IDE to the worktree using the "Open" button. */
 export const OPEN_LABEL = 'Open'
-/** Official worktrees header: open your IDE to the worktree using the "Open" button. */
-export const OPEN_LABEL = 'Open'
 /** 官方顶栏弹出对话（对标 Codex #15162 Open in Popup Window） */
 export const OPEN_IN_POPUP_WINDOW_LABEL = 'Open in Popup Window'
 /** 官方 Settings 小节与弹出窗开关（对标 learn.chatgpt.com/docs/reference/settings） */
