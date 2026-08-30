@@ -386,6 +386,8 @@ export function isLiveThinkAnswerSettledToolAppendChange(
     return false
   }
   if (!isLiveAddedAnswerPair(next[prev!.length + 1])) return false
+  // compress is its own process step; do not treat it as a settled follow tool
+  if (isLiveAddedCompress(next[next.length - 1])) return false
   return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
 }
 
