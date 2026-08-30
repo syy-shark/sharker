@@ -2389,6 +2389,509 @@ export function isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChan
   return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 6, next)
 }
 
+
+/** Allow 收口并 tool_done 后同一帧 ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefixClose(prev, next)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 2)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** Deny 收口并 tool_done 后同一帧 ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalDeniedAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalDeniedPrefixClose(prev, next)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 2)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** Allow 收口并 tool_done 后同一帧 ```demo + Ask User + 下一工具仍 active */
+export function isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefixClose(prev, next)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 2)) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** Deny 收口并 tool_done 后同一帧 ```demo + Ask User + 下一工具仍 active */
+export function isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalDeniedPrefixClose(prev, next)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 2)) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** Allow 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefixClose(prev, next)) return false
+  if (!isLiveAddedThinkPair(next[prev!.length])) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length + 1)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 3)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
+/** Deny 收口并 tool_done 后同一帧 think + ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalDeniedPrefixClose(prev, next)) return false
+  if (!isLiveAddedThinkPair(next[prev!.length])) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length + 1)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 3)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
+/** Allow 收口并 tool_done 后同一帧 Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalAllowedSettleAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefixClose(prev, next)) return false
+  if (next.length !== prev!.length + 3) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
+}
+
+/** Deny 收口并 tool_done 后同一帧 Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalDeniedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalDeniedPrefixClose(prev, next)) return false
+  if (next.length !== prev!.length + 3) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
+}
+
+/** Allow 收口并 tool_done 后同一帧 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalAllowedSettlePrefixClose(prev, next)) return false
+  if (next.length !== prev!.length + 4) return false
+  const text = next[prev!.length]
+  if (!text || !isLiveAddedAnswerPair(text) || isLiveErrorAnswer(text)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 1)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+}
+
+/** Deny 收口并 tool_done 后同一帧 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalDeniedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveApprovalDeniedPrefixClose(prev, next)) return false
+  if (next.length !== prev!.length + 4) return false
+  const text = next[prev!.length]
+  if (!text || !isLiveAddedAnswerPair(text) || isLiveErrorAnswer(text)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 1)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 错误 + ```demo + Ask User */
+export function isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 5) {
+    return isLiveAddedError(next[prev!.length]) && isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededHead(next, prev!.length + 3)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 6) {
+    return isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDemoFencePair(next, prev!.length + 2) && hasLiveAskNeededHead(next, prev!.length + 4)
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalResolvedAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 5) {
+    return isLiveAddedDemoFencePair(next, prev!.length) && hasLiveAskNeededResolvedHead(next, prev!.length + 2) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 6) {
+    return isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededResolvedHead(next, prev!.length + 3) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 ```demo + Ask User + 下一工具仍 active */
+export function isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 5) {
+    return isLiveAddedDemoFencePair(next, prev!.length) && hasLiveAskNeededResolvedHead(next, prev!.length + 2) && isLiveAddedToolsWithOptionalStatus(prev!.length + 4, next)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 6) {
+    return isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededResolvedHead(next, prev!.length + 3) && isLiveAddedToolsWithOptionalStatus(prev!.length + 5, next)
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 think + ```demo + Ask User + 下一工具已 complete_call */
+export function isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 6) {
+    return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededResolvedHead(next, prev!.length + 3) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 7) {
+    return isLiveAddedThinkPair(next[prev!.length + 1]) && isLiveAddedDemoFencePair(next, prev!.length + 2) && hasLiveAskNeededResolvedHead(next, prev!.length + 4) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 6, next)
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalResolvedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 3) {
+    return hasLiveAskNeededStoppedHead(next, prev!.length) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 4) {
+    return hasLiveAskNeededStoppedHead(next, prev!.length + 1) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 Ask User + 下一工具已 complete_call + compress */
+export function isLiveApprovalResolvedAskToolCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 4) {
+    return hasLiveAskNeededResolvedHead(next, prev!.length) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next) && isLiveAddedCompress(next[prev!.length + 3])
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 5) {
+    return hasLiveAskNeededResolvedHead(next, prev!.length + 1) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next) && isLiveAddedCompress(next[prev!.length + 4])
+  }
+  return false
+}
+
+/** Allow / Deny 只收口 Awaiting 行后同一帧 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveApprovalResolvedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 4) {
+    return Boolean(isLiveAddedAnswerPair(next[prev!.length]) && !isLiveErrorAnswer(next[prev!.length]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 1) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+  }
+  if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 5) {
+    return Boolean(isLiveAddedAnswerPair(next[prev!.length + 1]) && !isLiveErrorAnswer(next[prev!.length + 1]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 2) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+  }
+  return false
+}
+
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + ```demo + Ask User + 下一工具仍 active */
+export function isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length + 3)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 5)) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 7, next)
+}
+
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveStatusApprovalResolvedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (next.length !== prev!.length + 6) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
+/** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveToolAppendPrefixClose(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (next.length !== prev!.length + 7) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  const text = next[prev!.length + 3]
+  if (!text || !isLiveAddedAnswerPair(text) || isLiveErrorAnswer(text)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 4)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 6, next)
+}
+
+/** 写盘收束同时新开工具并立刻 Allow/Deny + ```demo + Ask User + 下一工具仍 active */
+export function isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next)) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length + 2)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 4)) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 6, next)
+}
+
+/** 写盘收束同时新开工具并立刻 Allow/Deny + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next)) return false
+  if (next.length !== prev!.length + 5) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 2)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** 写盘收束同时新开工具并立刻 Allow/Deny + 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next)) return false
+  if (next.length !== prev!.length + 6) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length)) return false
+  const text = next[prev!.length + 2]
+  if (!text || !isLiveAddedAnswerPair(text) || isLiveErrorAnswer(text)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + ```demo + Ask User + 下一工具仍 active */
+export function isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  if (!isLiveAddedDemoFencePair(next, prev!.length + 3)) return false
+  if (!hasLiveAskNeededResolvedHead(next, prev!.length + 5)) return false
+  return isLiveAddedToolsWithOptionalStatus(prev!.length + 7, next)
+}
+
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (next.length !== prev!.length + 6) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
+/** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + 首枚 token + Ask User + 下一工具已 complete_call + Stop */
+export function isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (!hasLiveWriteStatPrefix(prev, next) || !isLiveAddedStatusPair(next[prev!.length])) {
+    return false
+  }
+  if (next.length !== prev!.length + 7) return false
+  if (!isLiveAddedResolvedApprovalHead(next, prev!.length + 1)) return false
+  const text = next[prev!.length + 3]
+  if (!text || !isLiveAddedAnswerPair(text) || isLiveErrorAnswer(text)) return false
+  if (!hasLiveAskNeededStoppedHead(next, prev!.length + 4)) return false
+  return isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 6, next)
+}
+
+/** Ask User 作答后同一帧 ```demo + 错误 + 再开 Ask User */
+export function isLiveAskResolvedAnswerDemoErrorAskAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 5 &&
+    isLiveAddedDemoFencePair(next, prev!.length) && isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededHead(next, prev!.length + 3)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 7) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedDemoFencePair(next, prev!.length + 2) && isLiveAddedError(next[prev!.length + 4]) && hasLiveAskNeededHead(next, prev!.length + 5)
+}
+
+/** Ask User 作答后同一帧 错误 + ```demo + 再开 Ask User */
+export function isLiveAskResolvedErrorAnswerDemoAskAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 5 &&
+    isLiveAddedError(next[prev!.length]) && isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededHead(next, prev!.length + 3)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 7) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedError(next[prev!.length + 2]) && isLiveAddedDemoFencePair(next, prev!.length + 3) && hasLiveAskNeededHead(next, prev!.length + 5)
+}
+
+/** Ask User 作答后同一帧 think + 错误 + ```demo + 再开 Ask User */
+export function isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 6 &&
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDemoFencePair(next, prev!.length + 2) && hasLiveAskNeededHead(next, prev!.length + 4)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 8) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedError(next[prev!.length + 3]) && isLiveAddedDemoFencePair(next, prev!.length + 4) && hasLiveAskNeededHead(next, prev!.length + 6)
+}
+
+/** Ask User 作答后同一帧 ```demo + 再开 Ask User + 下一工具已 complete_call */
+export function isLiveAskResolvedAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 5 &&
+    isLiveAddedDemoFencePair(next, prev!.length) && hasLiveAskNeededResolvedHead(next, prev!.length + 2) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 7) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedDemoFencePair(next, prev!.length + 2) && hasLiveAskNeededResolvedHead(next, prev!.length + 4) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 6, next)
+}
+
+/** Ask User 作答后同一帧 ```demo + 再开 Ask User + 下一工具仍 active */
+export function isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 5 &&
+    isLiveAddedDemoFencePair(next, prev!.length) && hasLiveAskNeededResolvedHead(next, prev!.length + 2) && isLiveAddedToolsWithOptionalStatus(prev!.length + 4, next)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 7) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedDemoFencePair(next, prev!.length + 2) && hasLiveAskNeededResolvedHead(next, prev!.length + 4) && isLiveAddedToolsWithOptionalStatus(prev!.length + 6, next)
+}
+
+/** Ask User 作答后同一帧 think + ```demo + 再开 Ask User + 下一工具已 complete_call */
+export function isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 6 &&
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDemoFencePair(next, prev!.length + 1) && hasLiveAskNeededResolvedHead(next, prev!.length + 3) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 8) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedDemoFencePair(next, prev!.length + 3) && hasLiveAskNeededResolvedHead(next, prev!.length + 5) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 7, next)
+}
+
+/** Ask User 作答后同一帧 再开 Ask User + 下一工具已 complete_call + Stop */
+export function isLiveAskResolvedAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 3 &&
+    hasLiveAskNeededStoppedHead(next, prev!.length) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 5) return false
+  if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return hasLiveAskNeededStoppedHead(next, prev!.length + 2) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next)
+}
+
+/** Ask User 作答后同一帧 再开 Ask User + 下一工具已 complete_call + compress */
+export function isLiveAskResolvedAskToolCompressAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 4 &&
+    hasLiveAskNeededResolvedHead(next, prev!.length) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 2, next) && isLiveAddedCompress(next[prev!.length + 3])
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 6) return false
+  if (!isLiveAddedAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return hasLiveAskNeededResolvedHead(next, prev!.length + 2) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 4, next) && isLiveAddedCompress(next[prev!.length + 5])
+}
+
+/** Ask User 作答后同一帧 首枚 token + 再开 Ask User + 下一工具已 complete_call + Stop */
+export function isLiveAskResolvedAnswerAskToolCancelAppendChange(
+  prev: readonly TurnSegment[] | null | undefined,
+  next: readonly TurnSegment[]
+): boolean {
+  if (
+    hasLiveAskResolvedHangPrefix(prev, next) &&
+    next.length === prev!.length + 4 &&
+    Boolean(isLiveAddedAnswerPair(next[prev!.length]) && !isLiveErrorAnswer(next[prev!.length]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 1) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 3, next)
+  ) {
+    return true
+  }
+  if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 6) return false
+  if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
+  if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
+  return Boolean(isLiveAddedAnswerPair(next[prev!.length + 2]) && !isLiveErrorAnswer(next[prev!.length + 2]!)) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledToolsWithOptionalStatus(prev!.length + 5, next)
+}
+
 /** 写盘收束同时新开工具并立刻 Allow/Deny + compress */
 export function isLiveWriteStatApprovalResolvedCompressAppendChange(
   prev: readonly TurnSegment[] | null | undefined,
@@ -12115,6 +12618,41 @@ export function shouldSkipLiveStreamDerivation(
   if (isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusApprovalNeededAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalDeniedAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalDeniedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalDeniedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedAskToolCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAnswerDemoErrorAskAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAskToolCompressAppendChange(prevSegments, segments)) return 'tool'
+  if (isLiveAskResolvedAnswerAskToolCancelAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatApprovalResolvedCompressAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveWriteStatApprovalResolvedCancelAppendChange(prevSegments, segments)) return 'tool'
   if (isLiveStatusApprovalResolvedCompressAppendChange(prevSegments, segments)) return 'tool'
@@ -12985,6 +13523,11 @@ export function nextLiveThinkText(
       isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
       isLiveApprovalDeniedThinkAnswerDemoErrorAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
       isLiveApprovalDeniedThinkErrorAnswerDemoCancelAppendChange(prevSegments, segments) ||
       isLiveApprovalDeniedAnswerDemoErrorAppendChange(prevSegments, segments) ||
       isLiveApprovalDeniedErrorAnswerDemoAppendChange(prevSegments, segments) ||
@@ -14119,6 +14662,41 @@ export function nextLiveProcessView(
       isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusApprovalNeededAskToolCancelAppendChange(processHold.segments, segments) ||
       isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalDeniedAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalDeniedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalDeniedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedAskToolCompressAppendChange(processHold.segments, segments) ||
+      isLiveApprovalResolvedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveStatusApprovalResolvedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAnswerDemoErrorAskAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedErrorAnswerDemoAskAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAskToolCancelAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAskToolCompressAppendChange(processHold.segments, segments) ||
+      isLiveAskResolvedAnswerAskToolCancelAppendChange(processHold.segments, segments) ||
       isLiveWriteStatApprovalResolvedCompressAppendChange(processHold.segments, segments) ||
       isLiveWriteStatApprovalResolvedCancelAppendChange(processHold.segments, segments) ||
       isLiveStatusApprovalResolvedCompressAppendChange(processHold.segments, segments) ||
@@ -15555,6 +16133,111 @@ export function shouldSkipLiveAnswerIdentity(input: {
     return false
   }
   if (isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalAllowedSettleAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalDeniedAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalDeniedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalDeniedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedAskToolCompressAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveApprovalResolvedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveStatusApprovalResolvedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAnswerDemoErrorAskAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedErrorAnswerDemoAskAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAskToolCancelAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAskToolCompressAppendChange(input.prevSegments, input.segments)) {
+    return false
+  }
+  if (isLiveAskResolvedAnswerAskToolCancelAppendChange(input.prevSegments, input.segments)) {
     return false
   }
   if (isLiveWriteStatApprovalResolvedCompressAppendChange(input.prevSegments, input.segments)) {
@@ -17735,6 +18418,39 @@ export function nextLiveAnswerView(
       isLiveWriteStatStatusApprovalNeededAskToolCancelAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange(prevSegments, segments) ||
       isLiveApprovalResolvedCompressAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveApprovalDeniedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAnswerDemoErrorAskAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAskToolCancelAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) ||
       isLiveApprovalResolvedCancelAppendChange(prevSegments, segments) ||
       isLiveApprovalResolvedCancelChange(prevSegments, segments) ||
       isLiveApprovalResolvedThinkAppendChange(prevSegments, segments) ||
@@ -18155,7 +18871,9 @@ export function nextLiveAnswerView(
       isLiveWriteStatApprovalNeededAnswerDemoAskCompressAppendChange(prevSegments, segments) ||
       isLiveWriteStatApprovalNeededThinkAnswerDemoAskCompressAppendChange(prevSegments, segments) ||
       isLiveWriteStatStatusApprovalNeededAnswerDemoAskCompressAppendChange(prevSegments, segments) ||
-      isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskCompressAppendChange(prevSegments, segments))
+      isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskCompressAppendChange(prevSegments, segments) ||
+      isLiveApprovalResolvedAskToolCompressAppendChange(prevSegments, segments) ||
+      isLiveAskResolvedAskToolCompressAppendChange(prevSegments, segments))
   ) {
     const text = segments.slice(prevSegments!.length).find((segment) => segment.kind === 'text')
     if (text) {

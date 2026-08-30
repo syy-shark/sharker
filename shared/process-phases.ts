@@ -151,6 +151,41 @@ import {
   isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolAppendChange,
   isLiveWriteStatStatusApprovalNeededAskToolCancelAppendChange,
   isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange,
+  isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange,
+  isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange,
+  isLiveApprovalAllowedSettleAskToolCancelAppendChange,
+  isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange,
+  isLiveApprovalDeniedAnswerDemoAskToolAppendChange,
+  isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange,
+  isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange,
+  isLiveApprovalDeniedAskToolCancelAppendChange,
+  isLiveApprovalDeniedAnswerAskToolCancelAppendChange,
+  isLiveApprovalResolvedErrorAnswerDemoAskAppendChange,
+  isLiveApprovalResolvedAnswerDemoAskToolAppendChange,
+  isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange,
+  isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange,
+  isLiveApprovalResolvedAskToolCancelAppendChange,
+  isLiveApprovalResolvedAskToolCompressAppendChange,
+  isLiveApprovalResolvedAnswerAskToolCancelAppendChange,
+  isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange,
+  isLiveStatusApprovalResolvedAskToolCancelAppendChange,
+  isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange,
+  isLiveWriteStatApprovalResolvedAskToolCancelAppendChange,
+  isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange,
+  isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange,
+  isLiveAskResolvedAnswerDemoErrorAskAppendChange,
+  isLiveAskResolvedErrorAnswerDemoAskAppendChange,
+  isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange,
+  isLiveAskResolvedAnswerDemoAskToolAppendChange,
+  isLiveAskResolvedAnswerDemoAskActiveToolAppendChange,
+  isLiveAskResolvedThinkAnswerDemoAskToolAppendChange,
+  isLiveAskResolvedAskToolCancelAppendChange,
+  isLiveAskResolvedAskToolCompressAppendChange,
+  isLiveAskResolvedAnswerAskToolCancelAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -1489,6 +1524,41 @@ export function appendProcessPhaseStepOnToolStart(
     !isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskToolAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalNeededAskToolCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatStatusApprovalNeededAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleThinkAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalAllowedSettleAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalDeniedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAskToolCompressAppendChange(prevSegments, segments) &&
+    !isLiveApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveWriteStatStatusApprovalResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerDemoErrorAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkErrorAnswerDemoAskAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerDemoAskActiveToolAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedThinkAnswerDemoAskToolAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAskToolCancelAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAskToolCompressAppendChange(prevSegments, segments) &&
+    !isLiveAskResolvedAnswerAskToolCancelAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedCompressAppendChange(prevSegments, segments) &&
     !isLiveWriteStatApprovalResolvedCancelAppendChange(prevSegments, segments) &&
     !isLiveStatusApprovalResolvedCompressAppendChange(prevSegments, segments) &&
