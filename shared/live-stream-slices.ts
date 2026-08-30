@@ -60963,7 +60963,8 @@ export function isLiveApprovalNeededThinkAnswerDemoAskTwoSettledFiveActiveToolCa
   if (!isLiveAddedCancelledTool(next[prev!.length + 10])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
-  return isLiveAddedCompress(next[prev!.length + 13])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
+  return isLiveAddedCompress(next[prev!.length + 14])
 }
 
 /** Awaiting approval 挂上后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61119,7 +61120,8 @@ export function isLiveStatusApprovalNeededThinkAnswerDemoAskTwoSettledFiveActive
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
-  return isLiveAddedCompress(next[prev!.length + 14])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 14])) return false
+  return isLiveAddedCompress(next[prev!.length + 15])
 }
 
 /** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61263,7 +61265,8 @@ export function isLiveWriteStatApprovalNeededThinkAnswerDemoAskTwoSettledFiveAct
   if (!isLiveAddedCancelledTool(next[prev!.length + 10])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
-  return isLiveAddedCompress(next[prev!.length + 13])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
+  return isLiveAddedCompress(next[prev!.length + 14])
 }
 
 /** 写盘收束同时新开工具并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61419,7 +61422,8 @@ export function isLiveWriteStatStatusApprovalNeededThinkAnswerDemoAskTwoSettledF
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
-  return isLiveAddedCompress(next[prev!.length + 14])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 14])) return false
+  return isLiveAddedCompress(next[prev!.length + 15])
 }
 
 /** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Awaiting + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61556,7 +61560,8 @@ export function isLiveApprovalAllowedSettleThinkAnswerDemoAskTwoSettledFiveActiv
   if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 10])) return false
-  return isLiveAddedCompress(next[prev!.length + 11])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
+  return isLiveAddedCompress(next[prev!.length + 12])
 }
 
 /** Allow 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61690,7 +61695,8 @@ export function isLiveApprovalDeniedThinkAnswerDemoAskTwoSettledFiveActiveToolCa
   if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 10])) return false
-  return isLiveAddedCompress(next[prev!.length + 11])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
+  return isLiveAddedCompress(next[prev!.length + 12])
 }
 
 /** Deny 收口并 tool_done 后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -61803,10 +61809,10 @@ export function isLiveApprovalResolvedThinkAnswerDemoAskTwoSettledFiveActiveTool
   next: readonly TurnSegment[]
 ): boolean {
   if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 13) {
-    return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCompress(next[prev!.length + 11])
+    return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
   }
   if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 14) {
-    return isLiveAddedThinkPair(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
+    return isLiveAddedThinkPair(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
   }
   return false
 }
@@ -61957,7 +61963,8 @@ export function isLiveStatusApprovalResolvedThinkAnswerDemoAskTwoSettledFiveActi
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
-  return isLiveAddedCompress(next[prev!.length + 14])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 14])) return false
+  return isLiveAddedCompress(next[prev!.length + 15])
 }
 
 /** 规划下一步 / Reconnecting 后同一帧新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -62101,7 +62108,8 @@ export function isLiveWriteStatApprovalResolvedThinkAnswerDemoAskTwoSettledFiveA
   if (!isLiveAddedCancelledTool(next[prev!.length + 10])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
-  return isLiveAddedCompress(next[prev!.length + 13])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
+  return isLiveAddedCompress(next[prev!.length + 14])
 }
 
 /** 写盘收束同时新开工具并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -62257,7 +62265,8 @@ export function isLiveWriteStatStatusApprovalResolvedThinkAnswerDemoAskTwoSettle
   if (!isLiveAddedCancelledTool(next[prev!.length + 11])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 12])) return false
   if (!isLiveAddedCancelledTool(next[prev!.length + 13])) return false
-  return isLiveAddedCompress(next[prev!.length + 14])
+  if (!isLiveAddedCancelledTool(next[prev!.length + 14])) return false
+  return isLiveAddedCompress(next[prev!.length + 15])
 }
 
 /** 写盘收束同时新开 Reconnecting / 规划下一步并立刻 Allow/Deny + think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
@@ -62399,14 +62408,14 @@ export function isLiveAskResolvedThinkAnswerDemoAskTwoSettledFiveActiveToolCance
   if (
     hasLiveAskResolvedHangPrefix(prev, next) &&
     next.length === prev!.length + 13 &&
-    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCompress(next[prev!.length + 11])
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedSettledTool(next[prev!.length + 5]) && isLiveAddedSettledTool(next[prev!.length + 6]) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCompress(next[prev!.length + 12])
   ) {
     return true
   }
   if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 15) return false
   if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
   if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
-  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCompress(next[prev!.length + 13])
+  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedSettledTool(next[prev!.length + 7]) && isLiveAddedSettledTool(next[prev!.length + 8]) && isLiveAddedCancelledTool(next[prev!.length + 9]) && isLiveAddedCancelledTool(next[prev!.length + 10]) && isLiveAddedCancelledTool(next[prev!.length + 11]) && isLiveAddedCancelledTool(next[prev!.length + 12]) && isLiveAddedCancelledTool(next[prev!.length + 13]) && isLiveAddedCompress(next[prev!.length + 14])
 }
 
 /** Ask User 作答后同一帧 think + 错误 + Ask User + 下一两工具已 complete_call + 再五工具仍 active + Stop + compress */
