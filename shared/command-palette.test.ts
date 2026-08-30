@@ -179,6 +179,7 @@ describe('command palette', () => {
     expect(ids).toContain('automations')
     expect(PALETTE_COMMANDS.find((c) => c.id === 'automations')?.title).toBe('Scheduled')
     expect(ids).toContain('stop')
+    expect(PALETTE_COMMANDS.find((c) => c.id === 'stop')?.title).toBe('Stop')
     expect(ids).toContain('nav-back')
     expect(ids).toContain('nav-forward')
     expect(ids).toContain('font-larger')

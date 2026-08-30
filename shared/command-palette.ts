@@ -104,6 +104,7 @@ import {
   UNDO_LAST_APP_ACTION_LABEL,
   WORKTREE_LABEL
 } from './reveal-in-folder'
+import { STOP_LABEL } from './composer-submit'
 import { PERMISSIONS_LABEL } from './permission-mode'
 import { OPEN_SUBAGENTS_LABEL } from './subagent'
 import {
@@ -318,8 +319,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   },
   {
     id: 'stop',
-    title: '停止回合与终端',
-    keywords: 'stop abort terminal 停止 终端',
+    title: STOP_LABEL,
+    keywords: 'stop abort terminal 停止回合与终端 停止 终端',
     action: 'stop_terminals'
   },
   {

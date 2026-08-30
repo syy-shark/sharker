@@ -161,6 +161,7 @@ describe('chat-image', () => {
       action: 'lightbox',
       title: '查看大图'
     })
+    expect(chatImageMenuItems({ canExport: true })[0]?.title).toBe('Copy')
     expect(chatImageMenuItems({})).toEqual([])
     const viewport = { width: 1200, height: 800 }
     const landscape = chatImageLightboxFit({ width: 4000, height: 2000 }, viewport)

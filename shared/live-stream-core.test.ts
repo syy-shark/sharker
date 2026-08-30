@@ -1731,6 +1731,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatImage.tsx')).toContain('shouldApplyCachedWorkspaceImage')
     expect(src('../src/components/ChatImage.tsx')).toContain('shouldDeferChatImagePrefetch')
     expect(src('../src/components/ChatImage.tsx')).toContain('FenceImmediateHighlightContext')
+    expect(src('../src/components/ChatImage.tsx')).toContain('COPY_LABEL')
+    expect(src('../src/components/ChatImage.tsx').includes('复制图片')).toBe(false)
     expect(src('../src/components/ChatImage.tsx')).toContain('resolveLiveChatImageSrc')
     expect(src('../src/components/ChatImage.tsx')).toContain('LiveMarkdownStreamingContext')
     expect(src('../src/components/TurnFlow.tsx')).toContain('streaming={isStreaming}')

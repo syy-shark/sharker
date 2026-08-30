@@ -1,7 +1,7 @@
 /**
  * 对话渲染图：导出文件名与来源判定（对标 Codex Save or copy rendered images）。
  * 工作区相对路径图走 `readFileDataUrl`，不认任意 `file://`。
- * 右键：复制/保存图片；工作区图再加打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778 页内菜单）。
+ * 右键：Copy / 保存图片；工作区图再加打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778 页内菜单）。
  * 点图开视口自适应灯箱（对标 Codex 桌面 image preview / #26851），尺寸用 CSS 像素 contain，不跟 `--ui-font-scale` 放大裁切。
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，避免 48px 占位再跳。
  * 直播 token 中不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
@@ -14,7 +14,12 @@
 
 import { resolveCitationPath } from './file-citation'
 import { filePreviewKind } from './file-preview'
-import { COPY_PATH_LABEL, revealInFolderLabel, type RevealFolderPlatform } from './reveal-in-folder'
+import {
+  COPY_LABEL,
+  COPY_PATH_LABEL,
+  revealInFolderLabel,
+  type RevealFolderPlatform
+} from './reveal-in-folder'
 
 export type ChatImageExportInput = {
   src?: string
@@ -135,7 +140,7 @@ export function chatImageMenuItems(options: {
     )
   }
   if (options.canExport) {
-    items.push({ action: 'copy-image', title: '复制图片' }, { action: 'save', title: '保存图片' })
+    items.push({ action: 'copy-image', title: COPY_LABEL }, { action: 'save', title: '保存图片' })
   }
   return items
 }

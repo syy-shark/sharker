@@ -1,6 +1,6 @@
 /**
  * 对话渲染图：悬停复制 / 保存；工作区相对路径经 readFileDataUrl 成图。
- * 右键页内菜单：复制/保存；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
+ * 右键页内菜单：Copy / 保存图片；工作区图再打开 / Open in Finder / Copy path（对标 Codex #17591 / #40778）。
  * 点图开视口自适应灯箱（对标 Codex image preview / #26851），不订直播 token、不发明画布或拖出。
  * 收束预取与重挂共用 `prefetchRemoteChatImageSize`，命中尺寸缓存则首帧占位。
  * 直播 token 中只占位，不挂 `<img>`；闭合 dest 后 effect 开工尺寸 / 工作区 data URL 写缓存，不 setState。
@@ -46,7 +46,7 @@ import {
 } from '../../shared/chat-image'
 import { FenceImmediateHighlightContext, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
-import { FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
+import { COPY_LABEL, FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
 import {
   dispatchCopyWorkspaceFilePath,
   dispatchOpenWorkspaceFile,
@@ -396,8 +396,8 @@ export function ChatImage({
           <button
             type="button"
             className={`message-actions-btn${copied ? ' message-actions-btn--copied' : ''}`}
-            title={copied ? '已复制' : '复制图片'}
-            aria-label={copied ? '已复制' : '复制图片'}
+            title={COPY_LABEL}
+            aria-label={COPY_LABEL}
             onClick={() => void copy()}
           >
             {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
@@ -483,8 +483,8 @@ export function ChatImage({
                     <button
                       type="button"
                       className={`message-actions-btn${copied ? ' message-actions-btn--copied' : ''}`}
-                      title={copied ? '已复制' : '复制图片'}
-                      aria-label={copied ? '已复制' : '复制图片'}
+                      title={COPY_LABEL}
+                      aria-label={COPY_LABEL}
                       onClick={() => void copy()}
                     >
                       {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
