@@ -1813,6 +1813,22 @@ describe('splitStreamingMarkdown', () => {
       expect(manyFenceGrown[0].items[12]?.nodes).toBe(manyFenceFirst[0].items[12]?.nodes)
       expect(manyFenceGrown[0].items[12]?.blocks?.[0]).toMatchObject({ type: 'pre', text: 'xy', lang: 'js' })
     }
+    const manyFenceGrownAgain = continueCheapProseBlocks(
+      `${manyFence}y`,
+      manyFenceGrown,
+      `${manyFence}yz`
+    )
+    if (manyFenceGrown[0]?.type === 'list' && manyFenceGrownAgain[0]?.type === 'list') {
+      expect(
+        manyFenceGrownAgain[0].items.slice(0, 12).every((item, i) => item === manyFenceGrown[0].items[i])
+      ).toBe(true)
+      expect(manyFenceGrownAgain[0].items[12]?.nodes).toBe(manyFenceGrown[0].items[12]?.nodes)
+      expect(manyFenceGrownAgain[0].items[12]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'xyz',
+        lang: 'js'
+      })
+    }
     const manyThenQuote =
       Array.from({ length: 8 }, (_, i) => `- keep-${i}`).join('\n') + '\n- note\n  > quoted'
     const manyThenQuoteFirst = parseCheapProseBlocks(manyThenQuote)
@@ -2618,6 +2634,9 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('rememberLastCheapBlockStart')
     expect(mdSrc).toContain('rememberLastCheapBlockStart(parsed, nextText)')
     expect(mdSrc).toContain('rememberLastCheapBlockStart(out, nextText)')
+    expect(mdSrc).toContain('lastItemInnerStartHold')
+    expect(mdSrc).toContain('rememberItemInnerStart')
+    expect(mdSrc).toContain("text.indexOf('\\n', offset)")
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')
     expect(mdSrc).toContain('cheapInlineStableHold')
