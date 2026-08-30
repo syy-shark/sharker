@@ -1,9 +1,10 @@
 /**
- * `/memories` 空参数先选本对话记忆（对标 Codex use / generate / disabled）。
+ * `/memories` 空参数先选本对话 Use / Generate / Disabled / Inherit（对标 Codex use / generate / disabled）。
  * 选定前不改全局设置。
  * @see src/components/ARCH.md
  */
 import { useEffect } from 'react'
+import { FILE_CLOSE_LABEL } from '../../shared/reveal-in-folder'
 import {
   DISABLED_MEMORIES_CHAT_HINT,
   DISABLED_MEMORIES_LABEL,
@@ -24,7 +25,7 @@ interface Props {
   onPick: (pick: MemoryChatPick) => void
 }
 
-/** 官方 /memories 为本对话选使用已有 / 写入新 / 关闭 */
+/** 官方 /memories 为本对话选 Use / Generate / Disabled / Inherit */
 export function MemoryChatDialog({ open, onClose, onPick }: Props) {
   useEffect(() => {
     if (!open) return
@@ -46,7 +47,7 @@ export function MemoryChatDialog({ open, onClose, onPick }: Props) {
       <button
         type="button"
         className="memory-chat-backdrop"
-        aria-label="关闭记忆选择"
+        aria-label={FILE_CLOSE_LABEL}
         onClick={onClose}
       />
       <div
