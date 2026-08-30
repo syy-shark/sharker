@@ -96,6 +96,25 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([demo, reply], [demoDone, reply])).toBeNull()
   })
 
+  it('does not classify a second no-fence text after existing prose until the table is registered', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const extraText: TurnSegment = {
+      id: 'a2',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Error: boom'
+    }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, extraText])
+    ).toBeNull()
+    expect(
+      hasLiveProcessPhaseGrowHold([thought, reading, reply], [thought, reading, reply, extraText])
+    ).toBe(false)
+  })
+
   it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(

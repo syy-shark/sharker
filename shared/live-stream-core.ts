@@ -286,11 +286,13 @@ export function liveCoreAppendedProcessToolsSkip(
   }
   const extras = next.slice(processLen + prevAnswer.length)
   if (!extras.length) return null
-  if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
-  if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
-  if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
-  if (extrasHaveAnswerThenThinkOrStatus(extras)) {
-    return extras.some(isLiveStatus) ? 'status' : 'think'
+  if (!prevAnswer.length) {
+    if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
+    if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
+    if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
+    if (extrasHaveAnswerThenThinkOrStatus(extras)) {
+      return extras.some(isLiveStatus) ? 'status' : 'think'
+    }
   }
   if (extras.length && extras.every((segment) => isLiveThinking(segment) || isLiveStatus(segment))) {
     return extras.some(isLiveStatus) ? 'status' : 'think'
