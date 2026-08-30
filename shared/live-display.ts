@@ -724,6 +724,29 @@ export function isNearLiveMessageRow(
   return index >= Math.max(0, total - window)
 }
 
+/** 远窗未写入实测高度时，与 `.chat--active .message-row` 的 contain-intrinsic-size 估高一致 */
+export const FAR_ROW_INTRINSIC_GUESS = 160
+
+/**
+ * 远窗行高刷进 contain-intrinsic-size 后，只补完全在视口上方的行。
+ * 视口内 / 下方的行变高不改 scrollTop，避免把正在读的位置拽走。
+ */
+export function nextAboveFoldHeightScrollTop(input: {
+  scrollTop: number
+  changes: ReadonlyArray<{ offsetTop: number; previousSize: number; nextSize: number }>
+}): number {
+  let next = input.scrollTop
+  for (const change of input.changes) {
+    const prev = Math.round(change.previousSize)
+    const nextSize = Math.round(change.nextSize)
+    if (nextSize === prev) continue
+    if (change.offsetTop + prev <= input.scrollTop) {
+      next += nextSize - prev
+    }
+  }
+  return next > 0 ? next : 0
+}
+
 /** 远离贴底窗口后用实测高度当 content-visibility 内在尺寸，避免从 160px 估高跳变 */
 export function rowIntrinsicSizeStyle(
   height: number | undefined

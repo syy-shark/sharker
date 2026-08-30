@@ -1540,6 +1540,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldFlushRowIntrinsicHeight')
     expect(src('../src/components/ChatView.tsx')).toContain('nextRevealPreserveScrollTop')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextAboveFoldHeightScrollTop')
     expect(src('../src/components/ChatView.tsx').includes('trimTopIdsRef')).toBe(false)
     expect(src('../src/components/ChatView.tsx')).toContain('requestAnimationFrame(flush)')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantId')

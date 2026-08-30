@@ -45,6 +45,8 @@ import {
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
   shouldFlushRowIntrinsicHeight,
+  FAR_ROW_INTRINSIC_GUESS,
+  nextAboveFoldHeightScrollTop,
   mergeSeededRowHeights,
   readMountedMessageRowHeight,
   nextRowIntrinsicHeights,
@@ -382,6 +384,46 @@ describe('near-live message rows', () => {
     expect(shouldFlushRowIntrinsicHeight({ id: 'a1', live: true, height: 420 })).toBe(false)
     expect(shouldFlushRowIntrinsicHeight({ id: 'streaming', height: 420 })).toBe(false)
     expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 0 })).toBe(false)
+    expect(FAR_ROW_INTRINSIC_GUESS).toBe(160)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 2000,
+        changes: [{ offsetTop: 100, previousSize: 160, nextSize: 800 }]
+      })
+    ).toBe(2640)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 2000,
+        changes: [{ offsetTop: 1900, previousSize: 160, nextSize: 800 }]
+      })
+    ).toBe(2000)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 2000,
+        changes: [{ offsetTop: 4000, previousSize: 160, nextSize: 800 }]
+      })
+    ).toBe(2000)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 2000,
+        changes: [
+          { offsetTop: 40, previousSize: 160, nextSize: 800 },
+          { offsetTop: 220, previousSize: 160, nextSize: 400 }
+        ]
+      })
+    ).toBe(2880)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 100,
+        changes: [{ offsetTop: 0, previousSize: 800, nextSize: 160 }]
+      })
+    ).toBe(0)
+    expect(
+      nextAboveFoldHeightScrollTop({
+        scrollTop: 2000,
+        changes: [{ offsetTop: 100, previousSize: 420, nextSize: 420 }]
+      })
+    ).toBe(2000)
     const seeded = mergeSeededRowHeights(new Map(), { 'a-live': 420, skip: 0, '': 12 })
     expect(seeded.get('a-live')).toBe(420)
     expect(seeded.has('skip')).toBe(false)
@@ -502,6 +544,8 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
     expect(chatView).toContain('shouldFlushRowIntrinsicHeight')
+    expect(chatView).toContain('nextAboveFoldHeightScrollTop')
+    expect(chatView).toContain('FAR_ROW_INTRINSIC_GUESS')
     expect(chatView).toContain('requestAnimationFrame(flush)')
     expect(chatView).toContain('shouldRecordTranscriptScrollIntent')
     expect(chatView).toContain('liveStreaming: loadingRef.current')
