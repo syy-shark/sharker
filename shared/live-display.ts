@@ -695,6 +695,24 @@ export function shouldObserveRowIntrinsicHeight(input: {
   return !input.live
 }
 
+/**
+ * 远窗历史行量到真高后才刷进 React 内在尺寸。
+ * 贴底窗口 / 直播行 / 高度没变都不刷，避免跟 token 重绘（对标 Codex #22860 / #38220）。
+ */
+export function shouldFlushRowIntrinsicHeight(input: {
+  id?: string
+  live?: boolean
+  nearLive?: boolean
+  height: number
+  stored?: number
+}): boolean {
+  if (!shouldObserveRowIntrinsicHeight(input)) return false
+  if (input.nearLive) return false
+  const height = Math.round(input.height)
+  if (height < 1) return false
+  return input.stored !== height
+}
+
 /** 该历史行是否落在贴底窗口内（0-based index） */
 export function isNearLiveMessageRow(
   index: number,

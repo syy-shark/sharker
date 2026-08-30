@@ -1538,6 +1538,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('splitTranscriptAroundPinnedLive')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
+    expect(src('../src/components/ChatView.tsx')).toContain('shouldFlushRowIntrinsicHeight')
+    expect(src('../src/components/ChatView.tsx')).toContain('requestAnimationFrame(flush)')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantId')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantIds')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountActiveLiveSlot')

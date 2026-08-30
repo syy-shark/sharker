@@ -44,6 +44,7 @@ import {
   writeCachedInlineDemoHeight,
   isNearLiveMessageRow,
   shouldObserveRowIntrinsicHeight,
+  shouldFlushRowIntrinsicHeight,
   mergeSeededRowHeights,
   readMountedMessageRowHeight,
   nextRowIntrinsicHeights,
@@ -374,6 +375,13 @@ describe('near-live message rows', () => {
     expect(shouldObserveRowIntrinsicHeight({ id: 'a1', live: true })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: '' })).toBe(false)
     expect(shouldObserveRowIntrinsicHeight({ id: 'hist-1' })).toBe(true)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 420 })).toBe(true)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 420, stored: 420 })).toBe(false)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 420, stored: 160 })).toBe(true)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', nearLive: true, height: 420 })).toBe(false)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'a1', live: true, height: 420 })).toBe(false)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'streaming', height: 420 })).toBe(false)
+    expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 0 })).toBe(false)
     const seeded = mergeSeededRowHeights(new Map(), { 'a-live': 420, skip: 0, '': 12 })
     expect(seeded.get('a-live')).toBe(420)
     expect(seeded.has('skip')).toBe(false)
@@ -493,6 +501,8 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
+    expect(chatView).toContain('shouldFlushRowIntrinsicHeight')
+    expect(chatView).toContain('requestAnimationFrame(flush)')
     expect(chatView).toContain('shouldRecordTranscriptScrollIntent')
     expect(chatView).toContain('liveStreaming: loadingRef.current')
     expect(shouldFollowApprovalIntoView({ userLocked: false, stickToBottom: true })).toBe(true)

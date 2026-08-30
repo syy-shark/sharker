@@ -1,7 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
- * 历史行才盯 ResizeObserver 量内在高度；直播行不另盯，避免 token 长高叠一层 RO（对标 Codex #22860 / #39120）。
+ * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
@@ -98,6 +98,7 @@ import {
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
+  shouldFlushRowIntrinsicHeight,
   shouldObserveRowIntrinsicHeight,
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
@@ -2265,18 +2266,37 @@ export const ChatView = memo(function ChatView({
   useEffect(() => {
     const root = messagesInnerRef.current
     if (!root || isEmpty) return
+    const pending = new Map<string, { id: string; nearLive: boolean; height: number }>()
+    const flushed = new Map<string, number>()
+    let raf = 0
+    const flush = () => {
+      raf = 0
+      const snapshots = [...pending.values()]
+      pending.clear()
+      if (!snapshots.length) return
+      for (const row of snapshots) flushed.set(row.id, row.height)
+      setIntrinsicHeights((prev) => nextRowIntrinsicHeights(prev, snapshots))
+    }
     const remember = (el: Element) => {
       const id = el.id.startsWith('msg-') ? el.id.slice(4) : ''
+      const live = el.classList.contains('message-row--live')
+      if (!shouldObserveRowIntrinsicHeight({ id, live })) return
+      const height = Math.round((el as HTMLElement).offsetHeight)
+      if (height > 0) measuredRowHeightsRef.current.set(id, height)
+      const nearLive = el.classList.contains('message-row--near-live')
       if (
-        !shouldObserveRowIntrinsicHeight({
+        !shouldFlushRowIntrinsicHeight({
           id,
-          live: el.classList.contains('message-row--live')
+          live,
+          nearLive,
+          height,
+          stored: flushed.get(id)
         })
       ) {
         return
       }
-      const height = Math.round((el as HTMLElement).offsetHeight)
-      if (height > 0) measuredRowHeightsRef.current.set(id, height)
+      pending.set(id, { id, nearLive, height })
+      if (!raf) raf = window.requestAnimationFrame(flush)
     }
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) remember(entry.target)
@@ -2306,6 +2326,7 @@ export const ChatView = memo(function ChatView({
     })
     mo.observe(root, { childList: true })
     return () => {
+      if (raf) window.cancelAnimationFrame(raf)
       ro.disconnect()
       mo.disconnect()
     }
