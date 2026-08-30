@@ -346,6 +346,22 @@ describe('commitAssistantReply persist targeting', () => {
         hasLiveBody: true,
         historyHasReserved: true
       })
+    ).toBe(true)
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: false,
+        hasLiveBody: true,
+        reservedId: 'a-live',
+        hasReservedInHistory: true
+      })
+    ).toBe(true)
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: false,
+        hasLiveBody: false,
+        reservedId: 'a-live',
+        hasReservedInHistory: true
+      })
     ).toBe(false)
     const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
     const upserted = upsertAssistantMessage(liveTranscript, committed)

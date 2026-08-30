@@ -2,6 +2,7 @@
  * 直播助手行：过程与回答分开订 store 切片。
  * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
+ * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，回答 diff 仍 live 以免折 20 行跳（对标 Codex preserved streamed activity）。
  * @see src/components/ARCH.md
  */
 import { memo } from 'react'
@@ -38,7 +39,8 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   onOpenSubAgent,
   toolOutputDisplay,
   messageId,
-  onNeedFullMessage
+  onNeedFullMessage,
+  isStreaming
 }: {
   liveStartedAt?: number
   approvalWaiting: boolean
@@ -46,6 +48,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   messageId: string
   onNeedFullMessage?: (messageId: string) => void
+  isStreaming: boolean
 }) {
   const view = useLiveStreamUiSelect((snap, prev: LiveProcessTimeline | undefined) =>
     nextLiveProcessTimeline(prev ?? null, snap)
@@ -55,7 +58,7 @@ const LiveStoreProcess = memo(function LiveStoreProcess({
       <div className="turn-flow-live-panel">
         <TurnFlow
           segments={view.processForFlow}
-          isStreaming
+          isStreaming={isStreaming}
           liveStartedAt={liveStartedAt}
           approvalWaiting={approvalWaiting}
           liveThought
@@ -175,7 +178,8 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   onOpenSubAgent,
   onOpenChangedFiles,
   toolOutputDisplay,
-  onNeedFullMessage
+  onNeedFullMessage,
+  isStreaming = true
 }: {
   messageId: string
   meta?: AssistantMeta
@@ -190,6 +194,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
   onOpenChangedFiles?: (paths: string[]) => void
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
+  isStreaming?: boolean
 }) {
   const changedFiles = meta?.changedFiles ?? []
   return (
@@ -201,6 +206,7 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
         toolOutputDisplay={toolOutputDisplay}
         messageId={messageId}
         onNeedFullMessage={onNeedFullMessage}
+        isStreaming={isStreaming}
       />
       <LiveStoreAnswer />
       {approval && onApproval ? (

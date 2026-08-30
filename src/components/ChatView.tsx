@@ -5,7 +5,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列只在预留行真进 messages 后才订直播体布尔（对标 Codex #22860）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，同一直播实例留下（对标 Codex #22860 / preserved streamed activity）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -922,6 +922,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         onOpenSubAgent={onOpenSubAgent}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
+        isStreaming={loading}
       />
     </div>
   )
@@ -2356,7 +2357,7 @@ export const ChatView = memo(function ChatView({
   const reservedInHistory = Boolean(
     liveAssistantId && windowedMessages.some((m) => m.id === liveAssistantId)
   )
-  const liveBody = useLiveStreamUiSelectWhen(loading && reservedInHistory, (snap) =>
+  const liveBody = useLiveStreamUiSelectWhen(loading || reservedInHistory, (snap) =>
     liveHasAssistantBody(snap, Boolean(approval) || Boolean(userInput))
   )
   const hideReservedLive = shouldHideReservedDuringLive({

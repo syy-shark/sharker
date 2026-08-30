@@ -2,7 +2,7 @@
  * 直播 token / 回合元信息快照：引用没变则复用同一对象，供外部 store 订阅。
  * 工具心跳只换 meta / 秒表，不抬 ChatView（对标 Codex #22860）。
  * `liveStreamPatchFromSegments` 给 DEV seed / 开轮准备中 / 收束与中止一次写齐片段与秒表。
- * `shouldPublishTurnMetaReset`：commit 不清 store 秒表，等 loading 关再整帧清空。
+ * `shouldPublishTurnMetaReset`：commit 不清 store 秒表；loading 关也不整帧清空，开下一轮 / 切对话 / clear 再 reset。
  * @see shared/ARCH.md
  */
 import { COMPACT_LIVE_STATUS } from './compact-activity'
@@ -28,11 +28,17 @@ export interface LiveStreamUiSnapshot {
 }
 
 /**
- * 收束 commit 时先留着直播行的秒表 / 元信息；
- * `loading` 关闭后的 `resetLiveStreamUi` 再整帧清空（对标 Codex #37849）。
+ * 收束 commit 时先留着直播行的秒表 / 元信息 / 片段。
+ * loading 关也不整帧清空，让直播行继续画收束体（对标 Codex preserved streamed activity）。
+ * 开下一轮 / 切对话 / 显式 clear 再 `resetLiveStreamUi`。
  */
 export function shouldPublishTurnMetaReset(phase: 'commit' | 'clear'): boolean {
   return phase !== 'commit'
+}
+
+/** loading 从直播变为空闲时：保留 store，不要卸直播行重挂历史气泡。 */
+export function shouldResetLiveStreamUiWhenLoadingStops(): boolean {
+  return false
 }
 
 /** `/compact` 开轮：一条进行中状态，写入直播 store */

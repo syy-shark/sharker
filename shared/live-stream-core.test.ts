@@ -14,7 +14,7 @@ import {
   shouldSkipLiveStreamDerivation,
   type LiveAnswerView
 } from './live-stream-core'
-import { EMPTY_LIVE_STREAM_UI } from './live-stream-ui'
+import { EMPTY_LIVE_STREAM_UI, shouldResetLiveStreamUiWhenLoadingStops } from './live-stream-ui'
 import { appendProcessPhaseStepOnToolStart, deriveChronologicalSteps } from './process-phases'
 import { applyStreamChunk, finalizeSegments } from './turn-segments'
 
@@ -1501,11 +1501,16 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('shouldPrefetchLiveStreamTable')
     expect(src('../src/App.tsx')).toContain('nextLivePublishedStreaming')
     expect(src('../src/App.tsx')).toContain('LAST_TURN_UI_FLUSH_MS')
+    expect(src('../src/App.tsx')).toContain('shouldResetLiveStreamUiWhenLoadingStops')
+    expect(src('../src/App.tsx')).toContain('liveSegments: []')
+    expect(shouldResetLiveStreamUiWhenLoadingStops()).toBe(false)
 
     expect(src('../src/components/ChatView.tsx')).toContain(
       "from '../../shared/live-stream-core'"
     )
     expect(src('../src/components/ChatView.tsx').includes('live-stream-slices')).toBe(false)
+    expect(src('../src/components/ChatView.tsx')).toContain('loading || reservedInHistory')
+    expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={loading}')
 
     expect(src('../src/components/TurnFlow.tsx')).toContain(
       "from '../../shared/live-stream-core'"
@@ -1526,6 +1531,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
       'renderLiveAnswerPart(part, true)'
     )
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('isStreaming={isStreaming}')
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {
@@ -2013,5 +2019,90 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(process.processForFlow.some((segment) => segment.toolName === 'update_plan')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'view_image')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'write_file')).toBe(true)
+  })
+
+  it('keeps grep, glob, browser, and subagent first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Search the tree' }])
+    flush('grep', [
+      {
+        type: 'tool_start',
+        toolName: 'grep',
+        toolCallId: 'g1',
+        toolArgs: { pattern: 'shouldSkip', path: 'shared' }
+      },
+      { type: 'tool_done', toolName: 'grep', toolCallId: 'g1', resultSummary: '12 matches' }
+    ])
+    flush('glob', [
+      {
+        type: 'tool_start',
+        toolName: 'glob_file_search',
+        toolCallId: 'g2',
+        toolArgs: { glob: '**/*.ts' }
+      },
+      { type: 'tool_done', toolName: 'glob_file_search', toolCallId: 'g2', resultSummary: '40 files' }
+    ])
+    flush('browser', [
+      {
+        type: 'tool_start',
+        toolName: 'browser_navigate',
+        toolCallId: 'g3',
+        toolArgs: { url: 'https://learn.chatgpt.com' }
+      },
+      { type: 'tool_done', toolName: 'browser_navigate', toolCallId: 'g3', resultSummary: 'Opened' },
+      {
+        type: 'tool_start',
+        toolName: 'browser_snapshot',
+        toolCallId: 'g4'
+      },
+      { type: 'tool_done', toolName: 'browser_snapshot', toolCallId: 'g4' }
+    ])
+    flush('subagent', [
+      {
+        type: 'tool_start',
+        toolName: 'agent_spawn',
+        toolCallId: 'g5',
+        toolArgs: { task: 'Review the diff' }
+      },
+      { type: 'tool_done', toolName: 'agent_spawn', toolCallId: 'g5', resultSummary: 'Spawned' }
+    ])
+    flush('token', [{ type: 'token', content: 'Found the matches.' }])
+
+    expect(misses).toEqual([])
+    expect(
+      answer.parts.some((part) => part.type === 'text' && part.content.includes('Found the matches'))
+    ).toBe(true)
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'grep')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'glob_file_search')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'browser_navigate')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'browser_snapshot')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'agent_spawn')).toBe(true)
   })
 })

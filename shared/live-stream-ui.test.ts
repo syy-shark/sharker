@@ -9,6 +9,7 @@ import {
   nextLiveStreamUi,
   sameLiveStreamUi,
   shouldPublishTurnMetaReset,
+  shouldResetLiveStreamUiWhenLoadingStops,
   COMPACT_LIVE_STATUS,
   liveCompactStatusSegment
 } from './live-stream-ui'
@@ -27970,6 +27971,7 @@ describe('live stream ui snapshot', () => {
     expect(nextLiveProcessView(null, doneSnap).processForFlow[0]).toBe(doneSegs[0])
     expect(shouldPublishTurnMetaReset('commit')).toBe(false)
     expect(shouldPublishTurnMetaReset('clear')).toBe(true)
+    expect(shouldResetLiveStreamUiWhenLoadingStops()).toBe(false)
     const compactSeg = liveCompactStatusSegment(11)
     expect(compactSeg.content).toBe(COMPACT_LIVE_STATUS)
     expect(compactSeg.status).toBe('active')

@@ -30,7 +30,7 @@ export function publishLiveStreamUi(
   return snapshot
 }
 
-/** 清成空闲快照（收束 / 切对话） */
+/** 清成空闲快照（开下一轮 / 切对话 / 显式 clear；收束关 loading 不清） */
 export function resetLiveStreamUi(): void {
   publishLiveStreamUi(EMPTY_LIVE_STREAM_UI)
 }

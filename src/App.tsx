@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store（对标 Codex #22860 / #19260）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -91,7 +91,8 @@ import { ChatView } from './components/ChatView'
 import {
   liveCompactStatusSegment,
   liveStreamPatchFromSegments,
-  shouldPublishTurnMetaReset
+  shouldPublishTurnMetaReset,
+  shouldResetLiveStreamUiWhenLoadingStops
 } from '../shared/live-stream-ui'
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
@@ -1462,6 +1463,10 @@ export default function App() {
     const meta = liveAssistantMeta([], [])
     liveTurnMetaRef.current = meta
     publishLiveStreamUi({
+      liveSegments: [],
+      streaming: '',
+      turnThinking: '',
+      activeTool: null,
       liveTurnMeta: meta,
       turnStartedAt: now,
       turnHadThinking: false
@@ -1703,7 +1708,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!loading) resetLiveStreamUi()
+    if (!loading && shouldResetLiveStreamUiWhenLoadingStops()) resetLiveStreamUi()
   }, [loading])
 
   /** 并发创建对话时复用同一 Promise，避免连点/双触发造出多个空会话 */
