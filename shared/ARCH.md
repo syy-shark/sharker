@@ -111,7 +111,7 @@
 | `git-pr-review.test.ts` | 跳过 gh- 导入评论、拼 api 参数 |
 | `thread-window.ts` | 弹出线程窗 `#thread/<ws>/<id>` |
 | `thread-window.test.ts` | hash 往返 |
-| `subagent.ts` | 子 Agent 快照过滤 / 排序 / 主线程解析 id / 落盘中断（不进侧栏） |
+| `subagent.ts` | 子 Agent 快照过滤 / 排序 / 主线程解析 id / 落盘中断（不进侧栏）；官方 Subagents / Active / Done / Open Subagents（对标 learn.chatgpt.com Subagents；不发明 above-composer 覆盖层或 Failed） |
 | `subagent.test.ts` | 按父线程过滤、进行中优先、解析 spawn id、重启中断 |
 | `git-init.ts` | 审查面板：项目还不是仓库时 `git init -b main`（对标 Codex Review create a repository） |
 | `git-init.test.ts` | 空/根路径拒绝；临时目录建仓后拒绝二次 init |
