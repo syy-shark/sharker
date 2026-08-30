@@ -186,6 +186,9 @@ interface CodeArtifactBlockProps {
 /** 直播 Markdown 树：true 时闭合围栏也不跑 Prism（对标 Codex #22860） */
 export const LiveMarkdownLiveContext = createContext(false)
 
+/** 直播 token 中：闭合 mermaid 也不跑 mermaid.render */
+export const LiveMarkdownStreamingContext = createContext(false)
+
 function normalizeLanguage(language?: string): string {
   const value = language?.trim().toLowerCase()
   if (!value || value === 'plaintext' || value === 'plain') return 'text'

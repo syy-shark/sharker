@@ -1528,15 +1528,17 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('process-phases.ts').includes('live-stream-slices')).toBe(false)
 
     expect(src('../src/components/AssistantMessage.tsx')).toContain('wrapLines={!streaming}')
-    expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
-      'renderLiveAnswerPart(part, true)'
-    )
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('liveDiff: true')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('isStreaming={isStreaming}')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
-      '<StreamingMarkdown key={part.id} text={part.content} live />'
+      'streaming={options.markdownStreaming}'
     )
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('LiveMarkdownLiveContext.Provider')
+    expect(src('../src/components/StreamingMarkdown.tsx')).toContain(
+      'LiveMarkdownStreamingContext.Provider'
+    )
+    expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldRenderLiveMermaid')
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {
@@ -2189,5 +2191,91 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     )
     expect(process.processForFlow.some((segment) => segment.toolName === 'mcp_call_tool')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'delete_path')).toBe(true)
+  })
+
+  it('keeps pdf, notebook, tasks, plan-mode, and worktree first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Read extras' }])
+    flush('pdf', [
+      {
+        type: 'tool_start',
+        toolName: 'read_pdf',
+        toolCallId: 'x1',
+        toolArgs: { path: 'spec.pdf' }
+      },
+      { type: 'tool_done', toolName: 'read_pdf', toolCallId: 'x1', resultSummary: '12 pages' }
+    ])
+    flush('notebook', [
+      {
+        type: 'tool_start',
+        toolName: 'edit_notebook',
+        toolCallId: 'x2',
+        toolArgs: { path: 'n.ipynb', cell: 0 }
+      },
+      { type: 'tool_done', toolName: 'edit_notebook', toolCallId: 'x2' }
+    ])
+    flush('task', [
+      {
+        type: 'tool_start',
+        toolName: 'task_create',
+        toolCallId: 'x3',
+        toolArgs: { title: 'Follow up' }
+      },
+      { type: 'tool_done', toolName: 'task_create', toolCallId: 'x3' }
+    ])
+    flush('plan-mode', [
+      { type: 'tool_start', toolName: 'enter_plan_mode', toolCallId: 'x4' },
+      { type: 'tool_done', toolName: 'enter_plan_mode', toolCallId: 'x4' },
+      { type: 'tool_start', toolName: 'exit_plan_mode', toolCallId: 'x5' },
+      { type: 'tool_done', toolName: 'exit_plan_mode', toolCallId: 'x5' }
+    ])
+    flush('worktree', [
+      {
+        type: 'tool_start',
+        toolName: 'git_worktree_add',
+        toolCallId: 'x6',
+        toolArgs: { path: '.worktrees/review' }
+      },
+      { type: 'tool_done', toolName: 'git_worktree_add', toolCallId: 'x6' }
+    ])
+    flush('mermaid-close', [
+      { type: 'token', content: 'See\n```mermaid\ngraph TD\nA-->B' },
+      { type: 'token', content: '\n```' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(
+      answer.parts.some((part) => part.type === 'text' && part.content.includes('```mermaid'))
+    ).toBe(true)
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'read_pdf')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'edit_notebook')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'task_create')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'enter_plan_mode')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'git_worktree_add')).toBe(
+      true
+    )
   })
 })

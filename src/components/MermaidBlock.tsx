@@ -1,18 +1,19 @@
 /**
- * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合不解析。
- * 成图前继续 LiveFenceTail，避免闭合瞬间卸掉代码尾再挂一套。
+ * ```mermaid / ```mmd 围栏：开闭都挂本组件，未闭合或直播 token 中不解析。
+ * 成图前继续代码尾，避免闭合瞬间卸掉再挂一套，也不在 16ms 热路径跑 mermaid.render。
  * @see src/components/ARCH.md
  */
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   isMermaidLang,
   mermaidSlotHeight,
+  shouldRenderLiveMermaid,
   mermaidSvgAspectStyle,
   readCachedMermaidSvg,
   writeCachedMermaidSvg,
   type MermaidUiTheme
 } from '../../shared/mermaid-fence'
-import { ArtifactCodeLines, CodeArtifactShell } from './CodeArtifactBlock'
+import { ArtifactCodeLines, CodeArtifactShell, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import './MermaidBlock.css'
 
 type MermaidApi = {
@@ -55,20 +56,26 @@ function useUiMermaidTheme(): MermaidUiTheme {
 export function MermaidBlock({
   code,
   closed = true,
-  language = 'mermaid'
+  language = 'mermaid',
+  streaming = false
 }: {
   code: string
   /** 未闭合时只画代码尾，不跑 mermaid.render */
   closed?: boolean
   language?: string
+  /** 直播 token 中即使已闭合也不成图 */
+  streaming?: boolean
 }) {
   const reactId = useId().replace(/[^a-zA-Z0-9]/g, '')
   const theme = useUiMermaidTheme()
   const source = code.replace(/\n$/, '')
   const paintedSource = useRef(source.trim())
   const renderGen = useRef(0)
+  const streamingFromTree = useContext(LiveMarkdownStreamingContext)
+  const stream = streaming || streamingFromTree
+  const paint = shouldRenderLiveMermaid({ closed, streaming: stream })
   const [svg, setSvg] = useState(() =>
-    closed ? (readCachedMermaidSvg(source, theme) ?? '') : ''
+    paint ? (readCachedMermaidSvg(source, theme) ?? '') : ''
   )
   const [failed, setFailed] = useState(false)
   const fenceLang = isMermaidLang(language) ? language : 'mermaid'
@@ -83,7 +90,7 @@ export function MermaidBlock({
   )
 
   useEffect(() => {
-    if (!closed) {
+    if (!paint) {
       setFailed(false)
       return
     }
@@ -132,7 +139,7 @@ export function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [closed, source, theme, reactId])
+  }, [paint, source, theme, reactId])
 
   const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
     <CodeArtifactShell

@@ -1,5 +1,5 @@
 /**
- * ```mermaid / ```mmd 围栏判定。直播开闭都挂 MermaidBlock，只在闭合后画图。
+ * ```mermaid / ```mmd 围栏判定。直播开闭都挂 MermaidBlock，闭合且不在直播 token 时才画图。
  * SVG 缓存避免收束 / 廉价尾 → 稳定块重挂时先闪回源码。
  * @see shared/ARCH.md
  */
@@ -12,6 +12,11 @@ export function isMermaidLang(lang?: string | null): boolean {
 }
 
 /** 直播未写完 `mermaid`：`mer` 起就挂 MermaidBlock，不认 `md` / `mm` */
+/** 直播 token 中即使围栏已闭合也不跑 mermaid.render，收束后再成图以免卡贴底。 */
+export function shouldRenderLiveMermaid(options: { closed: boolean; streaming?: boolean }): boolean {
+  return options.closed && !options.streaming
+}
+
 export function isMermaidLangPrefix(lang?: string | null): boolean {
   const value = lang?.trim().toLowerCase().split(/[\s{]/)[0] ?? ''
   if (!value) return false

@@ -8,7 +8,7 @@
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
-import { LiveFenceTail, LiveMarkdownLiveContext } from './CodeArtifactBlock'
+import { LiveFenceTail, LiveMarkdownLiveContext, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import { MermaidBlock } from './MermaidBlock'
 import { isMermaidLangPrefix } from '../../shared/mermaid-fence'
 import { ChatImage } from './ChatImage'
@@ -355,10 +355,12 @@ function renderLiveFenceSlot(
 /** 直播正文：围栏顶层槽 + 已收散文闭合槽 + 增长尾 `prose-run-0` */
 export const StreamingMarkdown = memo(function StreamingMarkdown({
   text,
-  live = false
+  live = false,
+  streaming = false
 }: {
   text: string
   live?: boolean
+  streaming?: boolean
 }) {
   const prevRef = useRef({
     text: '',
@@ -384,16 +386,23 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({
   }, [text])
   return (
     <LiveMarkdownLiveContext.Provider value={live}>
-      <div className="streaming-markdown">
-        {slots.map((slot) => {
-          if (slot.kind === 'fence') {
-            return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
-          }
-          return (
-            <LiveProseTail key={slot.key} text={slot.text} defs={defsState.defs} closed={slot.closed} />
-          )
-        })}
-      </div>
+      <LiveMarkdownStreamingContext.Provider value={streaming}>
+        <div className="streaming-markdown">
+          {slots.map((slot) => {
+            if (slot.kind === 'fence') {
+              return renderLiveFenceSlot(slot.key, slot.lang, slot.body, slot.closed)
+            }
+            return (
+              <LiveProseTail
+                key={slot.key}
+                text={slot.text}
+                defs={defsState.defs}
+                closed={slot.closed}
+              />
+            )
+          })}
+        </div>
+      </LiveMarkdownStreamingContext.Provider>
     </LiveMarkdownLiveContext.Provider>
   )
 })
