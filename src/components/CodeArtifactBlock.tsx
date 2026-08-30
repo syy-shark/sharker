@@ -5,7 +5,7 @@
  * 直播跟尾只盯滚动壳与一层增高节点，不因 children 每枚 token 重挂
  * useLayoutEffect（对标 Codex #32030 / #22860 / #39120）。
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
- * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播实例闭合也不着色，避免 Prism 卡热路径。
+ * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播 token 中不着色，收束后同一实例 effect 着色并暖缓存。
  */
 import { Check, Copy } from 'lucide-react'
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -15,6 +15,7 @@ import {
   liveStickScrollTop,
   nextClosedFenceLines,
   shouldFollowArtifactTail,
+  shouldAllowLiveFenceHighlight,
   shouldHighlightLiveFence
 } from '../../shared/live-display'
 import { highlightFenceLines } from '../../shared/syntax-highlight'
@@ -277,9 +278,22 @@ export function ArtifactCodeLines({
  */
 export function LiveFenceTail({ code, language, followTail = false }: CodeArtifactBlockProps) {
   const live = useContext(LiveMarkdownLiveContext)
+  const streaming = useContext(LiveMarkdownStreamingContext)
   const normalizedCode = code.replace(/\n$/, '')
   const label = normalizeLanguage(language)
-  const highlight = shouldHighlightLiveFence({ live, closed: !followTail })
+  const closed = !followTail
+  const allowHighlight = shouldAllowLiveFenceHighlight({ closed, streaming })
+  const immediateHighlight = shouldHighlightLiveFence({ live, closed, streaming })
+  const [highlight, setHighlight] = useState(immediateHighlight)
+
+  useEffect(() => {
+    if (!allowHighlight) {
+      setHighlight(false)
+      return
+    }
+    setHighlight(true)
+  }, [allowHighlight])
+
   return (
     <CodeArtifactShell
       className="live-fence-tail"

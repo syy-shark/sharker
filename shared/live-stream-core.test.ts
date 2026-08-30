@@ -1534,6 +1534,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'streaming={options.markdownStreaming}'
     )
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
+    expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldAllowLiveFenceHighlight')
+    expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('LiveMarkdownStreamingContext')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('LiveMarkdownLiveContext.Provider')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain(
       'LiveMarkdownStreamingContext.Provider'

@@ -753,11 +753,24 @@ export function continueLiveFenceLines(
 }
 
 /**
- * 直播实例不在围栏闭合时跑语法高亮：Prism 全量着色会卡 16ms 热路径。
- * 历史气泡（live=false）闭合后再着色。
+ * 历史气泡闭合后立刻着色。直播 token 中即使已闭合也不着色。
+ * 直播收束后同一实例交给 effect 再着色，避免收束帧 / 下一轮重挂一次跑完 Prism。
  */
-export function shouldHighlightLiveFence(options: { live: boolean; closed: boolean }): boolean {
-  return !options.live && options.closed
+export function shouldHighlightLiveFence(options: {
+  live: boolean
+  closed: boolean
+  streaming?: boolean
+}): boolean {
+  if (!options.closed || options.streaming) return false
+  return !options.live
+}
+
+/** 闭合且不在直播 token 中即可着色：历史立刻画，直播收束后由 effect 画。 */
+export function shouldAllowLiveFenceHighlight(options: {
+  closed: boolean
+  streaming?: boolean
+}): boolean {
+  return options.closed && !options.streaming
 }
 
 /** 已完成围栏行：对象没变就退回 prev，给 memo 子树当稳定 props */
