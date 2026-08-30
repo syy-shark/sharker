@@ -89,7 +89,15 @@ describe('workbench shortcuts', () => {
         (row) =>
           row.action === 'thinking_cycle' &&
           row.title === 'Cycle reasoning effort' &&
-          row.defaultKeys === '未指定'
+          row.defaultKeys === 'Not assigned by default'
+      )
+    ).toBe(true)
+    expect(
+      SHORTCUT_CATALOG.some(
+        (row) =>
+          row.action === 'search_chats' &&
+          row.title === 'Search chats' &&
+          row.defaultKeys === 'Not assigned by default'
       )
     ).toBe(true)
     expect(

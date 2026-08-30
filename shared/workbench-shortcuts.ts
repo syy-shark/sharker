@@ -54,6 +54,7 @@ import {
   RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SEARCH_CHATS_LABEL,
+  NOT_ASSIGNED_BY_DEFAULT_LABEL,
   SEARCH_FILES_LABEL,
   START_DICTATION_LABEL,
   START_VOICE_CHAT_LABEL,
@@ -529,7 +530,12 @@ export const SHORTCUT_CATALOG: Array<{
     defaultKeys: 'Esc',
     defaultChord: 'escape'
   },
-  { action: 'search_chats', title: SEARCH_CHATS_LABEL, defaultKeys: '未指定', defaultChord: '' },
+  {
+    action: 'search_chats',
+    title: SEARCH_CHATS_LABEL,
+    defaultKeys: NOT_ASSIGNED_BY_DEFAULT_LABEL,
+    defaultChord: ''
+  },
   { action: 'search_files', title: SEARCH_FILES_LABEL, defaultKeys: '⌘P', defaultChord: 'mod+p' },
   { action: 'next_attention', title: NEXT_CHAT_NEEDING_ATTENTION_LABEL, defaultKeys: '⌘⌥A', defaultChord: 'mod+alt+a' },
   {
@@ -572,7 +578,7 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'thinking_cycle',
     title: CYCLE_REASONING_EFFORT_LABEL,
-    defaultKeys: '未指定',
+    defaultKeys: NOT_ASSIGNED_BY_DEFAULT_LABEL,
     defaultChord: ''
   }
 ]

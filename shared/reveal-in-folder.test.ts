@@ -98,7 +98,9 @@ import {
   REMOVE_LABEL,
   PROJECTS_LABEL,
   NO_CHATS_LABEL,
+  SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
+  NOT_ASSIGNED_BY_DEFAULT_LABEL,
   CREATE_PERMANENT_WORKTREE_LABEL,
   WORKTREE_RESTORE_BANNER,
   STARTING_BRANCH_LABEL,
@@ -197,6 +199,8 @@ describe('reveal in folder', () => {
     expect(PROJECTS_LABEL).toBe('Projects')
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
+    expect(SEARCH_CHATS_LABEL).toBe('Search chats')
+    expect(NOT_ASSIGNED_BY_DEFAULT_LABEL).toBe('Not assigned by default')
     expect(CREATE_PERMANENT_WORKTREE_LABEL).toBe('Create a permanent worktree')
     expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')
     expect(STARTING_BRANCH_LABEL).toBe('Starting branch')

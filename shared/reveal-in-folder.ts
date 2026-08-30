@@ -94,6 +94,8 @@ export const ARCHIVE_CHAT_LABEL = 'Archive chat'
 export const MARK_CHAT_AS_UNREAD_LABEL = 'Mark chat as unread'
 export const OPEN_SIDE_CHAT_LABEL = 'Open side chat'
 export const SEARCH_CHATS_LABEL = 'Search chats'
+/** Official Commands: Search chats / Cycle reasoning — Not assigned by default. */
+export const NOT_ASSIGNED_BY_DEFAULT_LABEL = 'Not assigned by default'
 export const FIND_IN_CHAT_LABEL = 'Find in chat'
 export const FIND_NEXT_MATCH_LABEL = 'Find next match'
 export const FIND_PREVIOUS_MATCH_LABEL = 'Find previous match'
