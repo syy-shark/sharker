@@ -12629,7 +12629,7 @@ export function isLiveApprovalNeededErrorAnswerDemoAskActiveToolCancelCompressAp
   if (!isLiveAddedError(next[prev!.length + 2])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -12644,7 +12644,7 @@ export function isLiveApprovalNeededAnswerDemoErrorAskActiveToolCancelCompressAp
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2)) return false
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -12660,7 +12660,7 @@ export function isLiveApprovalNeededThinkErrorAnswerDemoAskActiveToolCancelCompr
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12713,7 +12713,7 @@ export function isLiveStatusApprovalNeededErrorAnswerDemoAskActiveToolCancelComp
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12730,7 +12730,7 @@ export function isLiveStatusApprovalNeededAnswerDemoErrorAskActiveToolCancelComp
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!isLiveAddedError(next[prev!.length + 5])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12748,7 +12748,7 @@ export function isLiveStatusApprovalNeededThinkErrorAnswerDemoAskActiveToolCance
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 5)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 7)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 9, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
@@ -12795,7 +12795,7 @@ export function isLiveWriteStatApprovalNeededErrorAnswerDemoAskActiveToolCancelC
   if (!isLiveAddedError(next[prev!.length + 2])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -12810,7 +12810,7 @@ export function isLiveWriteStatApprovalNeededAnswerDemoErrorAskActiveToolCancelC
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2)) return false
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -12826,7 +12826,7 @@ export function isLiveWriteStatApprovalNeededThinkErrorAnswerDemoAskActiveToolCa
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12879,7 +12879,7 @@ export function isLiveWriteStatStatusApprovalNeededErrorAnswerDemoAskActiveToolC
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12896,7 +12896,7 @@ export function isLiveWriteStatStatusApprovalNeededAnswerDemoErrorAskActiveToolC
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!isLiveAddedError(next[prev!.length + 5])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -12914,7 +12914,7 @@ export function isLiveWriteStatStatusApprovalNeededThinkErrorAnswerDemoAskActive
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 5)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 7)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 9, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
@@ -12958,7 +12958,7 @@ export function isLiveApprovalAllowedSettleErrorAnswerDemoAskActiveToolCancelCom
   if (!isLiveAddedError(next[prev!.length])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 5])) return false
   return isLiveAddedCompress(next[prev!.length + 6])
 }
 
@@ -12972,7 +12972,7 @@ export function isLiveApprovalAllowedSettleAnswerDemoErrorAskActiveToolCancelCom
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length)) return false
   if (!isLiveAddedError(next[prev!.length + 2])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 5])) return false
   return isLiveAddedCompress(next[prev!.length + 6])
 }
 
@@ -12987,7 +12987,7 @@ export function isLiveApprovalAllowedSettleThinkErrorAnswerDemoAskActiveToolCanc
   if (!isLiveAddedError(next[prev!.length + 1])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 4)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 6])) return false
   return isLiveAddedCompress(next[prev!.length + 7])
 }
 
@@ -13031,7 +13031,7 @@ export function isLiveApprovalDeniedErrorAnswerDemoAskActiveToolCancelCompressAp
   if (!isLiveAddedError(next[prev!.length])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 5])) return false
   return isLiveAddedCompress(next[prev!.length + 6])
 }
 
@@ -13045,7 +13045,7 @@ export function isLiveApprovalDeniedAnswerDemoErrorAskActiveToolCancelCompressAp
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length)) return false
   if (!isLiveAddedError(next[prev!.length + 2])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 3)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 5])) return false
   return isLiveAddedCompress(next[prev!.length + 6])
 }
 
@@ -13060,7 +13060,7 @@ export function isLiveApprovalDeniedThinkErrorAnswerDemoAskActiveToolCancelCompr
   if (!isLiveAddedError(next[prev!.length + 1])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 4)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 6])) return false
   return isLiveAddedCompress(next[prev!.length + 7])
 }
 
@@ -13098,10 +13098,10 @@ export function isLiveApprovalResolvedErrorAnswerDemoAskActiveToolCancelCompress
   next: readonly TurnSegment[]
 ): boolean {
   if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 7) {
-    return isLiveAddedError(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next) && isLiveAddedCompress(next[prev!.length + 6])
+    return isLiveAddedError(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCompress(next[prev!.length + 6])
   }
   if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 8) {
-    return isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next) && isLiveAddedCompress(next[prev!.length + 7])
+    return isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCompress(next[prev!.length + 7])
   }
   return false
 }
@@ -13112,10 +13112,10 @@ export function isLiveApprovalResolvedAnswerDemoErrorAskActiveToolCancelCompress
   next: readonly TurnSegment[]
 ): boolean {
   if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 7) {
-    return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length) && isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next) && isLiveAddedCompress(next[prev!.length + 6])
+    return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length) && isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCompress(next[prev!.length + 6])
   }
   if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 8) {
-    return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && isLiveAddedError(next[prev!.length + 3]) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next) && isLiveAddedCompress(next[prev!.length + 7])
+    return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && isLiveAddedError(next[prev!.length + 3]) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCompress(next[prev!.length + 7])
   }
   return false
 }
@@ -13126,10 +13126,10 @@ export function isLiveApprovalResolvedThinkErrorAnswerDemoAskActiveToolCancelCom
   next: readonly TurnSegment[]
 ): boolean {
   if (hasLiveApprovalResolvedPrefixClose(prev, next) && next.length === prev!.length + 8) {
-    return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next) && isLiveAddedCompress(next[prev!.length + 7])
+    return isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCompress(next[prev!.length + 7])
   }
   if (hasLiveApprovalResolvedAppendPrefix(prev, next) && next.length === prev!.length + 9) {
-    return isLiveAddedThinkPair(next[prev!.length + 1]) && isLiveAddedError(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next) && isLiveAddedCompress(next[prev!.length + 8])
+    return isLiveAddedThinkPair(next[prev!.length + 1]) && isLiveAddedError(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCompress(next[prev!.length + 8])
   }
   return false
 }
@@ -13183,7 +13183,7 @@ export function isLiveStatusApprovalResolvedErrorAnswerDemoAskActiveToolCancelCo
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -13200,7 +13200,7 @@ export function isLiveStatusApprovalResolvedAnswerDemoErrorAskActiveToolCancelCo
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!isLiveAddedError(next[prev!.length + 5])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -13218,7 +13218,7 @@ export function isLiveStatusApprovalResolvedThinkErrorAnswerDemoAskActiveToolCan
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 5)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 7)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 9, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
@@ -13265,7 +13265,7 @@ export function isLiveWriteStatApprovalResolvedErrorAnswerDemoAskActiveToolCance
   if (!isLiveAddedError(next[prev!.length + 2])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -13280,7 +13280,7 @@ export function isLiveWriteStatApprovalResolvedAnswerDemoErrorAskActiveToolCance
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2)) return false
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 5)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 7])) return false
   return isLiveAddedCompress(next[prev!.length + 8])
 }
 
@@ -13296,7 +13296,7 @@ export function isLiveWriteStatApprovalResolvedThinkErrorAnswerDemoAskActiveTool
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -13349,7 +13349,7 @@ export function isLiveWriteStatStatusApprovalResolvedErrorAnswerDemoAskActiveToo
   if (!isLiveAddedError(next[prev!.length + 3])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -13366,7 +13366,7 @@ export function isLiveWriteStatStatusApprovalResolvedAnswerDemoErrorAskActiveToo
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3)) return false
   if (!isLiveAddedError(next[prev!.length + 5])) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 6)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 8])) return false
   return isLiveAddedCompress(next[prev!.length + 9])
 }
 
@@ -13384,7 +13384,7 @@ export function isLiveWriteStatStatusApprovalResolvedThinkErrorAnswerDemoAskActi
   if (!isLiveAddedError(next[prev!.length + 4])) return false
   if (!isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 5)) return false
   if (!hasLiveAskNeededStoppedHead(next, prev!.length + 7)) return false
-  if (!isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 9, next)) return false
+  if (!isLiveAddedCancelledTool(next[prev!.length + 9])) return false
   return isLiveAddedCompress(next[prev!.length + 10])
 }
 
@@ -13432,14 +13432,14 @@ export function isLiveAskResolvedErrorAnswerDemoAskActiveToolCancelCompressAppen
   if (
     hasLiveAskResolvedHangPrefix(prev, next) &&
     next.length === prev!.length + 7 &&
-    isLiveAddedError(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next) && isLiveAddedCompress(next[prev!.length + 6])
+    isLiveAddedError(next[prev!.length]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 1) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCompress(next[prev!.length + 6])
   ) {
     return true
   }
   if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 9) return false
   if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
   if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
-  return isLiveAddedError(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next) && isLiveAddedCompress(next[prev!.length + 8])
+  return isLiveAddedError(next[prev!.length + 2]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 3) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCompress(next[prev!.length + 8])
 }
 
 /** Ask User 作答后同一帧 ```demo + 错误 + Ask User + 下一工具仍 active + Stop + compress */
@@ -13450,14 +13450,14 @@ export function isLiveAskResolvedAnswerDemoErrorAskActiveToolCancelCompressAppen
   if (
     hasLiveAskResolvedHangPrefix(prev, next) &&
     next.length === prev!.length + 7 &&
-    isLiveAddedDoneDemoCancelledToolPair(next, prev!.length) && isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 5, next) && isLiveAddedCompress(next[prev!.length + 6])
+    isLiveAddedDoneDemoCancelledToolPair(next, prev!.length) && isLiveAddedError(next[prev!.length + 2]) && hasLiveAskNeededStoppedHead(next, prev!.length + 3) && isLiveAddedCancelledTool(next[prev!.length + 5]) && isLiveAddedCompress(next[prev!.length + 6])
   ) {
     return true
   }
   if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 9) return false
   if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
   if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
-  return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && isLiveAddedError(next[prev!.length + 4]) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 7, next) && isLiveAddedCompress(next[prev!.length + 8])
+  return isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && isLiveAddedError(next[prev!.length + 4]) && hasLiveAskNeededStoppedHead(next, prev!.length + 5) && isLiveAddedCancelledTool(next[prev!.length + 7]) && isLiveAddedCompress(next[prev!.length + 8])
 }
 
 /** Ask User 作答后同一帧 think + 错误 + ```demo + Ask User + 下一工具仍 active + Stop + compress */
@@ -13468,14 +13468,14 @@ export function isLiveAskResolvedThinkErrorAnswerDemoAskActiveToolCancelCompress
   if (
     hasLiveAskResolvedHangPrefix(prev, next) &&
     next.length === prev!.length + 8 &&
-    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 6, next) && isLiveAddedCompress(next[prev!.length + 7])
+    isLiveAddedThinkPair(next[prev!.length]) && isLiveAddedError(next[prev!.length + 1]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 2) && hasLiveAskNeededStoppedHead(next, prev!.length + 4) && isLiveAddedCancelledTool(next[prev!.length + 6]) && isLiveAddedCompress(next[prev!.length + 7])
   ) {
     return true
   }
   if (!hasLiveToolAppendPrefixClose(prev, next) || next.length !== prev!.length + 10) return false
   if (!isLiveAddedCancelledAskTool(next[prev!.length])) return false
   if (!isLiveAddedResolvedAskStatus(next[prev!.length + 1])) return false
-  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedError(next[prev!.length + 3]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4) && hasLiveAskNeededStoppedHead(next, prev!.length + 6) && isLiveAddedCancelledToolsWithOptionalStatus(prev!.length + 8, next) && isLiveAddedCompress(next[prev!.length + 9])
+  return isLiveAddedThinkPair(next[prev!.length + 2]) && isLiveAddedError(next[prev!.length + 3]) && isLiveAddedDoneDemoCancelledToolPair(next, prev!.length + 4) && hasLiveAskNeededStoppedHead(next, prev!.length + 6) && isLiveAddedCancelledTool(next[prev!.length + 8]) && isLiveAddedCompress(next[prev!.length + 9])
 }
 
 /** 写盘收束同时新开工具并立刻 Allow/Deny + compress */
