@@ -1829,6 +1829,44 @@ describe('splitStreamingMarkdown', () => {
         lang: 'js'
       })
     }
+    const manyFenceGrownThird = continueCheapProseBlocks(
+      `${manyFence}yz`,
+      manyFenceGrownAgain,
+      `${manyFence}yz1`
+    )
+    if (manyFenceGrownAgain[0]?.type === 'list' && manyFenceGrownThird[0]?.type === 'list') {
+      expect(
+        manyFenceGrownThird[0].items.slice(0, 12).every((item, i) => item === manyFenceGrownAgain[0].items[i])
+      ).toBe(true)
+      expect(manyFenceGrownThird[0].items[12]?.nodes).toBe(manyFenceGrownAgain[0].items[12]?.nodes)
+      expect(manyFenceGrownThird[0].items[12]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'xyz1',
+        lang: 'js'
+      })
+    }
+    const manyFenceGrownNl = continueCheapProseBlocks(
+      `${manyFence}yz1`,
+      manyFenceGrownThird,
+      `${manyFence}yz1\n`
+    )
+    expect(manyFenceGrownNl[0]).toBe(manyFenceGrownThird[0])
+    const manyFenceGrownLine = continueCheapProseBlocks(
+      `${manyFence}yz1\n`,
+      manyFenceGrownNl,
+      `${manyFence}yz1\n   const z`
+    )
+    if (manyFenceGrownNl[0]?.type === 'list' && manyFenceGrownLine[0]?.type === 'list') {
+      expect(
+        manyFenceGrownLine[0].items.slice(0, 12).every((item, i) => item === manyFenceGrownNl[0].items[i])
+      ).toBe(true)
+      expect(manyFenceGrownLine[0].items[12]?.nodes).toBe(manyFenceGrownNl[0].items[12]?.nodes)
+      expect(manyFenceGrownLine[0].items[12]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'xyz1\nconst z',
+        lang: 'js'
+      })
+    }
     const manyThenQuote =
       Array.from({ length: 8 }, (_, i) => `- keep-${i}`).join('\n') + '\n- note\n  > quoted'
     const manyThenQuoteFirst = parseCheapProseBlocks(manyThenQuote)
@@ -1884,6 +1922,22 @@ describe('splitStreamingMarkdown', () => {
       expect(nestedFenceGrown[0].items[0]?.nested?.items[0]?.blocks?.[0]).toMatchObject({
         type: 'pre',
         text: 'xy',
+        lang: 'js'
+      })
+    }
+    const nestedFenceGrownAgain = continueCheapProseBlocks(
+      '- a\n  - b\n    ```js\n    xy',
+      nestedFenceGrown,
+      '- a\n  - b\n    ```js\n    xyz'
+    )
+    if (nestedFenceGrown[0]?.type === 'list' && nestedFenceGrownAgain[0]?.type === 'list') {
+      expect(nestedFenceGrownAgain[0].items[0]?.nodes).toBe(nestedFenceGrown[0].items[0]?.nodes)
+      expect(nestedFenceGrownAgain[0].items[0]?.nested?.items[0]?.nodes).toBe(
+        nestedFenceGrown[0].items[0]?.nested?.items[0]?.nodes
+      )
+      expect(nestedFenceGrownAgain[0].items[0]?.nested?.items[0]?.blocks?.[0]).toMatchObject({
+        type: 'pre',
+        text: 'xyz',
         lang: 'js'
       })
     }
@@ -2636,6 +2690,9 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('rememberLastCheapBlockStart(out, nextText)')
     expect(mdSrc).toContain('lastItemInnerStartHold')
     expect(mdSrc).toContain('rememberItemInnerStart')
+    expect(mdSrc).toContain('lastItemInnerStripHold')
+    expect(mdSrc).toContain('rememberItemInnerStrip')
+    expect(mdSrc).toContain('growStrippedItemInnerWindow')
     expect(mdSrc).toContain("text.indexOf('\\n', offset)")
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')
