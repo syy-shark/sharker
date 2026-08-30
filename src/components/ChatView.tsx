@@ -5,7 +5,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下（对标 Codex #22860 / preserved streamed activity）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 再换历史重挂（对标 Codex #22860 / preserved streamed activity）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -65,9 +65,12 @@ import {
   liveRowMessageId,
   shouldHideReservedDuringLive,
   shouldMountLiveAssistantSlot,
-  shouldRenderLiveAssistantRow
+  shouldRenderLiveAssistantRow,
+  shouldStreamLiveAssistant,
+  splitTranscriptAroundLiveHandoff
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody } from '../../shared/live-stream-core'
+import { ThinkingIndicator } from './ThinkingIndicator'
 import type { SuggestedPrompt } from '../../shared/suggested-prompts'
 import {
   isNearLiveMessageRow,
@@ -404,6 +407,10 @@ interface Props {
   messages: ChatMessage[]
   /** 本轮助手预留 id：直播行与收束后历史行共用，避免整行卸载重挂 */
   liveAssistantId?: string | null
+  /** 跟进发送保住中的上一轮直播 id；期间过程不当直播 */
+  liveHandoffId?: string | null
+  /** 刚离开直播槽、历史重挂时保持 diff 展开 */
+  preserveLiveDiffsId?: string | null
   queuedPrompts: QueuedPrompt[]
   /** 已接受、下一工具/采样后写入当前回合（对标 Codex pending steer） */
   pendingSteers?: QueuedPrompt[]
@@ -858,6 +865,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
 const LiveAssistantSlot = memo(function LiveAssistantSlot({
   liveRowId,
   loading,
+  isStreaming,
   historyHasReserved,
   findHit,
   findCurrent,
@@ -874,6 +882,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
 }: {
   liveRowId: string
   loading: boolean
+  isStreaming: boolean
   historyHasReserved: boolean
   findHit: boolean
   findCurrent: boolean
@@ -923,7 +932,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         onOpenSubAgent={onOpenSubAgent}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
-        isStreaming={loading}
+        isStreaming={isStreaming}
       />
     </div>
   )
@@ -940,6 +949,8 @@ export const ChatView = memo(function ChatView({
   onThinkingLevelChange,
   messages,
   liveAssistantId = null,
+  liveHandoffId = null,
+  preserveLiveDiffsId = null,
   queuedPrompts,
   pendingSteers = [],
   loading,
@@ -2367,13 +2378,24 @@ export const ChatView = memo(function ChatView({
     reservedId: liveAssistantId,
     hasReservedInHistory: reservedInHistory
   })
-  const historicalRows = useMemo(
-    () =>
-      historicalMessagesDuringLive(
+  const liveStreaming = shouldStreamLiveAssistant({
+    loading,
+    handoffId: liveHandoffId
+  })
+  const handoffSplit = liveHandoffId
+    ? splitTranscriptAroundLiveHandoff(windowedMessages, liveHandoffId)
+    : null
+  const historicalSource = handoffSplit
+    ? handoffSplit.before
+    : historicalMessagesDuringLive(
         windowedMessages,
         hideReservedLive ? liveAssistantId : null,
         hideReservedLive
-      ).map((m, index, rows) => {
+      )
+  const followUpSource = handoffSplit?.after ?? []
+  const historicalRows = useMemo(
+    () =>
+      historicalSource.map((m, index, rows) => {
         const nearLive = isNearLiveMessageRow(index, rows.length)
         return m.role === 'user' ? (
           <UserMessageRow
@@ -2426,6 +2448,7 @@ export const ChatView = memo(function ChatView({
               onOpenChangedFiles={onOpenChangedFiles}
               toolOutputDisplay={toolOutputDisplay}
               onNeedFullMessage={onNeedFullMessage}
+              preserveLiveDiffs={m.id === preserveLiveDiffsId}
               onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
               onRetry={
                 index === rows.length - 1 && m.meta?.retryOfUserMessageId && onRetry
@@ -2443,7 +2466,9 @@ export const ChatView = memo(function ChatView({
       handleEditRequestHandled,
       intrinsicHeights,
       hideReservedLive,
+      historicalSource,
       liveAssistantId,
+      preserveLiveDiffsId,
       windowedMessages,
       modelLabel,
       onOpenSubAgent,
@@ -2576,6 +2601,7 @@ export const ChatView = memo(function ChatView({
               <LiveAssistantSlot
                 liveRowId={liveRowId}
                 loading={loading}
+                isStreaming={liveStreaming}
                 historyHasReserved={historyHasReserved}
                 findHit={liveMemoryFindHits.length > 0}
                 findCurrent={currentFindMessageId === liveRowId}
@@ -2590,6 +2616,64 @@ export const ChatView = memo(function ChatView({
                 toolOutputDisplay={toolOutputDisplay}
                 onNeedFullMessage={onNeedFullMessage}
               />
+            ) : null}
+
+            {followUpSource.map((m) =>
+              m.role === 'user' ? (
+                <UserMessageRow
+                  key={m.id}
+                  id={m.id}
+                  content={m.content}
+                  createdAt={m.createdAt}
+                  attachments={m.attachments}
+                  findHit={historicalFindIds.has(m.id)}
+                  findCurrent={currentFindMessageId === m.id}
+                  nearLive
+                  intrinsicHeight={resolveRowIntrinsicHeight(
+                    intrinsicHeights.get(m.id),
+                    measuredRowHeightsRef.current.get(m.id)
+                  )}
+                  editRequested={editUserMessageId === m.id}
+                  onEditRequestHandled={handleEditRequestHandled}
+                  onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
+                  onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                  onRevealSelection={handleRevealSelection}
+                  selectionSource={selectionSourceId === m.id}
+                />
+              ) : (
+                <div
+                  key={m.id}
+                  id={`msg-${m.id}`}
+                  className={`message-row message-row--assistant message-row--near-live${
+                    historicalFindIds.has(m.id) ? ' is-find-hit' : ''
+                  }${currentFindMessageId === m.id ? ' is-find-current' : ''}${
+                    selectionSourceId === m.id ? ' is-selection-source' : ''
+                  }`}
+                >
+                  <AssistantMessage
+                    messageId={m.id}
+                    content={m.content}
+                    createdAt={m.createdAt}
+                    meta={m.meta}
+                    modelLabel={m.meta?.model ?? modelLabel}
+                    onOpenSubAgent={onOpenSubAgent}
+                    onOpenChangedFiles={onOpenChangedFiles}
+                    toolOutputDisplay={toolOutputDisplay}
+                    onNeedFullMessage={onNeedFullMessage}
+                    preserveLiveDiffs={m.id === preserveLiveDiffsId}
+                    onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                  />
+                </div>
+              )
+            )}
+
+            {liveHandoffId ? (
+              <div
+                className="message-row message-row--assistant message-row--live-handoff"
+                aria-live="polite"
+              >
+                <ThinkingIndicator />
+              </div>
             ) : null}
 
             <div

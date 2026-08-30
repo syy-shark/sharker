@@ -7,6 +7,13 @@ import {
   liveRowMessageId,
   shouldMountLiveAssistantSlot,
   shouldRenderLiveAssistantRow,
+  shouldHoldLiveHandoff,
+  shouldStreamLiveAssistant,
+  shouldAdoptLiveHandoff,
+  shouldCancelLiveHandoffWithoutCommit,
+  shouldPublishLiveStreamDuringHandoff,
+  shouldPreserveLiveDiffExpanded,
+  splitTranscriptAroundLiveHandoff,
   upsertAssistantMessage,
   cancelQueuedPrompt,
   clearDoneCommitted,
@@ -392,6 +399,68 @@ describe('commitAssistantReply persist targeting', () => {
         hasLiveBody: true
       })
     ).toBe(false)
+    expect(
+      shouldHoldLiveHandoff({
+        hasLiveBody: true,
+        liveAssistantId: 'a-live',
+        historyHasReserved: true
+      })
+    ).toBe(true)
+    expect(
+      shouldHoldLiveHandoff({
+        hasLiveBody: false,
+        liveAssistantId: 'a-live',
+        historyHasReserved: true
+      })
+    ).toBe(false)
+    expect(
+      shouldHoldLiveHandoff({
+        hasLiveBody: true,
+        liveAssistantId: 'a-live',
+        historyHasReserved: false
+      })
+    ).toBe(false)
+    expect(
+      shouldHoldLiveHandoff({
+        hasLiveBody: true,
+        liveAssistantId: null,
+        historyHasReserved: true
+      })
+    ).toBe(false)
+    expect(shouldStreamLiveAssistant({ loading: true, handoffId: 'a-live' })).toBe(false)
+    expect(shouldStreamLiveAssistant({ loading: true, handoffId: null })).toBe(true)
+    expect(shouldStreamLiveAssistant({ loading: false, handoffId: null })).toBe(false)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'turn_start' })).toBe(true)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'think' })).toBe(true)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'token' })).toBe(true)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'status' })).toBe(true)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'done' })).toBe(true)
+    expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'steer_consumed' })).toBe(
+      false
+    )
+    expect(shouldAdoptLiveHandoff({ handoffId: null, chunkType: 'turn_start' })).toBe(false)
+    expect(shouldCancelLiveHandoffWithoutCommit({ handoffId: 'a-live' })).toBe(true)
+    expect(shouldCancelLiveHandoffWithoutCommit({ handoffId: null })).toBe(false)
+    expect(shouldPublishLiveStreamDuringHandoff('a-live')).toBe(false)
+    expect(shouldPublishLiveStreamDuringHandoff(null)).toBe(true)
+    expect(shouldPreserveLiveDiffExpanded({ streaming: true })).toBe(true)
+    expect(shouldPreserveLiveDiffExpanded({ streaming: false, preserveLiveDiffs: true })).toBe(
+      true
+    )
+    expect(shouldPreserveLiveDiffExpanded({ streaming: false, preserveLiveDiffs: false })).toBe(
+      false
+    )
+    const followUp = {
+      id: 'u2',
+      role: 'user' as const,
+      content: 'and then'
+    }
+    const around = splitTranscriptAroundLiveHandoff([...liveTranscript, followUp], 'a-live')
+    expect(around.before.map((m) => m.id)).toEqual(['u1'])
+    expect(around.after.map((m) => m.id)).toEqual(['u2'])
+    expect(splitTranscriptAroundLiveHandoff(liveTranscript, 'missing').before.map((m) => m.id)).toEqual(
+      ['u1', 'a-live']
+    )
     const committed: ChatMessage = { id: 'a-live', role: 'assistant', content: 'final' }
     const upserted = upsertAssistantMessage(liveTranscript, committed)
     expect(upserted).toHaveLength(2)

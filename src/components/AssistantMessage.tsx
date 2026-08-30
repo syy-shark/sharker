@@ -29,6 +29,7 @@ import {
   stripStoppedAfterFootnote,
   turnProcessBounds
 } from '../../shared/live-display'
+import { shouldPreserveLiveDiffExpanded } from '../../shared/session-runtime'
 import { MessageActions } from './MessageActions'
 import { nextFilesChangedStats } from '../../shared/files-changed-card'
 import { FilesChangedCard } from './FilesChangedCard'
@@ -76,16 +77,20 @@ interface Props {
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   /** 点开瘦身后的命令输出 / 思考时取完整消息 */
   onNeedFullMessage?: (messageId: string) => void
+  /** 刚离开直播槽时历史重挂仍展开 diff，但不跟尾 */
+  preserveLiveDiffs?: boolean
   children?: React.ReactNode
 }
 
 /** 直播文件 diff：写入一开始占槽，参数流填 +/-；直播中不折行、内层跟尾 */
 export const LiveFileDiff = memo(function LiveFileDiff({
   diff,
-  streaming = false
+  streaming = false,
+  preserveLiveDiffs = false
 }: {
   diff: FileDiff
   streaming?: boolean
+  preserveLiveDiffs?: boolean
 }) {
   return (
     <div className="assistant-live-diff">
@@ -95,6 +100,7 @@ export const LiveFileDiff = memo(function LiveFileDiff({
         showHeader
         wrapLines={!streaming}
         maxPreviewLines={20}
+        defaultExpanded={shouldPreserveLiveDiffExpanded({ streaming, preserveLiveDiffs })}
         onOpenLine={(line) => dispatchOpenWorkspaceFile({ path: diff.path, line })}
       />
     </div>
@@ -132,6 +138,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   onOpenChangedFiles,
   toolOutputDisplay = 'standard',
   onNeedFullMessage,
+  preserveLiveDiffs = false,
   children
 }: Props) {
   const [flowOpen, setFlowOpen] = useState(false)
@@ -562,6 +569,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                       key={part.id}
                       diff={part.diff}
                       streaming={Boolean(isStreaming)}
+                      preserveLiveDiffs={preserveLiveDiffs}
                     />
                   )
                 }

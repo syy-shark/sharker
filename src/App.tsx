@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；跟进发送先保住上一轮直播实例，首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -97,6 +97,7 @@ import {
 } from '../shared/live-stream-ui'
 import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks/useLiveStreamUi'
 import {
+  liveHasAssistantBody,
   nextLivePublishedStreaming,
   nextLiveThinkText,
   prefetchLiveStreamTable,
@@ -318,6 +319,10 @@ import {
   shouldAcceptDoneEvent,
   shouldApplyStreamToActive,
   shouldCommitToActiveUi,
+  shouldAdoptLiveHandoff,
+  shouldCancelLiveHandoffWithoutCommit,
+  shouldHoldLiveHandoff,
+  shouldPublishLiveStreamDuringHandoff,
   upsertAssistantMessage,
   type DoneCommittedMap,
   type SessionQueueMap
@@ -377,6 +382,11 @@ interface SessionLiveBuffer {
   lastTurnPaths?: string[]
   /** 本轮助手气泡预留 id，直播行与收束后历史行共用，避免整行卸载重挂 */
   liveAssistantId?: string | null
+  /** 跟进发送保住中的上一轮直播 id；首枚 harness chunk 前不换行 */
+  liveHandoffId?: string | null
+  /** 保住期间直播 store 仍是上一轮体；segmentsRef 已是下一轮 seed */
+  pendingTurnSegments?: TurnSegment[]
+  heldCompletedSegments?: TurnSegment[]
   /** 当前 messages[0] 在全量中的 seq；>0 还有更早页 */
   historyStartSeq?: number
 }
@@ -500,6 +510,8 @@ export default function App() {
     return () => window.clearTimeout(id)
   }, [loading])
   const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
+  const [liveHandoffId, setLiveHandoffId] = useState<string | null>(null)
+  const [preserveLiveDiffsId, setPreserveLiveDiffsId] = useState<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -752,6 +764,9 @@ export default function App() {
   const turnOutcomeRef = useRef<'success' | 'error' | 'aborted'>('success')
   const activeUserMessageIdRef = useRef<string | undefined>(undefined)
   const liveAssistantIdRef = useRef<string | null>(null)
+  const liveHandoffIdRef = useRef<string | null>(null)
+  const heldCompletedSegmentsRef = useRef<TurnSegment[] | null>(null)
+  const adoptLiveHandoffRef = useRef<() => boolean>(() => false)
   /** `/compact` 只占直播行，不是模型回合；Stop 不得写成「已停止」 */
   const compactingRef = useRef(false)
 
@@ -985,9 +1000,24 @@ export default function App() {
     )
     liveTurnMetaRef.current = restoredMeta
     turnStartedAtRef.current = buf.turnStartedAt ?? 0
+    const restoringHandoff = Boolean(buf.liveHandoffId && buf.pendingTurnSegments)
+    if (restoringHandoff) {
+      heldCompletedSegmentsRef.current = cloneSegments(
+        buf.heldCompletedSegments ?? buf.segments
+      )
+      segmentsRef.current = cloneSegments(buf.pendingTurnSegments!)
+      liveHandoffIdRef.current = buf.liveHandoffId ?? null
+      setLiveHandoffId(buf.liveHandoffId ?? null)
+    } else {
+      heldCompletedSegmentsRef.current = null
+      liveHandoffIdRef.current = null
+      setLiveHandoffId(null)
+    }
     publishLiveStreamUi({
       streaming: buf.streaming,
-      liveSegments: segmentsRef.current,
+      liveSegments: restoringHandoff
+        ? (buf.heldCompletedSegments ?? buf.segments)
+        : segmentsRef.current,
       turnThinking: buf.turnThinking,
       activeTool: buf.activeTool,
       liveTurnMeta: restoredMeta,
@@ -1477,6 +1507,62 @@ export default function App() {
     setLiveAssistantId(reservedId)
   }, [])
 
+  /** 跟进 Stop / 切会话：还原上一轮片段，不提交本地 Thinking seed。 */
+  const clearLiveHandoff = useCallback((restoreHeld: boolean) => {
+    if (restoreHeld && heldCompletedSegmentsRef.current) {
+      segmentsRef.current = heldCompletedSegmentsRef.current
+    }
+    heldCompletedSegmentsRef.current = null
+    liveHandoffIdRef.current = null
+    setLiveHandoffId(null)
+  }, [])
+
+  /**
+   * 首枚 harness chunk：同一帧换新 id 并发布下一轮片段，上一轮才进历史列。
+   * 不先 beginTurnMeta 空发布，避免回答闪空。
+   */
+  const adoptLiveHandoff = useCallback(() => {
+    const fromId = liveHandoffIdRef.current
+    if (!fromId) return false
+    heldCompletedSegmentsRef.current = null
+    liveHandoffIdRef.current = null
+    setLiveHandoffId(null)
+    setPreserveLiveDiffsId(fromId)
+    const now = Date.now()
+    if (!turnStartedAtRef.current) turnStartedAtRef.current = now
+    turnHadThinkingRef.current = false
+    turnOutcomeRef.current = 'success'
+    setApproval(null)
+    setApprovalResponding(false)
+    setUserInput(null)
+    setUserInputResponding(false)
+    userInputRef.current = null
+    turnMetaRef.current = { browsedFiles: [], activities: [] }
+    turnChangedPathsRef.current = []
+    const meta = liveAssistantMeta([], [])
+    liveTurnMetaRef.current = meta
+    const reservedId = crypto.randomUUID()
+    liveAssistantIdRef.current = reservedId
+    setLiveAssistantId(reservedId)
+    const active = findLastSegment(
+      segmentsRef.current,
+      (s) => s.kind === 'tool' && s.status === 'active'
+    )
+    publishLiveStreamUi(
+      liveStreamPatchFromSegments(segmentsRef.current, {
+        streaming: streamingRef.current,
+        turnThinking: turnThinkingRef.current,
+        activeTool: active?.toolName ?? null,
+        liveTurnMeta: meta,
+        turnStartedAt: turnStartedAtRef.current,
+        turnHadThinking: false
+      })
+    )
+    return true
+  }, [])
+
+  adoptLiveHandoffRef.current = adoptLiveHandoff
+
   /** DEV / 审批续播：没有预留 id 时补一条，保证直播行 key 稳定 */
   const ensureLiveAssistantId = useCallback(() => {
     if (liveAssistantIdRef.current) return liveAssistantIdRef.current
@@ -1496,7 +1582,11 @@ export default function App() {
         sendInFlightRef.current ||
         segmentsRef.current.length > 0 ||
         Boolean(streamingRef.current.trim()),
-      segments: cloneSegments(segmentsRef.current),
+      segments: cloneSegments(
+        liveHandoffIdRef.current && heldCompletedSegmentsRef.current
+          ? heldCompletedSegmentsRef.current
+          : segmentsRef.current
+      ),
       streaming: streamingRef.current,
       turnThinking: turnThinkingRef.current,
       approval: approvalRef.current,
@@ -1526,6 +1616,13 @@ export default function App() {
       changedRelPaths: [...turnChangedPathsRef.current],
       lastTurnPaths: lastTurnPathsByConvRef.current.get(prevId) ?? [],
       liveAssistantId: liveAssistantIdRef.current,
+      liveHandoffId: liveHandoffIdRef.current,
+      heldCompletedSegments: heldCompletedSegmentsRef.current
+        ? cloneSegments(heldCompletedSegmentsRef.current)
+        : undefined,
+      pendingTurnSegments: liveHandoffIdRef.current
+        ? cloneSegments(segmentsRef.current)
+        : undefined,
       historyStartSeq: historyStartSeqRef.current
     })
     return prevId
@@ -1580,14 +1677,16 @@ export default function App() {
     }
     liveAssistantIdRef.current = null
     setLiveAssistantId(null)
+    clearLiveHandoff(false)
     resetTurnMeta()
-  }, [cancelScheduledStreamPaint, resetTurnMeta, syncActiveQueueUi])
+  }, [cancelScheduledStreamPaint, clearLiveHandoff, resetTurnMeta, syncActiveQueueUi])
 
   /** 节流将有序片段 ref 刷到 UI */
   const flushSegmentsToUI = useCallback(() => {
     const paint = () => {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
+      if (!shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) return
       const segments = segmentsRef.current
       const prevSnap = getLiveStreamUi()
       // 心跳同一数组、或只换命令末行：不扫也不发（对标 Codex #19260 / #22860）
@@ -2873,6 +2972,15 @@ export default function App() {
           turnOutcomeRef.current = 'aborted'
         }
         if (
+          shouldAdoptLiveHandoff({
+            handoffId: liveHandoffIdRef.current,
+            chunkType: chunk.type
+          })
+        ) {
+          adoptLiveHandoffRef.current()
+          return
+        }
+        if (
           segmentsRef.current !== prevLiveSegments &&
           !shouldSkipLiveStreamPublish(prevLiveSegments, segmentsRef.current)
         ) {
@@ -2931,6 +3039,14 @@ export default function App() {
         }
         // 按会话门闩：A 的 stop 不得挡住 B 的 real done
         if (!shouldAcceptDoneEvent(doneCommittedMapRef.current, completedId)) return
+        if (
+          shouldAdoptLiveHandoff({
+            handoffId: liveHandoffIdRef.current,
+            chunkType: 'done'
+          })
+        ) {
+          adoptLiveHandoffRef.current()
+        }
         if (completedId) {
           doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, completedId)
         }
@@ -3408,7 +3524,35 @@ export default function App() {
       doneCommittedRef.current = false
       setLoading(true)
       bumpSessionLive()
-      beginTurnMeta()
+      const liveSnap = getLiveStreamUi()
+      const holdFollowUp = shouldHoldLiveHandoff({
+        hasLiveBody: liveHasAssistantBody(
+          liveSnap,
+          Boolean(approvalRef.current) || Boolean(userInputRef.current)
+        ),
+        liveAssistantId: liveAssistantIdRef.current,
+        historyHasReserved: Boolean(
+          liveAssistantIdRef.current &&
+            messagesRef.current.some((m) => m.id === liveAssistantIdRef.current)
+        )
+      })
+      if (holdFollowUp && liveAssistantIdRef.current) {
+        heldCompletedSegmentsRef.current = cloneSegments(liveSnap.liveSegments)
+        liveHandoffIdRef.current = liveAssistantIdRef.current
+        setLiveHandoffId(liveAssistantIdRef.current)
+        turnStartedAtRef.current = Date.now()
+        turnHadThinkingRef.current = false
+        turnOutcomeRef.current = 'success'
+        setApproval(null)
+        setApprovalResponding(false)
+        setUserInput(null)
+        setUserInputResponding(false)
+        userInputRef.current = null
+        turnMetaRef.current = { browsedFiles: [], activities: [] }
+        turnChangedPathsRef.current = []
+      } else {
+        beginTurnMeta()
+      }
       if (convId) {
         const buf = sessionBuffersRef.current.get(convId)
         if (buf) buf.liveAssistantId = liveAssistantIdRef.current
@@ -3429,15 +3573,17 @@ export default function App() {
           startedAt: seedAt
         }
       ]
-      publishLiveStreamUi(
-        liveStreamPatchFromSegments(segmentsRef.current, {
-          streaming: '',
-          activeTool: null,
-          turnStartedAt: turnStartedAtRef.current || seedAt,
-          liveTurnMeta: liveTurnMetaRef.current,
-          turnHadThinking: false
-        })
-      )
+      if (shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) {
+        publishLiveStreamUi(
+          liveStreamPatchFromSegments(segmentsRef.current, {
+            streaming: '',
+            activeTool: null,
+            turnStartedAt: turnStartedAtRef.current || seedAt,
+            liveTurnMeta: liveTurnMetaRef.current,
+            turnHadThinking: false
+          })
+        )
+      }
 
       try {
         if (!window.sharker?.sendMessage) {
@@ -3484,12 +3630,16 @@ export default function App() {
           sessionBuffersRef.current.set(convId, {
             messages: nextMessages,
             loading: true,
-            segments: cloneSegments(segmentsRef.current),
+            segments: cloneSegments(
+              liveHandoffIdRef.current && heldCompletedSegmentsRef.current
+                ? heldCompletedSegmentsRef.current
+                : segmentsRef.current
+            ),
             streaming: '',
             turnThinking: '',
             approval: null,
             userInput: null,
-            liveTurnMeta: null,
+            liveTurnMeta: liveHandoffIdRef.current ? liveTurnMetaRef.current : null,
             turnStartedAt: turnStartedAtRef.current || Date.now(),
             turnHadThinking: false,
             activeTool: null,
@@ -3499,7 +3649,14 @@ export default function App() {
             activeUserMessageId: userMsg.id,
             turnMeta: { browsedFiles: [], activities: [] },
             historyStartSeq: historyStartSeqRef.current,
-            liveAssistantId: liveAssistantIdRef.current
+            liveAssistantId: liveAssistantIdRef.current,
+            liveHandoffId: liveHandoffIdRef.current,
+            heldCompletedSegments: heldCompletedSegmentsRef.current
+              ? cloneSegments(heldCompletedSegmentsRef.current)
+              : undefined,
+            pendingTurnSegments: liveHandoffIdRef.current
+              ? cloneSegments(segmentsRef.current)
+              : undefined
           })
         }
 
@@ -3517,13 +3674,15 @@ export default function App() {
             },
             ...segmentsRef.current
           ]
-          publishLiveStreamUi(
-            liveStreamPatchFromSegments(segmentsRef.current, {
-              streaming: streamingRef.current,
-              turnStartedAt: turnStartedAtRef.current || warnAt,
-              liveTurnMeta: liveTurnMetaRef.current
-            })
-          )
+          if (shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) {
+            publishLiveStreamUi(
+              liveStreamPatchFromSegments(segmentsRef.current, {
+                streaming: streamingRef.current,
+                turnStartedAt: turnStartedAtRef.current || warnAt,
+                liveTurnMeta: liveTurnMetaRef.current
+              })
+            )
+          }
         }
         const history = await modelHistoryP
         if (
@@ -3549,6 +3708,7 @@ export default function App() {
           doneCommittedRef.current = true
           const msg = e instanceof Error ? e.message : String(e)
           turnOutcomeRef.current = 'error'
+          adoptLiveHandoffRef.current()
           segmentsRef.current = finalizeSegments(segmentsRef.current)
           publishLiveStreamUi(
             liveStreamPatchFromSegments(segmentsRef.current, {
@@ -3951,27 +4111,31 @@ export default function App() {
             doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, convId)
             doneCommittedRef.current = true
             turnOutcomeRef.current = 'aborted'
-            segmentsRef.current = applyStreamChunk(segmentsRef.current, {
-              type: 'turn_cancelled',
-              conversationId: convId,
-              timestamp: Date.now()
-            })
-            segmentsRef.current = finalizeSegments(segmentsRef.current)
-            publishLiveStreamUi(
-              liveStreamPatchFromSegments(segmentsRef.current, {
-                streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
-                activeTool: null,
-                turnStartedAt: turnStartedAtRef.current || null,
-                liveTurnMeta: liveTurnMetaRef.current,
-                turnHadThinking: turnHadThinkingRef.current
+            if (shouldCancelLiveHandoffWithoutCommit({ handoffId: liveHandoffIdRef.current })) {
+              clearLiveHandoff(true)
+            } else {
+              segmentsRef.current = applyStreamChunk(segmentsRef.current, {
+                type: 'turn_cancelled',
+                conversationId: convId,
+                timestamp: Date.now()
               })
-            )
-            commitAssistantReply(
-              streamingRef.current,
-              stoppedAfterFootnote(processElapsedSeconds({ startedAt: turnStartedAtRef.current })),
-              'aborted',
-              convId
-            )
+              segmentsRef.current = finalizeSegments(segmentsRef.current)
+              publishLiveStreamUi(
+                liveStreamPatchFromSegments(segmentsRef.current, {
+                  streaming: extractFinalContent(segmentsRef.current) || streamingRef.current,
+                  activeTool: null,
+                  turnStartedAt: turnStartedAtRef.current || null,
+                  liveTurnMeta: liveTurnMetaRef.current,
+                  turnHadThinking: turnHadThinkingRef.current
+                })
+              )
+              commitAssistantReply(
+                streamingRef.current,
+                stoppedAfterFootnote(processElapsedSeconds({ startedAt: turnStartedAtRef.current })),
+                'aborted',
+                convId
+              )
+            }
           }
           segmentsRef.current = []
           streamingRef.current = ''
@@ -4022,6 +4186,7 @@ export default function App() {
       await dispatchTurn(trimmed, attachments, convId ?? undefined, extras)
     },
     [
+      clearLiveHandoff,
       commitAssistantReply,
       dispatchTurn,
       flushSettingsDraftIfNeeded,
@@ -4270,6 +4435,27 @@ export default function App() {
         action.abortConversationId
       )
     }
+    if (
+      action.commitStopToConversationId === activeConversationIdRef.current &&
+      shouldCancelLiveHandoffWithoutCommit({ handoffId: liveHandoffIdRef.current })
+    ) {
+      clearLiveHandoff(true)
+      sendInFlightRef.current = false
+      doneCommittedRef.current = true
+      setLoading(false)
+      setApproval(null)
+      setApprovalResponding(false)
+      setUserInput(null)
+      setUserInputResponding(false)
+      userInputRef.current = null
+      if (action.abortConversationId) {
+        await window.sharker.abortChat(action.abortConversationId)
+        if (streamOwnerRef.current === action.abortConversationId) {
+          streamOwnerRef.current = null
+        }
+      }
+      return
+    }
     if (action.commitStopToConversationId === activeConversationIdRef.current) {
       doneCommittedRef.current = true
       turnOutcomeRef.current = 'aborted'
@@ -4365,7 +4551,7 @@ export default function App() {
         action.commitStopToConversationId
       )
     }
-  }, [commitAssistantReply, loading])
+  }, [clearLiveHandoff, commitAssistantReply, loading])
 
   /**
    * 设置页保存回调。
@@ -8999,6 +9185,8 @@ export default function App() {
               onThinkingLevelChange={handleThinkingLevelChange}
               messages={messages}
               liveAssistantId={liveAssistantId}
+              liveHandoffId={liveHandoffId}
+              preserveLiveDiffsId={preserveLiveDiffsId}
               loading={loading}
               queuedPrompts={composerQueuedPrompts}
               pendingSteers={pendingSteers}

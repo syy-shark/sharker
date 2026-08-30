@@ -389,6 +389,92 @@ export function historicalMessagesDuringLive(
 }
 
 /**
+ * 跟进发送时上一轮直播体还在：先保住同一直播实例，等首枚 harness chunk 再换 id。
+ * 历史列还没挂上预留行时仍走开轮 beginTurnMeta（首轮）。
+ */
+export function shouldHoldLiveHandoff(options: {
+  hasLiveBody: boolean
+  liveAssistantId?: string | null
+  historyHasReserved?: boolean
+}): boolean {
+  if (!options.hasLiveBody) return false
+  if (!options.liveAssistantId?.trim()) return false
+  if (options.historyHasReserved === false) return false
+  return true
+}
+
+/** 跟进保住期间过程秒表 / 图解码 / Thought 不得再当直播。 */
+export function shouldStreamLiveAssistant(options: {
+  loading: boolean
+  handoffId?: string | null
+}): boolean {
+  return Boolean(options.loading && !options.handoffId?.trim())
+}
+
+/** 首枚真实 harness 事件才换新直播 id；本地 Thinking seed 不触发。 */
+export function shouldAdoptLiveHandoff(options: {
+  handoffId?: string | null
+  chunkType: string
+}): boolean {
+  if (!options.handoffId?.trim()) return false
+  switch (options.chunkType) {
+    case 'turn_start':
+    case 'think':
+    case 'token':
+    case 'tool_start':
+    case 'tool_done':
+    case 'tool_preview':
+    case 'status':
+    case 'error':
+    case 'context_compress':
+    case 'approval_needed':
+    case 'user_input_needed':
+    case 'done':
+      return true
+    default:
+      return false
+  }
+}
+
+/** 保住期间 Stop：还原上一轮片段，不把本地 seed 提交成新助手。 */
+export function shouldCancelLiveHandoffWithoutCommit(options: {
+  handoffId?: string | null
+}): boolean {
+  return Boolean(options.handoffId?.trim())
+}
+
+/** 保住期间不把下一轮 seed 写进直播 store。 */
+export function shouldPublishLiveStreamDuringHandoff(handoffId?: string | null): boolean {
+  return !handoffId?.trim()
+}
+
+/**
+ * 跟进用户气泡插在上一轮直播行之后、新 Thinking 之前。
+ * 预留 id 不在列里时整列当 before，避免把回答藏起来却无处可画。
+ */
+export function splitTranscriptAroundLiveHandoff(
+  messages: ChatMessage[],
+  liveAssistantId: string | null | undefined
+): { before: ChatMessage[]; after: ChatMessage[] } {
+  const id = liveAssistantId?.trim()
+  if (!id) return { before: messages, after: [] }
+  const idx = messages.findIndex((m) => m.id === id)
+  if (idx < 0) return { before: messages, after: [] }
+  return {
+    before: messages.slice(0, idx),
+    after: messages.slice(idx + 1)
+  }
+}
+
+/** 历史重挂刚离开直播槽的 diff：展开，但 `live` 仍关以免 followTail 抢滚动。 */
+export function shouldPreserveLiveDiffExpanded(options: {
+  streaming: boolean
+  preserveLiveDiffs?: boolean
+}): boolean {
+  return options.streaming || Boolean(options.preserveLiveDiffs)
+}
+
+/**
  * 按预留 id 写入或替换助手气泡（直播行收束成历史时同一 id，避免再追加一条）。
  * 没有同 id 时走 `appendAssistantMessage`。
  */

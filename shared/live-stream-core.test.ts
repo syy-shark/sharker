@@ -1512,8 +1512,13 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     )
     expect(src('../src/components/ChatView.tsx').includes('live-stream-slices')).toBe(false)
     expect(src('../src/components/ChatView.tsx')).toContain('loading || reservedInHistory')
-    expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={loading}')
+    expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={liveStreaming}')
+    expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
+    expect(src('../src/components/ChatView.tsx')).toContain('splitTranscriptAroundLiveHandoff')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
+    expect(src('../src/App.tsx')).toContain('shouldHoldLiveHandoff')
+    expect(src('../src/App.tsx')).toContain('shouldAdoptLiveHandoff')
+    expect(src('../src/App.tsx')).toContain('adoptLiveHandoff')
 
     expect(src('../src/components/TurnFlow.tsx')).toContain(
       "from '../../shared/live-stream-core'"
