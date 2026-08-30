@@ -21,7 +21,7 @@
 | `BrowserSettings.tsx` / `.css` | 设置 → 浏览器：历史搜索 / 重新打开 / 删除，按时间清除历史，Cookie / 缓存，以及下载位置与每次询问保存（对标 Codex Settings → Browser）。不发明 @Browser / 导入系统配置 |
 | `SuggestedPromptSettings.tsx` | Suggested prompts 开关（对标 Codex Settings → Suggested prompts） |
 | `PersonalizationSettings.tsx` / `.css` | 个性化：Enable memories（官方默认关，说明用 Local Codex memories are off by default）+ Use memories / Generate memories（官方 inject / memory-generation 说明）、Choose a personality（Pragmatic / Friendly / None）、Custom instructions 写入个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；单对话 `/memories` 覆盖） |
-| `ShortcutSettings.tsx` / `.css` | Keyboard Shortcuts：Search by command name / Keystroke search、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合；动作标题用官方 Commands 文案；页说明用官方 Open Keyboard Shortcuts to review…） |
+| `ShortcutSettings.tsx` / `.css` | Keyboard Shortcuts：Search by command name / Keystroke search、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合；动作标题用官方 Commands 文案；Search chats / Cycle reasoning 默认 Not assigned by default；页说明用官方 Open Keyboard Shortcuts to review…） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量 |
 | `WorktreeSettings.tsx` | 设置 → Worktrees：Worktree root 与托管保留数（默认 15，0 关闭自动删除；对标 Codex Settings → Worktrees）。不发明环境编辑器或单独未落盘的自动删除开关 |
