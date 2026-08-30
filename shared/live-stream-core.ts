@@ -108,6 +108,7 @@ let processHold: {
   view: LiveProcessView
   segments: readonly TurnSegment[]
 } | null = null
+let copyableClosedHold: { closed: readonly AnswerPart[]; joined: string } | null = null
 
 export function registerLiveStreamTable(table: LiveStreamTable): void {
   liveStreamTable = table
@@ -118,6 +119,7 @@ export function resetLiveAnswerViewHold(): void {
   answerCache = null
   answerGrowHold = null
   processHold = null
+  copyableClosedHold = null
 }
 
 export function prefetchLiveStreamTable(): Promise<void> {
@@ -907,6 +909,23 @@ function copyableFromAnswerParts(parts: readonly AnswerPart[]): string {
     .trim()
 }
 
+/** 已闭合正文 join 按 closed 数组引用缓存，增长尾只拼这一截（对标 Codex #22860） */
+function closedTextJoinRaw(closed: readonly AnswerPart[]): string {
+  if (copyableClosedHold?.closed === closed) return copyableClosedHold.joined
+  const joined = closed
+    .filter((part): part is Extract<AnswerPart, { type: 'text' }> => part.type === 'text')
+    .map((part) => part.content)
+    .join('\n\n')
+  copyableClosedHold = { closed, joined }
+  return joined
+}
+
+function copyableFromClosedAndTail(closed: readonly AnswerPart[], tail: string): string {
+  const prefix = closed.length ? closedTextJoinRaw(closed) : ''
+  if (!prefix) return tail.trim()
+  return `${prefix}\n\n${tail}`.trim()
+}
+
 function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswerView {
   const content = tail.content ?? ''
   if (prev.tail?.type === 'text' && prev.tail.content === content) return prev
@@ -915,7 +934,7 @@ function growLiveAnswerView(prev: LiveAnswerView, tail: TurnSegment): LiveAnswer
     ? prev.closed
     : prev.parts.filter((part) => part.type !== 'text')
   const parts = prefix.length ? [...prefix, tailPart] : [tailPart]
-  const copyable = prefix.length ? copyableFromAnswerParts(parts) : content.trim()
+  const copyable = copyableFromClosedAndTail(prefix, content)
   return {
     parts,
     closed: prefix,

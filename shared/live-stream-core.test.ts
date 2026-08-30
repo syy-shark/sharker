@@ -1206,6 +1206,45 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(next.copyable).toBe('Hi')
   })
 
+  it('grows copyable from the sealed prefix without rebuilding closed text', () => {
+    resetLiveAnswerViewHold()
+    const hello: TurnSegment = { ...prose('Hello'), status: 'done' }
+    const next: TurnSegment = {
+      id: 'a2',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'World'
+    }
+    const first = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello]
+    })
+    const two = nextLiveAnswerView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, next]
+    })
+    expect(two.copyable).toBe('Hello\n\nWorld')
+    const grown: TurnSegment = { ...next, content: 'World!' }
+    const after = nextLiveAnswerView(two, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [hello, grown]
+    })
+    expect(after.closed).toBe(two.closed)
+    expect(after.copyable).toBe('Hello\n\nWorld!')
+    resetLiveAnswerViewHold()
+    const padded: TurnSegment = { ...hello, content: '  Hello  ' }
+    const padFirst = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [padded]
+    })
+    const padTwo = nextLiveAnswerView(padFirst, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [padded, next]
+    })
+    expect(padTwo.copyable).toBe('Hello  \n\nWorld')
+  })
+
   it('does not grow-hold process phases on same-length think tokens', () => {
     expect(hasLiveProcessPhaseGrowHold([think('Hmm')], [think('Hmm more')])).toBe(false)
   })
@@ -1569,6 +1608,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('adoptLiveHandoff')
     expect(src('../src/App.tsx')).toContain('nextLiveAnswerRenderParts')
     expect(src('../src/App.tsx')).toContain('resetLiveAnswerViewHold')
+    expect(src('live-stream-core.ts')).toContain('copyableClosedHold')
+    expect(src('live-stream-core.ts')).toContain('copyableFromClosedAndTail')
     expect(src('../src/App.tsx')).toContain('setRetiredLiveId')
     expect(src('../src/App.tsx')).toContain('retireLiveArticle')
     expect(src('../src/App.tsx')).toContain('snapshotRetiredLiveProcess')
