@@ -1,14 +1,16 @@
 /**
- * `/review` 范围选择：对标 Codex 桌面「未提交 / 相对基线」。
+ * `/review` 范围选择：官方 Choose Review against a base branch or Review uncommitted changes。
  * 选定前不派发审查回合，避免空 `/review` 撞直播。
  * @see src/components/ARCH.md
  */
 import { useEffect, useState } from 'react'
+import { FILE_CLOSE_LABEL, REVIEW_LABEL } from '../../shared/reveal-in-folder'
 import {
   REVIEW_A_COMMIT_DESCRIPTION,
   REVIEW_A_COMMIT_LABEL,
   REVIEW_AGAINST_A_BASE_BRANCH_DESCRIPTION,
   REVIEW_AGAINST_A_BASE_BRANCH_LABEL,
+  REVIEW_SCOPE_INTRO,
   REVIEW_UNCOMMITTED_CHANGES_DESCRIPTION,
   REVIEW_UNCOMMITTED_CHANGES_LABEL
 } from '../../shared/review-prompt'
@@ -49,7 +51,7 @@ export function ReviewScopeDialog({ open, onClose, onPick }: Props) {
       <button
         type="button"
         className="review-scope-backdrop"
-        aria-label="关闭审查范围"
+        aria-label={FILE_CLOSE_LABEL}
         onClick={onClose}
       />
       <div
@@ -58,11 +60,8 @@ export function ReviewScopeDialog({ open, onClose, onPick }: Props) {
         aria-labelledby="review-scope-title"
       >
         <div className="review-scope-head">
-          <h2 id="review-scope-title">选择审查范围</h2>
-          <p>
-            对标 Codex <code>/review</code>：先选未提交变更或相对基线。指定提交可填
-            sha。选定后再开审，直播中不会中止当前回合。
-          </p>
+          <h2 id="review-scope-title">{REVIEW_LABEL}</h2>
+          <p>{REVIEW_SCOPE_INTRO}</p>
         </div>
         <div className="review-scope-choices">
           <button type="button" onClick={() => onPick('uncommitted')}>
@@ -91,7 +90,7 @@ export function ReviewScopeDialog({ open, onClose, onPick }: Props) {
         </label>
         <div className="review-scope-actions">
           <button type="button" onClick={onClose}>
-            取消
+            {FILE_CLOSE_LABEL}
           </button>
         </div>
       </div>

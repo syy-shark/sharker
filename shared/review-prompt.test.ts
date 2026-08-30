@@ -14,6 +14,7 @@ import {
   REVIEW_A_COMMIT_LABEL,
   REVIEW_AGAINST_A_BASE_BRANCH_LABEL,
   REVIEW_DELIVERY_LABEL,
+  REVIEW_SCOPE_INTRO,
   REVIEW_UNCOMMITTED_CHANGES_LABEL,
   parseReviewProviderId,
   parseReviewRequest,
@@ -80,6 +81,18 @@ describe('review scope', () => {
     expect(REVIEW_UNCOMMITTED_CHANGES_LABEL).toBe('Review uncommitted changes')
     expect(REVIEW_AGAINST_A_BASE_BRANCH_LABEL).toBe('Review against a base branch')
     expect(REVIEW_A_COMMIT_LABEL).toBe('Review a commit')
+    expect(REVIEW_SCOPE_INTRO).toBe(
+      'Choose Review against a base branch or Review uncommitted changes.'
+    )
+    const dialogSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ReviewScopeDialog.tsx'),
+      'utf8'
+    )
+    expect(dialogSrc).toContain('REVIEW_SCOPE_INTRO')
+    expect(dialogSrc).toContain('REVIEW_LABEL')
+    expect(dialogSrc).toContain('FILE_CLOSE_LABEL')
+    expect(dialogSrc).not.toContain('选择审查范围')
+    expect(dialogSrc).not.toContain('对标 Codex')
   })
 
   it('uses Review delivery and allows here/detached overrides', () => {

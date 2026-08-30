@@ -37,6 +37,9 @@ export const REVIEW_UNCOMMITTED_CHANGES_DESCRIPTION = 'Reviews the changes in yo
 export const REVIEW_AGAINST_A_BASE_BRANCH_DESCRIPTION =
   'Compares your current branch with a branch you select.'
 export const REVIEW_A_COMMIT_DESCRIPTION = 'Reviews the exact change set for a selected commit.'
+/** Official desktop /review picker instruction (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_SCOPE_INTRO =
+  'Choose Review against a base branch or Review uncommitted changes.'
 
 /** Settings → Git → Review delivery（对标 Codex：默认 Inline 当前对话 / Detached 新线程） */
 export type ReviewDelivery = 'inline' | 'detached'
