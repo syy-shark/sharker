@@ -413,6 +413,16 @@ describe('near-live message rows', () => {
       emphasize: true
     })
     expect(jumpToBottomAffordance(false).label).toBe('Jump to bottom')
+    expect(jumpToBottomAffordance(false, { keepReading: true })).toEqual({
+      label: 'Jump to latest',
+      ariaLabel: 'Jump to latest',
+      emphasize: false
+    })
+    expect(jumpToBottomAffordance(true, { keepReading: true })).toEqual({
+      label: 'New response',
+      ariaLabel: 'New response, jump to latest',
+      emphasize: true
+    })
   })
 })
 

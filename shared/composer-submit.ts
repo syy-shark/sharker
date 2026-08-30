@@ -178,7 +178,7 @@ export type ComposerSubmitStickOptions = {
  * 提交后是否贴底并离开 historyHead。
  * 官方 #13698：普通发送跳到底（by design）。
  * Queue / Steer 不进 transcript，读历史时保持位置（官方 #38220）。
- * 划选 Add to chat 发送保持阅读位置，用 Jump to latest 再去新回复（官方 #41391）。
+ * 划选 Add to chat 发送保持阅读位置，用 Jump to latest / New response 再去新回复（官方 #41391）。
  */
 export function shouldStickAfterComposerSubmit(
   mode: ComposerSubmitMode,
@@ -190,7 +190,7 @@ export function shouldStickAfterComposerSubmit(
 
 /**
  * 划选发送后锁住当前阅读位置（即使当时还贴底或尚未溢出）。
- * 直播长高只出 Jump to latest / New message，不跟 token 拽走原文（官方 #41391）。
+ * 直播长高只出 Jump to latest / New response，不跟 token 拽走原文（官方 #41391）。
  */
 export function shouldKeepReadingAfterComposerSubmit(
   mode: ComposerSubmitMode,

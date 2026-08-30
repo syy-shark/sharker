@@ -837,17 +837,35 @@ export function shouldClearUnseenLive(options: {
 export const NEW_MESSAGE_LABEL = 'New message'
 /** Official desktop jump-to-bottom control when the live tail is already seen. */
 export const JUMP_TO_BOTTOM_LABEL = 'Jump to bottom'
+/** Official #41391 / #41446: keep-reading path after Add to chat. */
+export const JUMP_TO_LATEST_LABEL = 'Jump to latest'
+/** Official #41391: unseen live turn after a selected-text send. */
+export const NEW_RESPONSE_LABEL = 'New response'
 
 /**
  * Jump-to-bottom becomes New message when unseen live content grows.
+ * 划选发送锁阅读位置时改用 Jump to latest / New response（对标 Codex #41391）。
  * ChatView 把芯片放进 composer-stage 流里占位，不得 absolute 盖直播尾
  * （对标 Codex #38220 non-disruptive new message / #40788 reserve space）。
  */
-export function jumpToBottomAffordance(hasUnseenLive: boolean): {
+export function jumpToBottomAffordance(
+  hasUnseenLive: boolean,
+  options?: { keepReading?: boolean }
+): {
   label: string
   ariaLabel: string
   emphasize: boolean
 } {
+  if (options?.keepReading) {
+    if (hasUnseenLive) {
+      return {
+        label: NEW_RESPONSE_LABEL,
+        ariaLabel: 'New response, jump to latest',
+        emphasize: true
+      }
+    }
+    return { label: JUMP_TO_LATEST_LABEL, ariaLabel: JUMP_TO_LATEST_LABEL, emphasize: false }
+  }
   if (hasUnseenLive) {
     return { label: NEW_MESSAGE_LABEL, ariaLabel: 'New message, jump to bottom', emphasize: true }
   }

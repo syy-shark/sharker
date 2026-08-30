@@ -761,12 +761,14 @@ function LiveFindHighlight({
 const JumpToBottomChip = memo(function JumpToBottomChip({
   visible,
   stickToBottom,
+  keepReading,
   onClick,
   userLockedRef,
   stickToBottomRef
 }: {
   visible: boolean
   stickToBottom: boolean
+  keepReading: boolean
   onClick: () => void
   userLockedRef: { current: boolean }
   stickToBottomRef: { current: boolean }
@@ -805,7 +807,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
     }
   }, [progress, stickToBottom, stickToBottomRef, userLockedRef])
   if (!visible && !unseen) return null
-  const jump = jumpToBottomAffordance(unseen)
+  const jump = jumpToBottomAffordance(unseen, { keepReading })
   return (
     <div className="chat-scroll-bottom-wrap">
       <button
@@ -984,6 +986,7 @@ export const ChatView = memo(function ChatView({
   const [stickToBottom, setStickToBottom] = useState(true)
   /** 内容溢出且用户不在底部时才显示「回到底部」 */
   const [canJumpToBottom, setCanJumpToBottom] = useState(false)
+  const [keepReadingJump, setKeepReadingJump] = useState(false)
   const [liveMemoryFindHits, setLiveMemoryFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
@@ -1023,6 +1026,7 @@ export const ChatView = memo(function ChatView({
   useEffect(() => {
     setEditUserMessageId(null)
     setSideAsk(null)
+    setKeepReadingJump(false)
     measuredRowHeightsRef.current = new Map()
     setIntrinsicHeights(new Map())
     onCopyPickerClose?.()
@@ -1773,6 +1777,7 @@ export const ChatView = memo(function ChatView({
     stickToBottomRef.current = true
     setStickToBottom(true)
     setCanJumpToBottom(false)
+    setKeepReadingJump(false)
     pendingFullHistoryAfterLiveRef.current = false
     setPinnedStart(null)
     onLeaveHistoryHeadRef.current?.()
@@ -1789,6 +1794,7 @@ export const ChatView = memo(function ChatView({
         userScrollLockRef.current = false
         stickToBottomRef.current = true
         setStickToBottom(true)
+        setKeepReadingJump(false)
         pendingFullHistoryAfterLiveRef.current = false
         setPinnedStart(null)
         onLeaveHistoryHeadRef.current?.()
@@ -1800,6 +1806,7 @@ export const ChatView = memo(function ChatView({
       stickToBottomRef.current = false
       setStickToBottom(false)
       setCanJumpToBottom(true)
+      setKeepReadingJump(true)
       setPinnedStart((p) => p ?? stickTranscriptWindowStart(messagesLengthRef.current))
     },
     []
@@ -2574,6 +2581,7 @@ export const ChatView = memo(function ChatView({
           <JumpToBottomChip
             visible={canJumpToBottom}
             stickToBottom={stickToBottom}
+            keepReading={keepReadingJump}
             onClick={resumeStickToBottom}
             userLockedRef={userScrollLockRef}
             stickToBottomRef={stickToBottomRef}
