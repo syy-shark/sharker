@@ -3352,6 +3352,75 @@ function continueLastListBlock(
     : [{ type: 'list', ordered: prev.ordered, items, loose: loose || undefined, start: prev.start }]
 }
 
+function lastStreamingLine(text: string): string {
+  if (text.endsWith('\n')) return ''
+  return text.slice(text.lastIndexOf('\n') + 1)
+}
+
+function lastCompleteStreamingLine(text: string): string {
+  const trimmed = text.endsWith('\n') ? text.slice(0, -1) : text
+  return trimmed.slice(trimmed.lastIndexOf('\n') + 1)
+}
+
+function parseStreamingTableRowLine(
+  line: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapInlineNode[][] | null {
+  if (!isLiveTableDataLine(line)) return null
+  return splitGfmTableCells(line).map((cell) => parseCheapInlineMarkdown(cell, defs))
+}
+
+/**
+ * 表后缀只改正文最后一行：新数据行，或同一行里补 `|`。
+ * 单独换行、分隔行、空行后的兄弟段仍走整表窗口。
+ */
+export function shouldGrowStreamingTableLastLine(opts: {
+  prevNorm: string
+  suffix: string
+}): boolean {
+  const { prevNorm, suffix } = opts
+  if (!suffix || suffix.includes(']:')) return false
+  if (suffix === '\n') return false
+  let line: string
+  if (suffix.startsWith('\n')) {
+    if (suffix.slice(1).includes('\n')) return false
+    line = suffix.slice(1)
+  } else if (prevNorm.endsWith('\n')) {
+    if (suffix.includes('\n')) return false
+    line = suffix
+  } else {
+    if (suffix.includes('\n') || !suffix.includes('|')) return false
+    line = lastStreamingLine(prevNorm + suffix)
+  }
+  if (!line) return false
+  return isLiveTableDataLine(line)
+}
+
+function growStreamingTableLastLine(
+  prev: Extract<CheapProseBlock, { type: 'table' }>,
+  prevNorm: string,
+  nextText: string,
+  defs?: ReadonlyMap<string, string | CheapLinkDef>
+): CheapProseBlock[] | null {
+  const suffix = nextText.slice(prevNorm.length)
+  if (!shouldGrowStreamingTableLastLine({ prevNorm, suffix })) return null
+  const appending = suffix.startsWith('\n') || prevNorm.endsWith('\n')
+  if (appending && !prev.rows.length && !isGfmTableSep(lastCompleteStreamingLine(prevNorm))) {
+    return null
+  }
+  const line = lastStreamingLine(nextText)
+  const row = parseStreamingTableRowLine(line, defs)
+  if (!row) return null
+  if (appending) {
+    return [{ type: 'table', header: prev.header, rows: [...prev.rows, row], align: prev.align }]
+  }
+  if (!prev.rows.length) return null
+  const lastRow = prev.rows[prev.rows.length - 1]!
+  const reused = reuseInlineLists(lastRow, row)
+  if (reused === lastRow) return [prev]
+  return [{ type: 'table', header: prev.header, rows: [...prev.rows.slice(0, -1), reused], align: prev.align }]
+}
+
 function growLastTableCellsInline(
   prev: Extract<CheapProseBlock, { type: 'table' }>,
   suffix: string,
@@ -3389,6 +3458,8 @@ function continueLastTableBlock(
     const inline = growLastTableCellsInline(prev, nextText.slice(prevNorm.length), defs)
     if (inline) return inline
   }
+  const lastLineGrow = growStreamingTableLastLine(prev, prevNorm, nextText, defs)
+  if (lastLineGrow) return lastLineGrow
   if (nextText.startsWith(prevNorm) && prev.rows.length) {
     const extra = nextText.slice(prevNorm.length)
     if (extra.startsWith('\n')) {

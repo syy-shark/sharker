@@ -14,6 +14,7 @@ import {
   continueCheapInlineMarkdown,
   shouldGrowCheapInlineText,
   shouldGrowLastListItemInline,
+  shouldGrowStreamingTableLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   continueCheapProseBlocks,
@@ -1215,6 +1216,31 @@ describe('splitStreamingMarkdown', () => {
       expect(manyTableNew[0].rows.slice(0, 8).every((row, i) => row[0] === manyTable[0].rows[i]?.[0])).toBe(true)
       expect(manyTableNew[0].rows).toHaveLength(9)
     }
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: 'y' })).toBe(false)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n' })).toBe(false)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n| 8 | y |' })).toBe(true)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: `${manyRows}\n`, suffix: '| 8 | y |' })).toBe(true)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: `${manyRows}\n| 8`, suffix: ' | y |' })).toBe(true)
+    expect(shouldGrowStreamingTableLastLine({ prevNorm: manyRows, suffix: '\n\n下一段' })).toBe(false)
+    const tableNl = continueCheapProseBlocks(manyRows, manyTable, `${manyRows}\n`)
+    const tableMid = continueCheapProseBlocks(`${manyRows}\n`, tableNl, `${manyRows}\n| 8`)
+    const tableDone = continueCheapProseBlocks(`${manyRows}\n| 8`, tableMid, `${manyRows}\n| 8 | y |`)
+    if (manyTable[0]?.type === 'table' && tableMid[0]?.type === 'table' && tableDone[0]?.type === 'table') {
+      expect(tableNl[0]).toBe(manyTable[0])
+      expect(tableMid[0].header).toBe(manyTable[0].header)
+      expect(tableMid[0].rows.slice(0, 8).every((row, i) => row === manyTable[0].rows[i])).toBe(true)
+      expect(tableDone[0].header).toBe(manyTable[0].header)
+      expect(tableDone[0].rows.slice(0, 8).every((row, i) => row === manyTable[0].rows[i])).toBe(true)
+      expect(tableDone[0].rows[8]?.[0]).toBe(tableMid[0].rows[8]?.[0])
+      expect(tableDone[0].rows).toHaveLength(9)
+    }
+    const tableHead = '| A | B |\n| --- | --- |'
+    const tableHeadFirst = parseCheapProseBlocks(tableHead)
+    const tableHeadRow = continueCheapProseBlocks(tableHead, tableHeadFirst, `${tableHead}\n| 1 | 2 |`)
+    if (tableHeadFirst[0]?.type === 'table' && tableHeadRow[0]?.type === 'table') {
+      expect(tableHeadRow[0].header).toBe(tableHeadFirst[0].header)
+      expect(tableHeadRow[0].rows).toHaveLength(1)
+    }
     const marked = parseCheapProseBlocks('见 `foo` 与 ')
     const markedGrown = continueCheapProseBlocks('见 `foo` 与 ', marked, '见 `foo` 与 bar')
     if (marked[0]?.type === 'p' && markedGrown[0]?.type === 'p') {
@@ -2307,6 +2333,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
+    expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
     expect(mdSrc).toContain('cheapInlineStablePrefix')
