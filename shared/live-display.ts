@@ -625,7 +625,8 @@ export function shouldStartLiveCommitSettle(options: {
 
 /**
  * 贴底跟随中距底突然变大：布局收束，不是用户上翻。
- * 已锁或滚动意向是上翻则不忽略（滚轮 / 拖条仍能离开）。
+ * 收束短窗内浏览器夹低 scrollTop 会看起来像上翻，不能信这个意向；
+ * 已锁（滚轮 / 触摸已 lockUserScroll）则不忽略。短窗过后仍贴底且意向不是上翻也不锁。
  */
 export function shouldIgnoreLeaveBottomDuringCommit(options: {
   commitSettling: boolean
@@ -634,8 +635,8 @@ export function shouldIgnoreLeaveBottomDuringCommit(options: {
   scrollIntent?: 'up' | 'down' | null
 }): boolean {
   if (!options.stickToBottom || options.userLocked) return false
-  if (options.scrollIntent === 'up') return false
-  return options.commitSettling || options.scrollIntent !== 'up'
+  if (options.commitSettling) return true
+  return options.scrollIntent !== 'up'
 }
 
 /** 审批出现：已贴底才跟；读历史不解锁、不抢镜头（对标 Codex #38220，Enter/Esc 仍走输入框） */

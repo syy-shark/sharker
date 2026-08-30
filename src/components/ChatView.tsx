@@ -1546,6 +1546,12 @@ export const ChatView = memo(function ChatView({
           scrollIntent: lastScrollIntentRef.current
         })
       ) {
+        const node = messagesRef.current
+        if (node && stickToBottomRef.current && !userScrollLockRef.current) {
+          programmaticScrollRef.current = true
+          node.scrollTop = liveStickScrollTop(node.scrollHeight, node.clientHeight)
+          programmaticScrollRef.current = false
+        }
         return
       }
       userScrollLockRef.current = true
@@ -1951,8 +1957,11 @@ export const ChatView = memo(function ChatView({
     const onScroll = () => {
       if (programmaticScrollRef.current) return
       const top = el.scrollTop
-      if (top < lastScrollTopRef.current - 0.5) lastScrollIntentRef.current = 'up'
-      else if (top > lastScrollTopRef.current + 0.5) lastScrollIntentRef.current = 'down'
+      // 收束换行时浏览器夹低 scrollTop 会看起来像上翻（对标 Codex #37849）
+      if (!commitSettleRef.current) {
+        if (top < lastScrollTopRef.current - 0.5) lastScrollIntentRef.current = 'up'
+        else if (top > lastScrollTopRef.current + 0.5) lastScrollIntentRef.current = 'down'
+      }
       lastScrollTopRef.current = top
       syncScrollFlags()
       rememberTranscriptSnapshot()

@@ -331,6 +331,14 @@ describe('near-live message rows', () => {
       shouldIgnoreLeaveBottomDuringCommit({
         commitSettling: true,
         stickToBottom: true,
+        userLocked: false,
+        scrollIntent: 'up'
+      })
+    ).toBe(true)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: true,
+        stickToBottom: true,
         userLocked: true
       })
     ).toBe(false)
@@ -366,6 +374,7 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
+    expect(chatView).toContain('if (!commitSettleRef.current)')
     expect(shouldFollowApprovalIntoView({ userLocked: false, stickToBottom: true })).toBe(true)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: false })).toBe(false)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: true })).toBe(false)
