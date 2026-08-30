@@ -1592,8 +1592,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenSteps')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('useLiveStreamUiSelectWhen')
 
-    expect(src('../src/components/TurnFlow.tsx')).toContain(
-      "from '../../shared/live-stream-core'"
+    expect(src('../src/components/TurnFlow.tsx').includes("from '../../shared/live-stream-core'")).toBe(
+      false
     )
     expect(src('../src/components/TurnFlow.tsx').includes('live-stream-slices')).toBe(false)
 
