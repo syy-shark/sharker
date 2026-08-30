@@ -228,17 +228,17 @@ describe('reveal in folder', () => {
     expect(skillsSrc).toContain('SKILLS_INTRO')
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(skillsSrc).toContain('reloadNonce')
-    const composerSrc = readFileSync(
+    const skillReloadComposerSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
       'utf8'
     )
-    expect(composerSrc).toContain("'reload_skills'")
-    const appSrc = readFileSync(
+    expect(skillReloadComposerSrc).toContain("'reload_skills'")
+    const skillReloadAppSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'),
       'utf8'
     )
-    expect(appSrc).toContain('force_reload_skills')
-    expect(appSrc).toContain('skillReloadNonce')
+    expect(skillReloadAppSrc).toContain('force_reload_skills')
+    expect(skillReloadAppSrc).toContain('skillReloadNonce')
     expect(NEW_STANDALONE_CHAT_LABEL).toBe('New standalone chat')
     expect(TOGGLE_SIDEBAR_LABEL).toBe('Toggle sidebar')
     const toolbarSrc = readFileSync(
