@@ -15,6 +15,7 @@ import {
   shouldGrowCheapInlineText,
   shouldGrowLastListItemInline,
   shouldAppendStreamingListItem,
+  shouldAppendStreamingNestedListItem,
   paragraphSuffixNewLines,
   shouldGrowStreamingTableLastLine,
   shouldGrowOpenStreamingProseTail,
@@ -1196,6 +1197,39 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldAppendStreamingListItem({ prevNorm: '1. 一项', suffix: '\n2. 二项', ordered: true })).toBe(true)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n\n- 松散', ordered: false })).toBe(false)
     expect(shouldAppendStreamingListItem({ prevNorm: '- 一项', suffix: '\n- ```ts', ordered: false })).toBe(false)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n  - 嵌套' })).toBe(true)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项\n  - 嵌套', suffix: '\n  - 第二' })).toBe(true)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项\n  - 嵌套', suffix: '\n    - 更深' })).toBe(true)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n- 二项' })).toBe(false)
+    expect(shouldAppendStreamingNestedListItem({ prevNorm: '- 一项', suffix: '\n  -' })).toBe(false)
+    const nestSrc = '- 一项\n  - 嵌套'
+    const nestFirst = parseCheapProseBlocks(nestSrc)
+    const nestSibling = continueCheapProseBlocks(nestSrc, nestFirst, `${nestSrc}\n  - 第二`)
+    if (nestFirst[0]?.type === 'list' && nestSibling[0]?.type === 'list') {
+      expect(nestSibling[0].items[0]?.nodes).toBe(nestFirst[0].items[0]?.nodes)
+      expect(nestSibling[0].items[0]?.nested?.items[0]).toBe(nestFirst[0].items[0]?.nested?.items[0])
+      expect(nestSibling[0].items[0]?.nested?.items).toHaveLength(2)
+      expect(nestSibling[0].items[0]?.nested?.items[1]?.nodes).toEqual([{ type: 'text', text: '第二' }])
+    }
+    const nestOpenFirst = parseCheapProseBlocks('- 一项')
+    const nestOpen = continueCheapProseBlocks('- 一项', nestOpenFirst, '- 一项\n  - 嵌套')
+    if (nestOpenFirst[0]?.type === 'list' && nestOpen[0]?.type === 'list') {
+      expect(nestOpen[0].items[0]?.nodes).toBe(nestOpenFirst[0].items[0]?.nodes)
+      expect(nestOpen[0].items[0]?.nested?.items).toHaveLength(1)
+      expect(nestOpen[0].items[0]?.nested?.items[0]?.nodes).toEqual([{ type: 'text', text: '嵌套' }])
+    }
+    const nestDeep = continueCheapProseBlocks(nestSrc, nestFirst, `${nestSrc}\n    - 更深`)
+    if (nestFirst[0]?.type === 'list' && nestDeep[0]?.type === 'list') {
+      expect(nestDeep[0].items[0]?.nodes).toBe(nestFirst[0].items[0]?.nodes)
+      expect(nestDeep[0].items[0]?.nested?.items[0]?.nodes).toBe(nestFirst[0].items[0]?.nested?.items[0]?.nodes)
+      expect(nestDeep[0].items[0]?.nested?.items[0]?.nested?.items).toHaveLength(1)
+    }
+    const wrapPrefix = parseCheapProseBlocks('见 `foo` 然后')
+    const wrapPrefixGrown = continueCheapProseBlocks('见 `foo` 然后', wrapPrefix, '见 `foo` 然后\n继续')
+    if (wrapPrefix[0]?.type === 'p' && wrapPrefixGrown[0]?.type === 'p') {
+      expect(wrapPrefixGrown[0].nodes[0]).toBe(wrapPrefix[0].nodes[0])
+      expect(wrapPrefixGrown[0].nodes[1]).toBe(wrapPrefix[0].nodes[1])
+    }
     const orderedSrc = '1. 一项\n2. 二项'
     const orderedFirst = parseCheapProseBlocks(orderedSrc)
     const orderedNew = continueCheapProseBlocks(orderedSrc, orderedFirst, `${orderedSrc}\n3. 三项`)
@@ -2084,6 +2118,12 @@ describe('splitStreamingMarkdown', () => {
     const firstText = '见 `foo` 与 '
     const first = parseCheapInlineMarkdown(firstText)
     expect(shouldGrowCheapInlineText('普通段落', '继续写汉字')).toBe(true)
+    expect(shouldGrowCheapInlineText('普通段落', '\n续行')).toBe(true)
+    expect(shouldGrowCheapInlineText('普通段落', '\n')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '\n- 新项')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '\n# 标题')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '\n\n下一段')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', 'foo\nbar')).toBe(false)
     expect(shouldGrowCheapInlineText('普通段落', ' **粗**')).toBe(false)
     expect(shouldGrowCheapInlineText('普通段落', '*粗')).toBe(false)
     expect(shouldGrowCheapInlineText('普通段落', '`code')).toBe(false)
@@ -2377,6 +2417,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
     expect(mdSrc).toContain('shouldAppendStreamingListItem')
+    expect(mdSrc).toContain('shouldAppendStreamingNestedListItem')
     expect(mdSrc).toContain('paragraphSuffixNewLines')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
