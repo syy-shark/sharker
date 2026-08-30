@@ -6,6 +6,7 @@
  * 增长尾最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用 / 段落、标题后另起的项内表、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、缩进代码后另起的标题、缩进代码 / 脚注续行 / 引用内换行后的列表项、围栏 / 表 / 列表 / 引用 / 段落后的增长段）只重解析增长段；前面的标题 / 段落保持不动（对标 Codex #39061 / #34045）。
  * 直播实例闭合围栏也不跑 Prism，历史气泡再着色（对标 Codex #22860）。
  * ```demo 继承 `live` / `streaming` 上下文：直播实例不重写 srcDoc，历史重挂再灌套壳。
+ * 收束后的拆分 / 槽 / 廉价块写入 hold，窗口卸下再揭示时同一对象回来，不整段重拆（对标 Codex #22860）。
  * @see src/components/ARCH.md
  */
 import { memo, useMemo, useRef, type ReactNode } from 'react'
@@ -28,13 +29,16 @@ import {
   continueStreamingRenderSlots,
   matchLiveTaskMarker,
   nextLinkDefinitions,
-  parseCheapProseBlocks,
-  splitStreamingMarkdown,
+  seedCheapProseHold,
+  seedStreamingMarkdownHold,
+  shouldRememberCheapProseHold,
+  shouldRememberStreamingMarkdownHold,
+  writeCheapProseHold,
+  writeStreamingMarkdownHold,
   type CheapInlineNode,
   type CheapLinkDef,
   type CheapListItem,
-  type CheapProseBlock,
-  type LinkDefinitionState
+  type CheapProseBlock
 } from '../../shared/streaming-markdown'
 
 /** GFM 任务项：直播时就画 checkbox；未写完的 `[x` / `[ ]` 先占位，收束后不从普通 li 跳成任务列表 */
@@ -325,12 +329,13 @@ const LiveProseTail = memo(function LiveProseTail({
   defs?: ReadonlyMap<string, string | CheapLinkDef>
   closed?: boolean
 }) {
-  const prevRef = useRef({ text: '', blocks: parseCheapProseBlocks('') })
+  const prevRef = useRef(seedCheapProseHold(text))
   const blocks = useMemo(() => {
     const next = continueCheapProseBlocks(prevRef.current.text, prevRef.current.blocks, text, defs)
     prevRef.current = { text, blocks: next }
+    if (shouldRememberCheapProseHold({ closed })) writeCheapProseHold(text, next)
     return next
-  }, [text, defs])
+  }, [text, defs, closed])
   return (
     <div className={`live-prose-tail${closed ? ' live-prose-closed' : ''}`}>
       {renderCheapBlocks(blocks)}
@@ -363,12 +368,7 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({
   live?: boolean
   streaming?: boolean
 }) {
-  const prevRef = useRef({
-    text: '',
-    split: splitStreamingMarkdown(''),
-    slots: continueStreamingRenderSlots(null, splitStreamingMarkdown('')),
-    defs: null as LinkDefinitionState | null
-  })
+  const prevRef = useRef(seedStreamingMarkdownHold(text))
   const split = useMemo(() => {
     const next = continueStreamingMarkdown(prevRef.current.split, prevRef.current.text, text)
     prevRef.current.text = text
@@ -385,6 +385,9 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({
     prevRef.current.defs = next
     return next
   }, [text])
+  if (shouldRememberStreamingMarkdownHold({ streaming })) {
+    writeStreamingMarkdownHold({ text, split, slots, defs: defsState })
+  }
   return (
     <LiveMarkdownLiveContext.Provider value={live}>
       <LiveMarkdownStreamingContext.Provider value={streaming}>

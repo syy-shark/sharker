@@ -1592,6 +1592,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('queueMicrotask')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('hasCachedFenceHighlight')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('LiveMarkdownStreamingContext')
+    expect(src('../src/components/StreamingMarkdown.tsx')).toContain('seedStreamingMarkdownHold')
+    expect(src('../src/components/StreamingMarkdown.tsx')).toContain('writeStreamingMarkdownHold')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('LiveMarkdownLiveContext.Provider')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain(
       'LiveMarkdownStreamingContext.Provider'

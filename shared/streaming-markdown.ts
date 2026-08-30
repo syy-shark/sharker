@@ -318,6 +318,64 @@ export function continueStreamingRenderSlots(
   return allSame ? prev : out
 }
 
+/** 收束后的正文拆分 / 槽 / 引用定义，给历史重挂跳过全量拆分 */
+export type StreamingMarkdownHold = {
+  text: string
+  split: StreamingMarkdownSplit
+  slots: StreamingRenderSlot[]
+  defs: LinkDefinitionState | null
+}
+
+export const STREAMING_MARKDOWN_HOLD_LIMIT = 32
+
+const streamingMarkdownHolds = new Map<string, StreamingMarkdownHold>()
+
+export function shouldRememberStreamingMarkdownHold(input: { streaming?: boolean }): boolean {
+  return !input.streaming
+}
+
+export function emptyStreamingMarkdownHold(): StreamingMarkdownHold {
+  const split = splitStreamingMarkdown('')
+  return {
+    text: '',
+    split,
+    slots: continueStreamingRenderSlots(null, split),
+    defs: null
+  }
+}
+
+export function readStreamingMarkdownHold(text: string): StreamingMarkdownHold | undefined {
+  const key = normalizeStreamingText(text)
+  if (!key) return undefined
+  const hit = streamingMarkdownHolds.get(key)
+  if (!hit) return undefined
+  streamingMarkdownHolds.delete(key)
+  streamingMarkdownHolds.set(key, hit)
+  return hit
+}
+
+export function writeStreamingMarkdownHold(hold: StreamingMarkdownHold): StreamingMarkdownHold {
+  const key = normalizeStreamingText(hold.text)
+  if (!key) return hold
+  const stored = { ...hold, text: key }
+  streamingMarkdownHolds.delete(key)
+  streamingMarkdownHolds.set(key, stored)
+  while (streamingMarkdownHolds.size > STREAMING_MARKDOWN_HOLD_LIMIT) {
+    const oldest = streamingMarkdownHolds.keys().next().value
+    if (oldest === undefined) break
+    streamingMarkdownHolds.delete(oldest)
+  }
+  return stored
+}
+
+export function seedStreamingMarkdownHold(text: string): StreamingMarkdownHold {
+  return readStreamingMarkdownHold(text) ?? emptyStreamingMarkdownHold()
+}
+
+export function clearStreamingMarkdownHolds(): void {
+  streamingMarkdownHolds.clear()
+}
+
 /** 直播散文：未闭合围栏之前的原文；散文模式给全文，避免每收一段就换 remark 树 */
 export function streamingProseText(text: string, split: StreamingMarkdownSplit): string {
   const src = normalizeStreamingText(text)
@@ -3718,6 +3776,48 @@ function tryContinueLastCheapProseBlock(
  * 最后一块（含段落软换行、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、缩进代码 / 脚注续行 / 引用内换行后的子块、围栏 / 表 / 列表 / 引用 / 段落后的增长段）先走增长段；前面的标题 / 段落等保持同一引用（对标 Codex #39061 / #34045）。
  * 中间块类型变了也不把后面已闭合块整段丢掉（对标直播贴底不跳）。
  */
+export const CHEAP_PROSE_HOLD_LIMIT = 64
+
+const cheapProseHolds = new Map<string, CheapProseBlock[]>()
+
+export function shouldRememberCheapProseHold(input: { closed?: boolean }): boolean {
+  return Boolean(input.closed)
+}
+
+export function readCheapProseHold(text: string): CheapProseBlock[] | undefined {
+  const key = normalizeStreamingText(text)
+  if (!key) return undefined
+  const hit = cheapProseHolds.get(key)
+  if (!hit) return undefined
+  cheapProseHolds.delete(key)
+  cheapProseHolds.set(key, hit)
+  return hit
+}
+
+export function writeCheapProseHold(text: string, blocks: CheapProseBlock[]): CheapProseBlock[] {
+  const key = normalizeStreamingText(text)
+  if (!key || !blocks.length) return blocks
+  cheapProseHolds.delete(key)
+  cheapProseHolds.set(key, blocks)
+  while (cheapProseHolds.size > CHEAP_PROSE_HOLD_LIMIT) {
+    const oldest = cheapProseHolds.keys().next().value
+    if (oldest === undefined) break
+    cheapProseHolds.delete(oldest)
+  }
+  return blocks
+}
+
+export function seedCheapProseHold(text: string): { text: string; blocks: CheapProseBlock[] } {
+  const key = normalizeStreamingText(text)
+  const held = readCheapProseHold(key)
+  if (held) return { text: key, blocks: held }
+  return { text: '', blocks: parseCheapProseBlocks('') }
+}
+
+export function clearCheapProseHolds(): void {
+  cheapProseHolds.clear()
+}
+
 export function continueCheapProseBlocks(
   prevText: string,
   prevBlocks: CheapProseBlock[],

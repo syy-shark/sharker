@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
+  CHEAP_PROSE_HOLD_LIMIT,
+  STREAMING_MARKDOWN_HOLD_LIMIT,
   collectLinkDefinitions,
   cheapInlineNodeKeys,
   cheapProseBlockKeys,
   matchLiveTaskMarker,
+  clearCheapProseHolds,
+  clearStreamingMarkdownHolds,
   continueCheapInlineMarkdown,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
@@ -18,11 +25,17 @@ import {
   nextLinkDefinitions,
   parseCheapInlineMarkdown,
   parseCheapProseBlocks,
+  seedCheapProseHold,
+  seedStreamingMarkdownHold,
+  shouldRememberCheapProseHold,
+  shouldRememberStreamingMarkdownHold,
   splitStreamingMarkdown,
   normalizeStreamingText,
   streamingProseText,
   streamingRenderSlots,
-  needsFullRemarkMarkdown
+  needsFullRemarkMarkdown,
+  writeCheapProseHold,
+  writeStreamingMarkdownHold
 } from './streaming-markdown'
 
 describe('splitStreamingMarkdown', () => {
@@ -2086,5 +2099,69 @@ describe('splitStreamingMarkdown', () => {
     const edited = continueStreamingMarkdown(first, 'Hello world.\n\nNext', 'Changed.\n\nNext')
     expect(edited.blocks[0]).not.toBe(first.blocks[0])
     expect(edited.blocks[0]?.text).toBe('Changed.\n')
+  })
+})
+
+describe('streaming markdown remount holds', () => {
+  afterEach(() => {
+    clearStreamingMarkdownHolds()
+    clearCheapProseHolds()
+  })
+
+  it('seeds the same committed split and closed prose blocks on remount', () => {
+    expect(shouldRememberStreamingMarkdownHold({ streaming: true })).toBe(false)
+    expect(shouldRememberStreamingMarkdownHold({ streaming: false })).toBe(true)
+    expect(shouldRememberCheapProseHold({ closed: false })).toBe(false)
+    expect(shouldRememberCheapProseHold({ closed: true })).toBe(true)
+
+    const text = 'Hello world.\n\nNext sentence'
+    const split = splitStreamingMarkdown(text)
+    const slots = streamingRenderSlots(split)
+    const defs = nextLinkDefinitions(null, text)
+    const stored = writeStreamingMarkdownHold({ text, split, slots, defs })
+    const seeded = seedStreamingMarkdownHold(text)
+    expect(seeded.split).toBe(stored.split)
+    expect(seeded.slots).toBe(stored.slots)
+    expect(seeded.defs).toBe(stored.defs)
+    expect(continueStreamingMarkdown(seeded.split, seeded.text, text)).toBe(seeded.split)
+    expect(continueStreamingRenderSlots(seeded.slots, seeded.split)).toBe(seeded.slots)
+    expect(nextLinkDefinitions(seeded.defs, text)).toBe(seeded.defs)
+    expect(writeStreamingMarkdownHold({ text: '', split, slots, defs: null }).text).toBe('')
+    expect(seedStreamingMarkdownHold('')).toEqual(seedStreamingMarkdownHold('missing'))
+
+    const blocks = parseCheapProseBlocks('Hello **world**')
+    expect(writeCheapProseHold('Hello **world**', blocks)).toBe(blocks)
+    expect(seedCheapProseHold('Hello **world**').blocks).toBe(blocks)
+    expect(continueCheapProseBlocks('Hello **world**', blocks, 'Hello **world**')).toBe(blocks)
+    expect(writeCheapProseHold('', blocks)).toBe(blocks)
+    expect(seedCheapProseHold('').blocks).toEqual(parseCheapProseBlocks(''))
+
+    for (let i = 0; i < STREAMING_MARKDOWN_HOLD_LIMIT + 1; i++) {
+      writeStreamingMarkdownHold({
+        text: `hold-${i}`,
+        split,
+        slots,
+        defs
+      })
+    }
+    expect(seedStreamingMarkdownHold(text).split).not.toBe(stored.split)
+
+    const firstProse = parseCheapProseBlocks('keep')
+    writeCheapProseHold('keep', firstProse)
+    for (let i = 0; i < CHEAP_PROSE_HOLD_LIMIT; i++) {
+      writeCheapProseHold(`prose-${i}`, parseCheapProseBlocks(`p${i}`))
+    }
+    expect(seedCheapProseHold('keep').blocks).not.toBe(firstProse)
+
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/StreamingMarkdown.tsx'),
+      'utf8'
+    )
+    expect(src).toContain('seedStreamingMarkdownHold')
+    expect(src).toContain('writeStreamingMarkdownHold')
+    expect(src).toContain('shouldRememberStreamingMarkdownHold')
+    expect(src).toContain('seedCheapProseHold')
+    expect(src).toContain('writeCheapProseHold')
+    expect(src.includes('live-stream-slices')).toBe(false)
   })
 })
