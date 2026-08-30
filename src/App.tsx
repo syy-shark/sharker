@@ -154,7 +154,7 @@ import {
   isEmbeddedTerminalTarget,
   isTerminalClearChord
 } from '../shared/workbench-shortcuts'
-import { matchWorkbenchShortcut, shouldInterruptTurn } from '../shared/keymap'
+import { isInterruptTurnRemapped, matchWorkbenchShortcut, shouldInterruptTurn } from '../shared/keymap'
 import { mouseNavDirection, navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
 import {
   clampUiFontScale,
@@ -7064,7 +7064,7 @@ export default function App() {
               'input, textarea, [contenteditable=true], .slash-menu, .history-picker, .command-palette, .chat-find'
             )
           )
-        const remapped = Boolean(settingsRef.current.keyboardShortcuts?.interrupt_turn)
+        const remapped = isInterruptTurnRemapped(settingsRef.current.keyboardShortcuts)
         if (inField && !remapped) return
         if (sendInFlightRef.current || loading) {
           e.preventDefault()

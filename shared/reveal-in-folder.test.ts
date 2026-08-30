@@ -17,6 +17,7 @@ import {
   KEYSTROKE_SEARCH_LABEL,
   KEYSTROKE_SEARCH_PLACEHOLDER,
   changeShortcutLabel,
+  createNewShortcutLabel,
   ADD_SERVER_LABEL,
   MCP_HTTP_DESCRIPTION,
   MCP_SERVERS_INTRO,
@@ -238,6 +239,7 @@ describe('reveal in folder', () => {
     expect(KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER).toBe('Search by command name')
     expect(KEYSTROKE_SEARCH_PLACEHOLDER).toBe('Press a key combination')
     expect(changeShortcutLabel('Search chats')).toBe('Change shortcut for Search chats')
+    expect(createNewShortcutLabel('Search chats')).toBe('Create new shortcut for Search chats')
     expect(GENERAL_SETTINGS_LABEL).toBe('General')
     expect(GENERAL_SETTINGS_INTRO).toMatch(/Require Cmd\+Enter for multiline prompts/)
     expect(GENERAL_SETTINGS_INTRO).toMatch(/Follow-up behavior/)

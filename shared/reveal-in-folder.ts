@@ -269,6 +269,10 @@ export const KEYSTROKE_SEARCH_PLACEHOLDER = 'Press a key combination'
 export function changeShortcutLabel(commandTitle: string): string {
   return `Change shortcut for ${commandTitle}`
 }
+/** Official Keyboard Shortcuts Shift-held bind-button name (packaged desktop #27835). */
+export function createNewShortcutLabel(commandTitle: string): string {
+  return `Create new shortcut for ${commandTitle}`
+}
 export const GENERAL_SETTINGS_LABEL = 'General'
 export const APPEARANCE_SETTINGS_LABEL = 'Appearance'
 export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'

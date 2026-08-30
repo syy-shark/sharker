@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   chordsMatch,
+  effectiveShortcutChords,
   encodeShortcutChord,
   formatShortcutChord,
+  isInterruptTurnRemapped,
   matchWorkbenchShortcut,
   normalizeKeymap,
+  persistShortcutChords,
   interruptTurnChordLabel,
   shouldInterruptTurn
 } from './keymap'
@@ -65,6 +68,35 @@ describe('keymap', () => {
     expect(interruptTurnChordLabel()).toBe('Esc')
     expect(interruptTurnChordLabel({ interrupt_turn: 'f12' })).toBe('F12')
     expect(interruptTurnChordLabel({ interrupt_turn: '' })).toBeNull()
+    expect(isInterruptTurnRemapped({ interrupt_turn: 'f12' })).toBe(true)
+    expect(isInterruptTurnRemapped({ interrupt_turn: '' })).toBe(false)
+    expect(isInterruptTurnRemapped()).toBe(false)
+  })
+
+  it('keeps several accelerators on one command the way Codex desktop does', () => {
+    expect(effectiveShortcutChords('new_conversation')).toEqual(['mod+n', 'mod+shift+o'])
+    expect(persistShortcutChords(['mod+n', 'mod+shift+k'])).toEqual(['mod+n', 'mod+shift+k'])
+    const overrides = normalizeKeymap({
+      new_conversation: ['mod+n', 'mod+shift+k']
+    })
+    expect(effectiveShortcutChords('new_conversation', overrides)).toEqual(['mod+n', 'mod+shift+k'])
+    expect(matchWorkbenchShortcut(ev({ key: 'n', metaKey: true }), overrides)).toBe(
+      'new_conversation'
+    )
+    expect(
+      matchWorkbenchShortcut(ev({ key: 'k', metaKey: true, shiftKey: true }), overrides)
+    ).toBe('new_conversation')
+    expect(
+      matchWorkbenchShortcut(ev({ key: 'o', metaKey: true, shiftKey: true }), overrides)
+    ).toBeNull()
+    expect(
+      shouldInterruptTurn(ev({ key: 'F12' }), { interrupt_turn: ['f12', 'mod+escape'] })
+    ).toBe(true)
+    expect(
+      shouldInterruptTurn(ev({ key: 'Escape', metaKey: true }), {
+        interrupt_turn: ['f12', 'mod+escape']
+      })
+    ).toBe(true)
   })
 
   it('ignores unknown actions', () => {

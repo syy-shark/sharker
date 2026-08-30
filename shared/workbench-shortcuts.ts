@@ -582,3 +582,10 @@ export const SHORTCUT_CATALOG: Array<{
     defaultChord: ''
   }
 ]
+
+/** Official desktop can list several default accelerators for one command. */
+export function defaultShortcutChords(action: WorkbenchShortcutAction): string[] {
+  const raw = SHORTCUT_CATALOG.find((row) => row.action === action)?.defaultChord
+  if (!raw) return []
+  return (Array.isArray(raw) ? raw : [raw]).map((chord) => chord.trim().toLowerCase()).filter(Boolean)
+}

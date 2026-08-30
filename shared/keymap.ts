@@ -3,12 +3,13 @@
  * @see shared/ARCH.md
  */
 import {
+  defaultShortcutChords,
   matchDefaultWorkbenchShortcut,
   type WorkbenchShortcutAction
 } from './workbench-shortcuts'
 
-/** 用户覆盖：动作 → `mod+shift+a`；空串表示解除默认 */
-export type KeymapOverrides = Partial<Record<WorkbenchShortcutAction, string>>
+/** 用户覆盖：动作 → 一条或多条和弦；空串 / 空数组表示解除默认 */
+export type KeymapOverrides = Partial<Record<WorkbenchShortcutAction, string | string[]>>
 
 const ACTION_SET = new Set<string>([
   'toggle_sidebar',
@@ -146,14 +147,56 @@ export function formatShortcutChord(chord: string): string {
   return glyphs.join('')
 }
 
+export function keymapChords(value: string | string[] | undefined): string[] {
+  if (value == null) return []
+  if (typeof value === 'string') return value.trim() ? [value.trim().toLowerCase()] : []
+  return value.map((chord) => chord.trim().toLowerCase()).filter(Boolean)
+}
+
+export function persistShortcutChords(chords: string[]): string | string[] {
+  const next = chords.map((chord) => chord.trim().toLowerCase()).filter(Boolean)
+  if (next.length === 0) return ''
+  if (next.length === 1) return next[0]
+  return next
+}
+
+export function chordsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const left = [...a].map((chord) => chord.trim().toLowerCase()).sort()
+  const right = [...b].map((chord) => chord.trim().toLowerCase()).sort()
+  return left.every((chord, i) => chord === right[i])
+}
+
+/** Effective accelerators for one command (official desktop lists every assigned key). */
+export function effectiveShortcutChords(
+  action: WorkbenchShortcutAction,
+  overrides?: KeymapOverrides | null
+): string[] {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, action)) {
+    return keymapChords(overrides[action])
+  }
+  return defaultShortcutChords(action)
+}
+
+export function hasCustomShortcut(
+  action: WorkbenchShortcutAction,
+  overrides?: KeymapOverrides | null
+): boolean {
+  return Boolean(overrides && Object.prototype.hasOwnProperty.call(overrides, action))
+}
+
 export function normalizeKeymap(raw: unknown): KeymapOverrides {
   if (!raw || typeof raw !== 'object') return {}
   const out: KeymapOverrides = {}
   for (const [action, chord] of Object.entries(raw as Record<string, unknown>)) {
     if (!ACTION_SET.has(action)) continue
-    if (typeof chord !== 'string') continue
-    const trimmed = chord.trim().toLowerCase()
-    out[action as WorkbenchShortcutAction] = trimmed
+    if (typeof chord === 'string') {
+      out[action as WorkbenchShortcutAction] = chord.trim().toLowerCase()
+      continue
+    }
+    if (!Array.isArray(chord)) continue
+    const chords = chord.filter((item): item is string => typeof item === 'string').map((item) => item.trim().toLowerCase())
+    out[action as WorkbenchShortcutAction] = persistShortcutChords(chords)
   }
   return out
 }
@@ -174,7 +217,9 @@ export function matchWorkbenchShortcut(
   const encoded = encodeShortcutChord(event)
   if (overrides && encoded) {
     for (const [action, chord] of Object.entries(overrides)) {
-      if (chord && chordsMatch(chord, encoded)) return action as WorkbenchShortcutAction
+      if (keymapChords(chord).some((item) => chordsMatch(item, encoded))) {
+        return action as WorkbenchShortcutAction
+      }
     }
   }
   const fallback = matchDefaultWorkbenchShortcut(event)
@@ -214,9 +259,7 @@ export function shouldInterruptTurn(
   const encoded = encodeShortcutChord(event)
   if (!encoded) return false
   if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'interrupt_turn')) {
-    const chord = overrides.interrupt_turn
-    if (!chord) return false
-    return chordsMatch(chord, encoded)
+    return keymapChords(overrides.interrupt_turn).some((chord) => chordsMatch(chord, encoded))
   }
   return encoded === 'escape'
 }
@@ -224,9 +267,13 @@ export function shouldInterruptTurn(
 /** 设置页 / 输入框提示：当前中止回合按键；解绑返回 null */
 export function interruptTurnChordLabel(overrides?: KeymapOverrides | null): string | null {
   if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'interrupt_turn')) {
-    const chord = overrides.interrupt_turn
-    if (!chord) return null
-    return formatShortcutChord(chord)
+    const chord = keymapChords(overrides.interrupt_turn)[0]
+    return chord ? formatShortcutChord(chord) : null
   }
   return 'Esc'
+}
+
+/** Composer fields should only steal remapped interrupt chords, not an empty unbind. */
+export function isInterruptTurnRemapped(overrides?: KeymapOverrides | null): boolean {
+  return keymapChords(overrides?.interrupt_turn).length > 0 && hasCustomShortcut('interrupt_turn', overrides)
 }
