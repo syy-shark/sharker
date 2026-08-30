@@ -54,7 +54,7 @@
 | `FeedbackDialog.tsx` / `.css` | `/feedback` 对话框（对标 Codex Share feedback / Include current Codex session logs）；只复制本机诊断，不上传、不发明 Safety check |
 | `ShareDialog.tsx` / `.css` | `/share` 只读快照（斜杠说明 Share a read-only snapshot of a local Codex thread.，对标 learn.chatgpt.com Use ChatGPT）：打开时拍一帧，预览脱敏 Markdown；标题 Share，说明用官方 snapshot 原文，按钮 Close / Copy as Markdown，不上传、不发明 Who has access / Copy link |
 | `ReviewScopeDialog.tsx` / `.css` | `/review` 空参数先选官方 Review uncommitted changes / Review against a base branch / Review a commit；选定前不派发回合 |
-| `MemoryChatDialog.tsx` / `.css` | `/memories` 空参数先选本对话 Use memories / Generate memories / Disabled / Inherit（对标 Codex chat-level memories；不改全局 Enable memories） |
+| `MemoryChatDialog.tsx` / `.css` | `/memories` 空参数先选本对话 Use memories / Generate memories / Disabled / Inherit；说明用官方 Use /memories to choose whether a chat can use local memories or contribute to future memories.（对标 Codex chat-level memories；不改全局 Enable memories） |
 | `ProjectFoldersDialog.tsx` / `.css` | Edit project：说明用官方 New chats start in the primary folder…；分区 Primary folder / Secondary folders；Add folder / Make primary（对标 Codex Edit project / learn.chatgpt.com/docs/projects）；Git / AGENTS.md / Skill 仍走主路径 |
 | `ErrorBoundary.tsx` | 渲染错误捕获与降级 |
 | `ARCH.md` | 本层架构说明 |

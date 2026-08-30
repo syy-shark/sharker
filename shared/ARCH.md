@@ -19,7 +19,7 @@
 | `workspace.ts` | 工作区列表、排序、设置归一化（含 `WorkspaceItem.extraPaths`、`followUpBehavior` / `composerEnterBehavior` / `suggestedPrompts` / `reviewDelivery` / `reviewProviderId` / Git 文案模板 / force-with-lease / 分支前缀 / `toolOutputDisplay` / `fileOpener` / `showContextWindowUsage` / `reduceMotion` / `browserDownloadPath` / `browserAskWhereToSave` / `worktreeRoot` / `codeFont` / `codeFontScale` / `turnNotifyMode` / 防休眠 / 弹出置顶、`memoriesEnabled === true` 才开记忆）、全局工作区、⌘⌥⇧O 项目选择器过滤 |
 | `workspace-folders.ts` | 项目附加文件夹：只收绝对路径、去重、不与主路径相同；`promoteExtraFolderToPrimary` 把附加夹升为主夹并把旧主夹留下（对标 Codex Edit project Make primary）；审查只把其中不同 Git 仓库收进选择器 |
 | `workspace-folders.test.ts` | 拒绝 `/` / 相对 / `..` / 主路径重复；附加夹升为主夹后旧主路径进附加列表 |
-| `review-repos.ts` | 跨仓库审查：探根、同仓去重、Last turn 固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；官方审查范围标签 Unstaged / Staged / Last turn / Branch / Commit / All repos 与 Stage all / Revert all / Stage / Unstage / Revert；空仓官方 The review pane requires a project inside a Git repository. / create one；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
+| `review-repos.ts` | 跨仓库审查：探根、同仓去重、Last turn 固定 All repos（对标 Codex Last turn 看附加仓全部改动，选择器不再落到单仓）、附加根文件用目录名前缀打开、多文件 diff 展开键（对标 Codex Review changes across repositories / expand or collapse all diffs）；官方审查范围标签 Unstaged / Staged / Last turn / Branch / Commit / All repos 与 Stage all / Revert all / Stage / Unstage / Revert / Wrap long diff lines；空仓官方 The review pane requires a project inside a Git repository. / create one；`reviewDiffKeysForFindings` / `mergeReviewExpandedKeys` 给 `/review` 发现展开对应 diff（对标 Codex findings appear as inline comments）；`lastTurnPendingRelPaths` 列出预览已点名、git status 还没见到的路径（不编造 diff）；`sortReviewFilesLikeFileTree` 与文件树同序（目录先于文件、localeCompare，对标 Codex review diff ordering） |
 | `review-repos.test.ts` | 同仓子目录合并、Last turn 固定 All repos（选中单仓也不改）、官方审查范围标签、附加根路径匹配、本轮预览未落盘路径、多文件 diff 展开键、发现路径展开对应 diff；审查列表按文件树排序 |
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
@@ -255,7 +255,7 @@
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 当前目录脚手架（含 Code Review Rules）；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
-| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories 与官方 off by default / inject / memory-generation 说明 |
+| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories / Disabled / Inherit，说明用官方 Use /memories to choose whether a chat can use local memories… / Don't store secrets in memories. |
 | `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先、功能默认关 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案；`shouldOpenMcpSettings` 空配置且非 verbose 时打开设置 → MCP（对标 Codex Open MCP status） |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表；空配置打开设置、已有 Server / verbose 不跳 |
