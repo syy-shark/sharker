@@ -13,6 +13,7 @@ import {
   clearStreamingMarkdownHolds,
   continueCheapInlineMarkdown,
   shouldGrowCheapInlineText,
+  shouldGrowOpenStreamingProseTail,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   continueStreamingRenderSlots,
@@ -2063,6 +2064,30 @@ describe('splitStreamingMarkdown', () => {
   })
 
   it('reuses closed blocks when only the tail grows', () => {
+    expect(shouldGrowOpenStreamingProseTail('普通段落', '继续写汉字')).toBe(true)
+    expect(shouldGrowOpenStreamingProseTail('普通段落', '\n\n下一段')).toBe(false)
+    expect(shouldGrowOpenStreamingProseTail('``', '`ts')).toBe(false)
+    const openTail = splitStreamingMarkdown('普通段落开始写')
+    expect(openTail.closedEnd).toBe(0)
+    expect(openTail.blocks).toEqual([])
+    const openGrown = continueStreamingMarkdown(
+      openTail,
+      '普通段落开始写',
+      '普通段落开始写更多汉字'
+    )
+    expect(openGrown.blocks).toBe(openTail.blocks)
+    expect(openGrown.closedEnd).toBe(0)
+    expect(openGrown.tail).toBe('普通段落开始写更多汉字')
+    expect(openGrown.tailKind).toBe('prose')
+    const openFence = continueStreamingMarkdown(openTail, '普通段落开始写', '```ts')
+    expect(openFence.tailKind).toBe('fence')
+    const openClosed = continueStreamingMarkdown(
+      openGrown,
+      '普通段落开始写更多汉字',
+      '普通段落开始写更多汉字\n\n下一段'
+    )
+    expect(openClosed.blocks).toHaveLength(1)
+    expect(openClosed.tail).toBe('下一段')
     const first = splitStreamingMarkdown('Hello world.\n\nNext')
     expect(first.closedEnd).toBe('Hello world.\n\n'.length)
     const grown = continueStreamingMarkdown(first, 'Hello world.\n\nNext', 'Hello world.\n\nNext sentence')
@@ -2213,5 +2238,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain("if (!src.includes('\\r')) return src")
     expect(mdSrc).toContain("prev.blob === '' && !raw.includes(']:')")
     expect(mdSrc).toContain('shouldGrowCheapInlineText')
+    expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
+    expect(mdSrc).toContain("nextText.indexOf('\\n\\n', Math.max(0, prevNorm.length - 1))")
   })
 })

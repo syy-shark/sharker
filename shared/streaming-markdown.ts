@@ -147,8 +147,19 @@ export function splitStreamingMarkdown(text: string): StreamingMarkdownSplit {
 }
 
 /**
+ * 首段尚未空行收束时：同一行散文增长不整段重拆（对标 Codex #22860）。
+ * 新行或行首围栏仍走全量拆分。
+ */
+export function shouldGrowOpenStreamingProseTail(prevNorm: string, suffix: string): boolean {
+  if (!suffix) return true
+  if (suffix.includes('\n')) return false
+  const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1) + suffix
+  return !parseFenceLine(lastLine)
+}
+
+/**
  * 直播增量拆分：已闭合块复用同一对象，只重扫新增后缀。
- * 文本缩短或前缀对不上时回退全量拆分。
+ * 文本缩短或前缀对不上时回退全量拆分。首段未收束的同一行增长只换 tail。
  */
 export function continueStreamingMarkdown(
   prev: StreamingMarkdownSplit | null | undefined,
@@ -160,7 +171,24 @@ export function continueStreamingMarkdown(
   if (!nextText) return EMPTY_SPLIT
   if (prev && nextText === prevNorm) return prev
   const closedEnd = prev?.closedEnd ?? 0
-  if (!prev || closedEnd <= 0 || !nextText.startsWith(prevNorm.slice(0, closedEnd))) {
+  if (!prev) return splitStreamingMarkdown(nextText)
+  if (closedEnd <= 0) {
+    if (!nextText.startsWith(prevNorm)) return splitStreamingMarkdown(nextText)
+    const suffix = nextText.slice(prevNorm.length)
+    if (shouldGrowOpenStreamingProseTail(prevNorm, suffix)) {
+      if (prev.tail === nextText && prev.tailKind === 'prose' && prev.blocks.length === 0) {
+        return prev
+      }
+      return {
+        blocks: prev.blocks,
+        tail: nextText,
+        tailKind: 'prose',
+        closedEnd: 0
+      }
+    }
+    return splitStreamingMarkdown(nextText)
+  }
+  if (!nextText.startsWith(prevNorm.slice(0, closedEnd))) {
     return splitStreamingMarkdown(nextText)
   }
   const rest = nextText.slice(closedEnd)
@@ -3299,7 +3327,7 @@ function continueLastParagraphBlock(
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
   if (!suffix || suffix.includes(']:')) return null
-  const blank = nextText.indexOf('\n\n')
+  const blank = nextText.indexOf('\n\n', Math.max(0, prevNorm.length - 1))
   if (blank >= 0) {
     const paraText = nextText.slice(0, blank)
     const after = nextText.slice(blank + 2)
@@ -3312,18 +3340,20 @@ function continueLastParagraphBlock(
     if (after.trim() !== '' && !siblings.length) return null
     return siblings.length ? [...para, ...siblings] : para
   }
-  const lines = nextText.split('\n')
-  for (let i = 1; i < lines.length; i++) {
-    if (lineStartsSiblingAfterParagraph(lines[i]!)) {
-      const paraText = lines.slice(0, i).join('\n')
-      const after = lines.slice(i).join('\n')
-      const para = continueParagraphPrefix(prev, prevNorm, paraText, defs)
-      if (!para) return null
-      const siblings = parseCheapProseBlocks(after, defs)
-      if (after.trim() !== '' && !siblings.length) return null
-      return siblings.length ? [...para, ...siblings] : para
+  if (suffix.includes('\n') || prevNorm.endsWith('\n')) {
+    const lines = nextText.split('\n')
+    for (let i = 1; i < lines.length; i++) {
+      if (lineStartsSiblingAfterParagraph(lines[i]!)) {
+        const paraText = lines.slice(0, i).join('\n')
+        const after = lines.slice(i).join('\n')
+        const para = continueParagraphPrefix(prev, prevNorm, paraText, defs)
+        if (!para) return null
+        const siblings = parseCheapProseBlocks(after, defs)
+        if (after.trim() !== '' && !siblings.length) return null
+        return siblings.length ? [...para, ...siblings] : para
+      }
+      if (lineOpensNewCheapBlock(lines[i]!)) return null
     }
-    if (lineOpensNewCheapBlock(lines[i]!)) return null
   }
   if (!suffix.includes('\n') && !prevNorm.endsWith('\n')) {
     const lastLine = prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
