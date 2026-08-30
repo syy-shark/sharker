@@ -1558,6 +1558,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('snapshotFrozenProcessSteps')
     expect(src('../src/App.tsx')).toContain('takeEjectedLiveOverflow')
     expect(src('../src/App.tsx')).toContain('nextArchivedLiveArticles')
+    expect(src('session-runtime.ts')).not.toContain('ARCHIVED_LIVE_PARTS_LIMIT')
     expect(src('../src/App.tsx')).toContain('readMountedMessageRowHeight')
     expect(src('../src/components/ChatView.tsx')).toContain('ejectedLiveArticles')
     expect(src('../src/components/ChatView.tsx')).toContain('archivedLiveArticles')

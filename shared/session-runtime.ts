@@ -2,7 +2,7 @@
  * 多会话队列与流归属：纯逻辑，渲染层与单测共用。
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
- * 再掉出 ejected 环的行进 parts 归档，不抬 `EJECTED_LIVE_LIMIT`。
+ * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
  * @see shared/ARCH.md
  */
@@ -573,9 +573,6 @@ export const RETIRED_LIVE_LIMIT = 2
 /** 退出环后仍按完整冻结行画的上限；再早的进 parts 归档，不走普通历史气泡。 */
 export const EJECTED_LIVE_LIMIT = 8
 
-/** 掉出 ejected 环后仍按冻结 part 画的上限；不抬 ejected / retired 环。 */
-export const ARCHIVED_LIVE_PARTS_LIMIT = 64
-
 /** 把刚 adopt 的行推进环；同 id 覆盖，超出上限的最早行进 `ejected`。 */
 export function retireLiveArticle(
   prev: readonly RetiredLiveArticle[],
@@ -630,20 +627,17 @@ export function takeEjectedLiveOverflow(
   return { kept, dropped }
 }
 
-/** 掉出 ejected 环的冻结 part：同 id 覆盖，超出归档上限丢掉最早的。 */
+/** 掉出 ejected 环的冻结 part：同 id 覆盖；当前对话不截断，切对话清掉。不抬 ejected / retired 环。 */
 export function nextArchivedLiveArticles(
   prev: readonly RetiredLiveArticle[],
   dropped: readonly RetiredLiveArticle[]
 ): RetiredLiveArticle[] {
   if (!dropped.length) return prev.slice()
   const incoming = new Set(dropped.map((item) => item.id.trim()).filter(Boolean))
-  const next = [
+  return [
     ...prev.filter((item) => !incoming.has(item.id)),
     ...dropped.filter((item) => item.id.trim()).map((item) => ({ ...item }))
   ]
-  return next.length > ARCHIVED_LIVE_PARTS_LIMIT
-    ? next.slice(-ARCHIVED_LIVE_PARTS_LIMIT)
-    : next
 }
 
 /** 按 id 取冻结行。 */

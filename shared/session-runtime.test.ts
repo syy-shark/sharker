@@ -26,7 +26,6 @@ import {
   frozenHistoricalArticle,
   RETIRED_LIVE_LIMIT,
   EJECTED_LIVE_LIMIT,
-  ARCHIVED_LIVE_PARTS_LIMIT,
   splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
   historicalMessagesHidingIds,
@@ -646,7 +645,6 @@ describe('commitAssistantReply persist targeting', () => {
       kept: [{ ...first, copyable: 'A2' }],
       dropped: []
     })
-    expect(ARCHIVED_LIVE_PARTS_LIMIT).toBe(64)
     expect(nextArchivedLiveArticles([], [first]).map((a) => a.id)).toEqual(['a-live'])
     expect(nextArchivedLiveArticles([first], [second]).map((a) => a.id)).toEqual([
       'a-live',
@@ -660,8 +658,10 @@ describe('commitAssistantReply persist targeting', () => {
       copyable: String(i)
     }))
     expect(nextArchivedLiveArticles([], archivedOverflow).map((a) => a.id)).toEqual(
-      archivedOverflow.slice(-64).map((a) => a.id)
+      archivedOverflow.map((a) => a.id)
     )
+    expect(RETIRED_LIVE_LIMIT).toBe(2)
+    expect(EJECTED_LIVE_LIMIT).toBe(8)
     expect(frozenHistoricalArticle([first], [second], 'a-live')?.copyable).toBe('A')
     expect(frozenHistoricalArticle([], [second], 'b-live')?.copyable).toBe('B')
     expect(frozenHistoricalArticle([first], [first], 'a-live')?.copyable).toBe('A')
