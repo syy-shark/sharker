@@ -163,29 +163,87 @@ function extrasHaveProcessThenFirstAnswerText(extras: readonly TurnSegment[]): b
   return head.every((segment) => isLiveCoreAppendExtra(segment))
 }
 
+/** 同一帧开出恰好一段无 fence 正文，随后再落普通工具。 */
+function extrasHaveAnswerThenProcessTools(extras: readonly TurnSegment[]): boolean {
+  let textIndex = -1
+  for (let i = 0; i < extras.length; i++) {
+    const extra = extras[i]!
+    if (isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
+      if (textIndex >= 0) return false
+      textIndex = i
+      continue
+    }
+    if (!isLiveCoreAppendExtra(extra)) return false
+  }
+  if (textIndex < 0) return false
+  const after = extras.slice(textIndex + 1)
+  return after.some((segment) => isLiveCoreProcessTool(segment))
+}
+
+function liveCoreLastNoFenceAnswer(segments: readonly TurnSegment[]): TurnSegment | null {
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segment = segments[i]!
+    if (isLiveAnswerText(segment) && !hasStreamingDemoFence(segment.content ?? '')) return segment
+  }
+  return null
+}
+
+function liveCoreLeadingProcessLength(segments: readonly TurnSegment[]): number {
+  let i = 0
+  while (i < segments.length && isLiveCoreProcessPrefix(segments[i]!)) i += 1
+  return i
+}
+
+function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
+  if (prev === next) return true
+  if (prev.id !== next.id || prev.kind !== next.kind) return false
+  if (!isLiveAnswerText(prev) || !isLiveAnswerText(next)) return false
+  if (hasStreamingDemoFence(prev.content ?? '') || hasStreamingDemoFence(next.content ?? '')) {
+    return false
+  }
+  return liveTailContentGrew(prev, next)
+}
+
 /**
  * 无表时：过程前缀（思考 / status / 普通工具）后新开普通工具可走 cheap path。
  * 同一帧 `think + tool`、以及首轮第二枚工具也走这条。
  * 过程前缀后首枚无 fence 正文标 `'text'`，过程步复用、回答另开尾。
  * 同一帧过程 extras + 首枚无 fence 正文也标 `'text'`。
  * 只追加思考 / status，或同一帧 status+思考，也走核心，不必等表。
- * 闭合散文、或 `present_inline_demo` 仍等表。
+ * 过程前缀后已有无 fence 正文，再开普通工具也走核心。
+ * 同一帧首枚无 fence 正文后再落普通工具也标 `'tool'`。
+ * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
 export function liveCoreAppendedProcessToolsSkip(
   prev: readonly TurnSegment[],
   next: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
   if (next.length <= prev.length) return null
-  if (prev.some((segment) => !isLiveCoreProcessPrefix(segment))) return null
-  for (let i = 0; i < prev.length; i++) {
+  const processLen = liveCoreLeadingProcessLength(prev)
+  for (let i = 0; i < processLen; i++) {
     const before = prev[i]
     const after = next[i]
     if (!before || !after || !liveCorePrefixHolds(before, after)) return null
   }
-  const extras = next.slice(prev.length)
+  const prevAnswer = prev.slice(processLen)
+  if (
+    prevAnswer.some(
+      (segment) => !isLiveAnswerText(segment) || hasStreamingDemoFence(segment.content ?? '')
+    )
+  ) {
+    return null
+  }
+  if (next.length < processLen + prevAnswer.length) return null
+  for (let i = 0; i < prevAnswer.length; i++) {
+    const before = prevAnswer[i]!
+    const after = next[processLen + i]
+    if (!after || !liveCoreAnswerHolds(before, after)) return null
+  }
+  const extras = next.slice(processLen + prevAnswer.length)
   if (!extras.length) return null
   if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
   if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
+  if (extrasHaveAnswerThenProcessTools(extras)) return 'tool'
   if (extras.length && extras.every((segment) => isLiveThinking(segment) || isLiveStatus(segment))) {
     return extras.some(isLiveStatus) ? 'status' : 'think'
   }
@@ -886,8 +944,12 @@ export function nextLiveAnswerView(
       return view
     }
   }
-  if (prevSegments && liveCoreAppendedProcessToolsSkip(prevSegments, segments) === 'text') {
-    const extra = segments[segments.length - 1]
+  const coreSkip = prevSegments ? liveCoreAppendedProcessToolsSkip(prevSegments, segments) : null
+  if (coreSkip === 'text' || coreSkip === 'tool') {
+    const extra =
+      coreSkip === 'text'
+        ? segments[segments.length - 1]
+        : liveCoreLastNoFenceAnswer(segments)
     if (extra && isLiveAnswerText(extra) && !hasStreamingDemoFence(extra.content ?? '')) {
       const seed = prev ?? {
         parts: [],
@@ -900,6 +962,10 @@ export function nextLiveAnswerView(
       const view = growLiveAnswerView(seed, extra)
       answerGrowHold = { view, segments, tailPlain: true }
       return view
+    }
+    if (coreSkip === 'tool' && prev) {
+      answerGrowHold = { view: prev, segments, tailPlain: Boolean(prev.tail) }
+      return prev
     }
   }
   const view = rebuildLiveAnswerView(segments)

@@ -1610,9 +1610,15 @@ export default function App() {
           segments,
           (s) => s.kind === 'tool' && s.status === 'active'
         )
+        const answerTail = findLastSegment(
+          segments,
+          (s) => s.kind === 'text' && (s.role === 'final' || s.status === 'active')
+        )
         publishLiveStreamUi({
           liveSegments: segments,
-          activeTool: activeToolSeg?.toolName ?? null
+          activeTool: activeToolSeg?.toolName ?? null,
+          streaming: answerTail?.content ?? prevSnap.streaming,
+          turnThinking: nextLiveThinkText(prevSnap.turnThinking, prevSnap.liveSegments, segments)
         })
       } else {
         const finalPreview = extractFinalContent(segments, { isStreaming: true })

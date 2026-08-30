@@ -53,9 +53,47 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldSkipLiveStreamDerivation([prose('Hello')], [prose('Hello world')])).toBe('text')
   })
 
-  it('does not classify a newly appended tool after closed prose until the table is registered', () => {
-    const closed: TurnSegment = { ...prose('Hello'), status: 'done' }
-    expect(shouldSkipLiveStreamDerivation([prose('Hello')], [closed, tool('active')])).toBeNull()
+  it('classifies a newly appended tool after closed no-fence prose without the table', () => {
+    const hello = prose('Hello')
+    const closed: TurnSegment = { ...hello, status: 'done' }
+    const nextTool = tool('active')
+    expect(shouldSkipLiveStreamDerivation([hello], [closed, nextTool])).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([hello], [closed, nextTool])).toBe(true)
+  })
+
+  it('classifies a newly appended tool after think, tool, and streaming no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading, reply], [thought, reading, reply, nextTool])
+    ).toBe('tool')
+    expect(
+      hasLiveProcessPhaseGrowHold([thought, reading, reply], [thought, reading, reply, nextTool])
+    ).toBe(true)
+  })
+
+  it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
+    const demoFence = prose('```demo\n<div>demo</div>\n```')
+    expect(
+      shouldSkipLiveStreamDerivation([demoFence], [demoFence, tool('active')])
+    ).toBeNull()
+    expect(hasLiveProcessPhaseGrowHold([demoFence], [demoFence, tool('active')])).toBe(false)
+  })
+
+  it('classifies a same-flush first no-fence answer plus tool without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, reply, nextTool])
+    ).toBe('tool')
+    expect(
+      hasLiveProcessPhaseGrowHold([thought, reading], [thought, reading, reply, nextTool])
+    ).toBe(true)
+    expect(shouldSkipLiveStreamDerivation([], [reply, nextTool])).toBe('tool')
   })
 
   it('classifies first-stream tools without waiting for the table', () => {
@@ -336,6 +374,81 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(appended).not.toBeNull()
     expect(appended!.at(-1)?.segment).toBe(reconnect)
     expect(appended!.some((step) => step.segment === moreThink)).toBe(false)
+  })
+
+  it('appends a tool onto processForFlow after existing no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const withAnswer = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const next = nextLiveProcessView(withAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    expect(next.processForFlow[0]).toBe(withAnswer.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(nextTool)
+    expect(next.processForFlow).toHaveLength(withAnswer.processForFlow.length + 1)
+    const steps = deriveChronologicalSteps([thought, reading], { isStreaming: true })
+    const afterAnswer = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, reply],
+      true
+    )
+    const appended = appendProcessPhaseStepOnToolStart(
+      afterAnswer ?? steps,
+      [thought, reading, reply],
+      [thought, reading, reply, nextTool],
+      true
+    )
+    expect(appended).not.toBeNull()
+    expect(appended!.at(-1)?.segment).toBe(nextTool)
+    expect(appended!.some((step) => step.segment === reply)).toBe(false)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const heldAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    expect(heldAnswer).toBe(firstAnswer)
+    expect(heldAnswer.tail?.content).toBe('Hi')
+  })
+
+  it('appends a same-flush first answer and tool without rebuilding the answer tail', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    expect(next.processForFlow[0]).toBe(first.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(nextTool)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    expect(nextAnswer.tail?.content).toBe('Hi')
+    expect(nextAnswer.show).toBe(true)
   })
 
   it('opens the answer tail from the first prose after tools without the table', () => {
