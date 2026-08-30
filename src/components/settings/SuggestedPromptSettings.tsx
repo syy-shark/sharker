@@ -1,11 +1,15 @@
 /**
  * 建议提示：空对话上下文芯片开关。
+ * 分区说明用官方 Use context-aware suggestions…
  * 对标 Codex Settings → Suggested prompts。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import { SUGGESTED_PROMPTS_SETTINGS_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  SUGGESTED_PROMPTS_INTRO,
+  SUGGESTED_PROMPTS_SETTINGS_LABEL
+} from '../../../shared/reveal-in-folder'
 import { SettingsCard, SettingsRow, SettingsSection, SettingsToggle } from './SettingsPrimitives'
 
 interface Props {
@@ -42,7 +46,7 @@ export function SuggestedPromptSettings({ draft, setDraft, onSave }: Props) {
   )
 
   return (
-    <SettingsSection title={SUGGESTED_PROMPTS_SETTINGS_LABEL}>
+    <SettingsSection title={SUGGESTED_PROMPTS_SETTINGS_LABEL} description={SUGGESTED_PROMPTS_INTRO}>
       <SettingsCard>
         <SettingsRow
           title="上下文建议"

@@ -289,10 +289,23 @@ describe('reveal in folder', () => {
     expect(APPEARANCE_SETTINGS_LABEL).toBe('Appearance')
     expect(NOTIFICATIONS_SETTINGS_LABEL).toBe('Notifications')
     expect(NOTIFICATIONS_SETTINGS_INTRO).toMatch(/turn completion notifications/)
+    const notificationSettingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/NotificationSettings.tsx'),
+      'utf8'
+    )
+    expect(notificationSettingsSrc).toContain('NOTIFICATIONS_SETTINGS_INTRO')
     expect(PERSONALIZATION_SETTINGS_LABEL).toBe('Personalization')
     expect(PERSONALIZATION_SETTINGS_INTRO).toMatch(/Friendly, Pragmatic, or None/)
     expect(SUGGESTED_PROMPTS_SETTINGS_LABEL).toBe('Suggested prompts')
     expect(SUGGESTED_PROMPTS_INTRO).toMatch(/context-aware suggestions/)
+    const suggestedPromptSettingsSrc = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../src/components/settings/SuggestedPromptSettings.tsx'
+      ),
+      'utf8'
+    )
+    expect(suggestedPromptSettingsSrc).toContain('SUGGESTED_PROMPTS_INTRO')
     expect(ARCHIVED_CHATS_INTRO).toMatch(/Use Unarchive to restore a chat/)
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(FILES_LABEL).toBe('Files')

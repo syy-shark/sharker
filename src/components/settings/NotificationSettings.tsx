@@ -1,12 +1,16 @@
 /**
  * 通知：回合完成档、批准通知、系统权限。
+ * 分区说明用官方 Choose when turn completion notifications appear…
  * 对标 Codex Settings → Notifications。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
-import { NOTIFICATIONS_SETTINGS_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  NOTIFICATIONS_SETTINGS_INTRO,
+  NOTIFICATIONS_SETTINGS_LABEL
+} from '../../../shared/reveal-in-folder'
 import {
   SettingsCard,
   SettingsChoiceGroup,
@@ -50,7 +54,7 @@ export function NotificationSettings({ draft, setDraft, onSave }: Props) {
   )
 
   return (
-    <SettingsSection title={NOTIFICATIONS_SETTINGS_LABEL}>
+    <SettingsSection title={NOTIFICATIONS_SETTINGS_LABEL} description={NOTIFICATIONS_SETTINGS_INTRO}>
       <SettingsCard>
         <SettingsChoiceGroup
           value={parseTurnNotifyMode(draft.turnNotifyMode)}
