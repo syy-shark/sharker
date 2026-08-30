@@ -23,7 +23,8 @@
 | `PersonalizationSettings.tsx` / `.css` | 个性化：Enable memories（官方默认关，说明用 Local Codex memories are off by default）+ Use memories / Generate memories（官方 inject / memory-generation 说明）、Choose a personality（Pragmatic / Friendly / None）、Custom instructions 写入个人 `~/.sharker/AGENTS.md`（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；单对话 `/memories` 覆盖） |
 | `ShortcutSettings.tsx` / `.css` | Keyboard Shortcuts：Search by command name / Keystroke search、改绑、解除（空串解绑，录制时 Backspace 也可）、重置（`keyboardShortcuts`；含停止当前回合；动作标题用官方 Commands 文案；页说明用官方 Open Keyboard Shortcuts to review…） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
-| `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量、Worktree 根目录与托管保留数 |
+| `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git 文案 / force-with-lease / 分支前缀、命令输出展示量 |
+| `WorktreeSettings.tsx` | 设置 → Worktrees：Worktree root 与托管保留数（默认 15，0 关闭自动删除；对标 Codex Settings → Worktrees）。不发明环境编辑器或单独未落盘的自动删除开关 |
 | `ArchivedSettings.tsx` / `.css` | Archived chats：Unarchive 或彻底删除（含项目菜单一并归档的对话） |
 | `UsageSettings.tsx` / `.css` | Profile：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Settings → Profile，不假装最长任务或供应商额度） |
 | `McpSettings.tsx` / `.css` | MCP servers：列表、开关、Add server（STDIO / Streamable HTTP 用官方传输说明）、Restart（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |
