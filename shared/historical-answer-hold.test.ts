@@ -160,5 +160,8 @@ describe('historical answer idle warmup', () => {
       'utf8'
     )
     expect(assistant).toContain('historicalProcessForFlow')
+    expect(assistant).toContain('seededHold?.filesChanged')
+    expect(assistant).toContain('seededHold.hasProcess')
+    expect(assistant).toContain('seededHold.finalBody')
   })
 })
