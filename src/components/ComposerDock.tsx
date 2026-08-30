@@ -34,6 +34,7 @@ import {
   type KeymapOverrides
 } from '../../shared/keymap'
 import { filterWorkspaces, sortWorkspaces } from '../../shared/workspace'
+import type { CopyOutputTarget } from '../../shared/copy-output'
 import type { PromptSubmitMode } from '../types/chat'
 import { ModelPicker } from './ModelPicker'
 import { ReasoningGauge } from './ReasoningGauge'
@@ -266,6 +267,10 @@ export interface ComposerDockProps {
   keyboardShortcuts?: KeymapOverrides
   /** 输入框旁上下文用量环（对标 Codex Show context window usage；官方默认关） */
   showContextWindowUsage?: boolean
+  /** `/copy` 有代码/引用时先选；弹在输入框上，不占 composer-stage 高度以免挤直播贴底 */
+  copyPicker?: CopyOutputTarget[] | null
+  onCopyPick?: (target: CopyOutputTarget) => void
+  onCopyPickerClose?: () => void
 }
 
 export const ComposerDock = memo(
@@ -317,7 +322,10 @@ export const ComposerDock = memo(
       permissionMode = 'sandbox',
       onPermissionModeChange,
       keyboardShortcuts,
-      showContextWindowUsage = false
+      showContextWindowUsage = false,
+      copyPicker = null,
+      onCopyPick,
+      onCopyPickerClose
     },
     ref
   ) {
@@ -344,6 +352,8 @@ export const ComposerDock = memo(
     const [slashActiveIndex, setSlashActiveIndex] = useState(0)
     const [slashDismissed, setSlashDismissed] = useState(false)
     const slashActiveIndexRef = useRef(0)
+    const [copyPickIndex, setCopyPickIndex] = useState(0)
+    const copyPickIndexRef = useRef(0)
     const [cursor, setCursor] = useState(0)
     const [mentionDismissed, setMentionDismissed] = useState(false)
     const [mentionHits, setMentionHits] = useState<Array<{ name: string; relativePath: string }>>([])
@@ -696,6 +706,52 @@ export const ComposerDock = memo(
       setSlashActiveIndex(0)
       slashActiveIndexRef.current = 0
     }, [slashQuery])
+    useEffect(() => {
+      copyPickIndexRef.current = copyPickIndex
+    }, [copyPickIndex])
+    useEffect(() => {
+      setCopyPickIndex(0)
+      copyPickIndexRef.current = 0
+    }, [copyPicker])
+    useEffect(() => {
+      if (!copyPicker?.length) return
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          onCopyPickerClose?.()
+          return
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          setCopyPickIndex((i) => {
+            const next = Math.min(copyPicker.length - 1, i + 1)
+            copyPickIndexRef.current = next
+            return next
+          })
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          setCopyPickIndex((i) => {
+            const next = Math.max(0, i - 1)
+            copyPickIndexRef.current = next
+            return next
+          })
+          return
+        }
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          const target = copyPicker[copyPickIndexRef.current]
+          if (target) onCopyPick?.(target)
+        }
+      }
+      window.addEventListener('keydown', onKey, true)
+      return () => window.removeEventListener('keydown', onKey, true)
+    }, [copyPicker, onCopyPick, onCopyPickerClose])
     useEffect(() => {
       mentionActiveIndexRef.current = mentionActiveIndex
     }, [mentionActiveIndex])
@@ -1402,6 +1458,45 @@ export const ComposerDock = memo(
           }
         }}
       >
+        {copyPicker?.length ? (
+          <div className="composer-popover-slot">
+            <div
+              className="slash-menu popover-enter"
+              role="listbox"
+              aria-label="复制内容"
+              aria-activedescendant={
+                copyPicker[copyPickIndex] ? `copy-option-${copyPicker[copyPickIndex]!.id}` : undefined
+              }
+            >
+              <ul className="slash-menu-list">
+                {copyPicker.map((target, index) => (
+                  <li key={target.id} role="presentation">
+                    <button
+                      type="button"
+                      id={`copy-option-${target.id}`}
+                      role="option"
+                      aria-selected={index === copyPickIndex}
+                      className={`slash-menu-item${index === copyPickIndex ? ' slash-menu-item--active' : ''}`}
+                      onMouseEnter={() => {
+                        setCopyPickIndex(index)
+                        copyPickIndexRef.current = index
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onCopyPick?.(target)
+                      }}
+                    >
+                      <span className="slash-menu-name">
+                        {target.kind === 'full' ? '整段' : target.kind === 'code' ? '代码' : '引用'}
+                      </span>
+                      <span className="slash-menu-desc">{target.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
         {showMentionMenu ? (
           <div className="composer-popover-slot">
             <div
@@ -1929,7 +2024,8 @@ export const ComposerDock = memo(
               showSkillMenu ||
               showSlashMenu ||
               historyMounted ||
-              showPromptSearch
+              showPromptSearch ||
+              Boolean(copyPicker?.length)
             if (
               onPlanModeChange &&
               isPlanModeToggleKey({
