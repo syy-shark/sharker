@@ -732,7 +732,8 @@ export function nextLiveProcessView(
     return view
   }
   if (prev && processHold?.view === prev) {
-    if (liveCoreAppendedProcessToolsSkip(processHold.segments, segments) === 'text') {
+    const coreSkip = liveCoreAppendedProcessToolsSkip(processHold.segments, segments)
+    if (coreSkip === 'text') {
       const tail = segments[segments.length - 1]
       const hasProse = Boolean((tail?.content ?? '').trim())
       const view: LiveProcessView = hasProse
@@ -741,6 +742,12 @@ export function nextLiveProcessView(
       const held = sameProcessView(prev, view) ? prev : view
       processHold = { view: held, segments }
       return held
+    }
+    if (coreSkip === 'think') {
+      const thinkText = nextLiveThinkText(prev.thinkText, processHold.segments, segments)
+      const view = thinkText === prev.thinkText ? prev : { ...prev, thinkText }
+      processHold = { view, segments }
+      return view
     }
     if (isLiveMultiToolSettleChange(processHold.segments, segments)) {
       const processForFlow = prev.processForFlow.map((segment) => {

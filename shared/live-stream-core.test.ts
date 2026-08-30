@@ -5,11 +5,14 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
+  nextLiveProcessView,
   shouldPrefetchLiveStreamTable,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveStreamDerivation,
   type LiveAnswerView
 } from './live-stream-core'
+import { EMPTY_LIVE_STREAM_UI } from './live-stream-ui'
+import { appendProcessPhaseStepOnToolStart, deriveChronologicalSteps } from './process-phases'
 
 function think(content: string): TurnSegment {
   return { id: 'th1', kind: 'thinking', status: 'active', content }
@@ -120,6 +123,69 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(
       hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), demoFence])
     ).toBe(false)
+  })
+
+  it('reuses process steps when the first answer token arrives after tools', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const steps = deriveChronologicalSteps([thought, reading], { isStreaming: true })
+    const next = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, reply],
+      true
+    )
+    expect(next).not.toBeNull()
+    expect(next).toHaveLength(steps.length)
+    expect(next!.some((step) => step.segment === reply)).toBe(false)
+    const demoFence = prose('```demo\n<div>demo</div>\n```')
+    expect(
+      appendProcessPhaseStepOnToolStart(steps, [thought, reading], [thought, reading, demoFence], true)
+    ).toBeNull()
+    const demoTool: TurnSegment = {
+      id: 'd1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: ''
+    }
+    expect(
+      appendProcessPhaseStepOnToolStart(steps, [thought, reading], [thought, reading, demoTool], true)
+    ).toBeNull()
+  })
+
+  it('holds processForFlow when the first answer token arrives after tools', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    expect(next.processForFlow).toBe(first.processForFlow)
+    expect(next.contentStreaming).toBe(true)
+    expect(next.answerStreaming).toBe(true)
+  })
+
+  it('holds processForFlow when a later think segment arrives after tools', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const moreThink: TurnSegment = { ...think('Next'), id: 'th2' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, moreThink]
+    })
+    expect(next.processForFlow).toBe(first.processForFlow)
+    expect(next.thinkText).toBe(`${thought.content}${moreThink.content}`)
   })
 
   it('does not grow-hold process phases on same-length think tokens', () => {
