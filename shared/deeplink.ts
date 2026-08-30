@@ -105,7 +105,12 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   if (key === 'general' || key === 'review') {
     return { type: 'settings', tab: 'general' }
   }
-  if (key === 'browser' || key === 'browsing' || key === 'history') {
+  if (
+    key === 'browser' ||
+    key === 'browsing' ||
+    key === 'history' ||
+    key === 'browser-use'
+  ) {
     return { type: 'settings', tab: 'browser' }
   }
   if (key === 'notifications' || key === 'notify') {
@@ -121,7 +126,6 @@ function settingsTabFromPath(rest: string[]): DeeplinkAction {
   }
   if (
     key === 'permissions' ||
-    key === 'browser-use' ||
     key === 'git' ||
     key === 'worktree' ||
     key === 'worktrees' ||

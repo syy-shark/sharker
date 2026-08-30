@@ -44,6 +44,14 @@ describe('deeplink', () => {
     })
     expect(parseDeeplink('sharker://settings/browser-use')).toEqual({
       type: 'settings',
+      tab: 'browser'
+    })
+    expect(parseDeeplink('sharker://settings/computer-use')).toEqual({
+      type: 'settings',
+      tab: 'permissions'
+    })
+    expect(parseDeeplink('sharker://settings/computer-use/google-chrome')).toEqual({
+      type: 'settings',
       tab: 'permissions'
     })
     expect(parseDeeplink('sharker://settings/browser')).toEqual({
