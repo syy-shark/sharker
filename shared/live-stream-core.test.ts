@@ -253,6 +253,98 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(nextProcess.processForFlow.at(-1)).toBe(nextTool)
   })
 
+  it('classifies extras after a tool that already followed no-fence prose without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    const extraText: TurnSegment = {
+      id: 'a2',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Next'
+    }
+    const thirdTool: TurnSegment = { ...tool('active'), id: 't3' }
+    const reconnect = status('Reconnecting... 1/5')
+    const settled: TurnSegment = { ...nextTool, status: 'done' }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, nextTool, extraText]
+      )
+    ).toBe('text')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, nextTool, thirdTool]
+      )
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, nextTool, reconnect]
+      )
+    ).toBe('status')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, settled, extraText]
+      )
+    ).toBe('text')
+    expect(
+      hasLiveProcessPhaseGrowHold(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, nextTool, extraText]
+      )
+    ).toBe(true)
+    const demo: TurnSegment = {
+      id: 'd1',
+      kind: 'tool',
+      toolName: 'present_inline_demo',
+      status: 'active',
+      content: ''
+    }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply, nextTool],
+        [thought, reading, reply, nextTool, demo]
+      )
+    ).toBeNull()
+    const plan = status('根据已完成步骤规划下一步…')
+    const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
+    expect(
+      shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply, extraText])
+    ).toBeNull()
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool, extraText]
+    })
+    expect(nextAnswer.closed.some((part) => part.type === 'text' && part.content === 'Hi')).toBe(
+      true
+    )
+    expect(nextAnswer.tail?.content).toBe('Next')
+    const firstProcess = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool]
+    })
+    const nextProcess = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, nextTool, thirdTool]
+    })
+    expect(nextProcess.processForFlow.at(-1)).toBe(thirdTool)
+    const settledProcess = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, settled, extraText]
+    })
+    expect(settledProcess.contentStreaming).toBe(true)
+    expect(settledProcess.processForFlow).toContain(settled)
+  })
+
   it('classifies two extra no-fence texts in one flush without the table', () => {
     const thought = think('Hmm')
     const reading = tool('active')

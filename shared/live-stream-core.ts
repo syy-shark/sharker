@@ -2,7 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
- * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）、首枚或同一帧多段无 fence 正文、或只追加思考 / status 可在核心判定，不必等表。
+ * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）、首枚或同一帧多段无 fence 正文、正文后又夹过工具再开 extras、或只追加思考 / status 可在核心判定，不必等表。
  * `nextLiveProcessView` 在这些 skip 上只追加 / 换 processForFlow；首枚普通工具会摘掉思考步（对标 processSegments）。
  * @see shared/ARCH.md
  */
@@ -132,15 +132,13 @@ function isLiveCoreProcessTool(segment: TurnSegment): boolean {
   return segment.kind === 'tool' && segment.toolName !== 'present_inline_demo'
 }
 
-function isLiveCoreProcessPrefix(segment: TurnSegment): boolean {
-  return isLiveThinking(segment) || isLiveStatus(segment) || isLiveCoreProcessTool(segment)
-}
-
 function liveCorePrefixHolds(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev === next) return true
   if (prev.id !== next.id || prev.kind !== next.kind) return false
   if (isLiveThinking(prev) && isLiveThinking(next)) return true
-  if (isLiveStatus(prev) && isLiveStatus(next)) return true
+  if (isLiveStatus(prev) && isLiveStatus(next)) {
+    return (prev.toolName ?? '') === (next.toolName ?? '')
+  }
   return isLiveCoreProcessTool(prev) && isLiveCoreProcessTool(next)
 }
 
@@ -201,12 +199,6 @@ function liveCoreExtraNoFenceTexts(
   return next.slice(prev.length).filter(isLiveCoreNoFenceAnswer)
 }
 
-function liveCoreLeadingProcessLength(segments: readonly TurnSegment[]): number {
-  let i = 0
-  while (i < segments.length && isLiveCoreProcessPrefix(segments[i]!)) i += 1
-  return i
-}
-
 function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev === next) return true
   if (prev.id !== next.id || prev.kind !== next.kind) return false
@@ -228,6 +220,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 规划下一步改写成 Ask（换 `toolName`）仍等表。
  * 已有无 fence 正文后再开第二段或多段 text 标 `'text'`，先封上一尾再开新尾。
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
+ * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
  * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
@@ -270,31 +263,35 @@ function liveCoreInPlaceProcessToolSkip(
   return null
 }
 
+function liveCoreHeldPrefix(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): boolean {
+  if (next.length < prev.length) return false
+  for (let i = 0; i < prev.length; i++) {
+    const before = prev[i]
+    const after = next[i]
+    if (!before || !after) return false
+    if (hasStreamingDemoFence(before.content ?? '') || hasStreamingDemoFence(after.content ?? '')) {
+      return false
+    }
+    if (before.toolName === 'present_inline_demo' || after.toolName === 'present_inline_demo') {
+      return false
+    }
+    if (liveCorePrefixHolds(before, after) || liveCoreAnswerHolds(before, after)) continue
+    return false
+  }
+  return true
+}
+
 export function liveCoreAppendedProcessToolsSkip(
   prev: readonly TurnSegment[],
   next: readonly TurnSegment[]
 ): LiveStreamDerivationSkip | null {
   if (next.length < prev.length) return null
   if (next.length === prev.length) return liveCoreInPlaceProcessToolSkip(prev, next)
-  const processLen = liveCoreLeadingProcessLength(prev)
-  for (let i = 0; i < processLen; i++) {
-    const before = prev[i]
-    const after = next[i]
-    if (!before || !after || !liveCorePrefixHolds(before, after)) return null
-  }
-  const prevAnswer = prev.slice(processLen)
-  if (
-    prevAnswer.some((segment) => !isLiveCoreNoFenceAnswer(segment))
-  ) {
-    return null
-  }
-  if (next.length < processLen + prevAnswer.length) return null
-  for (let i = 0; i < prevAnswer.length; i++) {
-    const before = prevAnswer[i]!
-    const after = next[processLen + i]
-    if (!after || !liveCoreAnswerHolds(before, after)) return null
-  }
-  return classifyLiveCoreExtras(next.slice(processLen + prevAnswer.length))
+  if (!liveCoreHeldPrefix(prev, next)) return null
+  return classifyLiveCoreExtras(next.slice(prev.length))
 }
 
 function retargetLiveProcessFlow(
