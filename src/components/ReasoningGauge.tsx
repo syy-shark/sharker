@@ -3,7 +3,12 @@
  * 只读当前模型官方档位，不跟直播 token 重绘。
  * @see src/components/ARCH.md
  */
-import { stepThinkingLevel, thinkingGaugeIndex, type ThinkingLevelOption } from '../../shared/thinking-levels'
+import {
+  PICK_REASONING_EFFORT_LABEL,
+  stepThinkingLevel,
+  thinkingGaugeIndex,
+  type ThinkingLevelOption
+} from '../../shared/thinking-levels'
 import './ReasoningGauge.css'
 
 export function ReasoningGauge({
@@ -29,13 +34,13 @@ export function ReasoningGauge({
     <div
       className="reasoning-gauge"
       role="slider"
-      aria-label="思考水平"
+      aria-label={PICK_REASONING_EFFORT_LABEL}
       aria-valuemin={0}
       aria-valuemax={options.length - 1}
       aria-valuenow={index}
       aria-valuetext={currentLabel}
       tabIndex={0}
-      title={`思考 ${currentLabel}（点选或左右键，对标 Codex composer gauge）`}
+      title={currentLabel ? `${PICK_REASONING_EFFORT_LABEL} · ${currentLabel}` : PICK_REASONING_EFFORT_LABEL}
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
           event.preventDefault()

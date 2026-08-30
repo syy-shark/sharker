@@ -22,6 +22,19 @@ export interface ThinkingLevelOption {
   hint?: string
 }
 
+/** Official desktop composer: Light (CLI Low). learn.chatgpt.com/docs/models */
+export const REASONING_LIGHT_LABEL = 'Light'
+/** Official desktop / CLI Medium. */
+export const REASONING_MEDIUM_LABEL = 'Medium'
+/** Official desktop / CLI High. */
+export const REASONING_HIGH_LABEL = 'High'
+/** Official desktop Extra High (config `xhigh`). */
+export const REASONING_EXTRA_HIGH_LABEL = 'Extra High'
+/** Official desktop Max. Do not invent Ultra in the picker. */
+export const REASONING_MAX_LABEL = 'Max'
+/** Official Models page heading for the effort control. */
+export const PICK_REASONING_EFFORT_LABEL = 'Pick a reasoning effort'
+
 /** 当前模型是否支持思考水平配置 */
 export function supportsThinkingLevels(provider: ProviderConfig): boolean {
   return resolveThinkingOptions(provider).length > 0
@@ -45,36 +58,36 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
       }
       return [
         { id: 'off', label: '关闭思考', hint: 'thinking.type=disabled' },
-        { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-        { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' },
-        { id: 'max', label: '最大', hint: 'reasoning_effort=max' }
+        { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+        { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+        { id: 'max', label: REASONING_MAX_LABEL, hint: 'reasoning_effort=max' }
       ]
 
     case 'xai':
       // grok-4.6：low/medium/high/xhigh，默认 high
       if (/grok-4\.6|grok-4-6/.test(model)) {
         return [
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' },
-          { id: 'xhigh', label: '很高', hint: 'reasoning_effort=xhigh' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+          { id: 'medium', label: REASONING_MEDIUM_LABEL, hint: 'reasoning_effort=medium' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+          { id: 'xhigh', label: REASONING_EXTRA_HIGH_LABEL, hint: 'reasoning_effort=xhigh' }
         ]
       }
       // grok-4.5：low/medium/high，不可关闭，默认 high
       if (/grok-4\.5|grok-4-5/.test(model)) {
         return [
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+          { id: 'medium', label: REASONING_MEDIUM_LABEL, hint: 'reasoning_effort=medium' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' }
         ]
       }
       // 其它 grok id（刷新 /models 可能带回）：按 4.6 档位
       if (/^grok-/.test(model)) {
         return [
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'medium', label: '中', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高（默认）', hint: 'reasoning_effort=high' },
-          { id: 'xhigh', label: '很高', hint: 'reasoning_effort=xhigh' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+          { id: 'medium', label: REASONING_MEDIUM_LABEL, hint: 'reasoning_effort=medium' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+          { id: 'xhigh', label: REASONING_EXTRA_HIGH_LABEL, hint: 'reasoning_effort=xhigh' }
         ]
       }
       return []
@@ -87,16 +100,16 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
           return [
             { id: 'none', label: '无', hint: 'reasoning_effort=none' },
             { id: 'minimal', label: '最低', hint: 'reasoning_effort=minimal' },
-            { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-            { id: 'medium', label: '中（常用）', hint: 'reasoning_effort=medium' },
-            { id: 'high', label: '高', hint: 'reasoning_effort=high' },
-            { id: 'xhigh', label: '很高', hint: 'reasoning_effort=xhigh' }
+            { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+            { id: 'medium', label: REASONING_MEDIUM_LABEL, hint: 'reasoning_effort=medium' },
+            { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+            { id: 'xhigh', label: REASONING_EXTRA_HIGH_LABEL, hint: 'reasoning_effort=xhigh' }
           ]
         }
         return [
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'medium', label: '中（默认）', hint: 'reasoning_effort=medium' },
-          { id: 'high', label: '高', hint: 'reasoning_effort=high' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+          { id: 'medium', label: REASONING_MEDIUM_LABEL, hint: 'reasoning_effort=medium' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' }
         ]
       }
       return []
@@ -105,9 +118,9 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
       // K3：顶层 reasoning_effort low|high|max，默认 max
       if (/kimi-k3/.test(model)) {
         return [
-          { id: 'low', label: '低', hint: 'reasoning_effort=low' },
-          { id: 'high', label: '高', hint: 'reasoning_effort=high' },
-          { id: 'max', label: '最大（默认）', hint: 'reasoning_effort=max' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort=low' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+          { id: 'max', label: REASONING_MAX_LABEL, hint: 'reasoning_effort=max' }
         ]
       }
       // K2.7 Code：thinking.type enabled|disabled
@@ -124,9 +137,9 @@ export function resolveThinkingOptions(provider: ProviderConfig): ThinkingLevelO
       if (/glm-5\.2|glm-5-2|glm-5\.1|glm-5$|glm-5-/.test(model)) {
         return [
           { id: 'off', label: '关闭思考', hint: 'thinking.type=disabled' },
-          { id: 'low', label: '低', hint: 'reasoning_effort≈high' },
-          { id: 'high', label: '高', hint: 'reasoning_effort=high' },
-          { id: 'max', label: '最大（推荐）', hint: 'reasoning_effort=max' }
+          { id: 'low', label: REASONING_LIGHT_LABEL, hint: 'reasoning_effort≈high' },
+          { id: 'high', label: REASONING_HIGH_LABEL, hint: 'reasoning_effort=high' },
+          { id: 'max', label: REASONING_MAX_LABEL, hint: 'reasoning_effort=max' }
         ]
       }
       if (/glm-4\.[5-9]|glm-4-|glm-5/.test(model) || kind === 'zhipu') {
@@ -236,7 +249,7 @@ export function buildThinkingRequestFields(
   }
 }
 
-/** 设置页展示：当前档位中文名 */
+/** 设置页 / 输入框旁：当前档位官方桌面名（Light / Medium / High / Extra High / Max） */
 export function thinkingLevelLabel(provider: ProviderConfig): string {
   const id = provider.thinkingLevel || defaultThinkingLevel(provider)
   const opt = resolveThinkingOptions(provider).find((o) => o.id === id)
@@ -281,10 +294,10 @@ const REASONING_ALIASES: Record<string, string[]> = {
   off: ['off', 'none', 'disable', 'disabled'],
   none: ['none', 'off'],
   minimal: ['minimal', 'min'],
-  low: ['low', 'l'],
+  low: ['low', 'l', 'light'],
   medium: ['medium', 'mid', 'med'],
   high: ['high', 'h'],
-  xhigh: ['xhigh', 'x-high', 'extra'],
+  xhigh: ['xhigh', 'x-high', 'extra', 'extra high', 'extrahigh'],
   max: ['max', 'maximum']
 }
 

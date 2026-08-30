@@ -1,5 +1,5 @@
 /**
- * 输入区：模型选择 + 思考水平（官方支持时）+ 厂商图标
+ * 输入区：Open model picker + Pick a reasoning effort（官方桌面 Light / Medium / High / Extra High / Max）
  * 每个已配置接入展开 knownModels，可在同一订阅下换型号。
  */
 import { useEffect, useRef } from 'react'
@@ -12,9 +12,11 @@ import {
 } from '../../shared/provider-catalog'
 import {
   defaultThinkingLevel,
+  PICK_REASONING_EFFORT_LABEL,
   resolveThinkingOptions,
   thinkingLevelLabel
 } from '../../shared/thinking-levels'
+import { OPEN_MODEL_PICKER_LABEL } from '../../shared/reveal-in-folder'
 import { usePopoverAnimation } from '../hooks/usePopoverAnimation'
 import { ProviderBrandIcon } from './ProviderBrandIcon'
 import './ModelPicker.css'
@@ -158,9 +160,10 @@ export function ModelPicker({
         aria-haspopup="listbox"
         title={
           active
-            ? `${active.name} · ${active.model}${thinkingShort ? ` · 思考 ${thinkingShort}` : ''}`
+            ? `${active.name} · ${active.model}${thinkingShort ? ` · ${thinkingShort}` : ''}`
             : modelLabel
         }
+        aria-label={OPEN_MODEL_PICKER_LABEL}
       >
         {active ? <ProviderBrandIcon provider={active} size={16} /> : null}
         <span className="model-picker-label">{modelLabel}</span>
@@ -168,8 +171,12 @@ export function ModelPicker({
       </button>
 
       {pop.mounted && (
-        <div className={`model-picker-menu ${pop.surfaceClass}`} role="listbox">
-          <div className="model-picker-menu-head">对话模型</div>
+        <div
+          className={`model-picker-menu ${pop.surfaceClass}`}
+          role="listbox"
+          aria-label={OPEN_MODEL_PICKER_LABEL}
+        >
+          <div className="model-picker-menu-head">{OPEN_MODEL_PICKER_LABEL}</div>
           {list.map((p) => {
             const models = knownModelsForProvider(p.id, p.model)
             const ids = models.length > 0 ? models : [p.model?.trim() || '']
@@ -214,7 +221,7 @@ export function ModelPicker({
           {active && thinkingOpts.length > 0 ? (
             <>
               <div className="model-picker-divider" />
-              <div className="model-picker-menu-head">思考水平</div>
+              <div className="model-picker-menu-head">{PICK_REASONING_EFFORT_LABEL}</div>
               <div className="model-picker-thinking-grid">
                 {thinkingOpts.map((opt) => {
                   const selected = opt.id === thinkingValue
