@@ -1710,6 +1710,34 @@ function cheapInlineSourceAll(nodes: CheapInlineNode[]): string {
   return nodes.map(cheapInlineSource).join('')
 }
 
+/** 闭合行内前缀：同一 lastStable 再增长不 join 已画节点（对标 Codex #22860） */
+let cheapInlineStableHold: {
+  lastStable: CheapInlineNode | undefined
+  length: number
+  prefix: string
+} | null = null
+
+function cheapInlineStablePrefix(stable: CheapInlineNode[]): string {
+  const lastStable = stable[stable.length - 1]
+  if (
+    cheapInlineStableHold &&
+    cheapInlineStableHold.length === stable.length &&
+    cheapInlineStableHold.lastStable === lastStable
+  ) {
+    return cheapInlineStableHold.prefix
+  }
+  const prefix = cheapInlineSourceAll(stable)
+  cheapInlineStableHold = { lastStable, length: stable.length, prefix }
+  return prefix
+}
+
+let cheapInlineKeyHold: {
+  lastStable: CheapInlineNode | undefined
+  lastType: CheapInlineNode['type'] | undefined
+  length: number
+  keys: string[]
+} | null = null
+
 /** 直播块 key：按类型计数，中间块改类型时后面已画块不换下标 */
 export function cheapProseBlockKeys(blocks: CheapProseBlock[]): string[] {
   const counts = new Map<string, number>()
@@ -1744,11 +1772,27 @@ export function matchLiveTaskMarker(text: string): { checked: boolean; rest: str
 
 /** 直播行内 key：用类型 + 前缀长度，闭合标记时已画节点不换下标 */
 export function cheapInlineNodeKeys(nodes: CheapInlineNode[]): string[] {
+  const last = nodes[nodes.length - 1]
+  const lastStable = nodes[nodes.length - 2]
+  if (
+    cheapInlineKeyHold &&
+    cheapInlineKeyHold.length === nodes.length &&
+    cheapInlineKeyHold.lastStable === lastStable &&
+    cheapInlineKeyHold.lastType === last?.type
+  ) {
+    return cheapInlineKeyHold.keys
+  }
   const keys: string[] = []
   let prefix = 0
   for (const node of nodes) {
     keys.push(`${node.type}:${prefix}`)
     prefix += cheapInlineSource(node).length
+  }
+  cheapInlineKeyHold = {
+    lastStable,
+    lastType: last?.type,
+    length: nodes.length,
+    keys
   }
   return keys
 }
@@ -1779,7 +1823,7 @@ export function continueCheapInlineMarkdown(
   if (nextText === prevNorm && prevNodes.length) return prevNodes
   if (!prevNodes.length) return parseCheapInlineMarkdown(nextText, defs)
   const stable = prevNodes.slice(0, -1)
-  const prefix = cheapInlineSourceAll(stable)
+  const prefix = cheapInlineStablePrefix(stable)
   if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText, defs)
   const last = prevNodes[prevNodes.length - 1]
   if (last?.type === 'text') {
@@ -3974,6 +4018,8 @@ export function seedCheapProseHold(text: string): { text: string; blocks: CheapP
 
 export function clearCheapProseHolds(): void {
   cheapProseHolds.clear()
+  cheapInlineStableHold = null
+  cheapInlineKeyHold = null
 }
 
 export function continueCheapProseBlocks(

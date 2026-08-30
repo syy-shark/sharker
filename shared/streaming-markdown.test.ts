@@ -2021,6 +2021,15 @@ describe('splitStreamingMarkdown', () => {
     expect(afterCodeGrown[0]).toBe(afterCode[0])
     expect(afterCodeGrown[1]).toBe(afterCode[1])
     expect(afterCodeGrown[2]).toEqual({ type: 'text', text: ' 然后继续' })
+    const afterCodeKeys = cheapInlineNodeKeys(afterCodeGrown)
+    const afterCodeGrown2 = continueCheapInlineMarkdown(
+      '见 `foo` 然后继续',
+      afterCodeGrown,
+      '见 `foo` 然后继续写'
+    )
+    expect(afterCodeGrown2[0]).toBe(afterCode[0])
+    expect(afterCodeGrown2[1]).toBe(afterCode[1])
+    expect(cheapInlineNodeKeys(afterCodeGrown2)).toBe(afterCodeKeys)
     const star = parseCheapInlineMarkdown('普通')
     const starGrown = continueCheapInlineMarkdown('普通', star, '普通*粗*')
     expect(starGrown.map((n) => n.type)).toEqual(['text', 'em'])
@@ -2282,6 +2291,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
     expect(mdSrc).toContain('lastCheapBlockStartHold')
     expect(mdSrc).toContain('lineCouldStartLastBlock')
+    expect(mdSrc).toContain('cheapInlineStablePrefix')
+    expect(mdSrc).toContain('cheapInlineStableHold')
     expect(mdSrc).toContain("nextText.indexOf('\\n\\n', Math.max(0, prevNorm.length - 1))")
     expect(mdSrc).toContain('split.blocks === prevSplit.blocks')
     expect(src).toContain('continueStreamingRenderSlots(prevRef.current.slots, nextSplit, prevSplit)')
