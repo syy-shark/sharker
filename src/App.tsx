@@ -8660,6 +8660,11 @@ export default function App() {
     void handleNavigateRef.current(targetPage, tab)
   }, [])
 
+  const handleSearchChatsUi = useCallback(() => {
+    setPage('chat')
+    setShowHistoryPicker(true)
+  }, [])
+
   const fileSearchRoot = useMemo(() => {
     if (threadMode === 'worktree' && threadWorktreePath) return threadWorktreePath
     return getActiveWorkspacePath(settings) ?? ''
@@ -8737,6 +8742,7 @@ export default function App() {
           onNavigate={handleNavigateUi}
           onClearUnread={handleMarkConversationsRead}
           onToggleActivity={handleToggleActivity}
+          onSearchChats={handleSearchChatsUi}
           onCopyConversationMarkdown={copyConversationMarkdown}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}

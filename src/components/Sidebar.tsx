@@ -27,6 +27,7 @@ import {
   Settings2,
   Shield,
   Sparkles,
+  Search,
   SquarePen
 } from 'lucide-react'
 import type { ConversationSummary } from '../../shared/conversation'
@@ -62,6 +63,7 @@ import {
   RENAME_LABEL,
   SUGGESTED_PROMPTS_SETTINGS_LABEL,
   TOGGLE_ACTIVITY_VIEW_LABEL,
+  SEARCH_CHATS_LABEL,
   SKILLS_LABEL,
   revealInFolderLabel,
   threadMenuItems,
@@ -119,6 +121,8 @@ interface Props {
   onClearUnread?: () => void
   /** 侧栏铃铛：开关 Activity（对标 Codex 铃铛 / ⌘⌥U） */
   onToggleActivity?: () => void
+  /** 侧栏 Search chats（对标 Codex Open Search chats from the sidebar） */
+  onSearchChats?: () => void
   /** 线程右键 Copy as Markdown（对标 Codex Copy as Markdown / #25646） */
   onCopyConversationMarkdown?: (workspaceId: string, conversationId: string) => void
   /** 自动化审查队列未读数（Codex Triage） */
@@ -224,6 +228,7 @@ export const Sidebar = memo(function Sidebar({
   onNavigate,
   onClearUnread,
   onToggleActivity,
+  onSearchChats,
   onCopyConversationMarkdown,
   queueUnread = 0,
   collapsed: collapsedProp,
@@ -930,6 +935,17 @@ export const Sidebar = memo(function Sidebar({
             <SquarePen size={18} className="sidebar-nav-ico" aria-hidden />
             <span>{NEW_CHAT_LABEL}</span>
           </button>
+          {onSearchChats ? (
+            <button
+              type="button"
+              className="sidebar-nav-item"
+              onClick={onSearchChats}
+              aria-label={SEARCH_CHATS_LABEL}
+            >
+              <Search size={18} className="sidebar-nav-ico" aria-hidden />
+              <span>{SEARCH_CHATS_LABEL}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className={`sidebar-nav-item${activityOpen ? ' active' : ''}`}
