@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   CHATS_SECTION_LABEL,
   CHRONOLOGICAL_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
   MARK_ALL_AS_READ_LABEL,
+  UNREAD_FILTER_LABEL,
   SIDEBAR_CHAT_FILTERS,
   applyCustomTitle,
   buildForkedConversation,
@@ -222,6 +226,18 @@ describe('conversation search', () => {
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'live')?.label).toBe('Running')
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'waiting')?.label).toBe('Waiting')
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'unread')?.label).toBe('Unread')
+    expect(UNREAD_FILTER_LABEL).toBe('Unread')
+    const sidebarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/Sidebar.tsx'),
+      'utf8'
+    )
+    expect(sidebarSrc).toContain('UNREAD_FILTER_LABEL')
+    expect(sidebarSrc).not.toContain('aria-label="未读"')
+    const mainSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../electron/main/index.ts'),
+      'utf8'
+    )
+    expect(mainSrc).toContain("appendSwitch('js-flags', '--stack-size=16384')")
     expect(
       collectAttentionConversationIds({
         conversations: items,

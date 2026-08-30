@@ -24,7 +24,7 @@
 | `workspace-tree.ts` | 工作区文件树节点（右侧面板 IPC）；有附加文件夹时 `wrapWorkspaceForest` / `buildWorkspaceForest` 把主根与附加根都做成顶层节点；`@` 搜索可扫附加文件夹（目录名做前缀） |
 | `workspace-tree.test.ts` | 无附加时平铺主树；有附加时主根与附加根并列 |
 | `conversation.ts` | 对话模型、标题推导（空线程回退官方 `New chat`，旧盘 `新对话` 仍当占位再推导）、侧栏排序（置顶优先）、Search chats 扩匹配（标题 / 正文摘要 / git 分支；官方默认不绑 ⌘G）、对话路径、进行中任务拆分、⌘⌥A 先等审批再进行中、`conversationIdAtIndex` / `recentConversationIdAtIndex` 给 ⌘1–9 Go to chat / ⌘⌥1–6 Open recent chat（对标 Codex 桌面）、侧栏 Chats 区 + Chronological / Running / Waiting / Unread / Scheduled / Pinned 筛选、Activity **Mark all as read**、⌘⌥U 开关 Activity、项目菜单 Archive chats 只收该项目未归档 id（可跳过进行中）、`/fork` 分叉标题与拷贝、`messagesThroughInclusive` / `canForkThroughMessage`（对标 Codex `thread/fork` `lastTurnId`，直播未完成行拒分叉）、`/fork [local|worktree]` 目标、`/rename` `/pin` 未读；`historyStartSeq` / `historyTotal` 给长线程尾页 |
-| `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、按消息截断拷贝、空线程 `New chat` / 旧盘「新对话」占位再推导、置顶排序、`/rename`、⌘1–9 / ⌘⌥1–6 按序取对话、侧栏 Chronological / Running / Waiting / Unread / Chats / Mark all as read 官方文案 |
+| `conversation.test.ts` | 按标题 / 自定义标题 / id / 正文 / 分支过滤、进行中拆分、分叉标题与 `/fork` 目标、按消息截断拷贝、空线程 `New chat` / 旧盘「新对话」占位再推导、置顶排序、`/rename`、⌘1–9 / ⌘⌥1–6 按序取对话、侧栏 Chronological / Running / Waiting / Unread / Chats / Mark all as read 官方文案、未读点 Unread、主进程直播栈 `--stack-size=16384` |
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验 |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef |

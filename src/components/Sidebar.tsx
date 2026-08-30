@@ -35,6 +35,7 @@ import type { ConversationSummary } from '../../shared/conversation'
 import {
   CHATS_SECTION_LABEL,
   CHRONOLOGICAL_FILTER_LABEL,
+  UNREAD_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
   filterSidebarChats,
   isActivitySidebarFilter,
@@ -697,7 +698,11 @@ export const Sidebar = memo(function Sidebar({
               {live ? (
                 <SidebarLiveDot />
               ) : c.unread ? (
-                <span className="sidebar-unread-dot" aria-label="未读" title="未读" />
+                <span
+                  className="sidebar-unread-dot"
+                  aria-label={UNREAD_FILTER_LABEL}
+                  title={UNREAD_FILTER_LABEL}
+                />
               ) : null}
             </span>
           </button>

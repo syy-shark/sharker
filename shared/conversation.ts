@@ -335,6 +335,8 @@ export type SidebarChatFilter =
 export const CHATS_SECTION_LABEL = 'Chats'
 /** 官方 troubleshooting：找不到聊天时选 Chronological */
 export const CHRONOLOGICAL_FILTER_LABEL = 'Chronological'
+/** 官方 Activity / 侧栏筛选：Unread */
+export const UNREAD_FILTER_LABEL = 'Unread'
 /** 官方 Activity：Mark all as read */
 export const MARK_ALL_AS_READ_LABEL = 'Mark all as read'
 
@@ -342,7 +344,7 @@ export const SIDEBAR_CHAT_FILTERS: Array<{ id: SidebarChatFilter; label: string 
   { id: 'chronological', label: CHRONOLOGICAL_FILTER_LABEL },
   { id: 'live', label: 'Running' },
   { id: 'waiting', label: 'Waiting' },
-  { id: 'unread', label: 'Unread' },
+  { id: 'unread', label: UNREAD_FILTER_LABEL },
   { id: 'scheduled', label: 'Scheduled' },
   { id: 'pinned', label: 'Pinned' }
 ]
