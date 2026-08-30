@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   collectUserPrompts,
@@ -15,7 +18,10 @@ import {
   isDoubleEscape,
   lastUserMessageId,
   lastUserPrompt,
+  QUEUE_DELETE_LABEL,
+  QUEUE_EDIT_LABEL,
   QUEUE_LABEL,
+  QUEUE_SAVE_LABEL,
   QUEUE_SAVES_THE_MESSAGE_LABEL,
   STEER_ADDS_THE_MESSAGE_LABEL,
   rememberSubmittedComposerPrompt,
@@ -91,7 +97,20 @@ describe('composer submit', () => {
     expect(STEER_THE_CURRENT_RUN_LABEL).toBe('Steer the current run')
     expect(STEER_LABEL).toBe('Steer')
     expect(QUEUE_LABEL).toBe('Queue')
+    expect(QUEUE_EDIT_LABEL).toBe('Edit')
+    expect(QUEUE_SAVE_LABEL).toBe('Save')
+    expect(QUEUE_DELETE_LABEL).toBe('Delete')
     expect(SEND_LABEL).toBe('Send')
+    const queueSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerQueue.tsx'),
+      'utf8'
+    )
+    expect(queueSrc).toContain('QUEUE_EDIT_LABEL')
+    expect(queueSrc).toContain('QUEUE_SAVE_LABEL')
+    expect(queueSrc).toContain('QUEUE_DELETE_LABEL')
+    expect(queueSrc).not.toContain('编辑')
+    expect(queueSrc).not.toContain('删除')
+    expect(queueSrc).not.toContain('保存')
     expect(ASK_FOR_FOLLOW_UP_CHANGES_LABEL).toBe('Ask for follow-up changes')
     expect(idleComposerPlaceholder(true)).toBe('Ask for follow-up changes')
     expect(idleComposerPlaceholder(false)).toBeNull()

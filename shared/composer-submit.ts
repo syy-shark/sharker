@@ -30,6 +30,10 @@ export const STEER_ADDS_THE_MESSAGE_LABEL =
 export const STEER_LABEL = 'Steer'
 /** Official desktop queued follow-up chip / settings option. */
 export const QUEUE_LABEL = 'Queue'
+/** Official prompting queue verbs: edit, reorder, send, or delete them. */
+export const QUEUE_EDIT_LABEL = 'Edit'
+export const QUEUE_SAVE_LABEL = 'Save'
+export const QUEUE_DELETE_LABEL = 'Delete'
 /** Official desktop send button when the turn is idle. */
 export const SEND_LABEL = 'Send'
 /** Official idle follow-up composer (openai/codex #27583). Empty new chats keep local hint copy. */

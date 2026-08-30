@@ -7,7 +7,10 @@ import { memo, useState } from 'react'
 import type { QueuedPrompt } from '../types/chat'
 import {
   formatQueueChipLabel,
+  QUEUE_DELETE_LABEL,
+  QUEUE_EDIT_LABEL,
   QUEUE_LABEL,
+  QUEUE_SAVE_LABEL,
   SEND_LABEL,
   STEER_LABEL
 } from '../../shared/composer-submit'
@@ -99,11 +102,11 @@ function QueueRow({
             disabled={!draft.trim()}
             onClick={onCommit}
           >
-            保存
+            {QUEUE_SAVE_LABEL}
           </button>
         ) : (
           <button type="button" className="composer-queue-btn" onClick={onStartEdit}>
-            编辑
+            {QUEUE_EDIT_LABEL}
           </button>
         )}
         {kind === 'queue' ? (
@@ -137,7 +140,7 @@ function QueueRow({
           </>
         ) : null}
         <button type="button" className="composer-queue-btn" onClick={onCancel}>
-          删除
+          {QUEUE_DELETE_LABEL}
         </button>
       </div>
     </div>
