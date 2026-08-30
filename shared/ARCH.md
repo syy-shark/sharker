@@ -249,8 +249,8 @@
 | `bang-command.test.ts` | 空 bang / 普通文本 |
 | `fast-mode.ts` | `/fast` 解析与思考档位选择；`nextFastThinkingLevel` 给输入框旁 Fast 芯片 |
 | `fast-mode.test.ts` | on/off、off/low 优先、芯片再点切回默认档 |
-| `copy-output.ts` | `/copy` 取最近一条助手正文；有围栏或引用时列出整段 / 代码块 / 引用（对标 Codex /copy picker） |
-| `copy-output.test.ts` | 跳过空助手行；围栏与引用分列、围栏内 `>` 不当引用 |
+| `copy-output.ts` | `/copy` 取最近一条已完成助手正文；直播跳过预留行，斜杠确认 / 本机备注不当成模型输出；有围栏或引用时列出整段 / 代码块 / 引用（对标 Codex /copy · Ctrl+O / picker） |
+| `copy-output.test.ts` | 跳过空助手行、本机备注与进行中预留行；围栏与引用分列、围栏内 `>` 不当引用 |
 | `skills-status.ts` | `/skills` 已安装列表；侧栏 Skills 页跨项目合并与过滤 |
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 当前目录脚手架（含 Code Review Rules）；个人说明路径 `~/.sharker/AGENTS.md` |
