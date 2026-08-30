@@ -1,8 +1,33 @@
 /**
  * ```mermaid / ```mmd 围栏判定。直播开闭都挂 MermaidBlock，闭合且不在直播 token 时才画图。
  * SVG 缓存避免收束 / 廉价尾 → 稳定块重挂时先闪回源码。
+ * `loadMermaidApi` 给收束预取与成图共用同一动态 import，立刻跟进的下一轮不必再等模块。
  * @see shared/ARCH.md
  */
+
+export type MermaidApi = {
+  initialize: (config: {
+    startOnLoad: boolean
+    securityLevel: 'strict' | 'loose' | 'antiscript' | 'sandbox'
+    theme: 'default' | 'dark' | 'forest' | 'neutral' | 'base'
+  }) => void
+  render: (id: string, text: string) => Promise<{ svg: string }>
+}
+
+let mermaidLoader: Promise<MermaidApi> | null = null
+
+/** 动态装 mermaid；收束预取与成图共用同一 Promise。 */
+export function loadMermaidApi(): Promise<MermaidApi> {
+  if (!mermaidLoader) {
+    mermaidLoader = import('mermaid').then((mod) => (mod.default ?? mod) as MermaidApi)
+  }
+  return mermaidLoader
+}
+
+/** 只开工不阻塞；立刻跟进的重挂能碰上同一个 in-flight import。 */
+export function prefetchMermaidModule(): void {
+  void loadMermaidApi()
+}
 
 export type MermaidUiTheme = 'dark' | 'default'
 

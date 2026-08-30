@@ -6,6 +6,7 @@
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   isMermaidLang,
+  loadMermaidApi,
   mermaidSlotHeight,
   shouldRenderLiveMermaid,
   mermaidSvgAspectStyle,
@@ -15,24 +16,6 @@ import {
 } from '../../shared/mermaid-fence'
 import { ArtifactCodeLines, CodeArtifactShell, LiveMarkdownStreamingContext } from './CodeArtifactBlock'
 import './MermaidBlock.css'
-
-type MermaidApi = {
-  initialize: (config: {
-    startOnLoad: boolean
-    securityLevel: 'strict' | 'loose' | 'antiscript' | 'sandbox'
-    theme: 'default' | 'dark' | 'forest' | 'neutral' | 'base'
-  }) => void
-  render: (id: string, text: string) => Promise<{ svg: string }>
-}
-
-let mermaidLoader: Promise<MermaidApi> | null = null
-
-function loadMermaid(): Promise<MermaidApi> {
-  if (!mermaidLoader) {
-    mermaidLoader = import('mermaid').then((mod) => (mod.default ?? mod) as MermaidApi)
-  }
-  return mermaidLoader
-}
 
 function readUiTheme(): MermaidUiTheme {
   return document.documentElement.classList.contains('theme-dark') ? 'dark' : 'default'
@@ -113,7 +96,7 @@ export function MermaidBlock({
     setFailed(false)
     renderGen.current += 1
     const renderId = `sharker-mermaid-${reactId}-${renderGen.current}`
-    void loadMermaid()
+    void loadMermaidApi()
       .then((mermaid) => {
         mermaid.initialize({
           startOnLoad: false,
