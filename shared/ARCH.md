@@ -200,7 +200,7 @@
 | `thread-snapshot.test.ts` | 收录用户/回答/diff/直播可见段，丢掉 shell 输出，脱敏 Key，去掉内联 base64 图 |
 | `suggested-prompts.ts` | 空对话建议：先恢复进行中 / 未读 / 最近更新的对话，再审查 / 目标（对标 Codex Settings → Suggested prompts；不对创建时间排队） |
 | `suggested-prompts.test.ts` | 无工作区为空、有目标时跳过 goal 芯片；恢复优先进行中与最近 `updatedAt` |
-| `composer-paste.ts` | 粘贴决策：Finder/Explorer 文件条目先收附件（对标 Codex non-image file pasting）；其余 text/plain（及 HTML 剥标签）优先于 Office 图片层；CRLF 归一；超长收成 `Pasted text.txt`；只有官方粘贴名才折进空输入 / 空参斜杠 |
+| `composer-paste.ts` | 粘贴决策：Finder/Explorer 文件条目先收附件（对标 Codex non-image file pasting）；其余 text/plain（及 HTML 剥标签）优先于 Office 图片层；CRLF 归一；超过 10,000 字收成 `Pasted text.txt`（对标官方 Pastes longer than 10,000 characters）；回插按钮 **Show in text field**（nowrap）；只有官方粘贴名才折进空输入 / 空参斜杠 |
 | `composer-paste.test.ts` | Word 双层剪贴板走文本、路径列表收文件、源码附件不折进 `/goal` |
 | `turn-notify.ts` | 后台回合：系统通知档 never/background/always、批准通知、未读、Dock 徽标；芯片文案 Edited N files（对标 Codex render_changes_block） |
 | `turn-notify.test.ts` | 失焦通知、never/always、批准通知、同会话不标未读、徽标计数、改文件文案 |
