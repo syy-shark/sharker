@@ -2,7 +2,7 @@
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
  * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
  * 未登记时 miss 走全量重建，不扫 combinatorial 表。
- * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具）、首枚或同一帧多段无 fence 正文 / ```demo / present_inline_demo、正文后又夹过工具再开 extras、或只追加思考 / status 可在核心判定，不必等表。
+ * 例外：过程前缀后新开普通工具（含同一帧 think+tool、第二枚工具、首枚写盘 extras 开 diff 槽）、首枚或同一帧多段无 fence 正文 / ```demo / present_inline_demo、正文后又夹过工具再开 extras、只追加思考 / status、同长正文收口或错误挂到正文、Allow/Deny / Stop / compress 可在核心判定，不必等表。
  * `nextLiveProcessView` 在这些 skip 上只追加 / 换 processForFlow；首枚普通工具会摘掉思考步（对标 processSegments）。
  * @see shared/ARCH.md
  */
@@ -242,6 +242,26 @@ function liveCoreExtraDemoSegments(
   )
 }
 
+/** 相对 prev 新开且已有 +/- 的写盘工具（首枚 tool_preview / write 不要冻住空回答）。 */
+function liveCoreExtraWriteStatTools(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): TurnSegment[] {
+  return next.slice(prev.length).filter((segment) => liveWriteStatDiffParts(segment).length > 0)
+}
+
+/** 同长已有无 fence 正文加长或收口：过程 skip 是 think/status/tool 时回答仍要换尾。 */
+function liveCoreHeldNoFenceAnswerChange(
+  prev: readonly TurnSegment[],
+  next: readonly TurnSegment[]
+): TurnSegment | null {
+  const extra = liveCoreLastNoFenceAnswer(next)
+  if (!extra) return null
+  const before = prev.find((segment) => segment.id === extra.id)
+  if (!before || before === extra || !liveCoreAnswerHolds(before, extra)) return null
+  return extra
+}
+
 function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
   if (prev === next) return true
   if (prev.id !== next.id || prev.kind !== next.kind) return false
@@ -264,7 +284,9 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 已有无 fence 正文后再开第二段或多段 text 标 `'text'`，先封上一尾再开新尾。
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
- * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）。
+ * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽。
+ * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
+ * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
  */
 function liveCoreInPlaceProcessToolSkip(
@@ -299,7 +321,10 @@ function liveCoreInPlaceProcessToolSkip(
       }
       return null
     }
-    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) continue
+    if (isLiveAnswerText(before) && liveCoreAnswerHolds(before, after)) {
+      if (before !== after) textChange = true
+      continue
+    }
     if (before.id !== after.id || before.kind !== after.kind) return null
     if (isLiveThinking(before) && isLiveThinking(after)) {
       if (!liveTailContentGrew(before, after)) return null
@@ -1291,12 +1316,14 @@ export function nextLiveAnswerView(
         if (extra) view = appendLiveAnswerView(prev ?? emptyLiveAnswerView(), extra)
       }
     } else if (prev) {
-      view = prev
+      const grown = liveCoreHeldNoFenceAnswerChange(prevSegments, segments)
+      view = grown ? appendLiveAnswerView(prev, grown) : prev
     }
     if (view) {
-      const writeStats = findLiveCoreWriteStatTools(prevSegments, segments)
-      if (writeStats) {
-        for (const writeStat of writeStats) view = retargetLiveAnswerDiffs(view, writeStat)
+      const writeStats = findLiveCoreWriteStatTools(prevSegments, segments) ?? []
+      const extraWriteStats = liveCoreExtraWriteStatTools(prevSegments, segments)
+      for (const writeStat of [...writeStats, ...extraWriteStats]) {
+        view = retargetLiveAnswerDiffs(view, writeStat)
       }
       answerGrowHold = { view, segments, tailPlain: Boolean(view.tail) }
       return view

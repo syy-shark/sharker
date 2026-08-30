@@ -1158,6 +1158,214 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe('tool')
   })
 
+  it('classifies Allow/Deny, Stop, compress, and error-on-text without the table', () => {
+    const running = tool('active')
+    const approval = {
+      id: 'appr-1',
+      title: '读文件',
+      description: '',
+      toolName: 'read_file',
+      args: {}
+    }
+    const awaiting: TurnSegment = {
+      id: 'st-await',
+      kind: 'status',
+      status: 'active',
+      content: 'Awaiting approval · 读文件',
+      toolName: 'read_file',
+      approval
+    }
+    const hung: TurnSegment = { ...running, approval: awaiting.approval }
+    const allowed: TurnSegment = { ...hung, approval: undefined }
+    const confirmed: TurnSegment = {
+      ...awaiting,
+      status: 'done',
+      content: '已确认，继续执行',
+      approval: undefined
+    }
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), hung, awaiting], [think('Hmm'), allowed, confirmed])
+    ).toBe('tool')
+    const denied: TurnSegment = {
+      ...awaiting,
+      status: 'done',
+      content: '已拒绝该操作'
+    }
+    expect(
+      shouldSkipLiveStreamDerivation([think('Hmm'), hung, awaiting], [think('Hmm'), hung, denied])
+    ).toBe('status')
+    const firstAwait = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [think('Hmm'), hung, awaiting]
+    })
+    const afterAllow = nextLiveProcessView(firstAwait, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [think('Hmm'), allowed, confirmed]
+    })
+    expect(afterAllow.processForFlow).toEqual([allowed, confirmed])
+
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const plan = status('根据已完成步骤规划下一步…')
+    const cancelledThought: TurnSegment = { ...thought, status: 'cancelled' }
+    const cancelledTool: TurnSegment = {
+      ...reading,
+      status: 'cancelled',
+      errorMessage: '任务已停止',
+      resultSummary: '已停止'
+    }
+    const cancelledPlan: TurnSegment = { ...plan, status: 'cancelled' }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, plan],
+        [cancelledThought, cancelledTool, cancelledPlan]
+      )
+    ).toBe('tool')
+
+    const compacting: TurnSegment = {
+      id: 'st-compact',
+      kind: 'status',
+      status: 'active',
+      content: 'Compacting context'
+    }
+    const compacted: TurnSegment = { ...compacting, status: 'done' }
+    const compress: TurnSegment = {
+      id: 'compress-1',
+      kind: 'tool',
+      toolName: 'compress',
+      status: 'done',
+      toolTitle: 'Compacting context',
+      content: ''
+    }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, compacting],
+        [thought, reading, compacted, compress]
+      )
+    ).toBe('tool')
+    const firstCompact = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, compacting]
+    })
+    const afterCompress = nextLiveProcessView(firstCompact, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, compacted, compress]
+    })
+    expect(afterCompress.processForFlow.at(-1)).toEqual(compress)
+
+    const reply = prose('Hello')
+    const errored: TurnSegment = {
+      ...reply,
+      status: 'done',
+      content: 'Hello\n\n**错误**: boom'
+    }
+    expect(shouldSkipLiveStreamDerivation([reply], [errored])).toBe('text')
+    const firstReply = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [reply]
+    })
+    const afterError = nextLiveAnswerView(firstReply, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [errored]
+    })
+    expect(afterError.tail?.type === 'text' && afterError.tail.content).toBe(
+      'Hello\n\n**错误**: boom'
+    )
+
+    const ask: TurnSegment = {
+      id: 'st-ask',
+      kind: 'status',
+      status: 'active',
+      content: 'API style',
+      toolName: 'request_user_input'
+    }
+    const askDone: TurnSegment = { ...ask, status: 'done' }
+    expect(shouldSkipLiveStreamDerivation([ask], [askDone])).toBe('status')
+
+    const preparing = status('Preparing')
+    const preparingDone: TurnSegment = { ...preparing, status: 'done' }
+    const errText: TurnSegment = {
+      id: 'err1',
+      kind: 'text',
+      role: 'final',
+      status: 'done',
+      content: '**错误**: boom'
+    }
+    expect(shouldSkipLiveStreamDerivation([preparing], [preparingDone, errText])).toBe('text')
+    const firstStatus = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [preparing]
+    })
+    const afterStatusError = nextLiveAnswerView(firstStatus, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [preparingDone, errText]
+    })
+    expect(afterStatusError.tail?.type === 'text' && afterStatusError.tail.content).toBe(
+      '**错误**: boom'
+    )
+  })
+
+  it('opens write-stat diffs from the first extra write tool without the table', () => {
+    const thought = think('Hmm')
+    const thoughtDone: TurnSegment = { ...thought, status: 'done' }
+    const writing: TurnSegment = {
+      id: 'w1',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    expect(shouldSkipLiveStreamDerivation([thought], [thoughtDone, writing])).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([thought], [thoughtDone, writing])).toBe(true)
+    const first = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought]
+    })
+    expect(first.parts.some((part) => part.type === 'diff')).toBe(false)
+    const next = nextLiveAnswerView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thoughtDone, writing]
+    })
+    expect(next.parts.some((part) => part.type === 'diff')).toBe(true)
+    const reply = prose('Hi')
+    const replyDone: TurnSegment = { ...reply, status: 'done' }
+    const afterProse = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reply]
+    })
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reply], [thoughtDone, replyDone, writing])
+    ).toBe('tool')
+    const withDiff = nextLiveAnswerView(afterProse, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thoughtDone, replyDone, writing]
+    })
+    expect(withDiff.tail).toEqual(afterProse.tail)
+    expect(withDiff.parts.some((part) => part.type === 'diff')).toBe(true)
+  })
+
+  it('grows a held no-fence tail when think tokens arrive in the same flush', () => {
+    const thought = think('Hmm')
+    const reply = prose('Hi')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reply], [think('Hmm more'), prose('Hi there')])
+    ).toBe('think')
+    const first = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reply]
+    })
+    const next = nextLiveAnswerView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [think('Hmm more'), prose('Hi there')]
+    })
+    expect(next.tail?.type === 'text' && next.tail.content).toBe('Hi there')
+  })
+
   it('does not skip answer identity on prose tokens so the tail can grow', () => {
     expect(
       shouldSkipLiveAnswerIdentity({
