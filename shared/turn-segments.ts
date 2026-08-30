@@ -7,6 +7,7 @@
  * @see shared/ARCH.md
  */
 import { formatCompactActivity } from './compact-activity'
+import type { FilesChangedStatsView } from './files-changed-card'
 import type { ProcessPhaseModel, ProcessPhaseStep } from './process-phases'
 import type { FileDiff, FileDiffLine, FileEditPreview, StreamChunk, TurnSegment } from './types'
 import {
@@ -1500,6 +1501,9 @@ export type HistoricalAnswerHold = {
   processPhases: ProcessPhaseModel | null
   processSummary: string | null
   frozenSteps: ProcessPhaseStep[]
+  filesChanged: FilesChangedStatsView
+  hasProcess: boolean
+  finalBody: { show: boolean; content: string }
 }
 
 export const HISTORICAL_ANSWER_HOLD_LIMIT = 64

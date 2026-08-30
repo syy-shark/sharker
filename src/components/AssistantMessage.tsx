@@ -1,6 +1,6 @@
 /**
  * AI 助手消息：有序过程流（思考/旁白/工具）+ 最终回答
- * 收束后历史行写入 hold；窗口重挂复用正文部件 / 过程切片 / frozenSteps。
+ * 收束后历史行写入 hold；窗口重挂复用正文部件 / 过程切片 / frozenSteps / 写盘合计。
  * @see src/ARCH.md
  */
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
@@ -172,7 +172,10 @@ export const AssistantMessage = memo(function AssistantMessage({
   const browsedFiles = meta?.browsedFiles ?? []
   const browsedLeaf = exploreNameFromPath(browsedFiles[0])
   const changedFiles = meta?.changedFiles ?? []
-  const changedStats = useMemo(() => nextFilesChangedStats(null, segments), [segments])
+  const changedStats = useMemo(
+    () => seededHold?.filesChanged ?? nextFilesChangedStats(null, segments),
+    [seededHold, segments]
+  )
   const hadThinking = meta?.hadThinking ?? hadThinkingLive
   // Keep the UI at a high-level status; raw provider reasoning remains internal.
   const thinkingText = hadThinking
@@ -232,9 +235,11 @@ export const AssistantMessage = memo(function AssistantMessage({
     meta?.outcome === 'error' || /^\*\*错误\*\*:?/u.test(finalContentRaw)
   const isAborted = meta?.outcome === 'aborted'
   const finalDecision =
-    useSegmentFlow && !isError && !isAborted
-      ? shouldDisplayFinalBody(finalContentRaw, segments!, { isStreaming })
-      : { show: Boolean(finalContentRaw.trim()), content: finalContentRaw }
+    seededHold && useSegmentFlow && !isError && !isAborted
+      ? seededHold.finalBody
+      : useSegmentFlow && !isError && !isAborted
+        ? shouldDisplayFinalBody(finalContentRaw, segments!, { isStreaming })
+        : { show: Boolean(finalContentRaw.trim()), content: finalContentRaw }
   const finalContent = finalDecision.show ? finalDecision.content : ''
   const displayContent = isAborted ? stripStoppedAfterFootnote(finalContentRaw) : finalContent
   const abortedBounds = isAborted ? turnProcessBounds(segments ?? []) : undefined
@@ -343,6 +348,11 @@ export const AssistantMessage = memo(function AssistantMessage({
     if (!rememberHold || !useSegmentFlow) return null
     return snapshotFrozenProcessSteps(processForFlow, { isStreaming: false })
   }, [processForFlow, rememberHold, seededHold, useSegmentFlow])
+  const hasProcess = seededHold
+    ? seededHold.hasProcess
+    : useSegmentFlow
+      ? hasProcessFlow(segments!, { isStreaming })
+      : false
   if (rememberHold && useSegmentFlow && holdStamp) {
     writeHistoricalAnswerHold(
       messageId,
@@ -354,7 +364,10 @@ export const AssistantMessage = memo(function AssistantMessage({
         processForFlow,
         processPhases: phaseModel,
         processSummary: summary,
-        frozenSteps: frozenSteps ?? []
+        frozenSteps: frozenSteps ?? [],
+        filesChanged: changedStats,
+        hasProcess,
+        finalBody: finalDecision
       }
     )
   }
@@ -362,7 +375,7 @@ export const AssistantMessage = memo(function AssistantMessage({
     shownDuration != null ||
     browsedFiles.length > 0 ||
     isStreaming ||
-    (useSegmentFlow && hasProcessFlow(segments!, { isStreaming })) ||
+    (useSegmentFlow && hasProcess) ||
     legacyExpandable
   const copyableContent = (
     displayContent ||

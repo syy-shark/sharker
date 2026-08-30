@@ -7,7 +7,7 @@
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 切对话清掉历史 demo iframe 池与历史回答 hold。
- * 空闲时预热窗口外助手行 hold，直播中不跑。
+ * 空闲时按切片预热窗口外一页助手行 hold，直播中不跑。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
  * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
@@ -82,7 +82,9 @@ import {
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody, type LiveAnswerView } from '../../shared/live-stream-core'
 import {
+  HISTORICAL_ANSWER_WARM_SLICE,
   nextHistoricalAnswerWarmMessages,
+  shouldContinueHistoricalAnswerWarm,
   shouldScheduleHistoricalAnswerWarm,
   warmHistoricalAnswerHold
 } from '../../shared/historical-answer-hold'
@@ -1699,14 +1701,18 @@ export const ChatView = memo(function ChatView({
 
   useEffect(() => {
     if (!shouldScheduleHistoricalAnswerWarm({ loading })) return
-    const toWarm = nextHistoricalAnswerWarmMessages({
-      messages: transcriptMessages,
-      windowStart,
-      windowEnd
-    })
-    if (!toWarm.length) return
-    const run = () => {
-      if (loadingRef.current) return
+    let idleId = 0
+    let timeoutId = 0
+    let cancelled = false
+    const tick = () => {
+      if (cancelled || loadingRef.current) return
+      const toWarm = nextHistoricalAnswerWarmMessages({
+        messages: transcriptMessages,
+        windowStart,
+        windowEnd,
+        limit: HISTORICAL_ANSWER_WARM_SLICE,
+        skipHeld: true
+      })
       for (const message of toWarm) {
         if (message.role !== 'assistant' || !message.meta?.segments?.length) continue
         warmHistoricalAnswerHold({
@@ -1717,13 +1723,32 @@ export const ChatView = memo(function ChatView({
           segments: message.meta.segments
         })
       }
+      const remaining = nextHistoricalAnswerWarmMessages({
+        messages: transcriptMessages,
+        windowStart,
+        windowEnd,
+        limit: 1,
+        skipHeld: true
+      }).length
+      if (!shouldContinueHistoricalAnswerWarm({ remaining })) return
+      if (typeof requestIdleCallback === 'function') {
+        idleId = requestIdleCallback(tick)
+      } else {
+        timeoutId = window.setTimeout(tick, LAST_TURN_UI_FLUSH_MS)
+      }
     }
     if (typeof requestIdleCallback === 'function') {
-      const idleId = requestIdleCallback(run)
-      return () => cancelIdleCallback(idleId)
+      idleId = requestIdleCallback(tick)
+      return () => {
+        cancelled = true
+        cancelIdleCallback(idleId)
+      }
     }
-    const timeoutId = window.setTimeout(run, LAST_TURN_UI_FLUSH_MS)
-    return () => window.clearTimeout(timeoutId)
+    timeoutId = window.setTimeout(tick, LAST_TURN_UI_FLUSH_MS)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
   }, [loading, transcriptMessages, windowStart, windowEnd])
 
   useLayoutEffect(() => {

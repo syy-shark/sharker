@@ -8,11 +8,14 @@ import {
   historicalProcessForFlow,
   historicalProcessOutcome,
   HISTORICAL_ANSWER_WARM_LIMIT,
+  HISTORICAL_ANSWER_WARM_SLICE,
   nextHistoricalAnswerWarmMessages,
+  shouldContinueHistoricalAnswerWarm,
   shouldScheduleHistoricalAnswerWarm,
   shouldWarmHistoricalAnswerHold,
   warmHistoricalAnswerHold
 } from './historical-answer-hold'
+import { TRANSCRIPT_PAGE } from './transcript-window'
 import {
   buildAnswerParts,
   clearHistoricalAnswerHolds,
@@ -83,7 +86,10 @@ describe('historical answer idle warmup', () => {
         limit: 1
       }).map((m) => m.id)
     ).toEqual(['older-assist'])
-    expect(HISTORICAL_ANSWER_WARM_LIMIT).toBe(8)
+    expect(HISTORICAL_ANSWER_WARM_LIMIT).toBe(TRANSCRIPT_PAGE)
+    expect(HISTORICAL_ANSWER_WARM_SLICE).toBe(1)
+    expect(shouldContinueHistoricalAnswerWarm({ remaining: 1 })).toBe(true)
+    expect(shouldContinueHistoricalAnswerWarm({ remaining: 0 })).toBe(false)
 
     expect(
       warmHistoricalAnswerHold({
@@ -108,6 +114,17 @@ describe('historical answer idle warmup', () => {
       segments
     })
     expect(written?.stamp).toBe(captured.stamp)
+    expect(written?.filesChanged).toEqual(captured.filesChanged)
+    expect(written?.hasProcess).toBe(true)
+    expect(written?.finalBody.show).toBe(true)
+    expect(
+      nextHistoricalAnswerWarmMessages({
+        messages,
+        windowStart: 2,
+        windowEnd: 3,
+        skipHeld: true
+      }).map((m) => m.id)
+    ).toEqual(['newer-assist'])
     expect(written?.answerParts).not.toBe(captured.answerParts)
     const seeded = seedHistoricalAnswerHold(older.id, written!.stamp)
     expect(seeded).toBe(written)
@@ -133,6 +150,9 @@ describe('historical answer idle warmup', () => {
     expect(chat).toContain('shouldScheduleHistoricalAnswerWarm')
     expect(chat).toContain('nextHistoricalAnswerWarmMessages')
     expect(chat).toContain('warmHistoricalAnswerHold')
+    expect(chat).toContain('HISTORICAL_ANSWER_WARM_SLICE')
+    expect(chat).toContain('shouldContinueHistoricalAnswerWarm')
+    expect(chat).toContain('skipHeld: true')
     expect(chat).toContain('requestIdleCallback')
 
     const assistant = readFileSync(

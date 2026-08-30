@@ -3,25 +3,32 @@
  * 不进 16ms 直播路径；`shouldScheduleHistoricalAnswerWarm` 在 loading 时为假。
  * @see shared/ARCH.md
  */
+import { nextFilesChangedStats } from './files-changed-card'
 import {
   deriveProcessPhases,
   snapshotFrozenProcessSteps,
   summarizeProcessPhases
 } from './process-phases'
+import { TRANSCRIPT_PAGE } from './transcript-window'
 import {
   buildAnswerParts,
   extractFinalContent,
+  hasProcessFlow,
   historicalAnswerHoldStamp,
   processSegments,
   seedHistoricalAnswerHold,
+  shouldDisplayFinalBody,
   writeHistoricalAnswerHold,
   type AnswerPart,
   type HistoricalAnswerHold
 } from './turn-segments'
 import type { TurnSegment } from './types'
 
-/** 窗口外侧最多预热这么多条助手行，避免一次扫整页 */
-export const HISTORICAL_ANSWER_WARM_LIMIT = 8
+/** 覆盖一次上滑揭示页，避免揭示 30 行时只预热到 8 条 */
+export const HISTORICAL_ANSWER_WARM_LIMIT = TRANSCRIPT_PAGE
+
+/** 每个 idle 切片只采一条，避免一帧扫完整页 */
+export const HISTORICAL_ANSWER_WARM_SLICE = 1
 
 /** 直播中不预热；空闲才采集相邻未挂载行 */
 export function shouldScheduleHistoricalAnswerWarm(input: { loading?: boolean }): boolean {
@@ -64,12 +71,22 @@ export function historicalProcessOutcome(input: {
 
 /** 从窗口边沿向外挑未挂载的助手行，供 idle 预热 */
 export function nextHistoricalAnswerWarmMessages<
-  T extends { id: string; role: string; meta?: { segments?: readonly unknown[] | null } }
+  T extends {
+    id: string
+    role: string
+    content?: string
+    meta?: {
+      segments?: readonly TurnSegment[] | null
+      durationSec?: number
+      outcome?: string
+    }
+  }
 >(input: {
   messages: readonly T[]
   windowStart: number
   windowEnd: number
   limit?: number
+  skipHeld?: boolean
 }): T[] {
   const limit = input.limit ?? HISTORICAL_ANSWER_WARM_LIMIT
   const out: T[] = []
@@ -85,7 +102,18 @@ export function nextHistoricalAnswerWarmMessages<
         shouldWarmHistoricalAnswerHold({
           role: message.role,
           hasSegments: Boolean(message.meta?.segments?.length)
-        })
+        }) &&
+        (!input.skipHeld ||
+          !seedHistoricalAnswerHold(
+            message.id,
+            historicalAnswerHoldStamp({
+              messageId: message.id,
+              content: message.content ?? '',
+              durationSec: message.meta?.durationSec,
+              outcome: message.meta?.outcome,
+              segments: message.meta?.segments
+            })
+          ))
       ) {
         if (step < 0) older = index
         else newer = index
@@ -132,8 +160,16 @@ export function captureHistoricalAnswerHold(input: {
       input.durationSec,
       historicalProcessOutcome(input)
     ),
-    frozenSteps: snapshotFrozenProcessSteps(processForFlow, { isStreaming: false })
+    frozenSteps: snapshotFrozenProcessSteps(processForFlow, { isStreaming: false }),
+    filesChanged: nextFilesChangedStats(null, input.segments),
+    hasProcess: hasProcessFlow(input.segments, { isStreaming: false }),
+    finalBody: shouldDisplayFinalBody(extractedFinal, input.segments, { isStreaming: false })
   }
+}
+
+/** 还有未预热的相邻行时继续排下一个 idle 切片 */
+export function shouldContinueHistoricalAnswerWarm(input: { remaining: number }): boolean {
+  return input.remaining > 0
 }
 
 /** 已有同一 stamp 则只碰 LRU；否则采集并写入 */

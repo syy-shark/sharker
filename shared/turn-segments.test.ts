@@ -694,7 +694,10 @@ describe('historical answer remount holds', () => {
       processForFlow: processOnly,
       processPhases: null,
       processSummary: 'Worked for · 4s',
-      frozenSteps: []
+      frozenSteps: [],
+      filesChanged: { added: 0, removed: 0, byPath: {} },
+      hasProcess: true,
+      finalBody: { show: true, content: '完成。' }
     })
     const seeded = seedHistoricalAnswerHold('msg-hold', stamp)
     expect(seeded).toBe(hold)
