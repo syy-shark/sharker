@@ -269,8 +269,11 @@ html.theme-light .chat-toolbar {
 
 .chat-toolbar-popout-label {
   padding: 0 8px;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-toolbar-icon-btn:focus-visible {

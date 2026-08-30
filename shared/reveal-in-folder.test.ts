@@ -89,6 +89,9 @@ import {
   TOGGLE_FILE_TREE_LABEL,
   TOGGLE_FILE_TREE_MENU_LABEL,
   TOGGLE_SIDEBAR_LABEL,
+  FILES_LABEL,
+  REVIEW_LABEL,
+  TERMINAL_LABEL,
   FILE_MENU_LABEL,
   FILE_CLOSE_LABEL,
   CLOSE_CURRENT_TAB_OR_WINDOW_LABEL,
@@ -224,8 +227,10 @@ describe('reveal in folder', () => {
       'utf8'
     )
     expect(toolbarSrc).toContain('TOGGLE_SIDEBAR_LABEL')
+    expect(toolbarSrc).toContain('OPEN_IN_POPUP_WINDOW_LABEL')
     expect(toolbarSrc).not.toContain('固定展开边栏')
     expect(toolbarSrc).not.toContain('收起边栏')
+    expect(toolbarSrc).not.toContain('弹出对话')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
     expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
@@ -282,6 +287,19 @@ describe('reveal in folder', () => {
     expect(SUGGESTED_PROMPTS_INTRO).toMatch(/context-aware suggestions/)
     expect(ARCHIVED_CHATS_INTRO).toMatch(/Use Unarchive to restore a chat/)
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
+    expect(FILES_LABEL).toBe('Files')
+    expect(REVIEW_LABEL).toBe('Review')
+    expect(TERMINAL_LABEL).toBe('Terminal')
+    const panelSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/RightPanel.tsx'),
+      'utf8'
+    )
+    expect(panelSrc).toContain('FILES_LABEL')
+    expect(panelSrc).toContain('REVIEW_LABEL')
+    expect(panelSrc).toContain('TERMINAL_LABEL')
+    expect(panelSrc).toContain('BROWSER_SETTINGS_LABEL')
+    expect(panelSrc).not.toContain("['files', '文件']")
+    expect(panelSrc).not.toContain("['changes', '变更']")
     expect(MCP_SERVERS_LABEL).toBe('MCP servers')
     expect(ADD_SERVER_LABEL).toBe('Add server')
     expect(SAVE_LABEL).toBe('Save')

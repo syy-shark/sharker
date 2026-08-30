@@ -469,7 +469,7 @@ export const ChatToolbar = memo(function ChatToolbar({
               >
                 <Pin size={18} strokeWidth={1.75} aria-hidden />
               </button>
-              <span className="chat-toolbar-popout-label">弹出对话</span>
+              <span className="chat-toolbar-popout-label">{OPEN_IN_POPUP_WINDOW_LABEL}</span>
             </>
           ) : (
           <>

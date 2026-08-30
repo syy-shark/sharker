@@ -1,5 +1,5 @@
 /**
- * 右侧可展开面板：文件树 / 终端 / 内置浏览器；拖拽调宽按窗口比例记忆（对标 Codex）。
+ * 右侧可展开面板：Files / Review / Terminal / Browser / Subagents；拖拽调宽按窗口比例记忆（对标 Codex）。
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Expand, Minimize2, X } from 'lucide-react'
@@ -9,6 +9,12 @@ import { EmbeddedBrowser, type BrowserMenuCommand } from './panel/EmbeddedBrowse
 import { ChangesPanel } from './panel/ChangesPanel'
 import { AgentsPanel } from './panel/AgentsPanel'
 import { SUBAGENTS_LABEL } from '../../shared/subagent'
+import {
+  BROWSER_SETTINGS_LABEL,
+  FILES_LABEL,
+  REVIEW_LABEL,
+  TERMINAL_LABEL
+} from '../../shared/reveal-in-folder'
 import './RightPanel.css'
 import { RIGHT_PANEL_LAYOUT, WORKBENCH_BREAKPOINT } from '../constants/layout'
 import {
@@ -374,10 +380,10 @@ export const RightPanel = memo(function RightPanel({
         <div className="right-panel-tabs" role="tablist">
           {(
             [
-              ['files', '文件'],
-              ['changes', '变更'],
-              ['terminal', '终端'],
-              ['browser', '浏览器'],
+              ['files', FILES_LABEL],
+              ['changes', REVIEW_LABEL],
+              ['terminal', TERMINAL_LABEL],
+              ['browser', BROWSER_SETTINGS_LABEL],
               ['agents', SUBAGENTS_LABEL]
             ] as const
           ).map(([id, label]) => (

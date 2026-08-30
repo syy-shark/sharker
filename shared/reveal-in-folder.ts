@@ -291,6 +291,12 @@ export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'
 export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
+/** Official review pane / Open review tab (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_LABEL = 'Review'
+/** Official integrated terminal panel (learn.chatgpt.com/docs/integrated-terminal). */
+export const TERMINAL_LABEL = 'Terminal'
+/** Official desktop right-panel Files tool (#30659) next to Toggle file tree. */
+export const FILES_LABEL = 'Files'
 /** Official Settings → Worktrees (learn.chatgpt.com/docs/environments/git-worktrees). */
 export const WORKTREES_SETTINGS_LABEL = 'Worktrees'
 export const WORKTREE_ROOT_LABEL = 'Worktree root'
