@@ -1572,7 +1572,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('process-phases.ts').includes('live-stream-slices')).toBe(false)
 
     expect(src('../src/components/AssistantMessage.tsx')).toContain('wrapLines={!streaming}')
-    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('liveDiff: true')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('liveDiff = true')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('isStreaming={isStreaming}')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
       'streaming={options.markdownStreaming}'
