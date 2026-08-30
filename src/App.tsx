@@ -327,7 +327,8 @@ import {
   shouldCancelLiveHandoffWithoutCommit,
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
-  nextEjectedLiveArticles,
+  nextArchivedLiveArticles,
+  takeEjectedLiveOverflow,
   retireLiveArticle,
   upsertAssistantMessage,
   type DoneCommittedMap,
@@ -532,10 +533,12 @@ export default function App() {
   const [retiredLiveCopyable, setRetiredLiveCopyable] = useState<string | null>(null)
   const [retiredLiveArticles, setRetiredLiveArticles] = useState<RetiredLiveArticle[]>([])
   const [ejectedLiveArticles, setEjectedLiveArticles] = useState<RetiredLiveArticle[]>([])
+  const [archivedLiveArticles, setArchivedLiveArticles] = useState<RetiredLiveArticle[]>([])
   const [ejectedLiveHeights, setEjectedLiveHeights] = useState<Record<string, number>>({})
   const retiredLiveIdRef = useRef<string | null>(null)
   const retiredLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
   const ejectedLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
+  const archivedLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
   const approvalBusyRef = useRef(false)
@@ -1053,6 +1056,7 @@ export default function App() {
     retiredLiveIdRef.current = null
     retiredLiveArticlesRef.current = []
     ejectedLiveArticlesRef.current = []
+    archivedLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
@@ -1060,6 +1064,7 @@ export default function App() {
     setRetiredLiveCopyable(null)
     setRetiredLiveArticles([])
     setEjectedLiveArticles([])
+    setArchivedLiveArticles([])
     setEjectedLiveHeights({})
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     if (lastTurnUiTimerRef.current != null) {
@@ -1556,6 +1561,7 @@ export default function App() {
     retiredLiveIdRef.current = null
     retiredLiveArticlesRef.current = []
     ejectedLiveArticlesRef.current = []
+    archivedLiveArticlesRef.current = []
     setRetiredLiveId(null)
     setRetiredLiveParts(null)
     setRetiredLiveMeta(null)
@@ -1563,6 +1569,7 @@ export default function App() {
     setRetiredLiveCopyable(null)
     setRetiredLiveArticles([])
     setEjectedLiveArticles([])
+    setArchivedLiveArticles([])
     setEjectedLiveHeights({})
   }, [])
 
@@ -1600,9 +1607,14 @@ export default function App() {
     retiredLiveArticlesRef.current = nextRetired
     setRetiredLiveArticles(nextRetired)
     if (ejected.length) {
-      const nextEjected = nextEjectedLiveArticles(ejectedLiveArticlesRef.current, ejected)
-      ejectedLiveArticlesRef.current = nextEjected
-      setEjectedLiveArticles(nextEjected)
+      const { kept, dropped } = takeEjectedLiveOverflow(ejectedLiveArticlesRef.current, ejected)
+      ejectedLiveArticlesRef.current = kept
+      setEjectedLiveArticles(kept)
+      if (dropped.length) {
+        const nextArchived = nextArchivedLiveArticles(archivedLiveArticlesRef.current, dropped)
+        archivedLiveArticlesRef.current = nextArchived
+        setArchivedLiveArticles(nextArchived)
+      }
       setEjectedLiveHeights((prev) => {
         const next = { ...prev }
         for (const item of ejected) {
@@ -9282,6 +9294,7 @@ export default function App() {
               retiredLiveCopyable={retiredLiveCopyable}
               retiredLiveArticles={retiredLiveArticles}
               ejectedLiveArticles={ejectedLiveArticles}
+              archivedLiveArticles={archivedLiveArticles}
               ejectedLiveHeights={ejectedLiveHeights}
               loading={loading}
               queuedPrompts={composerQueuedPrompts}

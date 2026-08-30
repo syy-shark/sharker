@@ -18,10 +18,14 @@ import {
   pinnedLiveAssistantIds,
   nextRetiredLiveArticles,
   nextEjectedLiveArticles,
+  nextArchivedLiveArticles,
+  takeEjectedLiveOverflow,
   retireLiveArticle,
   retiredLiveArticle,
+  frozenHistoricalArticle,
   RETIRED_LIVE_LIMIT,
   EJECTED_LIVE_LIMIT,
+  ARCHIVED_LIVE_PARTS_LIMIT,
   splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
   historicalMessagesHidingIds,
@@ -621,6 +625,46 @@ describe('commitAssistantReply persist targeting', () => {
     expect(nextEjectedLiveArticles([], overflow).map((a) => a.id)).toEqual(
       overflow.slice(-8).map((a) => a.id)
     )
+    expect(takeEjectedLiveOverflow([], overflow)).toEqual({
+      kept: overflow.slice(-8).map((item) => ({ ...item })),
+      dropped: overflow.slice(0, 1).map((item) => ({ ...item, id: item.id }))
+    })
+    const fullEjected = overflow.slice(0, 8)
+    const ninth = {
+      id: 'e8',
+      parts: [],
+      meta: null,
+      startedAt: 8,
+      copyable: '8'
+    }
+    expect(takeEjectedLiveOverflow(fullEjected, [ninth])).toEqual({
+      kept: [...fullEjected.slice(1), { ...ninth }].map((item) => ({ ...item })),
+      dropped: [{ ...fullEjected[0], id: 'e0' }]
+    })
+    expect(takeEjectedLiveOverflow([first], [{ ...first, copyable: 'A2' }])).toEqual({
+      kept: [{ ...first, copyable: 'A2' }],
+      dropped: []
+    })
+    expect(ARCHIVED_LIVE_PARTS_LIMIT).toBe(64)
+    expect(nextArchivedLiveArticles([], [first]).map((a) => a.id)).toEqual(['a-live'])
+    expect(nextArchivedLiveArticles([first], [second]).map((a) => a.id)).toEqual([
+      'a-live',
+      'b-live'
+    ])
+    const archivedOverflow = Array.from({ length: 65 }, (_, i) => ({
+      id: `a${i}`,
+      parts: [],
+      meta: null,
+      startedAt: i,
+      copyable: String(i)
+    }))
+    expect(nextArchivedLiveArticles([], archivedOverflow).map((a) => a.id)).toEqual(
+      archivedOverflow.slice(-64).map((a) => a.id)
+    )
+    expect(frozenHistoricalArticle([first], [second], 'a-live')?.copyable).toBe('A')
+    expect(frozenHistoricalArticle([], [second], 'b-live')?.copyable).toBe('B')
+    expect(frozenHistoricalArticle([first], [first], 'a-live')?.copyable).toBe('A')
+    expect(frozenHistoricalArticle([], [], 'missing')).toBeNull()
     expect(retiredLiveArticle([first, second], 'a-live')?.copyable).toBe('A')
     expect(retiredLiveArticle([first, second], 'missing')).toBeNull()
     expect(

@@ -2,6 +2,7 @@
  * 多会话队列与流归属：纯逻辑，渲染层与单测共用。
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
+ * 再掉出 ejected 环的行进 parts 归档，不抬 `EJECTED_LIVE_LIMIT`。
  * @see shared/ARCH.md
  */
 
@@ -534,8 +535,11 @@ export type RetiredLiveArticle = {
 /** 短线程连跟两轮时仍留下上一行；再早的行退出环，但仍用冻结正文画，不重挂 `AssistantMessage`。 */
 export const RETIRED_LIVE_LIMIT = 2
 
-/** 退出环后仍按冻结 part 画的上限；再早的才走普通历史气泡。 */
+/** 退出环后仍按完整冻结行画的上限；再早的进 parts 归档，不走普通历史气泡。 */
 export const EJECTED_LIVE_LIMIT = 8
+
+/** 掉出 ejected 环后仍按冻结 part 画的上限；不抬 ejected / retired 环。 */
+export const ARCHIVED_LIVE_PARTS_LIMIT = 64
 
 /** 把刚 adopt 的行推进环；同 id 覆盖，超出上限的最早行进 `ejected`。 */
 export function retireLiveArticle(
@@ -571,6 +575,42 @@ export function nextEjectedLiveArticles(
   return next.length > EJECTED_LIVE_LIMIT ? next.slice(-EJECTED_LIVE_LIMIT) : next
 }
 
+/** ejected 环收下新行后，哪些旧冻结行掉出上限。 */
+export function takeEjectedLiveOverflow(
+  prev: readonly RetiredLiveArticle[],
+  ejected: readonly RetiredLiveArticle[]
+): { kept: RetiredLiveArticle[]; dropped: RetiredLiveArticle[] } {
+  const kept = nextEjectedLiveArticles(prev, ejected)
+  const keptIds = new Set(kept.map((item) => item.id))
+  const dropped: RetiredLiveArticle[] = []
+  const seen = new Set<string>()
+  const consider = (item: RetiredLiveArticle) => {
+    const id = item.id.trim()
+    if (!id || keptIds.has(id) || seen.has(id)) return
+    seen.add(id)
+    dropped.push({ ...item, id })
+  }
+  for (const item of prev) consider(item)
+  for (const item of ejected) consider(item)
+  return { kept, dropped }
+}
+
+/** 掉出 ejected 环的冻结 part：同 id 覆盖，超出归档上限丢掉最早的。 */
+export function nextArchivedLiveArticles(
+  prev: readonly RetiredLiveArticle[],
+  dropped: readonly RetiredLiveArticle[]
+): RetiredLiveArticle[] {
+  if (!dropped.length) return prev.slice()
+  const incoming = new Set(dropped.map((item) => item.id.trim()).filter(Boolean))
+  const next = [
+    ...prev.filter((item) => !incoming.has(item.id)),
+    ...dropped.filter((item) => item.id.trim()).map((item) => ({ ...item }))
+  ]
+  return next.length > ARCHIVED_LIVE_PARTS_LIMIT
+    ? next.slice(-ARCHIVED_LIVE_PARTS_LIMIT)
+    : next
+}
+
 /** 按 id 取冻结行。 */
 export function retiredLiveArticle(
   articles: readonly RetiredLiveArticle[],
@@ -579,6 +619,15 @@ export function retiredLiveArticle(
   const key = id?.trim()
   if (!key) return null
   return articles.find((item) => item.id === key) ?? null
+}
+
+/** 历史列冻结行：先 ejected 环，再 parts 归档。 */
+export function frozenHistoricalArticle(
+  ejected: readonly RetiredLiveArticle[],
+  archived: readonly RetiredLiveArticle[],
+  id?: string | null
+): RetiredLiveArticle | null {
+  return retiredLiveArticle(ejected, id) ?? retiredLiveArticle(archived, id)
 }
 
 /**
