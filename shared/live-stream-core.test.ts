@@ -253,6 +253,95 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(nextProcess.processForFlow.at(-1)).toBe(nextTool)
   })
 
+  it('classifies two extra no-fence texts in one flush without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reply = prose('Hi')
+    const extraText: TurnSegment = {
+      id: 'a2',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Next'
+    }
+    const thirdText: TurnSegment = {
+      id: 'a3',
+      kind: 'text',
+      role: 'final',
+      status: 'active',
+      content: 'Done'
+    }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading],
+        [thought, reading, reply, extraText]
+      )
+    ).toBe('text')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply],
+        [thought, reading, reply, extraText, thirdText]
+      )
+    ).toBe('text')
+    expect(
+      hasLiveProcessPhaseGrowHold(
+        [thought, reading, reply],
+        [thought, reading, reply, extraText, thirdText]
+      )
+    ).toBe(true)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const bothFromTools = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, extraText]
+    })
+    expect(bothFromTools.closed.some((part) => part.type === 'text' && part.content === 'Hi')).toBe(
+      true
+    )
+    expect(bothFromTools.tail?.content).toBe('Next')
+    expect(bothFromTools.copyable).toContain('Hi')
+    expect(bothFromTools.copyable).toContain('Next')
+    const afterProse = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply]
+    })
+    const twoMore = nextLiveAnswerView(afterProse, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reply, extraText, thirdText]
+    })
+    expect(twoMore.closed.filter((part) => part.type === 'text').map((part) => part.content)).toEqual(
+      ['Hi', 'Next']
+    )
+    expect(twoMore.tail?.content).toBe('Done')
+    expect(twoMore.copyable).toContain('Done')
+    const nextTool: TurnSegment = { ...tool('active'), id: 't2' }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading, reply],
+        [thought, reading, reply, extraText, thirdText, nextTool]
+      )
+    ).toBe('tool')
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, reading],
+        [thought, reading, nextTool, reply, extraText]
+      )
+    ).toBe('text')
+    const firstProcess = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const processThenTexts = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, nextTool, reply, extraText]
+    })
+    expect(processThenTexts.processForFlow.at(-1)).toBe(nextTool)
+    expect(processThenTexts.contentStreaming).toBe(true)
+    expect(processThenTexts.answerStreaming).toBe(true)
+  })
+
   it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
@@ -779,6 +868,90 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(nextAnswer.parts.filter((part) => part.type === 'text')).toEqual(
       firstAnswer.parts.filter((part) => part.type === 'text')
     )
+  })
+
+  it('retargets two write-stat tools and extra file diffs without rebuilding the answer tail', () => {
+    const thought = think('Hmm')
+    const writing: TurnSegment = {
+      id: 'w1',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    const writingB: TurnSegment = {
+      id: 'w2',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'b.ts',
+        lines: [{ kind: 'add', content: 'yo' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    const reply = prose('Hi')
+    const nextA = {
+      path: 'a.ts',
+      lines: [
+        { kind: 'add' as const, content: 'hi' },
+        { kind: 'add' as const, content: 'there' }
+      ],
+      stats: { added: 2, removed: 0 }
+    }
+    const nextB = {
+      path: 'b.ts',
+      lines: [
+        { kind: 'add' as const, content: 'yo' },
+        { kind: 'add' as const, content: 'there' }
+      ],
+      stats: { added: 2, removed: 0 }
+    }
+    const extraA = {
+      path: 'a2.ts',
+      lines: [{ kind: 'add' as const, content: 'more' }],
+      stats: { added: 1, removed: 0 }
+    }
+    const writtenA: TurnSegment = { ...writing, fileDiff: nextA, fileDiffs: [nextA] }
+    const writtenB: TurnSegment = { ...writingB, fileDiff: nextB, fileDiffs: [nextB] }
+    const multiA: TurnSegment = { ...writing, fileDiff: nextA, fileDiffs: [nextA, extraA] }
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [thought, writing, writingB, reply],
+        [thought, writtenA, writtenB, reply]
+      )
+    ).toBe('tool')
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, writingB, reply]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writtenA, writtenB, reply]
+    })
+    expect(nextAnswer.tail).toBe(firstAnswer.tail)
+    const diffs = nextAnswer.parts.filter((part) => part.type === 'diff')
+    expect(diffs).toHaveLength(2)
+    expect(diffs.every((part) => part.type === 'diff' && part.diff.stats?.added === 2)).toBe(true)
+    expect(nextAnswer.parts.filter((part) => part.type === 'text')).toEqual(
+      firstAnswer.parts.filter((part) => part.type === 'text')
+    )
+    const oneFile = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, reply]
+    })
+    const twoFiles = nextLiveAnswerView(oneFile, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, multiA, reply]
+    })
+    expect(twoFiles.tail).toBe(oneFile.tail)
+    expect(twoFiles.parts.filter((part) => part.type === 'diff')).toHaveLength(2)
   })
 
   it('opens the answer tail from the first prose after tools without the table', () => {
