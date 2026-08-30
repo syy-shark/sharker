@@ -503,6 +503,58 @@ import {
   isLiveWriteStatApprovalNeededCancelAppendChange,
   isLiveStatusApprovalNeededCompressAppendChange,
   isLiveStatusApprovalNeededCancelAppendChange,
+  isLiveApprovalNeededAnswerAskAppendChange,
+  isLiveApprovalNeededThinkAnswerAskAppendChange,
+  isLiveApprovalNeededAnswerAskCancelAppendChange,
+  isLiveApprovalNeededThinkAnswerAskCancelAppendChange,
+  isLiveApprovalNeededAnswerAskCompressAppendChange,
+  isLiveApprovalNeededThinkAnswerAskCompressAppendChange,
+  isLiveApprovalNeededAskToolAppendChange,
+  isLiveApprovalNeededAskActiveToolAppendChange,
+  isLiveApprovalNeededAnswerAskToolAppendChange,
+  isLiveApprovalNeededAnswerAskActiveToolAppendChange,
+  isLiveApprovalNeededThinkAnswerAskToolAppendChange,
+  isLiveApprovalNeededErrorAskAppendChange,
+  isLiveApprovalNeededThinkErrorAskAppendChange,
+  isLiveStatusApprovalNeededAnswerAskAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerAskAppendChange,
+  isLiveStatusApprovalNeededAnswerAskCancelAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerAskCancelAppendChange,
+  isLiveStatusApprovalNeededAnswerAskCompressAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerAskCompressAppendChange,
+  isLiveStatusApprovalNeededAskToolAppendChange,
+  isLiveStatusApprovalNeededAskActiveToolAppendChange,
+  isLiveStatusApprovalNeededAnswerAskToolAppendChange,
+  isLiveStatusApprovalNeededAnswerAskActiveToolAppendChange,
+  isLiveStatusApprovalNeededThinkAnswerAskToolAppendChange,
+  isLiveStatusApprovalNeededErrorAskAppendChange,
+  isLiveStatusApprovalNeededThinkErrorAskAppendChange,
+  isLiveWriteStatApprovalNeededAnswerAskAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerAskAppendChange,
+  isLiveWriteStatApprovalNeededAnswerAskCancelAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerAskCancelAppendChange,
+  isLiveWriteStatApprovalNeededAnswerAskCompressAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerAskCompressAppendChange,
+  isLiveWriteStatApprovalNeededAskToolAppendChange,
+  isLiveWriteStatApprovalNeededAskActiveToolAppendChange,
+  isLiveWriteStatApprovalNeededAnswerAskToolAppendChange,
+  isLiveWriteStatApprovalNeededAnswerAskActiveToolAppendChange,
+  isLiveWriteStatApprovalNeededThinkAnswerAskToolAppendChange,
+  isLiveWriteStatApprovalNeededErrorAskAppendChange,
+  isLiveWriteStatApprovalNeededThinkErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerAskAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerAskCancelAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerAskCompressAppendChange,
+  isLiveWriteStatStatusApprovalNeededAskToolAppendChange,
+  isLiveWriteStatStatusApprovalNeededAskActiveToolAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerAskToolAppendChange,
+  isLiveWriteStatStatusApprovalNeededAnswerAskActiveToolAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkAnswerAskToolAppendChange,
+  isLiveWriteStatStatusApprovalNeededErrorAskAppendChange,
+  isLiveWriteStatStatusApprovalNeededThinkErrorAskAppendChange,
   isLiveWriteStatApprovalResolvedCompressAppendChange,
   isLiveWriteStatApprovalResolvedCancelAppendChange,
   isLiveStatusApprovalResolvedCompressAppendChange,
@@ -11535,6 +11587,117 @@ describe('live stream ui snapshot', () => {
       const helperKey = label.replace(/\+hello$/, '') as keyof typeof liveTokenAskHelpers
       const helpers = liveTokenAskHelpers[helperKey]
       for (const [extra, chunks] of liveTokenAskExtras) {
+        const helper = helpers[extra as keyof typeof helpers]
+        if (!helper) continue
+        const next = playLiveChunks([...prev], stampLiveChunks([...head, ...chunks]))
+        expect(helper(prev, next), `${label}+${extra}`).toBe(true)
+        expect(shouldSkipLiveStreamDerivation(prev, next), `skip ${label}+${extra}`).toBe('tool')
+      }
+    }
+    const liveHangHead = [
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang
+    ]
+    const liveHangStatusHead = [
+      { type: 'status' as const, content: 'Reconnecting... 1/5' },
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang
+    ]
+    const liveWriteHangHead = [
+      writeAskDone,
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang
+    ]
+    const liveWriteStatusHangHead = [
+      writeAskDone,
+      { type: 'status' as const, content: '根据已完成步骤规划下一步…' },
+      { type: 'tool_start' as const, toolName: 'run_terminal_cmd' },
+      approvalHang
+    ]
+    const liveHangExtras: Array<[string, Parameters<typeof applyStreamChunk>[1][]]> = [
+      ['token+ask', [{ type: 'token', content: 'Hi' }, ...liveAskStart]],
+      ...liveTokenAskExtras,
+      ['token+error+ask', [{ type: 'token', content: 'Hi' }, { type: 'error', error: 'boom' }, ...liveAskStart]],
+      [
+        'think+token+error+ask',
+        [
+          { type: 'think', content: 'Next' },
+          { type: 'token', content: 'Hi' },
+          { type: 'error', error: 'boom' },
+          ...liveAskStart
+        ]
+      ]
+    ]
+    const liveHangHelpers = {
+      hang: {
+        'token+ask': isLiveApprovalNeededAnswerAskAppendChange,
+        'think+token+ask': isLiveApprovalNeededThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveApprovalNeededAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveApprovalNeededThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveApprovalNeededAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveApprovalNeededThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveApprovalNeededAskToolAppendChange,
+        'ask+active': isLiveApprovalNeededAskActiveToolAppendChange,
+        'token+ask+settled': isLiveApprovalNeededAnswerAskToolAppendChange,
+        'token+ask+active': isLiveApprovalNeededAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveApprovalNeededThinkAnswerAskToolAppendChange,
+        'token+error+ask': isLiveApprovalNeededErrorAskAppendChange,
+        'think+token+error+ask': isLiveApprovalNeededThinkErrorAskAppendChange
+      },
+      'hang-status': {
+        'token+ask': isLiveStatusApprovalNeededAnswerAskAppendChange,
+        'think+token+ask': isLiveStatusApprovalNeededThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveStatusApprovalNeededAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveStatusApprovalNeededThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveStatusApprovalNeededAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveStatusApprovalNeededThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveStatusApprovalNeededAskToolAppendChange,
+        'ask+active': isLiveStatusApprovalNeededAskActiveToolAppendChange,
+        'token+ask+settled': isLiveStatusApprovalNeededAnswerAskToolAppendChange,
+        'token+ask+active': isLiveStatusApprovalNeededAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveStatusApprovalNeededThinkAnswerAskToolAppendChange,
+        'token+error+ask': isLiveStatusApprovalNeededErrorAskAppendChange,
+        'think+token+error+ask': isLiveStatusApprovalNeededThinkErrorAskAppendChange
+      },
+      'write-hang': {
+        'token+ask': isLiveWriteStatApprovalNeededAnswerAskAppendChange,
+        'think+token+ask': isLiveWriteStatApprovalNeededThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveWriteStatApprovalNeededAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveWriteStatApprovalNeededThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveWriteStatApprovalNeededAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveWriteStatApprovalNeededThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveWriteStatApprovalNeededAskToolAppendChange,
+        'ask+active': isLiveWriteStatApprovalNeededAskActiveToolAppendChange,
+        'token+ask+settled': isLiveWriteStatApprovalNeededAnswerAskToolAppendChange,
+        'token+ask+active': isLiveWriteStatApprovalNeededAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveWriteStatApprovalNeededThinkAnswerAskToolAppendChange,
+        'token+error+ask': isLiveWriteStatApprovalNeededErrorAskAppendChange,
+        'think+token+error+ask': isLiveWriteStatApprovalNeededThinkErrorAskAppendChange
+      },
+      'write-status-hang': {
+        'token+ask': isLiveWriteStatStatusApprovalNeededAnswerAskAppendChange,
+        'think+token+ask': isLiveWriteStatStatusApprovalNeededThinkAnswerAskAppendChange,
+        'token+ask+cancel': isLiveWriteStatStatusApprovalNeededAnswerAskCancelAppendChange,
+        'think+token+ask+cancel': isLiveWriteStatStatusApprovalNeededThinkAnswerAskCancelAppendChange,
+        'token+ask+compress': isLiveWriteStatStatusApprovalNeededAnswerAskCompressAppendChange,
+        'think+token+ask+compress': isLiveWriteStatStatusApprovalNeededThinkAnswerAskCompressAppendChange,
+        'ask+settled': isLiveWriteStatStatusApprovalNeededAskToolAppendChange,
+        'ask+active': isLiveWriteStatStatusApprovalNeededAskActiveToolAppendChange,
+        'token+ask+settled': isLiveWriteStatStatusApprovalNeededAnswerAskToolAppendChange,
+        'token+ask+active': isLiveWriteStatStatusApprovalNeededAnswerAskActiveToolAppendChange,
+        'think+token+ask+settled': isLiveWriteStatStatusApprovalNeededThinkAnswerAskToolAppendChange,
+        'token+error+ask': isLiveWriteStatStatusApprovalNeededErrorAskAppendChange,
+        'think+token+error+ask': isLiveWriteStatStatusApprovalNeededThinkErrorAskAppendChange
+      }
+    } as const
+    for (const [label, prev, head] of [
+      ['hang', [hello], liveHangHead],
+      ['hang-status', [hello], liveHangStatusHead],
+      ['write-hang', [hello, running], liveWriteHangHead],
+      ['write-status-hang', [hello, running], liveWriteStatusHangHead]
+    ] as const) {
+      const helpers = liveHangHelpers[label]
+      for (const [extra, chunks] of liveHangExtras) {
         const helper = helpers[extra as keyof typeof helpers]
         if (!helper) continue
         const next = playLiveChunks([...prev], stampLiveChunks([...head, ...chunks]))
