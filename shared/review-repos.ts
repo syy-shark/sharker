@@ -15,6 +15,8 @@ export const STAGED_LABEL = 'Staged'
 export const BRANCH_REVIEW_LABEL = 'Branch'
 export const COMMIT_REVIEW_LABEL = 'Commit'
 export const STAGE_ALL_LABEL = 'Stage all'
+/** Official entire-diff unstage, parallel to Stage all / Revert all. */
+export const UNSTAGE_ALL_LABEL = 'Unstage all'
 export const REVERT_ALL_LABEL = 'Revert all'
 /** Official review pane per-file / per-hunk verbs (learn.chatgpt.com/docs/code-review). */
 export const STAGE_LABEL = 'Stage'

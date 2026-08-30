@@ -25,6 +25,7 @@ import type {
 } from '../../shared/types'
 import {
   PERMISSION_MODES,
+  PERMISSIONS_LABEL,
   permissionModeChipLabel,
   permissionModeChipTitle
 } from '../../shared/permission-mode'
@@ -2382,7 +2383,7 @@ export const ComposerDock = memo(
               </span>
             ) : null}
             {onPermissionModeChange ? (
-              <div className="composer-thread-mode" role="group" aria-label="权限">
+              <div className="composer-thread-mode" role="group" aria-label={PERMISSIONS_LABEL}>
                 {PERMISSION_MODES.map((mode) => (
                   <button
                     key={mode}

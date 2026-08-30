@@ -155,6 +155,7 @@ html.theme-dark .automations-filter {
 .automations-queue-btn {
   min-height: 26px;
   padding: 0 8px;
+  white-space: nowrap;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm, 6px);
   background: var(--glass-fill-nested);

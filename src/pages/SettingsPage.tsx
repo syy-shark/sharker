@@ -40,11 +40,12 @@ import {
   WORKTREES_SETTINGS_INTRO,
   WORKTREES_SETTINGS_LABEL
 } from '../../shared/reveal-in-folder'
+import { PERMISSIONS_LABEL } from '../../shared/permission-mode'
 import './SettingsPage.css'
 
 const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   permissions: {
-    title: '权限',
+    title: PERMISSIONS_LABEL,
     desc: '控制 AI 可访问的文件与系统范围与 Git 文案模板；高危操作仍会单独确认。Worktree root 在 Worktrees。/review 交付在通用。'
   },
   models: {

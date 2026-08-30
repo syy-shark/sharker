@@ -8,7 +8,8 @@ import {
   ASK_FOR_APPROVAL_DESCRIPTION,
   ASK_FOR_APPROVAL_LABEL,
   FULL_ACCESS_DESCRIPTION,
-  FULL_ACCESS_LABEL
+  FULL_ACCESS_LABEL,
+  PERMISSIONS_LABEL
 } from '../../../shared/permission-mode'
 import {
   parseToolOutputDisplay,
@@ -69,7 +70,7 @@ export function PermissionsSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="Permissions">
+      <SettingsSection title={PERMISSIONS_LABEL}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={draft.permissionMode}

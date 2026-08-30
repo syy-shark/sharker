@@ -324,7 +324,24 @@ describe('reveal in folder', () => {
     expect(composerSrc).toContain('NO_PROJECTS_LABEL')
     expect(composerSrc).toContain('REMOTE_BRANCH_HINT')
     expect(composerSrc).toContain('RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL')
+    expect(composerSrc).toContain('PERMISSIONS_LABEL')
     expect(composerSrc).not.toContain('提示历史')
+    expect(composerSrc).not.toContain('aria-label="权限"')
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SettingsPage.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('PERMISSIONS_LABEL')
+    const sidebarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/Sidebar.tsx'),
+      'utf8'
+    )
+    expect(sidebarSrc).toContain('PERMISSIONS_LABEL')
+    const permissionsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PermissionsSettings.tsx'),
+      'utf8'
+    )
+    expect(permissionsSrc).toContain('PERMISSIONS_LABEL')
     const paletteSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/CommandPalette.tsx'),
       'utf8'

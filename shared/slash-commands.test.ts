@@ -10,6 +10,7 @@ import {
   formatPermissionChanged,
   formatPermissionStatus,
   parsePermissionMode,
+  PERMISSIONS_LABEL,
   permissionModeChipLabel,
   permissionModeChipTitle
 } from './permission-mode'
@@ -104,6 +105,7 @@ describe('slash commands', () => {
     expect(parsePermissionMode('ask')).toBeNull()
     expect(parsePermissionMode('sandbox')).toBe('sandbox')
     expect(parsePermissionMode('FULL extra')).toBe('full')
+    expect(PERMISSIONS_LABEL).toBe('Permissions')
     expect(permissionModeChipLabel('sandbox')).toBe('Ask for approval')
     expect(permissionModeChipLabel('full')).toBe('Full access')
     expect(permissionModeChipTitle('sandbox')).toBe(

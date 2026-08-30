@@ -62,6 +62,7 @@ import {
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
+  UNSTAGE_ALL_LABEL,
   UNSTAGE_LABEL,
   UNSTAGED_LABEL,
   WRAP_LONG_DIFF_LINES_LABEL,
@@ -1284,7 +1285,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                 disabled={acting || visible.length === 0}
                 onClick={() => void runAction('unstage')}
               >
-                全部取消暂存
+                {UNSTAGE_ALL_LABEL}
               </button>
             )}
             <button

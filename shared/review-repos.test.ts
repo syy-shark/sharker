@@ -15,6 +15,7 @@ import {
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
+  UNSTAGE_ALL_LABEL,
   UNSTAGE_LABEL,
   UNSTAGED_LABEL,
   WRAP_LONG_DIFF_LINES_LABEL,
@@ -49,6 +50,7 @@ describe('review repos', () => {
     expect(COMMIT_REVIEW_LABEL).toBe('Commit')
     expect(ALL_REPOS_LABEL).toBe('All repos')
     expect(STAGE_ALL_LABEL).toBe('Stage all')
+    expect(UNSTAGE_ALL_LABEL).toBe('Unstage all')
     expect(REVERT_ALL_LABEL).toBe('Revert all')
     expect(STAGE_LABEL).toBe('Stage')
     expect(UNSTAGE_LABEL).toBe('Unstage')
@@ -63,7 +65,9 @@ describe('review repos', () => {
       'utf8'
     )
     expect(panelSrc).toContain('WRAP_LONG_DIFF_LINES_LABEL')
+    expect(panelSrc).toContain('UNSTAGE_ALL_LABEL')
     expect(panelSrc).not.toContain('换行长 diff')
+    expect(panelSrc).not.toContain('全部取消暂存')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

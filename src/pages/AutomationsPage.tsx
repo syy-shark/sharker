@@ -2,7 +2,11 @@
  * 自动化任务管理页。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CHATS_SECTION_LABEL, type ConversationSummary } from '../../shared/conversation'
+import {
+  CHATS_SECTION_LABEL,
+  MARK_ALL_AS_READ_LABEL,
+  type ConversationSummary
+} from '../../shared/conversation'
 import type { ProviderConfig, WorkspaceItem } from '../../shared/types'
 import { resolveThinkingOptions } from '../../shared/thinking-levels'
 import {
@@ -12,6 +16,7 @@ import {
   parseAutomationJobFilter,
   parseAutomationRunIn,
   parseOptionalAutomationId,
+  ARCHIVE_ELIGIBLE_RUNS_LABEL,
   RUN_NOW_LABEL,
   SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
@@ -186,7 +191,7 @@ export function AutomationsPage({
                   onQueueChanged?.()
                 }}
               >
-                全部标为已读
+                {MARK_ALL_AS_READ_LABEL}
               </button>
               <button
                 type="button"
@@ -199,7 +204,7 @@ export function AutomationsPage({
                   onQueueChanged?.()
                 }}
               >
-                归档已处理
+                {ARCHIVE_ELIGIBLE_RUNS_LABEL}
               </button>
             </div>
           ) : null}

@@ -187,6 +187,8 @@ export const SCHEDULED_ALL_LABEL = 'All'
 export const SCHEDULED_ACTIVE_LABEL = 'Active'
 export const SCHEDULED_PAUSED_LABEL = 'Paused'
 export const RUN_NOW_LABEL = 'Run now'
+/** Official Scheduled bulk action (learn.chatgpt.com/docs/whats-new). */
+export const ARCHIVE_ELIGIBLE_RUNS_LABEL = 'Archive eligible runs'
 
 /** 官方 Scheduled 页：All / Active / Paused */
 export type AutomationJobFilter = 'all' | 'active' | 'paused'

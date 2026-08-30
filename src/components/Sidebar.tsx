@@ -30,6 +30,7 @@ import {
   Search,
   SquarePen
 } from 'lucide-react'
+import { PERMISSIONS_LABEL } from '../../shared/permission-mode'
 import type { ConversationSummary } from '../../shared/conversation'
 import {
   CHATS_SECTION_LABEL,
@@ -165,7 +166,7 @@ const SIDEBAR_MIN_WIDTH = SIDEBAR_LAYOUT.min
 const SIDEBAR_MAX_WIDTH = SIDEBAR_LAYOUT.max
 const SIDEBAR_LAYOUT_MS = 280
 const SETTINGS_NAV: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
-  { id: 'permissions', label: '权限', icon: Shield },
+  { id: 'permissions', label: PERMISSIONS_LABEL, icon: Shield },
   { id: 'models', label: '模型', icon: Sparkles },
   { id: 'mcp', label: MCP_SERVERS_LABEL, icon: Plug },
   { id: 'general', label: GENERAL_SETTINGS_LABEL, icon: Settings2 },

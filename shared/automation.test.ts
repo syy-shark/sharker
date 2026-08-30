@@ -8,6 +8,7 @@ import {
   normalizeAutomationJob,
   normalizeAutomationJobs,
   applyScheduledTurnSettings,
+  ARCHIVE_ELIGIBLE_RUNS_LABEL,
   parseAutomationDestination,
   parseAutomationRunIn,
   filterAutomationJobs,
@@ -214,6 +215,11 @@ describe('automation destination', () => {
     expect(SCHEDULED_ACTIVE_LABEL).toBe('Active')
     expect(SCHEDULED_PAUSED_LABEL).toBe('Paused')
     expect(RUN_NOW_LABEL).toBe('Run now')
+    expect(ARCHIVE_ELIGIBLE_RUNS_LABEL).toBe('Archive eligible runs')
+    expect(automationsSrc).toContain('MARK_ALL_AS_READ_LABEL')
+    expect(automationsSrc).toContain('ARCHIVE_ELIGIBLE_RUNS_LABEL')
+    expect(automationsSrc).not.toContain('全部标为已读')
+    expect(automationsSrc).not.toContain('归档已处理')
     expect(
       applyScheduledTaskAction(created.jobs, { op: 'pause', id: 'job-1' }).jobs[0]?.enabled
     ).toBe(false)

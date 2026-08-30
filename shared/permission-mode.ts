@@ -8,6 +8,8 @@ import type { PermissionMode } from './types'
 
 export const PERMISSION_MODES = ['sandbox', 'full'] as const
 
+/** Official Settings → General / composer permissions control (learn.chatgpt.com/docs/permission-modes). */
+export const PERMISSIONS_LABEL = 'Permissions'
 /** 官方 composer 权限菜单项（对标 learn.chatgpt.com/docs/sandboxing） */
 export const ASK_FOR_APPROVAL_LABEL = 'Ask for approval'
 export const FULL_ACCESS_LABEL = 'Full access'
