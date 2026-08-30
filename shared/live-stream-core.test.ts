@@ -128,6 +128,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(hasLiveProcessPhaseGrowHold([thought, plan, reply], [thought, done, reply])).toBe(true)
     const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
     expect(shouldSkipLiveStreamDerivation([thought, plan, reply], [thought, ask, reply])).toBeNull()
+    const reconnect = status('Reconnecting... 1/5')
+    const reconnect2: TurnSegment = { ...reconnect, content: 'Reconnecting... 2/5' }
+    expect(shouldSkipLiveStreamDerivation([reconnect], [reconnect2])).toBe('status')
+    expect(
+      shouldSkipLiveStreamDerivation([thought, reconnect, reply], [thought, reconnect2, reply])
+    ).toBe('status')
   })
 
   it('classifies a settled prefix tool plus a newly appended tool after no-fence prose', () => {

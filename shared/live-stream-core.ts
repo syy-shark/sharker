@@ -229,7 +229,8 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 同一帧首枚无 fence 正文后再落普通工具也标 `'tool'`。
  * 同一帧首枚无 fence 正文后再落思考 / status 标 `'think'` / `'status'`。
  * 同长普通工具原地收束 / 改详情（可多枚并行 complete_call，正文可仍在末尾）标 `'tool'`。
- * 同长只改 status / 思考（正文可仍在末尾）标 `'status'` / `'think'`。
+ * 同长只改 status / 思考（正文可仍在末尾；重连 n/5 可改写文案）标 `'status'` / `'think'`。
+ * 规划下一步改写成 Ask（换 `toolName`）仍等表。
  * 正文里的 ```demo 围栏、或 `present_inline_demo` 仍等表。
  */
 function liveCoreInPlaceProcessToolSkip(
@@ -255,11 +256,7 @@ function liveCoreInPlaceProcessToolSkip(
       continue
     }
     if (isLiveStatus(before) && isLiveStatus(after)) {
-      const settled =
-        before.status === 'active' &&
-        after.status !== before.status &&
-        (after.content ?? '') === (before.content ?? '')
-      if (!liveTailContentGrew(before, after) && !settled) return null
+      if ((before.toolName ?? '') !== (after.toolName ?? '')) return null
       statusChange = true
       continue
     }
