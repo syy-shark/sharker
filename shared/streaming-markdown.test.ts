@@ -17,6 +17,7 @@ import {
   shouldAppendStreamingListItem,
   shouldAppendStreamingNestedListItem,
   paragraphSuffixNewLines,
+  quoteSuffixStaysInside,
   shouldGrowStreamingTableLastLine,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
@@ -1752,6 +1753,20 @@ describe('splitStreamingMarkdown', () => {
     }
     const quoteThenList = continueCheapProseBlocks('> foo', parseCheapProseBlocks('> foo'), '> foo\n- bar')
     expect(quoteThenList.map((b) => b.type)).toEqual(['quote', 'list'])
+    expect(quoteSuffixStaysInside('> foo', ' 更长')).toBe(true)
+    expect(quoteSuffixStaysInside('> foo', '\n> 续行')).toBe(true)
+    expect(quoteSuffixStaysInside('> foo\n>', '\nbar')).toBe(true)
+    expect(quoteSuffixStaysInside('> foo', '\n- bar')).toBe(false)
+    expect(quoteSuffixStaysInside('> foo\n\n', 'bar')).toBe(false)
+    const twoQuote = parseCheapProseBlocks('> 第一段\n>\n> 第二')
+    const twoQuoteGrown = continueCheapProseBlocks('> 第一段\n>\n> 第二', twoQuote, '> 第一段\n>\n> 第二段更长')
+    const twoQuoteWrap = continueCheapProseBlocks('> 第一段\n>\n> 第二', twoQuote, '> 第一段\n>\n> 第二\n> 续行')
+    if (twoQuote[0]?.type === 'quote' && twoQuoteGrown[0]?.type === 'quote') {
+      expect(twoQuoteGrown[0].blocks[0]).toBe(twoQuote[0].blocks[0])
+    }
+    if (twoQuote[0]?.type === 'quote' && twoQuoteWrap[0]?.type === 'quote') {
+      expect(twoQuoteWrap[0].blocks[0]).toBe(twoQuote[0].blocks[0])
+    }
     const manyQuote = Array.from({ length: 12 }, (_, i) => `> - q-${i}`).join('\n')
     const manyQuoteFirst = parseCheapProseBlocks(manyQuote)
     const manyQuoteGrown = continueCheapProseBlocks(manyQuote, manyQuoteFirst, `${manyQuote}\n> - q-12`)
@@ -2419,6 +2434,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldAppendStreamingListItem')
     expect(mdSrc).toContain('shouldAppendStreamingNestedListItem')
     expect(mdSrc).toContain('paragraphSuffixNewLines')
+    expect(mdSrc).toContain('quoteSuffixStaysInside')
+    expect(mdSrc).toContain('stripQuoteSuffix')
     expect(mdSrc).toContain('shouldGrowStreamingTableLastLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")

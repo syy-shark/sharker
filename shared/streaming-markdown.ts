@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；新同级 / 嵌套列表项只追加、不重解析已画项；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；段落软换行后续写、嵌套项内引用 / 围栏、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注缩进续行、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -3781,21 +3781,66 @@ function continueLastParagraphBlock(
   return nodes === prev.nodes ? [prev] : [{ type: 'p', nodes }]
 }
 
-/** 剥一层 `>`，给引用内最后一块走与顶层相同的增量 */
+/** 剥一层 `>`；同一原文再问时退回上次结果，直播 token 不整段 split */
+let quoteStripHold: { raw: string; inner: string } | null = null
+
 function stripOuterQuotePrefixes(text: string): string {
-  return text
+  if (quoteStripHold?.raw === text) return quoteStripHold.inner
+  const inner = text
     .split('\n')
     .map((line) => {
-      const inner = parseQuoteLine(line)
-      return inner !== null ? inner : line
+      const parsed = parseQuoteLine(line)
+      return parsed !== null ? parsed : line
+    })
+    .join('\n')
+  quoteStripHold = { raw: text, inner }
+  return inner
+}
+
+/** 只剥后缀里的 `>`；同行续写不再 split 已画引用 */
+function stripQuoteSuffix(suffix: string): string {
+  if (!suffix) return ''
+  return suffix
+    .split('\n')
+    .map((line, i) => {
+      if (i === 0 && line && parseQuoteLine(line) === null) return line
+      const parsed = parseQuoteLine(line)
+      return parsed !== null ? parsed : line
     })
     .join('\n')
 }
 
-/** 新行仍在引用内（`>` / 懒续行）；空行后的非引用行或顶层列表 / 标题留给全量解析 */
-function quoteGrowthStaysInside(nextText: string): boolean {
-  let sawBlank = false
-  for (const line of nextText.split('\n')) {
+function quoteLineOpensOutside(line: string): boolean {
+  return Boolean(
+    parseListLine(line) ||
+      parseHeadingLine(line) ||
+      parseFenceLine(line) ||
+      parseHrLine(line) ||
+      isIndentCodeLine(line) ||
+      parseFootnoteDefinitionLine(line) ||
+      isGfmTableRow(line) ||
+      looksLikeGfmTableCells(line)
+  )
+}
+
+/** 处理完 prev 后，空行标记只跟最后一行走（引用行含空 `>` 会清掉） */
+function quotePrevEndedBlank(prevNorm: string): boolean {
+  const last = prevNorm.endsWith('\n')
+    ? prevNorm.slice(0, -1).slice(prevNorm.slice(0, -1).lastIndexOf('\n') + 1)
+    : prevNorm.slice(prevNorm.lastIndexOf('\n') + 1)
+  if (parseQuoteLine(last) !== null) return false
+  return last.trim() === ''
+}
+
+/**
+ * 引用软换行后只扫后缀新行：已画行不必再 split 整段（对标 Codex #22860）。
+ * 同行增长无法离开引用。
+ */
+export function quoteSuffixStaysInside(prevNorm: string, suffix: string): boolean {
+  const newLines = paragraphSuffixNewLines(prevNorm, suffix)
+  if (newLines == null) return true
+  let sawBlank = quotePrevEndedBlank(prevNorm)
+  for (const line of newLines) {
     if (parseQuoteLine(line) !== null) {
       sawBlank = false
       continue
@@ -3805,18 +3850,7 @@ function quoteGrowthStaysInside(nextText: string): boolean {
       continue
     }
     if (sawBlank) return false
-    if (
-      parseListLine(line) ||
-      parseHeadingLine(line) ||
-      parseFenceLine(line) ||
-      parseHrLine(line) ||
-      isIndentCodeLine(line) ||
-      parseFootnoteDefinitionLine(line) ||
-      isGfmTableRow(line) ||
-      looksLikeGfmTableCells(line)
-    ) {
-      return false
-    }
+    if (quoteLineOpensOutside(line)) return false
   }
   return true
 }
@@ -3830,7 +3864,7 @@ function continueLastQuoteBlock(
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
   if (!suffix || suffix.includes(']:')) return null
-  if (!quoteGrowthStaysInside(nextText)) return null
+  if (!quoteSuffixStaysInside(prevNorm, suffix)) return null
   const last = prev.blocks[prev.blocks.length - 1]
   if (!last) return null
   if (!suffix.includes('\n') && !prevNorm.endsWith('\n') && last.type === 'p') {
@@ -3843,7 +3877,8 @@ function continueLastQuoteBlock(
     return [{ type: 'quote', blocks: [...prev.blocks.slice(0, -1), { type: 'p', nodes }] }]
   }
   const innerPrev = stripOuterQuotePrefixes(prevNorm)
-  const innerNext = stripOuterQuotePrefixes(nextText)
+  const innerNext = innerPrev + stripQuoteSuffix(suffix)
+  quoteStripHold = { raw: nextText, inner: innerNext }
   if (!innerNext.startsWith(innerPrev)) return null
   const closed = prev.blocks.slice(0, -1)
   let start = consumeClosedSingleLinePrefix(innerPrev, closed)
@@ -4310,6 +4345,7 @@ export function clearCheapProseHolds(): void {
   cheapProseHolds.clear()
   cheapInlineStableHold = null
   cheapInlineKeyHold = null
+  quoteStripHold = null
 }
 
 export function continueCheapProseBlocks(
