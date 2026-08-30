@@ -91,7 +91,9 @@ import {
   TOGGLE_ACTIVITY_VIEW_LABEL,
   TOGGLE_FILE_TREE_LABEL,
   TOGGLE_FILE_TREE_MENU_LABEL,
+  TOGGLE_BOTTOM_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
+  CLEAR_TERMINAL_LABEL,
   FILES_LABEL,
   REVIEW_LABEL,
   TERMINAL_LABEL,
@@ -230,10 +232,13 @@ describe('reveal in folder', () => {
       'utf8'
     )
     expect(toolbarSrc).toContain('TOGGLE_SIDEBAR_LABEL')
+    expect(toolbarSrc).toContain('TOGGLE_BOTTOM_PANEL_LABEL')
     expect(toolbarSrc).toContain('OPEN_IN_POPUP_WINDOW_LABEL')
     expect(toolbarSrc).not.toContain('固定展开边栏')
     expect(toolbarSrc).not.toContain('收起边栏')
     expect(toolbarSrc).not.toContain('弹出对话')
+    expect(toolbarSrc).not.toContain('展开右侧面板')
+    expect(toolbarSrc).not.toContain('收起右侧面板')
     expect(TOGGLE_FILE_TREE_LABEL).toBe('Toggle file tree')
     expect(TOGGLE_FILE_TREE_MENU_LABEL).toBe('Toggle File Tree')
     expect(OPEN_MODEL_PICKER_LABEL).toBe('Open model picker')
@@ -293,6 +298,16 @@ describe('reveal in folder', () => {
     expect(FILES_LABEL).toBe('Files')
     expect(REVIEW_LABEL).toBe('Review')
     expect(TERMINAL_LABEL).toBe('Terminal')
+    expect(TOGGLE_BOTTOM_PANEL_LABEL).toBe('Toggle bottom panel')
+    expect(CLEAR_TERMINAL_LABEL).toBe('Clear terminal')
+    const terminalSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedTerminal.tsx'),
+      'utf8'
+    )
+    expect(terminalSrc).toContain('CLEAR_TERMINAL_LABEL')
+    expect(terminalSrc).toContain('TERMINAL_LABEL')
+    expect(terminalSrc).not.toContain('清终端')
+    expect(terminalSrc).not.toContain('清屏')
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/RightPanel.tsx'),
       'utf8'

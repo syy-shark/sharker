@@ -38,6 +38,7 @@ import {
   OPEN_TERMINAL_MENU_LABEL,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SHARE_LABEL,
+  TOGGLE_BOTTOM_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
   revealInFolderLabel,
   threadCopyMenuItems,
@@ -492,12 +493,8 @@ export const ChatToolbar = memo(function ChatToolbar({
               onToggleRightPanel()
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            aria-label={rightPanelOpen ? '收起右侧面板' : '展开右侧面板'}
-            title={
-              rightPanelOpen
-                ? '收起面板'
-                : '展开：文件 / 审查 ⌘⌥B / 面板 ⌘J / 终端 Ctrl+` · 命令 ⌘K'
-            }
+            aria-label={TOGGLE_BOTTOM_PANEL_LABEL}
+            title={TOGGLE_BOTTOM_PANEL_LABEL}
           >
             {rightPanelOpen ? (
               <PanelRightClose size={18} aria-hidden />

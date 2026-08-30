@@ -24,6 +24,7 @@ import {
   threadTerminalKey
 } from '../../../shared/terminal-tabs'
 import { findHttpLinksInText, resolveChatLinkOpen } from '../../../shared/chat-link'
+import { CLEAR_TERMINAL_LABEL, TERMINAL_LABEL } from '../../../shared/reveal-in-folder'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import { Terminal, type ILink, type ITheme } from '@xterm/xterm'
@@ -540,12 +541,12 @@ export function EmbeddedTerminal({
 
   const cwdLabel = workspacePath?.trim()
     ? workspacePath.replace(/^\/Users\/[^/]+/, '~')
-    : '终端'
+    : TERMINAL_LABEL
 
   return (
     <div className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}>
       <div className="embedded-terminal-chrome">
-        <div className="embedded-terminal-tabs" role="tablist" aria-label="终端标签">
+        <div className="embedded-terminal-tabs" role="tablist" aria-label={TERMINAL_LABEL}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -603,11 +604,11 @@ export function EmbeddedTerminal({
         <button
           type="button"
           className="embedded-terminal-clear"
-          aria-label="清终端"
-          title="清终端 · Ctrl+L / ⌘K"
+          aria-label={CLEAR_TERMINAL_LABEL}
+          title={`${CLEAR_TERMINAL_LABEL} · Ctrl+L / ⌘K`}
           onClick={bumpActiveClear}
         >
-          清屏
+          {CLEAR_TERMINAL_LABEL}
         </button>
       </div>
       <div className="embedded-terminal-panes">
