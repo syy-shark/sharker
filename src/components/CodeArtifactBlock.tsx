@@ -258,10 +258,10 @@ export function ArtifactCodeLines({
   language?: string
   highlight?: boolean
 }) {
-  const prevRef = useRef({ lines: [] as string[], closed: [] as string[] })
-  const lines = continueLiveFenceLines(prevRef.current.lines, code)
+  const prevRef = useRef({ lines: [] as string[], closed: [] as string[], code: '' })
+  const lines = continueLiveFenceLines(prevRef.current.lines, code, prevRef.current.code)
   const closed = nextClosedFenceLines(prevRef.current.closed, lines)
-  prevRef.current = { lines, closed }
+  prevRef.current = { lines, closed, code }
   const htmlLines = highlight ? highlightFenceLines(code, language) : null
   const tail = lines.length ? lines[lines.length - 1]! : null
   return (

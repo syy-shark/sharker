@@ -1079,10 +1079,25 @@ export function codeArtifactHeadStickyTop(
  */
 export function continueLiveFenceLines(
   prev: readonly string[] | null | undefined,
-  code: string
+  code: string,
+  prevCode?: string
 ): string[] {
-  const next = code.replace(/\n$/, '').split('\n')
-  if (!prev?.length) return next
+  const nextText = code.endsWith('\n') ? code.slice(0, -1) : code
+  if (!prev?.length) return nextText.split('\n')
+  const prevText =
+    prevCode != null ? (prevCode.endsWith('\n') ? prevCode.slice(0, -1) : prevCode) : prev.join('\n')
+  if (nextText === prevText) return prev as string[]
+  if (nextText.startsWith(prevText)) {
+    const suffix = nextText.slice(prevText.length)
+    if (!suffix.includes('\n')) {
+      const grown = prev[prev.length - 1]! + suffix
+      return [...prev.slice(0, -1), grown]
+    }
+    const extra = suffix.split('\n')
+    const grownLast = prev[prev.length - 1]! + extra[0]!
+    return [...prev.slice(0, -1), grownLast, ...extra.slice(1)]
+  }
+  const next = nextText.split('\n')
   if (next.length === prev.length && next.every((line, index) => line === prev[index])) {
     return prev as string[]
   }

@@ -656,10 +656,31 @@ describe('near-live message rows', () => {
     expect(codeArtifactHeadStickyTop(fenceShell, { top: 500, bottom: 1300 }, 34)).toBeNull()
     expect(codeArtifactHeadStickyTop(fenceShell, { top: 0, bottom: 800 }, 0)).toBeNull()
     const fenceFirst = continueLiveFenceLines(null, 'const a = 1\nconst b =')
-    const fenceGrown = continueLiveFenceLines(fenceFirst, 'const a = 1\nconst b = 2')
+    const fenceGrown = continueLiveFenceLines(
+      fenceFirst,
+      'const a = 1\nconst b = 2',
+      'const a = 1\nconst b ='
+    )
     expect(fenceGrown[0]).toBe(fenceFirst[0])
     expect(fenceGrown).not.toBe(fenceFirst)
-    expect(continueLiveFenceLines(fenceGrown, 'const a = 1\nconst b = 2')).toBe(fenceGrown)
+    expect(
+      continueLiveFenceLines(fenceGrown, 'const a = 1\nconst b = 2', 'const a = 1\nconst b = 2')
+    ).toBe(fenceGrown)
+    const fenceNewLine = continueLiveFenceLines(
+      fenceGrown,
+      'const a = 1\nconst b = 2\nconst c =',
+      'const a = 1\nconst b = 2'
+    )
+    expect(fenceNewLine[0]).toBe(fenceGrown[0])
+    expect(fenceNewLine[1]).toBe(fenceGrown[1])
+    expect(fenceNewLine[2]).toBe('const c =')
+    const fenceSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeArtifactBlock.tsx'),
+      'utf8'
+    )
+    expect(fenceSrc).toContain('continueLiveFenceLines(prevRef.current.lines, code, prevRef.current.code)')
+    const displaySrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'live-display.ts'), 'utf8')
+    expect(displaySrc).toContain('nextText.startsWith(prevText)')
     const closedFirst = nextClosedFenceLines(null, fenceFirst)
     expect(closedFirst).toEqual(['const a = 1'])
     expect(nextClosedFenceLines(closedFirst, fenceGrown)).toBe(closedFirst)
