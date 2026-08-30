@@ -26,13 +26,14 @@ function formatArgs(args: Record<string, unknown>): string {
   try {
     return JSON.stringify(args, null, 2) ?? '{}'
   } catch {
-    return '操作参数无法显示'
+    return '{}'
   }
 }
 
 /**
  * 过程内高危确认：Allow once / Allow for session / Deny。
- * MCP 工具名走官方 Calling server.tool({compact})，不发明 always-allow 配置。
+ * MCP 工具名走官方 Calling server.tool({compact})，不另挂「查看操作参数」以免挤高直播审批卡。
+ * 不发明 always-allow 配置。
  */
 export function InlineApproval({ request, onRespond, responding = false }: InlineApprovalProps) {
   const rootRef = useRef<HTMLElement>(null)
@@ -105,7 +106,6 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
 
       <details className="inline-approval__details" key={request.id}>
         <summary>
-          <span>查看操作参数</span>
           <code title={request.toolName}>
             {formatMcpApprovalLabel(request.toolName, request.args)}
           </code>
@@ -118,12 +118,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
 
       <div className="inline-approval__actions">
         <span className="inline-approval__status" role="status" aria-live="polite">
-          {busy && (
-            <>
-              <LoaderCircle size={14} aria-hidden="true" />
-              正在提交审批结果
-            </>
-          )}
+          {busy ? <LoaderCircle size={14} aria-hidden="true" /> : null}
         </span>
         <button
           type="button"

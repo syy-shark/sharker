@@ -2,6 +2,7 @@
  * 官方 MCP Calling / Called 文案。
  * @see shared/mcp-activity.ts
  */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   formatMcpActivity,
@@ -72,5 +73,16 @@ describe('mcp-activity', () => {
       'Calling github.search({"q":"codex"})'
     )
     expect(formatMcpApprovalLabel('read_file', { path: 'a.ts' })).toBe('read_file')
+  })
+
+  it('keeps the live approval summary on official Calling server.tool({compact})', () => {
+    const approvalSrc = readFileSync(
+      new URL('../src/components/InlineApproval.tsx', import.meta.url),
+      'utf8'
+    )
+    expect(approvalSrc).toContain('formatMcpApprovalLabel')
+    expect(approvalSrc).not.toContain('查看操作参数')
+    expect(approvalSrc).not.toContain('正在提交审批结果')
+    expect(approvalSrc).not.toContain('操作参数无法显示')
   })
 })

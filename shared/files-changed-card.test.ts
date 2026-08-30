@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   EMPTY_FILES_CHANGED_STATS,
@@ -24,6 +25,7 @@ describe('files changed card', () => {
       'reveal',
       'copy'
     ])
+    expect(filesChangedFileMenuItems('darwin')[0]?.title).toBe('Open')
     expect(filesChangedFileMenuItems('darwin')[1]?.title).toBe('Open in Finder')
     expect(filesChangedFileMenuItems('darwin')[2]?.title).toBe('Copy path')
     expect(filesChangedFileMenuItems('win32')[1]?.title).toBe('Open in Explorer')
@@ -131,5 +133,11 @@ describe('files changed card', () => {
       })
     ).toBe(true)
     expect(nextFilesChangedStats(first, [prefix, thinkDone, answerTail])).toBe(first)
+    const cardSrc = readFileSync(
+      new URL('../src/components/FilesChangedCard.tsx', import.meta.url),
+      'utf8'
+    )
+    expect(cardSrc).toContain('OPEN_LABEL')
+    expect(cardSrc).not.toContain(' · 打开')
   })
 })

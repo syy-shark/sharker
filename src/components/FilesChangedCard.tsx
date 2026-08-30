@@ -1,6 +1,6 @@
 /**
  * 对话写盘卡：官方 Edited basename / Edited N files，标题打开审查，展开列短标签、种类与 +/-。
- * 不订直播 token，只吃路径列表与已合计的 +/-（对标 Codex render_changes_block / #20700 / #21426）。
+ * 文件行 / 右键用官方 Open。不订直播 token，只吃路径列表与已合计的 +/-（对标 Codex render_changes_block / #20700 / #21426）。
  * @see src/components/ARCH.md
  */
 import { memo, useEffect, useState } from 'react'
@@ -17,6 +17,7 @@ import {
   type FilesChangedLineStats
 } from '../../shared/files-changed-card'
 import { clampReviewMenuPosition } from '../../shared/review-file-click'
+import { OPEN_LABEL } from '../../shared/reveal-in-folder'
 import {
   dispatchCopyWorkspaceFilePath,
   dispatchOpenWorkspaceFile,
@@ -173,7 +174,7 @@ export const FilesChangedCard = memo(function FilesChangedCard({
                   type="button"
                   className="files-changed-card__file"
                   data-files-changed-file
-                  title={statsLabel ? `${path} · ${statsLabel} · 打开` : `${path} · 打开`}
+                  title={statsLabel ? `${path} · ${statsLabel} · ${OPEN_LABEL}` : `${path} · ${OPEN_LABEL}`}
                   aria-label={path}
                   onClick={(event) => {
                     event.preventDefault()

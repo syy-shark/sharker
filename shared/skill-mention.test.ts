@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   collectBoundSkills,
@@ -54,5 +55,14 @@ describe('skill mention', () => {
     ])
     expect(collectBoundSkills('price$100 $missing', skills)).toEqual([])
     expect(removeBoundSkill('请用 $code-review 再看', 'code-review')).toBe('请用 再看')
+    const composerSrc = readFileSync(
+      new URL('../src/components/ComposerDock.tsx', import.meta.url),
+      'utf8'
+    )
+    expect(composerSrc).toContain('SKILLS_LABEL')
+    expect(composerSrc).toContain('composer-skill-chip-name')
+    expect(composerSrc).toMatch(/\$\{skill\.name\}/)
+    expect(composerSrc).not.toContain('composer-skill-chip-desc')
+    expect(composerSrc).not.toContain('将使用的 Skill')
   })
 })

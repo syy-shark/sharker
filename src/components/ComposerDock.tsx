@@ -3,6 +3,7 @@
  * 划选进 Selection 芯片，不灌 textarea；发送收成官方 `# Selected text:`（对标 Codex selected-text previews）。
  * 输入框下方有 Ask for approval / Full access 芯片（对标 Codex permissions control beneath the composer）。
  * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
+ * 发送前 `$name` 芯片只露官方 `$skill-name`，描述进 title，以免长说明挤高直播贴底。
  * @see src/components/ARCH.md
  */
 import {
@@ -145,6 +146,7 @@ import {
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   SEARCH_PROJECTS_LABEL,
+  SKILLS_LABEL,
   STARTING_BRANCH_LABEL,
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
   START_DICTATION_LABEL,
@@ -2212,13 +2214,13 @@ export const ComposerDock = memo(
           rows={1}
         />
         {boundSkills.length > 0 ? (
-          <div className="composer-skill-chips" aria-label="将使用的 Skill">
+          <div className="composer-skill-chips" aria-label={SKILLS_LABEL}>
             {boundSkills.map((skill) => (
               <button
                 key={skill.name}
                 type="button"
                 className="composer-skill-chip glass-pill"
-                title={skill.description || skill.name}
+                title={skill.description || `$${skill.name}`}
                 onClick={() => {
                   const next = removeBoundSkill(input, skill.name)
                   setInput(next)
@@ -2233,9 +2235,6 @@ export const ComposerDock = memo(
                 }}
               >
                 <span className="composer-skill-chip-name">${skill.name}</span>
-                {skill.description ? (
-                  <span className="composer-skill-chip-desc">{skill.description}</span>
-                ) : null}
               </button>
             ))}
           </div>
