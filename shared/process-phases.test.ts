@@ -317,9 +317,14 @@ describe('process phases privacy', () => {
       content: '',
       startedAt: 12
     }
-    expect(
-      appendProcessPhaseStepOnToolStart(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, inlineDemo], true)
-    ).toBeNull()
+    const afterInlineDemo = appendProcessPhaseStepOnToolStart(
+      appended!,
+      [cmdDone, cmdNext],
+      [cmdDone, cmdNext, inlineDemo],
+      true
+    )
+    expect(afterInlineDemo).toEqual(appended)
+    expect(afterInlineDemo!.some((step) => step.segment === inlineDemo)).toBe(false)
     expect(
       remapProcessPhaseStepsOnThinkAppend(appended!, [cmdDone, cmdNext], [cmdDone, cmdNext, inlineDemo])
     ).toBe(appended)

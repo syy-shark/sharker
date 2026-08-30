@@ -93,7 +93,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       content: ''
     }
     const demoDone: TurnSegment = { ...demo, status: 'done' }
-    expect(shouldSkipLiveStreamDerivation([demo, reply], [demoDone, reply])).toBeNull()
+    expect(shouldSkipLiveStreamDerivation([demo, reply], [demoDone, reply])).toBe('text')
   })
 
   it('classifies parallel in-place tool settles after no-fence prose without the table', () => {
@@ -310,7 +310,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
         [thought, reading, reply, nextTool],
         [thought, reading, reply, nextTool, demo]
       )
-    ).toBeNull()
+    ).toBe('text')
     const plan = status('根据已完成步骤规划下一步…')
     const ask: TurnSegment = { ...plan, content: 'API style', toolName: 'request_user_input' }
     expect(
@@ -434,12 +434,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(processThenTexts.answerStreaming).toBe(true)
   })
 
-  it('does not classify a newly appended tool after demo-fence prose until the table is registered', () => {
+  it('classifies a newly appended tool after demo-fence prose without the table', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
       shouldSkipLiveStreamDerivation([demoFence], [demoFence, tool('active')])
-    ).toBeNull()
-    expect(hasLiveProcessPhaseGrowHold([demoFence], [demoFence, tool('active')])).toBe(false)
+    ).toBe('tool')
+    expect(hasLiveProcessPhaseGrowHold([demoFence], [demoFence, tool('active')])).toBe(true)
   })
 
   it('classifies a same-flush first no-fence answer plus tool without the table', () => {
@@ -499,7 +499,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       status: 'active',
       content: ''
     }
-    expect(shouldSkipLiveStreamDerivation([tool('active')], [tool('active'), demo])).toBeNull()
+    expect(shouldSkipLiveStreamDerivation([tool('active')], [tool('active'), demo])).toBe('text')
   })
 
   it('skips process derivation for the first answer token after tools without the table', () => {
@@ -564,17 +564,53 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
       shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, nextTool, demoFence])
-    ).toBeNull()
+    ).toBe('text')
   })
 
-  it('does not skip a first demo-fence answer after tools without the table', () => {
+  it('opens a first demo-fence answer after tools without the table', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
     const demoFence = prose('```demo\n<div>demo</div>\n```')
     expect(
-      shouldSkipLiveStreamDerivation([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), demoFence])
-    ).toBeNull()
-    expect(
-      hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), demoFence])
-    ).toBe(false)
+      shouldSkipLiveStreamDerivation([thought, reading], [thought, reading, demoFence])
+    ).toBe('text')
+    expect(hasLiveProcessPhaseGrowHold([thought, reading], [thought, reading, demoFence])).toBe(true)
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, demoFence]
+    })
+    expect(nextAnswer.parts.some((part) => part.type === 'demo')).toBe(true)
+    expect(nextAnswer.show).toBe(true)
+    const grown: TurnSegment = {
+      ...demoFence,
+      content: '```demo\n<div>demo</div>\n<p>more</p>\n```'
+    }
+    expect(shouldSkipLiveStreamDerivation([thought, reading, demoFence], [thought, reading, grown])).toBe(
+      'text'
+    )
+    const grownAnswer = nextLiveAnswerView(nextAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, grown]
+    })
+    const demoPart = grownAnswer.parts.find((part) => part.type === 'demo')
+    expect(demoPart?.type === 'demo' && demoPart.html.includes('more')).toBe(true)
+    const firstProcess = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const nextProcess = nextLiveProcessView(firstProcess, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, demoFence]
+    })
+    expect(nextProcess.processForFlow).toEqual(firstProcess.processForFlow)
+    expect(nextProcess.answerStreaming).toBe(true)
+    expect(nextProcess.processForFlow.some((segment) => segment.toolName === 'present_inline_demo')).toBe(
+      false
+    )
   })
 
   it('reuses process steps when the first answer token arrives after tools', () => {
@@ -592,9 +628,14 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(next).toHaveLength(steps.length)
     expect(next!.some((step) => step.segment === reply)).toBe(false)
     const demoFence = prose('```demo\n<div>demo</div>\n```')
-    expect(
-      appendProcessPhaseStepOnToolStart(steps, [thought, reading], [thought, reading, demoFence], true)
-    ).toBeNull()
+    const afterDemo = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, demoFence],
+      true
+    )
+    expect(afterDemo).toEqual(steps)
+    expect(afterDemo!.some((step) => step.segment === demoFence)).toBe(false)
     const demoTool: TurnSegment = {
       id: 'd1',
       kind: 'tool',
@@ -602,9 +643,14 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       status: 'active',
       content: ''
     }
-    expect(
-      appendProcessPhaseStepOnToolStart(steps, [thought, reading], [thought, reading, demoTool], true)
-    ).toBeNull()
+    const afterDemoTool = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, demoTool],
+      true
+    )
+    expect(afterDemoTool).toEqual(steps)
+    expect(afterDemoTool!.some((step) => step.segment === demoTool)).toBe(false)
   })
 
   it('holds processForFlow when the first answer token arrives after tools', () => {
