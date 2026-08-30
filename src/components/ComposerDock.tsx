@@ -243,7 +243,7 @@ export interface ComposerDockProps {
   queueHeld?: boolean
   onQueueHeldChange?: (held: boolean) => void
   speechHint?: string
-  onSubmitted?: (mode: PromptSubmitMode) => void
+  onSubmitted?: (mode: PromptSubmitMode, meta?: { hasSelectedText?: boolean }) => void
   /** 深链 `prompt=`：只在 nonce 变化时写入，不跟直播 token 重绘 */
   composerSeed?: ComposerSeed | null
   /** 空输入 Esc+Esc：就地回编上一条用户气泡并分叉 */
@@ -1347,6 +1347,7 @@ export const ComposerDock = memo(
       }
       const ask = t || composerEmptyAttachmentPrompt(attachments)
       const sent = formatSelectedTextSubmit(selectedTexts, ask)
+      const hasSelectedText = selectedTexts.length > 0
       rememberSubmittedComposerPrompt(sent)
       clearComposerDraft(draftKey)
       setInput('')
@@ -1355,7 +1356,7 @@ export const ComposerDock = memo(
       setPastePreviewId(null)
       setSelectedPreviewId(null)
       setAttachmentError('')
-      onSubmitted?.(mode)
+      onSubmitted?.(mode, { hasSelectedText })
       onSend(sent, mode, attachments)
       requestAnimationFrame(() => {
         syncTextareaHeight()
@@ -1368,6 +1369,7 @@ export const ComposerDock = memo(
       if (!t && selectedTextsRef.current.length === 0) return
       const sent = formatSelectedTextSubmit(selectedTextsRef.current, t)
       if (!sent) return
+      const hasSelectedText = selectedTextsRef.current.length > 0
       rememberSubmittedComposerPrompt(sent)
       clearComposerDraft(draftKey)
       setInput('')
@@ -1378,7 +1380,7 @@ export const ComposerDock = memo(
       setSelectedPreviewId(null)
       setAttachmentError('')
       const voiceMode = loadingRef.current ? 'queue' : 'send'
-      onSubmitted?.(voiceMode)
+      onSubmitted?.(voiceMode, { hasSelectedText })
       onSend(sent, voiceMode)
       requestAnimationFrame(() => {
         syncTextareaHeight()

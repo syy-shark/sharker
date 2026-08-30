@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createSelectedTextPreview,
+  findSelectedTextSourceMessageId,
   formatSelectedTextSubmit,
+  messageContainsSelectedText,
   normalizeSelectedTextDraft,
   parseSelectedTextSubmit,
   selectedTextChipLabel,
@@ -98,5 +100,26 @@ describe('selected-text-preview', () => {
     expect(
       normalizeSelectedTextDraft([{ text: 'Buy now', source: 'browser', comment: '  wrap  ' }])
     ).toEqual([expect.objectContaining({ text: 'Buy now', source: 'browser', comment: 'wrap' })])
+  })
+
+  it('finds the source message for an Add to chat excerpt', () => {
+    expect(messageContainsSelectedText('The overflow wraps on mobile.', 'overflow wraps')).toBe(
+      true
+    )
+    expect(messageContainsSelectedText('unrelated', 'overflow wraps')).toBe(false)
+    const rows = [
+      { id: 'a1', content: 'Earlier note' },
+      { id: 's1', content: 'The button overflow wraps on mobile.' },
+      {
+        id: 'u1',
+        content: formatSelectedTextSubmit(
+          [{ id: 'sel', text: 'overflow wraps on mobile', source: 'transcript' }],
+          'fix that'
+        )
+      }
+    ]
+    expect(findSelectedTextSourceMessageId(rows, 'overflow wraps on mobile', 'u1')).toBe('s1')
+    expect(findSelectedTextSourceMessageId(rows, 'missing excerpt', 'u1')).toBeNull()
+    expect(findSelectedTextSourceMessageId(rows, 'overflow wraps on mobile')).toBe('s1')
   })
 })

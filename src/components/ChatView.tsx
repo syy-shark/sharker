@@ -49,6 +49,7 @@ import {
   type ComposerEnterBehavior
 } from '../../shared/composer-submit'
 import {
+  findSelectedTextSourceMessageId,
   formatSelectedTextSubmit,
   parseSelectedTextSubmit,
   selectedTextChipLabel,
@@ -206,7 +207,9 @@ const UserMessageRow = memo(function UserMessageRow({
   editRequested,
   onEditRequestHandled,
   onEdit,
-  onFork
+  onFork,
+  onRevealSelection,
+  selectionSource
 }: {
   id: string
   content: string
@@ -219,6 +222,8 @@ const UserMessageRow = memo(function UserMessageRow({
   onEditRequestHandled?: () => void
   onEdit?: (text: string) => void
   onFork?: () => void
+  onRevealSelection?: (excerpt: string, userMessageId: string) => void
+  selectionSource?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [previewId, setPreviewId] = useState<string | null>(null)
@@ -251,7 +256,9 @@ const UserMessageRow = memo(function UserMessageRow({
       id={`msg-${id}`}
       className={`message-row message-row--user${nearLive ? ' message-row--near-live' : ''}${
         findHit ? ' is-find-hit' : ''
-      }${findCurrent ? ' is-find-current' : ''}`}
+      }${findCurrent ? ' is-find-current' : ''}${
+        selectionSource ? ' is-selection-source' : ''
+      }`}
       style={nearLive ? undefined : rowIntrinsicSizeStyle(intrinsicHeight)}
     >
       <div className="message-user-wrap">
@@ -311,10 +318,11 @@ const UserMessageRow = memo(function UserMessageRow({
                       className={`message-user-annotation${
                         previewId === sel.id ? ' message-user-annotation--open' : ''
                       }`}
-                      title={`${selectedTextTitle(index)} · 预览划选`}
-                      onClick={() =>
+                      title={`${selectedTextTitle(index)} · 回到原文`}
+                      onClick={() => {
+                        onRevealSelection?.(sel.text, id)
                         setPreviewId((cur) => (cur === sel.id ? null : sel.id))
-                      }
+                      }}
                     >
                       {selectedTextChipLabel(sel.text) || selectedTextTitle(index)}
                     </button>
@@ -566,7 +574,7 @@ const ChatComposerInputs = memo(function ChatComposerInputs({
   queueHeld: boolean
   onQueueHeldChange?: (held: boolean) => void
   speechHint: string
-  onSubmitted: (mode: PromptSubmitMode) => void
+  onSubmitted: (mode: PromptSubmitMode, meta?: { hasSelectedText?: boolean }) => void
   composerSeed?: ComposerSeed | null
   onEditLastUser: () => void
   followUpBehavior: 'queue' | 'steer'
@@ -977,6 +985,8 @@ export const ChatView = memo(function ChatView({
   const [diskFindHits, setDiskFindHits] = useState<ThreadSearchHit[]>(EMPTY_FIND_HITS)
   const findAnchorRef = useRef<Pick<ThreadSearchHit, 'messageId' | 'occurrence'> | null>(null)
   const [editUserMessageId, setEditUserMessageId] = useState<string | null>(null)
+  const [selectionSourceId, setSelectionSourceId] = useState<string | null>(null)
+  const selectionSourceTimerRef = useRef<number | null>(null)
   const [pinnedStart, setPinnedStart] = useState<number | null>(() =>
     restoreTranscriptWindowStart(scrollSnapshot)
   )
@@ -1760,17 +1770,58 @@ export const ChatView = memo(function ChatView({
     scrollToBottom(loading ? 'auto' : 'smooth')
   }, [loading, scrollToBottom])
 
-  const handleComposerSubmitted = useCallback((mode: PromptSubmitMode) => {
-    // Official #13698: sending a follow-up that adds transcript content
-    // jumps to bottom by design. Queue / Steer add no transcript row —
-    // keep reading position (official #38220).
-    if (!shouldStickAfterComposerSubmit(mode)) return
-    userScrollLockRef.current = false
-    stickToBottomRef.current = true
-    setStickToBottom(true)
-    pendingFullHistoryAfterLiveRef.current = false
-    setPinnedStart(null)
-    onLeaveHistoryHeadRef.current?.()
+  const handleComposerSubmitted = useCallback(
+    (mode: PromptSubmitMode, meta?: { hasSelectedText?: boolean }) => {
+      // Official #13698: ordinary send jumps to bottom by design.
+      // Queue / Steer add no transcript row — keep reading position (#38220).
+      // Add to chat / selected-text send keeps the passage in view (#41391).
+      if (!shouldStickAfterComposerSubmit(mode, meta)) return
+      userScrollLockRef.current = false
+      stickToBottomRef.current = true
+      setStickToBottom(true)
+      pendingFullHistoryAfterLiveRef.current = false
+      setPinnedStart(null)
+      onLeaveHistoryHeadRef.current?.()
+    },
+    []
+  )
+
+  const handleRevealSelection = useCallback(
+    (excerpt: string, userMessageId: string) => {
+      const sourceId = findSelectedTextSourceMessageId(messages, excerpt, userMessageId)
+      if (!sourceId) return
+      lockUserScroll()
+      const idx = messages.findIndex((m) => m.id === sourceId)
+      if (idx >= 0) {
+        setPinnedStart((p) => windowStartToCoverIndex(messages.length, p, idx))
+      }
+      if (selectionSourceTimerRef.current != null) {
+        window.clearTimeout(selectionSourceTimerRef.current)
+      }
+      setSelectionSourceId(sourceId)
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`msg-${sourceId}`)
+        el?.scrollIntoView({
+          block: 'center',
+          behavior: document.documentElement.classList.contains('reduce-motion')
+            ? 'auto'
+            : 'smooth'
+        })
+      })
+      selectionSourceTimerRef.current = window.setTimeout(() => {
+        setSelectionSourceId((cur) => (cur === sourceId ? null : cur))
+        selectionSourceTimerRef.current = null
+      }, 1600)
+    },
+    [lockUserScroll, messages]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (selectionSourceTimerRef.current != null) {
+        window.clearTimeout(selectionSourceTimerRef.current)
+      }
+    }
   }, [])
 
   const dockIntent =
@@ -2238,6 +2289,8 @@ export const ChatView = memo(function ChatView({
             onEditRequestHandled={handleEditRequestHandled}
             onEdit={onEditUserMessage ? (text) => onEditUserMessage(m.id, text) : undefined}
             onFork={onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+            onRevealSelection={handleRevealSelection}
+            selectionSource={selectionSourceId === m.id}
           />
         ) : (
           <div
@@ -2247,7 +2300,7 @@ export const ChatView = memo(function ChatView({
               nearLive ? ' message-row--near-live' : ''
             }${historicalFindIds.has(m.id) ? ' is-find-hit' : ''}${
               currentFindMessageId === m.id ? ' is-find-current' : ''
-            }`}
+            }${selectionSourceId === m.id ? ' is-selection-source' : ''}`}
             style={
               nearLive
                 ? undefined
@@ -2294,6 +2347,8 @@ export const ChatView = memo(function ChatView({
       onEditUserMessage,
       onForkFromMessage,
       onNeedFullMessage,
+      handleRevealSelection,
+      selectionSourceId,
       toolOutputDisplay
     ]
   )

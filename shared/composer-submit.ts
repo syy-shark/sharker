@@ -169,13 +169,23 @@ export function resolveComposerSubmit(options: {
   return follow === 'steer' ? 'jump' : 'queue'
 }
 
+/** 提交时是否带官方 Add to chat / `# Selected text:` 划选 */
+export type ComposerSubmitStickOptions = {
+  hasSelectedText?: boolean
+}
+
 /**
  * 提交后是否贴底并离开 historyHead。
- * 官方 #13698：真正写入对话的发送跳到底（by design）。
+ * 官方 #13698：普通发送跳到底（by design）。
  * Queue / Steer 不进 transcript，读历史时保持位置（官方 #38220）。
+ * 划选 Add to chat 发送保持阅读位置，用 Jump to latest 再去新回复（官方 #41391）。
  */
-export function shouldStickAfterComposerSubmit(mode: ComposerSubmitMode): boolean {
-  return mode === 'send'
+export function shouldStickAfterComposerSubmit(
+  mode: ComposerSubmitMode,
+  options?: ComposerSubmitStickOptions
+): boolean {
+  if (mode !== 'send') return false
+  return !options?.hasSelectedText
 }
 
 /**

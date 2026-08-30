@@ -3,6 +3,7 @@
  * 划选进芯片，不灌进输入框；发送时收成官方 `# Selected text:` 块。
  * 对话柱只画请求 + annotation 芯片，长划选不撑开贴底（对标 Codex #20294 transcript strip / #22670）。
  * 芯片可加备注（对标 Codex response annotation comments / #33763），不发明 #22677 划选跟帖气泡。
+ * 已发送芯片按摘录回跳原文（对标 Codex #41391），不把 message id 写进 submit 块。
  * @see shared/ARCH.md
  */
 
@@ -126,6 +127,39 @@ export function parseSelectedTextSubmit(markdown: string): {
 export function userFacingSelectedTextRequest(markdown: string): string {
   const parsed = parseSelectedTextSubmit(markdown)
   return parsed ? parsed.request : String(markdown ?? '')
+}
+
+function flattenForSelectionMatch(text: string): string {
+  return String(text || '').replace(/\s+/g, ' ').trim()
+}
+
+/** 正文（含用户气泡只露的请求）是否含该划选 */
+export function messageContainsSelectedText(content: string, excerpt: string): boolean {
+  const needle = flattenForSelectionMatch(excerpt)
+  if (!needle) return false
+  const visible = userFacingSelectedTextRequest(content)
+  const hay = flattenForSelectionMatch(visible || content)
+  return hay.includes(needle)
+}
+
+/**
+ * 从标注气泡之前往回找原文所在消息（对标 Codex #41391 划选回跳）。
+ * 不写进 submit 块，只按摘录匹配；找不到则 null。
+ */
+export function findSelectedTextSourceMessageId(
+  messages: Array<{ id: string; content: string }>,
+  excerpt: string,
+  beforeId?: string
+): string | null {
+  if (!flattenForSelectionMatch(excerpt)) return null
+  const end = beforeId ? messages.findIndex((m) => m.id === beforeId) : messages.length
+  const last = end < 0 ? messages.length : end
+  for (let i = last - 1; i >= 0; i--) {
+    const row = messages[i]
+    if (!row || row.id === beforeId) continue
+    if (messageContainsSelectedText(row.content, excerpt)) return row.id
+  }
+  return null
 }
 
 /** 草稿里只留有正文的划选 */
