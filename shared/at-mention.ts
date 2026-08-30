@@ -3,6 +3,24 @@
  * @see shared/ARCH.md
  */
 
+/** Official developer-commands: Type `@` to search for a file in the workspace. */
+export const TYPE_AT_TO_SEARCH_LABEL =
+  'Type @ to search for a file in the workspace and add its path to the prompt.'
+
+export type ComposerMentionKind = 'file' | 'skill' | 'chat'
+
+/**
+ * Official `@` search surfaces files before threads (Codex #31230 expected).
+ * Skills stay between files and recent chats.
+ */
+export function orderComposerMentionHits<T extends { kind: ComposerMentionKind }>(
+  files: T[],
+  skills: T[],
+  chats: T[]
+): T[] {
+  return [...files, ...skills, ...chats]
+}
+
 /** 当前光标处的 @ 查询 */
 export interface AtMentionQuery {
   /** `@` 在全文中的下标 */

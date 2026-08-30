@@ -48,7 +48,10 @@ import {
   EDIT_LABEL,
   CLEAR_LABEL,
   HAND_OFF_LABEL,
+  CODEX_ENVIRONMENTS_LABEL,
+  LOCAL_ENVIRONMENT_DESCRIPTION,
   LOCAL_LABEL,
+  WORKTREE_ENVIRONMENT_DESCRIPTION,
   WORKTREE_LABEL,
   CREATE_BRANCH_HERE_LABEL,
   OPEN_LABEL,
@@ -413,8 +416,22 @@ describe('reveal in folder', () => {
     expect(EDIT_LABEL).toBe('Edit')
     expect(CLEAR_LABEL).toBe('Clear')
     expect(HAND_OFF_LABEL).toBe('Hand off')
+    expect(CODEX_ENVIRONMENTS_LABEL).toBe('Codex environments')
     expect(LOCAL_LABEL).toBe('Local')
+    expect(LOCAL_ENVIRONMENT_DESCRIPTION).toBe(
+      'Local: work directly in your current project directory.'
+    )
     expect(WORKTREE_LABEL).toBe('Worktree')
+    expect(WORKTREE_ENVIRONMENT_DESCRIPTION).toBe('Worktree: isolate changes in a Git worktree.')
+    const dockSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
+      'utf8'
+    )
+    expect(dockSrc).toContain('CODEX_ENVIRONMENTS_LABEL')
+    expect(dockSrc).toContain('LOCAL_ENVIRONMENT_DESCRIPTION')
+    expect(dockSrc).toContain('WORKTREE_ENVIRONMENT_DESCRIPTION')
+    expect(dockSrc).not.toContain('线程模式')
+    expect(dockSrc).not.toContain('title={HAND_OFF_LABEL}')
     expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')
     expect(OPEN_LABEL).toBe('Open')
     expect(FILE_MENU_LABEL).toBe('File')

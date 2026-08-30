@@ -347,10 +347,15 @@ export const PAUSE_LABEL = 'Pause'
 export const RESUME_LABEL = 'Resume'
 export const EDIT_LABEL = 'Edit'
 export const CLEAR_LABEL = 'Clear'
-/** 官方顶栏交接与 composer 芯片（对标 learn.chatgpt.com/docs/environments/git-worktrees） */
+/** 官方顶栏交接（对标 learn.chatgpt.com/docs/environments/git-worktrees） */
 export const HAND_OFF_LABEL = 'Hand off'
 export const LOCAL_LABEL = 'Local'
 export const WORKTREE_LABEL = 'Worktree'
+/** Official composer environment options (learn.chatgpt.com/docs/environments/modes). */
+export const CODEX_ENVIRONMENTS_LABEL = 'Codex environments'
+export const LOCAL_ENVIRONMENT_DESCRIPTION =
+  'Local: work directly in your current project directory.'
+export const WORKTREE_ENVIRONMENT_DESCRIPTION = 'Worktree: isolate changes in a Git worktree.'
 export const CREATE_BRANCH_HERE_LABEL = 'Create branch here'
 /** Official worktrees header: open your IDE to the worktree using the "Open" button. */
 export const OPEN_LABEL = 'Open'

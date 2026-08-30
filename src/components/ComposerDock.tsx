@@ -54,7 +54,12 @@ import {
   type SlashCommandMeta
 } from '../../shared/slash-commands'
 import { parseBangCommand } from '../../shared/bang-command'
-import { insertAtMention, parseAtMention } from '../../shared/at-mention'
+import {
+  insertAtMention,
+  orderComposerMentionHits,
+  parseAtMention,
+  TYPE_AT_TO_SEARCH_LABEL
+} from '../../shared/at-mention'
 import { chatMentionToken, filterChatMentions } from '../../shared/chat-mention'
 import {
   collectBoundSkills,
@@ -136,7 +141,8 @@ import {
 import type { ThreadMode } from '../lib/thread-runtime'
 import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import {
-  HAND_OFF_LABEL,
+  CODEX_ENVIRONMENTS_LABEL,
+  LOCAL_ENVIRONMENT_DESCRIPTION,
   LOCAL_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
@@ -153,6 +159,7 @@ import {
   START_DICTATION_LABEL,
   voiceChatControlLabel,
   VOICE_LABEL,
+  WORKTREE_ENVIRONMENT_DESCRIPTION,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
 import { ANSWER_THE_QUESTIONS_TO_CONTINUE } from '../../shared/user-input'
@@ -686,8 +693,8 @@ export const ComposerDock = memo(
         }))
     }, [mentionQuery, skillCatalog])
     const mentionOptions: MentionOption[] = useMemo(
-      () => [...chatMentionHits, ...skillMentionHits, ...fileMentionHits],
-      [chatMentionHits, skillMentionHits, fileMentionHits]
+      () => orderComposerMentionHits(fileMentionHits, skillMentionHits, chatMentionHits),
+      [chatMentionHits, fileMentionHits, skillMentionHits]
     )
     const boundSkills = useMemo(() => collectBoundSkills(input, skillCatalog), [input, skillCatalog])
     const activeProvider = providers.find((p) => p.id === activeProviderId) ?? providers[0]
@@ -1521,7 +1528,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="引用文件、对话或 Skill"
+              aria-label={TYPE_AT_TO_SEARCH_LABEL}
               aria-activedescendant={
                 mentionOptions[mentionActiveIndex] ? `mention-option-${mentionActiveIndex}` : undefined
               }
@@ -2413,13 +2420,13 @@ export const ComposerDock = memo(
               </button>
             ) : null}
             {onThreadModeChange ? (
-              <div className="composer-thread-mode" role="group" aria-label="线程模式">
+              <div className="composer-thread-mode" role="group" aria-label={CODEX_ENVIRONMENTS_LABEL}>
                 <button
                   type="button"
                   className={`composer-thread-chip${threadMode === 'local' ? ' is-active' : ''}`}
                   aria-pressed={threadMode === 'local'}
                   onClick={() => onThreadModeChange('local')}
-                  title={HAND_OFF_LABEL}
+                  title={LOCAL_ENVIRONMENT_DESCRIPTION}
                 >
                   {LOCAL_LABEL}
                 </button>
@@ -2428,7 +2435,7 @@ export const ComposerDock = memo(
                   className={`composer-thread-chip${threadMode === 'worktree' ? ' is-active' : ''}`}
                   aria-pressed={threadMode === 'worktree'}
                   onClick={() => onThreadModeChange('worktree')}
-                  title={HAND_OFF_LABEL}
+                  title={WORKTREE_ENVIRONMENT_DESCRIPTION}
                 >
                   {WORKTREE_LABEL}
                 </button>
