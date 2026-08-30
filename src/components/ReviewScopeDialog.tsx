@@ -4,6 +4,14 @@
  * @see src/components/ARCH.md
  */
 import { useEffect, useState } from 'react'
+import {
+  REVIEW_A_COMMIT_DESCRIPTION,
+  REVIEW_A_COMMIT_LABEL,
+  REVIEW_AGAINST_A_BASE_BRANCH_DESCRIPTION,
+  REVIEW_AGAINST_A_BASE_BRANCH_LABEL,
+  REVIEW_UNCOMMITTED_CHANGES_DESCRIPTION,
+  REVIEW_UNCOMMITTED_CHANGES_LABEL
+} from '../../shared/review-prompt'
 import './ReviewScopeDialog.css'
 
 interface Props {
@@ -58,16 +66,16 @@ export function ReviewScopeDialog({ open, onClose, onPick }: Props) {
         </div>
         <div className="review-scope-choices">
           <button type="button" onClick={() => onPick('uncommitted')}>
-            <strong>未提交变更</strong>
-            <span>工作区脏文件与未跟踪文件（官方 Uncommitted）</span>
+            <strong>{REVIEW_UNCOMMITTED_CHANGES_LABEL}</strong>
+            <span>{REVIEW_UNCOMMITTED_CHANGES_DESCRIPTION}</span>
           </button>
           <button type="button" onClick={() => onPick('branch')}>
-            <strong>相对基线</strong>
-            <span>当前分支相对 origin/HEAD 或 main（官方 Review against a base branch）</span>
+            <strong>{REVIEW_AGAINST_A_BASE_BRANCH_LABEL}</strong>
+            <span>{REVIEW_AGAINST_A_BASE_BRANCH_DESCRIPTION}</span>
           </button>
           <button type="button" onClick={() => onPick('commit', sha.trim() || undefined)}>
-            <strong>指定提交</strong>
-            <span>审查某一个 commit；空 sha 则看 HEAD</span>
+            <strong>{REVIEW_A_COMMIT_LABEL}</strong>
+            <span>{REVIEW_A_COMMIT_DESCRIPTION}</span>
           </button>
         </div>
         <label className="review-scope-sha">

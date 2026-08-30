@@ -3,9 +3,18 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+  CODE_REVIEW_SETTINGS_LABEL,
   composeReviewScopeArgs,
+  DETACHED_REVIEW_DESCRIPTION,
+  DETACHED_REVIEW_LABEL,
   formatReviewPrompt,
+  INLINE_REVIEW_DESCRIPTION,
+  INLINE_REVIEW_LABEL,
   parseReviewDelivery,
+  REVIEW_A_COMMIT_LABEL,
+  REVIEW_AGAINST_A_BASE_BRANCH_LABEL,
+  REVIEW_DELIVERY_LABEL,
+  REVIEW_UNCOMMITTED_CHANGES_LABEL,
   parseReviewProviderId,
   parseReviewRequest,
   parseReviewScope,
@@ -59,6 +68,18 @@ describe('review scope', () => {
     expect(composeReviewScopeArgs('here', 'branch')).toBe('branch here')
     expect(composeReviewScopeArgs('', 'commit', 'abc1234')).toBe('commit abc1234')
     expect(reviewNeedsScopePicker(composeReviewScopeArgs('here', 'uncommitted'))).toBe(false)
+  })
+
+  it('uses official Review delivery and /review picker copy', () => {
+    expect(CODE_REVIEW_SETTINGS_LABEL).toBe('Code review')
+    expect(REVIEW_DELIVERY_LABEL).toBe('Review delivery')
+    expect(INLINE_REVIEW_LABEL).toBe('Inline')
+    expect(DETACHED_REVIEW_LABEL).toBe('Detached')
+    expect(INLINE_REVIEW_DESCRIPTION).toMatch(/current chat/)
+    expect(DETACHED_REVIEW_DESCRIPTION).toMatch(/separate review chat/)
+    expect(REVIEW_UNCOMMITTED_CHANGES_LABEL).toBe('Review uncommitted changes')
+    expect(REVIEW_AGAINST_A_BASE_BRANCH_LABEL).toBe('Review against a base branch')
+    expect(REVIEW_A_COMMIT_LABEL).toBe('Review a commit')
   })
 
   it('uses Review delivery and allows here/detached overrides', () => {

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALL_REPOS_ID,
+  ALL_REPOS_LABEL,
+  BRANCH_REVIEW_LABEL,
+  COMMIT_REVIEW_LABEL,
+  LAST_TURN_LABEL,
+  REVERT_ALL_LABEL,
+  STAGE_ALL_LABEL,
+  STAGED_LABEL,
+  UNSTAGED_LABEL,
   fileInLastTurnForRepo,
   lastTurnPendingRelPath,
   lastTurnPendingRelPaths,
@@ -24,6 +32,17 @@ import {
 } from './review-repos'
 
 describe('review repos', () => {
+  it('uses official desktop review pane scope labels', () => {
+    expect(UNSTAGED_LABEL).toBe('Unstaged')
+    expect(STAGED_LABEL).toBe('Staged')
+    expect(LAST_TURN_LABEL).toBe('Last turn')
+    expect(BRANCH_REVIEW_LABEL).toBe('Branch')
+    expect(COMMIT_REVIEW_LABEL).toBe('Commit')
+    expect(ALL_REPOS_LABEL).toBe('All repos')
+    expect(STAGE_ALL_LABEL).toBe('Stage all')
+    expect(REVERT_ALL_LABEL).toBe('Revert all')
+  })
+
   it('keeps distinct git roots and defaults Last turn to all repos', () => {
     expect(reviewProbeRoots('/proj', ['/extra', '/proj'])).toEqual(['/proj', '/extra'])
     expect(reviewRepoLabel('/work/docs-site')).toBe('docs-site')

@@ -21,6 +21,23 @@ export function reviewCommitPrompt(sha?: string): string {
   return `请审查 git commit ${target} 的变更（git show ${target}）。只做只读审查：指出问题、风险、遗漏测试与可改进处。不要修改文件，不要 commit。先看 name-status 与关键 diff，再给出结构化评审。\n\n${REVIEW_FINDINGS_TAIL}`
 }
 
+/** Official Settings → General → Code review / Review delivery. */
+export const CODE_REVIEW_SETTINGS_LABEL = 'Code review'
+export const REVIEW_DELIVERY_LABEL = 'Review delivery'
+export const INLINE_REVIEW_LABEL = 'Inline'
+export const DETACHED_REVIEW_LABEL = 'Detached'
+export const INLINE_REVIEW_DESCRIPTION = 'Run /review in the current chat when possible.'
+export const DETACHED_REVIEW_DESCRIPTION = 'Start a separate review chat.'
+/** Official app /review picker (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_UNCOMMITTED_CHANGES_LABEL = 'Review uncommitted changes'
+export const REVIEW_AGAINST_A_BASE_BRANCH_LABEL = 'Review against a base branch'
+/** Official CLI /review scope; desktop picker also offers a commit sha. */
+export const REVIEW_A_COMMIT_LABEL = 'Review a commit'
+export const REVIEW_UNCOMMITTED_CHANGES_DESCRIPTION = 'Reviews the changes in your working tree.'
+export const REVIEW_AGAINST_A_BASE_BRANCH_DESCRIPTION =
+  'Compares your current branch with a branch you select.'
+export const REVIEW_A_COMMIT_DESCRIPTION = 'Reviews the exact change set for a selected commit.'
+
 /** Settings → Git → Review delivery（对标 Codex：默认 Inline 当前对话 / Detached 新线程） */
 export type ReviewDelivery = 'inline' | 'detached'
 

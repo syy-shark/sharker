@@ -51,6 +51,14 @@ import {
 } from '../../../shared/review-file-click'
 import {
   ALL_REPOS_ID,
+  ALL_REPOS_LABEL,
+  BRANCH_REVIEW_LABEL,
+  COMMIT_REVIEW_LABEL,
+  LAST_TURN_LABEL,
+  REVERT_ALL_LABEL,
+  STAGE_ALL_LABEL,
+  STAGED_LABEL,
+  UNSTAGED_LABEL,
   expandAllReviewDiffKeys,
   mergeReviewExpandedKeys,
   reviewDiffKeysForFindings,
@@ -1101,7 +1109,7 @@ export const ChangesPanel = memo(function ChangesPanel({
           >
             {compare === 'last_turn' ? (
               <option value={ALL_REPOS_ID}>
-                全部仓库
+                {ALL_REPOS_LABEL}
                 {formatReviewLineStats(allRepoStats.added, allRepoStats.removed)
                   ? `  ${formatReviewLineStats(allRepoStats.added, allRepoStats.removed)}`
                   : ''}
@@ -1178,11 +1186,26 @@ export const ChangesPanel = memo(function ChangesPanel({
           <button
             type="button"
             role="tab"
-            aria-selected={compare === 'uncommitted'}
-            className={`changes-panel__scope${compare === 'uncommitted' ? ' is-active' : ''}`}
-            onClick={() => setCompare('uncommitted')}
+            aria-selected={compare === 'uncommitted' && scope === 'unstaged'}
+            className={`changes-panel__scope${compare === 'uncommitted' && scope === 'unstaged' ? ' is-active' : ''}`}
+            onClick={() => {
+              setScope('unstaged')
+              setCompare('uncommitted')
+            }}
           >
-            未提交
+            {UNSTAGED_LABEL}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={compare === 'uncommitted' && scope === 'staged'}
+            className={`changes-panel__scope${compare === 'uncommitted' && scope === 'staged' ? ' is-active' : ''}`}
+            onClick={() => {
+              setScope('staged')
+              setCompare('uncommitted')
+            }}
+          >
+            {STAGED_LABEL}
           </button>
           <button
             type="button"
@@ -1194,7 +1217,7 @@ export const ChangesPanel = memo(function ChangesPanel({
               setCompare('last_turn')
             }}
           >
-            本轮
+            {LAST_TURN_LABEL}
           </button>
           <button
             type="button"
@@ -1203,7 +1226,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className={`changes-panel__scope${compare === 'branch' ? ' is-active' : ''}`}
             onClick={() => setCompare('branch')}
           >
-            分支{branchBase ? ` · ${branchBase}` : ''}
+            {BRANCH_REVIEW_LABEL}
           </button>
           <button
             type="button"
@@ -1212,7 +1235,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className={`changes-panel__scope${compare === 'commit' ? ' is-active' : ''}`}
             onClick={() => setCompare('commit')}
           >
-            提交
+            {COMMIT_REVIEW_LABEL}
           </button>
         </div>
       ) : null}
@@ -1238,26 +1261,6 @@ export const ChangesPanel = memo(function ChangesPanel({
 
       {isRepo && !readOnly && !isAllRepos && files.length > 0 && compare === 'uncommitted' ? (
         <div className="changes-panel__toolbar">
-          <div className="changes-panel__scopes" role="tablist" aria-label="暂存范围">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === 'unstaged'}
-              className={`changes-panel__scope${scope === 'unstaged' ? ' is-active' : ''}`}
-              onClick={() => setScope('unstaged')}
-            >
-              未暂存
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === 'staged'}
-              className={`changes-panel__scope${scope === 'staged' ? ' is-active' : ''}`}
-              onClick={() => setScope('staged')}
-            >
-              已暂存
-            </button>
-          </div>
           <div className="changes-panel__bulk">
             {scope === 'unstaged' ? (
               <button
@@ -1266,7 +1269,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                 disabled={acting || visible.length === 0}
                 onClick={() => void runAction('stage')}
               >
-                全部暂存
+                {STAGE_ALL_LABEL}
               </button>
             ) : (
               <button
@@ -1289,7 +1292,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                 )
               }
             >
-              全部还原
+              {REVERT_ALL_LABEL}
             </button>
           </div>
         </div>

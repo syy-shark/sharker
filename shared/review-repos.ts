@@ -6,8 +6,16 @@
 import { fileInLastTurn } from './git-compare'
 import { workspaceAccessRoots } from './workspace-folders'
 
-/** 本轮对比：选择器显示「全部仓库」 */
+/** Official review pane Last turn selector (learn.chatgpt.com/docs/code-review). */
 export const ALL_REPOS_ID = 'all'
+export const ALL_REPOS_LABEL = 'All repos'
+export const LAST_TURN_LABEL = 'Last turn'
+export const UNSTAGED_LABEL = 'Unstaged'
+export const STAGED_LABEL = 'Staged'
+export const BRANCH_REVIEW_LABEL = 'Branch'
+export const COMMIT_REVIEW_LABEL = 'Commit'
+export const STAGE_ALL_LABEL = 'Stage all'
+export const REVERT_ALL_LABEL = 'Revert all'
 
 /** 审查最多再探几个附加根（含主根一共 cap） */
 export const MAX_REVIEW_REPOS = 8

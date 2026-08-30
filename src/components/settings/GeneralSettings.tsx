@@ -19,8 +19,14 @@ import {
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
 import {
+  CODE_REVIEW_SETTINGS_LABEL,
+  DETACHED_REVIEW_DESCRIPTION,
+  DETACHED_REVIEW_LABEL,
+  INLINE_REVIEW_DESCRIPTION,
+  INLINE_REVIEW_LABEL,
   parseReviewDelivery,
   parseReviewProviderId,
+  REVIEW_DELIVERY_LABEL,
   type ReviewDelivery
 } from '../../../shared/review-prompt'
 import { parseFileOpener } from '../../../shared/file-opener'
@@ -145,7 +151,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title="代码审查">
+      <SettingsSection title={CODE_REVIEW_SETTINGS_LABEL} description={REVIEW_DELIVERY_LABEL}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={parseReviewDelivery(draft.reviewDelivery)}
@@ -155,14 +161,14 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
             options={[
               {
                 value: 'inline',
-                title: '当前对话',
-                description: '官方默认：能在当前对话跑 /review 就在当前对话。直播中 Queue 或 Steer，不中止。',
+                title: INLINE_REVIEW_LABEL,
+                description: INLINE_REVIEW_DESCRIPTION,
                 icon: <span aria-hidden>内</span>
               },
               {
                 value: 'detached',
-                title: '独立线程',
-                description: '对标 Codex Detached：/review 新开审查对话。here / detached 可单次覆盖。',
+                title: DETACHED_REVIEW_LABEL,
+                description: DETACHED_REVIEW_DESCRIPTION,
                 icon: <span aria-hidden>独</span>
               }
             ]}
