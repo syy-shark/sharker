@@ -44,7 +44,7 @@ export interface LiveProcessTimeline {
   hasThought: boolean
 }
 
-/** 直播回答槽：闭合块与增长尾分开，已画正文不跟 token 重挂 */
+/** 直播回答槽：闭合块与增长尾分开存；渲染走同一列表，封口按 id 留下实例 */
 export interface LiveAnswerView {
   parts: AnswerPart[]
   closed: AnswerPart[]
@@ -306,7 +306,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
  * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽并翻 contentStreaming，随后首枚 token 不冲掉 +/-。
- * 没变的 `s.id-diff-N` 退回同一 part（sameFileDiff），closed 槽引用能复用就不抬 LiveStoreClosedAnswer。
+ * 没变的 `s.id-diff-N` 退回同一 part（sameFileDiff），closed 槽引用能复用就不抬回答列表。
  * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
  * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
@@ -1402,6 +1402,33 @@ export function liveAnswerViewFromSnap(snap: LiveStreamUiSnapshot): LiveAnswerVi
   const view = nextLiveAnswerView(answerCache?.view ?? null, snap)
   answerCache = { snap, view }
   return view
+}
+
+const EMPTY_ANSWER_RENDER_PARTS: AnswerPart[] = []
+
+/** 闭合与尾排成一列，封口时同一 part 引用仍在列表里，React 按 id 留下树。 */
+export function liveAnswerRenderParts(view: LiveAnswerView): readonly AnswerPart[] {
+  if (!view.show) return EMPTY_ANSWER_RENDER_PARTS
+  if (!view.tail) return view.closed
+  if (view.closed[view.closed.length - 1] === view.tail) return view.closed
+  if (!view.closed.length) return [view.tail]
+  return [...view.closed, view.tail]
+}
+
+/** 列表引用能复用就不抬 LiveStoreAnswer（对标 Codex #22860）。 */
+export function nextLiveAnswerRenderParts(
+  prev: readonly AnswerPart[] | null,
+  snap: LiveStreamUiSnapshot
+): readonly AnswerPart[] {
+  const next = liveAnswerRenderParts(liveAnswerViewFromSnap(snap))
+  if (
+    prev &&
+    prev.length === next.length &&
+    next.every((part, index) => part === prev[index])
+  ) {
+    return prev
+  }
+  return next
 }
 
 export function nextLiveAnswerActions(

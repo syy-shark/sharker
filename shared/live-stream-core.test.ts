@@ -6,6 +6,7 @@ import type { StreamChunk, TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
   isLiveSameLengthTokenGrow,
+  nextLiveAnswerRenderParts,
   nextLiveAnswerView,
   nextLivePublishedStreaming,
   nextLiveProcessView,
@@ -1534,6 +1535,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
       'streaming={options.markdownStreaming}'
     )
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('nextLiveAnswerRenderParts')
+    expect(src('../src/components/LiveAssistantParts.tsx')).not.toContain('LiveStoreAnswerTail')
+    expect(src('../src/components/LiveAssistantParts.tsx')).not.toContain('LiveStoreClosedAnswer')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldHighlightLiveFence')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldAllowLiveFenceHighlight')
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('shouldPaintLiveFenceHighlight')
@@ -1568,6 +1572,28 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatMath.tsx')).toContain('resolveLiveChatMathHtml')
     expect(src('../src/components/ChatMath.tsx')).toContain('LiveMarkdownStreamingContext')
     expect(src('../src/components/ChatMath.tsx')).toContain('useEffect')
+  })
+
+  it('keeps the sealed first-text part object when a later token opens a new tail', () => {
+    let prev: TurnSegment[] = []
+    let parts = nextLiveAnswerRenderParts(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const step = (chunk: StreamChunk) => {
+      const next = applyStreamChunk(prev, chunk)
+      if (next === prev) return
+      parts = nextLiveAnswerRenderParts(parts, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+    step({ type: 'turn_start' })
+    step({ type: 'token', content: 'Hello' })
+    const first = parts.find((part) => part.type === 'text')
+    expect(first?.type).toBe('text')
+    expect(first && first.type === 'text' ? first.content : '').toBe('Hello')
+    step({ type: 'tool_start', toolName: 'read_file', toolCallId: 'seal-1' })
+    step({ type: 'tool_done', toolName: 'read_file', toolCallId: 'seal-1' })
+    step({ type: 'token', content: 'More' })
+    expect(parts[0]).toBe(first)
+    expect(parts.length).toBeGreaterThan(1)
+    expect(parts[parts.length - 1]).not.toBe(first)
   })
 
   it('keeps a harness first-stream walk off the combinatorial table', () => {

@@ -1,6 +1,6 @@
 /**
  * 直播助手行：过程与回答分开订 store 切片。
- * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow（对标 Codex #22860）。
+ * token 只重绘回答尾；正文或思考加长不扫过程 / 已改文件指纹、不重跑过程 / 回答 buildAnswerParts；思考旁白另订 store，时间线引用能复用就不抬 TurnFlow；闭合与尾同一列表，封口按 part.id 留下 StreamingMarkdown（对标 Codex #22860）。
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
  * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，回答 diff 仍 live 以免折 20 行跳（对标 Codex preserved streamed activity）。
  * 直播 `StreamingMarkdown` 标 `live`，闭合围栏不跑 Prism；`streaming` 跟 loading，收束后再画 mermaid。
@@ -18,6 +18,7 @@ import { FilesChangedCard } from './FilesChangedCard'
 import {
   liveAnswerViewFromSnap,
   nextLiveAnswerActions,
+  nextLiveAnswerRenderParts,
   nextLiveProcessTimeline,
   type LiveAnswerView,
   type LiveProcessTimeline
@@ -105,46 +106,21 @@ function renderLiveAnswerPart(
   )
 }
 
-/** 已闭合回答：只在新块封口时重绘。写盘 +/- 即使被正文挤进 closed 也保持 live，避免首挂就折 20 行、内层停跟尾。 */
-const LiveStoreClosedAnswer = memo(function LiveStoreClosedAnswer({
-  markdownStreaming
-}: {
-  markdownStreaming: boolean
-}) {
-  const closed = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).closed)
-  if (!closed.length) return null
-  return (
-    <>
-      {closed.map((part) =>
-        renderLiveAnswerPart(part, { liveDiff: true, markdownStreaming })
-      )}
-    </>
-  )
-})
-
-/** 增长中的尾块：跟 token */
-const LiveStoreAnswerTail = memo(function LiveStoreAnswerTail({
-  markdownStreaming
-}: {
-  markdownStreaming: boolean
-}) {
-  const tail = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).tail)
-  if (!tail) return null
-  return <>{renderLiveAnswerPart(tail, { liveDiff: true, markdownStreaming })}</>
-})
-
-/** 回答外壳：只订 show，token 不重绘已画块的父节点 */
+/** 闭合与尾同一列表：封口时同一 part 引用留下，不拆 StreamingMarkdown / InlineDemo（对标 Codex #22860）。 */
 const LiveStoreAnswer = memo(function LiveStoreAnswer({
   markdownStreaming
 }: {
   markdownStreaming: boolean
 }) {
-  const show = useLiveStreamUiSelect((snap) => liveAnswerViewFromSnap(snap).show)
-  if (!show) return null
+  const parts = useLiveStreamUiSelect((snap, prev: LiveAnswerView['parts'] | undefined) =>
+    nextLiveAnswerRenderParts(prev ?? null, snap)
+  )
+  if (!parts.length) return null
   return (
     <div className="assistant-message-body message-body--assistant turn-flow-final turn-flow-final--streaming message-body--streaming-active">
-      <LiveStoreClosedAnswer markdownStreaming={markdownStreaming} />
-      <LiveStoreAnswerTail markdownStreaming={markdownStreaming} />
+      {parts.map((part) =>
+        renderLiveAnswerPart(part, { liveDiff: true, markdownStreaming })
+      )}
     </div>
   )
 })
