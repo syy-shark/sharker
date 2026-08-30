@@ -168,7 +168,7 @@ function extrasHaveProcessThenFirstAnswerText(extras: readonly TurnSegment[]): b
  * 同一帧 `think + tool`、以及首轮第二枚工具也走这条。
  * 过程前缀后首枚无 fence 正文标 `'text'`，过程步复用、回答另开尾。
  * 同一帧过程 extras + 首枚无 fence 正文也标 `'text'`。
- * 只追加思考 / status 也走核心，不必等表。
+ * 只追加思考 / status，或同一帧 status+思考，也走核心，不必等表。
  * 闭合散文、或 `present_inline_demo` 仍等表。
  */
 export function liveCoreAppendedProcessToolsSkip(
@@ -186,8 +186,9 @@ export function liveCoreAppendedProcessToolsSkip(
   if (!extras.length) return null
   if (extrasHaveOnlyFirstAnswerText(extras)) return 'text'
   if (extrasHaveProcessThenFirstAnswerText(extras)) return 'text'
-  if (extras.every((segment) => isLiveThinking(segment))) return 'think'
-  if (extras.every((segment) => isLiveStatus(segment))) return 'status'
+  if (extras.length && extras.every((segment) => isLiveThinking(segment) || isLiveStatus(segment))) {
+    return extras.some(isLiveStatus) ? 'status' : 'think'
+  }
   if (!extras.every((segment) => isLiveCoreAppendExtra(segment))) return null
   if (!extras.some((segment) => isLiveCoreProcessTool(segment))) return null
   return 'tool'

@@ -114,6 +114,18 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(
       hasLiveProcessPhaseGrowHold([think('Hmm'), tool('active')], [think('Hmm'), tool('active'), reconnect])
     ).toBe(true)
+    expect(
+      shouldSkipLiveStreamDerivation(
+        [think('Hmm'), tool('active')],
+        [think('Hmm'), tool('active'), reconnect, moreThink]
+      )
+    ).toBe('status')
+    expect(
+      hasLiveProcessPhaseGrowHold(
+        [think('Hmm'), tool('active')],
+        [think('Hmm'), tool('active'), reconnect, moreThink]
+      )
+    ).toBe(true)
   })
 
   it('skips derivation when a tool and the first answer arrive in the same flush', () => {
@@ -296,6 +308,34 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     })
     expect(next.processForFlow[0]).toBe(first.processForFlow[0])
     expect(next.processForFlow.at(-1)).toBe(reconnect)
+  })
+
+  it('appends reconnect status and later think in the same flush without rebuilding', () => {
+    const thought = think('Hmm')
+    const reading = tool('active')
+    const reconnect = status('Reconnecting... 1/5')
+    const moreThink: TurnSegment = { ...think('Next'), id: 'th2' }
+    const first = nextLiveProcessView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading]
+    })
+    const next = nextLiveProcessView(first, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, reading, reconnect, moreThink]
+    })
+    expect(next.processForFlow[0]).toBe(first.processForFlow[0])
+    expect(next.processForFlow.at(-1)).toBe(reconnect)
+    expect(next.thinkText).toBe(`${thought.content}${moreThink.content}`)
+    const steps = deriveChronologicalSteps([thought, reading], { isStreaming: true })
+    const appended = appendProcessPhaseStepOnToolStart(
+      steps,
+      [thought, reading],
+      [thought, reading, reconnect, moreThink],
+      true
+    )
+    expect(appended).not.toBeNull()
+    expect(appended!.at(-1)?.segment).toBe(reconnect)
+    expect(appended!.some((step) => step.segment === moreThink)).toBe(false)
   })
 
   it('opens the answer tail from the first prose after tools without the table', () => {
