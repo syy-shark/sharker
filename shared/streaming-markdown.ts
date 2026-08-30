@@ -1641,6 +1641,17 @@ export function cheapInlineNodeKeys(nodes: CheapInlineNode[]): string[] {
   return keys
 }
 
+/** 增长尾不含行内标记时只加长最后一段 text，不重扫整段（对标 Codex #22860） */
+const CHEAP_INLINE_GROW_TRIGGER = /[*_`~[\]()<>\\!&$^#/:@\n]|https?:|www\./i
+
+export function shouldGrowCheapInlineText(lastText: string, add: string): boolean {
+  if (!add) return true
+  if (CHEAP_INLINE_GROW_TRIGGER.test(add)) return false
+  if (/[*_`~[\]()<>\\!&$^#/:@]$/.test(lastText)) return false
+  const lastWord = lastText.split(/\s+/).pop() ?? ''
+  return !/^(?:https?|www)$/i.test(lastWord)
+}
+
 /**
  * 直播散文尾增量解析：复用已闭合的行内节点，只重扫最后一段增长文本。
  */
@@ -1658,6 +1669,17 @@ export function continueCheapInlineMarkdown(
   const stable = prevNodes.slice(0, -1)
   const prefix = cheapInlineSourceAll(stable)
   if (!nextText.startsWith(prefix)) return parseCheapInlineMarkdown(nextText, defs)
+  const last = prevNodes[prevNodes.length - 1]
+  if (last?.type === 'text') {
+    const lastSrc = last.text
+    if (nextText.startsWith(prefix + lastSrc)) {
+      const add = nextText.slice(prefix.length + lastSrc.length)
+      if (shouldGrowCheapInlineText(lastSrc, add)) {
+        const grown: CheapInlineNode = { type: 'text', text: lastSrc + add }
+        return stable.length ? [...stable, grown] : [grown]
+      }
+    }
+  }
   const rest = parseCheapInlineMarkdown(nextText.slice(prefix.length), defs)
   return stable.length ? [...stable, ...rest] : rest
 }

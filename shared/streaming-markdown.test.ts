@@ -12,6 +12,7 @@ import {
   clearCheapProseHolds,
   clearStreamingMarkdownHolds,
   continueCheapInlineMarkdown,
+  shouldGrowCheapInlineText,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   continueStreamingRenderSlots,
@@ -1977,6 +1978,42 @@ describe('splitStreamingMarkdown', () => {
   it('reuses closed inline nodes when the prose tail grows', () => {
     const firstText = '见 `foo` 与 '
     const first = parseCheapInlineMarkdown(firstText)
+    expect(shouldGrowCheapInlineText('普通段落', '继续写汉字')).toBe(true)
+    expect(shouldGrowCheapInlineText('普通段落', ' **粗**')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '*粗')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '`code')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', '[文档]')).toBe(false)
+    expect(shouldGrowCheapInlineText('普通段落', 'https://a.test')).toBe(false)
+    expect(shouldGrowCheapInlineText('半截 **', '粗')).toBe(false)
+    expect(shouldGrowCheapInlineText('见 http', 's://a.test')).toBe(false)
+    const plain = parseCheapInlineMarkdown('普通段落开始写')
+    const plainGrown = continueCheapInlineMarkdown(
+      '普通段落开始写',
+      plain,
+      '普通段落开始写更多汉字'
+    )
+    expect(plainGrown).toEqual([{ type: 'text', text: '普通段落开始写更多汉字' }])
+    const afterCode = parseCheapInlineMarkdown('见 `foo` 然后')
+    const afterCodeGrown = continueCheapInlineMarkdown(
+      '见 `foo` 然后',
+      afterCode,
+      '见 `foo` 然后继续'
+    )
+    expect(afterCodeGrown[0]).toBe(afterCode[0])
+    expect(afterCodeGrown[1]).toBe(afterCode[1])
+    expect(afterCodeGrown[2]).toEqual({ type: 'text', text: ' 然后继续' })
+    const star = parseCheapInlineMarkdown('普通')
+    const starGrown = continueCheapInlineMarkdown('普通', star, '普通*粗*')
+    expect(starGrown.map((n) => n.type)).toEqual(['text', 'em'])
+    const tick = parseCheapInlineMarkdown('见 ')
+    const tickGrown = continueCheapInlineMarkdown('见 ', tick, '见 `foo`')
+    expect(tickGrown.map((n) => n.type)).toEqual(['text', 'code'])
+    const bracket = parseCheapInlineMarkdown('见 ')
+    const bracketGrown = continueCheapInlineMarkdown('见 ', bracket, '见 [文档](https://a.test/x)')
+    expect(bracketGrown.map((n) => n.type)).toEqual(['text', 'link'])
+    const auto = parseCheapInlineMarkdown('见 ')
+    const autoGrown = continueCheapInlineMarkdown('见 ', auto, '见 https://a.test')
+    expect(autoGrown.some((n) => n.type === 'link')).toBe(true)
     const grown = continueCheapInlineMarkdown(firstText, first, '见 `foo` 与 **bar**')
     expect(grown[0]).toBe(first[0])
     expect(grown[1]).toBe(first[1])
@@ -2175,5 +2212,6 @@ describe('streaming markdown remount holds', () => {
     )
     expect(mdSrc).toContain("if (!src.includes('\\r')) return src")
     expect(mdSrc).toContain("prev.blob === '' && !raw.includes(']:')")
+    expect(mdSrc).toContain('shouldGrowCheapInlineText')
   })
 })
