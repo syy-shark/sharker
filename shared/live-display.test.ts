@@ -41,6 +41,7 @@ import {
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
   shouldIgnoreLeaveBottomDuringCommit,
+  shouldRecordTranscriptScrollIntent,
   shouldStartLiveCommitSettle,
   LIVE_COMMIT_SETTLE_FRAMES,
   LIVE_COMMIT_SETTLE_MS,
@@ -345,6 +346,29 @@ describe('near-live message rows', () => {
     expect(
       shouldIgnoreLeaveBottomDuringCommit({
         commitSettling: false,
+        liveStreaming: true,
+        stickToBottom: true,
+        userLocked: false,
+        scrollIntent: 'up'
+      })
+    ).toBe(true)
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: false,
+        liveStreaming: true,
+        stickToBottom: true,
+        userLocked: true,
+        scrollIntent: 'up'
+      })
+    ).toBe(false)
+    expect(shouldRecordTranscriptScrollIntent({ commitSettling: false })).toBe(true)
+    expect(shouldRecordTranscriptScrollIntent({ commitSettling: true })).toBe(false)
+    expect(shouldRecordTranscriptScrollIntent({ commitSettling: false, liveStreaming: true })).toBe(
+      false
+    )
+    expect(
+      shouldIgnoreLeaveBottomDuringCommit({
+        commitSettling: false,
         stickToBottom: true,
         userLocked: false,
         scrollIntent: 'down'
@@ -374,7 +398,8 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')
-    expect(chatView).toContain('if (!commitSettleRef.current)')
+    expect(chatView).toContain('shouldRecordTranscriptScrollIntent')
+    expect(chatView).toContain('liveStreaming: loadingRef.current')
     expect(shouldFollowApprovalIntoView({ userLocked: false, stickToBottom: true })).toBe(true)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: false })).toBe(false)
     expect(shouldFollowApprovalIntoView({ userLocked: true, stickToBottom: true })).toBe(false)

@@ -625,18 +625,28 @@ export function shouldStartLiveCommitSettle(options: {
 
 /**
  * 贴底跟随中距底突然变大：布局收束，不是用户上翻。
- * 收束短窗内浏览器夹低 scrollTop 会看起来像上翻，不能信这个意向；
- * 已锁（滚轮 / 触摸已 lockUserScroll）则不忽略。短窗过后仍贴底且意向不是上翻也不锁。
+ * 直播中思考收回 / 工具卡换高、以及收束短窗里浏览器夹低 scrollTop，都会看起来像上翻；
+ * 已锁（滚轮 / 触摸已 lockUserScroll）则不忽略。空闲后仍贴底且意向不是上翻也不锁。
+ * 对标 Codex #37872 直播中跳、#37849 / #38412 收束跳回用户提示。
  */
 export function shouldIgnoreLeaveBottomDuringCommit(options: {
   commitSettling: boolean
+  liveStreaming?: boolean
   stickToBottom: boolean
   userLocked: boolean
   scrollIntent?: 'up' | 'down' | null
 }): boolean {
   if (!options.stickToBottom || options.userLocked) return false
-  if (options.commitSettling) return true
+  if (options.commitSettling || options.liveStreaming) return true
   return options.scrollIntent !== 'up'
+}
+
+/** 直播或收束换行时不把浏览器夹低 scrollTop 记成上翻意向 */
+export function shouldRecordTranscriptScrollIntent(options: {
+  commitSettling: boolean
+  liveStreaming?: boolean
+}): boolean {
+  return !options.commitSettling && !options.liveStreaming
 }
 
 /** 审批出现：已贴底才跟；读历史不解锁、不抢镜头（对标 Codex #38220，Enter/Esc 仍走输入框） */

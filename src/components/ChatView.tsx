@@ -7,7 +7,7 @@
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 历史列只在预留行真进 messages 后才订直播体布尔（对标 Codex #22860）。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
- * 收束换行短窗内忽略误判上翻锁，继续贴底（对标 Codex #37849 跳回用户提示）。
+ * 直播中思考收回 / 收束换行时忽略误判上翻锁，继续贴底（对标 Codex #37872 / #37849）。
  * @see src/ARCH.md
  */
 import {
@@ -90,6 +90,7 @@ import {
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
   shouldIgnoreLeaveBottomDuringCommit,
+  shouldRecordTranscriptScrollIntent,
   shouldStartLiveCommitSettle,
   LIVE_COMMIT_SETTLE_FRAMES,
   LIVE_COMMIT_SETTLE_MS,
@@ -1541,6 +1542,7 @@ export const ChatView = memo(function ChatView({
       if (
         shouldIgnoreLeaveBottomDuringCommit({
           commitSettling: commitSettleRef.current,
+          liveStreaming: loadingRef.current,
           stickToBottom: stickToBottomRef.current,
           userLocked: userScrollLockRef.current,
           scrollIntent: lastScrollIntentRef.current
@@ -1957,8 +1959,13 @@ export const ChatView = memo(function ChatView({
     const onScroll = () => {
       if (programmaticScrollRef.current) return
       const top = el.scrollTop
-      // 收束换行时浏览器夹低 scrollTop 会看起来像上翻（对标 Codex #37849）
-      if (!commitSettleRef.current) {
+      // 直播中思考收回或收束换行时，浏览器夹低 scrollTop 会看起来像上翻（#37872 / #37849）
+      if (
+        shouldRecordTranscriptScrollIntent({
+          commitSettling: commitSettleRef.current,
+          liveStreaming: loadingRef.current
+        })
+      ) {
         if (top < lastScrollTopRef.current - 0.5) lastScrollIntentRef.current = 'up'
         else if (top > lastScrollTopRef.current + 0.5) lastScrollIntentRef.current = 'down'
       }
