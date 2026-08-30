@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnSegment } from './types'
 import {
   hasLiveProcessPhaseGrowHold,
+  shouldPrefetchLiveStreamTable,
   shouldSkipLiveAnswerIdentity,
   shouldSkipLiveStreamDerivation,
   type LiveAnswerView
@@ -79,6 +80,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     ).toBe(false)
   })
 
+  it('does not prefetch the detector table on first paint or during a live turn', () => {
+    expect(shouldPrefetchLiveStreamTable({ loading: false, hadLiveTurn: false })).toBe(false)
+    expect(shouldPrefetchLiveStreamTable({ loading: true, hadLiveTurn: true })).toBe(false)
+    expect(shouldPrefetchLiveStreamTable({ loading: false, hadLiveTurn: true })).toBe(true)
+  })
+
   it('keeps first-paint UI and process-phases off the slices table', () => {
     const coreSrc = src('live-stream-core.ts')
     expect(coreSrc.includes("from './live-stream-slices'")).toBe(false)
@@ -87,6 +94,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain("from '../shared/live-stream-core'")
     expect(src('../src/App.tsx').includes("from '../shared/live-stream-slices'")).toBe(false)
     expect(src('../src/App.tsx')).toContain('prefetchLiveStreamTable')
+    expect(src('../src/App.tsx')).toContain('shouldPrefetchLiveStreamTable')
+    expect(src('../src/App.tsx')).toContain('LAST_TURN_UI_FLUSH_MS')
 
     expect(src('../src/components/ChatView.tsx')).toContain(
       "from '../../shared/live-stream-core'"

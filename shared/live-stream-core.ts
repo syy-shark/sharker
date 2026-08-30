@@ -1,6 +1,7 @@
 /**
  * 直播 16ms 热路径：同长前缀尾 token / 末行工具，不静态导入 combinatorial 表。
- * `live-stream-slices` 在空闲时 register；未登记时 miss 走全量重建，不扫 7k 检测器。
+ * `live-stream-slices` 只在直播回合收束后空闲 register；开画 / 直播中不装表，以免主线程评 7.9k 检测器卡顿。
+ * 未登记时 miss 走全量重建，不扫 combinatorial 表。
  * @see shared/ARCH.md
  */
 import { isInlineDemoPaintable, liveThinkingText, sameRefList } from './live-display'
@@ -102,6 +103,14 @@ export function registerLiveStreamTable(table: LiveStreamTable): void {
 export function prefetchLiveStreamTable(): Promise<void> {
   tablePrefetch ??= import('./live-stream-slices').then(() => undefined)
   return tablePrefetch
+}
+
+/** 只在已有过直播且当前不在跑时才装表，避免开画 / 首轮 token 被 7.9k 评测卡住 */
+export function shouldPrefetchLiveStreamTable(input: {
+  loading: boolean
+  hadLiveTurn: boolean
+}): boolean {
+  return input.hadLiveTurn && !input.loading
 }
 
 function isLiveAnswerText(segment: TurnSegment): boolean {

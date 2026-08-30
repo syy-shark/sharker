@@ -97,6 +97,7 @@ import { getLiveStreamUi, publishLiveStreamUi, resetLiveStreamUi } from './hooks
 import {
   nextLiveThinkText,
   prefetchLiveStreamTable,
+  shouldPrefetchLiveStreamTable,
   shouldSkipLiveStreamDerivation,
   shouldSkipLiveStreamPublish
 } from '../shared/live-stream-core'
@@ -437,13 +438,6 @@ export default function App() {
     return () => document.documentElement.classList.remove('window-rounded')
   }, [])
 
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      void prefetchLiveStreamTable()
-    }, 0)
-    return () => window.clearTimeout(id)
-  }, [])
-
   useEffect(() => bindLiveShimmerVisibility(document), [])
 
   /** 全局状态与 ref 镜像，供 IPC 回调与节流刷新读取 */
@@ -482,6 +476,20 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const loadingLiveRef = useRef(false)
   loadingLiveRef.current = loading
+  const hadLiveTurnRef = useRef(false)
+  useEffect(() => {
+    if (loading) hadLiveTurnRef.current = true
+  }, [loading])
+
+  useEffect(() => {
+    if (!shouldPrefetchLiveStreamTable({ loading, hadLiveTurn: hadLiveTurnRef.current })) {
+      return
+    }
+    const id = window.setTimeout(() => {
+      void prefetchLiveStreamTable()
+    }, LAST_TURN_UI_FLUSH_MS)
+    return () => window.clearTimeout(id)
+  }, [loading])
   const [liveAssistantId, setLiveAssistantId] = useState<string | null>(null)
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [approvalResponding, setApprovalResponding] = useState(false)
