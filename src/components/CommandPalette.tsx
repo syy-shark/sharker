@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { filterPaletteCommands, type PaletteCommand } from '../../shared/command-palette'
+import { FILE_CLOSE_LABEL, OPEN_COMMAND_MENU_LABEL } from '../../shared/reveal-in-folder'
 import './CommandPalette.css'
 
 interface Props {
@@ -40,11 +41,11 @@ export function CommandPalette({ open, onClose, onRun }: Props) {
 
   return (
     <div className="command-palette-root" role="presentation">
-      <button type="button" className="command-palette-backdrop" aria-label="关闭命令面板" onClick={onClose} />
+      <button type="button" className="command-palette-backdrop" aria-label={FILE_CLOSE_LABEL} onClick={onClose} />
       <div
         className="command-palette glass-popover popover-enter"
         role="dialog"
-        aria-label="命令面板"
+        aria-label={OPEN_COMMAND_MENU_LABEL}
       >
         <input
           ref={inputRef}

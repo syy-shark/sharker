@@ -138,6 +138,7 @@ import {
   NO_PROJECTS_LABEL,
   OPEN_PROJECT_PICKER_LABEL,
   REMOTE_BRANCH_HINT,
+  RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   SEARCH_CHATS_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   SEARCH_PROJECTS_LABEL,
@@ -1824,7 +1825,7 @@ export const ComposerDock = memo(
             <div
               className="slash-menu popover-enter"
               role="listbox"
-              aria-label="提示历史"
+              aria-label={RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL}
               aria-activedescendant={
                 promptHits[promptSearchIndex] ? `prompt-option-${promptSearchIndex}` : undefined
               }

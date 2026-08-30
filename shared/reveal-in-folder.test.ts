@@ -30,6 +30,7 @@ import {
   NOTIFICATIONS_SETTINGS_LABEL,
   NEW_STANDALONE_CHAT_LABEL,
   OPEN_COMMAND_MENU_LABEL,
+  OPEN_KEYBOARD_SHORTCUTS_LABEL,
   PERSONALIZATION_SETTINGS_LABEL,
   SHARE_LABEL,
   SHARE_SNAPSHOT_INTRO,
@@ -124,6 +125,7 @@ import {
   STARTING_BRANCH_LABEL,
   STARTING_BRANCH_SEARCH_PLACEHOLDER,
   REMOTE_BRANCH_HINT,
+  RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
   TOGGLE_FULL_SCREEN_LABEL,
   OPEN_BROWSER_TAB_MENU_LABEL,
   FOCUS_BROWSER_ADDRESS_BAR_MENU_LABEL,
@@ -201,6 +203,8 @@ describe('reveal in folder', () => {
     expect(threadMenuItems({ platform: 'linux' })[0]?.title).toBe('Open in File Manager')
     expect(threadMenuItems({ platform: 'darwin' })[0]?.title).toBe('Open in Finder')
     expect(OPEN_COMMAND_MENU_LABEL).toBe('Open command menu')
+    expect(OPEN_KEYBOARD_SHORTCUTS_LABEL).toBe('Open keyboard shortcuts')
+    expect(RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL).toBe('Restore previous composer prompt')
     expect(OPEN_SETTINGS_LABEL).toBe('Open settings')
     expect(SKILLS_LABEL).toBe('Skills')
     expect(SKILLS_INTRO).toMatch(/view and explore skills created across your projects/)
@@ -319,6 +323,21 @@ describe('reveal in folder', () => {
     expect(composerSrc).toContain('SEARCH_PROJECTS_LABEL')
     expect(composerSrc).toContain('NO_PROJECTS_LABEL')
     expect(composerSrc).toContain('REMOTE_BRANCH_HINT')
+    expect(composerSrc).toContain('RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL')
+    expect(composerSrc).not.toContain('提示历史')
+    const paletteSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/CommandPalette.tsx'),
+      'utf8'
+    )
+    expect(paletteSrc).toContain('OPEN_COMMAND_MENU_LABEL')
+    expect(paletteSrc).toContain('FILE_CLOSE_LABEL')
+    const shortcutsHelpSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ShortcutsHelp.tsx'),
+      'utf8'
+    )
+    expect(shortcutsHelpSrc).toContain('KEYBOARD_SHORTCUTS_LABEL')
+    expect(shortcutsHelpSrc).toContain('OPEN_KEYBOARD_SHORTCUTS_LABEL')
+    expect(shortcutsHelpSrc).not.toContain('快捷键')
     const foldersSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ProjectFoldersDialog.tsx'),
       'utf8'
@@ -326,6 +345,7 @@ describe('reveal in folder', () => {
     expect(foldersSrc).toContain('EDIT_PROJECT_INTRO')
     expect(foldersSrc).toContain('PRIMARY_FOLDER_LABEL')
     expect(foldersSrc).toContain('SECONDARY_FOLDERS_LABEL')
+    expect(foldersSrc).toContain('FILE_CLOSE_LABEL')
     const askSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/InlineUserInput.tsx'),
       'utf8'

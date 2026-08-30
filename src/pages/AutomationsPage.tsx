@@ -2,7 +2,7 @@
  * 自动化任务管理页。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ConversationSummary } from '../../shared/conversation'
+import { CHATS_SECTION_LABEL, type ConversationSummary } from '../../shared/conversation'
 import type { ProviderConfig, WorkspaceItem } from '../../shared/types'
 import { resolveThinkingOptions } from '../../shared/thinking-levels'
 import {
@@ -13,6 +13,7 @@ import {
   parseAutomationRunIn,
   parseOptionalAutomationId,
   RUN_NOW_LABEL,
+  SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
   SCHEDULED_LABEL,
   type AutomationJob,
@@ -159,13 +160,10 @@ export function AutomationsPage({
       <div className="automations-inner">
         <header className="automations-head">
           <button type="button" className="automations-back" onClick={onBack}>
-            ← 返回
+            ← {CHATS_SECTION_LABEL}
           </button>
           <h1>{SCHEDULED_LABEL}</h1>
-          <p>
-            默认可新建对话并在隔离 worktree 后台跑；也可回到指定对话沿用上下文（对标 Codex
-            Scheduled）。结果进审查队列，不打断正在看的直播。可用 All / Active / Paused 筛选，或 Run now。
-          </p>
+          <p>{SCHEDULED_INTRO}</p>
         </header>
 
         <section className="automations-queue" aria-label="审查队列">

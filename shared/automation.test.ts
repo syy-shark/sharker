@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   applyScheduledTaskAction,
@@ -12,6 +15,7 @@ import {
   RUN_NOW_LABEL,
   SCHEDULED_ACTIVE_LABEL,
   SCHEDULED_ALL_LABEL,
+  SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
   SCHEDULED_LABEL,
   SCHEDULED_PAUSED_LABEL,
@@ -198,6 +202,14 @@ describe('automation destination', () => {
       SCHEDULED_PAUSED_LABEL
     ])
     expect(SCHEDULED_LABEL).toBe('Scheduled')
+    expect(SCHEDULED_INTRO).toMatch(/Scheduled view acts as your inbox/)
+    const automationsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/pages/AutomationsPage.tsx'),
+      'utf8'
+    )
+    expect(automationsSrc).toContain('SCHEDULED_INTRO')
+    expect(automationsSrc).toContain('CHATS_SECTION_LABEL')
+    expect(automationsSrc).not.toContain('← 返回')
     expect(SCHEDULED_ALL_LABEL).toBe('All')
     expect(SCHEDULED_ACTIVE_LABEL).toBe('Active')
     expect(SCHEDULED_PAUSED_LABEL).toBe('Paused')

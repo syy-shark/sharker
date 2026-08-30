@@ -1,9 +1,14 @@
 /**
- * ⌘/ 快捷键一览（对标 Codex Shortcuts window）。
+ * ⌘/ Open keyboard shortcuts overlay (official Commands table).
  * @see src/components/ARCH.md
  */
 import { useEffect } from 'react'
 import { WORKBENCH_SHORTCUT_HELP } from '../../shared/workbench-shortcuts'
+import {
+  FILE_CLOSE_LABEL,
+  KEYBOARD_SHORTCUTS_LABEL,
+  OPEN_KEYBOARD_SHORTCUTS_LABEL
+} from '../../shared/reveal-in-folder'
 import './ShortcutsHelp.css'
 
 interface Props {
@@ -11,7 +16,7 @@ interface Props {
   onClose: () => void
 }
 
-/** 工作台快捷键对照表 */
+/** Official Keyboard Shortcuts overlay */
 export function ShortcutsHelp({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return
@@ -29,11 +34,14 @@ export function ShortcutsHelp({ open, onClose }: Props) {
 
   return (
     <div className="shortcuts-help-root" role="presentation">
-      <button type="button" className="shortcuts-help-backdrop" aria-label="关闭快捷键一览" onClick={onClose} />
-      <div className="shortcuts-help glass-popover popover-enter" role="dialog" aria-label="快捷键">
+      <button type="button" className="shortcuts-help-backdrop" aria-label={FILE_CLOSE_LABEL} onClick={onClose} />
+      <div
+        className="shortcuts-help glass-popover popover-enter"
+        role="dialog"
+        aria-label={OPEN_KEYBOARD_SHORTCUTS_LABEL}
+      >
         <header className="shortcuts-help-head">
-          <h2>快捷键</h2>
-          <p>对标 Codex 桌面端常用和弦</p>
+          <h2>{KEYBOARD_SHORTCUTS_LABEL}</h2>
         </header>
         <ul className="shortcuts-help-list">
           {WORKBENCH_SHORTCUT_HELP.map((row) => (

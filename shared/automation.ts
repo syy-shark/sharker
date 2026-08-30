@@ -180,6 +180,9 @@ export type AutomationRunMode = 'new' | 'thread' | 'queue'
 
 /** Official desktop Scheduled page / sidebar / filters / Run now (learn.chatgpt.com / #20076). */
 export const SCHEDULED_LABEL = 'Scheduled'
+/** Official Scheduled inbox copy (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_INTRO =
+  'Find all scheduled tasks and their runs on Scheduled in the ChatGPT desktop app sidebar. The Scheduled view acts as your inbox. Scheduled task runs with findings appear there, and an unread indicator shows when a run needs your attention.'
 export const SCHEDULED_ALL_LABEL = 'All'
 export const SCHEDULED_ACTIVE_LABEL = 'Active'
 export const SCHEDULED_PAUSED_LABEL = 'Paused'

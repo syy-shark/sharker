@@ -7,6 +7,7 @@ import {
   ADD_FOLDER_LABEL,
   EDIT_PROJECT_INTRO,
   EDIT_PROJECT_LABEL,
+  FILE_CLOSE_LABEL,
   MAKE_PRIMARY_LABEL,
   PRIMARY_FOLDER_LABEL,
   SECONDARY_FOLDERS_LABEL
@@ -49,7 +50,7 @@ export function ProjectFoldersDialog({
 
   return (
     <div className="project-folders-root" role="presentation">
-      <button type="button" className="project-folders-backdrop" aria-label="关闭" onClick={onClose} />
+      <button type="button" className="project-folders-backdrop" aria-label={FILE_CLOSE_LABEL} onClick={onClose} />
       <div
         className="project-folders-dialog glass-popover popover-enter"
         role="dialog"
