@@ -23,6 +23,8 @@ import {
   shouldGrowStreamingFencedPreLastLine,
   shouldGrowStreamingFootnoteLastLine,
   shouldAppendStreamingFootnoteParagraph,
+  shouldAppendStreamingFootnoteItem,
+  collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
   suffixOpensNewCheapBlock,
@@ -789,6 +791,89 @@ describe('splitStreamingMarkdown', () => {
       expect(manyNotesParaGrown[1].items[12]?.paragraphs[0]).toBe(manyNotesPara[1].items[12]?.paragraphs[0])
     }
     expect(parseCheapProseBlocks('[^1]: n').map((b) => b.type)).toEqual([])
+    expect([...collectCitedFootnoteIds('见注[^1][^2]。\n[^1]: 一\n[^2]: 二')].sort()).toEqual(['1', '2'])
+    expect(collectCitedFootnoteIds('[^1]: n').size).toBe(0)
+    expect(
+      shouldAppendStreamingFootnoteItem({
+        prevNorm: '[^1]: 一',
+        suffix: '\n[^2]: 二',
+        existingIds: ['1'],
+        citedIds: new Set(['1', '2'])
+      })
+    ).toBe(true)
+    expect(
+      shouldAppendStreamingFootnoteItem({
+        prevNorm: '[^1]: 一',
+        suffix: '\n[^2]: 二',
+        existingIds: ['1'],
+        citedIds: new Set(['1'])
+      })
+    ).toBe(false)
+    expect(
+      shouldAppendStreamingFootnoteItem({
+        prevNorm: '[^1]: 一',
+        suffix: '\n[^1]: 又',
+        existingIds: ['1'],
+        citedIds: new Set(['1'])
+      })
+    ).toBe(false)
+    expect(
+      shouldAppendStreamingFootnoteItem({
+        prevNorm: '[^1]: 一',
+        suffix: '\n- item',
+        existingIds: ['1'],
+        citedIds: new Set(['1'])
+      })
+    ).toBe(false)
+    expect(
+      shouldAppendStreamingFootnoteItem({
+        prevNorm: '[^1]: 一',
+        suffix: '\n\n[^2]: 二',
+        existingIds: ['1'],
+        citedIds: new Set(['1', '2'])
+      })
+    ).toBe(false)
+    const firstTwoCites = parseCheapProseBlocks('见注[^1][^2]。\n[^1]: 一')
+    const addedSecond = continueCheapProseBlocks(
+      '见注[^1][^2]。\n[^1]: 一',
+      firstTwoCites,
+      '见注[^1][^2]。\n[^1]: 一\n[^2]: 二'
+    )
+    expect(addedSecond[0]).toBe(firstTwoCites[0])
+    if (firstTwoCites[1]?.type === 'footnotes' && addedSecond[1]?.type === 'footnotes') {
+      expect(addedSecond[1].items[0]).toBe(firstTwoCites[1].items[0])
+      expect(addedSecond[1].items).toHaveLength(2)
+    }
+    const firstThreeCites = parseCheapProseBlocks('见注[^1][^2][^3]。\n[^1]: 一')
+    const addedTwoDefs = continueCheapProseBlocks(
+      '见注[^1][^2][^3]。\n[^1]: 一',
+      firstThreeCites,
+      '见注[^1][^2][^3]。\n[^1]: 一\n[^2]: 二\n[^3]: 三'
+    )
+    expect(addedTwoDefs[0]).toBe(firstThreeCites[0])
+    if (firstThreeCites[1]?.type === 'footnotes' && addedTwoDefs[1]?.type === 'footnotes') {
+      expect(addedTwoDefs[1].items[0]).toBe(firstThreeCites[1].items[0])
+      expect(addedTwoDefs[1].items).toHaveLength(3)
+    }
+    const unusedAdd = continueCheapProseBlocks(
+      '见注[^1]。\n[^1]: 一',
+      parseCheapProseBlocks('见注[^1]。\n[^1]: 一'),
+      '见注[^1]。\n[^1]: 一\n[^2]: 二'
+    )
+    if (unusedAdd[1]?.type === 'footnotes') {
+      expect(unusedAdd[1].items).toHaveLength(1)
+    }
+    const manyNoteCitesPrefix = Array.from({ length: 12 }, (_, i) => `[^n${i}]`).join('')
+    const manyNoteDefsPrefix = Array.from({ length: 12 }, (_, i) => `[^n${i}]: keep-${i}`).join('\n')
+    const manyPrefix = `见注${manyNoteCitesPrefix}[^last]。\n${manyNoteDefsPrefix}`
+    const manyPrefixFirst = parseCheapProseBlocks(manyPrefix)
+    const manyPrefixAdded = continueCheapProseBlocks(manyPrefix, manyPrefixFirst, `${manyPrefix}\n[^last]: tail`)
+    if (manyPrefixFirst[1]?.type === 'footnotes' && manyPrefixAdded[1]?.type === 'footnotes') {
+      expect(
+        manyPrefixAdded[1].items.slice(0, 12).every((item, i) => item === manyPrefixFirst[1].items[i])
+      ).toBe(true)
+      expect(manyPrefixAdded[1].items).toHaveLength(13)
+    }
   })
 
   it('renders live GFM tables and rules instead of a single paragraph', () => {
@@ -3055,6 +3140,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowStreamingFencedPreLastLine')
     expect(mdSrc).toContain('shouldGrowStreamingFootnoteLastLine')
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
+    expect(mdSrc).toContain('shouldAppendStreamingFootnoteItem')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
