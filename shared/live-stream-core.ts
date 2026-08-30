@@ -784,20 +784,37 @@ export function nextLiveThinkText(
 ): string {
   if (prevSegments) {
     const tails = liveSameLengthPrefixTail(prevSegments, segments)
-    if (
-      tails &&
-      isLiveThinking(tails.nextTail) &&
-      tails.prevTail.status === tails.nextTail.status &&
-      liveTailContentGrew(tails.prevTail, tails.nextTail)
+    if (tails) {
+      if (isLiveThinking(tails.nextTail)) {
+        const prevContent = tails.prevTail.content ?? ''
+        const nextContent = tails.nextTail.content ?? ''
+        if (nextContent === prevContent) return prev
+        if (
+          liveTailContentGrew(tails.prevTail, tails.nextTail) &&
+          (prev === prevContent || prev.endsWith(prevContent))
+        ) {
+          return prev + nextContent.slice(prevContent.length)
+        }
+      } else {
+        return prev
+      }
+    } else if (
+      segments.length > prevSegments.length &&
+      liveCoreHeldPrefix(prevSegments, segments)
     ) {
-      const prevContent = tails.prevTail.content ?? ''
-      const nextContent = tails.nextTail.content ?? ''
-      if (nextContent === prevContent) return prev
-      if (
-        nextContent.startsWith(prevContent) &&
-        (prev === prevContent || prev.endsWith(prevContent))
-      ) {
-        return prev + nextContent.slice(prevContent.length)
+      let prefixThinkGrew = false
+      for (let i = 0; i < prevSegments.length; i++) {
+        const before = prevSegments[i]!
+        const after = segments[i]!
+        if (isLiveThinking(before) && (before.content ?? '') !== (after.content ?? '')) {
+          prefixThinkGrew = true
+          break
+        }
+      }
+      const extraThink = segments.slice(prevSegments.length).filter(isLiveThinking)
+      if (!prefixThinkGrew && extraThink.length === 0) return prev
+      if (!prefixThinkGrew) {
+        return prev + extraThink.map((segment) => segment.content ?? '').join('')
       }
     }
   }

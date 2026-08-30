@@ -10,6 +10,7 @@ import {
   nextLiveAnswerView,
   nextLivePublishedStreaming,
   nextLiveProcessView,
+  nextLiveThinkText,
   liveAnswerViewFromSnap,
   resetLiveAnswerViewHold,
   shouldPrefetchLiveStreamTable,
@@ -63,6 +64,18 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(shouldReusePublishedActiveTool('text')).toBe(true)
     expect(shouldReusePublishedActiveTool('tool')).toBe(false)
     expect(shouldReusePublishedActiveTool(null)).toBe(false)
+    const thought = think('Hmm')
+    const reading = tool('done')
+    const reply = prose('Hello')
+    const replyGrown = prose('Hello world')
+    expect(nextLiveThinkText('Hmm', [thought, reading, reply], [thought, reading, replyGrown])).toBe(
+      'Hmm'
+    )
+    expect(nextLiveThinkText('Hmm', [thought, reading], [thought, reading, reply])).toBe('Hmm')
+    const moreThink: TurnSegment = { id: 'th2', kind: 'thinking', status: 'active', content: 'Next' }
+    expect(nextLiveThinkText('Hmm', [thought, reading], [thought, reading, moreThink, reply])).toBe(
+      'HmmNext'
+    )
   })
 
   it('classifies a newly appended tool after closed no-fence prose without the table', () => {
@@ -1610,6 +1623,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('resetLiveAnswerViewHold')
     expect(src('live-stream-core.ts')).toContain('copyableClosedHold')
     expect(src('live-stream-core.ts')).toContain('copyableFromClosedAndTail')
+    expect(src('live-stream-core.ts')).toContain('prefixThinkGrew')
     expect(src('../src/App.tsx')).toContain('setRetiredLiveId')
     expect(src('../src/App.tsx')).toContain('retireLiveArticle')
     expect(src('../src/App.tsx')).toContain('snapshotRetiredLiveProcess')
