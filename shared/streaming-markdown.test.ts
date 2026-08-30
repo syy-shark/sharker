@@ -25,6 +25,7 @@ import {
   shouldAppendStreamingFootnoteParagraph,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
+  suffixOpensNewCheapBlock,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
   continueStreamingRenderSlots,
@@ -2485,6 +2486,38 @@ describe('splitStreamingMarkdown', () => {
       expect(headingSuffixGrown[0].items[0]?.blocks?.[0]).toBe(headingSuffixFirst[0].items[0]?.blocks?.[0])
       expect(headingSuffixGrown[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
     }
+    const headingSuffixMore = continueCheapProseBlocks(
+      `${headingSuffix}\n  after`,
+      headingSuffixGrown,
+      `${headingSuffix}\n  after more`
+    )
+    if (headingSuffixGrown[0]?.type === 'list' && headingSuffixMore[0]?.type === 'list') {
+      expect(headingSuffixMore[0].items[0]?.nodes).toBe(headingSuffixGrown[0].items[0]?.nodes)
+      expect(headingSuffixMore[0].items[0]?.blocks?.[0]).toBe(headingSuffixGrown[0].items[0]?.blocks?.[0])
+      expect(headingSuffixMore[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after more' }])
+    }
+    const manyHeadingSuffix = `${headingSuffix}\n  ${Array.from({ length: 12 }, (_, i) => `line-${i}`).join('\n  ')}`
+    const manyHeadingFirst = parseCheapProseBlocks(manyHeadingSuffix)
+    const manyHeadingGrown = continueCheapProseBlocks(
+      manyHeadingSuffix,
+      manyHeadingFirst,
+      `${manyHeadingSuffix}x`
+    )
+    if (manyHeadingFirst[0]?.type === 'list' && manyHeadingGrown[0]?.type === 'list') {
+      expect(manyHeadingGrown[0].items[0]?.nodes).toBe(manyHeadingFirst[0].items[0]?.nodes)
+      expect(manyHeadingGrown[0].items[0]?.blocks?.[0]).toBe(manyHeadingFirst[0].items[0]?.blocks?.[0])
+      const suffixText = manyHeadingGrown[0].items[0]?.suffix
+        ?.filter((node) => node.type === 'text')
+        .map((node) => node.text)
+        .join('')
+      expect(suffixText).toMatch(/line-11x$/)
+    }
+    expect(suffixOpensNewCheapBlock('')).toBe(false)
+    expect(suffixOpensNewCheapBlock('after more')).toBe(false)
+    expect(suffixOpensNewCheapBlock('foo\nbar')).toBe(false)
+    expect(suffixOpensNewCheapBlock('# t')).toBe(true)
+    expect(suffixOpensNewCheapBlock('foo\n- item')).toBe(true)
+    expect(suffixOpensNewCheapBlock('foo\n\n- item')).toBe(true)
     const hrSuffix = '- item\n  ***'
     const hrSuffixFirst = parseCheapProseBlocks(hrSuffix)
     const hrSuffixGrown = continueCheapProseBlocks(hrSuffix, hrSuffixFirst, `${hrSuffix}\n  after`)
@@ -2492,6 +2525,16 @@ describe('splitStreamingMarkdown', () => {
       expect(hrSuffixGrown[0].items[0]?.nodes).toBe(hrSuffixFirst[0].items[0]?.nodes)
       expect(hrSuffixGrown[0].items[0]?.blocks?.[0]).toBe(hrSuffixFirst[0].items[0]?.blocks?.[0])
       expect(hrSuffixGrown[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const hrSuffixMore = continueCheapProseBlocks(
+      `${hrSuffix}\n  after`,
+      hrSuffixGrown,
+      `${hrSuffix}\n  after more`
+    )
+    if (hrSuffixGrown[0]?.type === 'list' && hrSuffixMore[0]?.type === 'list') {
+      expect(hrSuffixMore[0].items[0]?.nodes).toBe(hrSuffixGrown[0].items[0]?.nodes)
+      expect(hrSuffixMore[0].items[0]?.blocks?.[0]).toBe(hrSuffixGrown[0].items[0]?.blocks?.[0])
+      expect(hrSuffixMore[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after more' }])
     }
     const closedTable = '- note\n  | A | B |\n  | --- | --- |\n  | 1 | 2 |'
     const closedTableFirst = parseCheapProseBlocks(closedTable)
@@ -2504,6 +2547,16 @@ describe('splitStreamingMarkdown', () => {
       expect(closedTableSuffix[0].items[0]?.nodes).toBe(closedTableFirst[0].items[0]?.nodes)
       expect(closedTableSuffix[0].items[0]?.blocks?.[0]).toBe(closedTableFirst[0].items[0]?.blocks?.[0])
       expect(closedTableSuffix[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after' }])
+    }
+    const closedTableMore = continueCheapProseBlocks(
+      `${closedTable}\n  after`,
+      closedTableSuffix,
+      `${closedTable}\n  after more`
+    )
+    if (closedTableSuffix[0]?.type === 'list' && closedTableMore[0]?.type === 'list') {
+      expect(closedTableMore[0].items[0]?.nodes).toBe(closedTableSuffix[0].items[0]?.nodes)
+      expect(closedTableMore[0].items[0]?.blocks?.[0]).toBe(closedTableSuffix[0].items[0]?.blocks?.[0])
+      expect(closedTableMore[0].items[0]?.suffix).toEqual([{ type: 'text', text: 'after more' }])
     }
     const nestedHeadingSuffix = '- a\n  - b\n    # title'
     const nestedHeadingFirst = parseCheapProseBlocks(nestedHeadingSuffix)
@@ -2868,6 +2921,9 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteParagraph')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
+    expect(mdSrc).toContain('suffixOpensNewCheapBlock')
+    expect(mdSrc).toContain('closedAfterSiblingStart')
+    expect(mdSrc).toContain('streamingFirstLine')
     expect(mdSrc).toContain('lastMatchingListLineStart')
     expect(mdSrc).toContain("text.lastIndexOf('\\n', end - 1)")
     expect(mdSrc).toContain('lastCheapBlockStartHold')

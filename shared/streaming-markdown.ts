@@ -2,7 +2,7 @@
  * 流式 Markdown 拆分：已闭合块保持稳定，只重解析未完成尾部。
  * `streamingRenderSlots` 已收散文按块成闭合槽，增长尾固定 `prose-run-0`。
  * CRLF 按 LF 拆；散文尾廉价解析含闭合链接（含空 dest / `#锚点` / 相对路径 / 危险协议清空）、引用式链接 / 引用式图片（含相对 dest 与定义 title）、HTML 实体、`<https>` / 邮箱 / `www.`、裸 URL、下划线强调、`***`/`___` 嵌套强调、`~~** **~~` 删除线套粗体、标记内混排 / 链接 / 代码、未闭合 `**` / `*` / `~~` / `~` / `` ` `` / `***` / `<https://` 先画、完整 `<!-- -->` 不画、图片 alt 去标记、脚注（含缩进续行与多段）、硬换行（含列表续行）、文件引用、ATX/Setext 标题（含行尾闭合 `#`）/列表（含 `1)` / `ol start`、缩进嵌套、续行硬换行与松散 `li>p`、项内引用 / ATX / Setext / HR / 嵌套围栏 / 围栏 / 标题 / HR / 表后后缀 / 松散项内缩进代码）/任务项/表格（含单列、无两侧 `|` 与 `\\|`）/分隔线（含 `* * *`） / 缩进代码 / 引用围栏与懒续行（未闭合围栏不吃懒续行；懒续行不抽表格）。
- * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；单块引用不再 `lastSingleBlockStart`，多块记下 `lastQuoteInnerStartHold`；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
+ * 增长列表 / 表格 / 段落 / 引用 / 标题 / 分隔线 / 缩进代码 / 脚注只重解析最后一块；新表行不换已画表头 / 旧行的 cells 数组引用（对标 Codex #22860）；缩进代码 / 项内围栏 / 引用内围栏最后一行或新正文行只改 last line，单独换行保持同一 `pre`，闭合标记只认后缀（`streamingFenceCloseAfter` / `lastFenceOpenHold`），已画正文不重拆；新同级 / 嵌套列表项只追加、不重解析已画项；松散项续段只改最后一段（`growLastListItemExtra`：同行 / 软换行 / 空行后新段，单独换行保持同一 extra）；段落软换行只扫后缀新行，不 split 已画正文；单行软换行只加长最后一段 text，不重扫行内；引用只扫后缀新行并增量剥 `>`，不 split 已画引用；单块引用不再 `lastSingleBlockStart`，多块记下 `lastQuoteInnerStartHold`；一段变多块时记下最后一块起点，后续 token 不再 `lastSingleBlockStart`；全量回退 / 首拆多块后也 `rememberLastCheapBlockStart`；`lastSingleBlockStart` 从文末 `lastIndexOf` 往前找，不 split 全文；段落软换行后续写、嵌套项内引用 / 围栏（`lastItemInnerStartHold` 记下项内块起点，不每 token `firstMatchingLineStart`；`lastItemInnerStripHold` 记下已剥缩进窗口，同一行 / 新行只剥后缀）、围栏 / 标题 / HR / 表闭合后的项后缀（`suffixOpensNewCheapBlock` / `closedAfterSiblingStart` / `streamingFirstLine` 只扫 after 新行，不 split 全文；Setext 下划线窗 `lastIndexOf`）、闭合并栏后再起表 / 标题 / 引用、闭合并栏后再起的后续段、引用内围栏 / 标题 / 分隔线 / 缩进代码闭合后再起的后续段、引用内换行后的列表项、脚注末项最后一段 / 缩进续行只改 last line（`shouldGrowStreamingFootnoteLastLine`）、空行后新段只追加（`shouldAppendStreamingFootnoteParagraph`）、段落后新起的列表或标题、闭合段落 / 表 / 列表 / 分隔线 / 缩进代码 / Setext 标题后再起的后续块（列表 / 表后的 Setext 用正文+下划线定位；前面已有同型引用 / 列表 / 表 / 围栏 / 缩进代码时从文末量最后一块）、以及围栏 / 表 / 列表 / 引用 / 段落后的增长段不整尾重扫（对标 Codex #39061 / #34045）。项内表不把无 `|` 的普通续行吃成新行；标题 / 围栏后的表行另起项内表，不进 suffix。缩进代码后面的标题 / 列表不并进 `pre` 正文。闭合并栏后的段落 / 标题 / 列表不再被增量路径丢掉。引用内 `grown.length > 1` 时前面的引用子块保持同一引用。段落闭合后再起列表 / 标题 / 围栏时段落对象不变（Setext / HR / 表分隔仍退回全量）。
  * @see shared/ARCH.md
  */
 import { chatMathSource, readChatMath } from './chat-math'
@@ -3229,15 +3229,50 @@ function lastItemInnerBlockStart(
   return matches ? openerAt : fromBody
 }
 
+/** 第一行；`indexOf`，不 split 全文 */
+function streamingFirstLine(text: string): string {
+  const nl = text.indexOf('\n')
+  return nl < 0 ? text : text.slice(0, nl)
+}
+
+/**
+ * 闭合块后的后缀里有没有另起廉价块的行。
+ * `indexOf` 往前走，不 split 已画 after（对标 Codex #22860）。
+ */
+export function suffixOpensNewCheapBlock(after: string): boolean {
+  if (!after) return false
+  let offset = 0
+  while (offset <= after.length) {
+    const nl = after.indexOf('\n', offset)
+    const end = nl < 0 ? after.length : nl
+    if (lineOpensNewCheapBlock(after.slice(offset, end))) return true
+    if (nl < 0) break
+    offset = nl + 1
+  }
+  return false
+}
+
+/** 后缀里第一行另起块的起点；没有则返回全文长度 */
+function closedAfterSiblingStart(after: string): number {
+  let offset = 0
+  while (offset <= after.length) {
+    const nl = after.indexOf('\n', offset)
+    const end = nl < 0 ? after.length : nl
+    if (lineOpensNewCheapBlock(after.slice(offset, end))) return offset
+    if (nl < 0) break
+    offset = nl + 1
+  }
+  return after.length
+}
+
 /** 已闭合单行项内块（ATX / HR / Setext 下划线窗）后面的后缀 */
 function suffixAfterClosedSingleLineBlock(prevNorm: string, nextText: string): string | null {
-  const nl = prevNorm.indexOf('\n')
-  const first = nl < 0 ? prevNorm : prevNorm.slice(0, nl)
+  const first = streamingFirstLine(prevNorm)
   if (!nextText.startsWith(first)) return null
   if (nextText === first) return ''
   if (!nextText.startsWith(`${first}\n`)) return null
   const after = nextText.slice(first.length + 1)
-  if (after.split('\n').some((line) => lineOpensNewCheapBlock(line))) return null
+  if (suffixOpensNewCheapBlock(after)) return null
   return after
 }
 
@@ -3249,9 +3284,9 @@ function suffixAfterClosedTable(prevNorm: string, nextText: string): string | nu
   if (!extra.startsWith('\n')) return null
   const after = extra.slice(1)
   if (!after) return ''
-  const first = after.split('\n')[0] ?? ''
+  const first = streamingFirstLine(after)
   if (isGfmTableRow(first) || looksLikeGfmTableCells(first) || isGfmTableSep(first)) return null
-  if (after.split('\n').some((line) => lineOpensNewCheapBlock(line))) return null
+  if (suffixOpensNewCheapBlock(after)) return null
   return after
 }
 
@@ -3334,11 +3369,12 @@ function splitSuffixAndSiblingBlocks(
   prevSuffix: CheapInlineNode[] | undefined,
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): { suffix?: CheapInlineNode[]; blocks: CheapProseBlock[] } | null {
-  const lines = after.split('\n')
-  let split = 0
-  while (split < lines.length && !lineOpensNewCheapBlock(lines[split]!)) split++
-  const suffixSrc = lines.slice(0, split).join('\n')
-  const rest = lines.slice(split).join('\n')
+  const splitAt = closedAfterSiblingStart(after)
+  const suffixSrc =
+    splitAt < after.length && splitAt > 0 && after[splitAt - 1] === '\n'
+      ? after.slice(0, splitAt - 1)
+      : after.slice(0, splitAt)
+  const rest = after.slice(splitAt)
   const blocks = rest ? parseCheapProseBlocks(rest, defs) : []
   if (rest && !blocks.length) return null
   const suffix = suffixSrc
@@ -3694,7 +3730,7 @@ function continueLastListBlock(
   const extra = nextText.startsWith(prevNorm) ? nextText.slice(prevNorm.length) : ''
   if (extra.startsWith('\n\n')) {
     const after = extra.slice(2)
-    const first = after.split('\n')[0] ?? ''
+    const first = streamingFirstLine(after)
     if (after && leadingIndent(first) === 0 && !parseListLine(first) && first.trim() !== '') {
       const siblings = parseCheapProseBlocks(after, defs)
       if (siblings.length && siblings[0]?.type !== 'list') return [prev, ...siblings]
@@ -3864,7 +3900,7 @@ function continueLastTableBlock(
     const extra = nextText.slice(prevNorm.length)
     if (extra.startsWith('\n')) {
       const after = extra.slice(1)
-      const first = after.split('\n')[0] ?? ''
+      const first = streamingFirstLine(after)
       if (
         after &&
         !isLiveTableDataLine(first) &&
@@ -3987,7 +4023,7 @@ function continueLastParagraphBlock(
   if (blank >= 0) {
     const paraText = nextText.slice(0, blank)
     const after = nextText.slice(blank + 2)
-    const afterFirst = after.split('\n')[0] ?? ''
+    const afterFirst = streamingFirstLine(after)
     if (isPendingSetextUnderline(afterFirst) || SETEXT_RE.test(afterFirst)) return null
     const para = continueParagraphPrefix(prev, prevNorm, paraText, defs)
     if (!para) return null
@@ -4368,21 +4404,28 @@ function continueLastSetextHeadingBlock(
   nextText: string,
   defs?: ReadonlyMap<string, string | CheapLinkDef>
 ): CheapProseBlock[] | null {
-  const lines = prevNorm.split('\n')
-  if (lines.length < 2) return null
-  let underlineAt = -1
-  for (let i = lines.length - 1; i >= 1; i--) {
-    const line = lines[i]!
-    if (line.trim() === '') continue
+  if (prevNorm.indexOf('\n') < 0) return null
+  let scanEnd = prevNorm.length
+  let underlineEnd = -1
+  while (scanEnd > 0) {
+    const nl = prevNorm.lastIndexOf('\n', scanEnd - 1)
+    const start = nl < 0 ? 0 : nl + 1
+    const line = prevNorm.slice(start, scanEnd)
+    if (line.trim() === '') {
+      if (nl < 0) break
+      scanEnd = nl
+      continue
+    }
+    if (start === 0) return null
     if (!SETEXT_RE.test(line) || isPendingSetextUnderline(line)) return null
     const marker = line.trim()[0]
     const level = marker === '=' ? 1 : 2
     if (level !== prev.level) return null
-    underlineAt = i
+    underlineEnd = scanEnd
     break
   }
-  if (underlineAt < 1) return null
-  const prefix = lines.slice(0, underlineAt + 1).join('\n')
+  if (underlineEnd < 1) return null
+  const prefix = prevNorm.slice(0, underlineEnd)
   if (!nextText.startsWith(prefix)) return null
   if (nextText === prefix) return [prev]
   if (!nextText.startsWith(`${prefix}\n`)) return null
@@ -4409,14 +4452,14 @@ function continueLastHeadingBlock(
     const nodes = continueCheapInlineMarkdown(prevH.text, prev.nodes, nextH.text, defs)
     return nodes === prev.nodes ? [prev] : [{ type: 'heading', level: prev.level, nodes }]
   }
-  const first = prevNorm.split('\n')[0] ?? ''
+  const first = streamingFirstLine(prevNorm)
   const prevH = parseHeadingLine(first)
   if (prevH && prevH.level === prev.level) {
     if (!nextText.startsWith(first)) return null
     if (nextText === first) return [prev]
     if (!nextText.startsWith(`${first}\n`)) return null
     const after = nextText.slice(first.length + 1)
-    const afterFirst = after.split('\n')[0] ?? ''
+    const afterFirst = streamingFirstLine(after)
     if (isPendingSetextUnderline(afterFirst) || SETEXT_RE.test(afterFirst)) return null
     if (!after) return [prev]
     const siblings = parseCheapProseBlocks(after, defs)
@@ -4435,7 +4478,7 @@ function continueLastHrBlock(
 ): CheapProseBlock[] | null {
   const suffix = nextText.slice(prevNorm.length)
   if (!suffix || suffix.includes(']:')) return null
-  const first = prevNorm.split('\n')[0] ?? ''
+  const first = streamingFirstLine(prevNorm)
   if (!parseHrLine(first)) return null
   if (!nextText.startsWith(first)) return null
   if (nextText === first) return [prev]
