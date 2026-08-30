@@ -21,6 +21,7 @@ import {
   hasStreamingDemoFence,
   hasStreamingDemoFenceGrowth,
   processSegments,
+  sameFileDiff,
   type AnswerPart
 } from './turn-segments'
 import type { TurnSegment } from './types'
@@ -305,6 +306,7 @@ function liveCoreAnswerHolds(prev: TurnSegment, next: TurnSegment): boolean {
  * 已有正文后再夹普通工具 / 思考 / status 也走同一套 extras 分类。
  * 正文后又夹过普通工具，再开正文 / 工具 / 思考 / status 仍走 held prefix + extras，不必等表。
  * 写盘 +/- 在 `'tool'` skip 上换这些工具的 diff 槽（同一帧可多枚）；新开写盘 extras 也开槽并翻 contentStreaming，随后首枚 token 不冲掉 +/-。
+ * 没变的 `s.id-diff-N` 退回同一 part（sameFileDiff），closed 槽引用能复用就不抬 LiveStoreClosedAnswer。
  * 同长正文收口或错误挂到正文标 `'text'`；与思考 / status 同帧加长时过程标 think/status，回答仍换尾。
  * Allow/Deny 只换 Awaiting 行（可顺带清工具 approval）、Stop 多条 cancelled、compress 收口 status 再追加压缩步也走核心。
  * 首枚 ```demo 围栏 / `present_inline_demo` 开演示槽，同长 HTML 增长只换该槽；过程步不挂演示。
@@ -1110,7 +1112,9 @@ function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveA
   }
   const reused = diffs.map((diff, index) => {
     const old = prev.parts[start + index]
-    if (old && old.type === 'diff' && old.id === diff.id && old.diff === diff.diff) return old
+    if (old && old.type === 'diff' && old.id === diff.id && sameFileDiff(old.diff, diff.diff)) {
+      return old
+    }
     return diff
   })
   if (
@@ -1125,12 +1129,23 @@ function retargetLiveAnswerDiffs(prev: LiveAnswerView, tool: TurnSegment): LiveA
 
 /** 写盘 extras 开槽后同步 closed/tail，避免下一枚 token 用空 closed 把 +/- 冲掉。 */
 function liveAnswerViewFromParts(prev: LiveAnswerView, parts: AnswerPart[]): LiveAnswerView {
+  if (
+    prev.parts.length === parts.length &&
+    parts.every((part, index) => part === prev.parts[index])
+  ) {
+    return prev
+  }
   const split = splitClosedTail(parts)
+  const closed =
+    prev.closed.length === split.closed.length &&
+    split.closed.every((part, index) => part === prev.closed[index])
+      ? prev.closed
+      : split.closed
   const copyable = copyableFromAnswerParts(parts)
   return {
     ...prev,
     parts,
-    closed: split.closed,
+    closed,
     tail: split.tail,
     show: parts.length > 0,
     copyable,

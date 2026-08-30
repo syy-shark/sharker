@@ -1285,7 +1285,7 @@ export function buildAnswerParts(
   return parts
 }
 
-function sameFileDiff(a: FileDiff, b: FileDiff): boolean {
+export function sameFileDiff(a: FileDiff, b: FileDiff): boolean {
   if (a === b) return true
   if (a.path !== b.path) return false
   if (a.stats.added !== b.stats.added || a.stats.removed !== b.stats.removed) return false

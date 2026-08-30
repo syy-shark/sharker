@@ -1112,6 +1112,73 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(twoFiles.parts.filter((part) => part.type === 'diff')).toHaveLength(2)
   })
 
+  it('reuses unchanged write-stat diff parts when only another file grows', () => {
+    const thought = think('Hmm')
+    const writing: TurnSegment = {
+      id: 'w1',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'a.ts',
+        lines: [{ kind: 'add', content: 'hi' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    const writingB: TurnSegment = {
+      id: 'w2',
+      kind: 'tool',
+      toolName: 'write_file',
+      status: 'active',
+      content: '',
+      fileDiff: {
+        path: 'b.ts',
+        lines: [{ kind: 'add', content: 'yo' }],
+        stats: { added: 1, removed: 0 }
+      }
+    }
+    const reply = prose('Hi')
+    const nextB = {
+      path: 'b.ts',
+      lines: [
+        { kind: 'add' as const, content: 'yo' },
+        { kind: 'add' as const, content: 'there' }
+      ],
+      stats: { added: 2, removed: 0 }
+    }
+    const grownB: TurnSegment = { ...writingB, fileDiff: nextB, fileDiffs: [nextB] }
+    const firstAnswer = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, writingB, reply]
+    })
+    const nextAnswer = nextLiveAnswerView(firstAnswer, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, grownB, reply]
+    })
+    const firstA = firstAnswer.parts.find((part) => part.type === 'diff' && part.id.startsWith('w1-'))
+    const nextA = nextAnswer.parts.find((part) => part.type === 'diff' && part.id.startsWith('w1-'))
+    expect(nextA).toBe(firstA)
+
+    const fresh = nextLiveAnswerView(null, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, writing, writingB, reply]
+    })
+    const settled: TurnSegment = {
+      ...writing,
+      toolArgs: { path: 'a.ts', content: 'hi' },
+      editPreview: [{ path: 'a.ts', stats: { added: 1, removed: 0 } }]
+    }
+    const afterStart = nextLiveAnswerView(fresh, {
+      ...EMPTY_LIVE_STREAM_UI,
+      liveSegments: [thought, settled, writingB, reply]
+    })
+    expect(
+      afterStart.parts.find((part) => part.type === 'diff' && part.id.startsWith('w1-'))
+    ).toBe(fresh.parts.find((part) => part.type === 'diff' && part.id.startsWith('w1-')))
+    expect(afterStart).toBe(fresh)
+  })
+
   it('opens the answer tail from the first prose after tools without the table', () => {
     const thought = think('Hmm')
     const reading = tool('active')
@@ -1833,5 +1900,118 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'World'
     ])
     expect(next.parts).toBe(firstView.parts)
+  })
+
+  it('keeps catalog tools, code fences, and Allow+write previews off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Look around' }])
+    flush('search', [
+      { type: 'tool_start', toolName: 'web_search', toolCallId: 's1', toolArgs: { query: 'codex' } },
+      {
+        type: 'tool_done',
+        toolName: 'web_search',
+        toolCallId: 's1',
+        resultSummary: 'https://example.com/docs'
+      }
+    ])
+    flush('mcp', [
+      {
+        type: 'tool_start',
+        toolName: 'mcp_github__search',
+        toolCallId: 's2',
+        toolArgs: { q: 'codex' }
+      },
+      { type: 'tool_done', toolName: 'mcp_github__search', toolCallId: 's2' }
+    ])
+    flush('plan', [
+      {
+        type: 'tool_start',
+        toolName: 'update_plan',
+        toolCallId: 's3',
+        toolArgs: {
+          plan: [
+            { step: 'Read', status: 'completed' },
+            { step: 'Patch', status: 'in_progress' }
+          ]
+        }
+      },
+      { type: 'tool_done', toolName: 'update_plan', toolCallId: 's3' }
+    ])
+    flush('image', [
+      {
+        type: 'tool_start',
+        toolName: 'view_image',
+        toolCallId: 's4',
+        toolArgs: { path: '/tmp/shot.png' }
+      },
+      { type: 'tool_done', toolName: 'view_image', toolCallId: 's4', resultSummary: 'Viewed image' }
+    ])
+    flush('ts-fence', [{ type: 'token', content: 'See\n```ts\nexport const n = 1' }])
+    flush('ts-grow', [{ type: 'token', content: '\nexport const m = 2\n```' }])
+    flush('mermaid', [{ type: 'token', content: '\n```mermaid\ngraph TD\nA-->B' }])
+    flush('run-and-allow-write', [
+      {
+        type: 'tool_start',
+        toolName: 'run_terminal_cmd',
+        toolCallId: 's5',
+        toolArgs: { command: 'ls' }
+      },
+      {
+        type: 'approval_needed',
+        toolName: 'run_terminal_cmd',
+        approval: {
+          id: 'appr-3',
+          title: 'ls',
+          description: '',
+          toolName: 'run_terminal_cmd',
+          args: { command: 'ls' }
+        }
+      },
+      { type: 'approval_resolved', toolName: 'run_terminal_cmd', approved: true },
+      { type: 'tool_done', toolName: 'run_terminal_cmd', toolCallId: 's5', resultSummary: 'ok' },
+      {
+        type: 'tool_preview',
+        toolName: 'write_file',
+        toolCallId: 's6',
+        toolArgs: { path: 'n.ts', content: 'export const n = 1\n' }
+      }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'text' && part.content.includes('```ts'))).toBe(
+      true
+    )
+    expect(
+      answer.parts.some((part) => part.type === 'text' && part.content.includes('```mermaid'))
+    ).toBe(true)
+    expect(answer.parts.some((part) => part.type === 'diff')).toBe(true)
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'web_search')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'mcp_github__search')).toBe(
+      true
+    )
+    expect(process.processForFlow.some((segment) => segment.toolName === 'update_plan')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'view_image')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'write_file')).toBe(true)
   })
 })
