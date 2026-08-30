@@ -232,7 +232,7 @@
 | `mcp-catalog-data.ts` | MCP 插件目录纯数据（渲染可 import） |
 | `plugin-catalog.ts` | 汇总 MCP 目录导出与安装模板 |
 | `permission-mode.ts` | Ask for approval / Full access 文案与 `/permissions` 参数解析（对标 Codex composer 下方权限控件；不发明 Approve for me / Auto / 命名 profile） |
-| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork Copy a local chat into a new local chat or worktree、/side [问题]、/project、/chat `/task` Start a chat without a project、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan Toggle plan mode、/plan-mode、/mcp Open MCP status、/feedback、/share、/local Run the chat in the selected local project、/worktree、/approve、/subagents、/settings Open settings、/keymap Open keyboard shortcuts；官方表里且语义一致的描述用 learn.chatgpt.com slash-commands 原文，不把 /local 改成交云对照、不把 /feedback 写成外发日志）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
+| `slash-commands.ts` | 斜杠命令目录（菜单与 /help，含 /fork Copy a local chat into a new local chat or worktree、/side [问题]、/project、/chat `/task` Start a chat without a project、/model、/archive、/rename、/pin、/unread、/usage、/init、/permissions（输入框下方也可切）、/memories、/copy、/fast、/reasoning、/skills、/stop、/status、/diff、/goal、/plan Toggle plan mode、/plan-mode、/mcp Open MCP status、/feedback、/share、/local Run the chat in your local workspace、/worktree、/approve、/subagents、/settings Open settings、/keymap Open keyboard shortcuts；官方 IDE 表原文用于 /goal /local /feedback，对话框仍只复制本机、不发明上传 / Safety check / service tier）；`slashItemsWithSkills` 把已安装 Skill 并进 `/` 列表；`matchUiSlashCommand` / `composerSlashLine` 给忙时排队、收束后再解析（对标 Codex Tab queue slash） |
 | `side-chat-quote.ts` | 对话 / 终端 / 文件预览（含 Markdown 富预览）/ 浏览器批注 → Add to chat 芯片或 Ask in side chat：摘录归一、拒输入框、历史与直播已出现正文都出条（对标 Codex desktop / #37560）；`formatComposerInsert` 仍给芯片回退正文 |
 | `side-chat-quote.test.ts` | 摘录截断、无问题/带问题提示、终端/文件/浏览器标签、加入对话引用、closest 拒绝 composer、接受直播行、文件预览划选 |
 | `browser-comment.ts` | 内置浏览器批注：可批注 URL、console-message 解析、摘录格式、气泡定位、访客脚本、⌘. 切换浏览/批注；Shift+点选区域、⌘/Ctrl+点立刻写入芯片（对标 Codex Annotation mode / hold Shift and click / Hold Cmd while clicking）。不发明 @Browser / Adjust |
@@ -262,7 +262,7 @@
 | `mcp-config.ts` | MCP Server 契约：STDIO / Streamable HTTP、`enabled`、草稿校验（不写 OAuth） |
 | `mcp-config.test.ts` | 名称 / 启用过滤 / 草稿 / HTTP 头与 SSE JSON-RPC |
 | `mcp-http.ts` | Streamable HTTP 请求头与 SSE 解析 |
-| `feedback-bundle.ts` | `/feedback` 本地诊断包（分类 / 说明 / 可否附带会话；不外发） |
+| `feedback-bundle.ts` | `/feedback` 本地诊断包（Bug / Other 与 Include current Codex session logs；不外发、不发明 Safety check） |
 | `feedback-bundle.test.ts` | 含状态、分类/说明、可省略会话诊断，且声明不外发 |
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析 |
 | `personality.ts` | 人格与 system 语气段；用户可见 Choose a personality / Pragmatic / Friendly / None 与 Custom instructions（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；旧 `empathetic` 读成 `friendly`） |
