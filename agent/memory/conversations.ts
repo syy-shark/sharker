@@ -16,6 +16,7 @@ import {
   toConversationSummary
 } from '../../shared/conversation'
 import type { ChatMessage } from '../../shared/types'
+import { messageCreatedAtMs } from '../../shared/message-timestamp'
 import { messageHasDeferredHydration, slimMessagesForUi } from '../../shared/transcript-hydrate'
 import { escapeLikePattern, findInThread, type ThreadSearchHit } from '../../shared/thread-search'
 import { getMemoryDb } from './db'
@@ -47,6 +48,7 @@ function rowToMessage(row: {
   tool_call_id: string | null
   tool_name: string | null
   meta: unknown
+  created_at?: Date | string | number | null
 }): ChatMessage {
   const msg: ChatMessage = {
     id: row.id,
@@ -55,6 +57,8 @@ function rowToMessage(row: {
   }
   if (row.tool_call_id) msg.toolCallId = row.tool_call_id
   if (row.tool_name) msg.toolName = row.tool_name
+  const createdAt = messageCreatedAtMs(row.created_at)
+  if (createdAt != null) msg.createdAt = createdAt
   if (row.meta) {
     if (typeof row.meta === 'string') {
       try {
@@ -98,12 +102,13 @@ export async function loadMessagesFromSeq(
     tool_call_id: string | null
     tool_name: string | null
     meta: unknown
+    created_at: Date | string | number | null
   }>(
     limit != null
-      ? `SELECT id, role, content, tool_call_id, tool_name, meta
+      ? `SELECT id, role, content, tool_call_id, tool_name, meta, created_at
          FROM session_messages WHERE session_id = $1 AND seq >= $2
          ORDER BY seq ASC LIMIT $3`
-      : `SELECT id, role, content, tool_call_id, tool_name, meta
+      : `SELECT id, role, content, tool_call_id, tool_name, meta, created_at
          FROM session_messages WHERE session_id = $1 AND seq >= $2
          ORDER BY seq ASC`,
     limit != null ? [sessionId, start, Math.max(0, Math.floor(limit))] : [sessionId, start]
@@ -126,8 +131,9 @@ export async function loadOlderMessages(
     tool_call_id: string | null
     tool_name: string | null
     meta: unknown
+    created_at: Date | string | number | null
   }>(
-    `SELECT id, role, content, tool_call_id, tool_name, meta
+    `SELECT id, role, content, tool_call_id, tool_name, meta, created_at
      FROM session_messages WHERE session_id = $1 AND seq < $2
      ORDER BY seq DESC LIMIT $3`,
     [sessionId, Math.floor(beforeSeq), Math.floor(limit)]
@@ -335,8 +341,9 @@ export async function loadConversationMessage(
     tool_call_id: string | null
     tool_name: string | null
     meta: unknown
+    created_at: Date | string | number | null
   }>(
-    `SELECT id, role, content, tool_call_id, tool_name, meta
+    `SELECT id, role, content, tool_call_id, tool_name, meta, created_at
      FROM session_messages WHERE id = $1 AND session_id = $2`,
     [messageId, conversationId]
   )
@@ -405,8 +412,9 @@ export async function loadConversationMessageRange(
     tool_call_id: string | null
     tool_name: string | null
     meta: unknown
+    created_at: Date | string | number | null
   }>(
-    `SELECT id, role, content, tool_call_id, tool_name, meta
+    `SELECT id, role, content, tool_call_id, tool_name, meta, created_at
      FROM session_messages
      WHERE session_id = $1 AND seq >= $2 AND seq < $3
      ORDER BY seq ASC`,
@@ -509,9 +517,10 @@ export async function saveConversation(
     const m = next.messages[i]
     if (messageHasDeferredHydration(m)) continue
     const seq = fromSeq + i
+    const createdAt = messageCreatedAtMs(m.createdAt)
     await db.query(
-      `INSERT INTO session_messages (id, session_id, role, content, tool_call_id, tool_name, meta, seq)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO session_messages (id, session_id, role, content, tool_call_id, tool_name, meta, seq, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, now()))
        ON CONFLICT (id) DO UPDATE SET
          session_id = EXCLUDED.session_id,
          role = EXCLUDED.role,
@@ -528,7 +537,8 @@ export async function saveConversation(
         m.toolCallId ?? null,
         m.toolName ?? null,
         m.meta ? (m.meta as object) : null,
-        seq
+        seq,
+        createdAt != null ? new Date(createdAt).toISOString() : null
       ]
     )
   }

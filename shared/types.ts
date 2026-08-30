@@ -334,6 +334,8 @@ export interface ChatMessage {
   toolCallId?: string
   toolName?: string
   meta?: AssistantMeta
+  /** 落盘 / hover 时间戳（epoch ms；对标 Codex #23849） */
+  createdAt?: number
 }
 
 /** 高危工具执行前的用户审批请求 */

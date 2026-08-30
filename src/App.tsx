@@ -337,6 +337,10 @@ import {
 } from '../shared/pending-steer'
 import './App.css'
 
+function withCreatedAt(message: ChatMessage, at = Date.now()): ChatMessage {
+  return message.createdAt != null ? message : { ...message, createdAt: at }
+}
+
 /** 非当前可见会话的流式缓冲（切换会话不丢 in-flight） */
 interface SessionLiveBuffer {
   messages: ChatMessage[]
@@ -1185,7 +1189,7 @@ export default function App() {
       }
       await window.sharker.saveConversation(workspaceId, {
         ...existing,
-        messages: msgs,
+        messages: msgs.map((m) => withCreatedAt(m)),
         title:
           existing.customTitle || fromSeq > 0
             ? existing.title
@@ -1771,7 +1775,8 @@ export default function App() {
         id: reservedId || crypto.randomUUID(),
         role: 'assistant',
         content: text,
-        meta
+        meta,
+        createdAt: Date.now()
       }
       const leftover = targetId ? leftoverFinishByConvRef.current.get(targetId) ?? [] : []
       const leftoverIds = leftover.map((item) => item.id)
@@ -2601,6 +2606,7 @@ export default function App() {
             id: buf.liveAssistantId || crypto.randomUUID(),
             role: 'assistant',
             content: text.trim(),
+            createdAt: buf.turnStartedAt || Date.now(),
             meta: {
               browsedFiles: [...buf.turnMeta.browsedFiles],
               activities: [...buf.turnMeta.activities],
@@ -2903,6 +2909,7 @@ export default function App() {
               id: buf.liveAssistantId || crypto.randomUUID(),
               role: 'assistant',
               content: text.trim(),
+              createdAt: buf.turnStartedAt || Date.now(),
               meta: {
                 browsedFiles: [...buf.turnMeta.browsedFiles],
                 activities: [...buf.turnMeta.activities],
@@ -3104,6 +3111,7 @@ export default function App() {
       const msg = {
         id: crypto.randomUUID(),
         role: 'assistant' as const,
+        createdAt: Date.now(),
         content: text
       }
       setMessages((msgs) => {
@@ -3256,7 +3264,8 @@ export default function App() {
           id: crypto.randomUUID(),
           role: 'user',
           content: text,
-          attachments: attachments.length ? attachments : undefined
+          attachments: attachments.length ? attachments : undefined,
+          createdAt: Date.now()
         }
         const uiHistory = skipUserMessage
           ? historyWithoutSteerIds(buf.messages, excludeIds)
@@ -3316,7 +3325,8 @@ export default function App() {
         id: crypto.randomUUID(),
         role: 'user',
         content: text,
-        attachments: attachments.length ? attachments : undefined
+        attachments: attachments.length ? attachments : undefined,
+        createdAt: Date.now()
       }
       const uiHistory = skipUserMessage
         ? historyWithoutSteerIds(messagesRef.current, excludeIds)
@@ -3796,13 +3806,15 @@ export default function App() {
           id: crypto.randomUUID(),
           role: 'user',
           content: trimmedEarly,
-          attachments: attachments.length ? attachments : undefined
+          attachments: attachments.length ? attachments : undefined,
+          createdAt: Date.now()
         }
         const errReply: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
           content:
-            '**提示**：请先在侧栏或 **设置 → 工作区** 中添加并选择一个工作区文件夹，然后再发送消息。'
+            '**提示**：请先在侧栏或 **设置 → 工作区** 中添加并选择一个工作区文件夹，然后再发送消息。',
+          createdAt: Date.now()
         }
         const withErr = [...messagesRef.current, userMsg, errReply]
         setMessages(withErr)
@@ -5396,6 +5408,7 @@ export default function App() {
       const note = {
         id: crypto.randomUUID(),
         role: 'assistant' as const,
+        createdAt: Date.now(),
         content
       }
       setMessages((msgs) => {
@@ -5939,6 +5952,7 @@ export default function App() {
             const note = {
               id: crypto.randomUUID(),
               role: 'assistant' as const,
+              createdAt: Date.now(),
               content: '没有工作区，无法创建 AGENTS.md。'
             }
             setMessages((msgs) => {
@@ -5953,6 +5967,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: result.ok
               ? result.created
                 ? `已在当前目录创建 \`AGENTS.md\`：\n\n\`${result.path}\`\n\n下一轮对话会自动注入这些项目说明。`
@@ -5974,6 +5989,7 @@ export default function App() {
             const note = {
               id: crypto.randomUUID(),
               role: 'assistant' as const,
+              createdAt: Date.now(),
               content: formatPermissionStatus(current)
             }
             setMessages((msgs) => {
@@ -5991,6 +6007,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatPermissionChanged(token)
           }
           setMessages((msgs) => {
@@ -6029,6 +6046,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatMemoryStatus({
               injection: flags.injection,
               generation: flags.generation,
@@ -6093,6 +6111,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatThreadStatus({
               conversationId: activeConversationIdRef.current || undefined,
               modelLabel: provider ? `${provider.name} / ${model}` : model,
@@ -6141,6 +6160,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: next.note
           }
           setMessages((msgs) => {
@@ -6175,6 +6195,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatMcpStatus(servers, verbose)
           }
           setMessages((msgs) => {
@@ -6409,6 +6430,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: personalitySwitchNote(next)
           }
           setMessages((msgs) => {
@@ -6427,6 +6449,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatApproveRetry(result)
           }
           setMessages((msgs) => {
@@ -6566,6 +6589,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatFastStatus({
               supported: options.length > 0,
               level,
@@ -6590,6 +6614,7 @@ export default function App() {
           const note = {
             id: crypto.randomUUID(),
             role: 'assistant' as const,
+            createdAt: Date.now(),
             content: formatSkillsStatus(items, args)
           }
           setMessages((msgs) => {
@@ -7605,7 +7630,8 @@ export default function App() {
           lastUser = {
             id: crypto.randomUUID(),
             role: 'user',
-            content: '（调试）触发一次失败重试路径'
+            content: '（调试）触发一次失败重试路径',
+            createdAt: Date.now()
           }
           base = [...base, lastUser]
         }
@@ -7613,6 +7639,7 @@ export default function App() {
           id: crypto.randomUUID(),
           role: 'assistant',
           content: errText,
+          createdAt: Date.now(),
           meta: {
             outcome: 'error',
             retryOfUserMessageId: lastUser.id,
@@ -7678,7 +7705,8 @@ export default function App() {
           lastUser = {
             id: crypto.randomUUID(),
             role: 'user',
-            content: '（调试）触发一次停止路径'
+            content: '（调试）触发一次停止路径',
+            createdAt: Date.now()
           }
           base = [...base, lastUser]
         }
@@ -7686,6 +7714,7 @@ export default function App() {
           id: crypto.randomUUID(),
           role: 'assistant',
           content,
+          createdAt: Date.now(),
           meta: {
             outcome: 'aborted',
             browsedFiles: [],

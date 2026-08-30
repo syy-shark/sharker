@@ -1,9 +1,10 @@
 /**
- * 消息 Copy / Fork 等操作按钮（对标 Codex hover Copy / Fork）
+ * 消息 Copy / Fork 等操作按钮（对标 Codex hover Copy / Fork / timestamp）
  * @see src/ARCH.md
  */
 import { useState } from 'react'
 import { Check, Copy, GitFork, Pencil, RotateCcw } from 'lucide-react'
+import { formatMessageTimestamp } from '../../shared/message-timestamp'
 import { COPY_LABEL, FORK_LABEL } from '../../shared/reveal-in-folder'
 import './MessageActions.css'
 
@@ -13,6 +14,8 @@ interface Props {
   /** 直播复制点按时再读，避免每枚 token 把操作条重绘一遍 */
   getContent?: () => string
   messageId: string
+  /** 悬停时间戳（epoch ms）；直播空槽不传，避免每秒重绘 */
+  createdAt?: number
   onRetry?: () => void
   onEdit?: () => void
   /** 从此条分叉到新线程（对标 Codex fork from an earlier message） */
@@ -21,11 +24,12 @@ interface Props {
   reserved?: boolean
 }
 
-/** 消息操作区（复制 / 分叉 / 编辑 / 重试） */
+/** 消息操作区（复制 / 分叉 / 编辑 / 重试 / hover 时间戳） */
 export function MessageActions({
   content,
   getContent,
   messageId,
+  createdAt,
   onRetry,
   onEdit,
   onFork,
@@ -53,8 +57,15 @@ export function MessageActions({
     }
   }
 
+  const timestamp = formatMessageTimestamp(createdAt)
+
   return (
     <div className="message-actions" data-message-id={messageId}>
+      {timestamp && createdAt != null ? (
+        <time className="message-actions-time" dateTime={new Date(createdAt).toISOString()}>
+          {timestamp}
+        </time>
+      ) : null}
       <button
         type="button"
         className={`message-actions-btn${copied ? ' message-actions-btn--copied' : ''}`}

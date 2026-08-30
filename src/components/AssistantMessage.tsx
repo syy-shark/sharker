@@ -47,6 +47,7 @@ import './TurnFlow.css'
 interface Props {
   messageId: string
   content: string
+  createdAt?: number
   meta?: AssistantMeta
   modelLabel?: string
   /** 直播中的有序片段（仅流式 turn） */
@@ -108,6 +109,7 @@ function formatDuration(sec: number): string {
 export const AssistantMessage = memo(function AssistantMessage({
   messageId,
   content,
+  createdAt,
   meta,
   modelLabel,
   liveSegments,
@@ -615,6 +617,7 @@ export const AssistantMessage = memo(function AssistantMessage({
         <MessageActions
           content={copyableContent}
           messageId={messageId}
+          createdAt={createdAt}
           reserved={reserveActions}
           onFork={reserveActions ? undefined : onFork}
         />

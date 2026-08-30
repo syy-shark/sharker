@@ -25,6 +25,16 @@
   pointer-events: none;
 }
 
+.message-actions-time {
+  margin-right: 6px;
+  font-size: 12px;
+  line-height: 28px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
 .message-actions-btn {
   display: flex;
   align-items: center;

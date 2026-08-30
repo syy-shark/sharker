@@ -352,6 +352,17 @@ describe('commitAssistantReply persist targeting', () => {
     expect(upserted).toHaveLength(2)
     expect(upserted[1]).toEqual(committed)
     expect(upsertAssistantMessage(base, committed)[1].id).toBe('a-live')
+    const reservedWithTime: ChatMessage = {
+      id: 'a-live',
+      role: 'assistant',
+      content: 'draft',
+      createdAt: 42
+    }
+    expect(upsertAssistantMessage([...base, reservedWithTime], committed)[1].createdAt).toBe(42)
+    expect(
+      upsertAssistantMessage([...base, reservedWithTime], { ...committed, createdAt: 99 })[1]
+        .createdAt
+    ).toBe(99)
   })
 })
 

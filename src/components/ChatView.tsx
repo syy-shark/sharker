@@ -205,6 +205,7 @@ function MessageAttachments({ attachments }: { attachments?: ChatAttachment[] })
 const UserMessageRow = memo(function UserMessageRow({
   id,
   content,
+  createdAt,
   attachments,
   findHit,
   findCurrent,
@@ -219,6 +220,7 @@ const UserMessageRow = memo(function UserMessageRow({
 }: {
   id: string
   content: string
+  createdAt?: number
   attachments?: ChatAttachment[]
   findHit: boolean
   findCurrent: boolean
@@ -354,6 +356,7 @@ const UserMessageRow = memo(function UserMessageRow({
           <MessageActions
             content={content}
             messageId={id}
+            createdAt={createdAt}
             onFork={onFork}
             onEdit={
               onEdit
@@ -2334,6 +2337,7 @@ export const ChatView = memo(function ChatView({
             key={m.id}
             id={m.id}
             content={m.content}
+            createdAt={m.createdAt}
             attachments={m.attachments}
             findHit={historicalFindIds.has(m.id)}
             findCurrent={currentFindMessageId === m.id}
@@ -2372,6 +2376,7 @@ export const ChatView = memo(function ChatView({
             <AssistantMessage
               messageId={m.id}
               content={m.content}
+              createdAt={m.createdAt}
               meta={m.meta}
               modelLabel={m.meta?.model ?? modelLabel}
               onOpenSubAgent={onOpenSubAgent}

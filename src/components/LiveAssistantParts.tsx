@@ -116,7 +116,13 @@ const LiveStoreAnswer = memo(function LiveStoreAnswer() {
 })
 
 /** 操作条：只订布尔；复制点按时再读最新正文 */
-const LiveStoreActions = memo(function LiveStoreActions({ messageId }: { messageId: string }) {
+const LiveStoreActions = memo(function LiveStoreActions({
+  messageId,
+  createdAt
+}: {
+  messageId: string
+  createdAt?: number
+}) {
   const chrome = useLiveStreamUiSelect((snap, prev) => nextLiveAnswerActions(prev ?? null, snap))
   const showActions = shouldMountMessageActions({ showBody: chrome.show })
   if (!showActions) return null
@@ -125,6 +131,7 @@ const LiveStoreActions = memo(function LiveStoreActions({ messageId }: { message
       content=""
       getContent={() => liveAnswerViewFromSnap(getLiveStreamUi()).copyable}
       messageId={messageId}
+      createdAt={chrome.reserved ? undefined : createdAt}
       reserved={chrome.reserved}
     />
   )
@@ -212,7 +219,10 @@ export const LiveAssistantArticle = memo(function LiveAssistantArticle({
       {changedFiles.length > 0 ? (
         <LiveFilesChangedCard files={changedFiles} onOpenReview={onOpenChangedFiles} />
       ) : null}
-      <LiveStoreActions messageId={messageId} />
+      <LiveStoreActions
+        messageId={messageId}
+        createdAt={liveStartedAt && liveStartedAt > 0 ? liveStartedAt : undefined}
+      />
     </article>
   )
 })

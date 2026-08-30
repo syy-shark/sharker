@@ -390,7 +390,11 @@ export function upsertAssistantMessage(
   if (idx < 0) return appendAssistantMessage(messages, assistant)
   if (messages[idx] === assistant) return messages
   const next = messages.slice()
-  next[idx] = assistant
+  const prevCreatedAt = messages[idx].createdAt
+  next[idx] =
+    assistant.createdAt != null || prevCreatedAt == null
+      ? assistant
+      : { ...assistant, createdAt: prevCreatedAt }
   return next
 }
 
