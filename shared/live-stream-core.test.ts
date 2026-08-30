@@ -1540,6 +1540,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     )
     expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldRenderLiveMermaid')
     expect(src('../src/components/ChatMath.tsx')).toContain('shouldRenderLiveChatMath')
+    expect(src('../src/components/ChatMath.tsx')).toContain('liveChatMathClassName')
     expect(src('../src/components/ChatMath.tsx')).toContain('LiveMarkdownStreamingContext')
   })
 
@@ -2466,5 +2467,117 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     )
     expect(process.processForFlow.some((segment) => segment.toolName === 'agent_list')).toBe(true)
     expect(process.processForFlow.some((segment) => segment.toolName === 'open_url')).toBe(true)
+  })
+
+  it('keeps remaining worktree, task, desktop, and browser first-stream walks off the table', () => {
+    const misses: string[] = []
+    let prev: TurnSegment[] = []
+    let answer = nextLiveAnswerView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    let process = nextLiveProcessView(null, { ...EMPTY_LIVE_STREAM_UI, liveSegments: prev })
+    const flush = (label: string, chunks: StreamChunk[]) => {
+      let next = prev
+      for (const chunk of chunks) next = applyStreamChunk(next, chunk)
+      if (next === prev) return
+      const skip = shouldSkipLiveStreamDerivation(prev, next)
+      if (!skip) {
+        misses.push(
+          `${label}: ${prev.map((s) => s.kind).join('+')} → ${next
+            .map((s) => `${s.kind}:${s.toolName ?? s.status}`)
+            .join(',')}`
+        )
+      }
+      answer = nextLiveAnswerView(answer, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      process = nextLiveProcessView(process, { ...EMPTY_LIVE_STREAM_UI, liveSegments: next })
+      prev = next
+    }
+
+    flush('open', [{ type: 'turn_start' }, { type: 'think', content: 'Cover leftover catalog' }])
+    flush('reads', [
+      { type: 'tool_start', toolName: 'read_image', toolCallId: 'r1', toolArgs: { path: 'a.png' } },
+      { type: 'tool_done', toolName: 'read_image', toolCallId: 'r1' },
+      { type: 'tool_start', toolName: 'read_graph', toolCallId: 'r2', toolArgs: { path: 'g.json' } },
+      { type: 'tool_done', toolName: 'read_graph', toolCallId: 'r2' },
+      {
+        type: 'tool_start',
+        toolName: 'read_notebook',
+        toolCallId: 'r3',
+        toolArgs: { path: 'n.ipynb' }
+      },
+      { type: 'tool_done', toolName: 'read_notebook', toolCallId: 'r3' }
+    ])
+    flush('worktree', [
+      { type: 'tool_start', toolName: 'git_worktree_list', toolCallId: 'r4' },
+      { type: 'tool_done', toolName: 'git_worktree_list', toolCallId: 'r4' },
+      {
+        type: 'tool_start',
+        toolName: 'git_worktree_remove',
+        toolCallId: 'r5',
+        toolArgs: { path: '.worktrees/old' }
+      },
+      { type: 'tool_done', toolName: 'git_worktree_remove', toolCallId: 'r5' },
+      { type: 'tool_start', toolName: 'enter_worktree', toolCallId: 'r6' },
+      { type: 'tool_done', toolName: 'enter_worktree', toolCallId: 'r6' },
+      { type: 'tool_start', toolName: 'exit_worktree', toolCallId: 'r7' },
+      { type: 'tool_done', toolName: 'exit_worktree', toolCallId: 'r7' }
+    ])
+    flush('tasks', [
+      { type: 'tool_start', toolName: 'task_update', toolCallId: 'r8', toolArgs: { id: 't1' } },
+      { type: 'tool_done', toolName: 'task_update', toolCallId: 'r8' },
+      { type: 'tool_start', toolName: 'task_get', toolCallId: 'r9', toolArgs: { id: 't1' } },
+      { type: 'tool_done', toolName: 'task_get', toolCallId: 'r9' },
+      { type: 'tool_start', toolName: 'task_list', toolCallId: 'r10' },
+      { type: 'tool_done', toolName: 'task_list', toolCallId: 'r10' },
+      { type: 'tool_start', toolName: 'task_output', toolCallId: 'r11' },
+      { type: 'tool_done', toolName: 'task_output', toolCallId: 'r11' },
+      { type: 'tool_start', toolName: 'task_stop', toolCallId: 'r12' },
+      { type: 'tool_done', toolName: 'task_stop', toolCallId: 'r12' },
+      { type: 'tool_start', toolName: 'manage_scheduled_task', toolCallId: 'r13' },
+      { type: 'tool_done', toolName: 'manage_scheduled_task', toolCallId: 'r13' }
+    ])
+    flush('desktop', [
+      { type: 'tool_start', toolName: 'desktop_doctor', toolCallId: 'r14' },
+      { type: 'tool_done', toolName: 'desktop_doctor', toolCallId: 'r14' },
+      { type: 'tool_start', toolName: 'desktop_list_windows', toolCallId: 'r15' },
+      { type: 'tool_done', toolName: 'desktop_list_windows', toolCallId: 'r15' },
+      { type: 'tool_start', toolName: 'desktop_get_ui_tree', toolCallId: 'r16' },
+      { type: 'tool_done', toolName: 'desktop_get_ui_tree', toolCallId: 'r16' },
+      { type: 'tool_start', toolName: 'desktop_click', toolCallId: 'r17' },
+      { type: 'tool_done', toolName: 'desktop_click', toolCallId: 'r17' },
+      { type: 'tool_start', toolName: 'desktop_type', toolCallId: 'r18' },
+      { type: 'tool_done', toolName: 'desktop_type', toolCallId: 'r18' },
+      { type: 'tool_start', toolName: 'desktop_key', toolCallId: 'r19' },
+      { type: 'tool_done', toolName: 'desktop_key', toolCallId: 'r19' },
+      { type: 'tool_start', toolName: 'desktop_scroll', toolCallId: 'r20' },
+      { type: 'tool_done', toolName: 'desktop_scroll', toolCallId: 'r20' }
+    ])
+    flush('browser', [
+      { type: 'tool_start', toolName: 'browser_click', toolCallId: 'r21' },
+      { type: 'tool_done', toolName: 'browser_click', toolCallId: 'r21' },
+      { type: 'tool_start', toolName: 'browser_type', toolCallId: 'r22' },
+      { type: 'tool_done', toolName: 'browser_type', toolCallId: 'r22' },
+      { type: 'tool_start', toolName: 'browser_screenshot', toolCallId: 'r23' },
+      { type: 'tool_done', toolName: 'browser_screenshot', toolCallId: 'r23' },
+      { type: 'tool_start', toolName: 'browser_close', toolCallId: 'r24' },
+      { type: 'tool_done', toolName: 'browser_close', toolCallId: 'r24' },
+      { type: 'tool_start', toolName: 'shell_send_input', toolCallId: 'r25' },
+      { type: 'tool_done', toolName: 'shell_send_input', toolCallId: 'r25' }
+    ])
+    flush('display-math', [
+      { type: 'token', content: 'See\n$$E=mc^2' },
+      { type: 'token', content: '$$' }
+    ])
+
+    expect(misses).toEqual([])
+    expect(answer.parts.some((part) => part.type === 'text' && part.content.includes('$$'))).toBe(
+      true
+    )
+    expect(process.contentStreaming).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'read_notebook')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'enter_worktree')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'task_list')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'desktop_click')).toBe(true)
+    expect(process.processForFlow.some((segment) => segment.toolName === 'browser_screenshot')).toBe(
+      true
+    )
   })
 })

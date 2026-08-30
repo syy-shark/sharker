@@ -63,7 +63,7 @@
 | `chat-image.ts` | 对话渲染图导出：安全文件名、只认附件路径 / http(s) / `data:image`（对标 Codex Save or copy rendered images）；工作区相对路径图接到工作区 / 附加根（不认 `file://`）；右键菜单查看大图 / 复制/保存，工作区图再打开 / 揭示 / 复制路径（对标 Codex #17591 / #40778 页内菜单，不发明拖出）；`chatImageLightboxFit` / `filePreviewImageFit` 按视口或预览窗 CSS 像素 contain、不乘界面字号（对标 Codex image preview / #26851 / #31112）；按 src 缓存固有宽高与 data URL；`peekChatImageSizeFromDataUrl` 从 PNG/JPEG/GIF/WebP/BMP 头读尺寸，直播首帧按比例占位，未测到前 48px 高水位，`liveChatImageMinHeight` 成图后只升不降（不再用 8rem / 小图塌贴底） |
 | `syntax-highlight.ts` | 闭合围栏 / 文件预览 highlight.js 着色（对标 Codex 桌面 / #18966）：未知语言与超大文件保持纯文本；未闭合直播围栏不调用；`.tex` 不发明语法 |
 | `syntax-highlight.test.ts` | 语言别名、扩展名、keyword / diff +/-、转义 `<script>`、超大跳过、跨行 span 拆行 |
-| `chat-math.ts` | 对话公式：只认闭合 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX / #14985）；不认 `$...$`；非法 TeX 回退原文；`trust: false`；`shouldRenderLiveChatMath` 直播 token 中先画原文，收束后再跑 KaTeX |
+| `chat-math.ts` | 对话公式：只认闭合 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX / #14985）；不认 `$...$`；非法 TeX 回退原文；`trust: false`；`shouldRenderLiveChatMath` 直播 token 中先画原文，收束后再跑 KaTeX；`liveChatMathClassName` 展示公式直播中也占 block 槽 |
 | `chat-math.test.ts` | 三种围栏、拒绝 `$...$` / 未闭合 / 超长、KaTeX HTML 缓存与失败回退；直播中不着色、收束后再画 |
 | `chat-image.test.ts` | 文件名清洗、拒绝 `javascript:` / `file://`、工作区相对路径解析、尺寸 / data URL 缓存、PNG 头窥尺寸与占位高、右键菜单项、灯箱与文件预览 fit-to-window、灯箱 Close |
 | `file-citation.test.ts` | 行号后缀、拒绝 URL / `www.` / `</tag>` / 尾斜杠 / `a\\`、边界匹配、附加根前缀、百分号解码、空格目录路径、复制路径、引用与文件树右键菜单 |

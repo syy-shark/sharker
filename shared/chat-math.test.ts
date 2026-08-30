@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHAT_MATH_MAX_TEX,
   chatMathSource,
+  liveChatMathClassName,
   readChatMath,
   renderChatMathHtml,
   shouldRenderLiveChatMath
@@ -37,5 +38,10 @@ describe('chat-math', () => {
     expect(shouldRenderLiveChatMath({ streaming: true })).toBe(false)
     expect(shouldRenderLiveChatMath({ streaming: false })).toBe(true)
     expect(shouldRenderLiveChatMath({})).toBe(true)
+    expect(liveChatMathClassName({ display: true, raw: true })).toBe(
+      'chat-math chat-math--raw chat-math--display'
+    )
+    expect(liveChatMathClassName({ display: true })).toBe('chat-math chat-math--display')
+    expect(liveChatMathClassName({ raw: true })).toBe('chat-math chat-math--raw')
   })
 })

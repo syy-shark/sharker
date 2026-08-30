@@ -14,6 +14,14 @@ export function shouldRenderLiveChatMath(options: { streaming?: boolean }): bool
   return !options.streaming
 }
 
+/** 展示公式直播中也占 block 槽，收束着色时不从行内跳成块。 */
+export function liveChatMathClassName(options: { display?: boolean; raw?: boolean }): string {
+  const classes = ['chat-math']
+  if (options.raw) classes.push('chat-math--raw')
+  if (options.display) classes.push('chat-math--display')
+  return classes.join(' ')
+}
+
 export type ChatMathFence = '$$' | 'square' | 'paren'
 
 export type ChatMathHit = {

@@ -6,6 +6,7 @@
 import { memo, useContext } from 'react'
 import {
   chatMathSource,
+  liveChatMathClassName,
   renderChatMathHtml,
   shouldRenderLiveChatMath,
   type ChatMathFence
@@ -26,15 +27,23 @@ export const ChatMath = memo(function ChatMath({
 }) {
   const streaming = useContext(LiveMarkdownStreamingContext)
   if (!shouldRenderLiveChatMath({ streaming })) {
-    return <span className="chat-math chat-math--raw">{chatMathSource(tex, fence)}</span>
+    return (
+      <span className={liveChatMathClassName({ display, raw: true })}>
+        {chatMathSource(tex, fence)}
+      </span>
+    )
   }
   const html = renderChatMathHtml(tex, display)
   if (!html) {
-    return <span className="chat-math chat-math--raw">{chatMathSource(tex, fence)}</span>
+    return (
+      <span className={liveChatMathClassName({ display, raw: true })}>
+        {chatMathSource(tex, fence)}
+      </span>
+    )
   }
   return (
     <span
-      className={`chat-math${display ? ' chat-math--display' : ''}`}
+      className={liveChatMathClassName({ display })}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
