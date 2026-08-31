@@ -3,6 +3,7 @@
  * 头详情只挂短路径，不挂命令末行（对标 Codex #19260）。
  * 开轮/收束不拆贴底 ResizeObserver（`shouldRebuildLiveStickObserverWhenLoadingChanges`）。
  * 未贴底也记下 `lastHeight`（`shouldRecordLiveStickHeightWhenUnstuck`）。
+ * 远窗行高 flush 写在已挂行上（`applyRowIntrinsicSizeStyle`），不抬 React state。
  * 与 TurnFlow 渲染共用，保证“头 = 当前步骤”。
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
@@ -829,7 +830,7 @@ export function shouldObserveRowIntrinsicHeight(input: {
 }
 
 /**
- * 远窗历史行量到真高后才刷进 React 内在尺寸。
+ * 远窗历史行量到真高后才刷进行上的 contain-intrinsic-size。
  * 贴底窗口 / 直播行 / 高度没变都不刷，避免跟 token 重绘（对标 Codex #22860 / #38220）。
  */
 export function shouldFlushRowIntrinsicHeight(input: {
@@ -922,6 +923,44 @@ export function rowIntrinsicSizeStyle(
   return style
 }
 
+/** 远窗量到真高后写在已挂行上，不抬 React state（对标 Codex #38220 / #39120） */
+export function shouldPaintFlushedRowIntrinsicSize(input: {
+  nearLive?: boolean
+  height?: number
+}): boolean {
+  if (input.nearLive) return false
+  return input.height != null && Math.round(input.height) >= 1
+}
+
+/** 把实测内在高度写到行根，复用 `rowIntrinsicSizeStyle` 缓存对象 */
+export function applyRowIntrinsicSizeStyle(
+  el: { style: { containIntrinsicSize: string } } | null | undefined,
+  height: number | undefined
+): boolean {
+  if (!el) return false
+  const style = rowIntrinsicSizeStyle(height)
+  if (!style) return false
+  if (el.style.containIntrinsicSize === style.containIntrinsicSize) return false
+  el.style.containIntrinsicSize = style.containIntrinsicSize
+  return true
+}
+
+/** 远窗行高写上后同帧补视口上方的 scrollTop，不经 setState（对标 Codex #38220） */
+export function commitAboveFoldHeightScroll(input: {
+  scroller: { scrollTop: number } | null | undefined
+  scrollTop: number
+  changes: ReadonlyArray<{ offsetTop: number; previousSize: number; nextSize: number }>
+}): number | null {
+  if (!input.scroller || input.changes.length === 0) return null
+  const nextTop = nextAboveFoldHeightScrollTop({
+    scrollTop: input.scrollTop,
+    changes: input.changes
+  })
+  if (nextTop === input.scroller.scrollTop) return null
+  input.scroller.scrollTop = nextTop
+  return nextTop
+}
+
 /** 按 id 缓存无参回调，窗口重算不换引用，避免 memo 行整列重绘 */
 export function cachedIdCallback(
   cache: Map<string, () => void>,
@@ -950,7 +989,7 @@ export function cachedIdArgCallback<T>(
   return fn
 }
 
-/** 离开贴底窗口的第一帧：state 还没写入时用已测量高度（对标 Codex #38220） */
+/** 离开贴底窗口的第一帧：store 还没写入时用已测量高度（对标 Codex #38220） */
 export function resolveRowIntrinsicHeight(
   stored: number | undefined,
   measured: number | undefined

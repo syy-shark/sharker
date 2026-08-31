@@ -1640,7 +1640,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'out.every((step, index) => step === prev[index])'
     )
     expect(src('../src/components/ChatView.tsx')).toContain('nextRevealPreserveScrollTop')
-    expect(src('../src/components/ChatView.tsx')).toContain('nextAboveFoldHeightScrollTop')
+    expect(src('../src/components/ChatView.tsx')).toContain('commitAboveFoldHeightScroll')
+    expect(src('../src/components/ChatView.tsx')).toContain('applyRowIntrinsicSizeStyle')
+    expect(src('../src/components/ChatView.tsx')).not.toContain('setIntrinsicHeights')
     expect(src('../src/components/ChatView.tsx').includes('trimTopIdsRef')).toBe(false)
     expect(src('../src/components/ChatView.tsx')).toContain('requestAnimationFrame(flush)')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveAssistantIds')

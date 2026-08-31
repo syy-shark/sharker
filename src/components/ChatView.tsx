@@ -3,7 +3,7 @@
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
  * pin 列 / 历史源 / pin 后缺口 / pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220）。
- * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，只补视口上方行的 scrollTop，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
+ * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 写在行上并同帧补视口上方 scrollTop，不抬 React state、不重建 `historicalRows`（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
@@ -120,10 +120,12 @@ import {
   cachedIdArgCallback,
   cachedIdCallback,
   FAR_ROW_INTRINSIC_GUESS,
-  nextAboveFoldHeightScrollTop,
+  applyRowIntrinsicSizeStyle,
+  commitAboveFoldHeightScroll,
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
   rowIntrinsicSizeStyle,
+  shouldPaintFlushedRowIntrinsicSize,
   shouldFlushRowIntrinsicHeight,
   shouldObserveRowIntrinsicHeight,
   shouldForceStickScroll,
@@ -1148,7 +1150,7 @@ export const ChatView = memo(function ChatView({
     setSideAsk(null)
     setKeepReadingJump(false)
     measuredRowHeightsRef.current = new Map()
-    heightFlushPreserveRef.current = null
+    heightFlushEpochRef.current += 1
     clearInlineDemoFramePool()
     clearHistoricalAnswerHolds()
     nearLiveImmediateIdsRef.current.clear()
@@ -1159,7 +1161,7 @@ export const ChatView = memo(function ChatView({
     pinnedGapsHeldRef.current = null
     pinnedGapsSessionRef.current = sessionKey
     pinnedLiveIdsHeldRef.current = []
-    setIntrinsicHeights(new Map())
+    intrinsicHeightsRef.current = new Map()
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
   const findInputRef = useRef<HTMLInputElement>(null)
@@ -1177,15 +1179,14 @@ export const ChatView = memo(function ChatView({
     nearLiveImmediateIdsRef.current.clear()
   }
   mergeSeededRowHeights(measuredRowHeightsRef.current, ejectedLiveHeights)
-  const [intrinsicHeights, setIntrinsicHeights] = useState<ReadonlyMap<string, number>>(
-    () => new Map()
-  )
-  const intrinsicHeightsRef = useRef(intrinsicHeights)
-  intrinsicHeightsRef.current = intrinsicHeights
-  const heightFlushPreserveRef = useRef<{
-    scrollTop: number
-    changes: Array<{ offsetTop: number; previousSize: number; nextSize: number }>
-  } | null>(null)
+  const intrinsicHeightsRef = useRef<ReadonlyMap<string, number>>(new Map())
+  const intrinsicHeightsSessionRef = useRef(sessionKey)
+  const heightFlushEpochRef = useRef(0)
+  if (intrinsicHeightsSessionRef.current !== sessionKey) {
+    intrinsicHeightsSessionRef.current = sessionKey
+    intrinsicHeightsRef.current = new Map()
+    heightFlushEpochRef.current += 1
+  }
   const bottomRef = useRef<HTMLDivElement>(null)
   const syncSideAsk = useCallback(() => {
     if (!onAskInSideChat && !onInsertComposer) {
@@ -1821,7 +1822,7 @@ export const ChatView = memo(function ChatView({
       pendingJumpTopRef.current = false
       pendingHeadJunctionRef.current = false
       revealPreserveHeightRef.current = null
-      heightFlushPreserveRef.current = null
+      heightFlushEpochRef.current += 1
       programmaticScrollRef.current = true
       el.scrollTop = 0
       programmaticScrollRef.current = false
@@ -1832,7 +1833,7 @@ export const ChatView = memo(function ChatView({
     if (pendingHeadJunctionRef.current) {
       pendingHeadJunctionRef.current = false
       revealPreserveHeightRef.current = null
-      heightFlushPreserveRef.current = null
+      heightFlushEpochRef.current += 1
       programmaticScrollRef.current = true
       el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
       programmaticScrollRef.current = false
@@ -2423,9 +2424,10 @@ export const ChatView = memo(function ChatView({
       const prev = intrinsicHeightsRef.current
       const next = nextRowIntrinsicHeights(prev, snapshots)
       if (next === prev) return
+      const epoch = heightFlushEpochRef.current
       const scroller = messagesRef.current
+      const changes: Array<{ offsetTop: number; previousSize: number; nextSize: number }> = []
       if (scroller) {
-        const changes: Array<{ offsetTop: number; previousSize: number; nextSize: number }> = []
         for (const row of snapshots) {
           const nextSize = Math.round(row.height)
           const previousSize = prev.get(row.id) ?? FAR_ROW_INTRINSIC_GUESS
@@ -2441,11 +2443,24 @@ export const ChatView = memo(function ChatView({
             nextSize
           })
         }
-        if (changes.length) {
-          heightFlushPreserveRef.current = { scrollTop: scroller.scrollTop, changes }
-        }
       }
-      setIntrinsicHeights(next)
+      for (const row of snapshots) {
+        if (!shouldPaintFlushedRowIntrinsicSize(row)) continue
+        const el = document.getElementById(`msg-${row.id}`)
+        if (el instanceof HTMLElement) applyRowIntrinsicSizeStyle(el, row.height)
+      }
+      intrinsicHeightsRef.current = next
+      if (epoch !== heightFlushEpochRef.current || !scroller) return
+      programmaticScrollRef.current = true
+      const nextTop = commitAboveFoldHeightScroll({
+        scroller,
+        scrollTop: scroller.scrollTop,
+        changes
+      })
+      programmaticScrollRef.current = false
+      if (nextTop == null) return
+      lastScrollTopRef.current = scroller.scrollTop
+      rememberTranscriptSnapshot()
     }
     const remember = (el: Element) => {
       const id = el.id.startsWith('msg-') ? el.id.slice(4) : ''
@@ -2503,31 +2518,14 @@ export const ChatView = memo(function ChatView({
   }, [isEmpty, sessionKey])
 
   useLayoutEffect(() => {
-    const pending = heightFlushPreserveRef.current
-    if (!pending) return
-    heightFlushPreserveRef.current = null
-    const el = messagesRef.current
-    if (!el) return
-    const nextTop = nextAboveFoldHeightScrollTop(pending)
-    if (nextTop === el.scrollTop) return
-    programmaticScrollRef.current = true
-    el.scrollTop = nextTop
-    programmaticScrollRef.current = false
-    lastScrollTopRef.current = el.scrollTop
-    rememberTranscriptSnapshot()
-  }, [intrinsicHeights, rememberTranscriptSnapshot])
-
-  useLayoutEffect(() => {
     if (isEmpty) return
-    setIntrinsicHeights((prev) =>
-      nextRowIntrinsicHeights(
-        prev,
-        windowedMessages.map((m, index) => ({
-          id: m.id,
-          nearLive: isNearLiveMessageRow(index, windowedMessages.length),
-          height: measuredRowHeightsRef.current.get(m.id)
-        }))
-      )
+    intrinsicHeightsRef.current = nextRowIntrinsicHeights(
+      intrinsicHeightsRef.current,
+      windowedMessages.map((m, index) => ({
+        id: m.id,
+        nearLive: isNearLiveMessageRow(index, windowedMessages.length),
+        height: measuredRowHeightsRef.current.get(m.id)
+      }))
     )
   }, [isEmpty, windowedMessages])
 
@@ -2743,7 +2741,7 @@ export const ChatView = memo(function ChatView({
             findCurrent={currentFindMessageId === m.id}
             nearLive={nearLive}
             intrinsicHeight={resolveRowIntrinsicHeight(
-              intrinsicHeights.get(m.id),
+              intrinsicHeightsRef.current.get(m.id),
               measuredRowHeightsRef.current.get(m.id)
             )}
             editRequested={editUserMessageId === m.id}
@@ -2775,7 +2773,7 @@ export const ChatView = memo(function ChatView({
                 ? undefined
                 : rowIntrinsicSizeStyle(
                     resolveRowIntrinsicHeight(
-                      intrinsicHeights.get(m.id),
+                      intrinsicHeightsRef.current.get(m.id),
                       measuredRowHeightsRef.current.get(m.id)
                     )
                   )
@@ -2819,7 +2817,6 @@ export const ChatView = memo(function ChatView({
       editUserMessageId,
       historicalFindIds,
       handleEditRequestHandled,
-      intrinsicHeights,
       ejectedLiveArticles,
       archivedLiveArticles,
       renderFrozenEjectedArticle,
@@ -2850,7 +2847,7 @@ export const ChatView = memo(function ChatView({
             findCurrent={currentFindMessageId === m.id}
             nearLive
             intrinsicHeight={resolveRowIntrinsicHeight(
-              intrinsicHeights.get(m.id),
+              intrinsicHeightsRef.current.get(m.id),
               measuredRowHeightsRef.current.get(m.id)
             )}
             editRequested={editUserMessageId === m.id}
@@ -2907,7 +2904,6 @@ export const ChatView = memo(function ChatView({
     handleEditRequestHandled,
     handleRevealSelection,
     historicalFindIds,
-    intrinsicHeights,
     modelLabel,
     onNeedFullMessage,
     onOpenChangedFiles,

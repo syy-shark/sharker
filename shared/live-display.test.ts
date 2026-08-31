@@ -54,6 +54,9 @@ import {
   shouldFlushRowIntrinsicHeight,
   FAR_ROW_INTRINSIC_GUESS,
   nextAboveFoldHeightScrollTop,
+  applyRowIntrinsicSizeStyle,
+  commitAboveFoldHeightScroll,
+  shouldPaintFlushedRowIntrinsicSize,
   mergeSeededRowHeights,
   readMountedMessageRowHeight,
   nextRowIntrinsicHeights,
@@ -497,6 +500,38 @@ describe('near-live message rows', () => {
     expect(rowIntrinsicSizeStyle(481.6)).toEqual({ containIntrinsicSize: 'auto 482px' })
     expect(rowIntrinsicSizeStyle(481.6)).toBe(rowIntrinsicSizeStyle(481.6))
     expect(rowIntrinsicSizeStyle(482)).toBe(rowIntrinsicSizeStyle(481.6))
+    expect(shouldPaintFlushedRowIntrinsicSize({ height: 420 })).toBe(true)
+    expect(shouldPaintFlushedRowIntrinsicSize({ nearLive: true, height: 420 })).toBe(false)
+    expect(shouldPaintFlushedRowIntrinsicSize({ height: 0 })).toBe(false)
+    expect(applyRowIntrinsicSizeStyle(null, 420)).toBe(false)
+    const painted = { style: { containIntrinsicSize: '' } }
+    expect(applyRowIntrinsicSizeStyle(painted, 420)).toBe(true)
+    expect(painted.style.containIntrinsicSize).toBe('auto 420px')
+    expect(applyRowIntrinsicSizeStyle(painted, 420)).toBe(false)
+    const scroller = { scrollTop: 2000 }
+    expect(
+      commitAboveFoldHeightScroll({
+        scroller,
+        scrollTop: 2000,
+        changes: [{ offsetTop: 100, previousSize: 160, nextSize: 800 }]
+      })
+    ).toBe(2640)
+    expect(scroller.scrollTop).toBe(2640)
+    expect(
+      commitAboveFoldHeightScroll({
+        scroller,
+        scrollTop: 2640,
+        changes: [{ offsetTop: 100, previousSize: 800, nextSize: 800 }]
+      })
+    ).toBeNull()
+    expect(commitAboveFoldHeightScroll({ scroller, scrollTop: 2640, changes: [] })).toBeNull()
+    expect(
+      commitAboveFoldHeightScroll({
+        scroller: null,
+        scrollTop: 2000,
+        changes: [{ offsetTop: 100, previousSize: 160, nextSize: 800 }]
+      })
+    ).toBeNull()
     const forkCache = new Map<string, () => void>()
     let forked = ''
     const forkRef: { current?: ((id: string) => void) | null } = {
@@ -648,7 +683,12 @@ describe('near-live message rows', () => {
     expect(chatView).toContain('shouldFlushRowIntrinsicHeight')
     expect(chatView).toContain('FenceImmediateHighlightContext')
     expect(chatView).toContain('clearInlineDemoFramePool')
-    expect(chatView).toContain('nextAboveFoldHeightScrollTop')
+    expect(chatView).toContain('commitAboveFoldHeightScroll')
+    expect(chatView).toContain('applyRowIntrinsicSizeStyle')
+    expect(chatView).toContain('shouldPaintFlushedRowIntrinsicSize')
+    expect(chatView).not.toContain('setIntrinsicHeights')
+    expect(chatView).not.toContain('handleEditRequestHandled,\n      intrinsicHeights,')
+    expect(chatView).not.toContain('historicalFindIds,\n    intrinsicHeights,')
     expect(chatView).toContain('FAR_ROW_INTRINSIC_GUESS')
     expect(chatView).toContain('requestAnimationFrame(flush)')
     expect(chatView).toContain('shouldRecordTranscriptScrollIntent')
