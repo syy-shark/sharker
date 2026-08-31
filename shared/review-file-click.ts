@@ -1,7 +1,7 @@
 /**
  * 审查面板文件名 / 行背景点击（对标 Codex Review pane）。
  * 文件名走 `file_opener`（none 为应用内预览）；行背景展开或收起 diff。
- * ⌘/Ctrl+单击 diff 行跳到该行。右键含打开预览、Open in Finder、展开 diff。
+ * ⌘/Ctrl+单击 diff 行跳到该行（官方 Clicking a single line while holding Cmd pressed…）。右键含打开预览、Open in Finder、展开 diff。
  * @see shared/ARCH.md
  */
 
@@ -12,6 +12,10 @@ export type ReviewFileClickTarget = 'name' | 'background'
 export type ReviewFileClickIntent = 'open' | 'toggle'
 
 export type ReviewFileMenuAction = 'open' | 'reveal' | 'toggle'
+
+/** Official review pane Cmd+click (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_CMD_CLICK_LINE_HINT =
+  'Clicking a single line while holding Cmd pressed opens the line in your chosen editor.'
 
 /** 审查文件树右键菜单（对标 Codex review Open in Finder / open menu） */
 export function reviewFileMenuItems(

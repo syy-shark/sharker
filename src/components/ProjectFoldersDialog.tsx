@@ -5,6 +5,7 @@
 import { useEffect } from 'react'
 import {
   ADD_FOLDER_LABEL,
+  PROJECTS_NEED_NO_FOLDER_HINT,
   EDIT_PROJECT_INTRO,
   EDIT_PROJECT_LABEL,
   FILE_CLOSE_LABEL,
@@ -74,7 +75,7 @@ export function ProjectFoldersDialog({
         <div className="project-folders-block">
           <span className="project-folders-label">{SECONDARY_FOLDERS_LABEL}</span>
           {(workspace.extraPaths ?? []).length === 0 ? (
-            <p className="project-folders-empty">还没有附加文件夹。</p>
+            <p className="project-folders-empty">{PROJECTS_NEED_NO_FOLDER_HINT}</p>
           ) : (
             <ul>
               {(workspace.extraPaths ?? []).map((folder) => (

@@ -89,6 +89,9 @@ export const SECONDARY_FOLDERS_LABEL = 'Secondary folders'
 export const ARCHIVE_CHATS_ACTION_LABEL = 'Archive chats'
 export const ADD_FOLDER_LABEL = 'Add folder'
 export const MAKE_PRIMARY_LABEL = 'Make primary'
+/** Official Edit project leftover (learn.chatgpt.com/docs/projects). */
+export const PROJECTS_NEED_NO_FOLDER_HINT =
+  "Projects don't need a folder, but you can attach folders as needed."
 
 /** 官方快捷键 / 命令面板（对标 learn.chatgpt.com Commands） */
 export const NEW_CHAT_LABEL = 'New chat'

@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   clampReviewMenuPosition,
+  REVIEW_CMD_CLICK_LINE_HINT,
   resolveReviewFileClick,
   reviewFileClickTargetFromElement,
   reviewFileMenuItems,
@@ -31,5 +35,12 @@ describe('review file click', () => {
     expect(shouldOpenReviewLine({})).toBe(false)
     expect(shouldOpenReviewLine({ metaKey: true, shiftKey: true })).toBe(false)
     expect(shouldOpenReviewLine({ ctrlKey: true, altKey: true })).toBe(false)
+    expect(REVIEW_CMD_CLICK_LINE_HINT).toMatch(/holding Cmd pressed/)
+    const diffSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeDiffBlock.tsx'),
+      'utf8'
+    )
+    expect(diffSrc).toContain('REVIEW_CMD_CLICK_LINE_HINT')
+    expect(diffSrc).not.toContain('⌘/Ctrl+单击打开该行预览')
   })
 })

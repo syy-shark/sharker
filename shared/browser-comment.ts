@@ -14,6 +14,7 @@ export const BROWSER_COMMENTS_INTRO =
 export const BROWSER_WRITE_SAVE_HINT = 'Write and save your comment.'
 export const BROWSER_NAME_PROBLEM_HINT =
   'Comments work best when you name the problem and the result you want:'
+export const BROWSER_CLICK_OR_DRAG_HINT = 'Click an element, or drag to select an area.'
 
 export const BROWSER_COMMENT_PREFIX = '__SHARKER_BROWSER_COMMENT__'
 

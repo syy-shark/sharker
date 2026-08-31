@@ -6,6 +6,7 @@ import {
   ANNOTATION_MODE_LABEL,
   BROWSER_COMMENTS_INTRO,
   BROWSER_COMMENT_PREFIX,
+  BROWSER_CLICK_OR_DRAG_HINT,
   BROWSER_NAME_PROBLEM_HINT,
   BROWSER_WRITE_SAVE_HINT,
   browserCommentAnnotateScript,
@@ -118,10 +119,12 @@ describe('browser comment', () => {
     expect(BROWSER_COMMENTS_INTRO).toMatch(/use browser comments to give ChatGPT precise feedback/)
     expect(BROWSER_WRITE_SAVE_HINT).toBe('Write and save your comment.')
     expect(BROWSER_NAME_PROBLEM_HINT).toMatch(/name the problem and the result you want/)
+    expect(BROWSER_CLICK_OR_DRAG_HINT).toBe('Click an element, or drag to select an area.')
     expect(browserSrc).toContain('ANNOTATION_MODE_LABEL')
     expect(browserSrc).toContain('BROWSER_COMMENTS_INTRO')
     expect(browserSrc).toContain('BROWSER_WRITE_SAVE_HINT')
     expect(browserSrc).toContain('BROWSER_NAME_PROBLEM_HINT')
+    expect(browserSrc).toContain('BROWSER_CLICK_OR_DRAG_HINT')
     expect(browserSrc).toContain('TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL')
     expect(browserSrc).not.toContain('>批注<')
     expect(browserSrc).not.toContain('aria-label="批注页面"')

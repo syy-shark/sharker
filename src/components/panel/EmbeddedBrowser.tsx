@@ -13,6 +13,7 @@ import {
 } from './browser-start-page'
 import {
   ANNOTATION_MODE_LABEL,
+  BROWSER_CLICK_OR_DRAG_HINT,
   BROWSER_COMMENTS_INTRO,
   BROWSER_NAME_PROBLEM_HINT,
   BROWSER_WRITE_SAVE_HINT,
@@ -686,7 +687,7 @@ export function EmbeddedBrowser({
           className={`embedded-browser-annotate-btn${annotating ? ' is-on' : ''}`}
           aria-pressed={annotating}
           aria-label={TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL}
-          title={BROWSER_COMMENTS_INTRO}
+          title={annotating ? BROWSER_CLICK_OR_DRAG_HINT : BROWSER_COMMENTS_INTRO}
           onClick={toggleAnnotate}
         >
           <PenLine size={14} strokeWidth={2} aria-hidden />

@@ -138,6 +138,7 @@ import {
   START_WITHOUT_A_PROJECT_INTRO,
   CREATE_A_PROJECT_FIRST_HINT,
   ADD_A_LOCAL_PROJECT_HINT,
+  PROJECTS_NEED_NO_FOLDER_HINT,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
   SEARCH_PROJECTS_LABEL,
@@ -306,6 +307,7 @@ describe('reveal in folder', () => {
     expect(START_WITHOUT_A_PROJECT_INTRO).toMatch(/without a project/)
     expect(CREATE_A_PROJECT_FIRST_HINT).toMatch(/Create a project first/)
     expect(ADD_A_LOCAL_PROJECT_HINT).toMatch(/Add a local project/)
+    expect(PROJECTS_NEED_NO_FOLDER_HINT).toMatch(/don't need a folder/)
     expect(PIN_A_PROJECT_HINT).toMatch(/Pin a project/)
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(NO_PROJECTS_LABEL).toBe('No projects')
@@ -508,6 +510,8 @@ describe('reveal in folder', () => {
     )
     expect(foldersSrc).toContain('EDIT_PROJECT_INTRO')
     expect(foldersSrc).toContain('PRIMARY_FOLDER_LABEL')
+    expect(foldersSrc).toContain('PROJECTS_NEED_NO_FOLDER_HINT')
+    expect(foldersSrc).not.toContain('还没有附加文件夹')
     expect(foldersSrc).toContain('SECONDARY_FOLDERS_LABEL')
     expect(foldersSrc).toContain('FILE_CLOSE_LABEL')
     const askSrc = readFileSync(

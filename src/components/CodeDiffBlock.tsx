@@ -8,7 +8,7 @@
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { FileDiff, FileDiffLine } from '../../shared/types'
-import { shouldOpenReviewLine } from '../../shared/review-file-click'
+import { REVIEW_CMD_CLICK_LINE_HINT, shouldOpenReviewLine } from '../../shared/review-file-click'
 import { splitFindHighlights } from '../../shared/review-diff-search'
 import {
   canOfferDiffPreviewCollapse,
@@ -166,7 +166,7 @@ const DiffLineRow = memo(function DiffLineRow({
     <div
       className={`code-diff-line code-diff-line--${line.kind}${review ? ' code-diff-line--review' : ''}${findCurrentStart != null ? ' code-diff-line--find-current' : ''}`}
       data-review-find-line={index}
-      title={onOpenLine ? '⌘/Ctrl+单击打开该行预览' : undefined}
+      title={onOpenLine ? REVIEW_CMD_CLICK_LINE_HINT : undefined}
       onClick={(e) => {
         if (!onOpenLine || !shouldOpenReviewLine(e)) return
         if ((e.target as Element | null)?.closest?.('.code-diff-comment-btn')) return
