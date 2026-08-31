@@ -8,6 +8,7 @@
  * - 同一工具只改详情、写盘 +/- 或收束时只换该步，写盘收束同时新开工具时 remap 并追加，写盘收束同时新开 status / 思考 / 散文 / ```demo / compress / 错误 / present_inline_demo 时 remap（status / compress 再追加该行）；前缀没变或只收束散文或无新写盘的工具时新开一或多个工具（可带一条 Awaiting / Question requested 行）只追加这些步并封回答尾、新思考只换旁白（无新写盘的工具收束后同一帧也走这条）、新散文只开回答尾、新 status 只追加一步、审批挂上或收束只换工具步与 Awaiting 行，挂起后同一帧可再夹 think / 首枚 token / ```demo / compress / 错误、Ask User 挂上或单条 status 收口只换工具步与 Question requested 行、Stop 把多条 active 收成 cancelled 只换这些步、错误收口 status 或无新写盘的工具后只开错误回答尾、新演示或正文 ```demo 只开回答槽；收束关 loading 只 `remapProcessPhaseStepsOnStreamEnd`，不整表重扫（对标 Codex #22860）
  * - 历史大段命令输出 / 思考按字节预算占位，点开再取全文（对标 Codex #38653）
  * - 历史冻结行用 `frozenSteps`，重挂不再 `deriveChronologicalSteps`
+ * - 直播行 `present_inline_demo` 带 `instanceId={step.id}` / `live`，html 加长不换 `useId()`、不走 walkTree 重写 srcDoc
  * - thinking 原文永不作为时间线标题或主回答
  * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
  * - 官方 ImageView 过程行标题 Viewed Image，短结果不当摘要倾倒
@@ -111,6 +112,8 @@ interface Props {
   frozenThinkText?: string
   /** 历史冻结行重挂时用 adopt 时收好的步骤，不再 deriveChronologicalSteps */
   frozenSteps?: readonly ProcessPhaseStep[] | null
+  /** 直播行（含收束后留下的那行）过程演示不走 walkTree / 不换 useId */
+  live?: boolean
 }
 
 /** 与阶段标题同义的噪音，不应单独占一行 */
@@ -538,6 +541,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
   onOpenSubAgent,
   outputMode,
   isStreaming = false,
+  live = false,
   messageId,
   onNeedFullMessage
 }: {
@@ -546,6 +550,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
   onOpenSubAgent?: (id: string | null) => void
   outputMode: ToolOutputDisplay
   isStreaming?: boolean
+  live?: boolean
   messageId?: string
   onNeedFullMessage?: (messageId: string) => void
 }) {
@@ -619,7 +624,13 @@ const ProcessStepRow = memo(function ProcessStepRow({
         </div>
         {isDemo && step.status !== 'error' && segment?.content ? (
           <div className="turn-flow-inline-demo">
-            <InlineDemo html={segment.content} caption={segment.toolDetail} />
+            <InlineDemo
+              html={segment.content}
+              caption={segment.toolDetail}
+              instanceId={step.id}
+              live={live}
+              streaming={isStreaming}
+            />
           </div>
         ) : null}
         {updatePlan && updatePlan.plan.length > 0 ? (
@@ -743,7 +754,8 @@ export const TurnFlow = memo(function TurnFlow({
   onNeedFullMessage,
   frozen = false,
   frozenThinkText,
-  frozenSteps = null
+  frozenSteps = null,
+  live = false
 }: Props) {
   const outputMode = parseToolOutputDisplay(toolOutputDisplay)
   /** 直播头文案短时粘滞，避免工具/规划/回答边界抖动 */
@@ -1127,6 +1139,7 @@ export const TurnFlow = memo(function TurnFlow({
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
               isStreaming={isStreaming}
+              live={live}
               messageId={messageId}
               onNeedFullMessage={onNeedFullMessage}
             />
@@ -1143,6 +1156,7 @@ export const TurnFlow = memo(function TurnFlow({
               onOpenSubAgent={onOpenSubAgent}
               outputMode={outputMode}
               isStreaming={isStreaming}
+              live={live}
               messageId={messageId}
               onNeedFullMessage={onNeedFullMessage}
             />

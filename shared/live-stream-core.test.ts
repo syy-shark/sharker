@@ -1808,6 +1808,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/TurnFlow.tsx')).toContain('frozenThinkText')
     expect(src('../src/components/TurnFlow.tsx')).toContain('frozenSteps')
     expect(src('../src/components/TurnFlow.tsx')).toContain('shouldUseFrozenProcessSteps')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('instanceId={step.id}')
+    expect(src('../src/components/TurnFlow.tsx')).toContain('live={live}')
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain(
+      'frozenSteps={frozenProcess?.steps}\n          live'
+    )
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('frozenSteps')
     expect(src('../src/components/LiveAssistantParts.tsx')).toContain('useLiveStreamUiSelectWhen')
 
