@@ -341,12 +341,13 @@ export function hasLiveAssistantBody(options: {
  * loading 中即使 store 闪空也留下直播槽，避免 `return null` 塌高再重挂。
  * 收束后 store 还留着本轮体时继续画直播行，避免卸下换历史气泡时重挂 Markdown / 折 20 行
  * （对标 Codex #22860 / changelog「preserved streamed activity when tasks complete」）。
- * 藏历史预留行交给 `shouldHideReservedDuringLive`；`historyHasReserved` 仍接调用方。
+ * 藏历史预留行交给 `shouldHideReservedDuringLive`。
+ * `historyHasReserved` 仍接调用方，直播槽不再订它：persist 入列翻 true 会重绘整棵 pinned 树。
  */
 export function shouldRenderLiveAssistantRow(options: {
   loading: boolean
   hasLiveBody: boolean
-  historyHasReserved: boolean
+  historyHasReserved?: boolean
 }): boolean {
   // loading 中 store 闪空也留下槽，避免 return null 塌高再重挂（对标 Codex #22860）。
   // historyHasReserved 仍接调用方；藏历史行交给 shouldHideReservedDuringLive。

@@ -1598,6 +1598,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedTranscriptGaps')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveAssistantIds')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveRows')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'historyHasReserved={historyHasReserved}'
+    )
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'historyHasReserved={Boolean('
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROWS')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
       '? pinnedLiveIds.map((id, index) => {'

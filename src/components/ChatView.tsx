@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 / pinned 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，贴底 setState 不重建历史行与 pinned 槽（对标 Codex #22860 / #38220）。
+ * pin 列 / 历史源 / pin 后缺口 / pinned 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与 pinned 槽（对标 Codex #22860 / #38220）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，只补视口上方行的 scrollTop，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -919,7 +919,7 @@ const JumpToBottomChip = memo(function JumpToBottomChip({
   )
 })
 
-/** 直播助手行：只订「有没有直播体」布尔；过程/回答各自订切片。loading 中 store 闪空也留下槽，不 `return null` 塌高。 */
+/** 直播助手行：只订「有没有直播体」布尔；过程/回答各自订切片。loading 中 store 闪空也留下槽，不 `return null` 塌高。不订 `historyHasReserved`，persist 入列不重绘。 */
 const LiveAssistantSlot = memo(function LiveAssistantSlot({
   liveRowId,
   loading,
@@ -930,7 +930,6 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   frozenStartedAt = null,
   frozenCopyable,
   frozenProcess = null,
-  historyHasReserved,
   findHit,
   findCurrent,
   modelLabel: _modelLabel,
@@ -953,7 +952,6 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   frozenStartedAt?: number | null
   frozenCopyable?: string
   frozenProcess?: import('../../shared/session-runtime').RetiredLiveProcess | null
-  historyHasReserved: boolean
   findHit: boolean
   findCurrent: boolean
   modelLabel?: string
@@ -976,8 +974,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
     !frozen &&
     !shouldRenderLiveAssistantRow({
       loading,
-      hasLiveBody: liveBody,
-      historyHasReserved
+      hasLiveBody: liveBody
     })
   ) {
     return null
@@ -2922,9 +2919,6 @@ export const ChatView = memo(function ChatView({
     toolOutputDisplay
   ])
 
-  const historyHasReserved = Boolean(
-    liveAssistantId && messages.some((m) => m.id === liveAssistantId)
-  )
   const pinnedLiveRows = useMemo(() => {
     if (pinnedLiveIds.length === 0) return EMPTY_PINNED_LIVE_ROWS
     return pinnedLiveIds.map((id, index) => {
@@ -2948,7 +2942,6 @@ export const ChatView = memo(function ChatView({
             frozenStartedAt={article?.startedAt ?? null}
             frozenCopyable={article?.copyable ?? undefined}
             frozenProcess={article?.process ?? null}
-            historyHasReserved={historyHasReserved}
             findHit={liveMemoryFindHits.length > 0 && liveRowId === id}
             findCurrent={currentFindMessageId === id}
             modelLabel={modelLabel}
@@ -2970,7 +2963,6 @@ export const ChatView = memo(function ChatView({
     approval,
     approvalResponding,
     currentFindMessageId,
-    historyHasReserved,
     liveAssistantId,
     liveMemoryFindHits,
     liveRowId,
@@ -3109,7 +3101,6 @@ export const ChatView = memo(function ChatView({
                     liveRowId={liveRowId}
                     loading={loading}
                     isStreaming={liveStreaming}
-                    historyHasReserved={historyHasReserved}
                     findHit={liveMemoryFindHits.length > 0}
                     findCurrent={currentFindMessageId === liveRowId}
                     modelLabel={modelLabel}
@@ -3147,9 +3138,6 @@ export const ChatView = memo(function ChatView({
                 liveRowId={liveRowId}
                 loading={loading}
                 isStreaming={liveStreaming}
-                historyHasReserved={Boolean(
-                  liveAssistantId && messages.some((m) => m.id === liveAssistantId)
-                )}
                 findHit={liveMemoryFindHits.length > 0}
                 findCurrent={currentFindMessageId === liveRowId}
                 modelLabel={modelLabel}
