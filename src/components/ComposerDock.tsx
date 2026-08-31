@@ -1,6 +1,7 @@
 /**
  * 输入区独立树：直播 token 不重绘 composer（对标 Codex 流式时输入框保持跟手）。
  * 命令面板 Force reload skills 走 `reload_skills` 重扫 `$` 列表。
+ * 官方 `/review` 仅在当前项目是 Git 仓库时出现在斜杠列表。
  * 划选进 Selection 芯片，不灌 textarea；发送收成官方 `# Selected text:`（对标 Codex selected-text previews）。
  * 输入框下方有 Ask for approval / Full access 芯片（对标 Codex permissions control beneath the composer）。
  * 模型旁有思考档位条、Fast 芯片，以及可选上下文用量环（对标 Codex composer gauge / `/fast` / Show context window usage）。
@@ -408,6 +409,7 @@ export const ComposerDock = memo(
     const [dictateError, setDictateError] = useState('')
     const [voiceChat, setVoiceChat] = useState(false)
     const [worktreeBranches, setWorktreeBranches] = useState<GitBranchRef[]>([])
+    const [workspaceIsGitRepo, setWorkspaceIsGitRepo] = useState(false)
     const [worktreeBranchOpen, setWorktreeBranchOpen] = useState(false)
     const [worktreeBranchQuery, setWorktreeBranchQuery] = useState('')
     const [worktreeBranchIndex, setWorktreeBranchIndex] = useState(0)
@@ -655,7 +657,10 @@ export const ComposerDock = memo(
       !/\s/.test(input.slice(1))
         ? input.slice(1)
         : null
-    const slashItems = slashQuery != null ? slashItemsWithSkills(slashQuery, skillCatalog) : []
+    const slashItems =
+      slashQuery != null
+        ? slashItemsWithSkills(slashQuery, skillCatalog, { isGitRepo: workspaceIsGitRepo })
+        : []
     const showSlashMenu = slashItems.length > 0
     const promptHits = useMemo(
       () =>
@@ -1309,6 +1314,25 @@ export const ComposerDock = memo(
       },
       []
     )
+
+    useEffect(() => {
+      if (!fileSearchRoot || !window.sharker.getGitBranchInfo) {
+        setWorkspaceIsGitRepo(false)
+        return
+      }
+      let cancelled = false
+      void window.sharker
+        .getGitBranchInfo(fileSearchRoot)
+        .then((result) => {
+          if (!cancelled) setWorkspaceIsGitRepo(Boolean(result.isRepo))
+        })
+        .catch(() => {
+          if (!cancelled) setWorkspaceIsGitRepo(false)
+        })
+      return () => {
+        cancelled = true
+      }
+    }, [fileSearchRoot])
 
     useEffect(() => {
       if (threadMode !== 'worktree' || !fileSearchRoot || !window.sharker.listGitBranches) {

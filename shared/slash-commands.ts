@@ -30,6 +30,13 @@ export const SLASH_FEEDBACK_DESCRIPTION =
   'Open the feedback dialog to submit feedback and optionally include logs.'
 export const SLASH_REVIEW_DESCRIPTION =
   'Start code review mode to review uncommitted changes or compare against a base branch.'
+/** Official desktop /review visibility (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_SLASH_REQUIRES_GIT =
+  'The `/review` command appears only when the open project is inside a Git repository.'
+/** Official: hide `/review` from the composer list unless the project is a Git repo. */
+export function shouldShowReviewSlash(options?: { isGitRepo?: boolean }): boolean {
+  return options?.isGitRepo !== false
+}
 export const SLASH_PERSONALITY_DESCRIPTION =
   'Choose how Codex responds, when the current model supports personalities.'
 export const SLASH_REASONING_DESCRIPTION = 'Choose the reasoning effort for the current chat.'
@@ -527,10 +534,16 @@ export function composerSlashLine(input: string, cmdName: string): string {
 }
 
 /** 按输入过滤命令（/ 后文本，不含 /） */
-export function filterSlashCommands(query: string): SlashCommandMeta[] {
+export function filterSlashCommands(
+  query: string,
+  options?: { isGitRepo?: boolean }
+): SlashCommandMeta[] {
   const q = query.trim().toLowerCase()
-  if (!q) return SLASH_COMMANDS
-  return SLASH_COMMANDS.filter(
+  const listed = shouldShowReviewSlash(options)
+    ? SLASH_COMMANDS
+    : SLASH_COMMANDS.filter((c) => c.name !== 'review')
+  if (!q) return listed
+  return listed.filter(
     (c) => c.name.startsWith(q) || c.description.toLowerCase().includes(q)
   )
 }
@@ -538,9 +551,10 @@ export function filterSlashCommands(query: string): SlashCommandMeta[] {
 /** 斜杠菜单：内置命令 + 已安装 Skill（对标 Codex：Enabled skills appear in the slash list） */
 export function slashItemsWithSkills(
   query: string,
-  skills: Array<{ name: string; description?: string }>
+  skills: Array<{ name: string; description?: string }>,
+  options?: { isGitRepo?: boolean }
 ): SlashCommandMeta[] {
-  const commands = filterSlashCommands(query)
+  const commands = filterSlashCommands(query, options)
   const reserved = new Set(SLASH_COMMANDS.map((c) => c.name.toLowerCase()))
   const q = query.trim().toLowerCase()
   const skillItems: SlashCommandMeta[] = []

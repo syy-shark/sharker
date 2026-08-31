@@ -4,6 +4,8 @@ import {
   composerSlashLine,
   filterSlashCommands,
   matchUiSlashCommand,
+  REVIEW_SLASH_REQUIRES_GIT,
+  shouldShowReviewSlash,
   slashItemsWithSkills,
   SLASH_COMMANDS,
   SLASH_COMMANDS_LABEL
@@ -208,6 +210,19 @@ describe('slash commands', () => {
     expect(filterSlashCommands('optionally include logs').some((c) => c.name === 'feedback')).toBe(
       true
     )
+    expect(REVIEW_SLASH_REQUIRES_GIT).toMatch(/inside a Git repository/)
+    expect(shouldShowReviewSlash()).toBe(true)
+    expect(shouldShowReviewSlash({ isGitRepo: true })).toBe(true)
+    expect(shouldShowReviewSlash({ isGitRepo: false })).toBe(false)
+    expect(filterSlashCommands('review', { isGitRepo: false }).some((c) => c.name === 'review')).toBe(
+      false
+    )
+    expect(filterSlashCommands('review', { isGitRepo: true }).some((c) => c.name === 'review')).toBe(
+      true
+    )
+    expect(filterSlashCommands('changes', { isGitRepo: false }).some((c) => c.name === 'changes')).toBe(
+      true
+    )
   })
 
   it('appends installed skills to the slash list without shadowing builtins', () => {
@@ -218,6 +233,17 @@ describe('slash commands', () => {
     expect(items.some((c) => c.name === 'review' && c.action === 'review_working_tree')).toBe(true)
     expect(items.some((c) => c.name === 'review-notes' && c.action === 'insert_skill')).toBe(true)
     expect(items.filter((c) => c.name === 'review')).toHaveLength(1)
+    const withoutGit = slashItemsWithSkills(
+      'rev',
+      [{ name: 'review-notes', description: '整理审查笔记' }],
+      { isGitRepo: false }
+    )
+    expect(withoutGit.some((c) => c.name === 'review' && c.action === 'review_working_tree')).toBe(
+      false
+    )
+    expect(withoutGit.some((c) => c.name === 'review-notes' && c.action === 'insert_skill')).toBe(
+      true
+    )
   })
 
   it('uses official Slash commands on the live composer popup', () => {
@@ -228,6 +254,8 @@ describe('slash commands', () => {
     )
     expect(composerSrc).toContain('SLASH_COMMANDS_LABEL')
     expect(composerSrc).toContain('SKILLS_LABEL')
+    expect(composerSrc).toContain('getGitBranchInfo')
+    expect(composerSrc).toContain('isGitRepo: workspaceIsGitRepo')
     expect(composerSrc).not.toContain('aria-label="斜杠命令"')
     expect(composerSrc).not.toContain('aria-label="引用 Skill"')
   })
