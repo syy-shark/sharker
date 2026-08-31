@@ -31,6 +31,7 @@ import {
   collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
+  fenceLangFromOpenTail,
   suffixOpensNewCheapBlock,
   continueCheapProseBlocks,
   continueStreamingMarkdown,
@@ -3063,6 +3064,46 @@ describe('splitStreamingMarkdown', () => {
     expect(shouldGrowOpenStreamingFenceTail('```js\n1', '\n2')).toBe(true)
     expect(shouldGrowOpenStreamingFenceTail('```js\n1', '\n```')).toBe(false)
     expect(shouldGrowOpenStreamingFenceTail('```js\n``', '`')).toBe(false)
+    expect(fenceLangFromOpenTail('```')).toBeUndefined()
+    expect(fenceLangFromOpenTail('```demo')).toBe('demo')
+    expect(fenceLangFromOpenTail('```demo\n<div>')).toBe('demo')
+    expect(fenceLangFromOpenTail('```mermaid\ngraph TD')).toBe('mermaid')
+    let demoText = 'Intro\n\n```'
+    let demoSplit = splitStreamingMarkdown(demoText)
+    expect(demoSplit.tailLang).toBeUndefined()
+    expect(streamingRenderSlots(demoSplit).find((slot) => slot.kind === 'fence')?.lang).toBeUndefined()
+    for (const next of [
+      'Intro\n\n```d',
+      'Intro\n\n```de',
+      'Intro\n\n```dem',
+      'Intro\n\n```demo',
+      'Intro\n\n```demo\n<div>',
+      'Intro\n\n```demo\n<div>\n```'
+    ]) {
+      demoSplit = continueStreamingMarkdown(demoSplit, demoText, next)
+      demoText = next
+      const fence = streamingRenderSlots(demoSplit).find((slot) => slot.kind === 'fence')
+      expect(fence?.key).toBe('live-fence-0')
+      if (next.includes('```demo') && !next.endsWith('\n```')) {
+        expect(demoSplit.tailLang).toBe('demo')
+        expect(fence?.closed).toBe(false)
+      }
+    }
+    const closedDemo = streamingRenderSlots(demoSplit).find((slot) => slot.kind === 'fence')
+    expect(closedDemo?.lang).toBe('demo')
+    expect(closedDemo?.closed).toBe(true)
+    let mermaidText = 'Intro\n\n```'
+    let mermaidSplit = splitStreamingMarkdown(mermaidText)
+    mermaidSplit = continueStreamingMarkdown(mermaidSplit, mermaidText, 'Intro\n\n```mermaid')
+    expect(mermaidSplit.tailLang).toBe('mermaid')
+    mermaidSplit = continueStreamingMarkdown(
+      mermaidSplit,
+      'Intro\n\n```mermaid',
+      'Intro\n\n```mermaid\ngraph TD\nA-->B\n```'
+    )
+    expect(streamingRenderSlots(mermaidSplit).find((slot) => slot.kind === 'fence')?.lang).toBe(
+      'mermaid'
+    )
     const openTail = splitStreamingMarkdown('普通段落开始写')
     expect(openTail.closedEnd).toBe(0)
     expect(openTail.blocks).toEqual([])
@@ -3300,6 +3341,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldGrowOpenStreamingProseTail')
     expect(mdSrc).toContain('streamingOpenProseTail')
     expect(mdSrc).toContain('shouldGrowOpenStreamingFenceTail')
+    expect(mdSrc).toContain('fenceLangFromOpenTail(rest)')
+    expect(mdSrc).not.toContain('tailLang: prev.tailLang')
     expect(mdSrc).toContain('shouldGrowLastListItemInline')
     expect(mdSrc).toContain('streamingSuffixLines')
     expect(mdSrc).toContain('eachStreamingSuffixLine')

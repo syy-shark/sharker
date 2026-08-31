@@ -1867,6 +1867,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/CodeArtifactBlock.tsx')).toContain('liveFenceLineHtml(html, text)')
     expect(src('../src/components/CodeArtifactBlock.tsx')).not.toContain('html != null ?')
     expect(src('live-display.ts')).toContain('export function liveFenceLineHtml')
+    expect(src('../src/components/StreamingMarkdown.tsx')).toContain(
+      '开标加长到 ```demo / mermaid 就挂 InlineDemo'
+    )
+    expect(src('streaming-markdown.ts')).toContain('fenceLangFromOpenTail(rest)')
+    expect(src('streaming-markdown.ts')).not.toContain('tailLang: prev.tailLang')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('seedStreamingMarkdownHold')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('writeStreamingMarkdownHold')
     expect(src('../src/components/StreamingMarkdown.tsx')).toContain('LiveMarkdownLiveContext.Provider')
