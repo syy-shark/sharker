@@ -5460,7 +5460,7 @@ export default function App() {
     return conv.id
   }
 
-  /** 官方 Take an Appshot：截最前窗口，按 60s 互动进当前对话或新开。 */
+  /** 官方 Take an Appshot：截最前窗口，按 60s 互动进当前对话或新开。失败写官方 Unable to attach appshot，不发明 toast。 */
   const handleTakeAppshot = async () => {
     if (appshotBusyRef.current) return
     if (!window.sharker.captureAppshot) return
