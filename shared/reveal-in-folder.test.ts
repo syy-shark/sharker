@@ -135,6 +135,7 @@ import {
   SETTINGS_LABEL,
   REMOVE_LABEL,
   SAVE_LABEL,
+  PIN_A_CHAT_HINT,
   PIN_A_PROJECT_HINT,
   PROJECTS_LABEL,
   PROJECTS_VIEW_INTRO,
@@ -322,6 +323,8 @@ describe('reveal in folder', () => {
     expect(ADD_A_LOCAL_PROJECT_HINT).toMatch(/Add a local project/)
     expect(PROJECTS_NEED_NO_FOLDER_HINT).toMatch(/don't need a folder/)
     expect(PIN_A_PROJECT_HINT).toMatch(/Pin a project/)
+    expect(PIN_A_PROJECT_HINT).toMatch(/doesn't add context/)
+    expect(PIN_A_CHAT_HINT).toMatch(/Pin a chat when you return to it often/)
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(NO_PROJECTS_LABEL).toBe('No projects')
     expect(SEARCH_PROJECTS_LABEL).toBe('Search projects')
@@ -500,6 +503,7 @@ describe('reveal in folder', () => {
     expect(sidebarSrc).toContain('PERMISSIONS_LABEL')
     expect(sidebarSrc).toContain('PROJECTS_VIEW_INTRO')
     expect(sidebarSrc).toContain('PIN_A_PROJECT_HINT')
+    expect(sidebarSrc).toContain('PIN_A_CHAT_HINT')
     expect(sidebarSrc).toContain('SEARCH_CHATS_INTRO')
     expect(sidebarSrc).toContain('CREATE_PERMANENT_WORKTREE_INTRO')
     const chatViewSrc = readFileSync(

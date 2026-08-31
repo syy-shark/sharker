@@ -3,6 +3,10 @@
  * @see shared/ARCH.md
  */
 
+/** Official leftover (learn.chatgpt.com/docs/code-review). */
+export const GITHUB_CLI_INSTALL_HINT =
+  'Install the GitHub CLI (`gh`) and authenticate it with `gh auth login` so Codex can load pull request context, review comments, and changed files. If `gh` is missing or unauthenticated, pull request details may not appear in the sidebar or review pane.'
+
 /** 规范化 PR 标题：去掉首尾空白，拒绝空或 `-` 开头 */
 export function normalizePrTitle(title: string): string | null {
   const text = String(title || '').trim()
@@ -44,7 +48,7 @@ export async function createPullRequest(options: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     if (/ENOENT|not found|spawn gh/i.test(msg)) {
-      return { ok: false, error: '未安装 GitHub CLI（gh），无法创建 PR' }
+      return { ok: false, error: GITHUB_CLI_INSTALL_HINT }
     }
     return { ok: false, error: msg }
   }

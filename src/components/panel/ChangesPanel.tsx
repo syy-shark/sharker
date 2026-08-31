@@ -22,6 +22,8 @@ import {
 import { useLiveStreamUiSelect } from '../../hooks/useLiveStreamUi'
 import {
   formatPrCommentsPrompt,
+  REVIEW_PR_FEEDBACK_INTRO,
+  REVIEW_PRIMARY_REPO_HINT,
   type PullRequestContext
 } from '../../../shared/git-pr-context'
 import { localCommentsForGithub } from '../../../shared/git-pr-review'
@@ -43,6 +45,7 @@ import {
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
   GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
+  OPEN_LABEL,
   REVIEW_LABEL,
   reviewFileRevealPath
 } from '../../../shared/reveal-in-folder'
@@ -1189,7 +1192,11 @@ export const ChangesPanel = memo(function ChangesPanel({
       ) : null}
 
       {prContext ? (
-        <div className="changes-panel__comments-bar">
+        <div
+          className="changes-panel__comments-bar"
+          title={REVIEW_PR_FEEDBACK_INTRO}
+          aria-label={REVIEW_PR_FEEDBACK_INTRO}
+        >
           <span>
             PR #{prContext.number} · {prContext.comments.length} 条 GitHub 评论
           </span>
@@ -1197,9 +1204,10 @@ export const ChangesPanel = memo(function ChangesPanel({
             <button
               type="button"
               className="changes-panel__action"
+              title={REVIEW_PRIMARY_REPO_HINT}
               onClick={() => void window.sharker.openExternal?.(prContext.url)}
             >
-              打开
+              {OPEN_LABEL}
             </button>
           ) : null}
           {prContext.comments.length > 0 && onSendComments ? (
@@ -1370,6 +1378,7 @@ export const ChangesPanel = memo(function ChangesPanel({
       {isRepo && !readOnly && !isAllRepos ? (
         <form
           className="changes-panel__commit"
+          title={REVIEW_PRIMARY_REPO_HINT}
           onSubmit={(e) => {
             e.preventDefault()
             void runCreatePr()

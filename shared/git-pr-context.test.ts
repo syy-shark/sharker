@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   formatPrCommentsPrompt,
   loadPullRequestContext,
   parsePrUrlParts,
   parsePrViewJson,
   parseReviewCommentsJson,
-  prToolbarLabel
+  prToolbarLabel,
+  REVIEW_PR_FEEDBACK_INTRO,
+  REVIEW_PRIMARY_REPO_HINT
 } from './git-pr-context'
+import { GITHUB_CLI_INSTALL_HINT } from './git-pr'
 
 describe('git pr context', () => {
   it('formats a toolbar chip label', () => {
@@ -79,6 +85,21 @@ describe('git pr context', () => {
       }
     })
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.error).toContain('GitHub CLI')
+    if (!result.ok) expect(result.error).toBe(GITHUB_CLI_INSTALL_HINT)
+    expect(REVIEW_PR_FEEDBACK_INTRO).toMatch(/pull request feedback/)
+    expect(REVIEW_PRIMARY_REPO_HINT).toMatch(/primary repository/)
+    const panelSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
+      'utf8'
+    )
+    expect(panelSrc).toContain('REVIEW_PR_FEEDBACK_INTRO')
+    expect(panelSrc).toContain('REVIEW_PRIMARY_REPO_HINT')
+    expect(panelSrc).toContain('OPEN_LABEL')
+    expect(panelSrc).not.toContain('>打开<')
+    const toolbarSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatToolbar.tsx'),
+      'utf8'
+    )
+    expect(toolbarSrc).toContain('REVIEW_PR_FEEDBACK_INTRO')
   })
 })

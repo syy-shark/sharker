@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPullRequest, normalizePrTitle, parsePrUrl } from './git-pr'
+import { createPullRequest, GITHUB_CLI_INSTALL_HINT, normalizePrTitle, parsePrUrl } from './git-pr'
 
 describe('git pr', () => {
   it('rejects empty or flag-like titles', () => {
@@ -54,6 +54,7 @@ describe('git pr', () => {
       }
     })
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.error).toContain('GitHub CLI')
+    if (!result.ok) expect(result.error).toBe(GITHUB_CLI_INSTALL_HINT)
+    expect(GITHUB_CLI_INSTALL_HINT).toMatch(/gh auth login/)
   })
 })

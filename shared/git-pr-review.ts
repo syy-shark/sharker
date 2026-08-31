@@ -2,7 +2,7 @@
  * 把本地行内评论发回 GitHub PR（对标 Codex 在同一线程处理完后回写）。
  * @see shared/ARCH.md
  */
-import type { CommandRunner } from './git-pr'
+import { GITHUB_CLI_INSTALL_HINT, type CommandRunner } from './git-pr'
 import type { ReviewLineComment } from './review-comment'
 
 export interface GithubReviewCommentDraft {
@@ -71,7 +71,7 @@ export async function postPullRequestLineComments(options: {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       if (/ENOENT|not found|spawn gh/i.test(msg)) {
-        return { ok: false, error: '未安装 GitHub CLI（gh）', posted }
+        return { ok: false, error: GITHUB_CLI_INSTALL_HINT, posted }
       }
       return { ok: false, error: msg || '发布评论失败', posted }
     }

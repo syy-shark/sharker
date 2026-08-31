@@ -4,7 +4,14 @@
  * @see shared/ARCH.md
  */
 import type { CommandRunner } from './git-pr'
-import { parsePrUrl } from './git-pr'
+import { GITHUB_CLI_INSTALL_HINT, parsePrUrl } from './git-pr'
+
+/** Official leftover (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_PR_FEEDBACK_INTRO =
+  'When Codex has GitHub access for your repository and the current project is on the pull request branch, the ChatGPT desktop app can help you work through pull request feedback without leaving the app. The sidebar shows pull request context and feedback from reviewers, and the review pane shows comments alongside the diff so you can ask Codex to address issues in the same chat.'
+/** Official leftover (learn.chatgpt.com/docs/projects). */
+export const REVIEW_PRIMARY_REPO_HINT =
+  'Pull request and worktree actions target the primary repository. When you start a chat in a worktree, the other folders remain attached.'
 import type { ReviewLineComment } from './review-comment'
 
 /** 当前分支对应的 PR */
@@ -109,7 +116,7 @@ export async function loadPullRequestContext(options: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     if (/ENOENT|not found|spawn gh/i.test(msg)) {
-      return { ok: false, error: '未安装 GitHub CLI（gh）' }
+      return { ok: false, error: GITHUB_CLI_INSTALL_HINT }
     }
     return { ok: false, error: msg || '当前分支没有 PR' }
   }

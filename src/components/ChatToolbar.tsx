@@ -49,6 +49,7 @@ import {
   threadCopyMenuItems,
   type ThreadCopyAction
 } from '../../shared/reveal-in-folder'
+import { REVIEW_PR_FEEDBACK_INTRO } from '../../shared/git-pr-context'
 import { OPEN_A_PULL_REQUEST_LABEL } from '../../shared/review-repos'
 import type { ThreadMode } from '../lib/thread-runtime'
 import './ChatToolbar.css'
@@ -357,7 +358,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onOpenPullRequest()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title={OPEN_A_PULL_REQUEST_LABEL}
+              title={REVIEW_PR_FEEDBACK_INTRO}
               aria-label={OPEN_A_PULL_REQUEST_LABEL}
             >
               {prLabel}

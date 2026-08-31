@@ -188,7 +188,10 @@ export const CREATE_A_PROJECT_FIRST_HINT =
 export const ADD_A_LOCAL_PROJECT_HINT =
   'Add a local project when ChatGPT needs to read or change files on your computer.'
 /** Official project pin (learn.chatgpt.com/docs/projects). */
-export const PIN_A_PROJECT_HINT = 'Pin a project to keep it near the top of the sidebar.'
+export const PIN_A_PROJECT_HINT =
+  "Pin a project to keep it near the top of the sidebar. You can also pin it from the Projects view. Pinning doesn't add context or change what ChatGPT can access. It only changes where the project or chat appears in the sidebar."
+/** Official leftover (learn.chatgpt.com/docs/projects). */
+export const PIN_A_CHAT_HINT = 'Pin a chat when you return to it often, even if newer chats appear in the project.'
 /** Official empty chats copy (do not show when chats exist). */
 export const NO_CHATS_LABEL = 'No chats'
 /** Official empty Projects copy (openai/codex #19290). */

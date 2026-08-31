@@ -74,6 +74,7 @@ import {
   TOGGLE_ACTIVITY_VIEW_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
+  PIN_A_CHAT_HINT,
   PIN_A_PROJECT_HINT,
   PROJECTS_LABEL,
   PROJECTS_VIEW_INTRO,
@@ -719,7 +720,7 @@ export const Sidebar = memo(function Sidebar({
           <button
             type="button"
             className="sidebar-row-archive sidebar-row-pin"
-            title={c.pinned ? UNPIN_LABEL : PIN_LABEL}
+            title={PIN_A_CHAT_HINT}
             aria-label={c.pinned ? `${UNPIN_LABEL} ${convTitle(c)}` : `${PIN_LABEL} ${convTitle(c)}`}
             onMouseDown={(e) => {
               e.preventDefault()
