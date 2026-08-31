@@ -15,10 +15,12 @@ import {
 import {
   formatGoalProgressLabel,
   GOAL_MODE_LABEL,
+  GOAL_PROGRESS_INTRO,
   goalClockEndedAt,
   type GoalCommand,
   type ThreadGoal
 } from '../../shared/thread-goal'
+import { GOAL_ELAPSED_CLOCK_RESERVE_CH } from '../../shared/live-display'
 import { LiveDuration } from './LiveDuration'
 import './GoalProgressRow.css'
 
@@ -67,6 +69,7 @@ export const GoalProgressRow = memo(function GoalProgressRow({
       className={`goal-progress-row${goal.status === 'paused' ? ' is-paused' : ' is-active'}`}
       role="region"
       aria-label={GOAL_MODE_LABEL}
+      title={GOAL_PROGRESS_INTRO}
     >
       <div className="goal-progress-row-main">
         <span className="goal-progress-row-status">{status}</span>
@@ -76,6 +79,7 @@ export const GoalProgressRow = memo(function GoalProgressRow({
             endedAt={goalClockEndedAt(goal)}
             paused={goal.status === 'paused'}
             className="goal-progress-row-elapsed"
+            style={{ minWidth: `${GOAL_ELAPSED_CLOCK_RESERVE_CH}ch` }}
           />
         ) : null}
         {editing ? (

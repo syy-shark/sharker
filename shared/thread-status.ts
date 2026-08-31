@@ -1,9 +1,15 @@
 /**
- * `/status` 会话状态文案（对标 Codex 桌面端 /status：thread ID、上下文用量百分比、本机用量）。
+ * `/status` 会话状态文案（对标 Codex 桌面端 /status：chat ID、context usage、rate limits）。
  * 环境行用官方 Local / Worktree。
  * @see shared/ARCH.md
  */
 import { LOCAL_LABEL, WORKTREE_LABEL } from './reveal-in-folder'
+import { SLASH_STATUS_DESCRIPTION } from './slash-commands'
+
+/** Official desktop `/status` fields (learn.chatgpt.com/docs/reference/slash-commands). */
+export const STATUS_CHAT_ID_LABEL = 'chat ID'
+export const STATUS_CONTEXT_USAGE_LABEL = 'context usage'
+export const STATUS_RATE_LIMITS_LABEL = 'rate limits'
 
 /** `/status` 展示所需的当前线程快照 */
 export interface ThreadStatusInfo {
@@ -53,9 +59,9 @@ export function formatThreadStatus(info: ThreadStatusInfo): string {
       ? formatContextUsage(info.contextUsed, info.contextLimit)
       : undefined
   return [
-    '**会话状态**',
+    SLASH_STATUS_DESCRIPTION,
     '',
-    line('对话 ID', info.conversationId),
+    line(STATUS_CHAT_ID_LABEL, info.conversationId),
     line('模型', info.modelLabel),
     line('权限', info.permissionMode),
     info.fast == null ? '' : line('Fast', info.fast ? '开' : '关'),
@@ -66,10 +72,10 @@ export function formatThreadStatus(info: ThreadStatusInfo): string {
     info.threadMode === 'worktree' ? line('Worktree', info.worktreePath) : '',
     line('分支', info.branch),
     line('目标', info.goal),
-    ctx ? line('上下文', ctx) : '',
+    ctx ? line(STATUS_CONTEXT_USAGE_LABEL, ctx) : '',
     info.usageTodayTokens != null || info.usageTodayTurns != null
       ? line(
-          '用量',
+          STATUS_RATE_LIMITS_LABEL,
           `今日 ${(info.usageTodayTokens ?? 0).toLocaleString()} tokens · ${info.usageTodayTurns ?? 0} 回合`
         )
       : ''

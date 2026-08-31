@@ -11,6 +11,9 @@ export const GOAL_ACTIVE_LABEL = 'Active'
 export const GOAL_PAUSED_LABEL = 'Paused'
 /** Official desktop `/goal` (learn.chatgpt.com/docs/reference/slash-commands). */
 export const GOAL_MODE_LABEL = 'Goal mode'
+/** Official desktop Goal progress row (learn.chatgpt.com/docs/long-running-work). Title only — do not add a visible intro above the composer. */
+export const GOAL_PROGRESS_INTRO =
+  'The progress row lets you pause, resume, edit, or clear the goal while ChatGPT works. You can also send follow-up messages while the goal runs to add context or adjust constraints.'
 
 /** 一条对话上的持久目标 */
 export interface ThreadGoal {

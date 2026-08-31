@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { formatContextUsage, formatThreadStatus, formatWritableRoots } from './thread-status'
+import { SLASH_STATUS_DESCRIPTION } from './slash-commands'
+import {
+  formatContextUsage,
+  formatThreadStatus,
+  formatWritableRoots,
+  STATUS_CHAT_ID_LABEL,
+  STATUS_CONTEXT_USAGE_LABEL,
+  STATUS_RATE_LIMITS_LABEL
+} from './thread-status'
 
 describe('thread status', () => {
   it('lists local thread fields and hides worktree path', () => {
@@ -20,6 +28,11 @@ describe('thread status', () => {
       fast: true,
       extraRoots: ['/notes', ' /docs ']
     })
+    expect(text).toContain(SLASH_STATUS_DESCRIPTION)
+    expect(text).toContain(STATUS_CHAT_ID_LABEL)
+    expect(text).toContain(STATUS_CONTEXT_USAGE_LABEL)
+    expect(text).toContain(STATUS_RATE_LIMITS_LABEL)
+    expect(text).not.toContain('对话 ID')
     expect(text).toContain('Local')
     expect(text).not.toContain('本地工作区')
     expect(text).not.toContain('隔离 worktree')

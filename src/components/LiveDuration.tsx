@@ -1,8 +1,9 @@
 /**
  * 直播耗时：独立计时，只在官方时钟文案会变时重绘秒表。
+ * Goal 行可传入预留宽，避免跨日换文案挤 composer-stage。
  * @see src/components/ARCH.md
  */
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useState, type CSSProperties } from 'react'
 import {
   elapsedClockSeconds,
   formatElapsedClock,
@@ -30,12 +31,14 @@ export const LiveDuration = memo(function LiveDuration({
   endedAt,
   paused = false,
   className,
+  style,
   fallback = '0s'
 }: {
   startedAt?: number | null
   endedAt?: number | null
   paused?: boolean
   className?: string
+  style?: CSSProperties
   fallback?: string
 }) {
   const frozen = paused || endedAt != null
@@ -62,5 +65,9 @@ export const LiveDuration = memo(function LiveDuration({
     schedule()
     return () => window.clearTimeout(id)
   }, [endedAt, fallback, frozen, startedAt])
-  return <span className={className}>{label}</span>
+  return (
+    <span className={className} style={style}>
+      {label}
+    </span>
+  )
 })

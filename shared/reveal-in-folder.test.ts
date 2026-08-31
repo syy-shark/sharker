@@ -88,6 +88,7 @@ import {
   FORCE_RELOAD_SKILLS_LABEL,
   SKILLS_INTRO,
   SKILLS_INVOKE_HINT,
+  SKILLS_MATCH_HINT,
   SKILLS_SLASH_HINT,
   revealInFolderLabel,
   reviewFileRevealPath,
@@ -237,6 +238,8 @@ describe('reveal in folder', () => {
     )
     expect(SKILLS_SLASH_HINT).toBe('Enabled skills also appear in the slash command list.')
     expect(SKILLS_SLASH_HINT).not.toMatch(/prompts:/)
+    expect(SKILLS_MATCH_HINT).toMatch(/choose a skill when your request matches its purpose/)
+    expect(SKILLS_MATCH_HINT).toMatch(/Codex supports `\$` mentions/)
     const skillsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SkillsPage.tsx'),
       'utf8'
@@ -244,6 +247,7 @@ describe('reveal in folder', () => {
     expect(skillsSrc).toContain('SKILLS_INTRO')
     expect(skillsSrc).toContain('SKILLS_INVOKE_HINT')
     expect(skillsSrc).toContain('SKILLS_SLASH_HINT')
+    expect(skillsSrc).toContain('SKILLS_MATCH_HINT')
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(skillsSrc).toContain('reloadNonce')
     const skillReloadComposerSrc = readFileSync(

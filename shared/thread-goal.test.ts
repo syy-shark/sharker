@@ -9,11 +9,13 @@ import {
   GOAL_ACTIVE_LABEL,
   GOAL_MODE_LABEL,
   GOAL_PAUSED_LABEL,
+  GOAL_PROGRESS_INTRO,
   goalClockEndedAt,
   goalPromptBlock,
   parseGoalCommand,
   shouldStartGoalTurn
 } from './thread-goal'
+import { GOAL_ELAPSED_CLOCK_RESERVE_CH } from './live-display'
 
 describe('thread goal', () => {
   it('parses slash args', () => {
@@ -68,11 +70,20 @@ describe('thread goal', () => {
     expect(GOAL_ACTIVE_LABEL).toBe('Active')
     expect(GOAL_PAUSED_LABEL).toBe('Paused')
     expect(GOAL_MODE_LABEL).toBe('Goal mode')
+    expect(GOAL_PROGRESS_INTRO).toMatch(/pause, resume, edit, or clear the goal/)
+    expect(GOAL_PROGRESS_INTRO).toMatch(/follow-up messages while the goal runs/)
     const rowSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/GoalProgressRow.tsx'),
       'utf8'
     )
     expect(rowSrc).toContain('GOAL_MODE_LABEL')
+    expect(rowSrc).toContain('GOAL_PROGRESS_INTRO')
+    expect(rowSrc).toContain('GOAL_ELAPSED_CLOCK_RESERVE_CH')
+    const rowCss = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/GoalProgressRow.css'),
+      'utf8'
+    )
+    expect(rowCss).toContain(`min-width: ${GOAL_ELAPSED_CLOCK_RESERVE_CH}ch`)
     expect(rowSrc).toContain('EDIT_LABEL')
     expect(rowSrc).toContain('SAVE_LABEL')
     expect(rowSrc).not.toContain('aria-label="线程目标"')

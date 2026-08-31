@@ -1,6 +1,6 @@
 /**
  * 侧栏 Skills 页：浏览各项目已安装 Skill（对标 Codex open Skills in the sidebar）。
- * 说明含官方 `$` 调用与 Enabled skills appear in the slash command list。
+ * 说明含官方 `$` 调用、slash 列表与 implicit match。
  * 命令面板 Force reload skills 用 `reloadNonce` 重扫盘上 SKILL.md。
  * @see src/pages/ARCH.md
  */
@@ -11,6 +11,7 @@ import {
   SKILLS_INTRO,
   SKILLS_INVOKE_HINT,
   SKILLS_LABEL,
+  SKILLS_MATCH_HINT,
   SKILLS_SLASH_HINT
 } from '../../shared/reveal-in-folder'
 import {
@@ -85,6 +86,7 @@ export function SkillsPage({ workspaces, onBack, onUseSkill, reloadNonce }: Prop
           </button>
           <h1>{SKILLS_LABEL}</h1>
           <p>{SKILLS_INTRO}</p>
+          <p>{SKILLS_MATCH_HINT}</p>
           <p>{SKILLS_INVOKE_HINT}</p>
           <p>{SKILLS_SLASH_HINT}</p>
         </header>
