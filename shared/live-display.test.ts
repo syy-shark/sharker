@@ -64,6 +64,7 @@ import {
   shouldForceStickScroll,
   shouldFollowApprovalIntoView,
   shouldIgnoreLeaveBottomDuringCommit,
+  shouldRebuildLiveStickObserverWhenLoadingChanges,
   shouldRecordTranscriptScrollIntent,
   shouldStartLiveCommitSettle,
   LIVE_COMMIT_SETTLE_FRAMES,
@@ -631,6 +632,11 @@ describe('near-live message rows', () => {
     const chatView = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
       'utf8'
+    )
+    expect(shouldRebuildLiveStickObserverWhenLoadingChanges()).toBe(false)
+    expect(chatView).toContain('shouldRebuildLiveStickObserverWhenLoadingChanges')
+    expect(chatView).not.toContain(
+      '[isEmpty, loading, sessionKey, applyTranscriptRestore, rememberTranscriptSnapshot]'
     )
     expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
