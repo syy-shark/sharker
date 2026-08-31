@@ -1,11 +1,11 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，准备中 seed 等 freeze 提交后再发以免 hold 行闪新一轮，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationSummary, ForkDestination } from '../shared/conversation'
 import {
   DEFAULT_CONVERSATION_TITLE,
@@ -340,6 +340,7 @@ import {
   shouldReserveLiveAfterHandoffHold,
   shouldReuseReservedLiveOnHandoffAdopt,
   shouldRestoreHeldLiveOnHandoffCancel,
+  shouldDeferLiveHandoffSeedPublish,
   shouldPublishLiveStreamDuringHandoff,
   retiredLiveArticle,
   nextArchivedLiveArticles,
@@ -824,6 +825,7 @@ export default function App() {
   const liveHandoffIdRef = useRef<string | null>(null)
   const heldCompletedSegmentsRef = useRef<TurnSegment[] | null>(null)
   const adoptLiveHandoffRef = useRef<() => boolean>(() => false)
+  const pendingHandoffSeedPublishRef = useRef(false)
   /** `/compact` 只占直播行，不是模型回合；Stop 不得写成「已停止」 */
   const compactingRef = useRef(false)
 
@@ -1710,6 +1712,7 @@ export default function App() {
     heldCompletedSegmentsRef.current = null
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)
+    pendingHandoffSeedPublishRef.current = false
   }, [])
 
   /**
@@ -1749,6 +1752,35 @@ export default function App() {
     )
     return true
   }, [clearLiveHandoff])
+
+  const publishHandoffSeedIfPending = useCallback(() => {
+    if (!pendingHandoffSeedPublishRef.current) return
+    pendingHandoffSeedPublishRef.current = false
+    if (
+      !shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, {
+        holdAlreadyRetired: Boolean(
+          liveHandoffIdRef.current &&
+            retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+        )
+      })
+    ) {
+      return
+    }
+    const seedAt = Date.now()
+    publishLiveStreamUi(
+      liveStreamPatchFromSegments(segmentsRef.current, {
+        streaming: streamingRef.current,
+        activeTool: null,
+        turnStartedAt: turnStartedAtRef.current || seedAt,
+        liveTurnMeta: liveTurnMetaRef.current,
+        turnHadThinking: turnHadThinkingRef.current
+      })
+    )
+  }, [])
+
+  useLayoutEffect(() => {
+    publishHandoffSeedIfPending()
+  }, [liveAssistantId, liveHandoffId, publishHandoffSeedIfPending, retiredLiveArticles])
 
   const clearRetiredLive = useCallback(() => {
     retiredLiveIdRef.current = null
@@ -3920,13 +3952,19 @@ export default function App() {
           startedAt: seedAt
         }
       ]
+      const holdAlreadyRetired = Boolean(
+        liveHandoffIdRef.current &&
+          retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+      )
       if (
-        shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, {
-          holdAlreadyRetired: Boolean(
-            liveHandoffIdRef.current &&
-              retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
-          )
+        shouldDeferLiveHandoffSeedPublish({
+          liveHandoffId: liveHandoffIdRef.current,
+          holdAlreadyRetired
         })
+      ) {
+        pendingHandoffSeedPublishRef.current = true
+      } else if (
+        shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, { holdAlreadyRetired })
       ) {
         publishLiveStreamUi(
           liveStreamPatchFromSegments(segmentsRef.current, {
