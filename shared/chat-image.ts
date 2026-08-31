@@ -423,6 +423,11 @@ export function resolveLiveChatImageSrc(options: { paint: boolean; src: string }
   return options.src.trim()
 }
 
+/** 成图后仍走同一 `chat-image-paint`，不把占位 span 换成 img 当第一层子节点。 */
+export function shouldShowChatImagePaint(src: string): boolean {
+  return Boolean(src.trim())
+}
+
 /** 未测到尺寸前的占位高；成图后高水位只升不降，避免 8rem 占位在小图上塌贴底 */
 export const CHAT_IMAGE_PENDING_MIN_PX = 48
 

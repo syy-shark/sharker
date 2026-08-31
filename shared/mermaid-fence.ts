@@ -5,6 +5,7 @@
  * `loadMermaidApi` 给收束预取与成图共用同一动态 import；`takeMermaidRenderJob` /
  * `renderMermaidSvg` 让预取与组件共用同一次 `mermaid.render`，立刻跟进的重挂不取消已开工的成图。
  * `shouldStartMermaidPaintJob` 缓存命中不再开工；`shouldDeferMermaidPaintJob` 远窗未命中推到下一帧。
+ * `shouldShowMermaidSvg` 成图后仍走同一 `mermaid-slot`，不换外壳第一层子节点。
  * @see shared/ARCH.md
  */
 

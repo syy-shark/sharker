@@ -7,6 +7,7 @@
  * 收束后命中预热则同一帧成图。
  * 尺寸缓存命中重挂不再 setSizeTick；已在画同一工作区 data URL 不再 setState；
  * 远窗 FenceImmediateHighlightContext 为假时未命中预取推到下一帧。
+ * 成图前后共用 `chat-image-paint`，不把占位 span 换成 img 当第一层子节点。
  * @see src/components/ARCH.md
  */
 import {
@@ -34,6 +35,7 @@ import {
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveLiveChatImageSrc,
+  shouldShowChatImagePaint,
   resolveWorkspaceChatImagePath,
   shouldApplyCachedWorkspaceImage,
   shouldDeferChatImagePrefetch,
@@ -361,36 +363,37 @@ export function ChatImage({
         setMenu({ x: next.x, y: next.y })
       }}
     >
-      {paintedSrc ? (
-        <img
-          src={paintedSrc}
-          alt={alt ?? ''}
-          title={title}
-          loading="eager"
-          decoding="async"
-          width={known?.width}
-          height={known?.height}
-          style={aspect}
-          onClick={(event) => {
-            if (event.metaKey || event.ctrlKey) return
-            event.preventDefault()
-            event.stopPropagation()
-            openLightbox()
-          }}
-          onLoad={(event) => {
-            const img = event.currentTarget
-            const size = writeCachedChatImageSize(src, {
-              width: img.naturalWidth,
-              height: img.naturalHeight
-            })
-            if (paintedSrc) writeCachedChatImageSize(paintedSrc, size)
-            if (absPath) writeCachedChatImageSize(absPath, size)
-            setSizeTick((n) => n + 1)
-          }}
-        />
-      ) : (
-        <span className="chat-image-slot" style={aspect} aria-hidden />
-      )}
+      <span className="chat-image-paint" style={aspect}>
+        {shouldShowChatImagePaint(paintedSrc) ? (
+          <img
+            src={paintedSrc}
+            alt={alt ?? ''}
+            title={title}
+            loading="eager"
+            decoding="async"
+            width={known?.width}
+            height={known?.height}
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey) return
+              event.preventDefault()
+              event.stopPropagation()
+              openLightbox()
+            }}
+            onLoad={(event) => {
+              const img = event.currentTarget
+              const size = writeCachedChatImageSize(src, {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              })
+              if (paintedSrc) writeCachedChatImageSize(paintedSrc, size)
+              if (absPath) writeCachedChatImageSize(absPath, size)
+              setSizeTick((n) => n + 1)
+            }}
+          />
+        ) : (
+          <span className="chat-image-slot" aria-hidden />
+        )}
+      </span>
       {canExport && paintedSrc ? (
         <span className="chat-image-actions" role="group" aria-label="图片操作">
           <button

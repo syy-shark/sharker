@@ -4,6 +4,12 @@
   max-width: 100%;
 }
 
+.chat-image-paint {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
 .chat-image img {
   display: block;
   max-width: 100%;
@@ -12,6 +18,7 @@
 
 .chat-image--openable img,
 .chat-image--workspace img,
+.chat-image--workspace .chat-image-paint,
 .chat-image--workspace .chat-image-slot {
   cursor: zoom-in;
 }
@@ -19,6 +26,9 @@
 .streaming-markdown .chat-image--pending img,
 .live-prose-tail .chat-image--pending img,
 .message-body--assistant .chat-image--pending img,
+.streaming-markdown .chat-image--pending .chat-image-paint,
+.live-prose-tail .chat-image--pending .chat-image-paint,
+.message-body--assistant .chat-image--pending .chat-image-paint,
 .streaming-markdown .chat-image--pending .chat-image-slot,
 .live-prose-tail .chat-image--pending .chat-image-slot,
 .message-body--assistant .chat-image--pending .chat-image-slot {

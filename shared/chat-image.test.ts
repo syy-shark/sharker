@@ -18,6 +18,7 @@ import {
   readCachedChatImageSize,
   readCachedWorkspaceImageDataUrl,
   resolveLiveChatImageSrc,
+  shouldShowChatImagePaint,
   resolveWorkspaceChatImagePath,
   shouldApplyCachedWorkspaceImage,
   shouldDeferChatImagePrefetch,
@@ -135,6 +136,9 @@ describe('chat-image', () => {
       'https://a.test/p.png'
     )
     expect(resolveLiveChatImageSrc({ paint: true, src: '  ' })).toBe('')
+    expect(shouldShowChatImagePaint('data:image/png;base64,x')).toBe(true)
+    expect(shouldShowChatImagePaint('')).toBe(false)
+    expect(shouldShowChatImagePaint('  ')).toBe(false)
     expect(prefetchChatImageSizes(['', '  '])).toBe(0)
     expect(prefetchChatImageSizes([png])).toBe(1)
     expect(readCachedChatImageSize(png)).toEqual({ width: 320, height: 200 })
