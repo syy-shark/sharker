@@ -327,7 +327,7 @@ describe('commitAssistantReply persist targeting', () => {
         reservedId: 'a-live',
         hasReservedInHistory: true
       })
-    ).toBe(false)
+    ).toBe(true)
     const hideEarlyToken = shouldHideReservedDuringLive({
       isLive: true,
       hasLiveBody: true,
@@ -352,7 +352,7 @@ describe('commitAssistantReply persist targeting', () => {
         hasLiveBody: false,
         historyHasReserved: true
       })
-    ).toBe(false)
+    ).toBe(true)
     expect(
       shouldRenderLiveAssistantRow({
         loading: true,
@@ -375,6 +375,13 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toBe(true)
     expect(
+      shouldRenderLiveAssistantRow({
+        loading: false,
+        hasLiveBody: false,
+        historyHasReserved: true
+      })
+    ).toBe(false)
+    expect(
       shouldHideReservedDuringLive({
         isLive: false,
         hasLiveBody: true,
@@ -390,6 +397,14 @@ describe('commitAssistantReply persist targeting', () => {
         hasReservedInHistory: true
       })
     ).toBe(false)
+    expect(
+      shouldHideReservedDuringLive({
+        isLive: true,
+        hasLiveBody: false,
+        reservedId: 'a-live',
+        hasReservedInHistory: true
+      })
+    ).toBe(true)
     expect(
       shouldMountLiveAssistantSlot({
         atLatestWindow: true,

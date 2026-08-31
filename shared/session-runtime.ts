@@ -335,19 +335,19 @@ export function hasLiveAssistantBody(options: {
 }
 
 /**
- * 历史已挂上同一预留 id、直播体又空时，只留历史行。
+ * loading 中即使 store 闪空也留下直播槽，避免 `return null` 塌高再重挂。
  * 收束后 store 还留着本轮体时继续画直播行，避免卸下换历史气泡时重挂 Markdown / 折 20 行
- * （对标 Codex changelog「preserved streamed activity when tasks complete」）。
+ * （对标 Codex #22860 / changelog「preserved streamed activity when tasks complete」）。
+ * 藏历史预留行交给 `shouldHideReservedDuringLive`；`historyHasReserved` 仍接调用方。
  */
 export function shouldRenderLiveAssistantRow(options: {
   loading: boolean
   hasLiveBody: boolean
   historyHasReserved: boolean
 }): boolean {
-  if (options.hasLiveBody) return true
-  if (!options.loading) return false
-  if (options.historyHasReserved) return false
-  return true
+  // loading 中 store 闪空也留下槽，避免 return null 塌高再重挂（对标 Codex #22860）。
+  // historyHasReserved 仍接调用方；藏历史行交给 shouldHideReservedDuringLive。
+  return options.hasLiveBody || options.loading
 }
 
 /**
@@ -363,8 +363,9 @@ export function shouldMountLiveAssistantSlot(options: {
 }
 
 /**
- * 历史列真有预留行且直播体已上屏才藏。
+ * 历史列真有预留行且（直播体已上屏或本轮仍 loading）才藏。
  * 开轮预留 id 还不在 messages 里时，首枚 token 不把历史 JSX 整列重建（对标 Codex #22860）。
+ * loading 中 store 闪空也继续藏，避免直播行 `return null` 塌高再跟历史气泡叠两份。
  * 收束关 loading 后 store 未清也继续藏，让同一直播行留下。
  */
 export function shouldHideReservedDuringLive(options: {
@@ -373,13 +374,13 @@ export function shouldHideReservedDuringLive(options: {
   reservedId?: string | null
   hasReservedInHistory: boolean
 }): boolean {
-  const { hasLiveBody, reservedId, hasReservedInHistory } = options
-  return Boolean(hasLiveBody && reservedId?.trim() && hasReservedInHistory)
+  const { isLive, hasLiveBody, reservedId, hasReservedInHistory } = options
+  return Boolean(reservedId?.trim() && hasReservedInHistory && (hasLiveBody || isLive))
 }
 
 /**
  * 直播中不把已提交的同一条助手再画进历史列，避免与直播行叠两份。
- * 直播体已空时不再藏历史行，否则会出现「消息未挂上、直播已空」的空窗。
+ * loading 已关且直播体已空时不再藏历史行，否则会出现「消息未挂上、直播已空」的空窗。
  * 收束后 store 还留着本轮体时继续藏预留行，同一直播实例留下；store 清空后预留 id 才出现在历史列。
  */
 export function historicalMessagesDuringLive(
