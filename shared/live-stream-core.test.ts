@@ -1601,6 +1601,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('frozenPinnedSlots')
     expect(src('../src/components/ChatView.tsx')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_FROZEN_PINNED_SLOTS')
+    expect(src('../src/components/ChatView.tsx')).toContain('activePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveRowNodes')
+    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROW_HOLD')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'liveStreaming,\n    loading,\n    modelLabel,\n    onApproval,\n    onNeedFullMessage,\n    onOpenSubAgent,\n    onUserInput,\n    frozenPinnedSlots'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('loading={false}')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
       'sessionKey,\n    toolOutputDisplay,\n    loading'
@@ -1684,6 +1690,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveAssistantIds')
     expect(src('session-runtime.ts')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameFrozenPinnedLiveSlotIdentity')
+    expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
     expect(src('session-runtime.ts')).toContain('historyHasReserved 仍接调用方')
     expect(src('session-runtime.ts')).not.toContain(
       'if (options.historyHasReserved === false) return false'

@@ -6,6 +6,7 @@
  * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口；预留行 persist 入列后复用同一 gap 引用，不重建历史行。
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
+ * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -896,6 +897,58 @@ export function nextFrozenPinnedLiveSlots<T>(
     return { slots: prevSlots, identities: prevIdentities }
   }
   return { slots, identities: nextIdentities }
+}
+
+/** pinned 行列：槽与 after 引用没变才复用上一份行节点 */
+export type PinnedLiveRowHold<T> = {
+  ids: readonly string[]
+  rows: readonly T[]
+  after: readonly unknown[]
+  slots: ReadonlyMap<string, unknown>
+}
+
+const EMPTY_PINNED_LIVE_ROW_HOLD: PinnedLiveRowHold<never> = {
+  ids: [],
+  rows: [],
+  after: [],
+  slots: EMPTY_FROZEN_PINNED_MAP
+}
+
+/** 槽与 pin 后缺口没变就留下同一行节点，收束不重挂冻结 Fragment（对标 Codex #22860 / #37849）。 */
+export function nextPinnedLiveRowNodes<T>(
+  prev: PinnedLiveRowHold<T> | null | undefined,
+  input: {
+    ids: readonly string[]
+    after: readonly unknown[]
+    slots: ReadonlyMap<string, unknown>
+  },
+  build: (id: string, index: number) => T
+): PinnedLiveRowHold<T> {
+  if (input.ids.length === 0) return EMPTY_PINNED_LIVE_ROW_HOLD as PinnedLiveRowHold<T>
+  const rows = input.ids.map((id, index) => {
+    if (
+      prev &&
+      prev.ids[index] === id &&
+      prev.slots.get(id) === input.slots.get(id) &&
+      prev.after[index] === input.after[index]
+    ) {
+      return prev.rows[index]
+    }
+    return build(id, index)
+  })
+  if (
+    prev &&
+    prev.rows.length === rows.length &&
+    rows.every((row, index) => row === prev.rows[index])
+  ) {
+    return prev
+  }
+  return {
+    ids: input.ids,
+    rows,
+    after: input.after,
+    slots: input.slots
+  }
 }
 
 /**

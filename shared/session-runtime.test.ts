@@ -36,6 +36,7 @@ import {
   reusePinnedLiveIds,
   nextPinnedAfterGaps,
   nextFrozenPinnedLiveSlots,
+  nextPinnedLiveRowNodes,
   sameFrozenPinnedLiveSlotIdentity,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
@@ -756,6 +757,34 @@ describe('commitAssistantReply persist targeting', () => {
     )
     expect(frozenGrown.slots.get('a-live')).toBe('slot-a')
     expect(frozenGrown.slots.get('b-live')).toBe('slot-b-live')
+    const rowAfter = [['u2']]
+    const rowSlots = new Map<string, unknown>([
+      ['a-live', 'frozen-a'],
+      ['b-live', 'active-b']
+    ])
+    const rowFirst = nextPinnedLiveRowNodes(
+      null,
+      { ids: ['a-live', 'b-live'], after: rowAfter, slots: rowSlots },
+      (id) => `row-${id}`
+    )
+    const rowLoadingFlip = nextPinnedLiveRowNodes(
+      rowFirst,
+      {
+        ids: ['a-live', 'b-live'],
+        after: rowAfter,
+        slots: new Map<string, unknown>([
+          ['a-live', 'frozen-a'],
+          ['b-live', 'active-b-next']
+        ])
+      },
+      (id) => `row-${id}-next`
+    )
+    expect(rowLoadingFlip.rows[0]).toBe(rowFirst.rows[0])
+    expect(rowLoadingFlip.rows[1]).toBe('row-b-live-next')
+    expect(
+      nextPinnedLiveRowNodes(rowLoadingFlip, { ids: [], after: [], slots: new Map() }, () => 'x')
+        .rows
+    ).toEqual([])
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
     const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
     const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }
