@@ -2,6 +2,7 @@
  * Thinking · 与 TurnFlow 直播头同几何，避免切换跳动
  * @see src/ARCH.md
  */
+import { memo } from 'react'
 import { THINKING_LABEL } from '../../shared/live-display'
 import { useOffscreenLiveShimmer } from '../hooks/useOffscreenLiveShimmer'
 import './ThinkingIndicator.css'
@@ -11,8 +12,8 @@ interface Props {
   elapsed?: string
 }
 
-/** 流式尚无实质步骤时的轻量状态（布局对齐 turn-flow-live-head） */
-export function ThinkingIndicator({ text = '', elapsed }: Props) {
+/** 流式尚无实质步骤时的轻量状态（布局对齐 turn-flow-live-head）。memo：贴底 setState 不重挂扫光。 */
+export const ThinkingIndicator = memo(function ThinkingIndicator({ text = '', elapsed }: Props) {
   const preview = text.trim()
   const pauseRef = useOffscreenLiveShimmer<HTMLDivElement>(true)
 
@@ -28,4 +29,4 @@ export function ThinkingIndicator({ text = '', elapsed }: Props) {
       {preview ? <pre className="thinking-indicator-text">{preview}</pre> : null}
     </div>
   )
-}
+})

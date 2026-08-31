@@ -1621,6 +1621,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_HISTORICAL_MESSAGES')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountUnpinnedLiveSlot')
+    expect(src('../src/components/ChatView.tsx')).toContain('unpinnedLiveRow')
+    expect(src('../src/components/ChatView.tsx')).toContain('liveHandoffRow')
+    expect(src('../src/components/ChatView.tsx')).toContain('activeLiveRow')
+    expect(src('../src/components/ThinkingIndicator.tsx')).toContain(
+      'memo(function ThinkingIndicator'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('shouldFlushRowIntrinsicHeight')
     expect(src('../src/components/ChatView.tsx')).toContain('cachedIdCallback')
     expect(src('../src/components/ChatView.tsx')).toContain('cachedIdArgCallback')
