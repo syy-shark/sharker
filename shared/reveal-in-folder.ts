@@ -114,6 +114,11 @@ export const FORCE_RELOAD_SKILLS_LABEL = 'Force reload skills'
 /** Official Skills sidebar (learn.chatgpt.com/docs/build-skills). */
 export const SKILLS_INTRO =
   'Open Skills in the sidebar to view and explore skills created across your projects.'
+/** Official desktop composer `$` invoke (learn.chatgpt.com/docs/reference/slash-commands). */
+export const SKILLS_INVOKE_HINT =
+  'You can also explicitly invoke skills by typing `$` in the chat composer.'
+/** Official desktop slash list (learn.chatgpt.com/docs/reference/slash-commands). Do not invent `/prompts:`. */
+export const SKILLS_SLASH_HINT = 'Enabled skills also appear in the slash command list.'
 
 /** Official Codex app-menu roots (github.com/openai/codex#14450 File, Edit, View, Window, Help). */
 export const FILE_MENU_LABEL = 'File'

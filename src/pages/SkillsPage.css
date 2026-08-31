@@ -28,6 +28,10 @@
   color: var(--text-muted);
 }
 
+.skills-head p + p {
+  margin-top: 8px;
+}
+
 .skills-head code {
   font-family: var(--mono);
   font-size: 12px;

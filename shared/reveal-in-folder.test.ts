@@ -87,6 +87,8 @@ import {
   SKILLS_LABEL,
   FORCE_RELOAD_SKILLS_LABEL,
   SKILLS_INTRO,
+  SKILLS_INVOKE_HINT,
+  SKILLS_SLASH_HINT,
   revealInFolderLabel,
   reviewFileRevealPath,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
@@ -230,11 +232,18 @@ describe('reveal in folder', () => {
     expect(SKILLS_LABEL).toBe('Skills')
     expect(FORCE_RELOAD_SKILLS_LABEL).toBe('Force reload skills')
     expect(SKILLS_INTRO).toMatch(/view and explore skills created across your projects/)
+    expect(SKILLS_INVOKE_HINT).toBe(
+      'You can also explicitly invoke skills by typing `$` in the chat composer.'
+    )
+    expect(SKILLS_SLASH_HINT).toBe('Enabled skills also appear in the slash command list.')
+    expect(SKILLS_SLASH_HINT).not.toMatch(/prompts:/)
     const skillsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SkillsPage.tsx'),
       'utf8'
     )
     expect(skillsSrc).toContain('SKILLS_INTRO')
+    expect(skillsSrc).toContain('SKILLS_INVOKE_HINT')
+    expect(skillsSrc).toContain('SKILLS_SLASH_HINT')
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(skillsSrc).toContain('reloadNonce')
     const skillReloadComposerSrc = readFileSync(

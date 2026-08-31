@@ -1,5 +1,5 @@
 /**
- * 思考与工具步骤时间线 UI
+ * 思考与工具步骤时间线 UI。`key={step.id}` 不带命令原文，避免加长或 Running→Ran 重挂。
  * @see src/ARCH.md
  */
 import type { ProcessStep } from '../../shared/process-steps'

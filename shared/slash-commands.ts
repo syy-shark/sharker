@@ -1,5 +1,6 @@
 /**
  * 斜杠命令目录：供输入框菜单与 /help 展示。
+ * /help 开场用官方 Slash commands let you run actions… / Available commands vary…
  * @see agent/commands.ts
  */
 import { SCHEDULED_LABEL } from './automation'
@@ -53,6 +54,12 @@ export const SLASH_SHARE_DESCRIPTION = 'Share a read-only snapshot of a local Co
 export const SLASH_COPY_DESCRIPTION = 'Copy the last response, code block, or quote.'
 /** Official desktop slash catalog title (learn.chatgpt.com/docs/reference/slash-commands). */
 export const SLASH_COMMANDS_LABEL = 'Slash commands'
+/** Official desktop slash intro (learn.chatgpt.com/docs/reference/slash-commands). */
+export const SLASH_COMMANDS_INTRO =
+  'Slash commands let you run actions without leaving the chat composer.'
+/** Official desktop slash access note (learn.chatgpt.com/docs/reference/slash-commands). */
+export const SLASH_COMMANDS_ACCESS_HINT =
+  'Available commands vary based on your environment and access.'
 
 /** 命令作用域：UI 本地执行 vs 走 Agent 管线 */
 export type SlashCommandScope = 'ui' | 'agent'
@@ -585,7 +592,7 @@ export function slashItemsWithSkills(
   return skillItems.length ? [...commands, ...skillItems] : commands
 }
 
-/** 生成 help 文本中的命令表 */
+/** 生成 /help 命令表；开场用官方 Slash commands 说明 */
 export function formatSlashCommandHelp(): string {
   const byCat = new Map<SlashCommandCategory, SlashCommandMeta[]>()
   for (const c of SLASH_COMMANDS) {
@@ -593,7 +600,7 @@ export function formatSlashCommandHelp(): string {
     list.push(c)
     byCat.set(c.category, list)
   }
-  const lines = ['**斜杠命令**（输入 `/` 可自动补全）：', '']
+  const lines = [`**${SLASH_COMMANDS_LABEL}**`, SLASH_COMMANDS_INTRO, SLASH_COMMANDS_ACCESS_HINT, '']
   for (const cat of Object.keys(SLASH_COMMAND_CATEGORIES).sort(
     (a, b) =>
       SLASH_COMMAND_CATEGORIES[a as SlashCommandCategory].order -

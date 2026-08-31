@@ -7,7 +7,10 @@ import {
   REVIEW_SLASH_REQUIRES_GIT,
   shouldShowReviewSlash,
   slashItemsWithSkills,
+  formatSlashCommandHelp,
   SLASH_COMMANDS,
+  SLASH_COMMANDS_ACCESS_HINT,
+  SLASH_COMMANDS_INTRO,
   SLASH_COMMANDS_LABEL
 } from './slash-commands'
 import {
@@ -254,6 +257,16 @@ describe('slash commands', () => {
 
   it('uses official Slash commands on the live composer popup', () => {
     expect(SLASH_COMMANDS_LABEL).toBe('Slash commands')
+    expect(SLASH_COMMANDS_INTRO).toBe(
+      'Slash commands let you run actions without leaving the chat composer.'
+    )
+    expect(SLASH_COMMANDS_ACCESS_HINT).toBe(
+      'Available commands vary based on your environment and access.'
+    )
+    const help = formatSlashCommandHelp()
+    expect(help).toContain(SLASH_COMMANDS_INTRO)
+    expect(help).toContain(SLASH_COMMANDS_ACCESS_HINT)
+    expect(help).not.toContain('/prompts:')
     const composerSrc = readFileSync(
       new URL('../src/components/ComposerDock.tsx', import.meta.url),
       'utf8'
