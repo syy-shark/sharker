@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，准备中 seed 等 freeze 提交后再发以免 hold 行闪新一轮，切回跟进会话还原 retired 环且 store 给新槽，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，准备中 seed 等 freeze 提交后再发以免 hold 行闪新一轮，切回跟进会话还原 retired 环与挤出真高且 store 给新槽，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -117,6 +117,7 @@ import { shouldRewriteVisibleTranscript } from '../shared/context-compress'
 import {
   processElapsedSeconds,
   readMountedMessageRowHeight,
+  cloneEjectedLiveHeights,
   stoppedAfterFootnote,
   THOUGHT_LABEL,
   TURN_START_LIVE_STATUS,
@@ -421,6 +422,7 @@ interface SessionLiveBuffer {
   retiredLiveArticles?: RetiredLiveArticle[]
   ejectedLiveArticles?: RetiredLiveArticle[]
   archivedLiveArticles?: RetiredLiveArticle[]
+  ejectedLiveHeights?: Record<string, number>
   /** 当前 messages[0] 在全量中的 seq；>0 还有更早页 */
   historyStartSeq?: number
 }
@@ -569,6 +571,7 @@ export default function App() {
   const [ejectedLiveArticles, setEjectedLiveArticles] = useState<RetiredLiveArticle[]>([])
   const [archivedLiveArticles, setArchivedLiveArticles] = useState<RetiredLiveArticle[]>([])
   const [ejectedLiveHeights, setEjectedLiveHeights] = useState<Record<string, number>>({})
+  const ejectedLiveHeightsRef = useRef<Record<string, number>>({})
   const retiredLiveIdRef = useRef<string | null>(null)
   const retiredLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
   const ejectedLiveArticlesRef = useRef<RetiredLiveArticle[]>([])
@@ -1097,7 +1100,9 @@ export default function App() {
     setRetiredLiveArticles(restoredRetired)
     setEjectedLiveArticles(restoredEjected)
     setArchivedLiveArticles(restoredArchived)
-    setEjectedLiveHeights({})
+    const restoredHeights = cloneEjectedLiveHeights(buf.ejectedLiveHeights)
+    ejectedLiveHeightsRef.current = restoredHeights
+    setEjectedLiveHeights(restoredHeights)
     const holdAlreadyRetired = Boolean(
       buf.liveHandoffId && retiredLiveArticle(restoredRetired, buf.liveHandoffId)
     )
@@ -1814,6 +1819,7 @@ export default function App() {
     setRetiredLiveArticles([])
     setEjectedLiveArticles([])
     setArchivedLiveArticles([])
+    ejectedLiveHeightsRef.current = {}
     setEjectedLiveHeights({})
   }, [])
 
@@ -1866,6 +1872,7 @@ export default function App() {
           const height = readMountedMessageRowHeight(item.id)
           if (height > 0) next[item.id] = height
         }
+        ejectedLiveHeightsRef.current = next
         return next
       })
     }
@@ -1992,6 +1999,7 @@ export default function App() {
       retiredLiveArticles: cloneRetiredLiveArticles(retiredLiveArticlesRef.current),
       ejectedLiveArticles: cloneRetiredLiveArticles(ejectedLiveArticlesRef.current),
       archivedLiveArticles: cloneRetiredLiveArticles(archivedLiveArticlesRef.current),
+      ejectedLiveHeights: cloneEjectedLiveHeights(ejectedLiveHeightsRef.current),
       historyStartSeq: historyStartSeqRef.current
     })
     return prevId
@@ -4075,7 +4083,8 @@ export default function App() {
             retiredLiveId: retiredLiveIdRef.current,
             retiredLiveArticles: cloneRetiredLiveArticles(retiredLiveArticlesRef.current),
             ejectedLiveArticles: cloneRetiredLiveArticles(ejectedLiveArticlesRef.current),
-            archivedLiveArticles: cloneRetiredLiveArticles(archivedLiveArticlesRef.current)
+            archivedLiveArticles: cloneRetiredLiveArticles(archivedLiveArticlesRef.current),
+            ejectedLiveHeights: cloneEjectedLiveHeights(ejectedLiveHeightsRef.current)
           })
         }
 

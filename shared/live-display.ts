@@ -4,6 +4,7 @@
  * 开轮/收束不拆贴底 ResizeObserver（`shouldRebuildLiveStickObserverWhenLoadingChanges`）。
  * 未贴底也记下 `lastHeight`（`shouldRecordLiveStickHeightWhenUnstuck`）。
  * 远窗行高 flush 写在已挂行上（`applyRowIntrinsicSizeStyle`），不抬 React state。
+ * `cloneEjectedLiveHeights` 给会话 buffer 带走挤出真高，切回不走 160px 估高跳。
  * 与 TurnFlow 渲染共用，保证“头 = 当前步骤”。
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
@@ -813,6 +814,20 @@ export function mergeSeededRowHeights(
     dest.set(key, height)
   }
   return dest
+}
+
+/** 会话 buffer 带走挤出真高，切回不走 160px 估高跳（对标 Codex #38220）。 */
+export function cloneEjectedLiveHeights(
+  heights: Readonly<Record<string, number>> | null | undefined
+): Record<string, number> {
+  if (!heights) return {}
+  const next: Record<string, number> = {}
+  for (const [id, height] of Object.entries(heights)) {
+    const key = id.trim()
+    if (!key || !Number.isFinite(height) || height <= 0) continue
+    next[key] = height
+  }
+  return next
 }
 
 /**

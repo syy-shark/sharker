@@ -1187,6 +1187,8 @@ export const ChatView = memo(function ChatView({
     setSideAsk(null)
     setKeepReadingJump(false)
     measuredRowHeightsRef.current = new Map()
+    // 只用本帧已还原的挤出真高；不订 ejectedLiveHeights，以免同会话挤出把整表清空。
+    mergeSeededRowHeights(measuredRowHeightsRef.current, ejectedLiveHeights)
     heightFlushEpochRef.current += 1
     clearInlineDemoFramePool()
     clearHistoricalAnswerHolds()

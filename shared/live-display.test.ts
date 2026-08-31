@@ -58,6 +58,7 @@ import {
   commitAboveFoldHeightScroll,
   shouldPaintFlushedRowIntrinsicSize,
   mergeSeededRowHeights,
+  cloneEjectedLiveHeights,
   readMountedMessageRowHeight,
   nextRowIntrinsicHeights,
   resolveRowIntrinsicHeight,
@@ -493,6 +494,9 @@ describe('near-live message rows', () => {
     mergeSeededRowHeights(seeded, { 'a-live': 99, 'b-live': 200 })
     expect(seeded.get('a-live')).toBe(420)
     expect(seeded.get('b-live')).toBe(200)
+    const clonedHeights = cloneEjectedLiveHeights({ 'a-live': 420, skip: 0, '': 12, bad: Number.NaN })
+    expect(clonedHeights).toEqual({ 'a-live': 420 })
+    expect(cloneEjectedLiveHeights(undefined)).toEqual({})
     expect(readMountedMessageRowHeight('missing-live')).toBe(0)
     expect(readMountedMessageRowHeight('')).toBe(0)
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()
