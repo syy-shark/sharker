@@ -1596,6 +1596,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={liveStreaming}')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedTranscriptGaps')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveAssistantIds')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveRows')
+    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROWS')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      '? pinnedLiveIds.map((id, index) => {'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedGapsHeldRef')
     expect(src('../src/components/ChatView.tsx')).toContain('renderFrozenEjectedArticle,\n      historicalSource')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
@@ -1625,13 +1631,13 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextAboveFoldHeightScrollTop')
     expect(src('../src/components/ChatView.tsx').includes('trimTopIdsRef')).toBe(false)
     expect(src('../src/components/ChatView.tsx')).toContain('requestAnimationFrame(flush)')
-    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantId')
-    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveAssistantIds')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveAssistantIds')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveIdsHeldRef')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountActiveLiveSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldPinActiveLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('pinActiveLive')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamPinnedLiveAssistant')
-    expect(src('../src/components/ChatView.tsx')).toContain('<LiveAssistantSlot\n                        key={id}')
+    expect(src('../src/components/ChatView.tsx')).toContain('<LiveAssistantSlot\n            key={id}')
     expect(src('../src/components/ChatView.tsx')).not.toContain('key={liveRowId}\n      id={`msg-${liveRowId}`}')
     expect(src('../src/App.tsx')).toContain('shouldHoldLiveHandoff')
     expect(src('../src/App.tsx')).toContain('shouldBeginNewLiveReservation')
@@ -1653,6 +1659,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('takeEjectedLiveOverflow')
     expect(src('../src/App.tsx')).toContain('nextArchivedLiveArticles')
     expect(src('session-runtime.ts')).toContain('reusePinnedTranscriptGaps')
+    expect(src('session-runtime.ts')).toContain('reusePinnedLiveIds')
+    expect(src('session-runtime.ts')).toContain('nextPinnedLiveAssistantIds')
     expect(src('session-runtime.ts')).toContain('historyHasReserved 仍接调用方')
     expect(src('session-runtime.ts')).not.toContain(
       'if (options.historyHasReserved === false) return false'

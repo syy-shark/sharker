@@ -4,6 +4,7 @@
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
  * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
  * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口；预留行 persist 入列后复用同一 gap 引用，不重建历史行。
+ * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -809,6 +810,32 @@ export function pinnedLiveAssistantIds(options: {
   push(options.liveHandoffId)
   if (options.hideReservedLive || options.pinActiveLive) push(options.liveAssistantId)
   return ids
+}
+
+const EMPTY_PINNED_LIVE_IDS: string[] = []
+
+/**
+ * hideReserved 翻转时 pin 列往往仍是同一批 id。
+ * 复用上一份数组，避免 ChatView 重算 gaps / 重建 pinned 槽（对标 Codex #22860 / #38220）。
+ */
+export function reusePinnedLiveIds(
+  prev: readonly string[] | null | undefined,
+  next: string[]
+): string[] {
+  if (next.length === 0) return EMPTY_PINNED_LIVE_IDS
+  if (!prev || prev.length !== next.length) return next
+  for (let i = 0; i < next.length; i++) {
+    if (prev[i] !== next[i]) return next
+  }
+  return prev as string[]
+}
+
+/** 算出 pin 列后再对照上一份；id 没变就留下同一引用。 */
+export function nextPinnedLiveAssistantIds(
+  prev: readonly string[] | null | undefined,
+  options: Parameters<typeof pinnedLiveAssistantIds>[0]
+): string[] {
+  return reusePinnedLiveIds(prev, pinnedLiveAssistantIds(options))
 }
 
 /**

@@ -32,6 +32,8 @@ import {
   splitTranscriptAroundPinnedLive,
   nextPinnedTranscriptGaps,
   reusePinnedTranscriptGaps,
+  nextPinnedLiveAssistantIds,
+  reusePinnedLiveIds,
   nextPinnedAfterGaps,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
@@ -689,6 +691,21 @@ describe('commitAssistantReply persist targeting', () => {
         pinActiveLive: true
       })
     ).toEqual(['a-live', 'b-live'])
+    const pinnedBeforeHide = pinnedLiveAssistantIds({
+      liveAssistantId: 'a-live',
+      hideReservedLive: false,
+      pinActiveLive: true
+    })
+    expect(
+      nextPinnedLiveAssistantIds(pinnedBeforeHide, {
+        liveAssistantId: 'a-live',
+        hideReservedLive: true,
+        pinActiveLive: true
+      })
+    ).toBe(pinnedBeforeHide)
+    const emptyPins = reusePinnedLiveIds(['a-live'], [])
+    expect(emptyPins).toEqual([])
+    expect(reusePinnedLiveIds(['gone'], [])).toBe(emptyPins)
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
     const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
     const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }
