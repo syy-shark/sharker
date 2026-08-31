@@ -1,6 +1,6 @@
 /**
  * 对话原生内联演示：无外框、透明背景、高度跟真实内容底边，嵌进助手正文如 Markdown。
- * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。直播实例（含收束后留下的那行）父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切；历史重挂再灌套壳，srcDoc 按 walkTree+主题+HTML 缓存；稳定 demoId 复用同一 srcDoc 引用，walkTree iframe 进池，揭示回来不 reload。
+ * 直播未可绘不挂空 iframe，只留骨架；可绘后再 srcDoc。直播实例（含收束后留下的那行）父页不挂全树量高 ResizeObserver，iframe 也不扫整棵、不灌 KaTeX CDN、不灌终端套壳脚本 / 终端窗与卡片 CSS，只留主题与解锁裁切；直播有 `instanceId` 用 `liveInlineDemoStableId`，html 加长 / 重挂不换 `useId()`；历史重挂再灌套壳，srcDoc 按 walkTree+主题+HTML 缓存；稳定 demoId 复用同一 srcDoc 引用，walkTree iframe 进池，揭示回来不 reload。
  * 假终端只给日志块套 macOS 三色灯；整页灰卡片会被拆掉。
  * @see ./ARCH.md
  */
@@ -8,6 +8,7 @@ import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useStat
 import {
   adoptInlineDemoFrame,
   inlineDemoStableId,
+  liveInlineDemoStableId,
   inlineDemoThemeCacheKey,
   isInlineDemoPaintable,
   liveInlineDemoPaintDelay,
@@ -17,6 +18,7 @@ import {
   shouldMeasureInlineDemoInParent,
   shouldMountInlineDemoFrame,
   shouldPoolInlineDemoFrame,
+  shouldUseLiveInlineDemoStableId,
   shouldWalkInlineDemoTree,
   writeCachedInlineDemoHeight
 } from '../../shared/live-display'
@@ -1327,9 +1329,11 @@ export function InlineDemo({ html, caption, streaming, live, instanceId }: Inlin
   const walkTree = shouldWalkInlineDemoTree({ live: isLive, streaming: isStreaming })
   const poolFrame = shouldPoolInlineDemoFrame({ walkTree })
   const reactId = useId()
-  const demoId = poolFrame
-    ? inlineDemoStableId(html, instanceId)
-    : `demo-${reactId.replace(/:/g, '')}`
+  const demoId = shouldUseLiveInlineDemoStableId({ live: isLive, instanceId })
+    ? liveInlineDemoStableId(String(instanceId))
+    : poolFrame
+      ? inlineDemoStableId(html, instanceId)
+      : `demo-${reactId.replace(/:/g, '')}`
   const frameRef = useRef<HTMLIFrameElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState(() => seedInlineDemoHeight(html, isStreaming))

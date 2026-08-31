@@ -222,15 +222,31 @@ const inlineDemoSrcDocCache = new Map<string, string>()
 const inlineDemoAppliedSrcDocCache = new Map<string, string>()
 const inlineDemoFramePool = new Map<string, { frame: HTMLIFrameElement; srcDoc: string }>()
 
-/** 历史重挂用 html + 槽 id 生成稳定 demoId，避免 `useId()` 换串再 apply。 */
-export function inlineDemoStableId(html: string, instanceId = ''): string {
-  const src = `${String(instanceId || '').trim()}\n${String(html || '')}`
+function fnvInlineDemoId(src: string): string {
   let hash = 2166136261
   for (let i = 0; i < src.length; i++) {
     hash ^= src.charCodeAt(i)
     hash = Math.imul(hash, 16777619)
   }
   return `demo-${(hash >>> 0).toString(16)}-${src.length.toString(16)}`
+}
+
+/** 历史重挂用 html + 槽 id 生成稳定 demoId，避免 `useId()` 换串再 apply。 */
+export function inlineDemoStableId(html: string, instanceId = ''): string {
+  return fnvInlineDemoId(`${String(instanceId || '').trim()}\n${String(html || '')}`)
+}
+
+/** 直播槽只用 instanceId，html 加长不换 demoId，以免 token 重写 srcDoc（对标 Codex #22860）。 */
+export function liveInlineDemoStableId(instanceId: string): string {
+  return fnvInlineDemoId(String(instanceId || '').trim())
+}
+
+/** 直播实例有槽 id 就用稳定 demoId，重挂不换 `useId()`。 */
+export function shouldUseLiveInlineDemoStableId(input: {
+  live?: boolean
+  instanceId?: string
+}): boolean {
+  return Boolean(input.live) && Boolean(String(input.instanceId || '').trim())
 }
 
 /** 只有历史 walkTree 才把已加载的 iframe 留在池里。 */

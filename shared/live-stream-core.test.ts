@@ -1878,6 +1878,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/LiveAssistantParts.tsx')).toMatch(
       /<InlineDemo[\s\S]{0,240}\blive\b/
     )
+    expect(src('../src/components/LiveAssistantParts.tsx')).toContain('instanceId={part.id}')
+    expect(src('../src/components/InlineDemo.tsx')).toContain('shouldUseLiveInlineDemoStableId')
+    expect(src('../src/components/InlineDemo.tsx')).toContain('liveInlineDemoStableId')
+    expect(src('live-display.ts')).toContain('shouldUseLiveInlineDemoStableId')
+    expect(src('live-display.ts')).toContain('liveInlineDemoStableId')
     expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldRenderLiveMermaid')
     expect(src('../src/components/MermaidBlock.tsx')).toContain('shouldWarmLiveMermaid')
     expect(src('../src/components/MermaidBlock.tsx')).toContain('renderMermaidSvg')

@@ -4,6 +4,7 @@
  * 写盘 +/- 在 closed 里仍 `live`：同一帧 write+token 后正文成尾，diff 不折 20 行、内层继续跟尾。
  * 收束关 loading 后同一实例留下：过程 `isStreaming` 停秒表，Thought 仍留在直播行（不整块卸掉），回答 diff 仍 live 以免折 20 行跳；跟进 adopt 后 `frozen` 停订 store，按 adopt 前 part 引用与旁白原文留下树；历史重挂传入 `frozenProcess` 保住 Thought / 时间线（对标 Codex preserved streamed activity）。
  * 直播 `StreamingMarkdown` 标 `live`，闭合围栏不跑 Prism；`streaming` 跟 loading，收束后再画 mermaid。
+ * 直播 ```demo 带 `instanceId={part.id}`，重挂不换 `useId()`。
  * @see src/components/ARCH.md
  */
 import { memo, useRef } from 'react'
@@ -108,6 +109,7 @@ function renderLiveAnswerPart(
         key={part.id}
         html={part.html}
         caption={part.caption}
+        instanceId={part.id}
         live
         streaming={Boolean(options.markdownStreaming && part.streaming)}
       />

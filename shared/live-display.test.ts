@@ -43,6 +43,8 @@ import {
   clearInlineDemoSrcDocCache,
   clearInlineDemoFramePool,
   inlineDemoStableId,
+  liveInlineDemoStableId,
+  shouldUseLiveInlineDemoStableId,
   INLINE_DEMO_FRAME_POOL_LIMIT,
   shouldPoolInlineDemoFrame,
   shouldReusePooledInlineDemoFrame,
@@ -369,6 +371,11 @@ describe('inline demo paintability', () => {
     expect(builds).toBe(1)
     expect(inlineDemoStableId(html, 'live-fence-0')).toBe(inlineDemoStableId(html, 'live-fence-0'))
     expect(inlineDemoStableId(html, 'live-fence-0')).not.toBe(inlineDemoStableId(html, 'live-fence-1'))
+    expect(liveInlineDemoStableId('part-a')).toBe(liveInlineDemoStableId('part-a'))
+    expect(liveInlineDemoStableId('part-a')).not.toBe(liveInlineDemoStableId('part-b'))
+    expect(shouldUseLiveInlineDemoStableId({ live: true, instanceId: 'part-a' })).toBe(true)
+    expect(shouldUseLiveInlineDemoStableId({ live: true, instanceId: '' })).toBe(false)
+    expect(shouldUseLiveInlineDemoStableId({ live: false, instanceId: 'part-a' })).toBe(false)
     expect(shouldPoolInlineDemoFrame({ walkTree: true })).toBe(true)
     expect(shouldPoolInlineDemoFrame({ walkTree: false })).toBe(false)
     expect(
