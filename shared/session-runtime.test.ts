@@ -6,6 +6,7 @@ import {
   shouldHideReservedDuringLive,
   liveRowMessageId,
   shouldMountLiveAssistantSlot,
+  shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldHoldLiveHandoff,
   shouldStreamLiveAssistant,
@@ -535,6 +536,38 @@ describe('commitAssistantReply persist targeting', () => {
         pinnedLiveIds: ['a-live', 'b-live']
       })
     ).toBe(false)
+    expect(shouldPinActiveLiveAssistant({ loading: true, hasLiveBody: false })).toBe(true)
+    expect(shouldPinActiveLiveAssistant({ loading: false, hasLiveBody: true })).toBe(true)
+    expect(shouldPinActiveLiveAssistant({ loading: false, hasLiveBody: false })).toBe(false)
+    expect(
+      pinnedLiveAssistantIds({
+        liveAssistantId: 'a-live',
+        hideReservedLive: false
+      })
+    ).toEqual([])
+    expect(
+      pinnedLiveAssistantIds({
+        liveAssistantId: 'a-live',
+        hideReservedLive: false,
+        pinActiveLive: true
+      })
+    ).toEqual(['a-live'])
+    expect(
+      pinnedLiveAssistantIds({
+        retiredLiveIds: ['a-live'],
+        liveAssistantId: 'b-live',
+        hideReservedLive: false,
+        pinActiveLive: true
+      })
+    ).toEqual(['a-live', 'b-live'])
+    expect(
+      pinnedLiveAssistantIds({
+        retiredLiveIds: ['a-live'],
+        liveAssistantId: 'b-live',
+        hideReservedLive: true,
+        pinActiveLive: true
+      })
+    ).toEqual(['a-live', 'b-live'])
     expect(
       pinnedLiveAssistantIds({
         retiredLiveIds: ['a-live', 'b-live'],

@@ -5,7 +5,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；`pinActiveLive` 从开轮就把当前预留 id 钉进 pinned 列，hideReserved 翻转不再把同一行从无 pin 槽搬进 map（对标 Codex #22860）；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 切对话清掉历史 demo iframe 池与历史回答 hold。
  * 空闲时按切片预热窗口外一页助手行 hold，直播中不跑。
  * 靠近顶预取更早盘页并 idle 预热，揭开不再冷挂载。
@@ -70,6 +70,7 @@ import {
   liveRowMessageId,
   shouldHideReservedDuringLive,
   shouldMountLiveAssistantSlot,
+  shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
   splitTranscriptAroundPinnedLive,
@@ -2603,6 +2604,10 @@ export const ChatView = memo(function ChatView({
     reservedId: liveAssistantId,
     hasReservedInHistory: reservedInHistory
   })
+  const pinActiveLive = shouldPinActiveLiveAssistant({
+    loading,
+    hasLiveBody: liveBody
+  })
   const liveStreaming = shouldStreamLiveAssistant({
     loading,
     handoffId: liveHandoffId
@@ -2627,14 +2632,16 @@ export const ChatView = memo(function ChatView({
     retiredLiveId,
     liveHandoffId,
     liveAssistantId,
-    hideReservedLive
+    hideReservedLive,
+    pinActiveLive
   })
   const pinnedLiveId = pinnedLiveAssistantId({
     retiredLiveIds: retiredIds,
     retiredLiveId,
     liveHandoffId,
     liveAssistantId,
-    hideReservedLive
+    hideReservedLive,
+    pinActiveLive
   })
   const pinnedSplit = pinnedLiveIds.length
     ? splitTranscriptAroundPinnedLive(windowedMessages, pinnedLiveIds)

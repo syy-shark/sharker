@@ -493,6 +493,17 @@ export function pinnedLiveAssistantId(options: {
   return pinnedLiveAssistantIds(options)[0] ?? null
 }
 
+/**
+ * 开轮或直播体已在 store 时就把当前预留 id 钉进 pinned 列。
+ * 等 hideReserved 再钉会把同一行从无 pin 槽搬进 map，整棵直播树重挂（对标 Codex #22860）。
+ */
+export function shouldPinActiveLiveAssistant(options: {
+  loading: boolean
+  hasLiveBody: boolean
+}): boolean {
+  return options.loading || options.hasLiveBody
+}
+
 /** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */
 export function shouldMountActiveLiveSlot(options: {
   atLatestWindow: boolean
@@ -660,7 +671,8 @@ export function frozenHistoricalArticle(
 }
 
 /**
- * 直播槽要按时间顺序挂住的 id：先 retired 环，再 handoff，再收束后仍藏着的预留 id。
+ * 直播槽要按时间顺序挂住的 id：先 retired 环，再 handoff，再当前预留 id。
+ * `pinActiveLive` 从开轮就钉当前 id，避免 hideReserved 翻转时搬槽重挂。
  * 去重且保序，让 A 在跟进 B / C 时 key 不丢。
  */
 export function pinnedLiveAssistantIds(options: {
@@ -669,6 +681,7 @@ export function pinnedLiveAssistantIds(options: {
   liveHandoffId?: string | null
   liveAssistantId?: string | null
   hideReservedLive?: boolean
+  pinActiveLive?: boolean
 }): string[] {
   const ids: string[] = []
   const seen = new Set<string>()
@@ -681,7 +694,7 @@ export function pinnedLiveAssistantIds(options: {
   for (const id of options.retiredLiveIds ?? []) push(id)
   push(options.retiredLiveId)
   push(options.liveHandoffId)
-  if (options.hideReservedLive) push(options.liveAssistantId)
+  if (options.hideReservedLive || options.pinActiveLive) push(options.liveAssistantId)
   return ids
 }
 
