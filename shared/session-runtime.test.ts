@@ -11,6 +11,7 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldHoldLiveHandoff,
+  shouldRetireLiveOnHandoffHold,
   shouldStreamLiveAssistant,
   shouldAdoptLiveHandoff,
   shouldCancelLiveHandoffWithoutCommit,
@@ -477,6 +478,26 @@ describe('commitAssistantReply persist targeting', () => {
         historyHasReserved: true
       })
     ).toBe(false)
+    expect(
+      shouldRetireLiveOnHandoffHold({
+        holdFollowUp: true,
+        liveAssistantId: 'a-live'
+      })
+    ).toBe(true)
+    expect(
+      shouldRetireLiveOnHandoffHold({
+        holdFollowUp: true,
+        liveAssistantId: 'a-live',
+        alreadyRetired: true
+      })
+    ).toBe(false)
+    expect(
+      shouldRetireLiveOnHandoffHold({
+        holdFollowUp: false,
+        liveAssistantId: 'a-live'
+      })
+    ).toBe(false)
+    expect(shouldRetireLiveOnHandoffHold({ holdFollowUp: true })).toBe(false)
     expect(shouldStreamLiveAssistant({ loading: true, handoffId: 'a-live' })).toBe(false)
     expect(shouldStreamLiveAssistant({ loading: true, handoffId: null })).toBe(true)
     expect(shouldStreamLiveAssistant({ loading: false, handoffId: null })).toBe(false)

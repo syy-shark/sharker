@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环，首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -336,7 +336,9 @@ import {
   shouldBeginNewLiveReservation,
   shouldPublishEmptyLiveBodyOnBeginTurn,
   shouldHoldLiveHandoff,
+  shouldRetireLiveOnHandoffHold,
   shouldPublishLiveStreamDuringHandoff,
+  retiredLiveArticle,
   nextArchivedLiveArticles,
   snapshotRetiredLiveProcess,
   takeEjectedLiveOverflow,
@@ -1723,13 +1725,11 @@ export default function App() {
     setEjectedLiveHeights({})
   }, [])
 
-  /**
-   * 首枚 harness chunk：同一帧换新 id 并发布下一轮片段，上一轮才进历史列。
-   * 不先 beginTurnMeta 空发布，避免回答闪空。
-   */
-  const adoptLiveHandoff = useCallback(() => {
-    const fromId = liveHandoffIdRef.current
-    if (!fromId) return false
+  /** 冻结当前直播行进 retired 环。同 id 已在环里则跳过，以免 adopt 再搬槽重挂。 */
+  const commitRetiredLiveFromStore = useCallback((fromId: string) => {
+    const id = fromId.trim()
+    if (!id) return
+    if (retiredLiveArticle(retiredLiveArticlesRef.current, id)) return
     const priorSnap = getLiveStreamUi()
     const priorParts = nextLiveAnswerRenderParts(null, priorSnap)
     const priorCopyable = liveAnswerViewFromSnap(priorSnap).copyable
@@ -1738,18 +1738,15 @@ export default function App() {
       ...priorView,
       steps: snapshotFrozenProcessSteps(priorView.processForFlow, { isStreaming: false })
     })
-    heldCompletedSegmentsRef.current = null
-    liveHandoffIdRef.current = null
-    setLiveHandoffId(null)
-    setPreserveLiveDiffsId(fromId)
-    retiredLiveIdRef.current = fromId
-    setRetiredLiveId(fromId)
+    setPreserveLiveDiffsId(id)
+    retiredLiveIdRef.current = id
+    setRetiredLiveId(id)
     setRetiredLiveParts(priorParts)
     setRetiredLiveMeta(priorSnap.liveTurnMeta)
     setRetiredLiveStartedAt(priorSnap.turnStartedAt)
     setRetiredLiveCopyable(priorCopyable)
     const article: RetiredLiveArticle = {
-      id: fromId,
+      id,
       parts: priorParts,
       meta: priorSnap.liveTurnMeta,
       startedAt: priorSnap.turnStartedAt,
@@ -1780,6 +1777,20 @@ export default function App() {
         return next
       })
     }
+  }, [])
+
+  /**
+   * 首枚 harness chunk：同一帧换新 id 并发布下一轮片段。
+   * 上一轮已在 hold 开轮冻进 retired 环则不再搬槽。
+   * 不先 beginTurnMeta 空发布，避免回答闪空。
+   */
+  const adoptLiveHandoff = useCallback(() => {
+    const fromId = liveHandoffIdRef.current
+    if (!fromId) return false
+    commitRetiredLiveFromStore(fromId)
+    heldCompletedSegmentsRef.current = null
+    liveHandoffIdRef.current = null
+    setLiveHandoffId(null)
     resetLiveAnswerViewHold()
     const now = Date.now()
     if (!turnStartedAtRef.current) turnStartedAtRef.current = now
@@ -1812,7 +1823,7 @@ export default function App() {
       })
     )
     return true
-  }, [])
+  }, [commitRetiredLiveFromStore])
 
   adoptLiveHandoffRef.current = adoptLiveHandoff
 
@@ -3783,6 +3794,17 @@ export default function App() {
         heldCompletedSegmentsRef.current = cloneSegments(liveSnap.liveSegments)
         liveHandoffIdRef.current = liveAssistantIdRef.current
         setLiveHandoffId(liveAssistantIdRef.current)
+        if (
+          shouldRetireLiveOnHandoffHold({
+            holdFollowUp: true,
+            liveAssistantId: liveAssistantIdRef.current,
+            alreadyRetired: Boolean(
+              retiredLiveArticle(retiredLiveArticlesRef.current, liveAssistantIdRef.current)
+            )
+          })
+        ) {
+          commitRetiredLiveFromStore(liveAssistantIdRef.current)
+        }
         turnStartedAtRef.current = Date.now()
         turnHadThinkingRef.current = false
         turnOutcomeRef.current = 'success'

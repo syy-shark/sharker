@@ -8,6 +8,7 @@
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
  * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
  * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading；handoff 未 adopt 前预留 id 仍是上一轮，hold 也不跟。
+ * `shouldRetireLiveOnHandoffHold` 跟进开轮就把上一轮推进 retired 环冻结，adopt 不再重挂。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
@@ -421,6 +422,20 @@ export function shouldHoldLiveHandoff(options: {
   if (!options.liveAssistantId?.trim()) return false
   // historyHasReserved 仍接调用方；persist 未入列也保住上一轮直播实例。
   return true
+}
+
+/**
+ * 跟进 hold 开轮就冻结上一轮。adopt 只换新 id，不再把 hold 从活动槽搬进 frozen 槽重挂
+ * （对标 Codex #22860 / #37849）。
+ */
+export function shouldRetireLiveOnHandoffHold(options: {
+  holdFollowUp: boolean
+  liveAssistantId?: string | null
+  alreadyRetired?: boolean
+}): boolean {
+  if (!options.holdFollowUp) return false
+  if (!options.liveAssistantId?.trim()) return false
+  return options.alreadyRetired !== true
 }
 
 /** 跟进保住期间过程秒表 / 图解码 / Thought 不得再当直播。 */
