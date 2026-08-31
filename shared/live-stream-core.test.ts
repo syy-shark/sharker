@@ -1767,7 +1767,13 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain(
       'mergeSeededRowHeights(measuredRowHeightsRef.current, ejectedLiveHeights)'
     )
-    expect(src('../src/components/ChatView.tsx')).toContain('不订 ejectedLiveHeights')
+    expect(src('../src/components/ChatView.tsx')).toContain(
+      'mergeSeededRowHeights(measuredRowHeightsRef.current, scrollSnapshot?.rowHeights ?? {})'
+    )
+    expect(src('../src/components/ChatView.tsx')).toContain('withTranscriptRowHeights')
+    expect(src('../src/components/ChatView.tsx')).toContain(
+      '不订 ejectedLiveHeights / scrollSnapshot.rowHeights'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('archivedLiveArticles')
     expect(src('../src/components/ChatView.tsx')).toContain('frozenHistoricalArticle')
     expect(src('../src/components/ChatView.tsx')).toContain('liveDiff={false}')

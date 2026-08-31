@@ -497,6 +497,14 @@ describe('near-live message rows', () => {
     const clonedHeights = cloneEjectedLiveHeights({ 'a-live': 420, skip: 0, '': 12, bad: Number.NaN })
     expect(clonedHeights).toEqual({ 'a-live': 420 })
     expect(cloneEjectedLiveHeights(undefined)).toEqual({})
+    const fromMap = new Map<string, number>([
+      ['hist-1', 640],
+      ['skip', 0],
+      ['bad', Number.NaN]
+    ])
+    const clonedMap = cloneEjectedLiveHeights(fromMap)
+    fromMap.set('hist-1', 1)
+    expect(clonedMap).toEqual({ 'hist-1': 640 })
     expect(readMountedMessageRowHeight('missing-live')).toBe(0)
     expect(readMountedMessageRowHeight('')).toBe(0)
     expect(rowIntrinsicSizeStyle(undefined)).toBeUndefined()

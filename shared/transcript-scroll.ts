@@ -2,7 +2,10 @@
  * 按会话记住对话柱滚动位置（对标 Codex app 26.406
  * “Preserved thread scroll position per conversation”）。
  * 只做窗口内内存快照：切对话 / 离开聊天页再回来仍在原处；不落盘、不跨窗口。
+ * 快照可带 `rowHeights`，切回远行不走 160px 估高跳（对标 Codex #38220）。
  */
+
+import { cloneEjectedLiveHeights } from './live-display'
 
 /** 窗口内按会话记下的对话柱位置（含长线程窗口起点） */
 export type TranscriptScrollSnapshot = {
@@ -14,6 +17,8 @@ export type TranscriptScrollSnapshot = {
   userLocked: boolean
   /** 读历史时钉住的窗口起点；贴底为 null，跟最近一段走 */
   transcriptWindowStart?: number | null
+  /** 已测量行高，切回第一帧不走 160px 估高 */
+  rowHeights?: Record<string, number>
 }
 
 /** 对话柱滚动盒的几何，供快照与恢复使用 */
@@ -39,6 +44,21 @@ export function captureTranscriptScroll(
     stickToBottom,
     userLocked,
     transcriptWindowStart
+  }
+}
+
+/** 切对话时把测量表挂上滚动快照，远行不能按估高跳（对标 Codex #38220）。 */
+export function withTranscriptRowHeights(
+  snap: TranscriptScrollSnapshot,
+  heights:
+    | Readonly<Record<string, number>>
+    | ReadonlyMap<string, number>
+    | null
+    | undefined
+): TranscriptScrollSnapshot {
+  return {
+    ...snap,
+    rowHeights: cloneEjectedLiveHeights(heights)
   }
 }
 

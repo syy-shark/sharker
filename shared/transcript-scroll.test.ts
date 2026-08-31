@@ -4,7 +4,8 @@ import {
   captureTranscriptScroll,
   resolveRestoredScrollTop,
   scrollTopToCenterChild,
-  shouldDeferScrollRestore
+  shouldDeferScrollRestore,
+  withTranscriptRowHeights
 } from './transcript-scroll'
 import type { ChatMessage } from './types'
 import {
@@ -120,6 +121,15 @@ describe('transcript scroll restore', () => {
       })
     ).toBeNull()
     expect(restoreTranscriptWindowStart(null)).toBeNull()
+
+    const heights = new Map<string, number>([
+      ['hist-1', 640],
+      ['skip', 0]
+    ])
+    const withHeights = withTranscriptRowHeights(mid, heights)
+    expect(withHeights.rowHeights).toEqual({ 'hist-1': 640 })
+    expect(withHeights.scrollTop).toBe(mid.scrollTop)
+    expect(withTranscriptRowHeights(mid, undefined).rowHeights).toEqual({})
 
     expect(stickTranscriptWindowStart(12)).toBe(0)
     expect(stickTranscriptWindowStart(80)).toBe(40)
@@ -285,6 +295,9 @@ describe('transcript scroll restore', () => {
     const chatSrc = readFileSync(new URL('../src/components/ChatView.tsx', import.meta.url), 'utf8')
     expect(chatSrc).toContain('shouldPrefetchOlderHistoryPage')
     expect(chatSrc).toContain('onPrefetchOlderHistory')
+    expect(chatSrc).toContain('withTranscriptRowHeights')
+    expect(chatSrc).toContain('scrollSnapshot?.rowHeights')
+    expect(chatSrc).toContain('不订 ejectedLiveHeights / scrollSnapshot.rowHeights')
     const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
     expect(appSrc).toContain('ensureOlderHistoryPage')
     expect(appSrc).toContain('handlePrefetchOlderHistory')
