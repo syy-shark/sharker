@@ -3,6 +3,13 @@
  * @see shared/ARCH.md
  */
 
+/** Official review findings (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_FINDINGS_INTRO =
+  'Review findings appear as inline comments in the review pane.'
+/** Official inline-comment follow-up (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_INLINE_COMMENT_FOLLOW_UP =
+  'After you finish leaving feedback, send a message back to the chat.'
+
 /** 一条行内审查评论 */
 export interface ReviewLineComment {
   id: string

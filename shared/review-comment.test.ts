@@ -7,6 +7,8 @@ import {
   nextLiveReviewFindings,
   parseLiveReviewFindings,
   parseReviewFindings,
+  REVIEW_FINDINGS_INTRO,
+  REVIEW_INLINE_COMMENT_FOLLOW_UP,
   sameReviewFindings
 } from './review-comment'
 
@@ -69,5 +71,14 @@ describe('review comments', () => {
     expect(panelSrc).toContain('useLiveStreamUiSelect')
     expect(panelSrc).toContain('reviewDiffKeysForFindings')
     expect(panelSrc).toContain('mergeReviewExpandedKeys')
+    expect(REVIEW_FINDINGS_INTRO).toMatch(/inline comments in the review pane/)
+    expect(REVIEW_INLINE_COMMENT_FOLLOW_UP).toMatch(/send a message back to the chat/)
+    const diffSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeDiffBlock.tsx'),
+      'utf8'
+    )
+    expect(diffSrc).toContain('REVIEW_FINDINGS_INTRO')
+    expect(diffSrc).toContain('REVIEW_INLINE_COMMENT_FOLLOW_UP')
+    expect(diffSrc).not.toContain('aria-label="行内评论"')
   })
 })

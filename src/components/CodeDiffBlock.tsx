@@ -1,5 +1,6 @@
 /**
  * 行级代码 diff 展示：过程流 / Markdown 用只读块；审查模式带 hunk 动作与行内评论。
+ * 发现列表 / 评论表单用官方 Review findings appear as inline comments… / After you finish leaving feedback…。
  * 直播写入：无行时按 stats 占位，有参数流 +/- 就画行；同一外壳填核实 diff。
  * 直播中不折预览、内层跟尾；收束后保持展开以免跳。
  * @see src/ARCH.md
@@ -25,7 +26,11 @@ import {
 import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
 import { REVERT_LABEL, STAGE_LABEL, UNSTAGE_LABEL } from '../../shared/review-repos'
-import type { ReviewLineComment } from '../../shared/review-comment'
+import {
+  REVIEW_FINDINGS_INTRO,
+  REVIEW_INLINE_COMMENT_FOLLOW_UP,
+  type ReviewLineComment
+} from '../../shared/review-comment'
 import { CodeArtifactShell } from './CodeArtifactBlock'
 import './CodeDiffBlock.css'
 
@@ -189,7 +194,11 @@ const DiffLineRow = memo(function DiffLineRow({
       </span>
       <code className="code-diff-text">{renderDiffFindText(line.content, findQuery, findCurrentStart)}</code>
       {comments.length > 0 ? (
-        <ul className="code-diff-comments">
+        <ul
+          className="code-diff-comments"
+          aria-label={REVIEW_FINDINGS_INTRO}
+          title={REVIEW_FINDINGS_INTRO}
+        >
           {comments.map((c) => (
             <li key={c.id}>{c.text}</li>
           ))}
@@ -342,12 +351,13 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
           }}
         />
         {commentingKey === key ? (
-          <div className="code-diff-comment-form">
+          <div className="code-diff-comment-form" title={REVIEW_INLINE_COMMENT_FOLLOW_UP}>
             <textarea
               className="code-diff-comment-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="写给 Agent 的行内意见…"
+              title={REVIEW_INLINE_COMMENT_FOLLOW_UP}
               rows={2}
               autoFocus
             />

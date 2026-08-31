@@ -140,8 +140,8 @@
 | `terminal-tabs.test.ts` | 新建 / 关闭 / 线程 key / 缓存淘汰 / pending 收编 |
 | `terminal-snapshot.ts` | 集成终端快照：去 ANSI、环形缓冲、`read_thread_terminal` 文案 |
 | `terminal-snapshot.test.ts` | 去色、截尾、无会话提示 |
-| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；解析 `/review` 的 `review-findings` 围栏；`nextLiveReviewFindings` 只认已闭合围栏，闭合后只追加不重扫；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline / #22860） |
-| `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、闭合后追加复用、审查面板订直播切片 |
+| `review-comment.ts` | 行内评论 → 跟进草稿（用户自己发送，不自动开一轮）；官方 Review findings appear as inline comments… / After you finish leaving feedback, send a message back to the chat.；解析 `/review` 的 `review-findings` 围栏；`nextLiveReviewFindings` 只认已闭合围栏，闭合后只追加不重扫；审查面板展开对应 diff 才把评论画在行上（对标 Codex review findings appear inline / #22860） |
+| `review-comment.test.ts` | 评论锚定路径与行号、围栏/标题解析、半截直播围栏不挂、闭合后追加复用、审查面板订直播切片；官方 findings / follow-up 原文 |
 | `files-changed-card.ts` | 对话写盘卡：`formatFilesChangedHeader` 用 Edited basename / Edited N files；标题打开审查、展开列短标签与种类、右键 Open / 访达 / 复制路径；从片段合计头栏 / 文件行 +N −M，数字没变复用同一对象；`shouldSkipFilesChangedIdentity` 在正文只加长或追加无 +/- 工具时跳过指纹，有 fileDiff / fileDiffs / editPreview 仍立刻合计（对标 Codex render_changes_block / #20700 / #21426 / #22860，不复制官方 #38695）。不发明回合 Undo |
 | `edit-activity.ts` | 官方写盘过程：Edited / Deleted / Added + basename，多文件 Edited N files，失败补丁 Failed to apply patch（对标 Codex render_changes_block）。write_file 不一律标 Added |
 | `edit-activity.test.ts` | Edited / Deleted / 多文件头 / 失败补丁 |
