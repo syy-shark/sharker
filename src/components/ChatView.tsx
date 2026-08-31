@@ -1,7 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
- * pin 列 / 历史源 `useMemo`，贴底 setState 不重建 `historicalRows`（对标 Codex #22860 / #38220）。
+ * pin 列 / 历史源 / pin 后缺口 `useMemo`，贴底 setState 不重建 `historicalRows` 与 after 行（对标 Codex #22860 / #38220）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，只补视口上方行的 scrollTop，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -23,6 +23,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type Ref
 } from 'react'
 import type {
@@ -74,6 +75,7 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
+  nextPinnedAfterGaps,
   nextPinnedTranscriptGaps,
   pinnedLiveAssistantIds,
   retiredLiveArticle,
@@ -210,6 +212,7 @@ import './ChatView.css'
 const EMPTY_FIND_HITS: ThreadSearchHit[] = []
 const EMPTY_RETIRED_ARTICLES: readonly RetiredLiveArticle[] = []
 const EMPTY_HISTORICAL_MESSAGES: ChatMessage[] = []
+const EMPTY_PINNED_AFTER_ROWS: readonly ReactNode[][] = []
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
 const AT_BOTTOM_PX = 16
@@ -2812,6 +2815,90 @@ export const ChatView = memo(function ChatView({
       toolOutputDisplay
     ]
   )
+  const pinnedAfterRows = useMemo(() => {
+    const afterGaps = nextPinnedAfterGaps(pinnedGaps)
+    if (afterGaps.length === 0) return EMPTY_PINNED_AFTER_ROWS
+    return afterGaps.map((gap) =>
+      gap.map((m) =>
+        m.role === 'user' ? (
+          <UserMessageRow
+            key={m.id}
+            id={m.id}
+            content={m.content}
+            createdAt={m.createdAt}
+            attachments={m.attachments}
+            findHit={historicalFindIds.has(m.id)}
+            findCurrent={currentFindMessageId === m.id}
+            nearLive
+            intrinsicHeight={resolveRowIntrinsicHeight(
+              intrinsicHeights.get(m.id),
+              measuredRowHeightsRef.current.get(m.id)
+            )}
+            editRequested={editUserMessageId === m.id}
+            onEditRequestHandled={handleEditRequestHandled}
+            onEdit={
+              onEditUserMessageRef.current
+                ? cachedIdArgCallback(editByIdRef.current, m.id, onEditUserMessageRef)
+                : undefined
+            }
+            onFork={
+              onForkFromMessageRef.current
+                ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                : undefined
+            }
+            onRevealSelection={handleRevealSelection}
+            selectionSource={selectionSourceId === m.id}
+          />
+        ) : (
+          <div
+            key={m.id}
+            id={`msg-${m.id}`}
+            className={`message-row message-row--assistant message-row--near-live${
+              historicalFindIds.has(m.id) ? ' is-find-hit' : ''
+            }${currentFindMessageId === m.id ? ' is-find-current' : ''}${
+              selectionSourceId === m.id ? ' is-selection-source' : ''
+            }`}
+          >
+            {renderFrozenEjectedArticle(m.id) ?? (
+              <AssistantMessage
+                messageId={m.id}
+                content={m.content}
+                createdAt={m.createdAt}
+                meta={m.meta}
+                modelLabel={m.meta?.model ?? modelLabel}
+                onOpenSubAgent={onOpenSubAgent}
+                onOpenChangedFiles={onOpenChangedFiles}
+                toolOutputDisplay={toolOutputDisplay}
+                onNeedFullMessage={onNeedFullMessage}
+                preserveLiveDiffs={m.id === preserveLiveDiffsId}
+                onFork={
+                  onForkFromMessageRef.current
+                    ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
+                    : undefined
+                }
+              />
+            )}
+          </div>
+        )
+      )
+    )
+  }, [
+    currentFindMessageId,
+    editUserMessageId,
+    handleEditRequestHandled,
+    handleRevealSelection,
+    historicalFindIds,
+    intrinsicHeights,
+    modelLabel,
+    onNeedFullMessage,
+    onOpenChangedFiles,
+    onOpenSubAgent,
+    pinnedGaps,
+    preserveLiveDiffsId,
+    renderFrozenEjectedArticle,
+    selectionSourceId,
+    toolOutputDisplay
+  ])
 
   const historyHasReserved = Boolean(
     liveAssistantId && messages.some((m) => m.id === liveAssistantId)
@@ -2927,7 +3014,6 @@ export const ChatView = memo(function ChatView({
               ? pinnedLiveIds.map((id, index) => {
                   const article = retiredLiveArticle(retiredArticles, id)
                   const frozen = Boolean(article)
-                  const after = pinnedGaps?.[index + 1] ?? []
                   return (
                     <Fragment key={id}>
                       <LiveAssistantSlot
@@ -2960,68 +3046,7 @@ export const ChatView = memo(function ChatView({
                         toolOutputDisplay={toolOutputDisplay}
                         onNeedFullMessage={onNeedFullMessage}
                       />
-                      {after.map((m) =>
-                        m.role === 'user' ? (
-                          <UserMessageRow
-                            key={m.id}
-                            id={m.id}
-                            content={m.content}
-                            createdAt={m.createdAt}
-                            attachments={m.attachments}
-                            findHit={historicalFindIds.has(m.id)}
-                            findCurrent={currentFindMessageId === m.id}
-                            nearLive
-                            intrinsicHeight={resolveRowIntrinsicHeight(
-                              intrinsicHeights.get(m.id),
-                              measuredRowHeightsRef.current.get(m.id)
-                            )}
-                            editRequested={editUserMessageId === m.id}
-                            onEditRequestHandled={handleEditRequestHandled}
-                            onEdit={
-                              onEditUserMessageRef.current
-                                ? cachedIdArgCallback(editByIdRef.current, m.id, onEditUserMessageRef)
-                                : undefined
-                            }
-                            onFork={
-                              onForkFromMessageRef.current
-                                ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
-                                : undefined
-                            }
-                            onRevealSelection={handleRevealSelection}
-                            selectionSource={selectionSourceId === m.id}
-                          />
-                        ) : (
-                          <div
-                            key={m.id}
-                            id={`msg-${m.id}`}
-                            className={`message-row message-row--assistant message-row--near-live${
-                              historicalFindIds.has(m.id) ? ' is-find-hit' : ''
-                            }${currentFindMessageId === m.id ? ' is-find-current' : ''}${
-                              selectionSourceId === m.id ? ' is-selection-source' : ''
-                            }`}
-                          >
-                            {renderFrozenEjectedArticle(m.id) ?? (
-                              <AssistantMessage
-                                messageId={m.id}
-                                content={m.content}
-                                createdAt={m.createdAt}
-                                meta={m.meta}
-                                modelLabel={m.meta?.model ?? modelLabel}
-                                onOpenSubAgent={onOpenSubAgent}
-                                onOpenChangedFiles={onOpenChangedFiles}
-                                toolOutputDisplay={toolOutputDisplay}
-                                onNeedFullMessage={onNeedFullMessage}
-                                preserveLiveDiffs={m.id === preserveLiveDiffsId}
-                                onFork={
-                                  onForkFromMessageRef.current
-                                    ? cachedIdCallback(forkByIdRef.current, m.id, onForkFromMessageRef)
-                                    : undefined
-                                }
-                              />
-                            )}
-                          </div>
-                        )
-                      )}
+                      {pinnedAfterRows[index]}
                     </Fragment>
                   )
                 })

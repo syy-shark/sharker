@@ -3,7 +3,7 @@
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
  * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
- * `nextPinnedTranscriptGaps` 给 ChatView 稳定的历史缺口，贴底 setState 不重建历史行。
+ * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口，贴底 setState 不重建历史行。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -593,6 +593,14 @@ export function nextPinnedTranscriptGaps(
   if (pinnedIds.length === 0) return null
   const split = splitTranscriptAroundPinnedLive(messages, pinnedIds)
   return split.gaps.map((gap) => historicalMessagesHidingIds(gap, hideIds))
+}
+
+const EMPTY_PINNED_AFTER_GAPS: ChatMessage[][] = []
+
+/** pin 后的缺口。空结果用同一数组，贴底 setState 不重建 after 行。 */
+export function nextPinnedAfterGaps(gaps: ChatMessage[][] | null): ChatMessage[][] {
+  if (!gaps || gaps.length <= 1) return EMPTY_PINNED_AFTER_GAPS
+  return gaps.slice(1)
 }
 
 /** 历史列同时藏 pinned / 预留直播 id，避免与冻结槽叠两份。 */

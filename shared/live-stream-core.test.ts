@@ -1596,6 +1596,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={liveStreaming}')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedTranscriptGaps')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedAfterGaps')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedAfterRows')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_HISTORICAL_MESSAGES')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountLiveAssistantSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountUnpinnedLiveSlot')

@@ -31,6 +31,7 @@ import {
   EJECTED_LIVE_LIMIT,
   splitTranscriptAroundPinnedLive,
   nextPinnedTranscriptGaps,
+  nextPinnedAfterGaps,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
   shouldStreamPinnedLiveAssistant,
@@ -699,6 +700,15 @@ describe('commitAssistantReply persist targeting', () => {
         ['a-live']
       )?.map((gap) => gap.map((m) => m.id))
     ).toEqual([['u1'], ['u2']])
+    const emptyAfter = nextPinnedAfterGaps(null)
+    expect(emptyAfter).toEqual([])
+    expect(nextPinnedAfterGaps([[{ id: 'u1', role: 'user', content: 'hi' }]])).toBe(emptyAfter)
+    expect(
+      nextPinnedAfterGaps([
+        [{ id: 'u1', role: 'user', content: 'hi' }],
+        [{ id: 'u2', role: 'user', content: 'more' }]
+      ]).map((gap) => gap.map((m) => m.id))
+    ).toEqual([['u2']])
     expect(
       pinnedLiveAssistantIds({
         retiredLiveIds: ['a-live', 'b-live'],
