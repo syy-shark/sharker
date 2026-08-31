@@ -333,6 +333,7 @@ import {
   shouldCommitToActiveUi,
   shouldAdoptLiveHandoff,
   shouldCancelLiveHandoffWithoutCommit,
+  shouldBeginNewLiveReservation,
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
   nextArchivedLiveArticles,
@@ -729,6 +730,7 @@ export default function App() {
         excludeMessageIds?: string[]
         providerId?: string
         thinkingLevel?: string
+        reuseReservedLiveId?: boolean
       }
     ) => Promise<void>
   >(async () => {})
@@ -771,6 +773,7 @@ export default function App() {
         excludeMessageIds?: string[]
         providerId?: string
         thinkingLevel?: string
+        reuseReservedLiveId?: boolean
       }
     ) => void
   >(() => {})
@@ -3634,6 +3637,7 @@ export default function App() {
         excludeMessageIds?: string[]
         providerId?: string
         thinkingLevel?: string
+        reuseReservedLiveId?: boolean
       }
     ) => {
       let convId = conversationId ?? activeConversationIdRef.current
@@ -3788,9 +3792,17 @@ export default function App() {
         userInputRef.current = null
         turnMetaRef.current = { browsedFiles: [], activities: [] }
         turnChangedPathsRef.current = []
-      } else {
+      } else if (
+        shouldBeginNewLiveReservation({
+          holdFollowUp: false,
+          reuseReservedLiveId: options?.reuseReservedLiveId,
+          reservedId: liveAssistantIdRef.current
+        })
+      ) {
         clearRetiredLive()
         beginTurnMeta()
+      } else {
+        clearRetiredLive()
       }
       if (convId) {
         const buf = sessionBuffersRef.current.get(convId)
@@ -4595,6 +4607,10 @@ export default function App() {
           startedAt: seedAt
         }
       ]
+      clearRetiredLive()
+      liveHandoffIdRef.current = null
+      setLiveHandoffId(null)
+      beginTurnMeta()
       setLoading(true)
       turnStartedAtRef.current = seedAt
       publishLiveStreamUi(
@@ -4611,7 +4627,9 @@ export default function App() {
       setMessages(history)
       messagesRef.current = history
       await persistActiveConversation(history)
-      await dispatchTurn(contentOverride ?? original.content, original.attachments ?? [])
+      await dispatchTurn(contentOverride ?? original.content, original.attachments ?? [], undefined, {
+        reuseReservedLiveId: true
+      })
     },
     [dispatchTurn, loading, persistActiveConversation]
   )

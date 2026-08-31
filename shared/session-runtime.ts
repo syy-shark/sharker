@@ -504,6 +504,20 @@ export function shouldPinActiveLiveAssistant(options: {
   return options.loading || options.hasLiveBody
 }
 
+/**
+ * 重试已在 persist 前预留直播 id 时不要再 beginTurnMeta。
+ * 否则 await 回来换新 id，直播树从旧槽搬到新槽重挂（对标 Codex #22860）。
+ */
+export function shouldBeginNewLiveReservation(options: {
+  holdFollowUp: boolean
+  reuseReservedLiveId?: boolean
+  reservedId?: string | null
+}): boolean {
+  if (options.holdFollowUp) return false
+  if (options.reuseReservedLiveId && Boolean(options.reservedId?.trim())) return false
+  return true
+}
+
 /** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */
 export function shouldMountActiveLiveSlot(options: {
   atLatestWindow: boolean

@@ -6,6 +6,7 @@ import {
   shouldHideReservedDuringLive,
   liveRowMessageId,
   shouldMountLiveAssistantSlot,
+  shouldBeginNewLiveReservation,
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldHoldLiveHandoff,
@@ -539,6 +540,28 @@ describe('commitAssistantReply persist targeting', () => {
     expect(shouldPinActiveLiveAssistant({ loading: true, hasLiveBody: false })).toBe(true)
     expect(shouldPinActiveLiveAssistant({ loading: false, hasLiveBody: true })).toBe(true)
     expect(shouldPinActiveLiveAssistant({ loading: false, hasLiveBody: false })).toBe(false)
+    expect(
+      shouldBeginNewLiveReservation({
+        holdFollowUp: false,
+        reuseReservedLiveId: true,
+        reservedId: 'a-live'
+      })
+    ).toBe(false)
+    expect(
+      shouldBeginNewLiveReservation({
+        holdFollowUp: false,
+        reuseReservedLiveId: true,
+        reservedId: null
+      })
+    ).toBe(true)
+    expect(
+      shouldBeginNewLiveReservation({
+        holdFollowUp: true,
+        reuseReservedLiveId: false,
+        reservedId: 'a-live'
+      })
+    ).toBe(false)
+    expect(shouldBeginNewLiveReservation({ holdFollowUp: false })).toBe(true)
     expect(
       pinnedLiveAssistantIds({
         liveAssistantId: 'a-live',
