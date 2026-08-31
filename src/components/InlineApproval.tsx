@@ -4,6 +4,7 @@ import type { ApprovalRequest } from '../../shared/types'
 import {
   ALLOW_FOR_SESSION_LABEL,
   ALLOW_ONCE_LABEL,
+  CHAT_APPEARS_STUCK_HINT,
   DENY_LABEL,
   type ApprovalDecision
 } from '../../shared/approval-session'
@@ -73,6 +74,7 @@ export function InlineApproval({ request, onRespond, responding = false }: Inlin
       ref={rootRef}
       className="inline-approval"
       role="region"
+      title={CHAT_APPEARS_STUCK_HINT}
       aria-live="polite"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}

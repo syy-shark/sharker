@@ -7,6 +7,10 @@
 /** 用户对单次审批请求的选择 */
 export type ApprovalDecision = 'once' | 'session' | 'deny'
 
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const CHAT_APPEARS_STUCK_HINT =
+  'If a chat appears stuck: Check whether Codex is waiting for an approval. Open the terminal and run a basic command like git status. Start a new chat with a smaller, more focused prompt.'
+
 /** Official desktop approval actions (gap-matrix / #10760 / #5131). */
 export const ALLOW_ONCE_LABEL = 'Allow once'
 export const ALLOW_FOR_SESSION_LABEL = 'Allow for session'

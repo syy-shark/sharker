@@ -81,6 +81,7 @@ import {
   PROJECTS_LABEL,
   PROJECTS_VIEW_INTRO,
   REMOVE_LABEL,
+  REMOVE_PROJECT_HINT,
   SEARCH_CHATS_INTRO,
   SEARCH_CHATS_LABEL,
   SETTINGS_LABEL,
@@ -800,7 +801,7 @@ export const Sidebar = memo(function Sidebar({
             <button
               type="button"
               className={`sidebar-row-action ${menuOpen ? 'sidebar-row-action--open' : ''}`}
-              title="更多"
+              title={REMOVE_PROJECT_HINT}
               aria-label={`${ws.label} 更多操作`}
               aria-expanded={menuOpen}
               onClick={(e) => {
@@ -905,6 +906,7 @@ export const Sidebar = memo(function Sidebar({
                   type="button"
                   role="menuitem"
                   className="sidebar-project-menu-danger"
+                  title={REMOVE_PROJECT_HINT}
                   onClick={(e) => {
                     e.stopPropagation()
                     closeProjectMenu()

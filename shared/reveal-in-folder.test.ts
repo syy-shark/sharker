@@ -109,6 +109,7 @@ import {
   CLEAR_TERMINAL_LABEL,
   FILES_LABEL,
   REVIEW_LABEL,
+  TERMINAL_APPEARS_STUCK_HINT,
   TERMINAL_INTRO,
   TERMINAL_LABEL,
   FILE_MENU_LABEL,
@@ -132,6 +133,7 @@ import {
   RESTORE_LABEL,
   ACTIVITY_LABEL,
   ADD_NEW_PROJECT_LABEL,
+  REMOVE_PROJECT_HINT,
   SETTINGS_LABEL,
   REMOVE_LABEL,
   SAVE_LABEL,
@@ -289,6 +291,8 @@ describe('reveal in folder', () => {
     expect(toolbarSrc).toContain('TOGGLE_BOTTOM_PANEL_LABEL')
     expect(toolbarSrc).toContain('OPEN_IN_POPUP_WINDOW_LABEL')
     expect(toolbarSrc).toContain('HAND_OFF_INTRO')
+    expect(toolbarSrc).toContain('TERMINAL_APPEARS_STUCK_HINT')
+    expect(toolbarSrc).toContain('OPEN_TERMINAL_MENU_LABEL')
     const worktreeSettingsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/WorktreeSettings.tsx'),
       'utf8'
@@ -314,6 +318,9 @@ describe('reveal in folder', () => {
     expect(TOGGLE_ACTIVITY_VIEW_LABEL).toBe('Toggle Activity view')
     expect(ACTIVITY_LABEL).toBe('Activity')
     expect(ADD_NEW_PROJECT_LABEL).toBe('Add new project')
+    expect(REMOVE_PROJECT_HINT).toMatch(/three dots/)
+    expect(REMOVE_PROJECT_HINT).toMatch(/Add new project/)
+    expect(REMOVE_PROJECT_HINT).toMatch(/Cmd\+O/)
     expect(SETTINGS_LABEL).toBe('Settings')
     expect(REMOVE_LABEL).toBe('Remove')
     expect(PROJECTS_LABEL).toBe('Projects')
@@ -398,6 +405,9 @@ describe('reveal in folder', () => {
     expect(TERMINAL_INTRO).toMatch(/validate changes, run scripts/)
     expect(CLEAR_TERMINAL_HINT).toMatch(/Cmd\+K opens the app command palette/)
     expect(CLEAR_TERMINAL_HINT).toMatch(/press Ctrl\+L/)
+    expect(TERMINAL_APPEARS_STUCK_HINT).toMatch(/Close the terminal panel/)
+    expect(TERMINAL_APPEARS_STUCK_HINT).toMatch(/Ctrl\+`/)
+    expect(TERMINAL_APPEARS_STUCK_HINT).toMatch(/pwd/)
     const terminalSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedTerminal.tsx'),
       'utf8'
@@ -418,6 +428,7 @@ describe('reveal in folder', () => {
     expect(panelSrc).toContain('FILES_LABEL')
     expect(panelSrc).toContain('REVIEW_LABEL')
     expect(panelSrc).toContain('TERMINAL_LABEL')
+    expect(panelSrc).toContain('TERMINAL_APPEARS_STUCK_HINT')
     expect(panelSrc).toContain('BROWSER_SETTINGS_LABEL')
     expect(panelSrc).toContain('FILE_CLOSE_LABEL')
     expect(panelSrc).toContain('TOGGLE_FULL_SCREEN_LABEL')
@@ -508,6 +519,7 @@ describe('reveal in folder', () => {
     expect(sidebarSrc).toContain('PIN_A_CHAT_HINT')
     expect(sidebarSrc).toContain('SEARCH_CHATS_INTRO')
     expect(sidebarSrc).toContain('CREATE_PERMANENT_WORKTREE_INTRO')
+    expect(sidebarSrc).toContain('REMOVE_PROJECT_HINT')
     const chatViewSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
       'utf8'

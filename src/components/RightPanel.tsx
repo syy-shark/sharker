@@ -14,6 +14,7 @@ import {
   FILE_CLOSE_LABEL,
   FILES_LABEL,
   REVIEW_LABEL,
+  TERMINAL_APPEARS_STUCK_HINT,
   TERMINAL_LABEL,
   TOGGLE_FULL_SCREEN_LABEL
 } from '../../shared/reveal-in-folder'
@@ -395,6 +396,7 @@ export const RightPanel = memo(function RightPanel({
               role="tab"
               aria-selected={tab === id}
               className={`right-panel-tab ${tab === id ? 'active' : ''}`}
+              title={id === 'terminal' ? TERMINAL_APPEARS_STUCK_HINT : undefined}
               onClick={() => onTabChange(id)}
             >
               {label}

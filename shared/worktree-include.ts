@@ -12,6 +12,9 @@ export const WORKTREE_INCLUDE_HINT =
   "Use this for files Git intentionally ignores, such as `.env`, `.env.local`, or `config/secrets.json`. Codex only copies ignored files that match `.worktreeinclude`; it doesn't copy other local files that Git doesn't track. Don't list tracked files."
 export const WORKTREE_INCLUDE_AGENTS_HINT =
   "Codex automatically copies an ignored `AGENTS.override.md` into local managed worktrees, so you don't need to list it in `.worktreeinclude`."
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const CODE_DOESNT_RUN_ON_WORKTREE_HINT =
+  'Worktrees are created in a different directory and inherit files checked into Git by default. Depending on how you manage dependencies and tooling for your project, you might have to run setup scripts on your worktree using a local environment or copy ignored setup files with `.worktreeinclude`. Alternatively, you can check out the changes in your regular local project.'
 
 /** 解析 `.worktreeinclude`：去注释与空行 */
 export function parseWorktreeInclude(text: string): string[] {

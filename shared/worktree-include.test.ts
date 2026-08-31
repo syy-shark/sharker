@@ -6,6 +6,7 @@ import {
   matchAnyWorktreeInclude,
   parseWorktreeInclude,
   sanitizeWorktreeBaseRef,
+  CODE_DOESNT_RUN_ON_WORKTREE_HINT,
   WORKTREE_INCLUDE_AGENTS_HINT,
   WORKTREE_INCLUDE_HINT,
   WORKTREE_INCLUDE_INTRO,
@@ -38,6 +39,9 @@ describe('worktree include', () => {
     expect(WORKTREE_INCLUDE_HINT).toMatch(/\.env\.local/)
     expect(WORKTREE_INCLUDE_HINT).toMatch(/Don't list tracked files/)
     expect(WORKTREE_INCLUDE_AGENTS_HINT).toMatch(/AGENTS\.override\.md/)
+    expect(CODE_DOESNT_RUN_ON_WORKTREE_HINT).toMatch(/different directory/)
+    expect(CODE_DOESNT_RUN_ON_WORKTREE_HINT).toMatch(/local environment/)
+    expect(CODE_DOESNT_RUN_ON_WORKTREE_HINT).toMatch(/\.worktreeinclude/)
     const settingsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/WorktreeSettings.tsx'),
       'utf8'
@@ -45,6 +49,7 @@ describe('worktree include', () => {
     expect(settingsSrc).toContain('WORKTREE_INCLUDE_INTRO')
     expect(settingsSrc).toContain('WORKTREE_INCLUDE_HINT')
     expect(settingsSrc).toContain('WORKTREE_INCLUDE_AGENTS_HINT')
+    expect(settingsSrc).toContain('CODE_DOESNT_RUN_ON_WORKTREE_HINT')
   })
 
   it('sanitizes base refs', () => {

@@ -41,6 +41,7 @@ import {
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
   OPEN_TERMINAL_MENU_LABEL,
+  TERMINAL_APPEARS_STUCK_HINT,
   RUN_ENVIRONMENT_ACTION_1_LABEL,
   SHARE_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
@@ -484,7 +485,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onOpenTerminal()
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title={OPEN_TERMINAL_MENU_LABEL}
+              title={TERMINAL_APPEARS_STUCK_HINT}
               aria-label={OPEN_TERMINAL_MENU_LABEL}
             >
               <SquareTerminal size={18} strokeWidth={1.75} aria-hidden />

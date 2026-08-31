@@ -170,6 +170,9 @@ export const WORKTREE_RESTORE_BANNER = 'Restore this worktree from its snapshot.
 export const ACTIVITY_LABEL = 'Activity'
 /** Official troubleshooting: Add new project button next to Chats. */
 export const ADD_NEW_PROJECT_LABEL = 'Add new project'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const REMOVE_PROJECT_HINT =
+  'To remove a project from the sidebar, hover over the name of your project, click the three dots and choose "Remove." To restore it, re-add the project using the Add new project button next to Chats or using Cmd+O.'
 /** Official Settings footer / Open settings without the verb. */
 export const SETTINGS_LABEL = 'Settings'
 /** Official project menu: Remove. */
@@ -348,6 +351,9 @@ export const TERMINAL_INTRO =
 /** Official: Cmd+K opens the palette; Ctrl+L clears. */
 export const CLEAR_TERMINAL_HINT =
   "Cmd+K opens the app command palette; it doesn't clear the terminal. To clear the terminal, press Ctrl+L."
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const TERMINAL_APPEARS_STUCK_HINT =
+  'Terminal appears stuck. Close the terminal panel. Reopen it with Ctrl+`. Re-run a basic command like pwd or git status.'
 /** Official desktop right-panel Files tool (#30659) next to Toggle file tree. */
 export const FILES_LABEL = 'Files'
 /** Official Settings → Worktrees (learn.chatgpt.com/docs/environments/git-worktrees). */

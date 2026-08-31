@@ -12,6 +12,7 @@ import {
 } from '../../../shared/reveal-in-folder'
 import { LOCAL_ENVIRONMENT_SETUP_INTRO } from '../../../shared/local-environment'
 import {
+  CODE_DOESNT_RUN_ON_WORKTREE_HINT,
   WORKTREE_INCLUDE_AGENTS_HINT,
   WORKTREE_INCLUDE_HINT,
   WORKTREE_INCLUDE_INTRO
@@ -60,6 +61,9 @@ export function WorktreeSettings({ draft, setDraft, onSave }: Props) {
       </p>
       <p className="st-section-desc" title={LOCAL_ENVIRONMENT_SETUP_INTRO}>
         {LOCAL_ENVIRONMENT_SETUP_INTRO}
+      </p>
+      <p className="st-section-desc" title={CODE_DOESNT_RUN_ON_WORKTREE_HINT}>
+        {CODE_DOESNT_RUN_ON_WORKTREE_HINT}
       </p>
       <SettingsCard>
         <SettingsRow

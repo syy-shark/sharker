@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   ALLOW_FOR_SESSION_LABEL,
   ALLOW_ONCE_LABEL,
+  CHAT_APPEARS_STUCK_HINT,
   approvalActionLabel,
   ConversationApprovalRegistry,
   DENY_LABEL,
@@ -27,6 +31,17 @@ describe('approval decision enforcement (once / session / deny)', () => {
     expect(approvalActionLabel('once')).toBe('Allow once')
     expect(approvalActionLabel('session')).toBe('Allow for session')
     expect(approvalActionLabel('deny')).toBe('Deny')
+    expect(CHAT_APPEARS_STUCK_HINT).toMatch(/waiting for an approval/)
+    expect(CHAT_APPEARS_STUCK_HINT).toMatch(/git status/)
+    expect(CHAT_APPEARS_STUCK_HINT).toMatch(/smaller, more focused prompt/)
+  })
+
+  it('wires official stuck-chat leftover on the live approval card', () => {
+    const approvalSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/InlineApproval.tsx'),
+      'utf8'
+    )
+    expect(approvalSrc).toContain('CHAT_APPEARS_STUCK_HINT')
   })
 
   it('once grants only that request — does not skip later approvals', () => {
