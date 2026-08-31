@@ -87,9 +87,11 @@ import {
   OPEN_SETTINGS_LABEL,
   SKILLS_LABEL,
   FORCE_RELOAD_SKILLS_LABEL,
+  SKILLS_DETECT_HINT,
   SKILLS_INTRO,
   SKILLS_INVOKE_HINT,
   SKILLS_MATCH_HINT,
+  SKILLS_SKILL_MD_HINT,
   SKILLS_SLASH_HINT,
   revealInFolderLabel,
   reviewFileRevealPath,
@@ -249,6 +251,9 @@ describe('reveal in folder', () => {
     expect(SKILLS_SLASH_HINT).not.toMatch(/prompts:/)
     expect(SKILLS_MATCH_HINT).toMatch(/choose a skill when your request matches its purpose/)
     expect(SKILLS_MATCH_HINT).toMatch(/Codex supports `\$` mentions/)
+    expect(SKILLS_DETECT_HINT).toMatch(/detects skill changes automatically/)
+    expect(SKILLS_SKILL_MD_HINT).toMatch(/SKILL\.md/)
+    expect(SKILLS_SKILL_MD_HINT).not.toMatch(/progressive disclosure/)
     const skillsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/pages/SkillsPage.tsx'),
       'utf8'
@@ -257,6 +262,9 @@ describe('reveal in folder', () => {
     expect(skillsSrc).toContain('SKILLS_INVOKE_HINT')
     expect(skillsSrc).toContain('SKILLS_SLASH_HINT')
     expect(skillsSrc).toContain('SKILLS_MATCH_HINT')
+    expect(skillsSrc).toContain('SKILLS_DETECT_HINT')
+    expect(skillsSrc).toContain('SKILLS_SKILL_MD_HINT')
+    expect(skillsSrc).not.toContain('progressive disclosure')
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(skillsSrc).toContain('reloadNonce')
     const skillReloadComposerSrc = readFileSync(
@@ -381,6 +389,8 @@ describe('reveal in folder', () => {
     expect(TOGGLE_BOTTOM_PANEL_LABEL).toBe('Toggle bottom panel')
     expect(CLEAR_TERMINAL_LABEL).toBe('Clear terminal')
     expect(TERMINAL_INTRO).toMatch(/terminal scoped to its current project or worktree/)
+    expect(TERMINAL_INTRO).toMatch(/read the current terminal output/)
+    expect(TERMINAL_INTRO).toMatch(/validate changes, run scripts/)
     expect(CLEAR_TERMINAL_HINT).toMatch(/Cmd\+K opens the app command palette/)
     expect(CLEAR_TERMINAL_HINT).toMatch(/press Ctrl\+L/)
     const terminalSrc = readFileSync(

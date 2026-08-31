@@ -132,6 +132,11 @@ export const SKILLS_SLASH_HINT = 'Enabled skills also appear in the slash comman
 /** Official Skills & Plugins (learn.chatgpt.com/docs/skills-and-plugins). Implicit match already selects SKILL.md. */
 export const SKILLS_MATCH_HINT =
   'ChatGPT and Codex can choose a skill when your request matches its purpose. You can also select one explicitly. ChatGPT supports `@` mentions, while Codex supports `$` mentions for skills.'
+/** Official leftover (learn.chatgpt.com/docs/build-skills). Do not claim progressive disclosure. */
+export const SKILLS_DETECT_HINT =
+  "Codex detects skill changes automatically. If an update doesn't appear, restart Codex."
+export const SKILLS_SKILL_MD_HINT =
+  'A skill is a directory with a `SKILL.md` file plus optional scripts and references. The `SKILL.md` file must include `name` and `description`.'
 
 /** Official Codex app-menu roots (github.com/openai/codex#14450 File, Edit, View, Window, Help). */
 export const FILE_MENU_LABEL = 'File'
@@ -336,7 +341,7 @@ export const REVIEW_LABEL = 'Review'
 export const TERMINAL_LABEL = 'Terminal'
 /** Official integrated terminal (learn.chatgpt.com/docs/integrated-terminal). */
 export const TERMINAL_INTRO =
-  'Each chat in the ChatGPT desktop app includes a terminal scoped to its current project or worktree. Open it from the terminal icon in the top-right corner of the app, or press Ctrl+`.'
+  'Each chat in the ChatGPT desktop app includes a terminal scoped to its current project or worktree. Open it from the terminal icon in the top-right corner of the app, or press Ctrl+`. Use the terminal to validate changes, run scripts, and perform Git operations without switching apps. ChatGPT can read the current terminal output, so it can check a running development server or refer to a failed build while it works with you.'
 /** Official: Cmd+K opens the palette; Ctrl+L clears. */
 export const CLEAR_TERMINAL_HINT =
   "Cmd+K opens the app command palette; it doesn't clear the terminal. To clear the terminal, press Ctrl+L."

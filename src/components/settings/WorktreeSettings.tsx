@@ -10,6 +10,7 @@ import {
   WORKTREES_SETTINGS_INTRO,
   WORKTREES_SETTINGS_LABEL
 } from '../../../shared/reveal-in-folder'
+import { LOCAL_ENVIRONMENT_SETUP_INTRO } from '../../../shared/local-environment'
 import {
   WORKTREE_INCLUDE_AGENTS_HINT,
   WORKTREE_INCLUDE_HINT,
@@ -56,6 +57,9 @@ export function WorktreeSettings({ draft, setDraft, onSave }: Props) {
       </p>
       <p className="st-section-desc" title={WORKTREE_INCLUDE_HINT}>
         {WORKTREE_INCLUDE_HINT} {WORKTREE_INCLUDE_AGENTS_HINT}
+      </p>
+      <p className="st-section-desc" title={LOCAL_ENVIRONMENT_SETUP_INTRO}>
+        {LOCAL_ENVIRONMENT_SETUP_INTRO}
       </p>
       <SettingsCard>
         <SettingsRow

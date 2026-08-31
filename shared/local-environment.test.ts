@@ -3,7 +3,10 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+  LOCAL_ENVIRONMENT_ACTIONS_HINT,
+  LOCAL_ENVIRONMENT_ACTIONS_INTRO,
   LOCAL_ENVIRONMENT_REL,
+  LOCAL_ENVIRONMENT_SETUP_INTRO,
   hostLocalEnvironmentPlatform,
   localEnvironmentTomlPath,
   parseLocalEnvironmentActions,
@@ -44,6 +47,12 @@ describe('local environment setup script', () => {
     expect(wtSrc).toContain("runLocalEnvironmentScript(cwd, dest, 'cleanup')")
     expect(wtSrc).toContain('localEnvironmentTomlPath')
     expect(wtSrc.includes('[[actions]]')).toBe(false)
+    const worktreeSettingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/WorktreeSettings.tsx'),
+      'utf8'
+    )
+    expect(worktreeSettingsSrc).toContain('LOCAL_ENVIRONMENT_SETUP_INTRO')
+    expect(worktreeSettingsSrc).not.toContain('environment editor')
     const expoToml = [
       'version = 1',
       'name = "app"',
@@ -104,6 +113,11 @@ describe('local environment setup script', () => {
     expect(toolbarSrc).toContain('onRunEnvironmentAction')
     expect(toolbarSrc).toContain('OPEN_TERMINAL_MENU_LABEL')
     expect(toolbarSrc).toContain('RUN_ENVIRONMENT_ACTION_1_LABEL')
+    expect(toolbarSrc).toContain('LOCAL_ENVIRONMENT_ACTIONS_INTRO')
+    expect(toolbarSrc).toContain('LOCAL_ENVIRONMENT_ACTIONS_HINT')
+    expect(LOCAL_ENVIRONMENT_ACTIONS_INTRO).toMatch(/top bar for quick access/)
+    expect(LOCAL_ENVIRONMENT_ACTIONS_HINT).toMatch(/run in the integrated terminal/)
+    expect(LOCAL_ENVIRONMENT_SETUP_INTRO).toMatch(/Setup scripts run automatically/)
     expect(toolbarSrc).not.toContain('环境动作')
     expect(toolbarSrc).not.toContain('打开环境动作')
     expect(toolbarSrc).toContain('onOpenTerminal')

@@ -1,7 +1,7 @@
 /**
  * 聊天区顶栏：
  * - 左簇（展开/收起 · 新对话）portal 到 body，贴红绿灯右侧，不被 view-enter transform 困住
- * - 右：Hand off / Open（worktree IDE）/ Create branch here / Local environment Actions（title/aria **Run environment action 1**）/ PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
+ * - 右：Hand off / Open（worktree IDE）/ Create branch here / Local environment Actions（aria **Run environment action 1**，title 官方 Use actions…）/ PR / Copy 子菜单 / Open Terminal / 右侧面板；中间空白拖窗
  * @see src/ARCH.md
  */
 import { memo, useEffect, useRef, useState } from 'react'
@@ -25,7 +25,11 @@ import {
   ChevronDown,
   MoreHorizontal
 } from 'lucide-react'
-import type { LocalEnvironmentAction } from '../../shared/local-environment'
+import {
+  LOCAL_ENVIRONMENT_ACTIONS_HINT,
+  LOCAL_ENVIRONMENT_ACTIONS_INTRO,
+  type LocalEnvironmentAction
+} from '../../shared/local-environment'
 import {
   ALWAYS_ON_TOP_LABEL,
   COPY_LABEL,
@@ -243,7 +247,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                   runAction(primaryAction)
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title={RUN_ENVIRONMENT_ACTION_1_LABEL}
+                title={`${LOCAL_ENVIRONMENT_ACTIONS_INTRO} ${LOCAL_ENVIRONMENT_ACTIONS_HINT}`}
                 aria-label={RUN_ENVIRONMENT_ACTION_1_LABEL}
                 aria-expanded={environmentActions.length > 1 ? actionsOpen : undefined}
                 aria-haspopup={environmentActions.length > 1 ? 'menu' : undefined}

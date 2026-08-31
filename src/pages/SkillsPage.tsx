@@ -1,6 +1,6 @@
 /**
  * 侧栏 Skills 页：浏览各项目已安装 Skill（对标 Codex open Skills in the sidebar）。
- * 说明含官方 `$` 调用、slash 列表与 implicit match。
+ * 说明含官方 `$` 调用、slash 列表、implicit match、SKILL.md 与自动检测。不发明 progressive disclosure。
  * 命令面板 Force reload skills 用 `reloadNonce` 重扫盘上 SKILL.md。
  * @see src/pages/ARCH.md
  */
@@ -8,10 +8,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { WorkspaceItem } from '../../shared/types'
 import { CHATS_SECTION_LABEL } from '../../shared/conversation'
 import {
+  SKILLS_DETECT_HINT,
   SKILLS_INTRO,
   SKILLS_INVOKE_HINT,
   SKILLS_LABEL,
   SKILLS_MATCH_HINT,
+  SKILLS_SKILL_MD_HINT,
   SKILLS_SLASH_HINT
 } from '../../shared/reveal-in-folder'
 import {
@@ -89,6 +91,8 @@ export function SkillsPage({ workspaces, onBack, onUseSkill, reloadNonce }: Prop
           <p>{SKILLS_MATCH_HINT}</p>
           <p>{SKILLS_INVOKE_HINT}</p>
           <p>{SKILLS_SLASH_HINT}</p>
+          <p>{SKILLS_SKILL_MD_HINT}</p>
+          <p>{SKILLS_DETECT_HINT}</p>
         </header>
 
         <label className="skills-search">

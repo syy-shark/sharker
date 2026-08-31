@@ -22,6 +22,14 @@ export interface LocalEnvironmentAction {
 
 /** 官方项目内本地环境文件（对标 Codex Local environments） */
 export const LOCAL_ENVIRONMENT_REL = path.join('.codex', 'environments', 'environment.toml')
+/** Official leftover (learn.chatgpt.com/docs/environments/local-environment). No Settings editor. */
+export const LOCAL_ENVIRONMENT_ACTIONS_INTRO =
+  "Use actions to define common tasks like starting your app's development server or running your test suite. These actions appear in the ChatGPT desktop app top bar for quick access. The actions run within the app's integrated terminal."
+export const LOCAL_ENVIRONMENT_ACTIONS_HINT =
+  'If you run a command regularly, define an action in your local environment. Actions appear as shortcuts in the ChatGPT desktop app and run in the integrated terminal.'
+/** Official leftover (learn.chatgpt.com/docs/environments/local-environment). */
+export const LOCAL_ENVIRONMENT_SETUP_INTRO =
+  'Setup scripts run automatically when Codex creates a new worktree at the start of a new chat. Use this script to run any command required to configure your environment, such as installing dependencies or running a build process.'
 
 /** 仓库根下的 environment.toml 绝对路径 */
 export function localEnvironmentTomlPath(root: string): string {
