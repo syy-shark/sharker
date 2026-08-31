@@ -53,6 +53,7 @@ import {
   shouldObserveRowIntrinsicHeight,
   shouldFlushRowIntrinsicHeight,
   FAR_ROW_INTRINSIC_GUESS,
+  resolvePreviousRowIntrinsicSize,
   nextAboveFoldHeightScrollTop,
   applyRowIntrinsicSizeStyle,
   commitAboveFoldHeightScroll,
@@ -449,6 +450,11 @@ describe('near-live message rows', () => {
     expect(shouldFlushRowIntrinsicHeight({ id: 'streaming', height: 420 })).toBe(false)
     expect(shouldFlushRowIntrinsicHeight({ id: 'hist-1', height: 0 })).toBe(false)
     expect(FAR_ROW_INTRINSIC_GUESS).toBe(160)
+    expect(resolvePreviousRowIntrinsicSize({})).toBe(FAR_ROW_INTRINSIC_GUESS)
+    expect(resolvePreviousRowIntrinsicSize({ stored: 0, seeded: 0 })).toBe(FAR_ROW_INTRINSIC_GUESS)
+    expect(resolvePreviousRowIntrinsicSize({ stored: 420, seeded: 640 })).toBe(420)
+    expect(resolvePreviousRowIntrinsicSize({ seeded: 640 })).toBe(640)
+    expect(resolvePreviousRowIntrinsicSize({ stored: Number.NaN, seeded: 481.6 })).toBe(482)
     expect(
       nextAboveFoldHeightScrollTop({
         scrollTop: 2000,
@@ -701,7 +707,9 @@ describe('near-live message rows', () => {
     expect(chatView).not.toContain('setIntrinsicHeights')
     expect(chatView).not.toContain('handleEditRequestHandled,\n      intrinsicHeights,')
     expect(chatView).not.toContain('historicalFindIds,\n    intrinsicHeights,')
-    expect(chatView).toContain('FAR_ROW_INTRINSIC_GUESS')
+    expect(chatView).toContain('resolvePreviousRowIntrinsicSize')
+    expect(chatView).not.toContain('FAR_ROW_INTRINSIC_GUESS')
+    expect(chatView).toContain('intrinsicHeightsRef.current = new Map(measuredRowHeightsRef.current)')
     expect(chatView).toContain('requestAnimationFrame(flush)')
     expect(chatView).toContain('shouldRecordTranscriptScrollIntent')
     expect(chatView).toContain('liveStreaming: loadingRef.current')

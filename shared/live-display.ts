@@ -5,6 +5,7 @@
  * 未贴底也记下 `lastHeight`（`shouldRecordLiveStickHeightWhenUnstuck`）。
  * 远窗行高 flush 写在已挂行上（`applyRowIntrinsicSizeStyle`），不抬 React state。
  * `cloneEjectedLiveHeights` 给会话 buffer / 滚动快照带走行高，切回不走 160px 估高跳。
+ * `resolvePreviousRowIntrinsicSize` 切回 flush 先信已灌真高，不把空表当成 160px 估高跳。
  * 与 TurnFlow 渲染共用，保证“头 = 当前步骤”。
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
@@ -907,6 +908,22 @@ export function rememberNearLiveHighlightPreference(
 
 /** 远窗未写入实测高度时，与 `.chat--active .message-row` 的 contain-intrinsic-size 估高一致 */
 export const FAR_ROW_INTRINSIC_GUESS = 160
+
+/**
+ * flush 补 scrollTop 时的「上一高」。
+ * 已写入 / 已灌回的真高优先；没有才回落 160px CSS 估高。
+ * 切回清掉 intrinsic 表后不能把已灌行当成估高，否则视口上方会跳（对标 Codex #38220）。
+ */
+export function resolvePreviousRowIntrinsicSize(input: {
+  stored?: number
+  seeded?: number
+}): number {
+  const stored = Math.round(input.stored ?? 0)
+  if (stored > 0) return stored
+  const seeded = Math.round(input.seeded ?? 0)
+  if (seeded > 0) return seeded
+  return FAR_ROW_INTRINSIC_GUESS
+}
 
 /**
  * 远窗行高刷进 contain-intrinsic-size 后，只补完全在视口上方的行。

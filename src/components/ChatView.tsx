@@ -8,7 +8,7 @@
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
  * 历史列在预留行入列或仍在直播时订直播体布尔；loading 中 store 闪空也留下直播槽并继续藏预留行，避免 `return null` 塌高（对标 Codex #22860）；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；`pinActiveLive` 从开轮就把当前预留 id 钉进 pinned 列，hideReserved 翻转不再把同一行从无 pin 槽搬进 map；pinned 槽带 `key={id}`，行根不再另挂 `key={liveRowId}` 以免实例留下、内层却重挂；无 pin 才走 `shouldMountUnpinnedLiveSlot`，不先挂 `key=streaming` 再搬进 map；钉进 map 的当前行仍 `shouldStreamPinnedLiveAssistant` 跟 `liveStreaming`，retired / handoff 行不跟秒表（对标 Codex #22860）；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
- * 切对话清掉历史 demo iframe 池与历史回答 hold；滚动快照带上测量行高，切回 `mergeSeededRowHeights` 灌回以免 160px 估高跳。
+ * 切对话清掉历史 demo iframe 池与历史回答 hold；滚动快照带上测量行高，切回 `mergeSeededRowHeights` 灌回，flush 用 `resolvePreviousRowIntrinsicSize` 信已灌真高，以免 160px 估高跳。
  * 空闲时按切片预热窗口外一页助手行 hold，直播中不跑。
  * 靠近顶预取更早盘页并 idle 预热，揭开不再冷挂载。
  * 长线程先挂最近一段，上滑再揭示更早行（对标 Codex older history fetched as needed）。
@@ -133,7 +133,7 @@ import {
   mergeSeededRowHeights,
   cachedIdArgCallback,
   cachedIdCallback,
-  FAR_ROW_INTRINSIC_GUESS,
+  resolvePreviousRowIntrinsicSize,
   applyRowIntrinsicSizeStyle,
   commitAboveFoldHeightScroll,
   nextRowIntrinsicHeights,
@@ -1219,7 +1219,7 @@ export const ChatView = memo(function ChatView({
     historicalRowsSessionRef.current = sessionKey
     pinnedAfterRowsHeldRef.current = EMPTY_PINNED_AFTER_ROW_HOLD
     pinnedAfterRowsSessionRef.current = sessionKey
-    intrinsicHeightsRef.current = new Map()
+    intrinsicHeightsRef.current = new Map(measuredRowHeightsRef.current)
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
   const findInputRef = useRef<HTMLInputElement>(null)
@@ -1259,7 +1259,7 @@ export const ChatView = memo(function ChatView({
   const heightFlushEpochRef = useRef(0)
   if (intrinsicHeightsSessionRef.current !== sessionKey) {
     intrinsicHeightsSessionRef.current = sessionKey
-    intrinsicHeightsRef.current = new Map()
+    intrinsicHeightsRef.current = new Map(measuredRowHeightsRef.current)
     heightFlushEpochRef.current += 1
   }
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -2513,7 +2513,10 @@ export const ChatView = memo(function ChatView({
       if (scroller) {
         for (const row of snapshots) {
           const nextSize = Math.round(row.height)
-          const previousSize = prev.get(row.id) ?? FAR_ROW_INTRINSIC_GUESS
+          const previousSize = resolvePreviousRowIntrinsicSize({
+            stored: prev.get(row.id),
+            seeded: measuredRowHeightsRef.current.get(row.id)
+          })
           if (nextSize === previousSize) continue
           const el = document.getElementById(`msg-${row.id}`)
           if (!(el instanceof HTMLElement)) continue

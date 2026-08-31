@@ -1774,6 +1774,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain(
       '不订 ejectedLiveHeights / scrollSnapshot.rowHeights'
     )
+    expect(src('../src/components/ChatView.tsx')).toContain('resolvePreviousRowIntrinsicSize')
+    expect(src('../src/components/ChatView.tsx')).toContain(
+      'intrinsicHeightsRef.current = new Map(measuredRowHeightsRef.current)'
+    )
+    expect(src('../src/components/ChatView.tsx')).not.toContain('FAR_ROW_INTRINSIC_GUESS')
     expect(src('../src/components/ChatView.tsx')).toContain('archivedLiveArticles')
     expect(src('../src/components/ChatView.tsx')).toContain('frozenHistoricalArticle')
     expect(src('../src/components/ChatView.tsx')).toContain('liveDiff={false}')
