@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from './types'
 import {
   filterWorkspaces,
   GLOBAL_WORKSPACE_ID,
   isLocalProjectWorkspace,
-  normalizeSettings
+  normalizeSettings,
+  resolveWorkspaceForSend
 } from './workspace'
 
 describe('workspace settings', () => {
@@ -91,5 +95,33 @@ describe('workspace project picker', () => {
     expect(isLocalProjectWorkspace({ id: 'home', path: '/repo', isHome: true })).toBe(false)
     expect(isLocalProjectWorkspace({ id: 'ws-2', path: '' })).toBe(false)
     expect(isLocalProjectWorkspace(null)).toBe(false)
+    const normalized = normalizeSettings({}, '/home/u')
+    expect(resolveWorkspaceForSend(normalized)).toEqual({
+      workspaceId: GLOBAL_WORKSPACE_ID,
+      workspacePath: '/home/u/.sharker/global'
+    })
+    expect(
+      resolveWorkspaceForSend({
+        activeWorkspaceId: 'ws-1',
+        workspaces: [{ id: 'ws-1', path: '/repo' }]
+      })
+    ).toEqual({ workspaceId: 'ws-1', workspacePath: '/repo' })
+    expect(
+      resolveWorkspaceForSend({
+        activeWorkspaceId: 'ws-empty',
+        workspaces: [
+          { id: GLOBAL_WORKSPACE_ID, path: '/home/u/.sharker/global', isHome: true },
+          { id: 'ws-empty', path: '' }
+        ]
+      })
+    ).toEqual({
+      workspaceId: GLOBAL_WORKSPACE_ID,
+      workspacePath: '/home/u/.sharker/global'
+    })
+    expect(resolveWorkspaceForSend({ workspaces: [] })).toBeNull()
+    const appSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'), 'utf8')
+    expect(appSrc).toContain('resolveWorkspaceForSend')
+    expect(appSrc).not.toContain('然后再发送消息')
+    expect(appSrc).not.toContain('请先在侧栏或 **设置 → 工作区**')
   })
 })

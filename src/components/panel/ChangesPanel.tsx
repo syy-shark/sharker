@@ -65,6 +65,7 @@ import {
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
+  REVIEW_HAPPY_WITH_CHANGE_HINT,
   REVIEW_LAST_TURN_ALL_REPOS_HINT,
   REVIEW_MULTI_REPO_INTRO,
   REVIEW_OTHER_SCOPE_REPO_HINT,
@@ -1291,7 +1292,7 @@ export const ChangesPanel = memo(function ChangesPanel({
 
       {isRepo && !readOnly && !isAllRepos && files.length > 0 && compare === 'uncommitted' ? (
         <div className="changes-panel__toolbar">
-          <div className="changes-panel__bulk">
+          <div className="changes-panel__bulk" title={REVIEW_HAPPY_WITH_CHANGE_HINT}>
             {scope === 'unstaged' ? (
               <button
                 type="button"

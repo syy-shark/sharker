@@ -73,6 +73,7 @@ import {
   GLOBAL_WORKSPACE_ID,
   getActiveWorkspace,
   getActiveWorkspacePath,
+  resolveWorkspaceForSend,
   sortWorkspaces,
   pickActiveWorkspaceId,
   withActiveWorkspace
@@ -2053,8 +2054,9 @@ export default function App() {
   /** 无活跃对话时创建新对话（列表刷新不阻塞返回，避免卡死发送） */
   const ensureActiveConversation = useCallback(
     async (opts?: { preserveMessages?: boolean }): Promise<string | null> => {
-      const workspaceId = settingsRef.current.activeWorkspaceId
-      if (!workspaceId || !getActiveWorkspacePath(settingsRef.current)) return null
+      const sendWs = resolveWorkspaceForSend(settingsRef.current)
+      if (!sendWs) return null
+      const workspaceId = sendWs.workspaceId
       if (activeConversationIdRef.current) return workspaceId
 
       if (!creatingConversationRef.current) {
@@ -4260,29 +4262,6 @@ export default function App() {
       } catch (e) {
         console.error('flush settings failed', e)
       }
-      if (!getActiveWorkspacePath(settingsRef.current)) {
-        const trimmedEarly = text.trim()
-        if (!trimmedEarly) return
-        const userMsg: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'user',
-          content: trimmedEarly,
-          attachments: attachments.length ? attachments : undefined,
-          createdAt: Date.now()
-        }
-        const errReply: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content:
-            '**提示**：请先在侧栏或 **设置 → 工作区** 中添加并选择一个工作区文件夹，然后再发送消息。',
-          createdAt: Date.now()
-        }
-        const withErr = [...messagesRef.current, userMsg, errReply]
-        setMessages(withErr)
-        messagesRef.current = withErr
-        return
-      }
-
       const trimmed = text.trim()
       if (!trimmed) return
 

@@ -1,5 +1,5 @@
 /**
- * 工作区列表、排序与设置归一化。
+ * 工作区列表、排序与设置归一化。`resolveWorkspaceForSend` 让无文件夹对话也能发送。
  * 详见 shared/ARCH.md
  */
 import type { AppSettings, WorkspaceItem } from './types'
@@ -91,6 +91,29 @@ export function getActiveWorkspacePath(settings: AppSettings): string {
   const item = settings.workspaces.find((w) => w.id === settings.activeWorkspaceId)
   if (item) return item.path
   return settings.workspacePath ?? ''
+}
+
+/**
+ * Official start-without-a-project: send even when no folder is attached.
+ * Prefer the active path; otherwise the global no-project workspace.
+ */
+export function resolveWorkspaceForSend(settings: {
+  activeWorkspaceId?: string
+  workspacePath?: string
+  workspaces?: Array<{ id: string; path?: string; isHome?: boolean }>
+}): { workspaceId: string; workspacePath: string } | null {
+  const workspaces = settings.workspaces ?? []
+  const activeId = String(settings.activeWorkspaceId || '').trim()
+  const active = workspaces.find((w) => w.id === activeId)
+  const activePath = String(active?.path || settings.workspacePath || '').trim()
+  if (activePath) {
+    const workspaceId = activeId || workspaces.find((w) => w.id === GLOBAL_WORKSPACE_ID || w.isHome)?.id || workspaces[0]?.id
+    if (workspaceId) return { workspaceId, workspacePath: activePath }
+  }
+  const global = workspaces.find((w) => w.id === GLOBAL_WORKSPACE_ID || w.isHome)
+  const globalPath = String(global?.path || '').trim()
+  if (global?.id && globalPath) return { workspaceId: global.id, workspacePath: globalPath }
+  return null
 }
 
 /** 当前激活的工作区条目 */

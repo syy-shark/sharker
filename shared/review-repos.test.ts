@@ -19,6 +19,7 @@ import {
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
+  REVIEW_HAPPY_WITH_CHANGE_HINT,
   REVIEW_LAST_TURN_ALL_REPOS_HINT,
   REVIEW_MULTI_REPO_INTRO,
   REVIEW_OTHER_SCOPE_REPO_HINT,
@@ -70,6 +71,7 @@ describe('review repos', () => {
       'The review pane requires a project inside a Git repository.'
     )
     expect(REVIEW_CREATE_ONE_HINT).toMatch(/create one/)
+    expect(REVIEW_HAPPY_WITH_CHANGE_HINT).toMatch(/stage it or revert/)
     expect(WRAP_LONG_DIFF_LINES_LABEL).toBe('Wrap long diff lines')
     expect(COMMIT_ACTION_LABEL).toBe('Commit')
     expect(PUSH_ACTION_LABEL).toBe('Push')
@@ -114,6 +116,7 @@ describe('review repos', () => {
     expect(panelSrc).not.toContain('换行长 diff')
     expect(panelSrc).not.toContain('全部取消暂存')
     expect(panelSrc).not.toContain('请先选择工作区')
+    expect(panelSrc).toContain('REVIEW_HAPPY_WITH_CHANGE_HINT')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

@@ -43,6 +43,9 @@ export const REVERT_ALL_LABEL = 'Revert all'
 export const STAGE_LABEL = 'Stage'
 export const UNSTAGE_LABEL = 'Unstage'
 export const REVERT_LABEL = 'Revert'
+/** Official review pane Stage / Revert leftover (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_HAPPY_WITH_CHANGE_HINT =
+  "If you're happy with a change, you can stage it or revert changes you don't want."
 /** Official review pane empty Git prompt (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_REQUIRES_GIT_LABEL =
   'The review pane requires a project inside a Git repository.'
