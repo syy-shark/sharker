@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+  CODE_REVIEW_SETTINGS_INTRO,
   CODE_REVIEW_SETTINGS_LABEL,
   composeReviewScopeArgs,
   DETACHED_REVIEW_DESCRIPTION,
@@ -74,6 +75,8 @@ describe('review scope', () => {
   it('uses official Review delivery and /review picker copy', () => {
     expect(CODE_REVIEW_SETTINGS_LABEL).toBe('Code review')
     expect(REVIEW_DELIVERY_LABEL).toBe('Review delivery')
+    expect(CODE_REVIEW_SETTINGS_INTRO).toMatch(/Reviews run in the current chat by default/)
+    expect(CODE_REVIEW_SETTINGS_INTRO).toMatch(/choose Detached/)
     expect(INLINE_REVIEW_LABEL).toBe('Inline')
     expect(DETACHED_REVIEW_LABEL).toBe('Detached')
     expect(INLINE_REVIEW_DESCRIPTION).toMatch(/current chat/)
@@ -93,6 +96,13 @@ describe('review scope', () => {
     expect(dialogSrc).toContain('FILE_CLOSE_LABEL')
     expect(dialogSrc).not.toContain('选择审查范围')
     expect(dialogSrc).not.toContain('对标 Codex')
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/GeneralSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('CODE_REVIEW_SETTINGS_INTRO')
+    expect(settingsSrc).toContain('CODE_REVIEW_SETTINGS_LABEL')
+    expect(settingsSrc).not.toContain('REVIEW_DELIVERY_LABEL')
   })
 
   it('uses Review delivery and allows here/detached overrides', () => {

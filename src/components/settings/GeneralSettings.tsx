@@ -21,6 +21,7 @@ import {
   type ComposerEnterBehavior
 } from '../../../shared/composer-submit'
 import {
+  CODE_REVIEW_SETTINGS_INTRO,
   CODE_REVIEW_SETTINGS_LABEL,
   DETACHED_REVIEW_DESCRIPTION,
   DETACHED_REVIEW_LABEL,
@@ -28,7 +29,6 @@ import {
   INLINE_REVIEW_LABEL,
   parseReviewDelivery,
   parseReviewProviderId,
-  REVIEW_DELIVERY_LABEL,
   type ReviewDelivery
 } from '../../../shared/review-prompt'
 import { parseShowContextWindowUsage } from '../../../shared/context-usage-indicator'
@@ -152,7 +152,7 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
-      <SettingsSection title={CODE_REVIEW_SETTINGS_LABEL} description={REVIEW_DELIVERY_LABEL}>
+      <SettingsSection title={CODE_REVIEW_SETTINGS_LABEL} description={CODE_REVIEW_SETTINGS_INTRO}>
         <SettingsCard>
           <SettingsChoiceGroup
             value={parseReviewDelivery(draft.reviewDelivery)}

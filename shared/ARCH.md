@@ -99,7 +99,7 @@
 | `ui-font-scale.test.ts` | 夹取、步进、百分数 |
 | `nav-history.ts` | 工作台前进 / 后退栈（最多 40 落点）；鼠标侧键 3/4；含 `skills` 页 |
 | `nav-history.test.ts` | 前进栈丢弃、往返 |
-| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；官方选择器文案 Review uncommitted changes / Review against a base branch / Review a commit 与 Choose Review against a base branch or Review uncommitted changes.；Settings Code review / Review delivery 默认 Inline（Run /review in the current chat when possible）与 Detached（Start a separate review chat），here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
+| `review-prompt.ts` | `/review` 未提交 / 基线 / 指定 commit 提示词；空参数先出范围选择器（`reviewNeedsScopePicker`）；官方选择器文案 Review uncommitted changes / Review against a base branch / Review a commit 与 Choose Review against a base branch or Review uncommitted changes.；Settings Code review 说明用官方 Reviews run in the current chat by default… choose Detached…；Review delivery 默认 Inline（Run /review in the current chat when possible）与 Detached（Start a separate review chat），here/detached 覆盖；`reviewProviderId` 对标 Codex `review_model`（空则当前会话）；`reviewSubmitMode` 直播中排队/注入不 abort；剩余参数作自定义关注（对标 Codex `/review Focus on …`） |
 | `git-prompt.ts` | Settings → Git 的 commit / PR 文案模板、分支前缀与 force-with-lease：官方 Git 分区说明、截断、拼 system 段、接到 `git-commit` skill |
 | `diff-hunk.ts` | FileDiff 拆 hunk + unified patch |
 | `diff-hunk.test.ts` | 远距变更拆成两块、patch 头 |
@@ -276,7 +276,7 @@
 | `slash-commands.test.ts` | 斜杠目录含审查命令与过滤；`/chat` 与 `/task` 同开无项目对话；`/permissions` 文案与 sandbox/full 解析；直播 `/` 弹层 aria **Slash commands** |
 | `personality.ts` | 人格与 system 语气段；用户可见 Choose a personality / A personality changes how ChatGPT communicates… / Pragmatic / Friendly / None 与 Custom instructions / Editing custom instructions updates your personal instructions in AGENTS.md.（对标 Codex Settings → Personalization / learn.chatgpt.com/docs/personalize；旧 `empathetic` 读成 `friendly`） |
 | `personality.test.ts` | 别名解析、循环、提示词 |
-| `review-prompt.test.ts` | `/review branch` / `commit` 解析、官方 Review delivery / /review 选择器文案、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
+| `review-prompt.test.ts` | `/review branch` / `commit` 解析、官方 Review delivery / Code review settings intro / /review 选择器文案、`review_model` 空/按 id/按模型名解析、自定义关注拼进提示；`App.tsx` 三处 persist 带上 `reviewProviderId` |
 | `commit-pr-prompt.test.ts` | commit/PR 模板截断与 skill 拼接 |
 | `ARCH.md` | 本层架构说明 |
 

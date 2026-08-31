@@ -24,6 +24,9 @@ export function reviewCommitPrompt(sha?: string): string {
 /** Official Settings → General → Code review / Review delivery. */
 export const CODE_REVIEW_SETTINGS_LABEL = 'Code review'
 export const REVIEW_DELIVERY_LABEL = 'Review delivery'
+/** Official Settings → General → Code review intro (learn.chatgpt.com/docs/code-review). */
+export const CODE_REVIEW_SETTINGS_INTRO =
+  'Reviews run in the current chat by default. Under Settings > General > Code review, choose Detached to start a separate review chat.'
 export const INLINE_REVIEW_LABEL = 'Inline'
 export const DETACHED_REVIEW_LABEL = 'Detached'
 export const INLINE_REVIEW_DESCRIPTION = 'Run /review in the current chat when possible.'
