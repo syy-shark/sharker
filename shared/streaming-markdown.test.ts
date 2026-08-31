@@ -26,6 +26,7 @@ import {
   shouldAppendStreamingFootnoteItem,
   shouldOpenStreamingFootnotesAfterParagraph,
   shouldOpenStreamingTableAfterParagraph,
+  isPendingSiblingStartLine,
   collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
@@ -2699,6 +2700,32 @@ describe('splitStreamingMarkdown', () => {
     const paraThenHeading = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n# t')
     expect(paraThenHeading[0]).toBe(paraOnly[0])
     expect(paraThenHeading.map((block) => block.type)).toEqual(['p', 'heading'])
+    expect(isPendingSiblingStartLine('-')).toBe(true)
+    expect(isPendingSiblingStartLine('#')).toBe(true)
+    expect(isPendingSiblingStartLine('##')).toBe(true)
+    expect(isPendingSiblingStartLine('`')).toBe(true)
+    expect(isPendingSiblingStartLine('``')).toBe(true)
+    expect(isPendingSiblingStartLine('- 一项')).toBe(false)
+    expect(isPendingSiblingStartLine('# t')).toBe(false)
+    expect(isPendingSiblingStartLine('```ts')).toBe(false)
+    const pendingList = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n-')
+    expect(pendingList).toHaveLength(1)
+    expect(pendingList[0]).toBe(paraOnly[0])
+    const openedList = continueCheapProseBlocks('见 foo\n-', pendingList, '见 foo\n- 一项')
+    expect(openedList[0]).toBe(paraOnly[0])
+    expect(openedList.map((block) => block.type)).toEqual(['p', 'list'])
+    const pendingHeading = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n#')
+    expect(pendingHeading[0]).toBe(paraOnly[0])
+    const openedHeading = continueCheapProseBlocks('见 foo\n#', pendingHeading, '见 foo\n# t')
+    expect(openedHeading[0]).toBe(paraOnly[0])
+    expect(openedHeading.map((block) => block.type)).toEqual(['p', 'heading'])
+    const pendingFence = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n`')
+    expect(pendingFence[0]).toBe(paraOnly[0])
+    const pendingFence2 = continueCheapProseBlocks('见 foo\n`', pendingFence, '见 foo\n``')
+    expect(pendingFence2[0]).toBe(paraOnly[0])
+    const openedFence = continueCheapProseBlocks('见 foo\n``', pendingFence2, '见 foo\n```ts')
+    expect(openedFence[0]).toBe(paraOnly[0])
+    expect(openedFence.map((block) => block.type)).toEqual(['p', 'pre'])
     const firstParaOnly = parseCheapProseBlocks('第一段')
     const paraThenBlank = continueCheapProseBlocks('第一段', firstParaOnly, '第一段\n\n第二')
     expect(paraThenBlank[0]).toBe(firstParaOnly[0])
@@ -3252,6 +3279,9 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('isPendingFootnoteDefinitionLine')
     expect(mdSrc).toContain('shouldOpenStreamingTableAfterParagraph')
     expect(mdSrc).toContain('isPendingTableStartLine')
+    expect(mdSrc).toContain('isPendingSiblingStartLine')
+    expect(mdSrc).toContain('isPendingHeadingStartLine')
+    expect(mdSrc).toContain('isPendingFenceStartLine')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
