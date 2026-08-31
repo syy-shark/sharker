@@ -77,6 +77,7 @@ import {
   PROJECTS_LABEL,
   PROJECTS_VIEW_INTRO,
   REMOVE_LABEL,
+  SEARCH_CHATS_INTRO,
   SEARCH_CHATS_LABEL,
   SETTINGS_LABEL,
   SKILLS_LABEL,
@@ -963,6 +964,7 @@ export const Sidebar = memo(function Sidebar({
               type="button"
               className="sidebar-nav-item"
               onClick={onSearchChats}
+              title={SEARCH_CHATS_INTRO}
               aria-label={SEARCH_CHATS_LABEL}
             >
               <Search size={18} className="sidebar-nav-ico" aria-hidden />

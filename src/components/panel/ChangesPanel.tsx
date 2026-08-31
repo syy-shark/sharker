@@ -50,7 +50,8 @@ import {
   clampReviewMenuPosition,
   resolveReviewFileClick,
   reviewFileClickTargetFromElement,
-  reviewFileMenuItems
+  reviewFileMenuItems,
+  REVIEW_FILE_NAME_OPENS_HINT
 } from '../../../shared/review-file-click'
 import {
   ALL_REPOS_ID,
@@ -1494,7 +1495,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                     <span className={`changes-panel__status status-${f.status.trim().charAt(0) || 'M'}`}>
                       {statusLabel(f)}
                     </span>
-                    <span className="changes-panel__path" data-review-file-name title={`${openPath} · 打开预览`}>
+                    <span className="changes-panel__path" data-review-file-name title={REVIEW_FILE_NAME_OPENS_HINT}>
                       {displayPath}
                     </span>
                   </button>

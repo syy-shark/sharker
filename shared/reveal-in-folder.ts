@@ -102,9 +102,16 @@ export const ARCHIVE_CHAT_LABEL = 'Archive chat'
 export const MARK_CHAT_AS_UNREAD_LABEL = 'Mark chat as unread'
 export const OPEN_SIDE_CHAT_LABEL = 'Open side chat'
 export const SEARCH_CHATS_LABEL = 'Search chats'
+/** Official Commands leftover (learn.chatgpt.com/docs/reference/commands). */
+export const SEARCH_CHATS_INTRO =
+  "Use Search chats to reopen a past chat. Search chats doesn't have a default shortcut."
+export const SEARCH_CHATS_MATCH_HINT =
+  'When expanded matching is available, search can also match chat content and Git branch names, so you can search for a phrase from the chat or a branch such as fix/login-redirect.'
 /** Official Commands: Search chats / Cycle reasoning — Not assigned by default. */
 export const NOT_ASSIGNED_BY_DEFAULT_LABEL = 'Not assigned by default'
 export const FIND_IN_CHAT_LABEL = 'Find in chat'
+export const FIND_IN_CHAT_INTRO =
+  "Use Find in chat after opening a chat to find text within it. It doesn't search across other chats."
 export const FIND_NEXT_MATCH_LABEL = 'Find next match'
 export const FIND_PREVIOUS_MATCH_LABEL = 'Find previous match'
 export const CLEAR_ALL_UNREAD_INDICATORS_LABEL = 'Clear all unread indicators'

@@ -153,7 +153,9 @@ import {
   OPEN_PROJECT_PICKER_LABEL,
   REMOTE_BRANCH_HINT,
   RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL,
+  SEARCH_CHATS_INTRO,
   SEARCH_CHATS_LABEL,
+  SEARCH_CHATS_MATCH_HINT,
   SEARCH_CHATS_PLACEHOLDER,
   SEARCH_PROJECTS_LABEL,
   SKILLS_LABEL,
@@ -1870,6 +1872,7 @@ export const ComposerDock = memo(
               className={`slash-menu history-picker ${historyExiting ? 'popover-exit' : 'popover-enter'}`.trim()}
               role="listbox"
               aria-label={SEARCH_CHATS_LABEL}
+              title={SEARCH_CHATS_INTRO}
               aria-activedescendant={
                 historyHits[historyActiveIndex]
                   ? `history-option-${historyHits[historyActiveIndex].id}`
@@ -1881,6 +1884,7 @@ export const ComposerDock = memo(
                 className="history-picker-search"
                 value={historyQuery}
                 placeholder={SEARCH_CHATS_PLACEHOLDER}
+                title={SEARCH_CHATS_MATCH_HINT}
                 aria-label={SEARCH_CHATS_LABEL}
                 onChange={(e) => {
                   setHistoryQuery(e.target.value)

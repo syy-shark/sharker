@@ -142,7 +142,10 @@ import {
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
   SEARCH_PROJECTS_LABEL,
+  SEARCH_CHATS_INTRO,
   SEARCH_CHATS_LABEL,
+  SEARCH_CHATS_MATCH_HINT,
+  FIND_IN_CHAT_INTRO,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
@@ -315,6 +318,9 @@ describe('reveal in folder', () => {
     expect(OPEN_PROJECT_PICKER_LABEL).toBe('Open project picker')
     expect(SEARCH_CHATS_PLACEHOLDER).toBe('Search title, message, or branch')
     expect(SEARCH_CHATS_LABEL).toBe('Search chats')
+    expect(SEARCH_CHATS_INTRO).toMatch(/doesn't have a default shortcut/)
+    expect(SEARCH_CHATS_MATCH_HINT).toMatch(/Git branch names/)
+    expect(FIND_IN_CHAT_INTRO).toMatch(/doesn't search across other chats/)
     expect(FIND_IN_CHAT_LABEL).toBe('Find in chat')
     expect(FIND_NEXT_MATCH_LABEL).toBe('Find next match')
     expect(FIND_PREVIOUS_MATCH_LABEL).toBe('Find previous match')
@@ -457,6 +463,8 @@ describe('reveal in folder', () => {
       'utf8'
     )
     expect(composerSrc).toContain('SEARCH_PROJECTS_LABEL')
+    expect(composerSrc).toContain('SEARCH_CHATS_INTRO')
+    expect(composerSrc).toContain('SEARCH_CHATS_MATCH_HINT')
     expect(composerSrc).toContain('NO_PROJECTS_LABEL')
     expect(composerSrc).toContain('REMOTE_BRANCH_HINT')
     expect(composerSrc).toContain('RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL')
@@ -478,6 +486,7 @@ describe('reveal in folder', () => {
     expect(sidebarSrc).toContain('PERMISSIONS_LABEL')
     expect(sidebarSrc).toContain('PROJECTS_VIEW_INTRO')
     expect(sidebarSrc).toContain('PIN_A_PROJECT_HINT')
+    expect(sidebarSrc).toContain('SEARCH_CHATS_INTRO')
     const chatViewSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
       'utf8'
@@ -485,6 +494,7 @@ describe('reveal in folder', () => {
     expect(chatViewSrc).toContain('START_WITHOUT_A_PROJECT_INTRO')
     expect(chatViewSrc).toContain('CREATE_A_PROJECT_FIRST_HINT')
     expect(chatViewSrc).toContain('isLocalProjectWorkspace')
+    expect(chatViewSrc).toContain('FIND_IN_CHAT_INTRO')
     expect(chatViewSrc).not.toContain('请先在侧栏或设置中添加一个工作区文件夹')
     const permissionsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PermissionsSettings.tsx'),

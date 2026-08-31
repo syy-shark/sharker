@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   APPSHOT_BOTH_META_CHORD,
   APPSHOT_DEFAULT_KEYS,
   APPSHOT_RECENT_MS,
+  APPSHOTS_CAPTURE_INTRO,
+  APPSHOTS_ROUTE_INTRO,
   APPSHOTS_SETTINGS_INTRO,
   APPSHOTS_SETTINGS_LABEL,
   TAKE_AN_APPSHOT_LABEL,
@@ -19,6 +24,15 @@ describe('appshot', () => {
     expect(APPSHOTS_SETTINGS_LABEL).toBe('Appshots')
     expect(TAKE_AN_APPSHOT_LABEL).toBe('Take an Appshot')
     expect(APPSHOTS_SETTINGS_INTRO).toMatch(/frontmost app window/)
+    expect(APPSHOTS_ROUTE_INTRO).toMatch(/last 60 seconds/)
+    expect(APPSHOTS_CAPTURE_INTRO).toMatch(/frontmost window only/)
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/AppshotSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('APPSHOTS_ROUTE_INTRO')
+    expect(settingsSrc).toContain('APPSHOTS_CAPTURE_INTRO')
+    expect(settingsSrc).not.toContain('plugin')
     expect(formatAppshotHotkey(undefined)).toBe(APPSHOT_DEFAULT_KEYS)
     expect(parseAppshotHotkey('')).toBe(APPSHOT_BOTH_META_CHORD)
     expect(appshotChordToAccelerator('both-meta')).toBeNull()

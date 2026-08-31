@@ -27,6 +27,11 @@ export const APPSHOTS_HOTKEY_INTRO =
 /** Official permissions copy. */
 export const APPSHOTS_PERMISSIONS_INTRO =
   'ChatGPT may ask for permissions before it can take appshots: Screen & System Audio Recording lets ChatGPT capture an image of the frontmost window. Accessibility lets ChatGPT read available text from the frontmost window.'
+/** Official Appshots routing leftover (learn.chatgpt.com/docs/appshots). Skip plugin copy. */
+export const APPSHOTS_ROUTE_INTRO =
+  'By default, ChatGPT starts a new chat for the appshot. If you interacted with a chat in the last 60 seconds, ChatGPT adds the appshot to that recent chat instead. Taking consecutive appshots adds them to the same chat.'
+export const APPSHOTS_CAPTURE_INTRO =
+  'An appshot captures the frontmost window only. It can include: An image of the visible window. Available text from that window, including visible text and text the app makes available outside the visible scroll area.'
 
 /** 官方路由：新对话，或 60 秒内刚互动过的对话。 */
 export type AppshotTarget = 'new_chat' | 'recent_chat'

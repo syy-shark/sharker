@@ -185,6 +185,7 @@ import { textForSpeech } from '../../shared/composer-dictation'
 import {
   CREATE_A_PROJECT_FIRST_HINT,
   FILE_CLOSE_LABEL,
+  FIND_IN_CHAT_INTRO,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
@@ -2826,7 +2827,7 @@ export const ChatView = memo(function ChatView({
         occurrence={findCurrent?.occurrence ?? 0}
       />
       {!isEmpty && findOpen ? (
-        <div className="chat-find glass-tile" role="search">
+        <div className="chat-find glass-tile" role="search" title={FIND_IN_CHAT_INTRO}>
           <input
             ref={findInputRef}
             className="chat-find__input"

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clampReviewMenuPosition,
   REVIEW_CMD_CLICK_LINE_HINT,
+  REVIEW_FILE_NAME_OPENS_HINT,
   resolveReviewFileClick,
   reviewFileClickTargetFromElement,
   reviewFileMenuItems,
@@ -36,6 +37,13 @@ describe('review file click', () => {
     expect(shouldOpenReviewLine({ metaKey: true, shiftKey: true })).toBe(false)
     expect(shouldOpenReviewLine({ ctrlKey: true, altKey: true })).toBe(false)
     expect(REVIEW_CMD_CLICK_LINE_HINT).toMatch(/holding Cmd pressed/)
+    expect(REVIEW_FILE_NAME_OPENS_HINT).toMatch(/opens that file in your chosen editor/)
+    const panelSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
+      'utf8'
+    )
+    expect(panelSrc).toContain('REVIEW_FILE_NAME_OPENS_HINT')
+    expect(panelSrc).not.toContain('· 打开预览')
     const diffSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeDiffBlock.tsx'),
       'utf8'

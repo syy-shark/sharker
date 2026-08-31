@@ -7,8 +7,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import {
   APPSHOT_BOTH_META_CHORD,
+  APPSHOTS_CAPTURE_INTRO,
   APPSHOTS_HOTKEY_INTRO,
   APPSHOTS_PERMISSIONS_INTRO,
+  APPSHOTS_ROUTE_INTRO,
   APPSHOTS_SETTINGS_INTRO,
   APPSHOTS_SETTINGS_LABEL,
   TAKE_AN_APPSHOT_LABEL,
@@ -62,7 +64,7 @@ export function AppshotSettings({ draft, setDraft, onSave }: Props) {
   return (
     <SettingsSection
       title={APPSHOTS_SETTINGS_LABEL}
-      description={`${APPSHOTS_SETTINGS_INTRO} ${APPSHOTS_HOTKEY_INTRO} ${APPSHOTS_PERMISSIONS_INTRO}`}
+      description={`${APPSHOTS_SETTINGS_INTRO} ${APPSHOTS_HOTKEY_INTRO} ${APPSHOTS_CAPTURE_INTRO} ${APPSHOTS_ROUTE_INTRO} ${APPSHOTS_PERMISSIONS_INTRO}`}
     >
       <SettingsCard>
         <SettingsRow title={TAKE_AN_APPSHOT_LABEL} last>

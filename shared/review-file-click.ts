@@ -16,6 +16,9 @@ export type ReviewFileMenuAction = 'open' | 'reveal' | 'toggle'
 /** Official review pane Cmd+click (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_CMD_CLICK_LINE_HINT =
   'Clicking a single line while holding Cmd pressed opens the line in your chosen editor.'
+/** Official review pane file-name click (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_FILE_NAME_OPENS_HINT =
+  'Clicking a file name typically opens that file in your chosen editor. You can choose the default editor in developer settings.'
 
 /** 审查文件树右键菜单（对标 Codex review Open in Finder / open menu） */
 export function reviewFileMenuItems(
