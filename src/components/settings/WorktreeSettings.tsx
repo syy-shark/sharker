@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import {
   WORKTREE_ROOT_LABEL,
+  WORKTREES_SETTINGS_INTRO,
   WORKTREES_SETTINGS_LABEL
 } from '../../../shared/reveal-in-folder'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
@@ -44,7 +45,7 @@ export function WorktreeSettings({ draft, setDraft, onSave }: Props) {
   }
 
   return (
-    <SettingsSection title={WORKTREES_SETTINGS_LABEL}>
+    <SettingsSection title={WORKTREES_SETTINGS_LABEL} description={WORKTREES_SETTINGS_INTRO}>
       <SettingsCard>
         <SettingsRow
           title={WORKTREE_ROOT_LABEL}

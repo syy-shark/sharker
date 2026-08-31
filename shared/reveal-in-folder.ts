@@ -303,7 +303,7 @@ export const FILES_LABEL = 'Files'
 export const WORKTREES_SETTINGS_LABEL = 'Worktrees'
 export const WORKTREE_ROOT_LABEL = 'Worktree root'
 export const WORKTREES_SETTINGS_INTRO =
-  'Codex creates managed worktrees under the Worktree root. Change this limit or set it to 0 to turn off automatic deletion.'
+  'By default, Codex keeps your most recent 15 Codex-managed worktrees. You can change this limit or turn off automatic deletion in settings if you prefer to manage disk usage yourself. To choose another location, open Settings > Worktrees and change Worktree root.'
 export const MCP_SERVERS_LABEL = 'MCP servers'
 /** Official Settings → MCP servers (learn.chatgpt.com/docs/extend/mcp). No OAuth Authenticate. */
 export const ADD_SERVER_LABEL = 'Add server'
@@ -351,13 +351,21 @@ export const EDIT_LABEL = 'Edit'
 export const CLEAR_LABEL = 'Clear'
 /** 官方顶栏交接（对标 learn.chatgpt.com/docs/environments/git-worktrees） */
 export const HAND_OFF_LABEL = 'Hand off'
+/** Official worktrees FAQ (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const HAND_OFF_INTRO =
+  'Use Hand off in the chat header to move a chat between your local checkout and a worktree.'
 export const LOCAL_LABEL = 'Local'
 export const WORKTREE_LABEL = 'Worktree'
+/** Official worktrees intro (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const WORKTREE_INTRO =
+  'Worktrees let Codex run multiple independent chats in the same project without interfering with each other.'
+export const WORKTREE_REQUIRES_GIT =
+  'Worktrees require a Git repository. Make sure the project you selected lives in one.'
 /** Official composer environment options (learn.chatgpt.com/docs/environments/modes). */
 export const CODEX_ENVIRONMENTS_LABEL = 'Codex environments'
 export const LOCAL_ENVIRONMENT_DESCRIPTION =
   'Local: work directly in your current project directory.'
-export const WORKTREE_ENVIRONMENT_DESCRIPTION = 'Worktree: isolate changes in a Git worktree.'
+export const WORKTREE_ENVIRONMENT_DESCRIPTION = WORKTREE_INTRO
 export const CREATE_BRANCH_HERE_LABEL = 'Create branch here'
 /** Official worktrees header: open your IDE to the worktree using the "Open" button. */
 export const OPEN_LABEL = 'Open'

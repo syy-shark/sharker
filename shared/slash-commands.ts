@@ -37,6 +37,10 @@ export const REVIEW_SLASH_REQUIRES_GIT =
 export function shouldShowReviewSlash(options?: { isGitRepo?: boolean }): boolean {
   return options?.isGitRepo !== false
 }
+/** Official: Worktrees require a Git repository. */
+export function shouldShowWorktreeSlash(options?: { isGitRepo?: boolean }): boolean {
+  return options?.isGitRepo !== false
+}
 export const SLASH_PERSONALITY_DESCRIPTION =
   'Choose how Codex responds, when the current model supports personalities.'
 export const SLASH_REASONING_DESCRIPTION = 'Choose the reasoning effort for the current chat.'
@@ -539,9 +543,11 @@ export function filterSlashCommands(
   options?: { isGitRepo?: boolean }
 ): SlashCommandMeta[] {
   const q = query.trim().toLowerCase()
-  const listed = shouldShowReviewSlash(options)
-    ? SLASH_COMMANDS
-    : SLASH_COMMANDS.filter((c) => c.name !== 'review')
+  const listed = SLASH_COMMANDS.filter((c) => {
+    if (c.name === 'review') return shouldShowReviewSlash(options)
+    if (c.name === 'worktree') return shouldShowWorktreeSlash(options)
+    return true
+  })
   if (!q) return listed
   return listed.filter(
     (c) => c.name.startsWith(q) || c.description.toLowerCase().includes(q)

@@ -32,6 +32,7 @@ import {
   CREATE_BRANCH_HERE_LABEL,
   FORK_LABEL,
   OPEN_LABEL,
+  HAND_OFF_INTRO,
   HAND_OFF_LABEL,
   NEW_CHAT_LABEL,
   OPEN_IN_POPUP_WINDOW_LABEL,
@@ -288,7 +289,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                 onThreadModeChange(threadMode === 'worktree' ? 'local' : 'worktree')
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title={HAND_OFF_LABEL}
+              title={HAND_OFF_INTRO}
               aria-label={HAND_OFF_LABEL}
             >
               {HAND_OFF_LABEL}

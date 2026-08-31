@@ -223,6 +223,12 @@ describe('slash commands', () => {
     expect(filterSlashCommands('changes', { isGitRepo: false }).some((c) => c.name === 'changes')).toBe(
       true
     )
+    expect(filterSlashCommands('worktree', { isGitRepo: false }).some((c) => c.name === 'worktree')).toBe(
+      false
+    )
+    expect(filterSlashCommands('worktree', { isGitRepo: true }).some((c) => c.name === 'worktree')).toBe(
+      true
+    )
   })
 
   it('appends installed skills to the slash list without shadowing builtins', () => {
@@ -255,7 +261,8 @@ describe('slash commands', () => {
     expect(composerSrc).toContain('SLASH_COMMANDS_LABEL')
     expect(composerSrc).toContain('SKILLS_LABEL')
     expect(composerSrc).toContain('getGitBranchInfo')
-    expect(composerSrc).toContain('isGitRepo: workspaceIsGitRepo')
+    expect(composerSrc).toContain('isGitRepo: workspaceIsGitRepo === true')
+    expect(composerSrc).toContain('workspaceIsGitRepo !== false')
     expect(composerSrc).not.toContain('aria-label="斜杠命令"')
     expect(composerSrc).not.toContain('aria-label="引用 Skill"')
   })

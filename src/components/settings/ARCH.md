@@ -25,7 +25,7 @@
 | `AppshotSettings.tsx` | Appshots：分区说明用官方 Appshots let you send the frontmost app window… / Press both Command keys…；热键行 **Take an Appshot**，默认 ⌘+⌘，改绑用 Change shortcut for / Press a key combination（对标 learn.chatgpt.com/docs/appshots / Commands；不进 Keyboard Shortcuts 目录，不发明开关） |
 | `ModelsSettings.tsx` / `.css` | 模型与 Provider（含 OpenCode Go 套餐 Key）、思考水平、测试连接 |
 | `PermissionsSettings.tsx` | Permissions：Ask for approval / Full access（对标 Codex Settings → General → Permissions，不发明 Approve for me）、网络隔离、Git（官方 Use Git settings to standardize branch naming…）、Project and terminal behavior（官方 Choose where files open…；`file_opener` 与命令输出同区；档位标题仍用简要/标准/详细，不发明 Brief/Standard/Verbose） |
-| `WorktreeSettings.tsx` | 设置 → Worktrees：Worktree root 与托管保留数（默认 15，0 关闭自动删除；对标 Codex Settings → Worktrees）。不发明环境编辑器或单独未落盘的自动删除开关 |
+| `WorktreeSettings.tsx` | 设置 → Worktrees：分区说明用官方 By default, Codex keeps your most recent 15 Codex-managed worktrees… / change Worktree root；Worktree root 与托管保留数（默认 15，0 关闭自动删除）。不发明环境编辑器或单独未落盘的自动删除开关 |
 | `ArchivedSettings.tsx` / `.css` | Archived chats：Unarchive 或彻底删除（含项目菜单一并归档的对话） |
 | `UsageSettings.tsx` / `.css` | Profile：本机终身 Token / 回合、峰值日、连续活跃、近 14 日单色火花图（对标 Codex Settings → Profile，不假装最长任务或供应商额度） |
 | `McpSettings.tsx` / `.css` | MCP servers：列表、开关、空态用官方 Select Add server… / Save the server, then select Restart / type /mcp；Add server 表单 Name / Command / Save / Remove（对标 Codex Settings → MCP servers / learn.chatgpt.com/docs/extend/mcp；不假装 OAuth） |

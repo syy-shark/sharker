@@ -47,12 +47,16 @@ import {
   RESUME_LABEL,
   EDIT_LABEL,
   CLEAR_LABEL,
+  HAND_OFF_INTRO,
   HAND_OFF_LABEL,
   CODEX_ENVIRONMENTS_LABEL,
   LOCAL_ENVIRONMENT_DESCRIPTION,
   LOCAL_LABEL,
   WORKTREE_ENVIRONMENT_DESCRIPTION,
+  WORKTREE_INTRO,
   WORKTREE_LABEL,
+  WORKTREE_REQUIRES_GIT,
+  WORKTREES_SETTINGS_INTRO,
   CREATE_BRANCH_HERE_LABEL,
   OPEN_LABEL,
   ALWAYS_ON_TOP_LABEL,
@@ -248,6 +252,12 @@ describe('reveal in folder', () => {
     expect(toolbarSrc).toContain('TOGGLE_SIDEBAR_LABEL')
     expect(toolbarSrc).toContain('TOGGLE_BOTTOM_PANEL_LABEL')
     expect(toolbarSrc).toContain('OPEN_IN_POPUP_WINDOW_LABEL')
+    expect(toolbarSrc).toContain('HAND_OFF_INTRO')
+    const worktreeSettingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/WorktreeSettings.tsx'),
+      'utf8'
+    )
+    expect(worktreeSettingsSrc).toContain('WORKTREES_SETTINGS_INTRO')
     expect(toolbarSrc).not.toContain('固定展开边栏')
     expect(toolbarSrc).not.toContain('收起边栏')
     expect(toolbarSrc).not.toContain('弹出对话')
@@ -474,13 +484,18 @@ describe('reveal in folder', () => {
     expect(messageActionsSrc).not.toContain('aria-label="编辑并重发"')
     expect(CLEAR_LABEL).toBe('Clear')
     expect(HAND_OFF_LABEL).toBe('Hand off')
+    expect(HAND_OFF_INTRO).toMatch(/Hand off in the chat header/)
+    expect(WORKTREE_INTRO).toMatch(/multiple independent chats/)
+    expect(WORKTREE_REQUIRES_GIT).toMatch(/require a Git repository/)
+    expect(WORKTREES_SETTINGS_INTRO).toMatch(/most recent 15 Codex-managed worktrees/)
+    expect(WORKTREES_SETTINGS_INTRO).toMatch(/change Worktree root/)
     expect(CODEX_ENVIRONMENTS_LABEL).toBe('Codex environments')
     expect(LOCAL_LABEL).toBe('Local')
     expect(LOCAL_ENVIRONMENT_DESCRIPTION).toBe(
       'Local: work directly in your current project directory.'
     )
     expect(WORKTREE_LABEL).toBe('Worktree')
-    expect(WORKTREE_ENVIRONMENT_DESCRIPTION).toBe('Worktree: isolate changes in a Git worktree.')
+    expect(WORKTREE_ENVIRONMENT_DESCRIPTION).toBe(WORKTREE_INTRO)
     const dockSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ComposerDock.tsx'),
       'utf8'
