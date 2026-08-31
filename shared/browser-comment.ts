@@ -1,12 +1,19 @@
 /**
  * 内置浏览器批注（对标 Codex Annotation mode / Comment on the page）。
  * 点元素或拖选区域后写成 composer Selection 芯片，不灌整页进对话柱。
+ * Comment on the page 用官方 When a bug is visible… / Write and save… / Comments work best…。
  * 不发明 @Browser / Computer Use / Adjust 样式预览。
  * @see shared/ARCH.md
  */
 
 /** Official built-in browser mode (learn.chatgpt.com/docs/browser: Turn on Annotation mode). */
 export const ANNOTATION_MODE_LABEL = 'Annotation mode'
+/** Official Comment on the page leftover (learn.chatgpt.com/docs/browser). Skip @Browser / Adjust. */
+export const BROWSER_COMMENTS_INTRO =
+  'When a bug is visible only in the rendered page, use browser comments to give ChatGPT precise feedback.'
+export const BROWSER_WRITE_SAVE_HINT = 'Write and save your comment.'
+export const BROWSER_NAME_PROBLEM_HINT =
+  'Comments work best when you name the problem and the result you want:'
 
 export const BROWSER_COMMENT_PREFIX = '__SHARKER_BROWSER_COMMENT__'
 

@@ -137,6 +137,7 @@ import {
   PROJECTS_VIEW_INTRO,
   START_WITHOUT_A_PROJECT_INTRO,
   CREATE_A_PROJECT_FIRST_HINT,
+  ADD_A_LOCAL_PROJECT_HINT,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
   SEARCH_PROJECTS_LABEL,
@@ -304,6 +305,7 @@ describe('reveal in folder', () => {
     expect(PROJECTS_VIEW_INTRO).toMatch(/ChatGPT projects and local projects/)
     expect(START_WITHOUT_A_PROJECT_INTRO).toMatch(/without a project/)
     expect(CREATE_A_PROJECT_FIRST_HINT).toMatch(/Create a project first/)
+    expect(ADD_A_LOCAL_PROJECT_HINT).toMatch(/Add a local project/)
     expect(PIN_A_PROJECT_HINT).toMatch(/Pin a project/)
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(NO_PROJECTS_LABEL).toBe('No projects')
@@ -622,10 +624,14 @@ describe('reveal in folder', () => {
     const fileTreeSrc = readFileSync(join(root, '../src/components/panel/FileTree.tsx'), 'utf8')
     expect(fileTreeSrc).toContain('FILE_CLOSE_LABEL')
     expect(fileTreeSrc).toContain('GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL')
+    expect(fileTreeSrc).toContain('ADD_A_LOCAL_PROJECT_HINT')
     expect(fileTreeSrc).not.toContain('>关闭<')
     expect(fileTreeSrc).not.toContain('aria-label="跳到行"')
+    expect(fileTreeSrc).not.toContain('请先选择工作区')
     const changesSrc = readFileSync(join(root, '../src/components/panel/ChangesPanel.tsx'), 'utf8')
     expect(changesSrc).toContain('GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL')
+    expect(changesSrc).toContain('REVIEW_REQUIRES_GIT_LABEL')
+    expect(changesSrc).not.toContain('请先选择工作区')
     expect(changesSrc).not.toContain('aria-label="跳到行"')
   })
 })

@@ -4,6 +4,7 @@
  * 图片预览按预览窗 CSS 像素 contain（对标 Codex #26851 / #31112），不订直播 token。
  * 源码预览按扩展名 highlight.js 着色（对标 Codex 文件查看器 / #18966），不发明 .tex 语法。
  * 文件右键打开 / Open in Finder / Copy path，目录只揭示 / 复制（对标 Codex file tree Open menu）。
+ * 无工作区空态用官方 Add a local project when ChatGPT needs to read or change files on your computer.
  * 写盘 revision 静默重拉树并在树内重读已打开预览（不抬 App），不清预览、不折叠已展开目录；定居后不再播进入动画以免直播抖。
  */
 import {
@@ -44,7 +45,11 @@ import {
   dispatchCopyWorkspaceFilePath,
   dispatchRevealWorkspaceFile
 } from '../../lib/open-workspace-file'
-import { FILE_CLOSE_LABEL, GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  ADD_A_LOCAL_PROJECT_HINT,
+  FILE_CLOSE_LABEL,
+  GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL
+} from '../../../shared/reveal-in-folder'
 import {
   ADD_TO_CHAT_LABEL,
   ASK_IN_SIDE_CHAT_LABEL,
@@ -576,7 +581,7 @@ export const FileTree = memo(function FileTree({
   }, [onAskInSideChat, onInsertComposer, syncSideAsk])
 
   if (!workspacePath) {
-    return <p className="file-tree-empty">请先选择工作区</p>
+    return <p className="file-tree-empty">{ADD_A_LOCAL_PROJECT_HINT}</p>
   }
 
   return (

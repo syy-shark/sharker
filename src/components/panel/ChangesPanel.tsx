@@ -3,6 +3,7 @@
  * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line or focus browser address bar）。
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
+ * 无工作区空态用官方 The review pane requires a project inside a Git repository. / create one。
  * 行内评论「插入输入框」只接草稿，不自动开一轮（对标 Codex send a follow-up after comments）。
  * 直播 `/review` 围栏一闭合就挂发现并展开对应 diff；闭合后只追加时不重解析围栏，不抬 App（对标 Codex review findings appear inline / #22860）。
  * @see ./ARCH.md
@@ -927,7 +928,8 @@ export const ChangesPanel = memo(function ChangesPanel({
   if (!workspacePath) {
     return (
       <div className="changes-panel changes-panel--empty" ref={panelRef} tabIndex={-1}>
-        <p>请先选择工作区</p>
+        <p>{REVIEW_REQUIRES_GIT_LABEL}</p>
+        <p className="changes-panel__hint">{REVIEW_CREATE_ONE_HINT}</p>
       </div>
     )
   }

@@ -44,7 +44,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 | `/mcp [verbose]` | 命令面板 **Open MCP status**（对标 Codex Open MCP status）：列出已配置 Server；空配置打开 Settings → MCP servers；`verbose` 只在对话里尝试连接并列工具、不跳设置 |
 | `/feedback` | Open the feedback dialog to submit feedback and optionally include logs（官方 IDE 原文）；对话框标题 **Share feedback**，勾选 **Include current Codex session logs**；Help / 命令面板仍是 **Send Feedback**；只复制本机诊断，不外发（对标 Codex #26890 / #26654，不发明上传 / Safety check / Check for Updates） |
 | `/share` | 斜杠说明用官方 **Share a read-only snapshot of a local Codex thread.**（learn.chatgpt.com Use ChatGPT / changelog；`/share` where slash commands are available）。打开只读快照：用户可见消息、思考摘要、改文件 diff；不含工具调用 / 命令输出；已知密钥脱敏后复制到剪贴板，不上传。对话框标题 **Share**，说明用官方 “The snapshot doesn't give other people access…” / 收录范围原文，按钮 **Close** / **Copy as Markdown**。打开时拍一帧，之后不跟直播 token 变。不发明官方 Who has access / Copy link 上传。文件菜单、命令面板、顶栏三点 Copy 子菜单与侧栏线程右键另有 **Copy as Markdown**（对标 Codex Copy as Markdown / #25201 / #25646）：从库取未瘦身全文静默复制，不打开对话框、不把全文灌进对话柱；附件与内联 `data:image` 用文件名 / `[Image]` 占位，不嵌 base64（对标 Codex #22894）。顶栏 Copy 子菜单同时提供 Copy working directory / Copy session ID / Copy deeplink；快捷键另有 Copy conversation path 与 Copy chat deep link |
-| `/chat` `/task` | Start a chat without a project（对标 Codex `/task`；`/chat` 同义）。空线程侧栏标题默认 **New chat**（旧盘「新对话」仍当占位再推导，对标 Codex Desktop sidebar）。无本地项目的空对话提示用官方 Start a chat without a project when the work is self-contained… / Create a project first when several chats will depend on the same context. |
+| `/chat` `/task` | Start a chat without a project（对标 Codex `/task`；`/chat` 同义）。空线程侧栏标题默认 **New chat**（旧盘「新对话」仍当占位再推导，对标 Codex Desktop sidebar）。无本地项目的空对话提示用官方 Start a chat without a project when the work is self-contained… / Create a project first when several chats will depend on the same context. 右侧文件树无工作区用官方 Add a local project when ChatGPT needs to read or change files on your computer. |
 | `/compact` | 本地压缩当前对话上下文并收可见历史；进行中在直播行显示 Compacting context（对标 Codex contextCompaction），Stop 不写成「已停止」。开轮自动压缩只缩模型上下文、不换可见对话柱 |
 | `/resume` | 打开历史对话选择器 |
 | `/automations` | Scheduled（对标官方侧栏 / `codex://automations`；页说明用官方 inbox 原文，返回 ← Chats） |
@@ -66,7 +66,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 审查行内评论
 
-在右侧审查 diff 行上点 `+` 留下意见（评论留在 diff 上）。再点「插入输入框」把锚定到文件:行号的意见接到草稿，由你自己发送跟进（对标 Codex：After leaving comments, send a follow-up；不自动开一轮）。
+在右侧审查 diff 行上点 `+` 留下意见（评论留在 diff 上；对标官方 Hover over the line you want to comment on. / Select the + button that appears. / Write your feedback and submit it.，不发明 Submit）。再点「插入输入框」把锚定到文件:行号的意见接到草稿，由你自己发送跟进（对标 Codex：After you finish leaving feedback, send a message back to the chat.；不自动开一轮）。
 
 ### 审查对比与提交
 
@@ -75,7 +75,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 - **未提交**：未暂存 / 已暂存；文件与 hunk 可暂存、取消暂存、还原
 - **本轮**：只看本轮助手写过、仍在工作区的文件（写入预览一开始就计入，对标 Codex 约 0.5s 逐文件 / Last turn）；多文件夹项目里固定看 **全部仓库**，选择器不再落到单仓（对标 Codex Last turn All repos）
 - **跨仓库**：附加文件夹若是独立 Git 仓库，审查顶栏出现仓库选择器，并显示各仓 +/- 行数；未暂存 / 已暂存 / 分支 / 提交 / 提交推送只作用于当前选中的仓库（本轮除外；主文件夹仍负责新对话 / AGENTS.md / Skill）
-- **创建仓库**：项目还不是 Git 仓库时，审查面板提示并一键 `git init`（对标 Codex Review：prompt you to create one）；建在主文件夹，默认 `main`
+- **创建仓库**：无工作区或项目还不是 Git 仓库时，审查面板用官方 The review pane requires a project inside a Git repository. / If your project isn't a Git repository yet, the app prompts you to create one.；有工作区时可一键 `git init`（建在主文件夹，默认 `main`）
 - **分支**：相对 `origin/HEAD` → `main` → `master` 的已提交变更（只读，仍可留行内评论）
 - **提交**：选最近一条 commit 看该次 diff（只读，对标 Codex Review → Commit）
 - 点 **文件名** 按设置 `file_opener` 打开（`none` 为右侧预览）；**右键** 出打开菜单（打开预览 / 在访达或资源管理器中显示 / 展开或收起 diff，对标 Codex review Open in Finder）；Agent 写盘后文件树静默刷新，正在预览的同一文件在树内重读、不抬整棵 App（对标 Codex 打开文档/文件树跟着改，不折叠已展开目录）；点 **行背景** 展开或收起该文件 diff（可同时展开多个）；列表顺序与文件树一致（同层目录在文件前，对标 Codex review diff ordering）；直播写盘时审查列表不换行 key、静默刷新保住滚动（对标 Codex review panel scroll jumps）；顶栏 **展开全部 / 收起全部**（对标 Codex expand or collapse all diffs）；**⌘/Ctrl+单击** 某一行跳到该行预览；审查聚焦时 **⌘F / ⌘G** 在 diff 内查找（划选预填、跨文件、屏外命中展开并滚入，对标 Codex search in long review files）；顶栏 **Wrap long diff lines** 切换长 diff 换行（对标 Codex Wrap long diff lines，默认开；nowrap 以免挤审查头；换行时行网格收在对话柱内，不再 `max-content` 撑开）
@@ -88,7 +88,7 @@ handlePromptSubmit（接待：排队 / 插队 / 直接派发）
 
 ### 线程内查找
 
-划选历史正文、**直播已出现正文**、文件预览、集成终端或内置浏览器批注会出现 **Add to chat** 与 **Ask in side chat**（对标 Codex desktop / #37560）。内置浏览器工具栏 **Annotation mode**（aria Toggle browser browse or comment mode）或聚焦时 `⌘.` 打开 Annotation mode：点元素或拖选区域后写备注，保存进同一条 Selection 芯片；Shift+点选区域，⌘/Ctrl+点立刻写入芯片不弹备注框（对标 Codex Comment on the page / hold Shift and click / Hold Cmd while clicking）；不发明 @Browser / Computer Use / Adjust 样式预览。加入对话进 composer `Selection N` 芯片，不把长摘录灌进输入框；发送收成官方 `# Selected text:` / `## My request for Codex:`。对话柱只画请求与可再点开的 annotation 芯片，长划选不撑开贴底（对标 Codex selected-text references remain after sending / #22670 / #20294）。带划选发送锁住阅读位置，即使当时还贴底也不跟直播 token 走（对标 Codex #41391，Jump to latest / New response 再去新回复）；点芯片回跳原文段落并用独立 CSS Highlight 短暂标出（不盖 ⌘F 查找高亮），同时可预览摘录。芯片可加备注、移除，或 **Show in text field** 回退成引用块（备注对标 Codex response annotation comments / #33763，不发明 #22677 划选跟帖气泡）。`/` 与 `!` 仍清芯片。旁路提问仍把摘录交给新线程。Copy as Markdown 仍带全文划选块。
+划选历史正文、**直播已出现正文**、文件预览、集成终端或内置浏览器批注会出现 **Add to chat** 与 **Ask in side chat**（对标 Codex desktop / #37560）。内置浏览器工具栏 **Annotation mode**（aria Toggle browser browse or comment mode，title 官方 When a bug is visible only in the rendered page, use browser comments to give ChatGPT precise feedback.）或聚焦时 `⌘.` 打开 Annotation mode：点元素或拖选区域后写备注（占位官方 Comments work best when you name the problem and the result you want:，气泡 title Write and save your comment.），保存进同一条 Selection 芯片；Shift+点选区域，⌘/Ctrl+点立刻写入芯片不弹备注框（对标 Codex Comment on the page / hold Shift and click / Hold Cmd while clicking）；不发明 @Browser / Computer Use / Adjust 样式预览。加入对话进 composer `Selection N` 芯片，不把长摘录灌进输入框；发送收成官方 `# Selected text:` / `## My request for Codex:`。对话柱只画请求与可再点开的 annotation 芯片，长划选不撑开贴底（对标 Codex selected-text references remain after sending / #22670 / #20294）。带划选发送锁住阅读位置，即使当时还贴底也不跟直播 token 走（对标 Codex #41391，Jump to latest / New response 再去新回复）；点芯片回跳原文段落并用独立 CSS Highlight 短暂标出（不盖 ⌘F 查找高亮），同时可预览摘录。芯片可加备注、移除，或 **Show in text field** 回退成引用块（备注对标 Codex response annotation comments / #33763，不发明 #22677 划选跟帖气泡）。`/` 与 `!` 仍清芯片。旁路提问仍把摘录交给新线程。Copy as Markdown 仍带全文划选块。
 
 `⌘F` 或命令面板 Find in chat / Find next match / Find previous match：大小写不敏感扫用户/助手正文（含直播行），同一条里每处各算一次；长线程先在盘上检索，不回放整段也不灌进 DOM（对标 Codex #33907 thread/searchOccurrences）。有正文划选时预填查找词（对标 Codex Find starts with current text selection）。Enter / ↑↓（aria Find previous match / Find next match） / `⌘G` / `⌘⇧G` / `F3` / `⇧F3` 跳转并高亮当前词，× Close，计数官方 x/y（无命中 `0/0`）（查找未开时先打开再跳，关闭栏时保留上次词；命中只改对话柱 `scrollTop` 并锁贴底，不 `scrollIntoView`，以免直播增高把镜头拽回底部；未加载的更早命中先揭开该 seq 起的一段再跳，屏外已加载行会先扩进窗口）。审查面板聚焦时同一组快捷键改搜当前对比的 diff（跨文件、屏外命中展开并滚入视口，对标 Codex search in long review files）；输入框 / 对话柱仍走线程查找。Search chats 官方默认不绑，走命令面板或 Settings → Keyboard Shortcuts。集成终端按线程保留，并可在同一线程开多个标签（对标 Codex terminal tabs per thread）；`!command` 与 Clear terminal 只作用于当前标签。
 

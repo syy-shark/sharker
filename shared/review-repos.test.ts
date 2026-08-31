@@ -113,6 +113,7 @@ describe('review repos', () => {
     expect(toolbarSrc).not.toContain('打开审查中的 Pull Request')
     expect(panelSrc).not.toContain('换行长 diff')
     expect(panelSrc).not.toContain('全部取消暂存')
+    expect(panelSrc).not.toContain('请先选择工作区')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

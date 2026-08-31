@@ -1,6 +1,6 @@
 /**
  * 行级代码 diff 展示：过程流 / Markdown 用只读块；审查模式带 hunk 动作与行内评论。
- * 发现列表 / 评论表单用官方 Review findings appear as inline comments… / After you finish leaving feedback…。
+ * 发现列表 / 评论表单用官方 Review findings appear as inline comments… / After you finish leaving feedback… / Write your feedback and submit it. / Select the + button that appears.；取消 / 留下评论仍本机。
  * 直播写入：无行时按 stats 占位，有参数流 +/- 就画行；同一外壳填核实 diff。
  * 直播中不折预览、内层跟尾；收束后保持展开以免跳。
  * @see src/ARCH.md
@@ -28,7 +28,10 @@ import type { GitReviewAction } from '../../shared/git-review-actions'
 import { REVERT_LABEL, STAGE_LABEL, UNSTAGE_LABEL } from '../../shared/review-repos'
 import {
   REVIEW_FINDINGS_INTRO,
+  REVIEW_HOVER_LINE_HINT,
   REVIEW_INLINE_COMMENT_FOLLOW_UP,
+  REVIEW_PLUS_BUTTON_HINT,
+  REVIEW_WRITE_FEEDBACK_HINT,
   type ReviewLineComment
 } from '../../shared/review-comment'
 import { CodeArtifactShell } from './CodeArtifactBlock'
@@ -178,8 +181,8 @@ const DiffLineRow = memo(function DiffLineRow({
           <button
             type="button"
             className="code-diff-comment-btn"
-            title="添加行内评论"
-            aria-label="添加行内评论"
+            title={`${REVIEW_HOVER_LINE_HINT} ${REVIEW_PLUS_BUTTON_HINT}`}
+            aria-label={REVIEW_PLUS_BUTTON_HINT}
             onClick={onStartComment}
           >
             <Plus size={11} aria-hidden />
@@ -356,7 +359,7 @@ export const CodeDiffBlock = memo(function CodeDiffBlock({
               className="code-diff-comment-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="写给 Agent 的行内意见…"
+              placeholder={REVIEW_WRITE_FEEDBACK_HINT}
               title={REVIEW_INLINE_COMMENT_FOLLOW_UP}
               rows={2}
               autoFocus

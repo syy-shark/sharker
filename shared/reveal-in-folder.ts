@@ -169,6 +169,9 @@ export const START_WITHOUT_A_PROJECT_INTRO =
   "Start a chat without a project when the work is self-contained and doesn't need shared project context."
 export const CREATE_A_PROJECT_FIRST_HINT =
   'Create a project first when several chats will depend on the same context.'
+/** Official local-project hint for files that need a folder (learn.chatgpt.com/docs/projects). */
+export const ADD_A_LOCAL_PROJECT_HINT =
+  'Add a local project when ChatGPT needs to read or change files on your computer.'
 /** Official project pin (learn.chatgpt.com/docs/projects). */
 export const PIN_A_PROJECT_HINT = 'Pin a project to keep it near the top of the sidebar.'
 /** Official empty chats copy (do not show when chats exist). */

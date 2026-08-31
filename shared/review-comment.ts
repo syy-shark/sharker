@@ -9,6 +9,10 @@ export const REVIEW_FINDINGS_INTRO =
 /** Official inline-comment follow-up (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_INLINE_COMMENT_FOLLOW_UP =
   'After you finish leaving feedback, send a message back to the chat.'
+/** Official inline-comment steps (learn.chatgpt.com/docs/code-review). Do not invent Submit. */
+export const REVIEW_HOVER_LINE_HINT = 'Hover over the line you want to comment on.'
+export const REVIEW_PLUS_BUTTON_HINT = 'Select the + button that appears.'
+export const REVIEW_WRITE_FEEDBACK_HINT = 'Write your feedback and submit it.'
 
 /** 一条行内审查评论 */
 export interface ReviewLineComment {

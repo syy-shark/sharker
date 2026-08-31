@@ -13,6 +13,9 @@ import {
 } from './browser-start-page'
 import {
   ANNOTATION_MODE_LABEL,
+  BROWSER_COMMENTS_INTRO,
+  BROWSER_NAME_PROBLEM_HINT,
+  BROWSER_WRITE_SAVE_HINT,
   browserCommentSetScript,
   canAnnotateBrowserUrl,
   formatBrowserCommentExcerpt,
@@ -683,7 +686,7 @@ export function EmbeddedBrowser({
           className={`embedded-browser-annotate-btn${annotating ? ' is-on' : ''}`}
           aria-pressed={annotating}
           aria-label={TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL}
-          title={TOGGLE_BROWSER_BROWSE_OR_COMMENT_MODE_LABEL}
+          title={BROWSER_COMMENTS_INTRO}
           onClick={toggleAnnotate}
         >
           <PenLine size={14} strokeWidth={2} aria-hidden />
@@ -706,6 +709,7 @@ export function EmbeddedBrowser({
         {draft ? (
           <form
             className="embedded-browser-comment glass-popover"
+            title={BROWSER_WRITE_SAVE_HINT}
             style={{ top: draft.top, left: draft.left }}
             onSubmit={(event) => {
               event.preventDefault()
@@ -722,7 +726,7 @@ export function EmbeddedBrowser({
               className="embedded-browser-comment-input"
               value={draftComment}
               onChange={(event) => setDraftComment(event.target.value)}
-              placeholder="写出问题和期望结果"
+              placeholder={BROWSER_NAME_PROBLEM_HINT}
               rows={3}
               autoFocus
             />

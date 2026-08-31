@@ -8,7 +8,10 @@ import {
   parseLiveReviewFindings,
   parseReviewFindings,
   REVIEW_FINDINGS_INTRO,
+  REVIEW_HOVER_LINE_HINT,
   REVIEW_INLINE_COMMENT_FOLLOW_UP,
+  REVIEW_PLUS_BUTTON_HINT,
+  REVIEW_WRITE_FEEDBACK_HINT,
   sameReviewFindings
 } from './review-comment'
 
@@ -73,12 +76,20 @@ describe('review comments', () => {
     expect(panelSrc).toContain('mergeReviewExpandedKeys')
     expect(REVIEW_FINDINGS_INTRO).toMatch(/inline comments in the review pane/)
     expect(REVIEW_INLINE_COMMENT_FOLLOW_UP).toMatch(/send a message back to the chat/)
+    expect(REVIEW_HOVER_LINE_HINT).toBe('Hover over the line you want to comment on.')
+    expect(REVIEW_PLUS_BUTTON_HINT).toBe('Select the + button that appears.')
+    expect(REVIEW_WRITE_FEEDBACK_HINT).toBe('Write your feedback and submit it.')
     const diffSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/CodeDiffBlock.tsx'),
       'utf8'
     )
     expect(diffSrc).toContain('REVIEW_FINDINGS_INTRO')
     expect(diffSrc).toContain('REVIEW_INLINE_COMMENT_FOLLOW_UP')
+    expect(diffSrc).toContain('REVIEW_HOVER_LINE_HINT')
+    expect(diffSrc).toContain('REVIEW_PLUS_BUTTON_HINT')
+    expect(diffSrc).toContain('REVIEW_WRITE_FEEDBACK_HINT')
     expect(diffSrc).not.toContain('aria-label="行内评论"')
+    expect(diffSrc).not.toContain('写给 Agent 的行内意见')
+    expect(diffSrc).not.toContain('>Submit<')
   })
 })
