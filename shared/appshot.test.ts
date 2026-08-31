@@ -13,6 +13,7 @@ import {
   APPSHOTS_SETTINGS_INTRO,
   APPSHOTS_SETTINGS_LABEL,
   TAKE_AN_APPSHOT_LABEL,
+  UNABLE_TO_ATTACH_APPSHOT,
   appshotChordToAccelerator,
   formatAppshotHotkey,
   isBothCommandAppshotHotkey,
@@ -25,6 +26,7 @@ describe('appshot', () => {
   it('keeps official Settings and Commands copy', () => {
     expect(APPSHOTS_SETTINGS_LABEL).toBe('Appshots')
     expect(TAKE_AN_APPSHOT_LABEL).toBe('Take an Appshot')
+    expect(UNABLE_TO_ATTACH_APPSHOT).toBe('Unable to attach appshot')
     expect(APPSHOTS_SETTINGS_INTRO).toMatch(/frontmost app window/)
     expect(APPSHOTS_ROUTE_INTRO).toMatch(/last 60 seconds/)
     expect(APPSHOTS_CAPTURE_INTRO).toMatch(/frontmost window only/)
@@ -42,6 +44,13 @@ describe('appshot', () => {
     expect(settingsSrc).toContain('APPSHOTS_DONT_WORK_HINT')
     expect(settingsSrc).toContain('APPSHOTS_CLI_RESUME')
     expect(settingsSrc).not.toContain('plugin')
+    const appSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/App.tsx'),
+      'utf8'
+    )
+    expect(appSrc).toContain('UNABLE_TO_ATTACH_APPSHOT')
+    expect(appSrc).not.toContain('appendLocalNote(shot.message)')
+    expect(appSrc).not.toContain('err instanceof Error ? err.message')
     expect(formatAppshotHotkey(undefined)).toBe(APPSHOT_DEFAULT_KEYS)
     expect(parseAppshotHotkey('')).toBe(APPSHOT_BOTH_META_CHORD)
     expect(appshotChordToAccelerator('both-meta')).toBeNull()

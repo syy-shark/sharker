@@ -1,7 +1,7 @@
 /**
  * 官方 Appshots：把最前窗口的截图与可读文本送进对话（对标 learn.chatgpt.com/docs/appshots）。
  * 默认热键是同时按下两个 Command；自定义和弦写在 Settings → Appshots，不进 Keyboard Shortcuts 目录。
- * leftover 含 If you resume a chat in the CLI that already contains an appshot…；不发明 plugin。
+ * leftover 含 If you resume a chat in the CLI that already contains an appshot…、Unable to attach appshot；不发明 plugin / toast。
  * @see shared/ARCH.md
  */
 import { encodeShortcutChord, formatShortcutChord } from './keymap'
@@ -9,6 +9,8 @@ import { encodeShortcutChord, formatShortcutChord } from './keymap'
 /** Official Settings → Appshots / Commands: Take an Appshot. */
 export const APPSHOTS_SETTINGS_LABEL = 'Appshots'
 export const TAKE_AN_APPSHOT_LABEL = 'Take an Appshot'
+/** Official failure toast leftover (GitHub #29772 / #25269). No toast chrome. */
+export const UNABLE_TO_ATTACH_APPSHOT = 'Unable to attach appshot'
 export const APPSHOT_ATTACHMENT_NAME = 'Appshot.png'
 export const APPSHOT_TEXT_ATTACHMENT_NAME = 'Appshot.txt'
 /** Official Commands shortcut: press both Command keys simultaneously. */

@@ -204,6 +204,7 @@ import {
 import {
   APPSHOT_ATTACHMENT_NAME,
   APPSHOT_TEXT_ATTACHMENT_NAME,
+  UNABLE_TO_ATTACH_APPSHOT,
   matchAppshotHotkey,
   resolveAppshotTarget
 } from '../shared/appshot'
@@ -5467,7 +5468,7 @@ export default function App() {
     try {
       const shot = await window.sharker.captureAppshot()
       if (!shot.ok || !shot.imageDataUrl) {
-        if (shot.message) appendLocalNote(shot.message)
+        appendLocalNote(UNABLE_TO_ATTACH_APPSHOT)
         return
       }
       const now = Date.now()
@@ -5513,8 +5514,8 @@ export default function App() {
         text: '',
         attachments
       })
-    } catch (err) {
-      appendLocalNote(err instanceof Error ? err.message : String(err))
+    } catch {
+      appendLocalNote(UNABLE_TO_ATTACH_APPSHOT)
     } finally {
       appshotBusyRef.current = false
     }
