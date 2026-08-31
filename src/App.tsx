@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；跟进发送先保住上一轮直播实例，首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例，首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -334,6 +334,7 @@ import {
   shouldAdoptLiveHandoff,
   shouldCancelLiveHandoffWithoutCommit,
   shouldBeginNewLiveReservation,
+  shouldPublishEmptyLiveBodyOnBeginTurn,
   shouldHoldLiveHandoff,
   shouldPublishLiveStreamDuringHandoff,
   nextArchivedLiveArticles,
@@ -1664,7 +1665,7 @@ export default function App() {
     publishLiveStreamUi({ liveTurnMeta: null, turnStartedAt: null })
   }, [])
 
-  /** 发送前初始化回合计时与活动列表 */
+  /** 发送前初始化回合计时与活动列表；不先发空直播体，留给同一帧的准备中 seed。 */
   const beginTurnMeta = useCallback(() => {
     const now = Date.now()
     turnStartedAtRef.current = now
@@ -1680,15 +1681,17 @@ export default function App() {
     turnChangedPathsRef.current = []
     const meta = liveAssistantMeta([], [])
     liveTurnMetaRef.current = meta
-    publishLiveStreamUi({
-      liveSegments: [],
-      streaming: '',
-      turnThinking: '',
-      activeTool: null,
-      liveTurnMeta: meta,
-      turnStartedAt: now,
-      turnHadThinking: false
-    })
+    if (shouldPublishEmptyLiveBodyOnBeginTurn()) {
+      publishLiveStreamUi({
+        liveSegments: [],
+        streaming: '',
+        turnThinking: '',
+        activeTool: null,
+        liveTurnMeta: meta,
+        turnStartedAt: now,
+        turnHadThinking: false
+      })
+    }
     const reservedId = crypto.randomUUID()
     liveAssistantIdRef.current = reservedId
     setLiveAssistantId(reservedId)

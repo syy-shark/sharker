@@ -1622,6 +1622,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamPinnedLiveAssistant')
     expect(src('../src/App.tsx')).toContain('shouldHoldLiveHandoff')
     expect(src('../src/App.tsx')).toContain('shouldBeginNewLiveReservation')
+    expect(src('../src/App.tsx')).toContain('shouldPublishEmptyLiveBodyOnBeginTurn')
     expect(src('../src/App.tsx')).toContain('reuseReservedLiveId')
     expect(src('../src/App.tsx')).toContain('先预留直播 id 再抬 loading')
     expect(src('../src/App.tsx')).toContain('shouldAdoptLiveHandoff')

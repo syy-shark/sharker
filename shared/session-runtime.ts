@@ -3,6 +3,7 @@
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
  * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
+ * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
  * @see shared/ARCH.md
@@ -504,6 +505,15 @@ export function shouldPinActiveLiveAssistant(options: {
   hasLiveBody: boolean
 }): boolean {
   return options.loading || options.hasLiveBody
+}
+
+/**
+ * 开轮 beginTurnMeta 不要先发空直播体。
+ * 空发布会让已挂直播行 `liveBody` 变 false，loading 尚未抬起时 `return null` 塌高
+ * （对标 Codex #22860）。准备中 seed 同一帧再写。
+ */
+export function shouldPublishEmptyLiveBodyOnBeginTurn(): boolean {
+  return false
 }
 
 /**

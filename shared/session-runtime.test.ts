@@ -7,6 +7,7 @@ import {
   liveRowMessageId,
   shouldMountLiveAssistantSlot,
   shouldBeginNewLiveReservation,
+  shouldPublishEmptyLiveBodyOnBeginTurn,
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldHoldLiveHandoff,
@@ -579,6 +580,7 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toBe(false)
     expect(shouldBeginNewLiveReservation({ holdFollowUp: false })).toBe(true)
+    expect(shouldPublishEmptyLiveBodyOnBeginTurn()).toBe(false)
     expect(
       shouldStreamPinnedLiveAssistant({
         pinnedId: 'a-live',
