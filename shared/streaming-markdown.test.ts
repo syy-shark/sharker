@@ -25,6 +25,7 @@ import {
   shouldAppendStreamingFootnoteParagraph,
   shouldAppendStreamingFootnoteItem,
   shouldOpenStreamingFootnotesAfterParagraph,
+  shouldOpenStreamingTableAfterParagraph,
   collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
   shouldGrowOpenStreamingFenceTail,
@@ -1539,6 +1540,43 @@ describe('splitStreamingMarkdown', () => {
     expect(longListGrown[1]?.type).toBe('list')
     if (longThenList[1]?.type === 'list' && longListGrown[1]?.type === 'list') {
       expect(longListGrown[1].items[0]?.nodes).toEqual([{ type: 'text', text: '新项更长' }])
+    }
+    expect(
+      shouldOpenStreamingTableAfterParagraph({ prevNorm: '见下表。', suffix: '\n| A | B |' })
+    ).toBe(true)
+    expect(
+      shouldOpenStreamingTableAfterParagraph({ prevNorm: '见下表', suffix: '。\n| A | B |' })
+    ).toBe(true)
+    expect(
+      shouldOpenStreamingTableAfterParagraph({ prevNorm: 'Name | Value', suffix: '\n--- | ---' })
+    ).toBe(false)
+    const tableIntro = parseCheapProseBlocks('见下表。')
+    const pendingTable = continueCheapProseBlocks('见下表。', tableIntro, '见下表。\n|')
+    expect(pendingTable).toHaveLength(1)
+    expect(pendingTable[0]).toBe(tableIntro[0])
+    const openedTable = continueCheapProseBlocks('见下表。', tableIntro, '见下表。\n| A | B |')
+    expect(openedTable[0]).toBe(tableIntro[0])
+    expect(openedTable.map((b) => b.type)).toEqual(['p', 'table'])
+    const openedTableFlush = continueCheapProseBlocks('见下表', parseCheapProseBlocks('见下表'), '见下表。\n| A | B |')
+    expect(openedTableFlush.map((b) => b.type)).toEqual(['p', 'table'])
+    const headerLike = parseCheapProseBlocks('Name | Value')
+    const headerToTable = continueCheapProseBlocks(
+      'Name | Value',
+      headerLike,
+      'Name | Value\n--- | ---'
+    )
+    expect(headerToTable.map((b) => b.type)).toEqual(['table'])
+    const longThenTable = continueCheapProseBlocks(longPara, longFirst, `${longPara}\n| A | B |`)
+    expect(longThenTable[0]).toBe(longFirst[0])
+    expect(longThenTable[1]?.type).toBe('table')
+    const longTableGrown = continueCheapProseBlocks(
+      `${longPara}\n| A | B |`,
+      longThenTable,
+      `${longPara}\n| A | B |\n| --- | --- |\n| 1 | 2 |`
+    )
+    expect(longTableGrown[0]).toBe(longFirst[0])
+    if (longThenTable[1]?.type === 'table' && longTableGrown[1]?.type === 'table') {
+      expect(longTableGrown[1].header).toBe(longThenTable[1].header)
     }
     const wrapSrc = '- 一项\n- 二项'
     const wrapFirst = parseCheapProseBlocks(wrapSrc)
@@ -3212,6 +3250,8 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('shouldAppendStreamingFootnoteItem')
     expect(mdSrc).toContain('shouldOpenStreamingFootnotesAfterParagraph')
     expect(mdSrc).toContain('isPendingFootnoteDefinitionLine')
+    expect(mdSrc).toContain('shouldOpenStreamingTableAfterParagraph')
+    expect(mdSrc).toContain('isPendingTableStartLine')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
