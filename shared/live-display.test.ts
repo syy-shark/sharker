@@ -84,6 +84,7 @@ import {
   sameRefList,
   shouldCollapseProcessOnAnswerStart,
   shouldFoldTurnWork,
+  nextTurnFlowVisibleSteps,
   shouldKeepCompletedLiveTurnFlow,
   shouldShowLiveThought,
   shouldPromoteSyntheticLiveHead,
@@ -1003,6 +1004,30 @@ describe('worked-for fold', () => {
     expect(
       shouldFoldTurnWork({ contentStreaming: true, isStreaming: false, foldableStepCount: 0 })
     ).toBe(false)
+    expect(
+      nextTurnFlowVisibleSteps({
+        showStepList: true,
+        showPinnedSteps: false,
+        listSteps: ['tool', 'approval'],
+        pinnedSteps: ['approval']
+      })
+    ).toEqual(['tool', 'approval'])
+    expect(
+      nextTurnFlowVisibleSteps({
+        showStepList: false,
+        showPinnedSteps: true,
+        listSteps: ['tool', 'approval'],
+        pinnedSteps: ['approval']
+      })
+    ).toEqual(['approval'])
+    expect(
+      nextTurnFlowVisibleSteps({
+        showStepList: false,
+        showPinnedSteps: false,
+        listSteps: ['tool'],
+        pinnedSteps: []
+      })
+    ).toEqual([])
     expect(shouldCollapseProcessOnAnswerStart(true, false)).toBe(true)
     expect(shouldCollapseProcessOnAnswerStart(true, true)).toBe(false)
     expect(shouldCollapseProcessOnAnswerStart(false, false)).toBe(false)
@@ -1045,6 +1070,11 @@ describe('worked-for fold', () => {
       'utf8'
     )
     expect(turnFlowSrc).toContain('shouldShowLiveThought')
+    expect(turnFlowSrc).toContain('nextTurnFlowVisibleSteps')
+    expect(turnFlowSrc).toContain('visibleSteps.map')
+    expect((turnFlowSrc.match(/className="turn-flow-steps"/g) || []).length).toBe(1)
+    expect(turnFlowSrc).not.toContain('{showStepList ? (')
+    expect(turnFlowSrc).not.toContain('{showPinnedSteps ? (')
     expect(turnFlowSrc).toContain('shouldKeepCompletedLiveTurnFlow')
     expect(turnFlowSrc).toContain('useLiveStreamUiSelectWhen')
     expect(turnFlowSrc).not.toContain('hasThoughtBody && isStreaming')

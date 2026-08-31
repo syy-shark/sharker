@@ -580,6 +580,22 @@ export function shouldFoldTurnWork(options: {
   return options.contentStreaming || !options.isStreaming
 }
 
+const EMPTY_TURN_FLOW_STEPS: readonly never[] = []
+
+/**
+ * 折叠时审批/失败行仍露在同一 `<ol>`，不另挂一张列表以免 `ProcessStepRow` 重挂淡入。
+ */
+export function nextTurnFlowVisibleSteps<T>(options: {
+  showStepList: boolean
+  showPinnedSteps: boolean
+  listSteps: readonly T[]
+  pinnedSteps: readonly T[]
+}): readonly T[] {
+  if (options.showStepList) return options.listSteps
+  if (options.showPinnedSteps) return options.pinnedSteps
+  return EMPTY_TURN_FLOW_STEPS as readonly T[]
+}
+
 /** 回答刚上屏时收回用户展开的 Thought / Worked for，避免过程区在直播回答上方突然长高 */
 export function shouldCollapseProcessOnAnswerStart(
   contentStreaming: boolean,
