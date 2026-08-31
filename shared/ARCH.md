@@ -30,7 +30,7 @@
 | `workspace.test.ts` | 项目选择器按显示名 / 路径 / id 过滤；附加文件夹归一化；`isLocalProjectWorkspace` 排除全局 / Home；`resolveWorkspaceForSend` 空路径回落全局「对话」、App 不再拦发送 |
 | `worktree-include.ts` | `.worktreeinclude` 解析 / 匹配、worktree 起点校验；官方 leftover If your repository ignores local setup files… add a `.worktreeinclude` file… / Use this for files Git intentionally ignores… / Codex automatically copies an ignored `AGENTS.override.md`… / Worktrees are created in a different directory… local environment or `.worktreeinclude` |
 | `worktree-include.test.ts` | 模式解析、glob、拒绝非法 baseRef、官方 `.worktreeinclude` leftover 挂进 Settings → Worktrees |
-| `local-environment.ts` | 解析 `.codex/environments/environment.toml` 的 `[setup]` / `[cleanup] script` 与 `[[actions]]`（name / icon / command / platform；同名平台表覆盖默认。官方 leftover Use actions to define common tasks… / If you run a command regularly… / Setup scripts run automatically…。对标 Codex Local environments / #41348，不发明 Settings 编辑器或嵌套 `[actions.macos]`） |
+| `local-environment.ts` | 解析 `.codex/environments/environment.toml` 的 `[setup]` / `[cleanup] script` 与 `[[actions]]`（name / icon / command / platform；同名平台表覆盖默认。官方 leftover Use actions to define common tasks… / If you run a command regularly… / Setup scripts run automatically… / App doesn't pick up a teammate's shared local environment… `.codex` folder…。对标 Codex Local environments / #41348，不发明 Settings 编辑器或嵌套 `[actions.macos]`） |
 | `local-environment.test.ts` | 空脚本 / 转义换行 / 三引号；setup 与 cleanup 互不串表；`[[actions]]` 平台覆盖；官方 leftover 挂进顶栏 / Settings → Worktrees；确认 worktree 创建/删除会跑对应脚本、顶栏会读 actions |
 | `worktree-root.ts` | Settings → Worktrees 根目录：只收绝对路径，空/非法回退默认 |
 | `worktree-root.test.ts` | 绝对路径保留、相对/`..`/`/` 丢弃 |

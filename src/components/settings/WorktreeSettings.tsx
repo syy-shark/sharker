@@ -1,5 +1,5 @@
 /**
- * 设置 → Worktrees：Worktree root、托管保留数、官方 `.worktreeinclude` leftover。
+ * 设置 → Worktrees：Worktree root、托管保留数、官方 `.worktreeinclude` leftover 与 teammate `.codex` leftover。
  * 对标 Codex Settings → Worktrees。不发明环境编辑器、`.worktreeinclude` 编辑器或单独未落盘的自动删除开关。
  * @see src/components/settings/ARCH.md
  */
@@ -10,7 +10,10 @@ import {
   WORKTREES_SETTINGS_INTRO,
   WORKTREES_SETTINGS_LABEL
 } from '../../../shared/reveal-in-folder'
-import { LOCAL_ENVIRONMENT_SETUP_INTRO } from '../../../shared/local-environment'
+import {
+  LOCAL_ENVIRONMENT_SETUP_INTRO,
+  SHARED_LOCAL_ENVIRONMENT_HINT
+} from '../../../shared/local-environment'
 import {
   CODE_DOESNT_RUN_ON_WORKTREE_HINT,
   WORKTREE_INCLUDE_AGENTS_HINT,
@@ -61,6 +64,9 @@ export function WorktreeSettings({ draft, setDraft, onSave }: Props) {
       </p>
       <p className="st-section-desc" title={LOCAL_ENVIRONMENT_SETUP_INTRO}>
         {LOCAL_ENVIRONMENT_SETUP_INTRO}
+      </p>
+      <p className="st-section-desc" title={SHARED_LOCAL_ENVIRONMENT_HINT}>
+        {SHARED_LOCAL_ENVIRONMENT_HINT}
       </p>
       <p className="st-section-desc" title={CODE_DOESNT_RUN_ON_WORKTREE_HINT}>
         {CODE_DOESNT_RUN_ON_WORKTREE_HINT}

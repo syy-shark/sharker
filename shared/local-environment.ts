@@ -30,6 +30,9 @@ export const LOCAL_ENVIRONMENT_ACTIONS_HINT =
 /** Official leftover (learn.chatgpt.com/docs/environments/local-environment). */
 export const LOCAL_ENVIRONMENT_SETUP_INTRO =
   'Setup scripts run automatically when Codex creates a new worktree at the start of a new chat. Use this script to run any command required to configure your environment, such as installing dependencies or running a build process.'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const SHARED_LOCAL_ENVIRONMENT_HINT =
+  "App doesn't pick up a teammate's shared local environment. The local environment configuration must be inside the `.codex` folder at the root of your project. If you are working in a monorepo with more than one project, make sure you open the project in the directory that contains the `.codex` folder."
 
 /** 仓库根下的 environment.toml 绝对路径 */
 export function localEnvironmentTomlPath(root: string): string {

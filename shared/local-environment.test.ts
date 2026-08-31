@@ -7,6 +7,7 @@ import {
   LOCAL_ENVIRONMENT_ACTIONS_INTRO,
   LOCAL_ENVIRONMENT_REL,
   LOCAL_ENVIRONMENT_SETUP_INTRO,
+  SHARED_LOCAL_ENVIRONMENT_HINT,
   hostLocalEnvironmentPlatform,
   localEnvironmentTomlPath,
   parseLocalEnvironmentActions,
@@ -52,7 +53,11 @@ describe('local environment setup script', () => {
       'utf8'
     )
     expect(worktreeSettingsSrc).toContain('LOCAL_ENVIRONMENT_SETUP_INTRO')
+    expect(worktreeSettingsSrc).toContain('SHARED_LOCAL_ENVIRONMENT_HINT')
     expect(worktreeSettingsSrc).not.toContain('environment editor')
+    expect(SHARED_LOCAL_ENVIRONMENT_HINT).toMatch(/teammate's shared local environment/)
+    expect(SHARED_LOCAL_ENVIRONMENT_HINT).toMatch(/\.codex` folder/)
+    expect(SHARED_LOCAL_ENVIRONMENT_HINT).toMatch(/monorepo/)
     const expoToml = [
       'version = 1',
       'name = "app"',
