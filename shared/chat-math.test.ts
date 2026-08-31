@@ -8,6 +8,7 @@ import {
   readChatMath,
   renderChatMathHtml,
   resolveLiveChatMathHtml,
+  liveChatMathPaintHtml,
   shouldDeferChatMathPaintJob,
   shouldRenderLiveChatMath,
   shouldStartChatMathPaintJob,
@@ -65,6 +66,8 @@ describe('chat-math', () => {
     expect(resolveLiveChatMathHtml({ streaming: true, html: cached, cached })).toBeNull()
     expect(resolveLiveChatMathHtml({ streaming: false, html: null, cached })).toBe(cached)
     expect(resolveLiveChatMathHtml({ streaming: false, html: null })).toBeNull()
+    expect(liveChatMathPaintHtml(null, 'a <b>', 'paren')).toBe('\\(a &lt;b&gt;\\)')
+    expect(liveChatMathPaintHtml('<span>k</span>', 'n^2', 'paren')).toBe('<span>k</span>')
     expect(collectClosedChatMath('If \\(E=mc^2\\) and $$a+b$$.').map((hit) => hit.tex)).toEqual([
       'E=mc^2',
       'a+b'

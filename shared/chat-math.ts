@@ -2,11 +2,13 @@
  * 对话数学：官方已交付的 `\(...\)` / `\[...\]` / `$$...$$`（对标 Codex 桌面 KaTeX）。
  * 不认 `$...$`（官方 tokenizer 也不认）；非法 TeX 回退原文；`trust: false`。
  * 直播 token 中先画原文，收束后再跑 KaTeX；预热命中则同一帧着色，避免先闪原文。
+ * `liveChatMathPaintHtml` 原文与 KaTeX 共用同一条 `<span>`，着色不从文本子节点换挂。
  * 直播中公式闭合后 `shouldWarmLiveChatMath` 开工 `renderChatMathHtml` 写缓存，不着色。
  * `shouldStartChatMathPaintJob` 缓存命中不再开工；`shouldDeferChatMathPaintJob` 远窗未命中推到下一帧。
  * @see shared/ARCH.md
  */
 import katex from 'katex'
+import { escapeLiveFenceLineHtml } from './live-display'
 
 /** 单条公式上限，避免超长 TeX 卡直播 */
 export const CHAT_MATH_MAX_TEX = 4_000
@@ -153,6 +155,18 @@ export function resolveLiveChatMathHtml(options: {
 }): string | null {
   if (!shouldRenderLiveChatMath({ streaming: options.streaming })) return null
   return options.html ?? options.cached ?? null
+}
+
+/**
+ * KaTeX HTML 或转义原文。同一条 `<span dangerouslySetInnerHTML>`，收束着色不换挂。
+ */
+export function liveChatMathPaintHtml(
+  painted: string | null,
+  tex: string,
+  fence: ChatMathFence
+): string {
+  if (painted) return painted
+  return escapeLiveFenceLineHtml(chatMathSource(tex, fence)) || ' '
 }
 
 /**

@@ -3,15 +3,16 @@
  * 非法 TeX 回退原文；不认 `$...$`；直播 token 中先画原文，闭合后 effect 开工 KaTeX 写缓存；
  * 收束后命中预热缓存则同一帧着色，否则 effect 再着色。
  * 缓存命中重挂不再 setHtml；远窗 FenceImmediateHighlightContext 为假时未命中成图推到下一帧。
+ * 节点始终 `liveChatMathPaintHtml` + `dangerouslySetInnerHTML`，着色不从文本子节点换挂。
  * @see src/components/ARCH.md
  */
 import { memo, useContext, useEffect, useState } from 'react'
 import {
-  chatMathSource,
   liveChatMathClassName,
   peekChatMathHtml,
   renderChatMathHtml,
   resolveLiveChatMathHtml,
+  liveChatMathPaintHtml,
   shouldDeferChatMathPaintJob,
   shouldRenderLiveChatMath,
   shouldStartChatMathPaintJob,
@@ -86,17 +87,10 @@ export const ChatMath = memo(function ChatMath({
     }
   }, [allowPaint, tex, display, streaming, preferImmediate])
 
-  if (!painted) {
-    return (
-      <span className={liveChatMathClassName({ display, raw: true })}>
-        {chatMathSource(tex, fence)}
-      </span>
-    )
-  }
   return (
     <span
-      className={liveChatMathClassName({ display })}
-      dangerouslySetInnerHTML={{ __html: painted }}
+      className={liveChatMathClassName({ display, raw: !painted })}
+      dangerouslySetInnerHTML={{ __html: liveChatMathPaintHtml(painted, tex, fence) }}
     />
   )
 })
