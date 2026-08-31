@@ -3,7 +3,7 @@
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
  * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
- * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口，贴底 setState 不重建历史行。
+ * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口；预留行 persist 入列后复用同一 gap 引用，不重建历史行。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -399,7 +399,9 @@ export function historicalMessagesDuringLive(
 
 /**
  * 跟进发送时上一轮直播体还在：先保住同一直播实例，等首枚 harness chunk 再换 id。
- * 历史列还没挂上预留行时仍走开轮 beginTurnMeta（首轮）。
+ * persist 还没把预留行写入历史列时也要保住（对标 Codex #22860）。
+ * 首轮没有直播体 / 预留 id，仍走开轮 beginTurnMeta。
+ * `historyHasReserved` 仍接调用方，不再当门闩。
  */
 export function shouldHoldLiveHandoff(options: {
   hasLiveBody: boolean
@@ -408,7 +410,7 @@ export function shouldHoldLiveHandoff(options: {
 }): boolean {
   if (!options.hasLiveBody) return false
   if (!options.liveAssistantId?.trim()) return false
-  if (options.historyHasReserved === false) return false
+  // historyHasReserved 仍接调用方；persist 未入列也保住上一轮直播实例。
   return true
 }
 
@@ -581,18 +583,48 @@ export function shouldMountActiveLiveSlot(options: {
   return true
 }
 
+function sameMessageRefList(prev: ChatMessage[] | undefined, next: ChatMessage[]): boolean {
+  if (prev === next) return true
+  if (!prev || prev.length !== next.length) return false
+  for (let i = 0; i < next.length; i++) {
+    if (prev[i] !== next[i]) return false
+  }
+  return true
+}
+
+/**
+ * persist 把预留行写入历史列后，before 缺口往往只是同一批消息对象。
+ * 复用上一份 gap，避免 ChatView 整列重建历史 JSX（对标 Codex #22860 / #38220）。
+ */
+export function reusePinnedTranscriptGaps(
+  prev: ChatMessage[][] | null | undefined,
+  next: ChatMessage[][]
+): ChatMessage[][] {
+  if (!prev || prev.length !== next.length) return next
+  let changed = false
+  const out = next.map((gap, i) => {
+    if (sameMessageRefList(prev[i], gap)) return prev[i]
+    changed = true
+    return gap
+  })
+  return changed ? out : prev
+}
+
 /**
  * 按 pinned id 切开历史列并藏掉这些 id。
  * 空 pin 返回 null，好让 ChatView 用同一引用跳过贴底重绘（对标 Codex #22860 / #38220）。
+ * 传入上一份 gaps 时，内容没变就复用同一数组。
  */
 export function nextPinnedTranscriptGaps(
   messages: ChatMessage[],
   pinnedIds: readonly string[],
-  hideIds: Array<string | null | undefined>
+  hideIds: Array<string | null | undefined>,
+  prev: ChatMessage[][] | null = null
 ): ChatMessage[][] | null {
   if (pinnedIds.length === 0) return null
   const split = splitTranscriptAroundPinnedLive(messages, pinnedIds)
-  return split.gaps.map((gap) => historicalMessagesHidingIds(gap, hideIds))
+  const next = split.gaps.map((gap) => historicalMessagesHidingIds(gap, hideIds))
+  return reusePinnedTranscriptGaps(prev, next)
 }
 
 const EMPTY_PINNED_AFTER_GAPS: ChatMessage[][] = []

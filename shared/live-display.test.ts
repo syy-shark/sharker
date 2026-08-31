@@ -65,6 +65,7 @@ import {
   shouldFollowApprovalIntoView,
   shouldIgnoreLeaveBottomDuringCommit,
   shouldRebuildLiveStickObserverWhenLoadingChanges,
+  shouldRecordLiveStickHeightWhenUnstuck,
   shouldRecordTranscriptScrollIntent,
   shouldStartLiveCommitSettle,
   LIVE_COMMIT_SETTLE_FRAMES,
@@ -634,10 +635,13 @@ describe('near-live message rows', () => {
       'utf8'
     )
     expect(shouldRebuildLiveStickObserverWhenLoadingChanges()).toBe(false)
+    expect(shouldRecordLiveStickHeightWhenUnstuck()).toBe(true)
     expect(chatView).toContain('shouldRebuildLiveStickObserverWhenLoadingChanges')
+    expect(chatView).toContain('shouldRecordLiveStickHeightWhenUnstuck')
     expect(chatView).not.toContain(
       '[isEmpty, loading, sessionKey, applyTranscriptRestore, rememberTranscriptSnapshot]'
     )
+    expect(chatView).not.toContain('if (!stickToBottomRef.current) return')
     expect(chatView).toContain('shouldIgnoreLeaveBottomDuringCommit')
     expect(chatView).toContain('LIVE_COMMIT_SETTLE_MS')
     expect(chatView).toContain('shouldStartLiveCommitSettle')

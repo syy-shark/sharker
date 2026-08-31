@@ -1596,6 +1596,14 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('isStreaming={liveStreaming}')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedTranscriptGaps')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedGapsHeldRef')
+    expect(src('../src/components/ChatView.tsx')).toContain('renderFrozenEjectedArticle,\n      historicalSource')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'renderFrozenEjectedArticle,\n      hideReservedLive,\n      historicalSource'
+    )
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'historicalSource,\n      liveAssistantId,\n      preserveLiveDiffsId,\n      windowedMessages'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedAfterGaps')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedAfterRows')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_HISTORICAL_MESSAGES')
@@ -1644,6 +1652,11 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/App.tsx')).toContain('snapshotFrozenProcessSteps')
     expect(src('../src/App.tsx')).toContain('takeEjectedLiveOverflow')
     expect(src('../src/App.tsx')).toContain('nextArchivedLiveArticles')
+    expect(src('session-runtime.ts')).toContain('reusePinnedTranscriptGaps')
+    expect(src('session-runtime.ts')).toContain('historyHasReserved 仍接调用方')
+    expect(src('session-runtime.ts')).not.toContain(
+      'if (options.historyHasReserved === false) return false'
+    )
     expect(src('session-runtime.ts')).not.toContain('ARCHIVED_LIVE_PARTS_LIMIT')
     expect(src('../src/App.tsx')).toContain('readMountedMessageRowHeight')
     expect(src('../src/components/ChatView.tsx')).toContain('ejectedLiveArticles')

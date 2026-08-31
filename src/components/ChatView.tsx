@@ -1,8 +1,8 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
- * 开轮 / 收束不拆这只 observer，以免 `lastHeight` 归零误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 `useMemo`，贴底 setState 不重建 `historicalRows` 与 after 行（对标 Codex #22860 / #38220）。
+ * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
+ * pin 列 / 历史源 / pin 后缺口 `useMemo`；persist 入列复用同一 gap，历史行只跟 `historicalSource`（对标 Codex #22860 / #38220）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，只补视口上方行的 scrollTop，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -106,6 +106,7 @@ import {
   shouldWatchLiveJumpProgress,
   liveStickNeedsFollow,
   shouldRebuildLiveStickObserverWhenLoadingChanges,
+  shouldRecordLiveStickHeightWhenUnstuck,
   liveStickScrollTop,
   clampLockedScrollTop,
   shouldClearUnseenLive,
@@ -1157,6 +1158,8 @@ export const ChatView = memo(function ChatView({
     forkByIdRef.current.clear()
     retryByIdRef.current.clear()
     editByIdRef.current.clear()
+    pinnedGapsHeldRef.current = null
+    pinnedGapsSessionRef.current = sessionKey
     setIntrinsicHeights(new Map())
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
@@ -1166,6 +1169,8 @@ export const ChatView = memo(function ChatView({
   const composerStageRef = useRef<HTMLDivElement>(null)
   const measuredRowHeightsRef = useRef(new Map<string, number>())
   const nearLiveImmediateIdsRef = useRef(new Set<string>())
+  const pinnedGapsHeldRef = useRef<ChatMessage[][] | null>(null)
+  const pinnedGapsSessionRef = useRef(sessionKey)
   const nearLiveImmediateSessionRef = useRef(sessionKey)
   if (nearLiveImmediateSessionRef.current !== sessionKey) {
     nearLiveImmediateSessionRef.current = sessionKey
@@ -2361,7 +2366,13 @@ export const ChatView = memo(function ChatView({
         lastClient = client
         return
       }
-      if (!stickToBottomRef.current) return
+      if (!stickToBottomRef.current) {
+        if (shouldRecordLiveStickHeightWhenUnstuck()) {
+          lastHeight = h
+          lastClient = client
+        }
+        return
+      }
       if (
         !liveStickNeedsFollow(
           { scrollHeight: lastHeight, clientHeight: lastClient },
@@ -2661,15 +2672,18 @@ export const ChatView = memo(function ChatView({
     [retiredIds, retiredLiveId, liveHandoffId, liveAssistantId, hideReservedLive, pinActiveLive]
   )
   const pinnedLiveId = pinnedLiveIds[0] ?? null
-  const pinnedGaps = useMemo(
-    () =>
-      nextPinnedTranscriptGaps(windowedMessages, pinnedLiveIds, [
-        ...pinnedLiveIds,
-        liveAssistantId,
-        retiredLiveId
-      ]),
-    [windowedMessages, pinnedLiveIds, liveAssistantId, retiredLiveId]
-  )
+  const pinnedGaps = useMemo(() => {
+    const prev = pinnedGapsSessionRef.current === sessionKey ? pinnedGapsHeldRef.current : null
+    pinnedGapsSessionRef.current = sessionKey
+    const next = nextPinnedTranscriptGaps(
+      windowedMessages,
+      pinnedLiveIds,
+      [...pinnedLiveIds, liveAssistantId, retiredLiveId],
+      prev
+    )
+    pinnedGapsHeldRef.current = next
+    return next
+  }, [sessionKey, windowedMessages, pinnedLiveIds, liveAssistantId, retiredLiveId])
   const historicalSource = useMemo(() => {
     if (pinnedGaps) return pinnedGaps[0] ?? EMPTY_HISTORICAL_MESSAGES
     return historicalMessagesDuringLive(
@@ -2809,11 +2823,8 @@ export const ChatView = memo(function ChatView({
       ejectedLiveArticles,
       archivedLiveArticles,
       renderFrozenEjectedArticle,
-      hideReservedLive,
       historicalSource,
-      liveAssistantId,
       preserveLiveDiffsId,
-      windowedMessages,
       modelLabel,
       onOpenSubAgent,
       onOpenChangedFiles,

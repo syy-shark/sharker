@@ -31,6 +31,7 @@ import {
   EJECTED_LIVE_LIMIT,
   splitTranscriptAroundPinnedLive,
   nextPinnedTranscriptGaps,
+  reusePinnedTranscriptGaps,
   nextPinnedAfterGaps,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
@@ -456,7 +457,7 @@ describe('commitAssistantReply persist targeting', () => {
         liveAssistantId: 'a-live',
         historyHasReserved: false
       })
-    ).toBe(false)
+    ).toBe(true)
     expect(
       shouldHoldLiveHandoff({
         hasLiveBody: true,
@@ -689,17 +690,24 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toEqual(['a-live', 'b-live'])
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
+    const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
+    const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }
+    const u2 = { id: 'u2', role: 'user' as const, content: 'more' }
     expect(
-      nextPinnedTranscriptGaps(
-        [
-          { id: 'u1', role: 'user', content: 'hi' },
-          { id: 'a-live', role: 'assistant', content: 'draft' },
-          { id: 'u2', role: 'user', content: 'more' }
-        ],
-        ['a-live'],
-        ['a-live']
-      )?.map((gap) => gap.map((m) => m.id))
+      nextPinnedTranscriptGaps([u1, liveDraft, u2], ['a-live'], ['a-live'])?.map((gap) =>
+        gap.map((m) => m.id)
+      )
     ).toEqual([['u1'], ['u2']])
+    const beforePersist = nextPinnedTranscriptGaps([u1, u2], ['a-live'], ['a-live'])
+    const afterPersist = nextPinnedTranscriptGaps(
+      [u1, u2, liveDraft],
+      ['a-live'],
+      ['a-live'],
+      beforePersist
+    )
+    expect(afterPersist).toBe(beforePersist)
+    expect(afterPersist?.[0]).toBe(beforePersist?.[0])
+    expect(reusePinnedTranscriptGaps(beforePersist, beforePersist ?? [])).toBe(beforePersist)
     const emptyAfter = nextPinnedAfterGaps(null)
     expect(emptyAfter).toEqual([])
     expect(nextPinnedAfterGaps([[{ id: 'u1', role: 'user', content: 'hi' }]])).toBe(emptyAfter)

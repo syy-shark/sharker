@@ -2,6 +2,7 @@
  * 直播过程展示头：从可见步骤推导当前头标签/详情。
  * 头详情只挂短路径，不挂命令末行（对标 Codex #19260）。
  * 开轮/收束不拆贴底 ResizeObserver（`shouldRebuildLiveStickObserverWhenLoadingChanges`）。
+ * 未贴底也记下 `lastHeight`（`shouldRecordLiveStickHeightWhenUnstuck`）。
  * 与 TurnFlow 渲染共用，保证“头 = 当前步骤”。
  * 思考原文不当时间线标题；展示为 Cursor 式可折叠 Thought，不是灰卡片倾倒。
  */
@@ -1058,6 +1059,14 @@ export const LIVE_TAIL_SAFE_PX = 12
  */
 export function shouldRebuildLiveStickObserverWhenLoadingChanges(): boolean {
   return false
+}
+
+/**
+ * 未贴底时也记下内容高度 / 视口。
+ * 不记的话 `lastHeight` 停在旧值，思考收回后 stick 闪回会误跟（对标 Codex #37849 / #37872）。
+ */
+export function shouldRecordLiveStickHeightWhenUnstuck(): boolean {
+  return true
 }
 
 /** 内容高度或滚动视口变了才需要重写 scrollTop */
