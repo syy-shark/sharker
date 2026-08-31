@@ -183,6 +183,24 @@ export const SCHEDULED_LABEL = 'Scheduled'
 /** Official Scheduled inbox copy (learn.chatgpt.com/docs/automations). */
 export const SCHEDULED_INTRO =
   'Find all scheduled tasks and their runs on Scheduled in the ChatGPT desktop app sidebar. The Scheduled view acts as your inbox. Scheduled task runs with findings appear there, and an unread indicator shows when a run needs your attention.'
+/** Official desktop Scheduled local/worktree sentence (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_LOCAL_INTRO =
+  'In the ChatGPT desktop app, scheduled tasks can work with local projects and run in the project directory or an isolated worktree. Keep the computer on and the app running when a scheduled task needs local files.'
+/** Official Scheduled run-in sentence (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_RUN_IN_INTRO =
+  'In Git repositories, you can choose whether a scheduled task runs in your local project or on a new worktree. Both options run in the background. Worktrees keep changes from scheduled tasks separate from unfinished local work, while running in your local project can modify files you are still working on. In non-version-controlled projects, scheduled tasks run directly in the project directory.'
+/** Official Scheduled multi-project sentence (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_MULTI_PROJECT_INTRO =
+  'You can have the same scheduled task run on more than one project.'
+/** Official Scheduled skill trigger (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_SKILL_HINT =
+  'In the ChatGPT desktop app, you can explicitly trigger a skill in a scheduled task prompt by using `$skill-name`.'
+/** Official Scheduled model / reasoning sentence (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_MODEL_INTRO =
+  'You can also leave the model and reasoning effort on their default settings, or choose them explicitly if you want more control over how the scheduled task runs.'
+/** Official Scheduled destination sentence (learn.chatgpt.com/docs/automations). */
+export const SCHEDULED_DESTINATION_INTRO =
+  'Use a standalone scheduled task when each run should start from the saved prompt. Use a scheduled task in a chat when you want ChatGPT to return to the same chat with its existing context.'
 export const SCHEDULED_ALL_LABEL = 'All'
 export const SCHEDULED_ACTIVE_LABEL = 'Active'
 export const SCHEDULED_PAUSED_LABEL = 'Paused'

@@ -16,10 +16,16 @@ import {
   RUN_NOW_LABEL,
   SCHEDULED_ACTIVE_LABEL,
   SCHEDULED_ALL_LABEL,
+  SCHEDULED_DESTINATION_INTRO,
   SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
   SCHEDULED_LABEL,
+  SCHEDULED_LOCAL_INTRO,
+  SCHEDULED_MODEL_INTRO,
+  SCHEDULED_MULTI_PROJECT_INTRO,
   SCHEDULED_PAUSED_LABEL,
+  SCHEDULED_RUN_IN_INTRO,
+  SCHEDULED_SKILL_HINT,
   parseAutomationWorkspaceIds,
   parseOptionalAutomationId,
   resolveAutomationRunPlan,
@@ -204,11 +210,24 @@ describe('automation destination', () => {
     ])
     expect(SCHEDULED_LABEL).toBe('Scheduled')
     expect(SCHEDULED_INTRO).toMatch(/Scheduled view acts as your inbox/)
+    expect(SCHEDULED_LOCAL_INTRO).toMatch(/isolated worktree/)
+    expect(SCHEDULED_RUN_IN_INTRO).toMatch(/local project or on a new worktree/)
+    expect(SCHEDULED_MULTI_PROJECT_INTRO).toMatch(/more than one project/)
+    expect(SCHEDULED_SKILL_HINT).toMatch(/\$skill-name/)
+    expect(SCHEDULED_MODEL_INTRO).toMatch(/model and reasoning effort/)
+    expect(SCHEDULED_DESTINATION_INTRO).toMatch(/standalone scheduled task/)
     const automationsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/pages/AutomationsPage.tsx'),
       'utf8'
     )
     expect(automationsSrc).toContain('SCHEDULED_INTRO')
+    expect(automationsSrc).toContain('SCHEDULED_LOCAL_INTRO')
+    expect(automationsSrc).toContain('SCHEDULED_SKILL_HINT')
+    expect(automationsSrc).toContain('SCHEDULED_DESTINATION_INTRO')
+    expect(automationsSrc).toContain('SCHEDULED_RUN_IN_INTRO')
+    expect(automationsSrc).toContain('SCHEDULED_MULTI_PROJECT_INTRO')
+    expect(automationsSrc).toContain('SCHEDULED_MODEL_INTRO')
+    expect(automationsSrc).not.toContain('不勾选则跟当前项目')
     expect(automationsSrc).toContain('CHATS_SECTION_LABEL')
     expect(automationsSrc).not.toContain('← 返回')
     expect(SCHEDULED_ALL_LABEL).toBe('All')

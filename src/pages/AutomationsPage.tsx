@@ -18,9 +18,15 @@ import {
   parseOptionalAutomationId,
   ARCHIVE_ELIGIBLE_RUNS_LABEL,
   RUN_NOW_LABEL,
+  SCHEDULED_DESTINATION_INTRO,
   SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
   SCHEDULED_LABEL,
+  SCHEDULED_LOCAL_INTRO,
+  SCHEDULED_MODEL_INTRO,
+  SCHEDULED_MULTI_PROJECT_INTRO,
+  SCHEDULED_RUN_IN_INTRO,
+  SCHEDULED_SKILL_HINT,
   type AutomationJob,
   type AutomationJobFilter
 } from '../../shared/automation'
@@ -169,6 +175,7 @@ export function AutomationsPage({
           </button>
           <h1>{SCHEDULED_LABEL}</h1>
           <p>{SCHEDULED_INTRO}</p>
+          <p>{SCHEDULED_LOCAL_INTRO}</p>
         </header>
 
         <section className="automations-queue" aria-label="审查队列">
@@ -354,6 +361,7 @@ export function AutomationsPage({
                     rows={3}
                     onChange={(e) => updateJob(j.id, { prompt: e.target.value })}
                     onBlur={persistCurrent}
+                    title={SCHEDULED_SKILL_HINT}
                   />
                 </label>
 
@@ -373,6 +381,7 @@ export function AutomationsPage({
                       persistCurrent()
                     }}
                     aria-label="任务目标"
+                    title={SCHEDULED_DESTINATION_INTRO}
                   >
                     <option value="new">每次新对话</option>
                     <option value="thread">回到指定对话</option>
@@ -390,6 +399,7 @@ export function AutomationsPage({
                           persistCurrent()
                         }}
                         aria-label="运行环境"
+                        title={SCHEDULED_RUN_IN_INTRO}
                       >
                         <option value="worktree">隔离 worktree</option>
                         <option value="local">本地项目</option>
@@ -397,9 +407,7 @@ export function AutomationsPage({
                     </label>
                     <fieldset className="automation-field automation-projects">
                       <legend>项目</legend>
-                      <p className="automation-projects-hint">
-                        不勾选则跟当前项目；可同一任务跑多个项目
-                      </p>
+                      <p className="automation-projects-hint">{SCHEDULED_MULTI_PROJECT_INTRO}</p>
                       {workspaces.length === 0 ? (
                         <p className="automations-empty">还没有工作区</p>
                       ) : (
@@ -451,6 +459,7 @@ export function AutomationsPage({
                       persistCurrent()
                     }}
                     aria-label="任务模型"
+                    title={SCHEDULED_MODEL_INTRO}
                   >
                     <option value="">跟随当前</option>
                     {providers.map((p) => (
@@ -479,6 +488,7 @@ export function AutomationsPage({
                           persistCurrent()
                         }}
                         aria-label="任务思考档位"
+                        title={SCHEDULED_MODEL_INTRO}
                       >
                         <option value="">跟随当前</option>
                         {opts.map((opt) => (
