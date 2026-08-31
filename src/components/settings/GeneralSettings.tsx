@@ -1,5 +1,6 @@
 /**
  * 通用：后续行为、Enter 发送、审查交付、Prevent sleep while running。
+ * Follow-up 选项标题用官方 Wait for the next run / Steer the current run；Composer 芯片仍 Queue / Steer。
  * 对标 Codex Settings → General（Follow-up / Cmd+Enter / Prevent sleep / Code review / review_model）。
  * file_opener 与命令输出在 Permissions → Project and terminal behavior。
  * 建议提示在 SuggestedPromptSettings（官方 Settings → Suggested prompts）。
@@ -10,10 +11,10 @@ import type { AppSettings } from '../../../shared/types'
 import {
   FOLLOW_UP_BEHAVIOR_INTRO,
   FOLLOW_UP_BEHAVIOR_LABEL,
-  QUEUE_LABEL,
   QUEUE_SAVES_THE_MESSAGE_LABEL,
   STEER_ADDS_THE_MESSAGE_LABEL,
-  STEER_LABEL,
+  STEER_THE_CURRENT_RUN_LABEL,
+  WAIT_FOR_THE_NEXT_RUN_LABEL,
   CMD_CTRL_ENTER_SENDS_MULTILINE_LABEL,
   composerEnterBehaviorLabel,
   parseComposerEnterBehavior,
@@ -90,13 +91,13 @@ export function GeneralSettings({ draft, setDraft, onSave }: Props) {
             options={[
               {
                 value: 'queue',
-                title: QUEUE_LABEL,
+                title: WAIT_FOR_THE_NEXT_RUN_LABEL,
                 description: QUEUE_SAVES_THE_MESSAGE_LABEL,
                 icon: <span aria-hidden>Q</span>
               },
               {
                 value: 'steer',
-                title: STEER_LABEL,
+                title: STEER_THE_CURRENT_RUN_LABEL,
                 description: STEER_ADDS_THE_MESSAGE_LABEL,
                 icon: <span aria-hidden>S</span>
               }

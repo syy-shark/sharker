@@ -19,9 +19,9 @@ export const FOLLOW_UP_BEHAVIOR_LABEL = 'Follow-up behavior'
 /** Official Settings → General short option lines. */
 export const WAIT_FOR_THE_NEXT_RUN_LABEL = 'Wait for the next run'
 export const STEER_THE_CURRENT_RUN_LABEL = 'Steer the current run'
-/** Official prompting copy for Settings → General → Follow-up behavior. */
+/** Official Settings → General → Follow-up behavior (learn.chatgpt.com/docs/reference/settings). */
 export const FOLLOW_UP_BEHAVIOR_INTRO =
-  'Queued messages appear above the composer, where you can edit, reorder, send, or delete them. The setting also shows the shortcut for using the other behavior for one message without changing your default.'
+  'Under Follow-up behavior, choose whether a message sent while ChatGPT works should steer the current run or wait for the next run. Queued messages appear above the composer, where you can edit, reorder, send, or delete them. The setting also shows the shortcut for using the other behavior for one message without changing your default.'
 export const QUEUE_SAVES_THE_MESSAGE_LABEL =
   'Queue saves the message for the next run. Use it for a follow-up that should wait until the current work finishes.'
 export const STEER_ADDS_THE_MESSAGE_LABEL =
