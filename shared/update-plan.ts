@@ -1,6 +1,7 @@
 /**
  * 官方 `update_plan`：任务清单（不是计划模式）。
  * 工具结果固定 `Plan updated`；过程区画 pending / in_progress / completed。
+ * 清单行 id 只用序号，避免直播 step 正文加长时重挂。
  * 不发明 /plan-model、底栏 Step N/5 徽章或第二套计划文档。
  * @see shared/ARCH.md
  */
@@ -27,6 +28,11 @@ export type UpdatePlanStep = {
 export type UpdatePlanArgs = {
   explanation: string | null
   plan: UpdatePlanStep[]
+}
+
+/** 直播清单行 key：只用序号，避免 step 正文加长时 TurnFlow 重挂。 */
+export function updatePlanStepKey(index: number): string {
+  return `plan-${Math.max(0, Math.floor(Number(index) || 0))}`
 }
 
 export function parsePlanStepStatus(raw: unknown): PlanStepStatus {

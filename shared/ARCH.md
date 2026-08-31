@@ -178,8 +178,8 @@
 | `view-image.test.ts` | 官方名 / 别名、detail、MIME、短结果往返（含空格路径）、ImageView 路径、Viewed Image 过程标题 |
 | `web-search.ts` | 官方 web_search / web_fetch：Searching the web / Searched 头 + query 或 URL detail、title+url 来源行（对标 Codex TUI web_search_header / open_page / #9960 / #24693 / #32898 / #7390）。仍认旧「Searched the web for」输出。不发明 Fetched / find_in_page / web.run |
 | `web-search.test.ts` | 活动文案、source 往返、忽略非 http(s) |
-| `update-plan.ts` | 官方 `update_plan` 清单：pending / in_progress / completed、短结果 `Plan updated`；计划模式收束文案 Proposed Plan / Implement this plan?。不是第二套计划文档，不发明 /plan-model、底栏徽章或 Clear context |
-| `update-plan.test.ts` | 状态解析、空参、直播头当前步 / `Plan · n/m`、计划模式白名单 |
+| `update-plan.ts` | 官方 `update_plan` 清单：pending / in_progress / completed、短结果 `Plan updated`；直播行 key 用 `plan-N`，step 正文加长不重挂；计划模式收束文案 Proposed Plan / Implement this plan?。不是第二套计划文档，不发明 /plan-model、底栏徽章或 Clear context |
+| `update-plan.test.ts` | 状态解析、空参、直播头当前步 / `Plan · n/m`、计划模式白名单、清单行 `plan-N` 不带 step 正文 |
 | `exec-activity.ts` | 官方命令过程：Running / Ran + 短命令（对标 Codex `exec_cell`）。不发明 You ran / unified-exec |
 | `exec-activity.test.ts` | 短选项、Running/Ran、过长截断 |
 | `explore-activity.ts` | 官方探索过程：Read / List / Search + basename（对标 Codex exec_cell parsed Read/List/Search）。不发明 Exploring 分组头，也不发明比官方更长的完整路径 |

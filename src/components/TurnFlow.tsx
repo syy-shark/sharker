@@ -11,6 +11,7 @@
  * - thinking 原文永不作为时间线标题或主回答
  * - 官方 MCP 单元格用 Calling / Called `server.tool(args)`，不把 JSON 结果倾进直播行（对标 Codex #20677，不抄 #22300）
  * - 官方 ImageView 过程行标题 Viewed Image，短结果不当摘要倾倒
+ * - `update_plan` 清单 `key` 只用 `plan-N`，正文加长或 pending→in_progress 不重挂行
  * @see src/ARCH.md · docs/ui-style.md
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -56,7 +57,7 @@ import { ChatLink } from './ChatLink'
 import { isWorkspaceChatImageSrc } from '../../shared/chat-image'
 import { isViewImageDump, isViewImageTool, viewedImagePathFromTool } from '../../shared/view-image'
 import { parseWebSearchSources } from '../../shared/web-search'
-import { parseUpdatePlanArgs } from '../../shared/update-plan'
+import { parseUpdatePlanArgs, updatePlanStepKey } from '../../shared/update-plan'
 import { isMcpActivityToolName, isMcpJsonDump } from '../../shared/mcp-activity'
 import { OPEN_LABEL } from '../../shared/reveal-in-folder'
 import { isSubAgentInspectTool, openSubAgentControlLabel, subAgentIdFromTool } from '../../shared/subagent'
@@ -629,7 +630,7 @@ const ProcessStepRow = memo(function ProcessStepRow({
             <ol className="turn-flow-plan-list">
               {updatePlan.plan.map((item, index) => (
                 <li
-                  key={`${index}:${item.step}`}
+                  key={updatePlanStepKey(index)}
                   className={`turn-flow-plan-item turn-flow-plan-item--${item.status}`}
                 >
                   <span className="turn-flow-plan-mark" aria-hidden>

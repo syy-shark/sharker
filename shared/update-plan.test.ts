@@ -2,6 +2,7 @@
  * 官方 update_plan 参数与直播文案。
  * @see shared/update-plan.ts
  */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { isToolAllowedInPlanMode } from '../tools/tool-groups'
 import { getAllBuiltinTools } from '../tools/registry'
@@ -14,7 +15,8 @@ import {
   IMPLEMENT_PLAN_YES,
   parsePlanStepStatus,
   parseUpdatePlanArgs,
-  PROPOSED_PLAN_TITLE
+  PROPOSED_PLAN_TITLE,
+  updatePlanStepKey
 } from './update-plan'
 
 describe('update-plan', () => {
@@ -48,5 +50,17 @@ describe('update-plan', () => {
     expect(IMPLEMENT_PLAN_NO).toBe('No, tell Codex how to adjust')
     expect(getAllBuiltinTools().some((tool) => tool.name === 'update_plan')).toBe(true)
     expect(isToolAllowedInPlanMode('update_plan')).toBe(true)
+  })
+
+  it('keeps live plan row keys stable while step text grows', () => {
+    const first = updatePlanStepKey(0)
+    const grown = updatePlanStepKey(0)
+    expect(first).toBe('plan-0')
+    expect(grown).toBe(first)
+    expect(first).not.toContain('Fix the scroll')
+    expect(updatePlanStepKey(1)).toBe('plan-1')
+    const turnFlowSrc = readFileSync(new URL('../src/components/TurnFlow.tsx', import.meta.url), 'utf8')
+    expect(turnFlowSrc).toContain('updatePlanStepKey')
+    expect(turnFlowSrc).not.toContain('${index}:${item.step}')
   })
 })
