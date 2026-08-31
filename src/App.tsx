@@ -170,11 +170,7 @@ import {
   resolveLocalEnvironmentActions,
   type LocalEnvironmentAction
 } from '../shared/local-environment'
-import {
-  adjacentConversationId,
-  isEmbeddedTerminalTarget,
-  isTerminalClearChord
-} from '../shared/workbench-shortcuts'
+import { adjacentConversationId } from '../shared/workbench-shortcuts'
 import { isInterruptTurnRemapped, matchWorkbenchShortcut, shouldInterruptTurn } from '../shared/keymap'
 import { mouseNavDirection, navBack, navForward, pushNav, type NavEntry } from '../shared/nav-history'
 import {
@@ -7843,21 +7839,6 @@ export default function App() {
         return
       }
       if (action === 'command_palette') {
-        // 对标 Codex：终端聚焦时 ⌘K / Ctrl+K 清屏，⌘⇧P 仍开命令面板
-        if (
-          isTerminalClearChord({
-            key: e.key,
-            metaKey: e.metaKey,
-            ctrlKey: e.ctrlKey,
-            altKey: e.altKey,
-            shiftKey: e.shiftKey,
-            isComposing: e.isComposing
-          }) &&
-          isEmbeddedTerminalTarget(e.target)
-        ) {
-          handleClearTerminal()
-          return
-        }
         setCommandPaletteOpen((open) => !open)
         return
       }

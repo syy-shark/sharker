@@ -318,6 +318,12 @@ export const BROWSER_SETTINGS_INTRO =
 export const REVIEW_LABEL = 'Review'
 /** Official integrated terminal panel (learn.chatgpt.com/docs/integrated-terminal). */
 export const TERMINAL_LABEL = 'Terminal'
+/** Official integrated terminal (learn.chatgpt.com/docs/integrated-terminal). */
+export const TERMINAL_INTRO =
+  'Each chat in the ChatGPT desktop app includes a terminal scoped to its current project or worktree. Open it from the terminal icon in the top-right corner of the app, or press Ctrl+`.'
+/** Official: Cmd+K opens the palette; Ctrl+L clears. */
+export const CLEAR_TERMINAL_HINT =
+  "Cmd+K opens the app command palette; it doesn't clear the terminal. To clear the terminal, press Ctrl+L."
 /** Official desktop right-panel Files tool (#30659) next to Toggle file tree. */
 export const FILES_LABEL = 'Files'
 /** Official Settings → Worktrees (learn.chatgpt.com/docs/environments/git-worktrees). */

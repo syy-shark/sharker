@@ -314,7 +314,10 @@ export function matchDefaultWorkbenchShortcut(event: {
   return null
 }
 
-/** 终端聚焦时 ⌘K / Ctrl+K 清屏（对标 Codex：Clear the terminal when focused） */
+/**
+ * 官方桌面：To clear the terminal, press Ctrl+L. Cmd+K opens the command palette.
+ * 终端聚焦时只认 Ctrl+L，不把 ⌘K / Ctrl+K 当清屏。
+ */
 export function isTerminalClearChord(event: {
   key: string
   metaKey: boolean
@@ -324,10 +327,10 @@ export function isTerminalClearChord(event: {
   isComposing?: boolean
 }): boolean {
   if (event.isComposing) return false
-  if (event.altKey || event.shiftKey) return false
-  if (!(event.metaKey || event.ctrlKey)) return false
+  if (event.altKey || event.shiftKey || event.metaKey) return false
+  if (!event.ctrlKey) return false
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
-  return key === 'k'
+  return key === 'l'
 }
 
 /** 事件是否落在集成终端（含 xterm 隐藏 textarea） */
@@ -390,7 +393,7 @@ export const WORKBENCH_SHORTCUT_HELP: Array<{ keys: string; title: string }> = [
   { keys: '⌘[ / ⌘]', title: `${NAVIGATE_BACK_LABEL} / ${NAVIGATE_FORWARD_LABEL}` },
   { keys: '⌘+ / ⌘-', title: `${INCREASE_FONT_SIZE_LABEL} / ${DECREASE_FONT_SIZE_LABEL}` },
   { keys: '⌘0', title: RESET_FONT_SIZE_LABEL },
-  { keys: 'Ctrl+L / ⌘K（终端聚焦）', title: CLEAR_TERMINAL_LABEL },
+  { keys: 'Ctrl+L', title: CLEAR_TERMINAL_LABEL },
   { keys: '⌘⇧[ / ⌘⇧] / ⌃Tab / ⌃⇧Tab', title: `${PREVIOUS_CHAT_OR_TAB_LABEL} / ${NEXT_CHAT_OR_TAB_LABEL}` },
   { keys: '⌘1–9', title: GO_TO_CHAT_LABEL },
   { keys: '⌘⌥1–6', title: OPEN_RECENT_CHAT_LABEL },
@@ -481,7 +484,7 @@ export const SHORTCUT_CATALOG: Array<{
   {
     action: 'clear_terminal',
     title: CLEAR_TERMINAL_LABEL,
-    defaultKeys: 'Ctrl+L / ⌘K（终端聚焦）',
+    defaultKeys: 'Ctrl+L',
     defaultChord: 'mod+ctrl+l'
   },
   { action: 'toggle_files', title: TOGGLE_FILE_TREE_LABEL, defaultKeys: '⌘⇧E', defaultChord: 'mod+shift+e' },

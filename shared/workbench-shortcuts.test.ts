@@ -341,11 +341,20 @@ describe('workbench shortcuts', () => {
     expect(adjacentConversationId([], 'a', 1)).toBeNull()
   })
 
-  it('treats ⌘K as a terminal clear chord only without Shift', () => {
-    expect(isTerminalClearChord(ev({ key: 'k', metaKey: true }))).toBe(true)
-    expect(isTerminalClearChord(ev({ key: 'k', ctrlKey: true }))).toBe(true)
-    expect(isTerminalClearChord(ev({ key: 'k', metaKey: true, shiftKey: true }))).toBe(false)
-    expect(isTerminalClearChord(ev({ key: 'p', metaKey: true, shiftKey: true }))).toBe(false)
+  it('clears the terminal with Ctrl+L and leaves ⌘K for the command palette', () => {
+    expect(isTerminalClearChord(ev({ key: 'l', ctrlKey: true }))).toBe(true)
+    expect(isTerminalClearChord(ev({ key: 'k', metaKey: true }))).toBe(false)
+    expect(isTerminalClearChord(ev({ key: 'k', ctrlKey: true }))).toBe(false)
+    expect(isTerminalClearChord(ev({ key: 'l', metaKey: true }))).toBe(false)
+    expect(isTerminalClearChord(ev({ key: 'l', ctrlKey: true, shiftKey: true }))).toBe(false)
+    expect(matchWorkbenchShortcut(ev({ key: 'l', ctrlKey: true }))).toBe('clear_terminal')
+    expect(matchWorkbenchShortcut(ev({ key: 'k', metaKey: true }))).toBe('command_palette')
+    expect(SHORTCUT_CATALOG.find((row) => row.action === 'clear_terminal')?.defaultKeys).toBe(
+      'Ctrl+L'
+    )
+    expect(
+      WORKBENCH_SHORTCUT_HELP.some((row) => row.keys === 'Ctrl+L' && row.title === 'Clear terminal')
+    ).toBe(true)
   })
 
   it('detects xterm hosts as the embedded terminal', () => {

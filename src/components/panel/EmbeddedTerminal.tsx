@@ -1,6 +1,7 @@
 /**
  * 集成终端（xterm.js + node-pty IPC）。
  * 按线程保留会话，线程内可开多个标签（对标 Codex terminal tabs per thread）。
+ * 清屏只认官方 Ctrl+L；⌘K 开命令面板，不把终端焦点当清屏。
  * 输出里的 http(s) 点进内置浏览器，⌘/Ctrl+点进系统浏览器（对标 Codex clicking a URL / #38387）。
  * 浅色主题强制水滴玻璃浅底（非黑屏）；无红绿灯。
  * @see ./ARCH.md
@@ -24,7 +25,13 @@ import {
   threadTerminalKey
 } from '../../../shared/terminal-tabs'
 import { findHttpLinksInText, resolveChatLinkOpen } from '../../../shared/chat-link'
-import { CLEAR_TERMINAL_LABEL, FILE_CLOSE_LABEL, TERMINAL_LABEL } from '../../../shared/reveal-in-folder'
+import {
+  CLEAR_TERMINAL_HINT,
+  CLEAR_TERMINAL_LABEL,
+  FILE_CLOSE_LABEL,
+  TERMINAL_INTRO,
+  TERMINAL_LABEL
+} from '../../../shared/reveal-in-folder'
 import { isTerminalClearChord } from '../../../shared/workbench-shortcuts'
 import { dispatchOpenBrowserUrl } from '../../lib/browser-history-store'
 import { Terminal, type ILink, type ITheme } from '@xterm/xterm'
@@ -544,7 +551,10 @@ export function EmbeddedTerminal({
     : TERMINAL_LABEL
 
   return (
-    <div className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}>
+    <div
+      className={`embedded-terminal-shell ${uiDark ? 'is-dark' : 'is-light'}`}
+      title={TERMINAL_INTRO}
+    >
       <div className="embedded-terminal-chrome">
         <div className="embedded-terminal-tabs" role="tablist" aria-label={TERMINAL_LABEL}>
           {tabs.map((tab) => (
@@ -605,7 +615,7 @@ export function EmbeddedTerminal({
           type="button"
           className="embedded-terminal-clear"
           aria-label={CLEAR_TERMINAL_LABEL}
-          title={`${CLEAR_TERMINAL_LABEL} · Ctrl+L / ⌘K`}
+          title={CLEAR_TERMINAL_HINT}
           onClick={bumpActiveClear}
         >
           {CLEAR_TERMINAL_LABEL}

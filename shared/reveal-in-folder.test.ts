@@ -102,9 +102,11 @@ import {
   TOGGLE_FILE_TREE_MENU_LABEL,
   TOGGLE_BOTTOM_PANEL_LABEL,
   TOGGLE_SIDEBAR_LABEL,
+  CLEAR_TERMINAL_HINT,
   CLEAR_TERMINAL_LABEL,
   FILES_LABEL,
   REVIEW_LABEL,
+  TERMINAL_INTRO,
   TERMINAL_LABEL,
   FILE_MENU_LABEL,
   FILE_CLOSE_LABEL,
@@ -364,12 +366,18 @@ describe('reveal in folder', () => {
     expect(TERMINAL_LABEL).toBe('Terminal')
     expect(TOGGLE_BOTTOM_PANEL_LABEL).toBe('Toggle bottom panel')
     expect(CLEAR_TERMINAL_LABEL).toBe('Clear terminal')
+    expect(TERMINAL_INTRO).toMatch(/terminal scoped to its current project or worktree/)
+    expect(CLEAR_TERMINAL_HINT).toMatch(/Cmd\+K opens the app command palette/)
+    expect(CLEAR_TERMINAL_HINT).toMatch(/press Ctrl\+L/)
     const terminalSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/EmbeddedTerminal.tsx'),
       'utf8'
     )
     expect(terminalSrc).toContain('CLEAR_TERMINAL_LABEL')
+    expect(terminalSrc).toContain('CLEAR_TERMINAL_HINT')
+    expect(terminalSrc).toContain('TERMINAL_INTRO')
     expect(terminalSrc).toContain('TERMINAL_LABEL')
+    expect(terminalSrc).not.toContain('Ctrl+L / ⌘K')
     expect(terminalSrc).toContain('FILE_CLOSE_LABEL')
     expect(terminalSrc).not.toContain('aria-label="清终端"')
     expect(terminalSrc).not.toContain('>清屏<')
