@@ -16,6 +16,8 @@ import {
   shouldReuseReservedLiveOnHandoffAdopt,
   shouldRestoreHeldLiveOnHandoffCancel,
   shouldDeferLiveHandoffSeedPublish,
+  shouldPublishPendingLiveOnHandoffRestore,
+  cloneRetiredLiveArticles,
   shouldMountLiveHandoffThinking,
   shouldStreamLiveAssistant,
   shouldAdoptLiveHandoff,
@@ -597,6 +599,38 @@ describe('commitAssistantReply persist targeting', () => {
         holdAlreadyRetired: true
       })
     ).toBe(false)
+    expect(
+      shouldPublishPendingLiveOnHandoffRestore({
+        restoringHandoff: true,
+        holdAlreadyRetired: true
+      })
+    ).toBe(true)
+    expect(
+      shouldPublishPendingLiveOnHandoffRestore({
+        restoringHandoff: true,
+        holdAlreadyRetired: false
+      })
+    ).toBe(false)
+    expect(
+      shouldPublishPendingLiveOnHandoffRestore({
+        restoringHandoff: false,
+        holdAlreadyRetired: true
+      })
+    ).toBe(false)
+    const original = [
+      {
+        id: 'a-live',
+        parts: [],
+        meta: null,
+        startedAt: 1,
+        copyable: 'held'
+      }
+    ]
+    const cloned = cloneRetiredLiveArticles(original)
+    expect(cloned).toEqual(original)
+    expect(cloned).not.toBe(original)
+    expect(cloned[0]).not.toBe(original[0])
+    expect(cloneRetiredLiveArticles(undefined)).toEqual([])
     expect(shouldPreserveLiveDiffExpanded({ streaming: true })).toBe(true)
     expect(shouldPreserveLiveDiffExpanded({ streaming: false, preserveLiveDiffs: true })).toBe(
       true

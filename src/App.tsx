@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，准备中 seed 等 freeze 提交后再发以免 hold 行闪新一轮，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，准备中 seed 等 freeze 提交后再发以免 hold 行闪新一轮，切回跟进会话还原 retired 环且 store 给新槽，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -341,6 +341,8 @@ import {
   shouldReuseReservedLiveOnHandoffAdopt,
   shouldRestoreHeldLiveOnHandoffCancel,
   shouldDeferLiveHandoffSeedPublish,
+  shouldPublishPendingLiveOnHandoffRestore,
+  cloneRetiredLiveArticles,
   shouldPublishLiveStreamDuringHandoff,
   retiredLiveArticle,
   nextArchivedLiveArticles,
@@ -409,13 +411,16 @@ interface SessionLiveBuffer {
   liveAssistantId?: string | null
   /** 跟进发送保住中的上一轮直播 id；首枚 harness chunk 前不换行 */
   liveHandoffId?: string | null
-  /** 保住期间直播 store 仍是上一轮体；segmentsRef 已是下一轮 seed */
+  /** 保住期间 segmentsRef 已是下一轮 seed；hold 已冻结则 store 也发下一轮 */
   pendingTurnSegments?: TurnSegment[]
   heldCompletedSegments?: TurnSegment[]
   retiredLiveId?: string | null
   retiredLiveMeta?: AssistantMeta | null
   retiredLiveStartedAt?: number | null
   retiredLiveCopyable?: string | null
+  retiredLiveArticles?: RetiredLiveArticle[]
+  ejectedLiveArticles?: RetiredLiveArticle[]
+  archivedLiveArticles?: RetiredLiveArticle[]
   /** 当前 messages[0] 在全量中的 seq；>0 还有更早页 */
   historyStartSeq?: number
 }
@@ -1072,32 +1077,46 @@ export default function App() {
       liveHandoffIdRef.current = null
       setLiveHandoffId(null)
     }
+    liveAssistantIdRef.current = buf.liveAssistantId ?? null
+    setLiveAssistantId(buf.liveAssistantId ?? null)
+    const restoredRetired = cloneRetiredLiveArticles(buf.retiredLiveArticles)
+    const restoredEjected = cloneRetiredLiveArticles(buf.ejectedLiveArticles)
+    const restoredArchived = cloneRetiredLiveArticles(buf.archivedLiveArticles)
+    retiredLiveArticlesRef.current = restoredRetired
+    ejectedLiveArticlesRef.current = restoredEjected
+    archivedLiveArticlesRef.current = restoredArchived
+    const restoredRetiredId =
+      buf.retiredLiveId ?? restoredRetired[restoredRetired.length - 1]?.id ?? null
+    retiredLiveIdRef.current = restoredRetiredId
+    const restoredArticle = retiredLiveArticle(restoredRetired, restoredRetiredId)
+    setRetiredLiveId(restoredRetiredId)
+    setRetiredLiveParts(restoredArticle?.parts ?? null)
+    setRetiredLiveMeta(restoredArticle?.meta ?? buf.retiredLiveMeta ?? null)
+    setRetiredLiveStartedAt(restoredArticle?.startedAt ?? buf.retiredLiveStartedAt ?? null)
+    setRetiredLiveCopyable(restoredArticle?.copyable ?? buf.retiredLiveCopyable ?? null)
+    setRetiredLiveArticles(restoredRetired)
+    setEjectedLiveArticles(restoredEjected)
+    setArchivedLiveArticles(restoredArchived)
+    setEjectedLiveHeights({})
+    const holdAlreadyRetired = Boolean(
+      buf.liveHandoffId && retiredLiveArticle(restoredRetired, buf.liveHandoffId)
+    )
     publishLiveStreamUi({
       streaming: buf.streaming,
-      liveSegments: restoringHandoff
-        ? (buf.heldCompletedSegments ?? buf.segments)
-        : segmentsRef.current,
+      liveSegments: shouldPublishPendingLiveOnHandoffRestore({
+        restoringHandoff,
+        holdAlreadyRetired
+      })
+        ? segmentsRef.current
+        : restoringHandoff
+          ? (buf.heldCompletedSegments ?? buf.segments)
+          : segmentsRef.current,
       turnThinking: buf.turnThinking,
       activeTool: buf.activeTool,
       liveTurnMeta: restoredMeta,
       turnStartedAt: buf.turnStartedAt,
       turnHadThinking: buf.turnHadThinking
     })
-    liveAssistantIdRef.current = buf.liveAssistantId ?? null
-    setLiveAssistantId(buf.liveAssistantId ?? null)
-    retiredLiveIdRef.current = null
-    retiredLiveArticlesRef.current = []
-    ejectedLiveArticlesRef.current = []
-    archivedLiveArticlesRef.current = []
-    setRetiredLiveId(null)
-    setRetiredLiveParts(null)
-    setRetiredLiveMeta(null)
-    setRetiredLiveStartedAt(null)
-    setRetiredLiveCopyable(null)
-    setRetiredLiveArticles([])
-    setEjectedLiveArticles([])
-    setArchivedLiveArticles([])
-    setEjectedLiveHeights({})
     turnChangedPathsRef.current = [...(buf.changedRelPaths ?? [])]
     if (lastTurnUiTimerRef.current != null) {
       window.clearTimeout(lastTurnUiTimerRef.current)
@@ -1969,6 +1988,10 @@ export default function App() {
       pendingTurnSegments: liveHandoffIdRef.current
         ? cloneSegments(segmentsRef.current)
         : undefined,
+      retiredLiveId: retiredLiveIdRef.current,
+      retiredLiveArticles: cloneRetiredLiveArticles(retiredLiveArticlesRef.current),
+      ejectedLiveArticles: cloneRetiredLiveArticles(ejectedLiveArticlesRef.current),
+      archivedLiveArticles: cloneRetiredLiveArticles(archivedLiveArticlesRef.current),
       historyStartSeq: historyStartSeqRef.current
     })
     return prevId
@@ -4048,7 +4071,11 @@ export default function App() {
               : undefined,
             pendingTurnSegments: liveHandoffIdRef.current
               ? cloneSegments(segmentsRef.current)
-              : undefined
+              : undefined,
+            retiredLiveId: retiredLiveIdRef.current,
+            retiredLiveArticles: cloneRetiredLiveArticles(retiredLiveArticlesRef.current),
+            ejectedLiveArticles: cloneRetiredLiveArticles(ejectedLiveArticlesRef.current),
+            archivedLiveArticles: cloneRetiredLiveArticles(archivedLiveArticlesRef.current)
           })
         }
 

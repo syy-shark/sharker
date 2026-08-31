@@ -13,6 +13,7 @@
  * `shouldReuseReservedLiveOnHandoffAdopt` 已预留新 id 时 adopt 只清 handoff，不再换 id 重挂。
  * `shouldRestoreHeldLiveOnHandoffCancel` Stop 未出首枚 token 时把预留 id 收回 hold，避免空槽留下。
  * `shouldDeferLiveHandoffSeedPublish` 等 freeze 提交后再发准备中 seed，避免 hold 行闪新一轮。
+ * `shouldPublishPendingLiveOnHandoffRestore` 切回时 store 给新槽看下一轮，retired 环保住冻结 hold。
  * `shouldMountLiveHandoffThinking` 已有新预留 id 时不另挂 Thinking 行。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
@@ -541,6 +542,32 @@ export function shouldDeferLiveHandoffSeedPublish(options: {
   holdAlreadyRetired?: boolean
 }): boolean {
   return Boolean(options.liveHandoffId?.trim() && options.holdAlreadyRetired)
+}
+
+/** 切回跟进会话：hold 已在 retired 环则 store 发下一轮片段，不把上一轮体写回订阅槽。 */
+export function shouldPublishPendingLiveOnHandoffRestore(options: {
+  restoringHandoff: boolean
+  holdAlreadyRetired?: boolean
+}): boolean {
+  return options.restoringHandoff && options.holdAlreadyRetired === true
+}
+
+/** 会话 buffer 带走 / 还原冻结行。 */
+export function cloneRetiredLiveArticles(
+  articles: readonly RetiredLiveArticle[] | null | undefined
+): RetiredLiveArticle[] {
+  if (!articles?.length) return []
+  return articles.map((item) => ({
+    ...item,
+    parts: item.parts.slice(),
+    process: item.process
+      ? {
+          ...item.process,
+          processForFlow: item.process.processForFlow.slice(),
+          steps: item.process.steps ? item.process.steps.slice() : item.process.steps
+        }
+      : item.process
+  }))
 }
 
 /**
