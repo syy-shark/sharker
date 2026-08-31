@@ -335,6 +335,12 @@ export type SidebarChatFilter =
 export const CHATS_SECTION_LABEL = 'Chats'
 /** 官方 troubleshooting：找不到聊天时选 Chronological */
 export const CHRONOLOGICAL_FILTER_LABEL = 'Chronological'
+/** Official troubleshooting (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const MISSING_CHATS_FILTER_HINT =
+  "If you're missing chats, select the filter icon next to Chats, then select Chronological."
+/** Official Activity view (learn.chatgpt.com/docs/whats-new / notifications). */
+export const ACTIVITY_INTRO =
+  "The desktop app's new Activity view brings together chats you recently engaged with and work that needs your attention."
 /** 官方 Activity / 侧栏筛选：Unread */
 export const UNREAD_FILTER_LABEL = 'Unread'
 /** 官方 Activity：Mark all as read */

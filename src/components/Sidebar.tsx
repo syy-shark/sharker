@@ -34,8 +34,9 @@ import {
 import { PERMISSIONS_LABEL } from '../../shared/permission-mode'
 import type { ConversationSummary } from '../../shared/conversation'
 import {
+  ACTIVITY_INTRO,
   CHATS_SECTION_LABEL,
-  CHRONOLOGICAL_FILTER_LABEL,
+  MISSING_CHATS_FILTER_HINT,
   UNREAD_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
   filterSidebarChats,
@@ -1055,8 +1056,8 @@ export const Sidebar = memo(function Sidebar({
                 <button
                   type="button"
                   className={`sidebar-section-action${chatFilterOpen || !groupedChats ? ' sidebar-section-action--active' : ''}`}
-                  title={`If chats are missing, select ${CHRONOLOGICAL_FILTER_LABEL}.`}
-                  aria-label="Filter chats"
+                  title={MISSING_CHATS_FILTER_HINT}
+                  aria-label={MISSING_CHATS_FILTER_HINT}
                   aria-expanded={chatFilterOpen}
                   onClick={() => setChatFilterOpen((open) => !open)}
                 >
@@ -1104,7 +1105,7 @@ export const Sidebar = memo(function Sidebar({
               )
             ) : filteredConvs.length === 0 ? (
               <p className="sidebar-section-empty">
-                {`No matching chats. Select ${CHRONOLOGICAL_FILTER_LABEL} to see all.`}
+                {activityOpen ? ACTIVITY_INTRO : MISSING_CHATS_FILTER_HINT}
               </p>
             ) : (
               filteredConvs.map((c) => renderConvRow(c))

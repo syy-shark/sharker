@@ -3,10 +3,12 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+  ACTIVITY_INTRO,
   CHATS_SECTION_LABEL,
   CHRONOLOGICAL_FILTER_LABEL,
   DEFAULT_CONVERSATION_TITLE,
   MARK_ALL_AS_READ_LABEL,
+  MISSING_CHATS_FILTER_HINT,
   UNREAD_FILTER_LABEL,
   SIDEBAR_CHAT_FILTERS,
   applyCustomTitle,
@@ -219,6 +221,9 @@ describe('conversation search', () => {
       CHRONOLOGICAL_FILTER_LABEL
     )
     expect(CHRONOLOGICAL_FILTER_LABEL).toBe('Chronological')
+    expect(MISSING_CHATS_FILTER_HINT).toMatch(/select the filter icon next to Chats/)
+    expect(MISSING_CHATS_FILTER_HINT).toMatch(/Chronological/)
+    expect(ACTIVITY_INTRO).toMatch(/brings together chats you recently engaged with/)
     expect(CHATS_SECTION_LABEL).toBe('Chats')
     expect(MARK_ALL_AS_READ_LABEL).toBe('Mark all as read')
     expect(SIDEBAR_CHAT_FILTERS.find((item) => item.id === 'scheduled')?.label).toBe('Scheduled')
@@ -232,6 +237,9 @@ describe('conversation search', () => {
       'utf8'
     )
     expect(sidebarSrc).toContain('UNREAD_FILTER_LABEL')
+    expect(sidebarSrc).toContain('MISSING_CHATS_FILTER_HINT')
+    expect(sidebarSrc).toContain('ACTIVITY_INTRO')
+    expect(sidebarSrc).not.toContain('aria-label="Filter chats"')
     expect(sidebarSrc).not.toContain('aria-label="未读"')
     const mainSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../electron/main/index.ts'),
