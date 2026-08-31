@@ -1,6 +1,7 @@
 /**
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
+ * pin 列 / 历史源 `useMemo`，贴底 setState 不重建 `historicalRows`（对标 Codex #22860 / #38220）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 刷进 contain-intrinsic-size，只补视口上方行的 scrollTop，不跟 token 重绘；直播行不另盯（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -73,14 +74,12 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
-  splitTranscriptAroundPinnedLive,
-  pinnedLiveAssistantId,
+  nextPinnedTranscriptGaps,
   pinnedLiveAssistantIds,
   retiredLiveArticle,
   frozenHistoricalArticle,
   shouldMountActiveLiveSlot,
   shouldStreamPinnedLiveAssistant,
-  historicalMessagesHidingIds,
   type RetiredLiveArticle
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody, type LiveAnswerView } from '../../shared/live-stream-core'
@@ -209,6 +208,8 @@ import { type GoalCommand, type ThreadGoal } from '../../shared/thread-goal'
 import './ChatView.css'
 
 const EMPTY_FIND_HITS: ThreadSearchHit[] = []
+const EMPTY_RETIRED_ARTICLES: readonly RetiredLiveArticle[] = []
+const EMPTY_HISTORICAL_MESSAGES: ChatMessage[] = []
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
 const AT_BOTTOM_PX = 16
@@ -2612,51 +2613,60 @@ export const ChatView = memo(function ChatView({
     loading,
     handoffId: liveHandoffId
   })
-  const retiredArticles: readonly RetiredLiveArticle[] =
-    retiredLiveArticles.length > 0
-      ? retiredLiveArticles
-      : retiredLiveId
-        ? [
-            {
-              id: retiredLiveId,
-              parts: retiredLiveParts ?? [],
-              meta: retiredLiveMeta,
-              startedAt: retiredLiveStartedAt,
-              copyable: retiredLiveCopyable
-            }
-          ]
-        : []
-  const retiredIds = retiredArticles.map((article) => article.id)
-  const pinnedLiveIds = pinnedLiveAssistantIds({
-    retiredLiveIds: retiredIds,
+  const retiredArticles: readonly RetiredLiveArticle[] = useMemo(() => {
+    if (retiredLiveArticles.length > 0) return retiredLiveArticles
+    if (!retiredLiveId) return EMPTY_RETIRED_ARTICLES
+    return [
+      {
+        id: retiredLiveId,
+        parts: retiredLiveParts ?? [],
+        meta: retiredLiveMeta,
+        startedAt: retiredLiveStartedAt,
+        copyable: retiredLiveCopyable
+      }
+    ]
+  }, [
+    retiredLiveArticles,
     retiredLiveId,
-    liveHandoffId,
-    liveAssistantId,
-    hideReservedLive,
-    pinActiveLive
-  })
-  const pinnedLiveId = pinnedLiveAssistantId({
-    retiredLiveIds: retiredIds,
-    retiredLiveId,
-    liveHandoffId,
-    liveAssistantId,
-    hideReservedLive,
-    pinActiveLive
-  })
-  const pinnedSplit = pinnedLiveIds.length
-    ? splitTranscriptAroundPinnedLive(windowedMessages, pinnedLiveIds)
-    : null
-  const hidePinnedIds = [...pinnedLiveIds, liveAssistantId, retiredLiveId]
-  const pinnedGaps = pinnedSplit
-    ? pinnedSplit.gaps.map((gap) => historicalMessagesHidingIds(gap, hidePinnedIds))
-    : null
-  const historicalSource = pinnedGaps
-    ? (pinnedGaps[0] ?? [])
-    : historicalMessagesDuringLive(
-        windowedMessages,
-        hideReservedLive ? liveAssistantId : null,
-        hideReservedLive
-      )
+    retiredLiveParts,
+    retiredLiveMeta,
+    retiredLiveStartedAt,
+    retiredLiveCopyable
+  ])
+  const retiredIds = useMemo(
+    () => retiredArticles.map((article) => article.id),
+    [retiredArticles]
+  )
+  const pinnedLiveIds = useMemo(
+    () =>
+      pinnedLiveAssistantIds({
+        retiredLiveIds: retiredIds,
+        retiredLiveId,
+        liveHandoffId,
+        liveAssistantId,
+        hideReservedLive,
+        pinActiveLive
+      }),
+    [retiredIds, retiredLiveId, liveHandoffId, liveAssistantId, hideReservedLive, pinActiveLive]
+  )
+  const pinnedLiveId = pinnedLiveIds[0] ?? null
+  const pinnedGaps = useMemo(
+    () =>
+      nextPinnedTranscriptGaps(windowedMessages, pinnedLiveIds, [
+        ...pinnedLiveIds,
+        liveAssistantId,
+        retiredLiveId
+      ]),
+    [windowedMessages, pinnedLiveIds, liveAssistantId, retiredLiveId]
+  )
+  const historicalSource = useMemo(() => {
+    if (pinnedGaps) return pinnedGaps[0] ?? EMPTY_HISTORICAL_MESSAGES
+    return historicalMessagesDuringLive(
+      windowedMessages,
+      hideReservedLive ? liveAssistantId : null,
+      hideReservedLive
+    )
+  }, [pinnedGaps, windowedMessages, hideReservedLive, liveAssistantId])
   const renderFrozenEjectedArticle = useCallback(
     (id: string) => {
       const article = frozenHistoricalArticle(ejectedLiveArticles, archivedLiveArticles, id)
