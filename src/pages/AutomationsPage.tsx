@@ -18,6 +18,7 @@ import {
   parseOptionalAutomationId,
   ARCHIVE_ELIGIBLE_RUNS_LABEL,
   RUN_NOW_LABEL,
+  SCHEDULED_WORKTREE_CLEANUP_HINT,
   SCHEDULED_DESTINATION_INTRO,
   SCHEDULED_INTRO,
   SCHEDULED_JOB_FILTERS,
@@ -204,6 +205,7 @@ export function AutomationsPage({
                 type="button"
                 className="automations-queue-btn"
                 disabled={eligibleQueueArchiveCount(queue) === 0}
+                title={SCHEDULED_WORKTREE_CLEANUP_HINT}
                 onClick={() => {
                   const next = archiveEligibleQueueRuns(queue)
                   setQueue(next)

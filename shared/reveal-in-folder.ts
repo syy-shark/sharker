@@ -310,7 +310,7 @@ export const SUGGESTED_PROMPTS_INTRO =
   'Use context-aware suggestions to surface follow-ups and tasks you may want to resume when you start or return to ChatGPT.'
 /** Official Settings → Archived chats. */
 export const ARCHIVED_CHATS_INTRO =
-  'The Archived chats section lists archived chats with dates and project context. Use Unarchive to restore a chat.'
+  'The Archived chats section lists archived chats with dates and project context. Use Unarchive to restore a chat. Archived chats can be found in Settings. When you unarchive a chat, it reappears in its original sidebar location.'
 /** Official Settings → Personalization. */
 export const PERSONALIZATION_SETTINGS_INTRO =
   'Choose Friendly, Pragmatic, or None as your default personality. Use None to disable personality instructions. You can update this at any time.'

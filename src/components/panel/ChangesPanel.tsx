@@ -65,6 +65,7 @@ import {
   CREATE_A_PULL_REQUEST_LABEL,
   OPEN_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
+  REVIEW_LAST_TURN_VIEW_HINT,
   PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
@@ -1255,6 +1256,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             role="tab"
             aria-selected={compare === 'last_turn'}
             className={`changes-panel__scope${compare === 'last_turn' ? ' is-active' : ''}`}
+            title={REVIEW_LAST_TURN_VIEW_HINT}
             onClick={() => {
               setRepoId(ALL_REPOS_ID)
               setCompare('last_turn')

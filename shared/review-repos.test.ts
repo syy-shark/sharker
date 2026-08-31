@@ -11,6 +11,7 @@ import {
   CREATE_A_PULL_REQUEST_LABEL,
   OPEN_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
+  REVIEW_LAST_TURN_VIEW_HINT,
   REVIEW_PANE_EXPAND_HINT,
   REVIEW_PANE_GIT_STATE,
   REVIEW_PANE_INTRO,
@@ -59,6 +60,7 @@ describe('review repos', () => {
     expect(UNSTAGED_LABEL).toBe('Unstaged')
     expect(STAGED_LABEL).toBe('Staged')
     expect(LAST_TURN_LABEL).toBe('Last turn')
+    expect(REVIEW_LAST_TURN_VIEW_HINT).toMatch(/Last turn view/)
     expect(BRANCH_REVIEW_LABEL).toBe('Branch')
     expect(COMMIT_REVIEW_LABEL).toBe('Commit')
     expect(ALL_REPOS_LABEL).toBe('All repos')
@@ -96,6 +98,7 @@ describe('review repos', () => {
     expect(panelSrc).toContain('REVIEW_PANE_EXPAND_HINT')
     expect(panelSrc).toContain('REVIEW_MULTI_REPO_INTRO')
     expect(panelSrc).toContain('REVIEW_LAST_TURN_ALL_REPOS_HINT')
+    expect(panelSrc).toContain('REVIEW_LAST_TURN_VIEW_HINT')
     expect(panelSrc).toContain('REVIEW_OTHER_SCOPE_REPO_HINT')
     expect(panelSrc).not.toContain('aria-label="选择要审查的仓库"')
     expect(panelSrc).not.toContain('<span>审查</span>')

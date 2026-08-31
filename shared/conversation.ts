@@ -341,6 +341,11 @@ export const MISSING_CHATS_FILTER_HINT =
 /** Official Activity view (learn.chatgpt.com/docs/whats-new / notifications). */
 export const ACTIVITY_INTRO =
   "The desktop app's new Activity view brings together chats you recently engaged with and work that needs your attention."
+/** Official leftover (learn.chatgpt.com/docs/notifications). */
+export const ACTIVITY_BELL_HINT =
+  'When Activity is available, select the bell in the sidebar to see chats that are unread, running, or waiting for your response. You can also open or close Activity view with Cmd+Option+U on macOS or Ctrl+Alt+U on Windows.'
+export const ACTIVITY_OPTIONS_HINT =
+  "Use the view's options to choose which chats appear. Depending on your current surface, the options can include Work, Chat, Pinned, and Scheduled. You can also select Mark all as read to clear unread items."
 /** 官方 Activity / 侧栏筛选：Unread */
 export const UNREAD_FILTER_LABEL = 'Unread'
 /** 官方 Activity：Mark all as read */

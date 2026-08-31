@@ -383,6 +383,8 @@ describe('reveal in folder', () => {
     )
     expect(suggestedPromptSettingsSrc).toContain('SUGGESTED_PROMPTS_INTRO')
     expect(ARCHIVED_CHATS_INTRO).toMatch(/Use Unarchive to restore a chat/)
+    expect(ARCHIVED_CHATS_INTRO).toMatch(/Archived chats can be found in Settings/)
+    expect(ARCHIVED_CHATS_INTRO).toMatch(/original sidebar location/)
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
     expect(BROWSER_SETTINGS_INTRO).toMatch(/separate from your regular browser/)
     expect(BROWSER_SETTINGS_INTRO).toMatch(/Ask where to save downloads/)

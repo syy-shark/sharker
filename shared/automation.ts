@@ -207,6 +207,9 @@ export const SCHEDULED_PAUSED_LABEL = 'Paused'
 export const RUN_NOW_LABEL = 'Run now'
 /** Official Scheduled bulk action (learn.chatgpt.com/docs/whats-new). */
 export const ARCHIVE_ELIGIBLE_RUNS_LABEL = 'Archive eligible runs'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const SCHEDULED_WORKTREE_CLEANUP_HINT =
+  'Frequent scheduled tasks can create many worktrees over time. Archive scheduled runs you no longer need and avoid pinning runs unless you intend to keep their worktrees.'
 
 /** 官方 Scheduled 页：All / Active / Paused */
 export type AutomationJobFilter = 'all' | 'active' | 'paused'

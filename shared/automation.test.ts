@@ -9,6 +9,7 @@ import {
   normalizeAutomationJobs,
   applyScheduledTurnSettings,
   ARCHIVE_ELIGIBLE_RUNS_LABEL,
+  SCHEDULED_WORKTREE_CLEANUP_HINT,
   parseAutomationDestination,
   parseAutomationRunIn,
   filterAutomationJobs,
@@ -235,8 +236,10 @@ describe('automation destination', () => {
     expect(SCHEDULED_PAUSED_LABEL).toBe('Paused')
     expect(RUN_NOW_LABEL).toBe('Run now')
     expect(ARCHIVE_ELIGIBLE_RUNS_LABEL).toBe('Archive eligible runs')
+    expect(SCHEDULED_WORKTREE_CLEANUP_HINT).toMatch(/create many worktrees/)
     expect(automationsSrc).toContain('MARK_ALL_AS_READ_LABEL')
     expect(automationsSrc).toContain('ARCHIVE_ELIGIBLE_RUNS_LABEL')
+    expect(automationsSrc).toContain('SCHEDULED_WORKTREE_CLEANUP_HINT')
     expect(automationsSrc).not.toContain('全部标为已读')
     expect(automationsSrc).not.toContain('归档已处理')
     expect(

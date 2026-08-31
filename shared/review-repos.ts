@@ -31,6 +31,9 @@ export const REVIEW_OTHER_SCOPE_REPO_HINT =
 export const ALL_REPOS_ID = 'all'
 export const ALL_REPOS_LABEL = 'All repos'
 export const LAST_TURN_LABEL = 'Last turn'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const REVIEW_LAST_TURN_VIEW_HINT =
+  'If you want to see only the changes of your last Codex turn, switch the diff pane to the Last turn view.'
 export const UNSTAGED_LABEL = 'Unstaged'
 export const STAGED_LABEL = 'Staged'
 export const BRANCH_REVIEW_LABEL = 'Branch'

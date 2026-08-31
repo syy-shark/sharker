@@ -34,7 +34,9 @@ import {
 import { PERMISSIONS_LABEL } from '../../shared/permission-mode'
 import type { ConversationSummary } from '../../shared/conversation'
 import {
+  ACTIVITY_BELL_HINT,
   ACTIVITY_INTRO,
+  ACTIVITY_OPTIONS_HINT,
   CHATS_SECTION_LABEL,
   MISSING_CHATS_FILTER_HINT,
   UNREAD_FILTER_LABEL,
@@ -978,7 +980,7 @@ export const Sidebar = memo(function Sidebar({
           <button
             type="button"
             className={`sidebar-nav-item${activityOpen ? ' active' : ''}`}
-            title={`${TOGGLE_ACTIVITY_VIEW_LABEL} (⌘⌥U)`}
+            title={ACTIVITY_BELL_HINT}
             aria-pressed={activityOpen}
             aria-label={TOGGLE_ACTIVITY_VIEW_LABEL}
             onClick={() => onToggleActivity?.()}
@@ -1066,8 +1068,8 @@ export const Sidebar = memo(function Sidebar({
                 <button
                   type="button"
                   className={`sidebar-section-action${chatFilterOpen || !groupedChats ? ' sidebar-section-action--active' : ''}`}
-                  title={MISSING_CHATS_FILTER_HINT}
-                  aria-label={MISSING_CHATS_FILTER_HINT}
+                  title={activityOpen ? ACTIVITY_OPTIONS_HINT : MISSING_CHATS_FILTER_HINT}
+                  aria-label={activityOpen ? ACTIVITY_OPTIONS_HINT : MISSING_CHATS_FILTER_HINT}
                   aria-expanded={chatFilterOpen}
                   onClick={() => setChatFilterOpen((open) => !open)}
                 >
@@ -1093,6 +1095,7 @@ export const Sidebar = memo(function Sidebar({
                         <button
                           type="button"
                           role="menuitem"
+                          title={ACTIVITY_OPTIONS_HINT}
                           onClick={() => {
                             onClearUnread()
                             setChatFilterOpen(false)
