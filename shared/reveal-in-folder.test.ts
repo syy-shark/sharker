@@ -152,6 +152,7 @@ import {
   FIND_PREVIOUS_MATCH_LABEL,
   SEARCH_CHATS_PLACEHOLDER,
   NOT_ASSIGNED_BY_DEFAULT_LABEL,
+  CREATE_PERMANENT_WORKTREE_INTRO,
   CREATE_PERMANENT_WORKTREE_LABEL,
   WORKTREE_RESTORE_BANNER,
   STARTING_BRANCH_LABEL,
@@ -328,6 +329,8 @@ describe('reveal in folder', () => {
     expect(FILE_CLOSE_LABEL).toBe('Close')
     expect(NOT_ASSIGNED_BY_DEFAULT_LABEL).toBe('Not assigned by default')
     expect(CREATE_PERMANENT_WORKTREE_LABEL).toBe('Create a permanent worktree')
+    expect(CREATE_PERMANENT_WORKTREE_INTRO).toMatch(/three-dot menu/)
+    expect(CREATE_PERMANENT_WORKTREE_INTRO).toMatch(/aren't automatically deleted/)
     expect(WORKTREE_RESTORE_BANNER).toBe('Restore this worktree from its snapshot.')
     expect(STARTING_BRANCH_LABEL).toBe('Starting branch')
     expect(STARTING_BRANCH_SEARCH_PLACEHOLDER).toBe('Search local or remote branches')
@@ -335,7 +338,7 @@ describe('reveal in folder', () => {
     expect(RESTORE_LABEL).toBe('Restore')
     expect(KEYBOARD_SHORTCUTS_LABEL).toBe('Keyboard Shortcuts')
     expect(KEYBOARD_SHORTCUTS_INTRO).toBe(
-      'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it.'
+      'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it. Appshots use a separate global shortcut under Settings > Appshots.'
     )
     expect(KEYSTROKE_SEARCH_LABEL).toBe('Keystroke search')
     expect(KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER).toBe('Search by command name')
@@ -488,6 +491,7 @@ describe('reveal in folder', () => {
     expect(sidebarSrc).toContain('PROJECTS_VIEW_INTRO')
     expect(sidebarSrc).toContain('PIN_A_PROJECT_HINT')
     expect(sidebarSrc).toContain('SEARCH_CHATS_INTRO')
+    expect(sidebarSrc).toContain('CREATE_PERMANENT_WORKTREE_INTRO')
     const chatViewSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
       'utf8'
@@ -550,6 +554,7 @@ describe('reveal in folder', () => {
     expect(WORKTREE_INTRO).toMatch(/multiple independent chats/)
     expect(WORKTREE_REQUIRES_GIT).toMatch(/require a Git repository/)
     expect(WORKTREE_DETACHED_HEAD_HINT).toMatch(/detached HEAD/)
+    expect(WORKTREE_DETACHED_HEAD_HINT).toMatch(/uncommitted changes/)
     expect(WORKTREES_SETTINGS_INTRO).toMatch(/most recent 15 Codex-managed worktrees/)
     expect(WORKTREES_SETTINGS_INTRO).toMatch(/change Worktree root/)
     expect(CODEX_ENVIRONMENTS_LABEL).toBe('Codex environments')

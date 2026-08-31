@@ -55,6 +55,7 @@ import {
   ARCHIVE_CHATS_ACTION_LABEL,
   ARCHIVE_LABEL,
   ARCHIVED_CHATS_LABEL,
+  CREATE_PERMANENT_WORKTREE_INTRO,
   CREATE_PERMANENT_WORKTREE_LABEL,
   EDIT_PROJECT_LABEL,
   BROWSER_SETTINGS_LABEL,
@@ -873,6 +874,8 @@ export const Sidebar = memo(function Sidebar({
                   <button
                     type="button"
                     role="menuitem"
+                    title={CREATE_PERMANENT_WORKTREE_INTRO}
+                    aria-label={CREATE_PERMANENT_WORKTREE_INTRO}
                     onClick={(e) => {
                       e.stopPropagation()
                       closeProjectMenu()

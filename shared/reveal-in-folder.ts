@@ -194,6 +194,9 @@ export const SEARCH_PROJECTS_LABEL = 'Search projects'
 export const SEARCH_CHATS_PLACEHOLDER = 'Search title, message, or branch'
 /** Official worktrees: create a permanent worktree from the three-dot menu. */
 export const CREATE_PERMANENT_WORKTREE_LABEL = 'Create a permanent worktree'
+/** Official desktop leftover (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const CREATE_PERMANENT_WORKTREE_INTRO =
+  "If you want a long-lived environment, create a permanent worktree from the three-dot menu on a project in the sidebar. This creates a new permanent worktree as its own project. Permanent worktrees aren't automatically deleted, and you can start multiple chats from the same worktree."
 /** Official worktrees: Select the starting branch below the composer. */
 export const STARTING_BRANCH_LABEL = 'Starting branch'
 export const STARTING_BRANCH_SEARCH_PLACEHOLDER = 'Search local or remote branches'
@@ -306,7 +309,7 @@ export const PERSONALIZATION_SETTINGS_INTRO =
 export const KEYBOARD_SHORTCUTS_LABEL = 'Keyboard Shortcuts'
 /** Official Settings → Keyboard Shortcuts (learn.chatgpt.com/docs/reference/settings). */
 export const KEYBOARD_SHORTCUTS_INTRO =
-  'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it.'
+  'Open Keyboard Shortcuts to review commands, change bindings, or reset custom shortcuts to their defaults. Use the search field to find shortcuts by command name, or switch to keystroke search and press a key combination to find the command that uses it. Appshots use a separate global shortcut under Settings > Appshots.'
 export const KEYSTROKE_SEARCH_LABEL = 'Keystroke search'
 export const KEYBOARD_SHORTCUTS_SEARCH_PLACEHOLDER = 'Search by command name'
 export const KEYSTROKE_SEARCH_PLACEHOLDER = 'Press a key combination'
@@ -403,7 +406,7 @@ export const WORKTREE_REQUIRES_GIT =
   'Worktrees require a Git repository. Make sure the project you selected lives in one.'
 /** Official desktop leftover (learn.chatgpt.com/docs/environments/git-worktrees). */
 export const WORKTREE_DETACHED_HEAD_HINT =
-  'Submit your prompt, and Codex creates a Git worktree based on the branch you selected. By default, Codex works in a detached HEAD.'
+  'Submit your prompt, and Codex creates a Git worktree based on the branch you selected. By default, Codex works in a detached HEAD. If you chose a branch with local changes, Codex applies the uncommitted changes to the worktree as well.'
 /** Official composer environment options (learn.chatgpt.com/docs/environments/modes). */
 export const CODEX_ENVIRONMENTS_LABEL = 'Codex environments'
 export const LOCAL_ENVIRONMENT_DESCRIPTION =
