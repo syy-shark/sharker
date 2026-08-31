@@ -7,7 +7,7 @@
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
  * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
- * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading，跟进 hold 不因开轮重挂。
+ * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading；handoff 未 adopt 前预留 id 仍是上一轮，hold 也不跟。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
@@ -563,16 +563,23 @@ export function shouldStreamPinnedLiveAssistant(options: {
 export function shouldAttachLiveApprovalToPinnedSlot(options: {
   pinnedId: string
   liveAssistantId?: string | null
+  liveHandoffId?: string | null
 }): boolean {
   const pinned = options.pinnedId.trim()
   const live = options.liveAssistantId?.trim()
+  const handoff = options.liveHandoffId?.trim()
+  if (handoff && pinned === handoff) return false
   return Boolean(pinned && live && pinned === live)
 }
 
-/** 只有当前预留 id 才跟 `loading`。跟进 hold 的上一轮不因开轮重挂（对标 Codex #22860 / #37849）。 */
+/**
+ * 只有当前预留 id 才跟 `loading`。
+ * 跟进未 adopt 前 `liveAssistantId` 仍是上一轮，hold / handoff 行也不跟（对标 Codex #22860 / #37849）。
+ */
 export function shouldAttachLiveLoadingToPinnedSlot(options: {
   pinnedId: string
   liveAssistantId?: string | null
+  liveHandoffId?: string | null
 }): boolean {
   return shouldAttachLiveApprovalToPinnedSlot(options)
 }

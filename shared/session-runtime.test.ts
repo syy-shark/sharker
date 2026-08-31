@@ -650,6 +650,13 @@ describe('commitAssistantReply persist targeting', () => {
     ).toBe(false)
     expect(shouldAttachLiveApprovalToPinnedSlot({ pinnedId: 'a-live' })).toBe(false)
     expect(
+      shouldAttachLiveApprovalToPinnedSlot({
+        pinnedId: 'a-live',
+        liveAssistantId: 'a-live',
+        liveHandoffId: 'a-live'
+      })
+    ).toBe(false)
+    expect(
       shouldAttachLiveLoadingToPinnedSlot({
         pinnedId: 'b-live',
         liveAssistantId: 'b-live'
@@ -662,6 +669,20 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toBe(false)
     expect(shouldAttachLiveLoadingToPinnedSlot({ pinnedId: 'a-live' })).toBe(false)
+    expect(
+      shouldAttachLiveLoadingToPinnedSlot({
+        pinnedId: 'a-live',
+        liveAssistantId: 'a-live',
+        liveHandoffId: 'a-live'
+      })
+    ).toBe(false)
+    expect(
+      shouldAttachLiveLoadingToPinnedSlot({
+        pinnedId: 'b-live',
+        liveAssistantId: 'b-live',
+        liveHandoffId: 'a-live'
+      })
+    ).toBe(true)
     expect(
       shouldMountUnpinnedLiveSlot({
         pinnedCount: 0,
@@ -846,6 +867,21 @@ describe('commitAssistantReply persist targeting', () => {
     expect(activeAfterLoading.slots.get('a-live')).toBe('hold-a')
     expect(activeAfterLoading.slots.get('b-live')).toBe('loading-b-live')
     expect(loadingBuilt).toBe(1)
+    let handoffBuilt = 0
+    const handoffHold = { ...holdId, loading: false }
+    const handoffPrev = new Map([['a-live', 'hold-a']])
+    const handoffIdentities = new Map([['a-live', handoffHold]])
+    const handoffAfterFollowUp = nextActivePinnedLiveSlots(
+      handoffPrev,
+      handoffIdentities,
+      new Map([['a-live', handoffHold]]),
+      () => {
+        handoffBuilt += 1
+        return 'handoff-remount'
+      }
+    )
+    expect(handoffAfterFollowUp.slots.get('a-live')).toBe('hold-a')
+    expect(handoffBuilt).toBe(0)
     const rowAfter = [['u2']]
     const rowSlots = new Map<string, unknown>([
       ['a-live', 'frozen-a'],

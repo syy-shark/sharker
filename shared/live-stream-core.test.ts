@@ -1605,6 +1605,10 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextActivePinnedLiveSlots')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveLoadingToPinnedSlot')
+    expect(src('../src/components/ChatView.tsx')).toContain('liveHandoffId')
+    expect(src('../src/components/ChatView.tsx')).toContain(
+      'shouldAttachLiveLoadingToPinnedSlot({\n          pinnedId: id,\n          liveAssistantId,\n          liveHandoffId'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('loading={identity?.loading ?? false}')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
       'loading={identity?.loading ?? loading}'
