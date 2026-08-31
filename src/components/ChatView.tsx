@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，活动槽只让当前预留 id 接审批，跟进 hold 不重挂上一轮；挤出冻结行只重画该历史 id，pin 后缺口同样只换该 id 以免重挂冻结 Fragment；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
+ * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，活动槽只让当前预留 id 接审批与 loading，跟进 hold 不重挂上一轮；挤出冻结行只重画该历史 id，pin 后缺口同样只换该 id 以免重挂冻结 Fragment；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 写在行上并同帧补视口上方 scrollTop，不抬 React state、不重建 `historicalRows`（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -87,6 +87,7 @@ import {
   retiredLiveArticle,
   frozenHistoricalArticle,
   shouldAttachLiveApprovalToPinnedSlot,
+  shouldAttachLiveLoadingToPinnedSlot,
   shouldMountActiveLiveSlot,
   shouldStreamPinnedLiveAssistant,
   type ActivePinnedLiveSlotIdentity,
@@ -3120,7 +3121,12 @@ export const ChatView = memo(function ChatView({
         liveAssistantId
       })
       identities.set(id, {
-        loading,
+        loading: shouldAttachLiveLoadingToPinnedSlot({
+          pinnedId: id,
+          liveAssistantId
+        })
+          ? loading
+          : false,
         isStreaming: shouldStreamPinnedLiveAssistant({
           pinnedId: id,
           liveAssistantId,
@@ -3146,7 +3152,7 @@ export const ChatView = memo(function ChatView({
           <LiveAssistantSlot
             key={id}
             liveRowId={id}
-            loading={identity?.loading ?? loading}
+            loading={identity?.loading ?? false}
             isStreaming={identity?.isStreaming ?? false}
             findHit={identity?.findHit ?? false}
             findCurrent={identity?.findCurrent ?? false}

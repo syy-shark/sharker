@@ -7,6 +7,7 @@
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
  * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
+ * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading，跟进 hold 不因开轮重挂。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
@@ -568,6 +569,14 @@ export function shouldAttachLiveApprovalToPinnedSlot(options: {
   return Boolean(pinned && live && pinned === live)
 }
 
+/** 只有当前预留 id 才跟 `loading`。跟进 hold 的上一轮不因开轮重挂（对标 Codex #22860 / #37849）。 */
+export function shouldAttachLiveLoadingToPinnedSlot(options: {
+  pinnedId: string
+  liveAssistantId?: string | null
+}): boolean {
+  return shouldAttachLiveApprovalToPinnedSlot(options)
+}
+
 /**
  * 无 pin 才走 fallback 槽。`pinActiveLive` 已开但预留 id 还没进 map 时
  * 不要用 `key=streaming` 占位，否则 id 一到就从 fallback 搬进 map 整棵重挂（对标 Codex #22860）。
@@ -929,7 +938,7 @@ export function nextFrozenPinnedLiveSlots<T>(
   )
 }
 
-/** 未冻结 pinned 槽身份：审批只挂当前预留 id，hold 行不跟新一轮审批 */
+/** 未冻结 pinned 槽身份：审批与 loading 只挂当前预留 id，hold 行不跟新一轮 */
 export type ActivePinnedLiveSlotIdentity = {
   loading: boolean
   isStreaming: boolean
