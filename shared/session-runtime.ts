@@ -9,6 +9,7 @@
  * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
+ * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -1030,6 +1031,81 @@ export function nextPinnedLiveRowNodes<T>(
     after: input.after,
     slots: input.slots
   }
+}
+
+/** 历史行身份：消息与冻结 article 引用没变才复用元素 */
+export type HistoricalRowIdentity = {
+  message: unknown
+  article: unknown
+  findHit: boolean
+  findCurrent: boolean
+  nearLive: boolean
+  editRequested: boolean
+  selectionSource: boolean
+  preserveLiveDiffs: boolean
+  isLast: boolean
+}
+
+export type HistoricalRowHold<T> = {
+  ids: readonly string[]
+  rows: readonly T[]
+  identities: ReadonlyMap<string, HistoricalRowIdentity>
+}
+
+const EMPTY_HISTORICAL_ROW_HOLD: HistoricalRowHold<never> = {
+  ids: [],
+  rows: [],
+  identities: EMPTY_FROZEN_PINNED_MAP
+}
+
+export function sameHistoricalRowIdentity(
+  prev: HistoricalRowIdentity | undefined,
+  next: HistoricalRowIdentity
+): boolean {
+  if (!prev) return false
+  return (
+    prev.message === next.message &&
+    prev.article === next.article &&
+    prev.findHit === next.findHit &&
+    prev.findCurrent === next.findCurrent &&
+    prev.nearLive === next.nearLive &&
+    prev.editRequested === next.editRequested &&
+    prev.selectionSource === next.selectionSource &&
+    prev.preserveLiveDiffs === next.preserveLiveDiffs &&
+    prev.isLast === next.isLast
+  )
+}
+
+/**
+ * 挤出 / 归档冻结行只换该 id。其余历史行留下上一份元素（对标 Codex #22860 / #38220）。
+ */
+export function nextHistoricalRowNodes<T>(
+  prev: HistoricalRowHold<T> | null | undefined,
+  nextIds: readonly string[],
+  nextIdentities: ReadonlyMap<string, HistoricalRowIdentity>,
+  build: (id: string, index: number) => T
+): HistoricalRowHold<T> {
+  if (nextIds.length === 0) return EMPTY_HISTORICAL_ROW_HOLD as HistoricalRowHold<T>
+  const rows = nextIds.map((id, index) => {
+    const identity = nextIdentities.get(id)
+    if (
+      prev &&
+      prev.ids[index] === id &&
+      identity &&
+      sameHistoricalRowIdentity(prev.identities.get(id), identity)
+    ) {
+      return prev.rows[index]
+    }
+    return build(id, index)
+  })
+  if (
+    prev &&
+    prev.rows.length === rows.length &&
+    rows.every((row, index) => row === prev.rows[index])
+  ) {
+    return prev
+  }
+  return { ids: nextIds, rows, identities: nextIdentities }
 }
 
 /**

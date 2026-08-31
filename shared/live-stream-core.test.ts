@@ -1606,6 +1606,15 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveRowNodes')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROW_HOLD')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextHistoricalRowNodes')
+    expect(src('../src/components/ChatView.tsx')).toContain('historicalRowsHeldRef')
+    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_HISTORICAL_ROW_HOLD')
+    expect(src('../src/components/ChatView.tsx')).toContain(
+      'sessionKey,\n      currentFindMessageId'
+    )
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'return historicalSource.map((m, index, rows) =>'
+    )
     expect(src('../src/components/ChatView.tsx')).not.toContain(
       'liveStreaming,\n    loading,\n    modelLabel,\n    onApproval,\n    onNeedFullMessage,\n    onOpenSubAgent,\n    onUserInput,\n    frozenPinnedSlots'
     )
@@ -1693,6 +1702,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameFrozenPinnedLiveSlotIdentity')
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
+    expect(src('session-runtime.ts')).toContain('nextHistoricalRowNodes')
+    expect(src('session-runtime.ts')).toContain('sameHistoricalRowIdentity')
     expect(src('session-runtime.ts')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('session-runtime.ts')).toContain('nextActivePinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameActivePinnedLiveSlotIdentity')

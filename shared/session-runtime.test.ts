@@ -38,8 +38,10 @@ import {
   nextActivePinnedLiveSlots,
   nextFrozenPinnedLiveSlots,
   nextPinnedLiveRowNodes,
+  nextHistoricalRowNodes,
   sameActivePinnedLiveSlotIdentity,
   sameFrozenPinnedLiveSlotIdentity,
+  sameHistoricalRowIdentity,
   shouldAttachLiveApprovalToPinnedSlot,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
@@ -841,6 +843,57 @@ describe('commitAssistantReply persist targeting', () => {
       nextPinnedLiveRowNodes(rowLoadingFlip, { ids: [], after: [], slots: new Map() }, () => 'x')
         .rows
     ).toEqual([])
+    const histBase = {
+      findHit: false,
+      findCurrent: false,
+      nearLive: false,
+      editRequested: false,
+      selectionSource: false,
+      preserveLiveDiffs: false,
+      isLast: false
+    }
+    const oldMsg = { id: 'old' }
+    const ejectedMsg = { id: 'ejected' }
+    const oldHistId = { ...histBase, message: oldMsg, article: null }
+    const ejectedHistId = { ...histBase, message: ejectedMsg, article: null, isLast: true }
+    expect(sameHistoricalRowIdentity(undefined, oldHistId)).toBe(false)
+    expect(sameHistoricalRowIdentity(oldHistId, oldHistId)).toBe(true)
+    expect(sameHistoricalRowIdentity(oldHistId, { ...oldHistId, findHit: true })).toBe(false)
+    const histFirst = nextHistoricalRowNodes(
+      null,
+      ['old', 'ejected'],
+      new Map([
+        ['old', oldHistId],
+        ['ejected', ejectedHistId]
+      ]),
+      (id) => `row-${id}`
+    )
+    let histBuilt = 0
+    const ejectedArticle = { id: 'ejected' }
+    const histAfterEject = nextHistoricalRowNodes(
+      histFirst,
+      ['old', 'ejected'],
+      new Map([
+        ['old', oldHistId],
+        ['ejected', { ...ejectedHistId, article: ejectedArticle }]
+      ]),
+      (id) => {
+        histBuilt += 1
+        return `row-${id}-next`
+      }
+    )
+    expect(histAfterEject.rows[0]).toBe(histFirst.rows[0])
+    expect(histAfterEject.rows[1]).toBe('row-ejected-next')
+    expect(histBuilt).toBe(1)
+    expect(
+      nextHistoricalRowNodes(
+        histAfterEject,
+        ['old', 'ejected'],
+        histAfterEject.identities,
+        () => 'should-not-build'
+      )
+    ).toBe(histAfterEject)
+    expect(nextHistoricalRowNodes(histAfterEject, [], new Map(), () => 'x').rows).toEqual([])
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
     const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
     const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }
