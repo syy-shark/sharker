@@ -1,12 +1,20 @@
 /**
  * 通知：回合完成档、批准通知、系统权限。
+ * 档标题用官方 Never / Only while ChatGPT is in the background / Always。
  * 分区说明用官方 Choose when turn completion notifications appear…
- * 对标 Codex Settings → Notifications。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef } from 'react'
 import type { AppSettings } from '../../../shared/types'
-import { parseTurnNotifyMode, type TurnNotifyMode } from '../../../shared/turn-notify'
+import {
+  ALWAYS_TURN_COMPLETION_LABEL,
+  NEVER_TURN_COMPLETION_LABEL,
+  NOTIFICATION_PERMISSION_DESCRIPTION,
+  ONLY_WHILE_IN_THE_BACKGROUND_LABEL,
+  PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION,
+  parseTurnNotifyMode,
+  type TurnNotifyMode
+} from '../../../shared/turn-notify'
 import {
   NOTIFICATIONS_SETTINGS_INTRO,
   NOTIFICATIONS_SETTINGS_LABEL
@@ -64,19 +72,19 @@ export function NotificationSettings({ draft, setDraft, onSave }: Props) {
           options={[
             {
               value: 'never',
-              title: '从不',
+              title: NEVER_TURN_COMPLETION_LABEL,
               description: '回合完成不弹系统通知。',
               icon: <span aria-hidden>静</span>
             },
             {
               value: 'background',
-              title: '后台',
+              title: ONLY_WHILE_IN_THE_BACKGROUND_LABEL,
               description: '正在看且窗口在前台时不打扰。',
               icon: <span aria-hidden>后</span>
             },
             {
               value: 'always',
-              title: '始终',
+              title: ALWAYS_TURN_COMPLETION_LABEL,
               description: '每次回合完成都通知。',
               icon: <span aria-hidden>通</span>
             }
@@ -84,7 +92,7 @@ export function NotificationSettings({ draft, setDraft, onSave }: Props) {
         />
         <SettingsRow
           title="批准通知"
-          description="对标 Codex permission notifications：后台或失焦时高危操作需要批准会弹系统通知。"
+          description={PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION}
         >
           <SettingsToggle
             checked={draft.approvalNotify !== false}
@@ -96,7 +104,7 @@ export function NotificationSettings({ draft, setDraft, onSave }: Props) {
         </SettingsRow>
         <SettingsRow
           title="系统通知权限"
-          description="对标 Codex：向 macOS 申请通知权限。会发一条测试通知。"
+          description={NOTIFICATION_PERMISSION_DESCRIPTION}
           last
         >
           <button

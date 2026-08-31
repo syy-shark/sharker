@@ -303,6 +303,9 @@ describe('reveal in folder', () => {
     expect(APPEARANCE_SETTINGS_LABEL).toBe('Appearance')
     expect(NOTIFICATIONS_SETTINGS_LABEL).toBe('Notifications')
     expect(NOTIFICATIONS_SETTINGS_INTRO).toMatch(/turn completion notifications/)
+    expect(NOTIFICATIONS_SETTINGS_INTRO).toMatch(
+      /never, only while ChatGPT is in the background, or always/
+    )
     const notificationSettingsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/NotificationSettings.tsx'),
       'utf8'

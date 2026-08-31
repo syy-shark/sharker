@@ -262,7 +262,7 @@ export const GENERAL_SETTINGS_INTRO =
   'Require Cmd+Enter for multiline prompts, or turn on Prevent sleep while running so local chats can continue while you step away. Under Follow-up behavior, choose whether a message sent while ChatGPT works should steer the current run or wait for the next run.'
 /** Official Settings → Notifications. */
 export const NOTIFICATIONS_SETTINGS_INTRO =
-  'Choose when turn completion notifications appear, and whether the app should prompt for notification permissions.'
+  'Choose when turn completion notifications appear, and whether the app should prompt for notification permissions. Open Settings to choose whether turn-completion alerts appear never, only while ChatGPT is in the background, or always.'
 /** Official Settings → Suggested prompts. */
 export const SUGGESTED_PROMPTS_INTRO =
   'Use context-aware suggestions to surface follow-ups and tasks you may want to resume when you start or return to ChatGPT.'

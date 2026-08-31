@@ -1,5 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+  ALWAYS_TURN_COMPLETION_LABEL,
+  NEVER_TURN_COMPLETION_LABEL,
+  NOTIFICATION_PERMISSION_DESCRIPTION,
+  ONLY_WHILE_IN_THE_BACKGROUND_LABEL,
+  PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION,
   parseTurnNotifyMode,
   shouldMarkConversationUnread,
   shouldNotifyApproval,
@@ -128,5 +136,27 @@ describe('background turn notifications', () => {
   it('counts unread conversations for the dock badge', () => {
     expect(unreadDockBadgeCount([{ unread: true }, { unread: false }, { unread: true }])).toBe(2)
     expect(unreadDockBadgeCount([])).toBe(0)
+  })
+
+  it('uses official Notifications option titles', () => {
+    expect(NEVER_TURN_COMPLETION_LABEL).toBe('Never')
+    expect(ONLY_WHILE_IN_THE_BACKGROUND_LABEL).toBe('Only while ChatGPT is in the background')
+    expect(ALWAYS_TURN_COMPLETION_LABEL).toBe('Always')
+    expect(PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION).toMatch(
+      /permission and question notifications/
+    )
+    expect(NOTIFICATION_PERMISSION_DESCRIPTION).toMatch(/grant notification permission/)
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/NotificationSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('NEVER_TURN_COMPLETION_LABEL')
+    expect(settingsSrc).toContain('ONLY_WHILE_IN_THE_BACKGROUND_LABEL')
+    expect(settingsSrc).toContain('ALWAYS_TURN_COMPLETION_LABEL')
+    expect(settingsSrc).toContain('PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION')
+    expect(settingsSrc).toContain('NOTIFICATION_PERMISSION_DESCRIPTION')
+    expect(settingsSrc).not.toContain("title: '从不'")
+    expect(settingsSrc).not.toContain("title: '后台'")
+    expect(settingsSrc).not.toContain("title: '始终'")
   })
 })

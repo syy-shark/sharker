@@ -22,6 +22,16 @@ export type TurnNotifyOutcome = 'success' | 'error' | 'aborted'
  */
 export type TurnNotifyMode = 'never' | 'background' | 'always'
 
+/** Official desktop Notifications options (learn.chatgpt.com/docs/notifications). */
+export const NEVER_TURN_COMPLETION_LABEL = 'Never'
+export const ONLY_WHILE_IN_THE_BACKGROUND_LABEL = 'Only while ChatGPT is in the background'
+export const ALWAYS_TURN_COMPLETION_LABEL = 'Always'
+/** Official desktop Notifications (learn.chatgpt.com/docs/notifications). */
+export const PERMISSION_AND_QUESTION_NOTIFICATIONS_DESCRIPTION =
+  'Separate controls let you turn permission and question notifications on or off.'
+export const NOTIFICATION_PERMISSION_DESCRIPTION =
+  'Your operating system may ask you to grant notification permission to the ChatGPT desktop app.'
+
 export function parseTurnNotifyMode(raw: unknown): TurnNotifyMode {
   if (raw === 'never' || raw === 'always') return raw
   return 'background'
