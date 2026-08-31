@@ -39,6 +39,7 @@ import {
   nextFrozenPinnedLiveSlots,
   nextPinnedLiveRowNodes,
   nextHistoricalRowNodes,
+  nextPinnedAfterRowNodes,
   sameActivePinnedLiveSlotIdentity,
   sameFrozenPinnedLiveSlotIdentity,
   sameHistoricalRowIdentity,
@@ -894,6 +895,42 @@ describe('commitAssistantReply persist targeting', () => {
       )
     ).toBe(histAfterEject)
     expect(nextHistoricalRowNodes(histAfterEject, [], new Map(), () => 'x').rows).toEqual([])
+    const afterOld = { id: 'after-old' }
+    const afterEjected = { id: 'after-ejected' }
+    const afterOldId = { ...oldHistId, message: afterOld, nearLive: true }
+    const afterEjectedId = { ...ejectedHistId, message: afterEjected, nearLive: true }
+    const afterFirst = nextPinnedAfterRowNodes(
+      null,
+      [[afterOld], [afterEjected]],
+      new Map([
+        ['after-old', afterOldId],
+        ['after-ejected', afterEjectedId]
+      ]),
+      (id) => `after-${id}`
+    )
+    let afterBuilt = 0
+    const afterEject = nextPinnedAfterRowNodes(
+      afterFirst,
+      [[afterOld], [afterEjected]],
+      new Map([
+        ['after-old', afterOldId],
+        ['after-ejected', { ...afterEjectedId, article: ejectedArticle }]
+      ]),
+      (id) => {
+        afterBuilt += 1
+        return `after-${id}-next`
+      }
+    )
+    expect(afterEject.gaps[0]).toBe(afterFirst.gaps[0])
+    expect(afterEject.gaps[1]).toEqual(['after-after-ejected-next'])
+    expect(afterEject.rows[0]).toBe(afterFirst.rows[0])
+    expect(afterBuilt).toBe(1)
+    expect(
+      nextPinnedAfterRowNodes(afterEject, [[afterOld], [afterEjected]], afterEject.identities, () => {
+        throw new Error('should reuse after gaps')
+      })
+    ).toBe(afterEject)
+    expect(nextPinnedAfterRowNodes(afterEject, [], new Map(), () => 'x').gaps).toEqual([])
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
     const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
     const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }

@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，活动槽只让当前预留 id 接审批，跟进 hold 不重挂上一轮；挤出冻结行只重画该历史 id；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
+ * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，活动槽只让当前预留 id 接审批，跟进 hold 不重挂上一轮；挤出冻结行只重画该历史 id，pin 后缺口同样只换该 id 以免重挂冻结 Fragment；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 写在行上并同帧补视口上方 scrollTop，不抬 React state、不重建 `historicalRows`（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -80,6 +80,7 @@ import {
   nextFrozenPinnedLiveSlots,
   nextHistoricalRowNodes,
   nextPinnedAfterGaps,
+  nextPinnedAfterRowNodes,
   nextPinnedLiveAssistantIds,
   nextPinnedLiveRowNodes,
   nextPinnedTranscriptGaps,
@@ -92,6 +93,7 @@ import {
   type FrozenPinnedLiveSlotIdentity,
   type HistoricalRowHold,
   type HistoricalRowIdentity,
+  type PinnedAfterRowHold,
   type PinnedLiveRowHold,
   type RetiredLiveArticle
 } from '../../shared/session-runtime'
@@ -244,6 +246,12 @@ const EMPTY_HISTORICAL_ROWS: readonly ReactNode[] = []
 const EMPTY_HISTORICAL_ROW_HOLD: HistoricalRowHold<ReactNode> = {
   ids: [],
   rows: [],
+  identities: new Map()
+}
+const EMPTY_PINNED_AFTER_ROW_HOLD: PinnedAfterRowHold<ReactNode> = {
+  ids: [],
+  rows: [],
+  gaps: [],
   identities: new Map()
 }
 
@@ -1202,6 +1210,8 @@ export const ChatView = memo(function ChatView({
     activePinnedSessionRef.current = sessionKey
     historicalRowsHeldRef.current = EMPTY_HISTORICAL_ROW_HOLD
     historicalRowsSessionRef.current = sessionKey
+    pinnedAfterRowsHeldRef.current = EMPTY_PINNED_AFTER_ROW_HOLD
+    pinnedAfterRowsSessionRef.current = sessionKey
     intrinsicHeightsRef.current = new Map()
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
@@ -1228,6 +1238,8 @@ export const ChatView = memo(function ChatView({
   const activePinnedSessionRef = useRef(sessionKey)
   const historicalRowsHeldRef = useRef<HistoricalRowHold<ReactNode>>(EMPTY_HISTORICAL_ROW_HOLD)
   const historicalRowsSessionRef = useRef(sessionKey)
+  const pinnedAfterRowsHeldRef = useRef<PinnedAfterRowHold<ReactNode>>(EMPTY_PINNED_AFTER_ROW_HOLD)
+  const pinnedAfterRowsSessionRef = useRef(sessionKey)
   const nearLiveImmediateSessionRef = useRef(sessionKey)
   if (nearLiveImmediateSessionRef.current !== sessionKey) {
     nearLiveImmediateSessionRef.current = sessionKey
@@ -2919,11 +2931,37 @@ export const ChatView = memo(function ChatView({
     ]
   )
   const pinnedAfterRows = useMemo(() => {
+    if (pinnedAfterRowsSessionRef.current !== sessionKey) {
+      pinnedAfterRowsSessionRef.current = sessionKey
+      pinnedAfterRowsHeldRef.current = EMPTY_PINNED_AFTER_ROW_HOLD
+    }
     const afterGaps = nextPinnedAfterGaps(pinnedGaps)
-    if (afterGaps.length === 0) return EMPTY_PINNED_AFTER_ROWS
-    return afterGaps.map((gap) =>
-      gap.map((m) =>
-        m.role === 'user' ? (
+    if (afterGaps.length === 0) {
+      pinnedAfterRowsHeldRef.current = EMPTY_PINNED_AFTER_ROW_HOLD
+      return EMPTY_PINNED_AFTER_ROWS
+    }
+    const afterMessages = afterGaps.flat()
+    const identities = new Map<string, HistoricalRowIdentity>()
+    afterMessages.forEach((m, index) => {
+      identities.set(m.id, {
+        message: m,
+        article: frozenHistoricalArticle(ejectedLiveArticles, archivedLiveArticles, m.id),
+        findHit: historicalFindIds.has(m.id),
+        findCurrent: currentFindMessageId === m.id,
+        nearLive: true,
+        editRequested: editUserMessageId === m.id,
+        selectionSource: selectionSourceId === m.id,
+        preserveLiveDiffs: m.id === preserveLiveDiffsId,
+        isLast: index === afterMessages.length - 1
+      })
+    })
+    const next = nextPinnedAfterRowNodes(
+      pinnedAfterRowsHeldRef.current,
+      afterGaps,
+      identities,
+      (id, index) => {
+        const m = afterMessages[index]
+        return m.role === 'user' ? (
           <UserMessageRow
             key={m.id}
             id={m.id}
@@ -2983,11 +3021,15 @@ export const ChatView = memo(function ChatView({
             )}
           </div>
         )
-      )
+      }
     )
+    pinnedAfterRowsHeldRef.current = next
+    return next.gaps.length === 0 ? EMPTY_PINNED_AFTER_ROWS : (next.gaps as ReactNode[][])
   }, [
+    archivedLiveArticles,
     currentFindMessageId,
     editUserMessageId,
+    ejectedLiveArticles,
     handleEditRequestHandled,
     handleRevealSelection,
     historicalFindIds,
@@ -2999,6 +3041,7 @@ export const ChatView = memo(function ChatView({
     preserveLiveDiffsId,
     renderFrozenEjectedArticle,
     selectionSourceId,
+    sessionKey,
     toolOutputDisplay
   ])
 

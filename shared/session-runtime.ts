@@ -10,6 +10,7 @@
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
+ * `nextPinnedAfterRowNodes` 挤出冻结行时只换该 pin 后缺口，其余 after 数组留下以免重挂冻结 Fragment。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -1106,6 +1107,61 @@ export function nextHistoricalRowNodes<T>(
     return prev
   }
   return { ids: nextIds, rows, identities: nextIdentities }
+}
+
+/** pin 后缺口身份：与历史行同一套比较，挤出只换该 id */
+export type PinnedAfterRowHold<T> = {
+  ids: readonly string[]
+  rows: readonly T[]
+  gaps: readonly (readonly T[])[]
+  identities: ReadonlyMap<string, HistoricalRowIdentity>
+}
+
+const EMPTY_PINNED_AFTER_ROW_HOLD: PinnedAfterRowHold<never> = {
+  ids: [],
+  rows: [],
+  gaps: [],
+  identities: EMPTY_FROZEN_PINNED_MAP
+}
+
+/**
+ * 挤出 / 归档冻结行只换含该 id 的 after 缺口。其余 gap 数组留下，
+ * 以便 `nextPinnedLiveRowNodes` 不重挂冻结 Fragment（对标 Codex #22860 / #38220）。
+ */
+export function nextPinnedAfterRowNodes<T>(
+  prev: PinnedAfterRowHold<T> | null | undefined,
+  nextGaps: readonly (readonly { id: string }[])[],
+  nextIdentities: ReadonlyMap<string, HistoricalRowIdentity>,
+  build: (id: string, index: number) => T
+): PinnedAfterRowHold<T> {
+  const nextIds = nextGaps.flatMap((gap) => gap.map((item) => item.id))
+  if (nextIds.length === 0) return EMPTY_PINNED_AFTER_ROW_HOLD as PinnedAfterRowHold<T>
+  const flat = nextHistoricalRowNodes(prev, nextIds, nextIdentities, build)
+  const gaps: (readonly T[])[] = []
+  let offset = 0
+  for (let index = 0; index < nextGaps.length; index += 1) {
+    const len = nextGaps[index].length
+    const slice = flat.rows.slice(offset, offset + len)
+    const prevGap = prev?.gaps[index]
+    if (
+      prevGap &&
+      prevGap.length === slice.length &&
+      slice.every((row, rowIndex) => row === prevGap[rowIndex])
+    ) {
+      gaps.push(prevGap)
+    } else {
+      gaps.push(slice)
+    }
+    offset += len
+  }
+  if (
+    prev &&
+    prev.gaps.length === gaps.length &&
+    gaps.every((gap, index) => gap === prev.gaps[index])
+  ) {
+    return prev
+  }
+  return { ids: flat.ids, rows: flat.rows, gaps, identities: flat.identities }
 }
 
 /**

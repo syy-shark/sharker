@@ -1609,6 +1609,12 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextHistoricalRowNodes')
     expect(src('../src/components/ChatView.tsx')).toContain('historicalRowsHeldRef')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_HISTORICAL_ROW_HOLD')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedAfterRowNodes')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedAfterRowsHeldRef')
+    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_AFTER_ROW_HOLD')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'return afterGaps.map((gap) =>'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain(
       'sessionKey,\n      currentFindMessageId'
     )
@@ -1704,6 +1710,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
     expect(src('session-runtime.ts')).toContain('nextHistoricalRowNodes')
     expect(src('session-runtime.ts')).toContain('sameHistoricalRowIdentity')
+    expect(src('session-runtime.ts')).toContain('nextPinnedAfterRowNodes')
     expect(src('session-runtime.ts')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('session-runtime.ts')).toContain('nextActivePinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameActivePinnedLiveSlotIdentity')
