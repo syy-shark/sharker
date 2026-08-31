@@ -30,6 +30,7 @@ import {
   EJECTED_LIVE_LIMIT,
   splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
+  shouldStreamPinnedLiveAssistant,
   historicalMessagesHidingIds,
   upsertAssistantMessage,
   cancelQueuedPrompt,
@@ -562,6 +563,46 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toBe(false)
     expect(shouldBeginNewLiveReservation({ holdFollowUp: false })).toBe(true)
+    expect(
+      shouldStreamPinnedLiveAssistant({
+        pinnedId: 'a-live',
+        liveAssistantId: 'a-live',
+        frozen: false,
+        liveStreaming: true
+      })
+    ).toBe(true)
+    expect(
+      shouldStreamPinnedLiveAssistant({
+        pinnedId: 'a-live',
+        liveAssistantId: 'a-live',
+        frozen: true,
+        liveStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldStreamPinnedLiveAssistant({
+        pinnedId: 'a-live',
+        liveAssistantId: 'b-live',
+        frozen: false,
+        liveStreaming: true
+      })
+    ).toBe(false)
+    expect(
+      shouldStreamPinnedLiveAssistant({
+        pinnedId: 'a-live',
+        liveAssistantId: 'a-live',
+        frozen: false,
+        liveStreaming: false
+      })
+    ).toBe(false)
+    expect(
+      shouldStreamPinnedLiveAssistant({
+        pinnedId: '  a-live  ',
+        liveAssistantId: 'a-live',
+        frozen: false,
+        liveStreaming: true
+      })
+    ).toBe(true)
     expect(
       pinnedLiveAssistantIds({
         liveAssistantId: 'a-live',

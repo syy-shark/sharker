@@ -2,6 +2,7 @@
  * 多会话队列与流归属：纯逻辑，渲染层与单测共用。
  * 保证 A 的排队 follow-up 不会在切换到 B 后派发到 B。
  * 直播行 retired 环挤出后仍按冻结正文画，不立刻重挂历史气泡。
+ * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
  * @see shared/ARCH.md
@@ -516,6 +517,23 @@ export function shouldBeginNewLiveReservation(options: {
   if (options.holdFollowUp) return false
   if (options.reuseReservedLiveId && Boolean(options.reservedId?.trim())) return false
   return true
+}
+
+/**
+ * pinned 列里只有当前未冻结的预留 id 才跟 `liveStreaming`。
+ * `pinActiveLive` 从开轮就把该 id 钉进 map 后，若整列写死 `isStreaming={false}`，
+ * 秒表 / 贴尾 / mermaid 会当成收束（对标 Codex #22860）。
+ */
+export function shouldStreamPinnedLiveAssistant(options: {
+  pinnedId: string
+  liveAssistantId?: string | null
+  frozen: boolean
+  liveStreaming: boolean
+}): boolean {
+  if (options.frozen || !options.liveStreaming) return false
+  const pinned = options.pinnedId.trim()
+  const live = options.liveAssistantId?.trim()
+  return Boolean(pinned && live && pinned === live)
 }
 
 /** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */

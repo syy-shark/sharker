@@ -1618,6 +1618,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('shouldMountActiveLiveSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldPinActiveLiveAssistant')
     expect(src('../src/components/ChatView.tsx')).toContain('pinActiveLive')
+    expect(src('../src/components/ChatView.tsx')).toContain('shouldStreamPinnedLiveAssistant')
     expect(src('../src/App.tsx')).toContain('shouldHoldLiveHandoff')
     expect(src('../src/App.tsx')).toContain('shouldBeginNewLiveReservation')
     expect(src('../src/App.tsx')).toContain('reuseReservedLiveId')
