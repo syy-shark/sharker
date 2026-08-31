@@ -30,6 +30,7 @@ import {
   EJECTED_LIVE_LIMIT,
   splitTranscriptAroundPinnedLive,
   shouldMountActiveLiveSlot,
+  shouldMountUnpinnedLiveSlot,
   shouldStreamPinnedLiveAssistant,
   historicalMessagesHidingIds,
   upsertAssistantMessage,
@@ -603,6 +604,42 @@ describe('commitAssistantReply persist targeting', () => {
         liveStreaming: true
       })
     ).toBe(true)
+    expect(
+      shouldMountUnpinnedLiveSlot({
+        pinnedCount: 0,
+        pinActiveLive: true,
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: false
+      })
+    ).toBe(false)
+    expect(
+      shouldMountUnpinnedLiveSlot({
+        pinnedCount: 1,
+        pinActiveLive: false,
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: true
+      })
+    ).toBe(false)
+    expect(
+      shouldMountUnpinnedLiveSlot({
+        pinnedCount: 0,
+        pinActiveLive: false,
+        atLatestWindow: true,
+        loading: true,
+        hasLiveBody: false
+      })
+    ).toBe(true)
+    expect(
+      shouldMountUnpinnedLiveSlot({
+        pinnedCount: 0,
+        pinActiveLive: false,
+        atLatestWindow: false,
+        loading: true,
+        hasLiveBody: true
+      })
+    ).toBe(false)
     expect(
       pinnedLiveAssistantIds({
         liveAssistantId: 'a-live',

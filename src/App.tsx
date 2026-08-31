@@ -3764,8 +3764,6 @@ export default function App() {
       const myTurn = ++turnGenRef.current
       sendInFlightRef.current = true
       doneCommittedRef.current = false
-      setLoading(true)
-      bumpSessionLive()
       const liveSnap = getLiveStreamUi()
       const holdFollowUp = shouldHoldLiveHandoff({
         hasLiveBody: liveHasAssistantBody(
@@ -3804,6 +3802,9 @@ export default function App() {
       } else {
         clearRetiredLive()
       }
+      // 先预留直播 id 再抬 loading，避免首帧 key=streaming 再搬进 pin map 重挂
+      setLoading(true)
+      bumpSessionLive()
       if (convId) {
         const buf = sessionBuffersRef.current.get(convId)
         if (buf) buf.liveAssistantId = liveAssistantIdRef.current
@@ -5889,8 +5890,8 @@ export default function App() {
             }
           ]
           segmentsRef.current = segs
-          setLoading(true)
           ensureLiveAssistantId()
+          setLoading(true)
           publishLiveStreamUi(
             liveStreamPatchFromSegments(segs, {
               turnStartedAt: turnStartedAtRef.current || now
@@ -5908,8 +5909,8 @@ export default function App() {
             }
           ]
           segmentsRef.current = segs
-          setLoading(true)
           ensureLiveAssistantId()
+          setLoading(true)
           publishLiveStreamUi(
             liveStreamPatchFromSegments(segs, {
               turnStartedAt: turnStartedAtRef.current || now
@@ -8202,8 +8203,8 @@ export default function App() {
         setApproval(req)
         approvalRef.current = req
         setApprovalResponding(false)
-        setLoading(true)
         ensureLiveAssistantId()
+        setLoading(true)
         const now = Date.now()
         const segs: TurnSegment[] = [
           {
@@ -8495,8 +8496,8 @@ export default function App() {
           approvalRef.current = req
         }
         segmentsRef.current = segs
-        setLoading(true)
         ensureLiveAssistantId()
+        setLoading(true)
         sendInFlightRef.current = true
         // 调试直播视为进行中回合：允许切会话后恢复，且 Stop/done 门闩可工作
         doneCommittedRef.current = false
@@ -8567,8 +8568,8 @@ export default function App() {
           setApproval(null)
           approvalRef.current = null
           segmentsRef.current = segs
-          setLoading(true)
           ensureLiveAssistantId()
+          setLoading(true)
           sendInFlightRef.current = true
           const streaming = opts?.streaming ?? ''
           streamingRef.current = streaming

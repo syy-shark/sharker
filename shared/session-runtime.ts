@@ -536,6 +536,21 @@ export function shouldStreamPinnedLiveAssistant(options: {
   return Boolean(pinned && live && pinned === live)
 }
 
+/**
+ * 无 pin 才走 fallback 槽。`pinActiveLive` 已开但预留 id 还没进 map 时
+ * 不要用 `key=streaming` 占位，否则 id 一到就从 fallback 搬进 map 整棵重挂（对标 Codex #22860）。
+ */
+export function shouldMountUnpinnedLiveSlot(options: {
+  pinnedCount: number
+  pinActiveLive: boolean
+  atLatestWindow: boolean
+  loading: boolean
+  hasLiveBody: boolean
+}): boolean {
+  if (options.pinnedCount > 0 || options.pinActiveLive) return false
+  return shouldMountLiveAssistantSlot(options)
+}
+
 /** 新直播 id 已与 pinned 行分开时才另挂一轮槽，避免 adopt 把 A 的 key 换成 B。 */
 export function shouldMountActiveLiveSlot(options: {
   atLatestWindow: boolean
