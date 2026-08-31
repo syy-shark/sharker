@@ -70,7 +70,8 @@ describe('thread goal', () => {
     expect(GOAL_ACTIVE_LABEL).toBe('Active')
     expect(GOAL_PAUSED_LABEL).toBe('Paused')
     expect(GOAL_MODE_LABEL).toBe('Goal mode')
-    expect(GOAL_PROGRESS_INTRO).toMatch(/pause, resume, edit, or clear the goal/)
+    expect(GOAL_PROGRESS_INTRO).toMatch(/shows its progress above the composer/)
+    expect(GOAL_PROGRESS_INTRO).toMatch(/pause or resume the goal/)
     expect(GOAL_PROGRESS_INTRO).toMatch(/follow-up messages while the goal runs/)
     const rowSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/GoalProgressRow.tsx'),

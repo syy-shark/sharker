@@ -53,6 +53,7 @@ import {
   CODEX_ENVIRONMENTS_LABEL,
   LOCAL_ENVIRONMENT_DESCRIPTION,
   LOCAL_LABEL,
+  WORKTREE_DETACHED_HEAD_HINT,
   WORKTREE_ENVIRONMENT_DESCRIPTION,
   WORKTREE_INTRO,
   WORKTREE_LABEL,
@@ -545,8 +546,10 @@ describe('reveal in folder', () => {
     expect(CLEAR_LABEL).toBe('Clear')
     expect(HAND_OFF_LABEL).toBe('Hand off')
     expect(HAND_OFF_INTRO).toMatch(/Hand off in the chat header/)
+    expect(HAND_OFF_INTRO).toMatch(/\.worktreeinclude/)
     expect(WORKTREE_INTRO).toMatch(/multiple independent chats/)
     expect(WORKTREE_REQUIRES_GIT).toMatch(/require a Git repository/)
+    expect(WORKTREE_DETACHED_HEAD_HINT).toMatch(/detached HEAD/)
     expect(WORKTREES_SETTINGS_INTRO).toMatch(/most recent 15 Codex-managed worktrees/)
     expect(WORKTREES_SETTINGS_INTRO).toMatch(/change Worktree root/)
     expect(CODEX_ENVIRONMENTS_LABEL).toBe('Codex environments')
@@ -563,6 +566,7 @@ describe('reveal in folder', () => {
     expect(dockSrc).toContain('CODEX_ENVIRONMENTS_LABEL')
     expect(dockSrc).toContain('LOCAL_ENVIRONMENT_DESCRIPTION')
     expect(dockSrc).toContain('WORKTREE_ENVIRONMENT_DESCRIPTION')
+    expect(dockSrc).toContain('WORKTREE_DETACHED_HEAD_HINT')
     expect(dockSrc).not.toContain('线程模式')
     expect(dockSrc).not.toContain('title={HAND_OFF_LABEL}')
     expect(CREATE_BRANCH_HERE_LABEL).toBe('Create branch here')

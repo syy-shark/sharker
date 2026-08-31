@@ -7,6 +7,7 @@ import {
   nextLiveReviewFindings,
   parseLiveReviewFindings,
   parseReviewFindings,
+  REVIEW_APPLY_FIXES_HINT,
   REVIEW_FINDINGS_INTRO,
   REVIEW_HOVER_LINE_HINT,
   REVIEW_INLINE_COMMENT_FOLLOW_UP,
@@ -75,7 +76,10 @@ describe('review comments', () => {
     expect(panelSrc).toContain('reviewDiffKeysForFindings')
     expect(panelSrc).toContain('mergeReviewExpandedKeys')
     expect(REVIEW_FINDINGS_INTRO).toMatch(/inline comments in the review pane/)
+    expect(REVIEW_APPLY_FIXES_HINT).toMatch(/sandbox and approval settings/)
+    expect(REVIEW_INLINE_COMMENT_FOLLOW_UP).toMatch(/line-specific/)
     expect(REVIEW_INLINE_COMMENT_FOLLOW_UP).toMatch(/send a message back to the chat/)
+    expect(REVIEW_INLINE_COMMENT_FOLLOW_UP).toMatch(/review guidance/)
     expect(REVIEW_HOVER_LINE_HINT).toBe('Hover over the line you want to comment on.')
     expect(REVIEW_PLUS_BUTTON_HINT).toBe('Select the + button that appears.')
     expect(REVIEW_WRITE_FEEDBACK_HINT).toBe('Write your feedback and submit it.')
@@ -84,6 +88,7 @@ describe('review comments', () => {
       'utf8'
     )
     expect(diffSrc).toContain('REVIEW_FINDINGS_INTRO')
+    expect(diffSrc).toContain('REVIEW_APPLY_FIXES_HINT')
     expect(diffSrc).toContain('REVIEW_INLINE_COMMENT_FOLLOW_UP')
     expect(diffSrc).toContain('REVIEW_HOVER_LINE_HINT')
     expect(diffSrc).toContain('REVIEW_PLUS_BUTTON_HINT')

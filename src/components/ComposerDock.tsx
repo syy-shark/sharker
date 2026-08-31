@@ -164,6 +164,7 @@ import {
   START_DICTATION_LABEL,
   voiceChatControlLabel,
   VOICE_LABEL,
+  WORKTREE_DETACHED_HEAD_HINT,
   WORKTREE_ENVIRONMENT_DESCRIPTION,
   WORKTREE_LABEL
 } from '../../shared/reveal-in-folder'
@@ -2555,7 +2556,7 @@ export const ComposerDock = memo(
                   aria-label={STARTING_BRANCH_LABEL}
                   aria-expanded={showWorktreeBranchPicker}
                   aria-haspopup="listbox"
-                  title={STARTING_BRANCH_SEARCH_PLACEHOLDER}
+                  title={WORKTREE_DETACHED_HEAD_HINT}
                   onClick={() => {
                     setProjectPickerOpen(false)
                     onCloseHistoryPicker?.()

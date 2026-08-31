@@ -27,6 +27,7 @@ import { splitDiffHunks, type DiffHunk } from '../../shared/diff-hunk'
 import type { GitReviewAction } from '../../shared/git-review-actions'
 import { REVERT_LABEL, STAGE_LABEL, UNSTAGE_LABEL } from '../../shared/review-repos'
 import {
+  REVIEW_APPLY_FIXES_HINT,
   REVIEW_FINDINGS_INTRO,
   REVIEW_HOVER_LINE_HINT,
   REVIEW_INLINE_COMMENT_FOLLOW_UP,
@@ -200,7 +201,7 @@ const DiffLineRow = memo(function DiffLineRow({
         <ul
           className="code-diff-comments"
           aria-label={REVIEW_FINDINGS_INTRO}
-          title={REVIEW_FINDINGS_INTRO}
+          title={`${REVIEW_FINDINGS_INTRO} ${REVIEW_APPLY_FIXES_HINT}`}
         >
           {comments.map((c) => (
             <li key={c.id}>{c.text}</li>

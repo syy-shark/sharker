@@ -24,6 +24,7 @@ import {
   REVIEW_MULTI_REPO_INTRO,
   REVIEW_OTHER_SCOPE_REPO_HINT,
   REVIEW_REQUIRES_GIT_LABEL,
+  REVIEW_SAME_FILE_BOTH_VIEWS_HINT,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
@@ -117,6 +118,8 @@ describe('review repos', () => {
     expect(panelSrc).not.toContain('全部取消暂存')
     expect(panelSrc).not.toContain('请先选择工作区')
     expect(panelSrc).toContain('REVIEW_HAPPY_WITH_CHANGE_HINT')
+    expect(REVIEW_SAME_FILE_BOTH_VIEWS_HINT).toMatch(/same file in both views/)
+    expect(panelSrc).toContain('REVIEW_SAME_FILE_BOTH_VIEWS_HINT')
   })
 
   it('keeps distinct git roots and defaults Last turn to all repos', () => {

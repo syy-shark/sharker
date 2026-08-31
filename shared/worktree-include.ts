@@ -1,9 +1,17 @@
 /**
  * Codex 式 `.worktreeinclude`：隔离 worktree 创建时拷贝被 gitignore 的本地文件。
+ * 设置页挂官方 leftover，不发明文件编辑器。
  * @see shared/ARCH.md
  */
 
 export const WORKTREE_INCLUDE_ALWAYS = ['AGENTS.override.md']
+/** Official desktop leftover (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const WORKTREE_INCLUDE_INTRO =
+  'If your repository ignores local setup files that a new worktree needs, add a `.worktreeinclude` file to the repository root and list the ignored paths or `.gitignore`-style patterns to copy when Codex creates a managed worktree.'
+export const WORKTREE_INCLUDE_HINT =
+  "Use this for files Git intentionally ignores, such as `.env`, `.env.local`, or `config/secrets.json`. Codex only copies ignored files that match `.worktreeinclude`; it doesn't copy other local files that Git doesn't track. Don't list tracked files."
+export const WORKTREE_INCLUDE_AGENTS_HINT =
+  "Codex automatically copies an ignored `AGENTS.override.md` into local managed worktrees, so you don't need to list it in `.worktreeinclude`."
 
 /** 解析 `.worktreeinclude`：去注释与空行 */
 export function parseWorktreeInclude(text: string): string[] {

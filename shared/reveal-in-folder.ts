@@ -393,7 +393,7 @@ export const CLEAR_LABEL = 'Clear'
 export const HAND_OFF_LABEL = 'Hand off'
 /** Official worktrees FAQ (learn.chatgpt.com/docs/environments/git-worktrees). */
 export const HAND_OFF_INTRO =
-  'Use Hand off in the chat header to move a chat between your local checkout and a worktree.'
+  "Use Hand off in the chat header to move a chat between your local checkout and a worktree. Since Handoff uses Git operations, any files that are part of your `.gitignore` file won't move with the chat unless Codex copies them into a local managed worktree with `.worktreeinclude`."
 export const LOCAL_LABEL = 'Local'
 export const WORKTREE_LABEL = 'Worktree'
 /** Official worktrees intro (learn.chatgpt.com/docs/environments/git-worktrees). */
@@ -401,6 +401,9 @@ export const WORKTREE_INTRO =
   'Worktrees let Codex run multiple independent chats in the same project without interfering with each other.'
 export const WORKTREE_REQUIRES_GIT =
   'Worktrees require a Git repository. Make sure the project you selected lives in one.'
+/** Official desktop leftover (learn.chatgpt.com/docs/environments/git-worktrees). */
+export const WORKTREE_DETACHED_HEAD_HINT =
+  'Submit your prompt, and Codex creates a Git worktree based on the branch you selected. By default, Codex works in a detached HEAD.'
 /** Official composer environment options (learn.chatgpt.com/docs/environments/modes). */
 export const CODEX_ENVIRONMENTS_LABEL = 'Codex environments'
 export const LOCAL_ENVIRONMENT_DESCRIPTION =

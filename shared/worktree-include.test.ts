@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   matchAnyWorktreeInclude,
   parseWorktreeInclude,
   sanitizeWorktreeBaseRef,
+  WORKTREE_INCLUDE_AGENTS_HINT,
+  WORKTREE_INCLUDE_HINT,
+  WORKTREE_INCLUDE_INTRO,
   worktreeIncludePatterns
 } from './worktree-include'
 
@@ -25,6 +31,20 @@ describe('worktree include', () => {
     expect(matchAnyWorktreeInclude('.env.local', pats)).toBe(true)
     expect(matchAnyWorktreeInclude('config/secrets.json', pats)).toBe(true)
     expect(matchAnyWorktreeInclude('src/app.ts', pats)).toBe(false)
+  })
+
+  it('uses official desktop .worktreeinclude leftover', () => {
+    expect(WORKTREE_INCLUDE_INTRO).toMatch(/add a `.worktreeinclude` file/)
+    expect(WORKTREE_INCLUDE_HINT).toMatch(/\.env\.local/)
+    expect(WORKTREE_INCLUDE_HINT).toMatch(/Don't list tracked files/)
+    expect(WORKTREE_INCLUDE_AGENTS_HINT).toMatch(/AGENTS\.override\.md/)
+    const settingsSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/WorktreeSettings.tsx'),
+      'utf8'
+    )
+    expect(settingsSrc).toContain('WORKTREE_INCLUDE_INTRO')
+    expect(settingsSrc).toContain('WORKTREE_INCLUDE_HINT')
+    expect(settingsSrc).toContain('WORKTREE_INCLUDE_AGENTS_HINT')
   })
 
   it('sanitizes base refs', () => {

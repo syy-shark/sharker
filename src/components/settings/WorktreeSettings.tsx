@@ -1,6 +1,6 @@
 /**
- * 设置 → Worktrees：Worktree root 与托管保留数。
- * 对标 Codex Settings → Worktrees。不发明环境编辑器或单独未落盘的自动删除开关。
+ * 设置 → Worktrees：Worktree root、托管保留数、官方 `.worktreeinclude` leftover。
+ * 对标 Codex Settings → Worktrees。不发明环境编辑器、`.worktreeinclude` 编辑器或单独未落盘的自动删除开关。
  * @see src/components/settings/ARCH.md
  */
 import { useEffect, useRef } from 'react'
@@ -10,6 +10,11 @@ import {
   WORKTREES_SETTINGS_INTRO,
   WORKTREES_SETTINGS_LABEL
 } from '../../../shared/reveal-in-folder'
+import {
+  WORKTREE_INCLUDE_AGENTS_HINT,
+  WORKTREE_INCLUDE_HINT,
+  WORKTREE_INCLUDE_INTRO
+} from '../../../shared/worktree-include'
 import { clampWorktreeKeepCount } from '../../../shared/worktree-prune'
 import { clampWorktreeRoot } from '../../../shared/worktree-root'
 import { SettingsCard, SettingsRow, SettingsSection } from './SettingsPrimitives'
@@ -46,6 +51,12 @@ export function WorktreeSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <SettingsSection title={WORKTREES_SETTINGS_LABEL} description={WORKTREES_SETTINGS_INTRO}>
+      <p className="st-section-desc" title={WORKTREE_INCLUDE_INTRO}>
+        {WORKTREE_INCLUDE_INTRO}
+      </p>
+      <p className="st-section-desc" title={WORKTREE_INCLUDE_HINT}>
+        {WORKTREE_INCLUDE_HINT} {WORKTREE_INCLUDE_AGENTS_HINT}
+      </p>
       <SettingsCard>
         <SettingsRow
           title={WORKTREE_ROOT_LABEL}

@@ -51,6 +51,9 @@ export const REVIEW_REQUIRES_GIT_LABEL =
   'The review pane requires a project inside a Git repository.'
 export const REVIEW_CREATE_ONE_HINT =
   "If your project isn't a Git repository yet, the app prompts you to create one."
+/** Official desktop leftover (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_SAME_FILE_BOTH_VIEWS_HINT =
+  "Git can represent both staged and unstaged changes in the same file. When that happens, the pane can show the same file in both views. That's normal Git behavior."
 /** Official review wrap (learn.chatgpt.com remote / Wrap long diff lines). */
 export const WRAP_LONG_DIFF_LINES_LABEL = 'Wrap long diff lines'
 /** Official local Git controls (learn.chatgpt.com/docs/environments/local-environment). */

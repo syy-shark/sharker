@@ -6,9 +6,12 @@
 /** Official review findings (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_FINDINGS_INTRO =
   'Review findings appear as inline comments in the review pane.'
-/** Official inline-comment follow-up (learn.chatgpt.com/docs/code-review). */
+/** Official desktop leftover (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_APPLY_FIXES_HINT =
+  'If you ask Codex to apply the fixes it finds, your normal sandbox and approval settings apply.'
+/** Official inline-comment leftover (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_INLINE_COMMENT_FOLLOW_UP =
-  'After you finish leaving feedback, send a message back to the chat.'
+  'Because comments are line-specific, Codex can respond more precisely than with a general instruction. After you finish leaving feedback, send a message back to the chat. Codex treats inline comments as review guidance.'
 /** Official inline-comment steps (learn.chatgpt.com/docs/code-review). Do not invent Submit. */
 export const REVIEW_HOVER_LINE_HINT = 'Hover over the line you want to comment on.'
 export const REVIEW_PLUS_BUTTON_HINT = 'Select the + button that appears.'

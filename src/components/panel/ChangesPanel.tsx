@@ -75,6 +75,7 @@ import {
   REVIEW_PANE_INTRO,
   REVIEW_PANE_SCOPE_INTRO,
   REVIEW_REQUIRES_GIT_LABEL,
+  REVIEW_SAME_FILE_BOTH_VIEWS_HINT,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
   STAGED_LABEL,
@@ -1220,6 +1221,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             role="tab"
             aria-selected={compare === 'uncommitted' && scope === 'unstaged'}
             className={`changes-panel__scope${compare === 'uncommitted' && scope === 'unstaged' ? ' is-active' : ''}`}
+            title={REVIEW_SAME_FILE_BOTH_VIEWS_HINT}
             onClick={() => {
               setScope('unstaged')
               setCompare('uncommitted')
@@ -1232,6 +1234,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             role="tab"
             aria-selected={compare === 'uncommitted' && scope === 'staged'}
             className={`changes-panel__scope${compare === 'uncommitted' && scope === 'staged' ? ' is-active' : ''}`}
+            title={REVIEW_SAME_FILE_BOTH_VIEWS_HINT}
             onClick={() => {
               setScope('staged')
               setCompare('uncommitted')
