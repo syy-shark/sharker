@@ -13,6 +13,8 @@ import {
   INHERIT_MEMORIES_CHAT_HINT,
   INHERIT_MEMORIES_LABEL,
   MEMORIES_CHAT_INTRO,
+  MEMORIES_SETTINGS_INTRO,
+  MEMORIES_SETTINGS_LABEL,
   USE_MEMORIES_CHAT_HINT,
   USE_MEMORIES_DESCRIPTION,
   USE_MEMORIES_LABEL,
@@ -68,6 +70,17 @@ describe('memory command', () => {
   })
 
   it('formats empty and listed memories', () => {
+    expect(MEMORIES_SETTINGS_LABEL).toBe('Memories')
+    expect(MEMORIES_SETTINGS_INTRO).toMatch(
+      /carry useful context from past chats into future work/
+    )
+    const personalizationSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PersonalizationSettings.tsx'),
+      'utf8'
+    )
+    expect(personalizationSrc).toContain('MEMORIES_SETTINGS_LABEL')
+    expect(personalizationSrc).toContain('MEMORIES_SETTINGS_INTRO')
+    expect(personalizationSrc).not.toContain('title="Memories"')
     expect(ENABLE_MEMORIES_LABEL).toBe('Enable memories')
     expect(USE_MEMORIES_LABEL).toBe('Use memories')
     expect(GENERATE_MEMORIES_LABEL).toBe('Generate memories')

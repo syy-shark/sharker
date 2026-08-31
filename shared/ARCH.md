@@ -264,7 +264,7 @@
 | `skills-status.test.ts` | 过滤与跨项目合并 |
 | `agents-md.ts` | AGENTS.md 发现优先级、根到 cwd 目录链、32KiB 合并与 `/init` 当前目录脚手架（含 Code Review Rules）；个人说明路径 `~/.sharker/AGENTS.md` |
 | `agents-md.test.ts` | override 优先、目录链、截断、个人说明路径 |
-| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Enable memories / Use memories / Generate memories / Disabled / Inherit，说明用官方 Use /memories to choose whether a chat can use local memories… / Don't store secrets in memories. |
+| `memory-command.ts` | `/memories` 本对话选择器 / 覆盖解析与条目文案（不改全局；全局 `memoriesEnabled` 关则不 Use / Generate）；用户可见 Memories / Enable Memories, where available… / Enable memories / Use memories / Generate memories / Disabled / Inherit，说明用官方 Use /memories to choose whether a chat can use local memories… / Don't store secrets in memories. |
 | `memory-command.test.ts` | 空命令 pick、on/off/use/inherit、本对话覆盖优先、功能默认关 |
 | `mcp-status.ts` | `/mcp` 已配置 Server 文案；`shouldOpenMcpSettings` 空配置且非 verbose 时打开设置 → MCP（对标 Codex Open MCP status） |
 | `mcp-status.test.ts` | 空配置与 verbose 工具列表；空配置打开设置、已有 Server / verbose 不跳 |

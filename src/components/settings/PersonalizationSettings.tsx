@@ -1,5 +1,5 @@
 /**
- * 个性化：启用记忆（官方默认关）、Choose a personality 与 Custom instructions（对标 Codex Settings → Personalization）。
+ * 个性化：Memories 分区用官方 Enable Memories, where available…；启用记忆（官方默认关）、Choose a personality 与 Custom instructions（对标 Codex Settings → Personalization）。
  * @see src/components/settings/ARCH.md
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,6 +19,8 @@ import {
   ENABLE_MEMORIES_LABEL,
   GENERATE_MEMORIES_DESCRIPTION,
   GENERATE_MEMORIES_LABEL,
+  MEMORIES_SETTINGS_INTRO,
+  MEMORIES_SETTINGS_LABEL,
   USE_MEMORIES_DESCRIPTION,
   USE_MEMORIES_LABEL
 } from '../../../shared/memory-command'
@@ -80,7 +82,7 @@ export function PersonalizationSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="Memories">
+      <SettingsSection title={MEMORIES_SETTINGS_LABEL} description={MEMORIES_SETTINGS_INTRO}>
         <SettingsCard>
           <SettingsRow
             title={ENABLE_MEMORIES_LABEL}

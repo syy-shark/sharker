@@ -11,6 +11,11 @@ export type MemoryCommand =
 /** 官方空 `/memories`：为本对话选使用 / 写入 / 关闭 */
 export type MemoryChatPick = 'use' | 'generate' | 'off' | 'inherit'
 
+/** Official Settings → Memories heading (learn.chatgpt.com/docs/reference/settings). */
+export const MEMORIES_SETTINGS_LABEL = 'Memories'
+/** Official Settings → Memories (learn.chatgpt.com/docs/reference/settings). */
+export const MEMORIES_SETTINGS_INTRO =
+  'Enable Memories, where available, to let ChatGPT carry useful context from past chats into future work.'
 /** Official desktop Settings → Personalization (learn.chatgpt.com / config-reference). */
 export const ENABLE_MEMORIES_LABEL = 'Enable memories'
 export const USE_MEMORIES_LABEL = 'Use memories'
