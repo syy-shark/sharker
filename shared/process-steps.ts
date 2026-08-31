@@ -1,5 +1,6 @@
 /**
  * 将一轮工具活动转为过程时间线步骤。
+ * 步骤 id 不带 label，避免命令加长或 Running→Ran 时 ProcessTimeline 重挂。
  * 详见 shared/ARCH.md
  */
 import { formatEditActivity, isEditActivityToolName } from './edit-activity'
@@ -181,18 +182,20 @@ export function buildProcessSteps(options: {
     })
   } else if (options.isStreaming && !options.activeTool) {
     steps.push({
-      id: 'think-waiting',
+      id: 'think',
       kind: 'think',
       title: THINKING_LABEL,
       status: 'active'
     })
   }
 
+  let toolSeq = 0
+  let compressSeq = 0
   for (let i = 0; i < options.activities.length; i++) {
     const a = options.activities[i]
     if (a.kind === 'compress') {
       steps.push({
-        id: `compress-${i}`,
+        id: `compress-${compressSeq++}`,
         kind: 'compress',
         title: 'Context automatically compacted',
         detail: a.label.includes('·') ? a.label.split('·')[1]?.trim() : undefined,
@@ -214,7 +217,7 @@ export function buildProcessSteps(options: {
     }
 
     steps.push({
-      id: `tool-${i}-${a.label}`,
+      id: `tool-${toolSeq++}`,
       kind: 'tool',
       title,
       detail,
