@@ -12,6 +12,9 @@ import {
   shouldRenderLiveAssistantRow,
   shouldHoldLiveHandoff,
   shouldRetireLiveOnHandoffHold,
+  shouldReserveLiveAfterHandoffHold,
+  shouldReuseReservedLiveOnHandoffAdopt,
+  shouldMountLiveHandoffThinking,
   shouldStreamLiveAssistant,
   shouldAdoptLiveHandoff,
   shouldCancelLiveHandoffWithoutCommit,
@@ -499,6 +502,13 @@ describe('commitAssistantReply persist targeting', () => {
     ).toBe(false)
     expect(shouldRetireLiveOnHandoffHold({ holdFollowUp: true })).toBe(false)
     expect(shouldStreamLiveAssistant({ loading: true, handoffId: 'a-live' })).toBe(false)
+    expect(
+      shouldStreamLiveAssistant({
+        loading: true,
+        handoffId: 'a-live',
+        holdAlreadyRetired: true
+      })
+    ).toBe(true)
     expect(shouldStreamLiveAssistant({ loading: true, handoffId: null })).toBe(true)
     expect(shouldStreamLiveAssistant({ loading: false, handoffId: null })).toBe(false)
     expect(shouldAdoptLiveHandoff({ handoffId: 'a-live', chunkType: 'turn_start' })).toBe(true)
@@ -513,7 +523,48 @@ describe('commitAssistantReply persist targeting', () => {
     expect(shouldCancelLiveHandoffWithoutCommit({ handoffId: 'a-live' })).toBe(true)
     expect(shouldCancelLiveHandoffWithoutCommit({ handoffId: null })).toBe(false)
     expect(shouldPublishLiveStreamDuringHandoff('a-live')).toBe(false)
+    expect(
+      shouldPublishLiveStreamDuringHandoff('a-live', { holdAlreadyRetired: true })
+    ).toBe(true)
     expect(shouldPublishLiveStreamDuringHandoff(null)).toBe(true)
+    expect(
+      shouldReserveLiveAfterHandoffHold({ holdFollowUp: true, retired: true })
+    ).toBe(true)
+    expect(
+      shouldReserveLiveAfterHandoffHold({ holdFollowUp: true, retired: false })
+    ).toBe(false)
+    expect(shouldMountLiveHandoffThinking({ liveHandoffId: 'a-live' })).toBe(true)
+    expect(
+      shouldMountLiveHandoffThinking({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'a-live'
+      })
+    ).toBe(true)
+    expect(
+      shouldMountLiveHandoffThinking({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'b-live'
+      })
+    ).toBe(false)
+    expect(shouldMountLiveHandoffThinking({ liveHandoffId: null })).toBe(false)
+    expect(
+      shouldReuseReservedLiveOnHandoffAdopt({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'b-live'
+      })
+    ).toBe(true)
+    expect(
+      shouldReuseReservedLiveOnHandoffAdopt({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'a-live'
+      })
+    ).toBe(false)
+    expect(
+      shouldReuseReservedLiveOnHandoffAdopt({
+        liveHandoffId: 'a-live',
+        liveAssistantId: null
+      })
+    ).toBe(false)
     expect(shouldPreserveLiveDiffExpanded({ streaming: true })).toBe(true)
     expect(shouldPreserveLiveDiffExpanded({ streaming: false, preserveLiveDiffs: true })).toBe(
       true

@@ -7,8 +7,11 @@
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
  * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
- * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading；handoff 未 adopt 前预留 id 仍是上一轮，hold 也不跟。
+ * `shouldAttachLiveLoadingToPinnedSlot` 只让当前预留 id 跟 loading；hold 行（handoff id）不跟。
  * `shouldRetireLiveOnHandoffHold` 跟进开轮就把上一轮推进 retired 环冻结，adopt 不再重挂。
+ * `shouldReserveLiveAfterHandoffHold` 冻结后立刻预留新 id，首枚 token 不另挂槽。
+ * `shouldReuseReservedLiveOnHandoffAdopt` 已预留新 id 时 adopt 只清 handoff，不再换 id 重挂。
+ * `shouldMountLiveHandoffThinking` 已有新预留 id 时不另挂 Thinking 行。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
@@ -438,15 +441,18 @@ export function shouldRetireLiveOnHandoffHold(options: {
   return options.alreadyRetired !== true
 }
 
-/** 跟进保住期间过程秒表 / 图解码 / Thought 不得再当直播。 */
+/** 跟进保住期间过程秒表 / 图解码 / Thought 不得再当直播。hold 已冻结则可给新槽跟秒表。 */
 export function shouldStreamLiveAssistant(options: {
   loading: boolean
   handoffId?: string | null
+  holdAlreadyRetired?: boolean
 }): boolean {
-  return Boolean(options.loading && !options.handoffId?.trim())
+  if (!options.loading) return false
+  if (options.handoffId?.trim() && !options.holdAlreadyRetired) return false
+  return true
 }
 
-/** 首枚真实 harness 事件才换新直播 id；本地 Thinking seed 不触发。 */
+/** 首枚真实 harness 事件才清 handoff；本地 Thinking seed 不触发。已预留则不再换 id。 */
 export function shouldAdoptLiveHandoff(options: {
   handoffId?: string | null
   chunkType: string
@@ -478,9 +484,42 @@ export function shouldCancelLiveHandoffWithoutCommit(options: {
   return Boolean(options.handoffId?.trim())
 }
 
-/** 保住期间不把下一轮 seed 写进直播 store。 */
-export function shouldPublishLiveStreamDuringHandoff(handoffId?: string | null): boolean {
-  return !handoffId?.trim()
+/** 保住期间不把下一轮 seed 写进直播 store。hold 已冻结则可以写给新槽。 */
+export function shouldPublishLiveStreamDuringHandoff(
+  handoffId?: string | null,
+  options?: { holdAlreadyRetired?: boolean }
+): boolean {
+  if (!handoffId?.trim()) return true
+  return options?.holdAlreadyRetired === true
+}
+
+/** 冻结后立刻预留新直播 id，首枚 token 不另挂槽（对标 Codex #22860）。 */
+export function shouldReserveLiveAfterHandoffHold(options: {
+  holdFollowUp: boolean
+  retired?: boolean
+}): boolean {
+  return Boolean(options.holdFollowUp && options.retired)
+}
+
+/** 已有不同于 hold 的预留 id 时不另挂 Thinking 行。 */
+export function shouldMountLiveHandoffThinking(options: {
+  liveHandoffId?: string | null
+  liveAssistantId?: string | null
+}): boolean {
+  const handoff = options.liveHandoffId?.trim()
+  if (!handoff) return false
+  const live = options.liveAssistantId?.trim()
+  return !live || live === handoff
+}
+
+/** 冻结后已预留新 id：adopt 只清 handoff，不再 mint 新槽（对标 Codex #22860）。 */
+export function shouldReuseReservedLiveOnHandoffAdopt(options: {
+  liveHandoffId?: string | null
+  liveAssistantId?: string | null
+}): boolean {
+  const handoff = options.liveHandoffId?.trim()
+  const live = options.liveAssistantId?.trim()
+  return Boolean(handoff && live && live !== handoff)
 }
 
 /**
@@ -589,7 +628,7 @@ export function shouldAttachLiveApprovalToPinnedSlot(options: {
 
 /**
  * 只有当前预留 id 才跟 `loading`。
- * 跟进未 adopt 前 `liveAssistantId` 仍是上一轮，hold / handoff 行也不跟（对标 Codex #22860 / #37849）。
+ * hold / handoff 行不跟（对标 Codex #22860 / #37849）。冻结后预留 id 已是新槽。
  */
 export function shouldAttachLiveLoadingToPinnedSlot(options: {
   pinnedId: string

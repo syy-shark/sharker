@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环，首枚 harness chunk 再换 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，首枚 harness chunk 不再另挂槽（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -337,6 +337,8 @@ import {
   shouldPublishEmptyLiveBodyOnBeginTurn,
   shouldHoldLiveHandoff,
   shouldRetireLiveOnHandoffHold,
+  shouldReserveLiveAfterHandoffHold,
+  shouldReuseReservedLiveOnHandoffAdopt,
   shouldPublishLiveStreamDuringHandoff,
   retiredLiveArticle,
   nextArchivedLiveArticles,
@@ -1780,7 +1782,8 @@ export default function App() {
   }, [])
 
   /**
-   * 首枚 harness chunk：同一帧换新 id 并发布下一轮片段。
+   * 首枚 harness chunk：清 handoff 并发布下一轮片段。
+   * 开轮已预留新 id 则复用，不再 mint 以免重挂新槽。
    * 上一轮已在 hold 开轮冻进 retired 环则不再搬槽。
    * 不先 beginTurnMeta 空发布，避免回答闪空。
    */
@@ -1791,23 +1794,31 @@ export default function App() {
     heldCompletedSegmentsRef.current = null
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)
-    resetLiveAnswerViewHold()
+    const reuseReserved = shouldReuseReservedLiveOnHandoffAdopt({
+      liveHandoffId: fromId,
+      liveAssistantId: liveAssistantIdRef.current
+    })
+    if (!reuseReserved) {
+      resetLiveAnswerViewHold()
+      const now = Date.now()
+      if (!turnStartedAtRef.current) turnStartedAtRef.current = now
+      turnHadThinkingRef.current = false
+      turnOutcomeRef.current = 'success'
+      setApproval(null)
+      setApprovalResponding(false)
+      setUserInput(null)
+      setUserInputResponding(false)
+      userInputRef.current = null
+      turnMetaRef.current = { browsedFiles: [], activities: [] }
+      turnChangedPathsRef.current = []
+      const meta = liveAssistantMeta([], [])
+      liveTurnMetaRef.current = meta
+      const reservedId = crypto.randomUUID()
+      liveAssistantIdRef.current = reservedId
+      setLiveAssistantId(reservedId)
+    }
     const now = Date.now()
     if (!turnStartedAtRef.current) turnStartedAtRef.current = now
-    turnHadThinkingRef.current = false
-    turnOutcomeRef.current = 'success'
-    setApproval(null)
-    setApprovalResponding(false)
-    setUserInput(null)
-    setUserInputResponding(false)
-    userInputRef.current = null
-    turnMetaRef.current = { browsedFiles: [], activities: [] }
-    turnChangedPathsRef.current = []
-    const meta = liveAssistantMeta([], [])
-    liveTurnMetaRef.current = meta
-    const reservedId = crypto.randomUUID()
-    liveAssistantIdRef.current = reservedId
-    setLiveAssistantId(reservedId)
     const active = findLastSegment(
       segmentsRef.current,
       (s) => s.kind === 'tool' && s.status === 'active'
@@ -1817,9 +1828,9 @@ export default function App() {
         streaming: streamingRef.current,
         turnThinking: turnThinkingRef.current,
         activeTool: active?.toolName ?? null,
-        liveTurnMeta: meta,
+        liveTurnMeta: liveTurnMetaRef.current,
         turnStartedAt: turnStartedAtRef.current,
-        turnHadThinking: false
+        turnHadThinking: turnHadThinkingRef.current
       })
     )
     return true
@@ -1951,7 +1962,16 @@ export default function App() {
     const paint = () => {
       streamRafRef.current = null
       streamFlushTimerRef.current = null
-      if (!shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) return
+      if (
+        !shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, {
+          holdAlreadyRetired: Boolean(
+            liveHandoffIdRef.current &&
+              retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+          )
+        })
+      ) {
+        return
+      }
       const segments = segmentsRef.current
       const prevSnap = getLiveStreamUi()
       // 心跳同一数组、或只换命令末行：不扫也不发（对标 Codex #19260 / #22860）
@@ -3805,16 +3825,27 @@ export default function App() {
         ) {
           commitRetiredLiveFromStore(liveAssistantIdRef.current)
         }
-        turnStartedAtRef.current = Date.now()
-        turnHadThinkingRef.current = false
-        turnOutcomeRef.current = 'success'
-        setApproval(null)
-        setApprovalResponding(false)
-        setUserInput(null)
-        setUserInputResponding(false)
-        userInputRef.current = null
-        turnMetaRef.current = { browsedFiles: [], activities: [] }
-        turnChangedPathsRef.current = []
+        if (
+          shouldReserveLiveAfterHandoffHold({
+            holdFollowUp: true,
+            retired: Boolean(
+              retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+            )
+          })
+        ) {
+          beginTurnMeta()
+        } else {
+          turnStartedAtRef.current = Date.now()
+          turnHadThinkingRef.current = false
+          turnOutcomeRef.current = 'success'
+          setApproval(null)
+          setApprovalResponding(false)
+          setUserInput(null)
+          setUserInputResponding(false)
+          userInputRef.current = null
+          turnMetaRef.current = { browsedFiles: [], activities: [] }
+          turnChangedPathsRef.current = []
+        }
       } else if (
         shouldBeginNewLiveReservation({
           holdFollowUp: false,
@@ -3850,7 +3881,14 @@ export default function App() {
           startedAt: seedAt
         }
       ]
-      if (shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) {
+      if (
+        shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, {
+          holdAlreadyRetired: Boolean(
+            liveHandoffIdRef.current &&
+              retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+          )
+        })
+      ) {
         publishLiveStreamUi(
           liveStreamPatchFromSegments(segmentsRef.current, {
             streaming: '',
@@ -3951,7 +3989,14 @@ export default function App() {
             },
             ...segmentsRef.current
           ]
-          if (shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current)) {
+          if (
+            shouldPublishLiveStreamDuringHandoff(liveHandoffIdRef.current, {
+              holdAlreadyRetired: Boolean(
+                liveHandoffIdRef.current &&
+                  retiredLiveArticle(retiredLiveArticlesRef.current, liveHandoffIdRef.current)
+              )
+            })
+          ) {
             publishLiveStreamUi(
               liveStreamPatchFromSegments(segmentsRef.current, {
                 streaming: streamingRef.current,

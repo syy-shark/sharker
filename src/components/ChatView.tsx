@@ -76,6 +76,7 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
+  shouldMountLiveHandoffThinking,
   nextActivePinnedLiveSlots,
   nextFrozenPinnedLiveSlots,
   nextHistoricalRowNodes,
@@ -2697,10 +2698,6 @@ export const ChatView = memo(function ChatView({
     loading,
     hasLiveBody: liveBody
   })
-  const liveStreaming = shouldStreamLiveAssistant({
-    loading,
-    handoffId: liveHandoffId
-  })
   const retiredArticles: readonly RetiredLiveArticle[] = useMemo(() => {
     if (retiredLiveArticles.length > 0) return retiredLiveArticles
     if (!retiredLiveId) return EMPTY_RETIRED_ARTICLES
@@ -2721,6 +2718,13 @@ export const ChatView = memo(function ChatView({
     retiredLiveStartedAt,
     retiredLiveCopyable
   ])
+  const liveStreaming = shouldStreamLiveAssistant({
+    loading,
+    handoffId: liveHandoffId,
+    holdAlreadyRetired: Boolean(
+      liveHandoffId && retiredLiveArticle(retiredArticles, liveHandoffId)
+    )
+  })
   const retiredIds = useMemo(
     () => retiredArticles.map((article) => article.id),
     [retiredArticles]
@@ -3286,7 +3290,14 @@ export const ChatView = memo(function ChatView({
     userInputResponding
   ])
   const liveHandoffRow = useMemo(() => {
-    if (!liveHandoffId) return null
+    if (
+      !shouldMountLiveHandoffThinking({
+        liveHandoffId,
+        liveAssistantId
+      })
+    ) {
+      return null
+    }
     return (
       <div
         className="message-row message-row--assistant message-row--live-handoff"
@@ -3295,7 +3306,7 @@ export const ChatView = memo(function ChatView({
         <ThinkingIndicator />
       </div>
     )
-  }, [liveHandoffId])
+  }, [liveAssistantId, liveHandoffId])
   const activeLiveRow = useMemo(() => {
     if (
       !shouldMountActiveLiveSlot({
