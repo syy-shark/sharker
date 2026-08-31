@@ -26,6 +26,7 @@ import {
   shouldAppendStreamingFootnoteItem,
   shouldOpenStreamingFootnotesAfterParagraph,
   shouldOpenStreamingTableAfterParagraph,
+  shouldOpenStreamingHrAfterParagraph,
   isPendingSiblingStartLine,
   collectCitedFootnoteIds,
   shouldGrowOpenStreamingProseTail,
@@ -2738,6 +2739,18 @@ describe('splitStreamingMarkdown', () => {
     const openedFence = continueCheapProseBlocks('见 foo\n``', pendingFence2, '见 foo\n```ts')
     expect(openedFence[0]).toBe(paraOnly[0])
     expect(openedFence.map((block) => block.type)).toEqual(['p', 'pre'])
+    expect(shouldOpenStreamingHrAfterParagraph({ prevNorm: '见 foo', suffix: '\n* * *' })).toBe(true)
+    expect(shouldOpenStreamingHrAfterParagraph({ prevNorm: 'Title', suffix: '\n---' })).toBe(false)
+    const openedHr = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n* * *')
+    expect(openedHr[0]).toBe(paraOnly[0])
+    expect(openedHr.map((block) => block.type)).toEqual(['p', 'hr'])
+    const pendingStar = continueCheapProseBlocks('见 foo', paraOnly, '见 foo\n*')
+    expect(pendingStar[0]).toBe(paraOnly[0])
+    const openedHrFromStar = continueCheapProseBlocks('见 foo\n*', pendingStar, '见 foo\n* * *')
+    expect(openedHrFromStar[0]).toBe(paraOnly[0])
+    expect(openedHrFromStar.map((block) => block.type)).toEqual(['p', 'hr'])
+    const setextFromDashes = continueCheapProseBlocks('Title', parseCheapProseBlocks('Title'), 'Title\n---')
+    expect(setextFromDashes.map((block) => block.type)).toEqual(['heading'])
     const firstParaOnly = parseCheapProseBlocks('第一段')
     const paraThenBlank = continueCheapProseBlocks('第一段', firstParaOnly, '第一段\n\n第二')
     expect(paraThenBlank[0]).toBe(firstParaOnly[0])
@@ -3295,6 +3308,7 @@ describe('streaming markdown remount holds', () => {
     expect(mdSrc).toContain('isPendingHeadingStartLine')
     expect(mdSrc).toContain('isPendingFenceStartLine')
     expect(mdSrc).toContain('isPendingOrderedListDigitLine')
+    expect(mdSrc).toContain('shouldOpenStreamingHrAfterParagraph')
     expect(mdSrc).toContain('lastQuoteInnerStartHold')
     expect(mdSrc).toContain('rememberQuoteInnerStart')
     expect(mdSrc).toContain('suffixOpensNewCheapBlock')
