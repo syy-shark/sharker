@@ -18,6 +18,7 @@
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveSlots` 同一 map 收 active→frozen，跟进冻结只换 props、不换槽归属。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
+ * `nextTranscriptRowNodes` 把历史列与 pinned Fragment 收成同一兄弟列，挤出冻结行按 key 挪槽、不重挂。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
  * `nextPinnedAfterRowNodes` 挤出冻结行时只换该 pin 后缺口，其余 after 数组留下以免重挂冻结 Fragment。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
@@ -1209,6 +1210,38 @@ export function nextPinnedLiveRowNodes<T>(
     after: input.after,
     slots: input.slots
   }
+}
+
+const EMPTY_TRANSCRIPT_ROWS: readonly never[] = []
+
+/**
+ * 历史列与 pinned Fragment 收成同一兄弟列。
+ * 挤出冻结行时同一 `key` 从 pin 段挪到历史段，React 挪 fiber 不重挂（对标 Codex #22860）。
+ */
+export function nextTranscriptRowNodes<T>(
+  prev: readonly T[] | null | undefined,
+  input: {
+    historical: readonly T[]
+    pinned: readonly T[]
+    unpinned: T | null
+    extras: readonly (T | null | undefined)[]
+  }
+): readonly T[] {
+  const next: T[] = []
+  next.push(...input.historical)
+  if (input.pinned.length) next.push(...input.pinned)
+  else if (input.unpinned != null) next.push(input.unpinned)
+  for (const extra of input.extras) {
+    if (extra != null) next.push(extra)
+  }
+  if (
+    prev &&
+    prev.length === next.length &&
+    prev.every((row, index) => row === next[index])
+  ) {
+    return prev
+  }
+  return next.length === 0 ? (EMPTY_TRANSCRIPT_ROWS as readonly T[]) : next
 }
 
 /** 历史行身份：消息与冻结 article 引用没变才复用元素 */

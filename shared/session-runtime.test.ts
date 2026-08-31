@@ -47,6 +47,7 @@ import {
   nextFrozenPinnedLiveSlots,
   nextPinnedLiveSlots,
   nextPinnedLiveRowNodes,
+  nextTranscriptRowNodes,
   nextHistoricalRowNodes,
   nextPinnedAfterRowNodes,
   sameActivePinnedLiveSlotIdentity,
@@ -1113,6 +1114,49 @@ describe('commitAssistantReply persist targeting', () => {
     expect(
       nextPinnedLiveRowNodes(rowLoadingFlip, { ids: [], after: [], slots: new Map() }, () => 'x')
         .rows
+    ).toEqual([])
+    const slotA = { id: 'slot-a' }
+    const slotB = { id: 'slot-b' }
+    const histUser = { id: 'user-1' }
+    const transcriptPinned = nextTranscriptRowNodes(null, {
+      historical: [histUser],
+      pinned: [slotA, slotB],
+      unpinned: null,
+      extras: [null]
+    })
+    expect(transcriptPinned).toEqual([histUser, slotA, slotB])
+    const transcriptEjected = nextTranscriptRowNodes(transcriptPinned, {
+      historical: [histUser, slotA],
+      pinned: [slotB],
+      unpinned: null,
+      extras: [null]
+    })
+    expect(transcriptEjected).toEqual([histUser, slotA, slotB])
+    expect(transcriptEjected[1]).toBe(slotA)
+    expect(transcriptEjected[2]).toBe(slotB)
+    const transcriptSame = nextTranscriptRowNodes(transcriptEjected, {
+      historical: [histUser, slotA],
+      pinned: [slotB],
+      unpinned: null,
+      extras: [null, undefined]
+    })
+    expect(transcriptSame).toBe(transcriptEjected)
+    const unpinnedSlot = { id: 'unpinned' }
+    expect(
+      nextTranscriptRowNodes(null, {
+        historical: [histUser],
+        pinned: [],
+        unpinned: unpinnedSlot,
+        extras: [{ id: 'handoff' }]
+      })
+    ).toEqual([histUser, unpinnedSlot, { id: 'handoff' }])
+    expect(
+      nextTranscriptRowNodes(['keep'], {
+        historical: [],
+        pinned: [],
+        unpinned: null,
+        extras: []
+      })
     ).toEqual([])
     const histBase = {
       findHit: false,

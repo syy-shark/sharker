@@ -7,7 +7,7 @@
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
  * 直播 token / 回合元信息走 `useLiveStreamUi`，ChatView 本体不接收 streaming / liveSegments / liveTurnMeta。
- * 历史列在预留行入列或仍在直播时订直播体布尔；loading 中 store 闪空也留下直播槽并继续藏预留行，避免 `return null` 塌高（对标 Codex #22860）；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；`pinActiveLive` 从开轮就把当前预留 id 钉进 pinned 列，hideReserved 翻转不再把同一行从无 pin 槽搬进 map；pinned 槽带 `key={id}`，行根不再另挂 `key={liveRowId}` 以免实例留下、内层却重挂；无 pin 才走 `shouldMountUnpinnedLiveSlot`，不先挂 `key=streaming` 再搬进 map；钉进 map 的当前行仍 `shouldStreamPinnedLiveAssistant` 跟 `liveStreaming`，retired / handoff 行不跟秒表（对标 Codex #22860）；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 part 与过程快照画，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
+ * 历史列在预留行入列或仍在直播时订直播体布尔；loading 中 store 闪空也留下直播槽并继续藏预留行，避免 `return null` 塌高（对标 Codex #22860）；收束后 store 未清也藏预留行，且 `shouldMountLiveAssistantSlot` 在 loading 关后仍挂直播槽，同一直播实例留下；`pinActiveLive` 从开轮就把当前预留 id 钉进 pinned 列，hideReserved 翻转不再把同一行从无 pin 槽搬进 map；pinned 槽带 `key={id}`，行根不再另挂 `key={liveRowId}` 以免实例留下、内层却重挂；无 pin 才走 `shouldMountUnpinnedLiveSlot`，不先挂 `key=streaming` 再搬进 map；钉进 map 的当前行仍 `shouldStreamPinnedLiveAssistant` 跟 `liveStreaming`，retired / handoff 行不跟秒表（对标 Codex #22860）；跟进发送先保住上一轮直播行，新用户气泡与 Thinking 插在其后，首枚 harness chunk 冻结该行 part 引用并另挂新槽；连跟两轮时 retired 环留下 A 与 B；再早的行进 `ejectedLiveArticles`，掉出 ejected 环的行进 `archivedLiveArticles`（当前对话不截断）仍用冻结 `LiveAssistantSlot` 画（`message-row--live`），`nextTranscriptRowNodes` 与 pinned Fragment 同一兄弟列按 key 挪槽，不重挂 `AssistantMessage`；挤出当帧记下行高（对标 Codex #22860 / preserved streamed activity）。
  * 切对话清掉历史 demo iframe 池与历史回答 hold；滚动快照带上测量行高，切回 `mergeSeededRowHeights` 灌回，flush 用 `resolvePreviousRowIntrinsicSize` 信已灌真高，以免 160px 估高跳。
  * 空闲时按切片预热窗口外一页助手行 hold，直播中不跑。
  * 靠近顶预取更早盘页并 idle 预热，揭开不再冷挂载。
@@ -79,6 +79,7 @@ import {
   shouldMountLiveHandoffThinking,
   nextHistoricalRowNodes,
   nextPinnedLiveSlots,
+  nextTranscriptRowNodes,
   nextPinnedAfterGaps,
   nextPinnedAfterRowNodes,
   nextPinnedLiveAssistantIds,
@@ -976,8 +977,10 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   userInputResponding,
   onUserInput,
   onOpenSubAgent,
+  onOpenChangedFiles,
   toolOutputDisplay,
-  onNeedFullMessage
+  onNeedFullMessage,
+  liveDiff = true
 }: {
   liveRowId: string
   loading: boolean
@@ -998,8 +1001,10 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
   userInputResponding?: boolean
   onUserInput?: (response: UserInputResponse) => void | Promise<void>
   onOpenSubAgent?: (id: string | null) => void
+  onOpenChangedFiles?: (paths: string[]) => void
   toolOutputDisplay?: 'brief' | 'standard' | 'verbose'
   onNeedFullMessage?: (messageId: string) => void
+  liveDiff?: boolean
 }) {
   const liveTurnMeta = useLiveStreamUiSelectWhen(!frozen, (snap) => snap.liveTurnMeta)
   const turnStartedAt = useLiveStreamUiSelectWhen(!frozen, (snap) => snap.turnStartedAt)
@@ -1033,6 +1038,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         userInputResponding={userInputResponding}
         onUserInput={onUserInput}
         onOpenSubAgent={onOpenSubAgent}
+        onOpenChangedFiles={onOpenChangedFiles}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
         isStreaming={isStreaming}
@@ -1040,6 +1046,7 @@ const LiveAssistantSlot = memo(function LiveAssistantSlot({
         frozenParts={frozenParts}
         frozenCopyable={frozenCopyable}
         frozenProcess={frozenProcess}
+        liveDiff={liveDiff}
       />
     </div>
   )
@@ -1205,6 +1212,7 @@ export const ChatView = memo(function ChatView({
     pinnedLiveSlotsSessionRef.current = sessionKey
     pinnedLiveRowsHeldRef.current = EMPTY_PINNED_LIVE_ROW_HOLD
     pinnedLiveRowsSessionRef.current = sessionKey
+    transcriptRowsHeldRef.current = EMPTY_PINNED_LIVE_ROWS
     historicalRowsHeldRef.current = EMPTY_HISTORICAL_ROW_HOLD
     historicalRowsSessionRef.current = sessionKey
     pinnedAfterRowsHeldRef.current = EMPTY_PINNED_AFTER_ROW_HOLD
@@ -1228,6 +1236,7 @@ export const ChatView = memo(function ChatView({
   const pinnedLiveSlotsSessionRef = useRef(sessionKey)
   const pinnedLiveRowsHeldRef = useRef<PinnedLiveRowHold<ReactNode>>(EMPTY_PINNED_LIVE_ROW_HOLD)
   const pinnedLiveRowsSessionRef = useRef(sessionKey)
+  const transcriptRowsHeldRef = useRef<readonly ReactNode[]>(EMPTY_PINNED_LIVE_ROWS)
   const historicalRowsHeldRef = useRef<HistoricalRowHold<ReactNode>>(EMPTY_HISTORICAL_ROW_HOLD)
   const historicalRowsSessionRef = useRef(sessionKey)
   const pinnedAfterRowsHeldRef = useRef<PinnedAfterRowHold<ReactNode>>(EMPTY_PINNED_AFTER_ROW_HOLD)
@@ -2769,26 +2778,34 @@ export const ChatView = memo(function ChatView({
       const article = frozenHistoricalArticle(ejectedLiveArticles, archivedLiveArticles, id)
       if (!article) return null
       return (
-        <LiveAssistantArticle
-          messageId={id}
-          meta={article.meta ?? undefined}
-          liveStartedAt={article.startedAt ?? undefined}
-          onOpenSubAgent={onOpenSubAgent}
-          onOpenChangedFiles={onOpenChangedFiles}
-          toolOutputDisplay={toolOutputDisplay}
-          onNeedFullMessage={onNeedFullMessage}
-          isStreaming={false}
-          frozen
-          frozenParts={article.parts}
-          frozenCopyable={article.copyable ?? undefined}
-          frozenProcess={article.process}
-          liveDiff={false}
-        />
+        <Fragment key={id}>
+          <LiveAssistantSlot
+            key={id}
+            liveRowId={id}
+            loading={false}
+            isStreaming={false}
+            frozen
+            frozenParts={article.parts}
+            frozenMeta={article.meta ?? null}
+            frozenStartedAt={article.startedAt ?? null}
+            frozenCopyable={article.copyable ?? undefined}
+            frozenProcess={article.process}
+            findHit={historicalFindIds.has(id)}
+            findCurrent={currentFindMessageId === id}
+            onOpenSubAgent={onOpenSubAgent}
+            onOpenChangedFiles={onOpenChangedFiles}
+            toolOutputDisplay={toolOutputDisplay}
+            onNeedFullMessage={onNeedFullMessage}
+            liveDiff={false}
+          />
+        </Fragment>
       )
     },
     [
-      ejectedLiveArticles,
       archivedLiveArticles,
+      currentFindMessageId,
+      ejectedLiveArticles,
+      historicalFindIds,
       onNeedFullMessage,
       onOpenChangedFiles,
       onOpenSubAgent,
@@ -2860,6 +2877,7 @@ export const ChatView = memo(function ChatView({
             selectionSource={selectionSourceId === m.id}
           />
         ) : (
+          renderFrozenEjectedArticle(m.id) ?? (
           <div
             key={m.id}
             id={`msg-${m.id}`}
@@ -2880,8 +2898,7 @@ export const ChatView = memo(function ChatView({
             }
           >
             <FenceImmediateHighlightContext.Provider value={preferImmediate}>
-              {renderFrozenEjectedArticle(m.id) ?? (
-                <AssistantMessage
+              <AssistantMessage
                   messageId={m.id}
                   content={m.content}
                   createdAt={m.createdAt}
@@ -2909,9 +2926,9 @@ export const ChatView = memo(function ChatView({
                       : undefined
                   }
                 />
-              )}
             </FenceImmediateHighlightContext.Provider>
           </div>
+          )
         )
       }
     )
@@ -2998,6 +3015,7 @@ export const ChatView = memo(function ChatView({
             selectionSource={selectionSourceId === m.id}
           />
         ) : (
+          renderFrozenEjectedArticle(m.id) ?? (
           <div
             key={m.id}
             id={`msg-${m.id}`}
@@ -3007,8 +3025,7 @@ export const ChatView = memo(function ChatView({
               selectionSourceId === m.id ? ' is-selection-source' : ''
             }`}
           >
-            {renderFrozenEjectedArticle(m.id) ?? (
-              <AssistantMessage
+            <AssistantMessage
                 messageId={m.id}
                 content={m.content}
                 createdAt={m.createdAt}
@@ -3025,8 +3042,8 @@ export const ChatView = memo(function ChatView({
                     : undefined
                 }
               />
-            )}
           </div>
+          )
         )
       }
     )
@@ -3132,6 +3149,7 @@ export const ChatView = memo(function ChatView({
             userInputResponding={identity?.userInputResponding}
             onUserInput={identity?.userInput ? onUserInput : undefined}
             onOpenSubAgent={onOpenSubAgent}
+            onOpenChangedFiles={onOpenChangedFiles}
             toolOutputDisplay={toolOutputDisplay}
             onNeedFullMessage={onNeedFullMessage}
           />
@@ -3153,6 +3171,7 @@ export const ChatView = memo(function ChatView({
     modelLabel,
     onApproval,
     onNeedFullMessage,
+    onOpenChangedFiles,
     onOpenSubAgent,
     onUserInput,
     pinnedLiveIds,
@@ -3214,6 +3233,7 @@ export const ChatView = memo(function ChatView({
         userInputResponding={userInputResponding}
         onUserInput={onUserInput}
         onOpenSubAgent={onOpenSubAgent}
+        onOpenChangedFiles={onOpenChangedFiles}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
       />
@@ -3231,6 +3251,7 @@ export const ChatView = memo(function ChatView({
     modelLabel,
     onApproval,
     onNeedFullMessage,
+    onOpenChangedFiles,
     onOpenSubAgent,
     onUserInput,
     pinActiveLive,
@@ -3250,6 +3271,7 @@ export const ChatView = memo(function ChatView({
     }
     return (
       <div
+        key="live-handoff"
         className="message-row message-row--assistant message-row--live-handoff"
         aria-live="polite"
       >
@@ -3286,6 +3308,7 @@ export const ChatView = memo(function ChatView({
         userInputResponding={userInputResponding}
         onUserInput={onUserInput}
         onOpenSubAgent={onOpenSubAgent}
+        onOpenChangedFiles={onOpenChangedFiles}
         toolOutputDisplay={toolOutputDisplay}
         onNeedFullMessage={onNeedFullMessage}
       />
@@ -3304,6 +3327,7 @@ export const ChatView = memo(function ChatView({
     modelLabel,
     onApproval,
     onNeedFullMessage,
+    onOpenChangedFiles,
     onOpenSubAgent,
     onUserInput,
     pinnedLiveId,
@@ -3312,6 +3336,16 @@ export const ChatView = memo(function ChatView({
     userInput,
     userInputResponding
   ])
+  const transcriptRows = useMemo(() => {
+    const next = nextTranscriptRowNodes(transcriptRowsHeldRef.current, {
+      historical: historicalRows,
+      pinned: pinnedLiveRows,
+      unpinned: pinnedLiveRows.length ? null : unpinnedLiveRow,
+      extras: [liveHandoffRow, activeLiveRow]
+    })
+    transcriptRowsHeldRef.current = next
+    return next
+  }, [activeLiveRow, historicalRows, liveHandoffRow, pinnedLiveRows, unpinnedLiveRow])
 
   return (
     <ChatImageWorkspaceProvider
@@ -3417,13 +3451,7 @@ export const ChatView = memo(function ChatView({
           }}
         >
           <div className="messages" ref={messagesInnerRef}>
-            {historicalRows}
-
-            {pinnedLiveRows.length ? pinnedLiveRows : unpinnedLiveRow}
-
-            {liveHandoffRow}
-
-            {activeLiveRow}
+            {transcriptRows}
 
             <div
               ref={bottomRef}

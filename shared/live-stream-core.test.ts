@@ -1624,6 +1624,16 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'identities.set(id, {\n        loading,\n        isStreaming:'
     )
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveRowNodes')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextTranscriptRowNodes')
+    expect(src('../src/components/ChatView.tsx')).toContain('{transcriptRows}')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      '{historicalRows}\n\n            {pinnedLiveRows.length ? pinnedLiveRows : unpinnedLiveRow}'
+    )
+    expect(src('../src/components/ChatView.tsx')).toContain('<LiveAssistantSlot\n            key={id}')
+    expect(src('../src/components/ChatView.tsx')).toContain('liveDiff={false}')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      '<LiveAssistantArticle\n          messageId={id}'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROW_HOLD')
     expect(src('../src/components/ChatView.tsx')).toContain('nextHistoricalRowNodes')
     expect(src('../src/components/ChatView.tsx')).toContain('historicalRowsHeldRef')
@@ -1750,6 +1760,7 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('samePinnedLiveSlotIdentity')
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
+    expect(src('session-runtime.ts')).toContain('nextTranscriptRowNodes')
     expect(src('session-runtime.ts')).toContain('nextHistoricalRowNodes')
     expect(src('session-runtime.ts')).toContain('sameHistoricalRowIdentity')
     expect(src('session-runtime.ts')).toContain('nextPinnedAfterRowNodes')
