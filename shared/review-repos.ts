@@ -18,6 +18,15 @@ export const REVIEW_PANE_SCOPE_INTRO =
 /** Official review pane expand hint (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_PANE_EXPAND_HINT =
   'Clicking the file name background expands or collapses the diff.'
+/** Official review pane multi-repo selector (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_MULTI_REPO_INTRO =
+  'When a local project includes multiple folders backed by different Git repositories, the review pane can show changes from each repository. Open the repository selector in the review header to inspect another repository and see the lines added or removed without leaving the current review pane.'
+/** Official Last turn All repos sentence (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_LAST_TURN_ALL_REPOS_HINT =
+  "Choose Last turn to see the assistant's latest changes across the attached repositories. The repository selector shows All repos for that view."
+/** Official other-scope repo sentence (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_OTHER_SCOPE_REPO_HINT =
+  'Other review scopes, such as Unstaged, Staged, and Branch, apply to the repository you select.'
 /** Official review pane Last turn selector (learn.chatgpt.com/docs/code-review). */
 export const ALL_REPOS_ID = 'all'
 export const ALL_REPOS_LABEL = 'All repos'

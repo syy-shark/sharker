@@ -19,6 +19,9 @@ import {
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
+  REVIEW_LAST_TURN_ALL_REPOS_HINT,
+  REVIEW_MULTI_REPO_INTRO,
+  REVIEW_OTHER_SCOPE_REPO_HINT,
   REVIEW_REQUIRES_GIT_LABEL,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
@@ -76,6 +79,9 @@ describe('review repos', () => {
     expect(REVIEW_PANE_GIT_STATE).toMatch(/not just what Codex edited/)
     expect(REVIEW_PANE_SCOPE_INTRO).toMatch(/Unstaged changes/)
     expect(REVIEW_PANE_EXPAND_HINT).toMatch(/expands or collapses the diff/)
+    expect(REVIEW_MULTI_REPO_INTRO).toMatch(/repository selector/)
+    expect(REVIEW_LAST_TURN_ALL_REPOS_HINT).toMatch(/All repos/)
+    expect(REVIEW_OTHER_SCOPE_REPO_HINT).toMatch(/Unstaged, Staged, and Branch/)
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
       'utf8'
@@ -85,6 +91,10 @@ describe('review repos', () => {
     expect(panelSrc).toContain('REVIEW_PANE_GIT_STATE')
     expect(panelSrc).toContain('REVIEW_PANE_SCOPE_INTRO')
     expect(panelSrc).toContain('REVIEW_PANE_EXPAND_HINT')
+    expect(panelSrc).toContain('REVIEW_MULTI_REPO_INTRO')
+    expect(panelSrc).toContain('REVIEW_LAST_TURN_ALL_REPOS_HINT')
+    expect(panelSrc).toContain('REVIEW_OTHER_SCOPE_REPO_HINT')
+    expect(panelSrc).not.toContain('aria-label="选择要审查的仓库"')
     expect(panelSrc).not.toContain('<span>审查</span>')
     expect(panelSrc).not.toContain('aria-label="对比范围"')
     expect(panelSrc).not.toContain('展开或收起 diff · 右键打开')

@@ -1,5 +1,5 @@
 /**
- * 设置页壳：权限 / 模型 / MCP servers / General / Worktrees / Browser / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Appshots / Archived chats / Profile
+ * 设置页壳：权限 / 模型 / MCP servers / General / Worktrees / Browser（页说明用官方 built-in browser profile / history / downloads 原文） / Appearance / Notifications / Personalization / Suggested prompts / Keyboard Shortcuts / Appshots / Archived chats / Profile
  * Computer Use / Browser Use 入口暂隐藏；`WorktreeSettings` 对标 Codex Settings → Worktrees
  * @see src/ARCH.md
  */
@@ -29,6 +29,7 @@ import {
   APPEARANCE_SETTINGS_LABEL,
   ARCHIVED_CHATS_INTRO,
   ARCHIVED_CHATS_LABEL,
+  BROWSER_SETTINGS_INTRO,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_INTRO,
   GENERAL_SETTINGS_LABEL,
@@ -72,7 +73,7 @@ const TAB_META: Record<SettingsTab, { title: string; desc: string }> = {
   },
   browser: {
     title: BROWSER_SETTINGS_LABEL,
-    desc: '内置浏览器自己的历史与下载：搜索、重新打开、删除，按时间清除历史 / Cookie / 缓存，以及下载目录与每次询问保存。对标 Codex Settings → Browser。不接系统 Chrome，不发明 @Browser。'
+    desc: BROWSER_SETTINGS_INTRO
   },
   appearance: {
     title: APPEARANCE_SETTINGS_LABEL,

@@ -1,5 +1,6 @@
 /**
  * 设置 → 浏览器：本机内置浏览历史、重新打开、删除、清除数据、下载目录。
+ * 分区说明用官方 built-in browser profile / history / Clear browsing data / downloads 原文。
  * 对标 Codex Settings → Browser。不发明 @Browser / Computer Use / 导入系统配置。
  * @see src/components/settings/ARCH.md
  */
@@ -8,11 +9,14 @@ import { Globe, Trash2 } from 'lucide-react'
 import type { AppSettings } from '../../../shared/types'
 import {
   ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL,
+  BROWSER_DOWNLOADS_INTRO,
   parseBrowserAskWhereToSave,
   parseBrowserDownloadPath
 } from '../../../shared/browser-downloads'
 import {
+  BROWSER_CLEAR_INTRO,
   BROWSER_HISTORY_CHANGED_EVENT,
+  BROWSER_HISTORY_INTRO,
   CLEAR_BROWSING_DATA_LABEL,
   browserHistoryLabel,
   clearBrowserHistory,
@@ -145,15 +149,11 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
 
   return (
     <>
-      <SettingsSection title="下载">
+      <SettingsSection title="下载" description={BROWSER_DOWNLOADS_INTRO}>
         <SettingsCard>
           <SettingsRow
             title="下载位置"
-            description={
-              downloadPath
-                ? downloadPath
-                : '默认保存到系统下载文件夹。可选其它目录，或恢复默认。'
-            }
+            description={downloadPath || BROWSER_DOWNLOADS_INTRO}
           >
             <div className="browser-settings-actions">
               <SettingsPillButton onClick={() => void handlePickDownloadDir()}>
@@ -168,7 +168,7 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title={ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL}
-            description="下载前弹出另存为。关闭则直接写入上面的目录。"
+            description={BROWSER_DOWNLOADS_INTRO}
             last
           >
             <SettingsToggle
@@ -182,11 +182,11 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="浏览历史">
+      <SettingsSection title="浏览历史" description={BROWSER_HISTORY_INTRO}>
         <SettingsCard>
           <SettingsRow
             title="搜索历史"
-            description="只含内置浏览器访问过的页面，不含系统 Chrome。"
+            description={BROWSER_HISTORY_INTRO}
           >
             <input
               className="browser-settings-search"
@@ -235,7 +235,7 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
 
       <SettingsSection title={CLEAR_BROWSING_DATA_LABEL}>
         <SettingsCard>
-          <SettingsRow title="时间范围" description="历史按此窗口删除；Cookie 与缓存一次清掉该配置内全部。">
+          <SettingsRow title="时间范围" description={BROWSER_CLEAR_INTRO}>
             <select
               className="browser-settings-range"
               value={range}
@@ -275,7 +275,7 @@ export function BrowserSettings({ draft, setDraft, onSave }: Props) {
           </label>
           <SettingsRow
             title={CLEAR_BROWSING_DATA_LABEL}
-            description="只动内置浏览器配置，不影响对话或系统浏览器。"
+            description={BROWSER_CLEAR_INTRO}
             last
           >
             <button

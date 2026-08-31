@@ -1,5 +1,5 @@
 /**
- * 右侧「变更」审查：对比范围 + 跨仓库选择器 + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
+ * 右侧「变更」审查：对比范围 + 跨仓库选择器（官方 When a local project includes multiple folders… / All repos） + 文件/hunk 动作 + 提交推送（对标 Codex Review）。
  * 已展开 diff 且面板聚焦时 ⌘L 跳到行并打开预览（对标 Codex Go to line or focus browser address bar）。
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
@@ -64,6 +64,9 @@ import {
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
+  REVIEW_LAST_TURN_ALL_REPOS_HINT,
+  REVIEW_MULTI_REPO_INTRO,
+  REVIEW_OTHER_SCOPE_REPO_HINT,
   REVIEW_PANE_EXPAND_HINT,
   REVIEW_PANE_GIT_STATE,
   REVIEW_PANE_INTRO,
@@ -1116,13 +1119,21 @@ export const ChangesPanel = memo(function ChangesPanel({
       ) : null}
 
       {showRepoSelector ? (
-        <label className="changes-panel__commit-pick">
+        <label
+          className="changes-panel__commit-pick"
+          title={REVIEW_MULTI_REPO_INTRO}
+        >
           <span className="changes-panel__commit-pick-label">仓库</span>
           <select
             className="changes-panel__commit-select"
             value={effectiveRepoId}
             onChange={(event) => setRepoId(event.target.value)}
-            aria-label="选择要审查的仓库"
+            aria-label={REVIEW_MULTI_REPO_INTRO}
+            title={
+              compare === 'last_turn'
+                ? REVIEW_LAST_TURN_ALL_REPOS_HINT
+                : REVIEW_OTHER_SCOPE_REPO_HINT
+            }
           >
             {compare === 'last_turn' ? (
               <option value={ALL_REPOS_ID}>

@@ -3,6 +3,8 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 import {
+  BROWSER_CLEAR_INTRO,
+  BROWSER_HISTORY_INTRO,
   BROWSER_HISTORY_MAX,
   BROWSER_SESSION_PARTITION,
   CLEAR_BROWSING_DATA_LABEL,
@@ -124,12 +126,18 @@ describe('browser history', () => {
     expect(browserSrc).not.toContain('aria-label="地址栏"')
     expect(browserSrc).not.toContain('>主页<')
     expect(CLEAR_BROWSING_DATA_LABEL).toBe('Clear browsing data')
+    expect(BROWSER_HISTORY_INTRO).toMatch(/search the built-in browser's history/)
+    expect(BROWSER_CLEAR_INTRO).toMatch(/Use Clear browsing data/)
     const settingsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/BrowserSettings.tsx'),
       'utf8'
     )
     expect(settingsSrc).toContain('CLEAR_BROWSING_DATA_LABEL')
+    expect(settingsSrc).toContain('BROWSER_HISTORY_INTRO')
+    expect(settingsSrc).toContain('BROWSER_CLEAR_INTRO')
     expect(settingsSrc).not.toContain('title="清除浏览数据"')
     expect(settingsSrc).not.toContain('>清除数据<')
+    expect(settingsSrc).not.toContain('只含内置浏览器访问过的页面')
+    expect(settingsSrc).not.toContain('只动内置浏览器配置')
   })
 })

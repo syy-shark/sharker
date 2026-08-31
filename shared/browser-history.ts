@@ -9,6 +9,12 @@ export const SEARCH_FROM_THE_ADDRESS_BAR_LABEL = 'Search from the address bar'
 
 /** Official Settings → Browser control (learn.chatgpt.com/docs/browser: Use Clear browsing data). */
 export const CLEAR_BROWSING_DATA_LABEL = 'Clear browsing data'
+/** Official Settings → Browser history (learn.chatgpt.com/docs/browser). */
+export const BROWSER_HISTORY_INTRO =
+  "Open Settings > Browser to search the built-in browser's history, reopen a visited page, or remove history entries when your organization permits it."
+/** Official Settings → Browser clear (learn.chatgpt.com/docs/browser). */
+export const BROWSER_CLEAR_INTRO =
+  'Use Clear browsing data to choose a time range and the types of browsing data you want to remove.'
 
 export const BROWSER_HISTORY_STORAGE_KEY = 'sharker-browser-history'
 export const BROWSER_HISTORY_CHANGED_EVENT = 'sharker:browser-history-changed'

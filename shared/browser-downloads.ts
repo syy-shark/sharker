@@ -7,6 +7,9 @@ import path from 'path'
 
 /** Official Settings → Browser toggle (learn.chatgpt.com/docs/browser). */
 export const ASK_WHERE_TO_SAVE_DOWNLOADS_LABEL = 'Ask where to save downloads'
+/** Official Settings → Browser downloads (learn.chatgpt.com/docs/browser). */
+export const BROWSER_DOWNLOADS_INTRO =
+  'Browser downloads go to your system Downloads folder by default. In Settings > Browser, you can choose another download location, reset it to the system default, or turn on Ask where to save downloads.'
 
 /** 去掉穿越；空串表示系统下载文件夹 */
 export function parseBrowserDownloadPath(raw: unknown): string {

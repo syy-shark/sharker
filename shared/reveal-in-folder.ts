@@ -293,6 +293,9 @@ export const NOTIFICATIONS_SETTINGS_LABEL = 'Notifications'
 export const PERSONALIZATION_SETTINGS_LABEL = 'Personalization'
 export const SUGGESTED_PROMPTS_SETTINGS_LABEL = 'Suggested prompts'
 export const BROWSER_SETTINGS_LABEL = 'Browser'
+/** Official Settings → Browser (learn.chatgpt.com/docs/browser). No plugin, extension, or Import. */
+export const BROWSER_SETTINGS_INTRO =
+  "The built-in browser uses a browser profile that is separate from your regular browser. It doesn't automatically share your existing tabs or browser session. Open Settings > Browser to search the built-in browser's history, reopen a visited page, or remove history entries when your organization permits it. Use Clear browsing data to choose a time range and the types of browsing data you want to remove. Browser downloads go to your system Downloads folder by default. In Settings > Browser, you can choose another download location, reset it to the system default, or turn on Ask where to save downloads."
 /** Official review pane / Open review tab (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_LABEL = 'Review'
 /** Official integrated terminal panel (learn.chatgpt.com/docs/integrated-terminal). */

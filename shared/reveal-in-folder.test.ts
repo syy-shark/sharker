@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   APPEARANCE_SETTINGS_LABEL,
+  BROWSER_SETTINGS_INTRO,
   BROWSER_SETTINGS_LABEL,
   GENERAL_SETTINGS_LABEL,
   ARCHIVED_CHATS_INTRO,
@@ -335,6 +336,8 @@ describe('reveal in folder', () => {
     expect(suggestedPromptSettingsSrc).toContain('SUGGESTED_PROMPTS_INTRO')
     expect(ARCHIVED_CHATS_INTRO).toMatch(/Use Unarchive to restore a chat/)
     expect(BROWSER_SETTINGS_LABEL).toBe('Browser')
+    expect(BROWSER_SETTINGS_INTRO).toMatch(/separate from your regular browser/)
+    expect(BROWSER_SETTINGS_INTRO).toMatch(/Ask where to save downloads/)
     expect(FILES_LABEL).toBe('Files')
     expect(REVIEW_LABEL).toBe('Review')
     expect(TERMINAL_LABEL).toBe('Terminal')
@@ -433,6 +436,8 @@ describe('reveal in folder', () => {
       'utf8'
     )
     expect(settingsSrc).toContain('PERMISSIONS_LABEL')
+    expect(settingsSrc).toContain('BROWSER_SETTINGS_INTRO')
+    expect(settingsSrc).not.toContain('不接系统 Chrome，不发明 @Browser')
     const sidebarSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/Sidebar.tsx'),
       'utf8'
