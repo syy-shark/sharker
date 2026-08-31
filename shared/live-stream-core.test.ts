@@ -1602,6 +1602,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_FROZEN_PINNED_SLOTS')
     expect(src('../src/components/ChatView.tsx')).toContain('activePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextActivePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveRowNodes')
     expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_ROW_HOLD')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
@@ -1691,6 +1693,9 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameFrozenPinnedLiveSlotIdentity')
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
+    expect(src('session-runtime.ts')).toContain('shouldAttachLiveApprovalToPinnedSlot')
+    expect(src('session-runtime.ts')).toContain('nextActivePinnedLiveSlots')
+    expect(src('session-runtime.ts')).toContain('sameActivePinnedLiveSlotIdentity')
     expect(src('session-runtime.ts')).toContain('historyHasReserved 仍接调用方')
     expect(src('session-runtime.ts')).not.toContain(
       'if (options.historyHasReserved === false) return false'

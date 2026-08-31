@@ -6,6 +6,8 @@
  * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口；预留行 persist 入列后复用同一 gap 引用，不重建历史行。
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
  * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
+ * `shouldAttachLiveApprovalToPinnedSlot` 只让当前预留 id 接审批 / Ask User，跟进 hold 的上一轮不跟新一轮审批。
+ * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
@@ -554,6 +556,16 @@ export function shouldStreamPinnedLiveAssistant(options: {
   return Boolean(pinned && live && pinned === live)
 }
 
+/** 只有当前预留 id 才接审批 / Ask User。跟进 hold 的上一轮不跟新一轮审批（对标 Codex #22860）。 */
+export function shouldAttachLiveApprovalToPinnedSlot(options: {
+  pinnedId: string
+  liveAssistantId?: string | null
+}): boolean {
+  const pinned = options.pinnedId.trim()
+  const live = options.liveAssistantId?.trim()
+  return Boolean(pinned && live && pinned === live)
+}
+
 /**
  * 无 pin 才走 fallback 槽。`pinActiveLive` 已开但预留 id 还没进 map 时
  * 不要用 `key=streaming` 占位，否则 id 一到就从 fallback 搬进 map 整棵重挂（对标 Codex #22860）。
@@ -850,6 +862,36 @@ export type FrozenPinnedLiveSlotIdentity = {
 
 const EMPTY_FROZEN_PINNED_MAP: ReadonlyMap<string, never> = new Map()
 
+function nextHeldSlotMap<T, I>(
+  prevSlots: ReadonlyMap<string, T> | null | undefined,
+  prevIdentities: ReadonlyMap<string, I> | null | undefined,
+  nextIdentities: ReadonlyMap<string, I>,
+  sameIdentity: (prev: I | undefined, next: I) => boolean,
+  build: (id: string) => T
+): { slots: ReadonlyMap<string, T>; identities: ReadonlyMap<string, I> } {
+  if (nextIdentities.size === 0) {
+    return {
+      slots: EMPTY_FROZEN_PINNED_MAP as ReadonlyMap<string, T>,
+      identities: EMPTY_FROZEN_PINNED_MAP as ReadonlyMap<string, I>
+    }
+  }
+  const slots = new Map<string, T>()
+  let reusedAll = Boolean(prevSlots && prevSlots.size === nextIdentities.size)
+  for (const [id, identity] of nextIdentities) {
+    const held = prevSlots?.get(id)
+    if (held != null && sameIdentity(prevIdentities?.get(id), identity)) {
+      slots.set(id, held)
+    } else {
+      reusedAll = false
+      slots.set(id, build(id))
+    }
+  }
+  if (reusedAll && prevSlots && prevIdentities) {
+    return { slots: prevSlots, identities: prevIdentities }
+  }
+  return { slots, identities: nextIdentities }
+}
+
 /** 冻结行不跟 loading / 秒表；article 与找词没变才复用上一份元素（对标 Codex #22860 / #37849）。 */
 export function sameFrozenPinnedLiveSlotIdentity(
   prev: FrozenPinnedLiveSlotIdentity | undefined,
@@ -876,27 +918,66 @@ export function nextFrozenPinnedLiveSlots<T>(
   slots: ReadonlyMap<string, T>
   identities: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity>
 } {
-  if (nextIdentities.size === 0) {
-    return {
-      slots: EMPTY_FROZEN_PINNED_MAP as ReadonlyMap<string, T>,
-      identities: EMPTY_FROZEN_PINNED_MAP
-    }
-  }
-  const slots = new Map<string, T>()
-  let reusedAll = Boolean(prevSlots && prevSlots.size === nextIdentities.size)
-  for (const [id, identity] of nextIdentities) {
-    const held = prevSlots?.get(id)
-    if (held != null && sameFrozenPinnedLiveSlotIdentity(prevIdentities?.get(id), identity)) {
-      slots.set(id, held)
-    } else {
-      reusedAll = false
-      slots.set(id, build(id))
-    }
-  }
-  if (reusedAll && prevSlots && prevIdentities) {
-    return { slots: prevSlots, identities: prevIdentities }
-  }
-  return { slots, identities: nextIdentities }
+  return nextHeldSlotMap(
+    prevSlots,
+    prevIdentities,
+    nextIdentities,
+    sameFrozenPinnedLiveSlotIdentity,
+    build
+  )
+}
+
+/** 未冻结 pinned 槽身份：审批只挂当前预留 id，hold 行不跟新一轮审批 */
+export type ActivePinnedLiveSlotIdentity = {
+  loading: boolean
+  isStreaming: boolean
+  findHit: boolean
+  findCurrent: boolean
+  approval: unknown
+  userInput: unknown
+  approvalResponding: boolean
+  userInputResponding: boolean
+  toolOutputDisplay?: string
+}
+
+export function sameActivePinnedLiveSlotIdentity(
+  prev: ActivePinnedLiveSlotIdentity | undefined,
+  next: ActivePinnedLiveSlotIdentity
+): boolean {
+  if (!prev) return false
+  return (
+    prev.loading === next.loading &&
+    prev.isStreaming === next.isStreaming &&
+    prev.findHit === next.findHit &&
+    prev.findCurrent === next.findCurrent &&
+    prev.approval === next.approval &&
+    prev.userInput === next.userInput &&
+    prev.approvalResponding === next.approvalResponding &&
+    prev.userInputResponding === next.userInputResponding &&
+    prev.toolOutputDisplay === next.toolOutputDisplay
+  )
+}
+
+/**
+ * 未冻结 pinned 槽：身份没变留下上一份元素。
+ * 新一轮审批 / Ask User 不重挂跟进 hold 的上一轮（对标 Codex #22860）。
+ */
+export function nextActivePinnedLiveSlots<T>(
+  prevSlots: ReadonlyMap<string, T> | null | undefined,
+  prevIdentities: ReadonlyMap<string, ActivePinnedLiveSlotIdentity> | null | undefined,
+  nextIdentities: ReadonlyMap<string, ActivePinnedLiveSlotIdentity>,
+  build: (id: string) => T
+): {
+  slots: ReadonlyMap<string, T>
+  identities: ReadonlyMap<string, ActivePinnedLiveSlotIdentity>
+} {
+  return nextHeldSlotMap(
+    prevSlots,
+    prevIdentities,
+    nextIdentities,
+    sameActivePinnedLiveSlotIdentity,
+    build
+  )
 }
 
 /** pinned 行列：槽与 after 引用没变才复用上一份行节点 */

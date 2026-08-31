@@ -35,9 +35,12 @@ import {
   nextPinnedLiveAssistantIds,
   reusePinnedLiveIds,
   nextPinnedAfterGaps,
+  nextActivePinnedLiveSlots,
   nextFrozenPinnedLiveSlots,
   nextPinnedLiveRowNodes,
+  sameActivePinnedLiveSlotIdentity,
   sameFrozenPinnedLiveSlotIdentity,
+  shouldAttachLiveApprovalToPinnedSlot,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
   shouldStreamPinnedLiveAssistant,
@@ -630,6 +633,19 @@ describe('commitAssistantReply persist targeting', () => {
       })
     ).toBe(true)
     expect(
+      shouldAttachLiveApprovalToPinnedSlot({
+        pinnedId: 'b-live',
+        liveAssistantId: 'b-live'
+      })
+    ).toBe(true)
+    expect(
+      shouldAttachLiveApprovalToPinnedSlot({
+        pinnedId: 'a-live',
+        liveAssistantId: 'b-live'
+      })
+    ).toBe(false)
+    expect(shouldAttachLiveApprovalToPinnedSlot({ pinnedId: 'a-live' })).toBe(false)
+    expect(
       shouldMountUnpinnedLiveSlot({
         pinnedCount: 0,
         pinActiveLive: true,
@@ -757,6 +773,46 @@ describe('commitAssistantReply persist targeting', () => {
     )
     expect(frozenGrown.slots.get('a-live')).toBe('slot-a')
     expect(frozenGrown.slots.get('b-live')).toBe('slot-b-live')
+    const holdId = {
+      loading: true,
+      isStreaming: false,
+      findHit: false,
+      findCurrent: false,
+      approval: null,
+      userInput: null,
+      approvalResponding: false,
+      userInputResponding: false
+    }
+    const liveId = { ...holdId, isStreaming: true }
+    expect(sameActivePinnedLiveSlotIdentity(undefined, holdId)).toBe(false)
+    expect(sameActivePinnedLiveSlotIdentity(holdId, holdId)).toBe(true)
+    expect(sameActivePinnedLiveSlotIdentity(holdId, { ...holdId, approval: { id: 'ap' } })).toBe(
+      false
+    )
+    const activePrev = new Map([
+      ['a-live', 'hold-a'],
+      ['b-live', 'live-b']
+    ])
+    const activeIdentities = new Map([
+      ['a-live', holdId],
+      ['b-live', liveId]
+    ])
+    let activeBuilt = 0
+    const activeAfterApproval = nextActivePinnedLiveSlots(
+      activePrev,
+      activeIdentities,
+      new Map([
+        ['a-live', holdId],
+        ['b-live', { ...liveId, approval: { id: 'ap' } }]
+      ]),
+      (id) => {
+        activeBuilt += 1
+        return `next-${id}`
+      }
+    )
+    expect(activeAfterApproval.slots.get('a-live')).toBe('hold-a')
+    expect(activeAfterApproval.slots.get('b-live')).toBe('next-b-live')
+    expect(activeBuilt).toBe(1)
     const rowAfter = [['u2']]
     const rowSlots = new Map<string, unknown>([
       ['a-live', 'frozen-a'],

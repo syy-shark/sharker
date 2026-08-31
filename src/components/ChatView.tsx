@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，收束不重挂上一轮直播树；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
+ * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 活动 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽与行节点不跟 loading，活动槽只让当前预留 id 接审批，跟进 hold 不重挂上一轮；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 写在行上并同帧补视口上方 scrollTop，不抬 React state、不重建 `historicalRows`（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -76,6 +76,7 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
+  nextActivePinnedLiveSlots,
   nextFrozenPinnedLiveSlots,
   nextPinnedAfterGaps,
   nextPinnedLiveAssistantIds,
@@ -83,8 +84,10 @@ import {
   nextPinnedTranscriptGaps,
   retiredLiveArticle,
   frozenHistoricalArticle,
+  shouldAttachLiveApprovalToPinnedSlot,
   shouldMountActiveLiveSlot,
   shouldStreamPinnedLiveAssistant,
+  type ActivePinnedLiveSlotIdentity,
   type FrozenPinnedLiveSlotIdentity,
   type PinnedLiveRowHold,
   type RetiredLiveArticle
@@ -225,6 +228,8 @@ const EMPTY_PINNED_AFTER_ROWS: readonly ReactNode[][] = []
 const EMPTY_PINNED_LIVE_ROWS: readonly ReactNode[] = []
 const EMPTY_FROZEN_PINNED_SLOTS: ReadonlyMap<string, ReactNode> = new Map()
 const EMPTY_FROZEN_PINNED_IDENTITIES: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity> =
+  new Map()
+const EMPTY_ACTIVE_PINNED_IDENTITIES: ReadonlyMap<string, ActivePinnedLiveSlotIdentity> =
   new Map()
 const EMPTY_PINNED_LIVE_ROW_HOLD: PinnedLiveRowHold<ReactNode> = {
   ids: [],
@@ -1181,6 +1186,11 @@ export const ChatView = memo(function ChatView({
     frozenPinnedSessionRef.current = sessionKey
     pinnedLiveRowsHeldRef.current = EMPTY_PINNED_LIVE_ROW_HOLD
     pinnedLiveRowsSessionRef.current = sessionKey
+    activePinnedSlotsHeldRef.current = {
+      slots: EMPTY_FROZEN_PINNED_SLOTS,
+      identities: EMPTY_ACTIVE_PINNED_IDENTITIES
+    }
+    activePinnedSessionRef.current = sessionKey
     intrinsicHeightsRef.current = new Map()
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
@@ -1200,6 +1210,11 @@ export const ChatView = memo(function ChatView({
   const frozenPinnedSessionRef = useRef(sessionKey)
   const pinnedLiveRowsHeldRef = useRef<PinnedLiveRowHold<ReactNode>>(EMPTY_PINNED_LIVE_ROW_HOLD)
   const pinnedLiveRowsSessionRef = useRef(sessionKey)
+  const activePinnedSlotsHeldRef = useRef<{
+    slots: ReadonlyMap<string, ReactNode>
+    identities: ReadonlyMap<string, ActivePinnedLiveSlotIdentity>
+  }>({ slots: EMPTY_FROZEN_PINNED_SLOTS, identities: EMPTY_ACTIVE_PINNED_IDENTITIES })
+  const activePinnedSessionRef = useRef(sessionKey)
   const nearLiveImmediateSessionRef = useRef(sessionKey)
   if (nearLiveImmediateSessionRef.current !== sessionKey) {
     nearLiveImmediateSessionRef.current = sessionKey
@@ -3002,37 +3017,67 @@ export const ChatView = memo(function ChatView({
   ])
 
   const activePinnedLiveSlots = useMemo(() => {
-    const slots = new Map<string, ReactNode>()
+    if (activePinnedSessionRef.current !== sessionKey) {
+      activePinnedSessionRef.current = sessionKey
+      activePinnedSlotsHeldRef.current = {
+        slots: EMPTY_FROZEN_PINNED_SLOTS,
+        identities: EMPTY_ACTIVE_PINNED_IDENTITIES
+      }
+    }
+    const identities = new Map<string, ActivePinnedLiveSlotIdentity>()
     for (const id of pinnedLiveIds) {
       if (retiredLiveArticle(retiredArticles, id)) continue
-      slots.set(
-        id,
-        <LiveAssistantSlot
-          key={id}
-          liveRowId={id}
-          loading={loading}
-          isStreaming={shouldStreamPinnedLiveAssistant({
-            pinnedId: id,
-            liveAssistantId,
-            frozen: false,
-            liveStreaming
-          })}
-          findHit={liveMemoryFindHits.length > 0 && liveRowId === id}
-          findCurrent={currentFindMessageId === id}
-          modelLabel={modelLabel}
-          approval={approval}
-          approvalResponding={approvalResponding}
-          onApproval={onApproval}
-          userInput={userInput}
-          userInputResponding={userInputResponding}
-          onUserInput={onUserInput}
-          onOpenSubAgent={onOpenSubAgent}
-          toolOutputDisplay={toolOutputDisplay}
-          onNeedFullMessage={onNeedFullMessage}
-        />
-      )
+      const attachApproval = shouldAttachLiveApprovalToPinnedSlot({
+        pinnedId: id,
+        liveAssistantId
+      })
+      identities.set(id, {
+        loading,
+        isStreaming: shouldStreamPinnedLiveAssistant({
+          pinnedId: id,
+          liveAssistantId,
+          frozen: false,
+          liveStreaming
+        }),
+        findHit: liveMemoryFindHits.length > 0 && liveRowId === id,
+        findCurrent: currentFindMessageId === id,
+        approval: attachApproval ? approval : null,
+        userInput: attachApproval ? userInput : null,
+        approvalResponding: attachApproval ? Boolean(approvalResponding) : false,
+        userInputResponding: attachApproval ? Boolean(userInputResponding) : false,
+        toolOutputDisplay
+      })
     }
-    return slots.size === 0 ? EMPTY_FROZEN_PINNED_SLOTS : slots
+    const next = nextActivePinnedLiveSlots(
+      activePinnedSlotsHeldRef.current.slots,
+      activePinnedSlotsHeldRef.current.identities,
+      identities,
+      (id) => {
+        const identity = identities.get(id)
+        return (
+          <LiveAssistantSlot
+            key={id}
+            liveRowId={id}
+            loading={identity?.loading ?? loading}
+            isStreaming={identity?.isStreaming ?? false}
+            findHit={identity?.findHit ?? false}
+            findCurrent={identity?.findCurrent ?? false}
+            modelLabel={modelLabel}
+            approval={identity?.approval as typeof approval}
+            approvalResponding={identity?.approvalResponding}
+            onApproval={identity?.approval ? onApproval : undefined}
+            userInput={identity?.userInput as typeof userInput}
+            userInputResponding={identity?.userInputResponding}
+            onUserInput={identity?.userInput ? onUserInput : undefined}
+            onOpenSubAgent={onOpenSubAgent}
+            toolOutputDisplay={toolOutputDisplay}
+            onNeedFullMessage={onNeedFullMessage}
+          />
+        )
+      }
+    )
+    activePinnedSlotsHeldRef.current = next
+    return next.slots
   }, [
     approval,
     approvalResponding,
@@ -3049,6 +3094,7 @@ export const ChatView = memo(function ChatView({
     onUserInput,
     pinnedLiveIds,
     retiredArticles,
+    sessionKey,
     toolOutputDisplay,
     userInput,
     userInputResponding
