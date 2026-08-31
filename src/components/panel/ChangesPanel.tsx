@@ -42,6 +42,7 @@ import {
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
   GO_TO_LINE_OR_FOCUS_BROWSER_ADDRESS_BAR_LABEL,
+  REVIEW_LABEL,
   reviewFileRevealPath
 } from '../../../shared/reveal-in-folder'
 import {
@@ -63,6 +64,10 @@ import {
   REVERT_ALL_LABEL,
   REVERT_LABEL,
   REVIEW_CREATE_ONE_HINT,
+  REVIEW_PANE_EXPAND_HINT,
+  REVIEW_PANE_GIT_STATE,
+  REVIEW_PANE_INTRO,
+  REVIEW_PANE_SCOPE_INTRO,
   REVIEW_REQUIRES_GIT_LABEL,
   STAGE_ALL_LABEL,
   STAGE_LABEL,
@@ -946,7 +951,7 @@ export const ChangesPanel = memo(function ChangesPanel({
       <div className="changes-panel__head">
         <div className="changes-panel__title">
           <FileDiff size={15} aria-hidden />
-          <span>审查</span>
+          <span title={REVIEW_PANE_INTRO}>{REVIEW_LABEL}</span>
           {isRepo && !isAllRepos && branch ? (
             <span className="changes-panel__branch" title={branch}>
               <GitBranch size={12} aria-hidden />
@@ -1194,7 +1199,7 @@ export const ChangesPanel = memo(function ChangesPanel({
       ) : null}
 
       {isRepo ? (
-        <div className="changes-panel__compare" role="tablist" aria-label="对比范围">
+        <div className="changes-panel__compare" role="tablist" aria-label={REVIEW_PANE_SCOPE_INTRO} title={REVIEW_PANE_SCOPE_INTRO}>
           <button
             type="button"
             role="tab"
@@ -1415,7 +1420,8 @@ export const ChangesPanel = memo(function ChangesPanel({
           <ul
             className="changes-panel__list"
             role="listbox"
-            aria-label="变更文件"
+            aria-label={REVIEW_PANE_GIT_STATE}
+            title={REVIEW_PANE_GIT_STATE}
             ref={listRef}
             onScroll={(event) => {
               listScrollTopRef.current = event.currentTarget.scrollTop
@@ -1440,7 +1446,7 @@ export const ChangesPanel = memo(function ChangesPanel({
                   <button
                     type="button"
                     className="changes-panel__item"
-                    title="展开或收起 diff · 右键打开"
+                    title={REVIEW_PANE_EXPAND_HINT}
                     aria-selected={expanded}
                     aria-expanded={expanded}
                     onClick={(e) => {

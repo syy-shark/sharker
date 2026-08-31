@@ -11,6 +11,10 @@ import {
   CREATE_A_PULL_REQUEST_LABEL,
   OPEN_A_PULL_REQUEST_LABEL,
   LAST_TURN_LABEL,
+  REVIEW_PANE_EXPAND_HINT,
+  REVIEW_PANE_GIT_STATE,
+  REVIEW_PANE_INTRO,
+  REVIEW_PANE_SCOPE_INTRO,
   PUSH_ACTION_LABEL,
   REVERT_ALL_LABEL,
   REVERT_LABEL,
@@ -68,10 +72,22 @@ describe('review repos', () => {
     expect(PUSH_ACTION_LABEL).toBe('Push')
     expect(CREATE_A_PULL_REQUEST_LABEL).toBe('Create a pull request')
     expect(OPEN_A_PULL_REQUEST_LABEL).toBe('Open a pull request')
+    expect(REVIEW_PANE_INTRO).toMatch(/understand what changed/)
+    expect(REVIEW_PANE_GIT_STATE).toMatch(/not just what Codex edited/)
+    expect(REVIEW_PANE_SCOPE_INTRO).toMatch(/Unstaged changes/)
+    expect(REVIEW_PANE_EXPAND_HINT).toMatch(/expands or collapses the diff/)
     const panelSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/panel/ChangesPanel.tsx'),
       'utf8'
     )
+    expect(panelSrc).toContain('REVIEW_LABEL')
+    expect(panelSrc).toContain('REVIEW_PANE_INTRO')
+    expect(panelSrc).toContain('REVIEW_PANE_GIT_STATE')
+    expect(panelSrc).toContain('REVIEW_PANE_SCOPE_INTRO')
+    expect(panelSrc).toContain('REVIEW_PANE_EXPAND_HINT')
+    expect(panelSrc).not.toContain('<span>审查</span>')
+    expect(panelSrc).not.toContain('aria-label="对比范围"')
+    expect(panelSrc).not.toContain('展开或收起 diff · 右键打开')
     expect(panelSrc).toContain('WRAP_LONG_DIFF_LINES_LABEL')
     expect(panelSrc).toContain('UNSTAGE_ALL_LABEL')
     expect(panelSrc).toContain('COMMIT_ACTION_LABEL')

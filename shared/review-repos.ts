@@ -6,6 +6,18 @@
 import { fileInLastTurn } from './git-compare'
 import { workspaceAccessRoots } from './workspace-folders'
 
+/** Official review pane (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_PANE_INTRO =
+  'Open the review pane to understand what changed, give line-specific feedback, and decide what to stage, revert, commit, or push.'
+/** Official review pane Git-state sentence (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_PANE_GIT_STATE =
+  'The review pane reflects the state of your Git repository, not just what Codex edited.'
+/** Official review pane default scope (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_PANE_SCOPE_INTRO =
+  'By default, the review pane shows Unstaged changes. Use Staged for the Git index, Commit for a selected commit, Branch for the diff against your base branch, or Last turn for the most recent assistant turn.'
+/** Official review pane expand hint (learn.chatgpt.com/docs/code-review). */
+export const REVIEW_PANE_EXPAND_HINT =
+  'Clicking the file name background expands or collapses the diff.'
 /** Official review pane Last turn selector (learn.chatgpt.com/docs/code-review). */
 export const ALL_REPOS_ID = 'all'
 export const ALL_REPOS_LABEL = 'All repos'
