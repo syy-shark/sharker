@@ -7,6 +7,7 @@ import {
   APPSHOT_DEFAULT_KEYS,
   APPSHOT_RECENT_MS,
   APPSHOTS_CAPTURE_INTRO,
+  APPSHOTS_CLI_RESUME,
   APPSHOTS_DONT_WORK_HINT,
   APPSHOTS_ROUTE_INTRO,
   APPSHOTS_SETTINGS_INTRO,
@@ -30,6 +31,8 @@ describe('appshot', () => {
     expect(APPSHOTS_DONT_WORK_HINT).toMatch(/Privacy & Security/)
     expect(APPSHOTS_DONT_WORK_HINT).toMatch(/Screen & System Audio Recording/)
     expect(APPSHOTS_DONT_WORK_HINT).toMatch(/Accessibility for Codex Computer Use/)
+    expect(APPSHOTS_CLI_RESUME).toMatch(/resume a chat in the CLI/)
+    expect(APPSHOTS_CLI_RESUME).toMatch(/can't create a new appshot/)
     const settingsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/AppshotSettings.tsx'),
       'utf8'
@@ -37,6 +40,7 @@ describe('appshot', () => {
     expect(settingsSrc).toContain('APPSHOTS_ROUTE_INTRO')
     expect(settingsSrc).toContain('APPSHOTS_CAPTURE_INTRO')
     expect(settingsSrc).toContain('APPSHOTS_DONT_WORK_HINT')
+    expect(settingsSrc).toContain('APPSHOTS_CLI_RESUME')
     expect(settingsSrc).not.toContain('plugin')
     expect(formatAppshotHotkey(undefined)).toBe(APPSHOT_DEFAULT_KEYS)
     expect(parseAppshotHotkey('')).toBe(APPSHOT_BOTH_META_CHORD)

@@ -12,6 +12,9 @@ export const REVIEW_PANE_INTRO =
 /** Official review pane Git-state sentence (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_PANE_GIT_STATE =
   'The review pane reflects the state of your Git repository, not just what Codex edited.'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const FILES_APPEAR_IN_SIDE_PANEL_HINT =
+  "Files appear in the side panel that Codex didn't edit. If your project is inside a Git repository, the review panel automatically shows changes based on your project's Git state, including changes that Codex didn't make."
 /** Official review pane default scope (learn.chatgpt.com/docs/code-review). */
 export const REVIEW_PANE_SCOPE_INTRO =
   'By default, the review pane shows Unstaged changes. Use Staged for the Git index, Commit for a selected commit, Branch for the diff against your base branch, or Last turn for the most recent assistant turn.'

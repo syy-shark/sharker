@@ -1,6 +1,7 @@
 /**
  * 官方 Appshots：把最前窗口的截图与可读文本送进对话（对标 learn.chatgpt.com/docs/appshots）。
  * 默认热键是同时按下两个 Command；自定义和弦写在 Settings → Appshots，不进 Keyboard Shortcuts 目录。
+ * leftover 含 If you resume a chat in the CLI that already contains an appshot…；不发明 plugin。
  * @see shared/ARCH.md
  */
 import { encodeShortcutChord, formatShortcutChord } from './keymap'
@@ -35,6 +36,9 @@ export const APPSHOTS_CAPTURE_INTRO =
 /** Official leftover (learn.chatgpt.com/docs/appshots). No plugin copy. */
 export const APPSHOTS_DONT_WORK_HINT =
   "If appshots don't work: Open System Settings > Privacy & Security. Check Screen & System Audio Recording and Accessibility for Codex Computer Use. Restart the app and try again."
+/** Official leftover (learn.chatgpt.com/docs/appshots). No plugin copy. */
+export const APPSHOTS_CLI_RESUME =
+  "If you resume a chat in the CLI that already contains an appshot, the attachment is part of the chat history, but the CLI can't create a new appshot."
 
 /** 官方路由：新对话，或 60 秒内刚互动过的对话。 */
 export type AppshotTarget = 'new_chat' | 'recent_chat'

@@ -4,6 +4,7 @@
  * 面板聚焦时 ⌘F / ⌘G 在审查 diff 内查找并跳到屏外命中（对标 Codex review search）。
  * 文件列表按文件树排序；右键打开菜单；刷新时保住滚动（对标 Codex review file tree / scroll jumps）。
  * 无工作区空态用官方 The review pane requires a project inside a Git repository. / create one。
+ * 文件列表 title leftover Files appear in the side panel that Codex didn't edit…。
  * 行内评论「插入输入框」只接草稿，不自动开一轮（对标 Codex send a follow-up after comments）。
  * 直播 `/review` 围栏一闭合就挂发现并展开对应 diff；闭合后只追加时不重解析围栏，不抬 App（对标 Codex review findings appear inline / #22860）。
  * @see ./ARCH.md
@@ -74,6 +75,7 @@ import {
   REVIEW_LAST_TURN_ALL_REPOS_HINT,
   REVIEW_MULTI_REPO_INTRO,
   REVIEW_OTHER_SCOPE_REPO_HINT,
+  FILES_APPEAR_IN_SIDE_PANEL_HINT,
   REVIEW_PANE_EXPAND_HINT,
   REVIEW_PANE_GIT_STATE,
   REVIEW_PANE_INTRO,
@@ -1450,7 +1452,7 @@ export const ChangesPanel = memo(function ChangesPanel({
             className="changes-panel__list"
             role="listbox"
             aria-label={REVIEW_PANE_GIT_STATE}
-            title={REVIEW_PANE_GIT_STATE}
+            title={`${FILES_APPEAR_IN_SIDE_PANEL_HINT} ${REVIEW_PANE_GIT_STATE}`}
             ref={listRef}
             onScroll={(event) => {
               listScrollTopRef.current = event.currentTarget.scrollTop

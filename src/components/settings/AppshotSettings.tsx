@@ -1,5 +1,5 @@
 /**
- * Settings → Appshots：官方热键改绑（learn.chatgpt.com/docs/appshots）。
+ * Settings → Appshots：官方热键改绑与 CLI resume leftover（learn.chatgpt.com/docs/appshots）。
  * 不进 Keyboard Shortcuts 目录；不发明开关。
  * @see src/components/settings/ARCH.md
  */
@@ -8,6 +8,7 @@ import type { AppSettings } from '../../../shared/types'
 import {
   APPSHOT_BOTH_META_CHORD,
   APPSHOTS_CAPTURE_INTRO,
+  APPSHOTS_CLI_RESUME,
   APPSHOTS_DONT_WORK_HINT,
   APPSHOTS_HOTKEY_INTRO,
   APPSHOTS_PERMISSIONS_INTRO,
@@ -65,7 +66,7 @@ export function AppshotSettings({ draft, setDraft, onSave }: Props) {
   return (
     <SettingsSection
       title={APPSHOTS_SETTINGS_LABEL}
-      description={`${APPSHOTS_SETTINGS_INTRO} ${APPSHOTS_HOTKEY_INTRO} ${APPSHOTS_CAPTURE_INTRO} ${APPSHOTS_ROUTE_INTRO} ${APPSHOTS_PERMISSIONS_INTRO} ${APPSHOTS_DONT_WORK_HINT}`}
+      description={`${APPSHOTS_SETTINGS_INTRO} ${APPSHOTS_HOTKEY_INTRO} ${APPSHOTS_CAPTURE_INTRO} ${APPSHOTS_ROUTE_INTRO} ${APPSHOTS_PERMISSIONS_INTRO} ${APPSHOTS_CLI_RESUME} ${APPSHOTS_DONT_WORK_HINT}`}
     >
       <SettingsCard>
         <SettingsRow title={TAKE_AN_APPSHOT_LABEL} last>

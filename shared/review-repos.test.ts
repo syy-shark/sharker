@@ -13,6 +13,7 @@ import {
   LAST_TURN_LABEL,
   REVIEW_LAST_TURN_VIEW_HINT,
   REVIEW_PANE_EXPAND_HINT,
+  FILES_APPEAR_IN_SIDE_PANEL_HINT,
   REVIEW_PANE_GIT_STATE,
   REVIEW_PANE_INTRO,
   REVIEW_PANE_SCOPE_INTRO,
@@ -82,6 +83,8 @@ describe('review repos', () => {
     expect(OPEN_A_PULL_REQUEST_LABEL).toBe('Open a pull request')
     expect(REVIEW_PANE_INTRO).toMatch(/understand what changed/)
     expect(REVIEW_PANE_GIT_STATE).toMatch(/not just what Codex edited/)
+    expect(FILES_APPEAR_IN_SIDE_PANEL_HINT).toMatch(/Files appear in the side panel/)
+    expect(FILES_APPEAR_IN_SIDE_PANEL_HINT).toMatch(/Codex didn't edit/)
     expect(REVIEW_PANE_SCOPE_INTRO).toMatch(/Unstaged changes/)
     expect(REVIEW_PANE_EXPAND_HINT).toMatch(/expands or collapses the diff/)
     expect(REVIEW_MULTI_REPO_INTRO).toMatch(/repository selector/)
@@ -94,6 +97,7 @@ describe('review repos', () => {
     expect(panelSrc).toContain('REVIEW_LABEL')
     expect(panelSrc).toContain('REVIEW_PANE_INTRO')
     expect(panelSrc).toContain('REVIEW_PANE_GIT_STATE')
+    expect(panelSrc).toContain('FILES_APPEAR_IN_SIDE_PANEL_HINT')
     expect(panelSrc).toContain('REVIEW_PANE_SCOPE_INTRO')
     expect(panelSrc).toContain('REVIEW_PANE_EXPAND_HINT')
     expect(panelSrc).toContain('REVIEW_MULTI_REPO_INTRO')
