@@ -7,6 +7,7 @@
  * 已完成围栏行单独 memo，只重绘增长行（对标 Codex #39061 / #22860）。
  * 闭合围栏才语法着色（对标 Codex 桌面 highlight.js / #18966）；直播 token 中不着色，
  * 围栏闭合后 effect 开工 highlight.js 写缓存；收束后命中预热缓存则同一帧着色，否则 effect 再着色。远窗历史 FenceImmediateHighlightContext 为假时缓存未命中不在揭示帧跑 highlight.js。
+ * 行节点始终 `dangerouslySetInnerHTML`（`liveFenceLineHtml`），着色不从文本子节点换挂 `<code>`。
  */
 import { Check, Copy } from 'lucide-react'
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -18,7 +19,8 @@ import {
   shouldFollowArtifactTail,
   shouldAllowLiveFenceHighlight,
   shouldHighlightLiveFence,
-  shouldPaintLiveFenceHighlight
+  shouldPaintLiveFenceHighlight,
+  liveFenceLineHtml
 } from '../../shared/live-display'
 import {
   hasCachedFenceHighlight,
@@ -220,14 +222,10 @@ const ArtifactCodeLine = memo(function ArtifactCodeLine({
       <span className="code-artifact-line-number" aria-hidden>
         {index + 1}
       </span>
-      {html != null ? (
-        <code
-          className="code-artifact-line-text"
-          dangerouslySetInnerHTML={{ __html: html || ' ' }}
-        />
-      ) : (
-        <code className="code-artifact-line-text">{text || ' '}</code>
-      )}
+      <code
+        className="code-artifact-line-text"
+        dangerouslySetInnerHTML={{ __html: liveFenceLineHtml(html, text) }}
+      />
     </div>
   )
 })

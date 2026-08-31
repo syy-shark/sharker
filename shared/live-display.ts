@@ -1282,6 +1282,20 @@ export function shouldPaintLiveFenceHighlight(options: {
   return Boolean(options.cached)
 }
 
+/** 纯文本行转成与 highlight.js 同一条 `<code>` 的 innerHTML，着色不换节点。 */
+export function escapeLiveFenceLineHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/**
+ * 着色 html 或转义原文。`html != null` 走高亮（空串占一位），否则转义 text。
+ * 同一条 `<code dangerouslySetInnerHTML>`，收束着色不从文本子节点换挂。
+ */
+export function liveFenceLineHtml(html: string | undefined, text: string): string {
+  if (html != null) return html || ' '
+  return escapeLiveFenceLineHtml(text) || ' '
+}
+
 /** 已完成围栏行：对象没变就退回 prev，给 memo 子树当稳定 props */
 export function nextClosedFenceLines(
   prev: readonly string[] | null | undefined,

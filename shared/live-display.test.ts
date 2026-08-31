@@ -103,6 +103,8 @@ import {
   shouldAllowLiveFenceHighlight,
   shouldHighlightLiveFence,
   shouldPaintLiveFenceHighlight,
+  escapeLiveFenceLineHtml,
+  liveFenceLineHtml,
   shouldMountMessageActions,
   shouldReserveMessageActions,
   LIVE_TAIL_SAFE_PX,
@@ -814,6 +816,14 @@ describe('near-live message rows', () => {
       shouldPaintLiveFenceHighlight({ live: true, closed: true, streaming: false, cached: false })
     ).toBe(false)
     expect(shouldPaintLiveFenceHighlight({ live: false, closed: true, cached: false })).toBe(true)
+    expect(escapeLiveFenceLineHtml('a <b> & c')).toBe('a &lt;b&gt; &amp; c')
+    expect(liveFenceLineHtml(undefined, 'a <b>')).toBe('a &lt;b&gt;')
+    expect(liveFenceLineHtml(undefined, '')).toBe(' ')
+    expect(liveFenceLineHtml('', 'plain')).toBe(' ')
+    expect(liveFenceLineHtml('<span>hi</span>', 'plain')).toBe('<span>hi</span>')
+    expect(fenceSrc).toContain('liveFenceLineHtml(html, text)')
+    expect(fenceSrc).not.toContain('html != null ?')
+    expect(fenceSrc).toContain('dangerouslySetInnerHTML={{ __html: liveFenceLineHtml(html, text) }}')
     expect(shouldMountMessageActions({ showBody: true })).toBe(true)
     expect(shouldMountMessageActions({ showBody: true, isError: true })).toBe(false)
     expect(shouldMountMessageActions({ showBody: false })).toBe(false)
