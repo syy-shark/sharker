@@ -14,6 +14,7 @@ import {
   shouldRetireLiveOnHandoffHold,
   shouldReserveLiveAfterHandoffHold,
   shouldReuseReservedLiveOnHandoffAdopt,
+  shouldRestoreHeldLiveOnHandoffCancel,
   shouldMountLiveHandoffThinking,
   shouldStreamLiveAssistant,
   shouldAdoptLiveHandoff,
@@ -563,6 +564,18 @@ describe('commitAssistantReply persist targeting', () => {
       shouldReuseReservedLiveOnHandoffAdopt({
         liveHandoffId: 'a-live',
         liveAssistantId: null
+      })
+    ).toBe(false)
+    expect(
+      shouldRestoreHeldLiveOnHandoffCancel({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'b-live'
+      })
+    ).toBe(true)
+    expect(
+      shouldRestoreHeldLiveOnHandoffCancel({
+        liveHandoffId: 'a-live',
+        liveAssistantId: 'a-live'
       })
     ).toBe(false)
     expect(shouldPreserveLiveDiffExpanded({ streaming: true })).toBe(true)

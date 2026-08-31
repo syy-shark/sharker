@@ -11,6 +11,7 @@
  * `shouldRetireLiveOnHandoffHold` 跟进开轮就把上一轮推进 retired 环冻结，adopt 不再重挂。
  * `shouldReserveLiveAfterHandoffHold` 冻结后立刻预留新 id，首枚 token 不另挂槽。
  * `shouldReuseReservedLiveOnHandoffAdopt` 已预留新 id 时 adopt 只清 handoff，不再换 id 重挂。
+ * `shouldRestoreHeldLiveOnHandoffCancel` Stop 未出首枚 token 时把预留 id 收回 hold，避免空槽留下。
  * `shouldMountLiveHandoffThinking` 已有新预留 id 时不另挂 Thinking 行。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
@@ -520,6 +521,14 @@ export function shouldReuseReservedLiveOnHandoffAdopt(options: {
   const handoff = options.liveHandoffId?.trim()
   const live = options.liveAssistantId?.trim()
   return Boolean(handoff && live && live !== handoff)
+}
+
+/** Stop 未出首枚 token：把预留 id 收回 hold，空槽不能留下（对标 Codex #22860）。 */
+export function shouldRestoreHeldLiveOnHandoffCancel(options: {
+  liveHandoffId?: string | null
+  liveAssistantId?: string | null
+}): boolean {
+  return shouldReuseReservedLiveOnHandoffAdopt(options)
 }
 
 /**

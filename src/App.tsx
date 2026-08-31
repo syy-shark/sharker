@@ -1,6 +1,6 @@
 /**
  * 应用根组件：全局状态、发送/流式、设置与工作区/对话切换。
- * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，首枚 harness chunk 不再另挂槽（对标 Codex #22860 / #19260 / preserved streamed activity）。
+ * 直播正文 / 片段 / 思考 / 当前工具只写 `publishLiveStreamUi` 与 ref，不进 App React state；思考 / 状态 / 散文只加长时 16ms flush 不扫 extractFinalContent；`nextLivePublishedStreaming` 在 tool_start 收口无 role 正文后仍发布找词 / 跳底；命令末行不发 store；收束关 loading 不清 store，开下一轮才清片段；`beginTurnMeta` 不先发空直播体，准备中 seed 同一帧再写；跟进发送先保住上一轮直播实例（persist 未入列也保住），开轮就冻进 retired 环并立刻预留新 id，首枚 harness chunk 不再另挂槽，Stop 未出首枚 token 收回预留 id（对标 Codex #22860 / #19260 / preserved streamed activity）。
  * 打开的文件预览跟写盘 `changesRevision` 在文件树内重读，不在 tool_done 上抬 App。
  * 开轮自动压缩不重写可见对话柱，只在直播行标 Automatically compacting context。
  * @see src/ARCH.md
@@ -339,6 +339,7 @@ import {
   shouldRetireLiveOnHandoffHold,
   shouldReserveLiveAfterHandoffHold,
   shouldReuseReservedLiveOnHandoffAdopt,
+  shouldRestoreHeldLiveOnHandoffCancel,
   shouldPublishLiveStreamDuringHandoff,
   retiredLiveArticle,
   nextArchivedLiveArticles,
@@ -1710,6 +1711,44 @@ export default function App() {
     liveHandoffIdRef.current = null
     setLiveHandoffId(null)
   }, [])
+
+  /**
+   * Stop 未出首枚 token：收回已预留的新 id，并把 store 写回 hold 片段，
+   * 避免空直播槽留下（对标 Codex #22860）。
+   */
+  const cancelLiveHandoffWithoutCommit = useCallback(() => {
+    const fromId = liveHandoffIdRef.current
+    if (!shouldCancelLiveHandoffWithoutCommit({ handoffId: fromId })) return false
+    if (
+      fromId &&
+      shouldRestoreHeldLiveOnHandoffCancel({
+        liveHandoffId: fromId,
+        liveAssistantId: liveAssistantIdRef.current
+      })
+    ) {
+      liveAssistantIdRef.current = fromId
+      setLiveAssistantId(fromId)
+      const held = retiredLiveArticle(retiredLiveArticlesRef.current, fromId)
+      if (held) {
+        liveTurnMetaRef.current = held.meta
+        if (held.startedAt) turnStartedAtRef.current = held.startedAt
+      }
+    }
+    clearLiveHandoff(true)
+    streamingRef.current = extractFinalContent(segmentsRef.current) || ''
+    turnThinkingRef.current = ''
+    publishLiveStreamUi(
+      liveStreamPatchFromSegments(segmentsRef.current, {
+        streaming: streamingRef.current,
+        turnThinking: '',
+        activeTool: null,
+        liveTurnMeta: liveTurnMetaRef.current,
+        turnStartedAt: turnStartedAtRef.current || null,
+        turnHadThinking: turnHadThinkingRef.current
+      })
+    )
+    return true
+  }, [clearLiveHandoff])
 
   const clearRetiredLive = useCallback(() => {
     retiredLiveIdRef.current = null
@@ -4411,9 +4450,7 @@ export default function App() {
             doneCommittedMapRef.current = markDoneCommitted(doneCommittedMapRef.current, convId)
             doneCommittedRef.current = true
             turnOutcomeRef.current = 'aborted'
-            if (shouldCancelLiveHandoffWithoutCommit({ handoffId: liveHandoffIdRef.current })) {
-              clearLiveHandoff(true)
-            } else {
+            if (!cancelLiveHandoffWithoutCommit()) {
               segmentsRef.current = applyStreamChunk(segmentsRef.current, {
                 type: 'turn_cancelled',
                 conversationId: convId,
@@ -4486,7 +4523,7 @@ export default function App() {
       await dispatchTurn(trimmed, attachments, convId ?? undefined, extras)
     },
     [
-      clearLiveHandoff,
+      cancelLiveHandoffWithoutCommit,
       commitAssistantReply,
       dispatchTurn,
       flushSettingsDraftIfNeeded,
@@ -4743,9 +4780,8 @@ export default function App() {
     }
     if (
       action.commitStopToConversationId === activeConversationIdRef.current &&
-      shouldCancelLiveHandoffWithoutCommit({ handoffId: liveHandoffIdRef.current })
+      cancelLiveHandoffWithoutCommit()
     ) {
-      clearLiveHandoff(true)
       sendInFlightRef.current = false
       doneCommittedRef.current = true
       setLoading(false)
@@ -4857,7 +4893,7 @@ export default function App() {
         action.commitStopToConversationId
       )
     }
-  }, [clearLiveHandoff, commitAssistantReply, loading])
+  }, [cancelLiveHandoffWithoutCommit, commitAssistantReply, loading])
 
   /**
    * 设置页保存回调。
