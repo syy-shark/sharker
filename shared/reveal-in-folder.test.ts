@@ -130,6 +130,7 @@ import {
   SEND_FEEDBACK_LABEL,
   SHARE_FEEDBACK_LABEL,
   INCLUDE_CURRENT_SESSION_LOGS_LABEL,
+  FEEDBACK_COMPOSER_HINT,
   RESTORE_LABEL,
   ACTIVITY_LABEL,
   ADD_NEW_PROJECT_LABEL,
@@ -625,6 +626,9 @@ describe('reveal in folder', () => {
     expect(SEND_FEEDBACK_LABEL).toBe('Send Feedback')
     expect(SHARE_FEEDBACK_LABEL).toBe('Share feedback')
     expect(INCLUDE_CURRENT_SESSION_LOGS_LABEL).toBe('Include current Codex session logs')
+    expect(FEEDBACK_COMPOSER_HINT).toBe(
+      "Type / into the message composer to provide feedback for the team. If you trigger feedback in an existing chat, you can choose to share the existing session along with your feedback. After submitting your feedback, you'll receive a session ID that you can share with the team."
+    )
     expect(RESTORE_LABEL).toBe('Restore')
     expect(TOGGLE_FULL_SCREEN_LABEL).toBe('Toggle Full Screen')
     expect(OPEN_BROWSER_TAB_MENU_LABEL).toBe('Open Browser Tab')
@@ -668,7 +672,9 @@ describe('reveal in folder', () => {
     const feedbackSrc = readFileSync(join(root, '../src/components/FeedbackDialog.tsx'), 'utf8')
     expect(feedbackSrc).toContain('SHARE_FEEDBACK_LABEL')
     expect(feedbackSrc).toContain('INCLUDE_CURRENT_SESSION_LOGS_LABEL')
+    expect(feedbackSrc).toContain('FEEDBACK_COMPOSER_HINT')
     expect(feedbackSrc).toContain('FILE_CLOSE_LABEL')
+    expect(feedbackSrc).not.toContain('Opens the official')
     expect(feedbackSrc).not.toContain('aria-label="关闭反馈"')
     expect(feedbackSrc).not.toContain('>取消<')
     const imageSrc = readFileSync(join(root, '../src/components/ChatImage.tsx'), 'utf8')

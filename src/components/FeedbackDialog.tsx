@@ -1,5 +1,5 @@
 /**
- * `/feedback` 对话框：对标 Codex 桌面反馈窗（分类 / 说明 / 附带会话）。
+ * `/feedback` 对话框：对标 Codex 桌面反馈窗（分类 / 官方 leftover 说明 / 附带会话）。
  * 只复制本机诊断，不上传。
  * @see src/components/ARCH.md
  */
@@ -11,6 +11,7 @@ import {
   type FeedbackClassification
 } from '../../shared/feedback-bundle'
 import {
+  FEEDBACK_COMPOSER_HINT,
   FILE_CLOSE_LABEL,
   INCLUDE_CURRENT_SESSION_LOGS_LABEL,
   SHARE_FEEDBACK_LABEL
@@ -85,7 +86,7 @@ export function FeedbackDialog({ open, info, onClose }: Props) {
       <div className="feedback-dialog glass-popover popover-enter" role="dialog" aria-labelledby="feedback-dialog-title">
         <header className="feedback-dialog-head">
           <h2 id="feedback-dialog-title">{SHARE_FEEDBACK_LABEL}</h2>
-          <p>Opens the official `/feedback` form. Copies local diagnostics; does not upload.</p>
+          <p>{FEEDBACK_COMPOSER_HINT}</p>
         </header>
         <div className="feedback-dialog-kinds" role="radiogroup" aria-label="反馈类型">
           {FEEDBACK_CLASSIFICATIONS.map((item) => (

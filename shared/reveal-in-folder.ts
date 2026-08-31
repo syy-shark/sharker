@@ -163,6 +163,9 @@ export const SEND_FEEDBACK_LABEL = 'Send Feedback'
 export const SHARE_FEEDBACK_LABEL = 'Share feedback'
 /** Official `/feedback` checkbox (Codex desktop #26654). */
 export const INCLUDE_CURRENT_SESSION_LOGS_LABEL = 'Include current Codex session logs'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const FEEDBACK_COMPOSER_HINT =
+  "Type / into the message composer to provide feedback for the team. If you trigger feedback in an existing chat, you can choose to share the existing session along with your feedback. After submitting your feedback, you'll receive a session ID that you can share with the team."
 export const RESTORE_LABEL = 'Restore'
 /** Official worktrees FAQ: reopen the chat and restore from the saved snapshot. */
 export const WORKTREE_RESTORE_BANNER = 'Restore this worktree from its snapshot.'
