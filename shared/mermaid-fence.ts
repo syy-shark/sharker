@@ -138,6 +138,16 @@ export function resolveLiveMermaidSvg(options: {
   return options.svg || options.cached || ''
 }
 
+/** 成图后仍走同一 `mermaid-slot`，不另挂一套外壳。 */
+export function shouldShowMermaidSvg(options: {
+  closed: boolean
+  hasSource: boolean
+  failed: boolean
+  svg: string
+}): boolean {
+  return options.closed && options.hasSource && !options.failed && Boolean(options.svg)
+}
+
 /** 缓存已有 SVG 时重挂不再开工 mermaid.render / setState。 */
 export function shouldStartMermaidPaintJob(options: {
   paint: boolean

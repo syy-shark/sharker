@@ -8,6 +8,7 @@ import {
   shouldRenderLiveMermaid,
   shouldWarmLiveMermaid,
   resolveLiveMermaidSvg,
+  shouldShowMermaidSvg,
   shouldStartMermaidPaintJob,
   shouldDeferMermaidPaintJob,
   takeMermaidRenderJob,
@@ -56,6 +57,18 @@ describe('mermaid-fence', () => {
       '<svg>s</svg>'
     )
     expect(resolveLiveMermaidSvg({ paint: true, svg: '' })).toBe('')
+    expect(
+      shouldShowMermaidSvg({ closed: true, hasSource: true, failed: false, svg: '<svg></svg>' })
+    ).toBe(true)
+    expect(
+      shouldShowMermaidSvg({ closed: true, hasSource: true, failed: false, svg: '' })
+    ).toBe(false)
+    expect(
+      shouldShowMermaidSvg({ closed: false, hasSource: true, failed: false, svg: '<svg></svg>' })
+    ).toBe(false)
+    expect(
+      shouldShowMermaidSvg({ closed: true, hasSource: true, failed: true, svg: '<svg></svg>' })
+    ).toBe(false)
     expect(shouldStartMermaidPaintJob({ paint: true, hasCachedSvg: true })).toBe(false)
     expect(shouldStartMermaidPaintJob({ paint: true, hasCachedSvg: false })).toBe(true)
     expect(shouldStartMermaidPaintJob({ paint: false, hasCachedSvg: false })).toBe(false)

@@ -4,6 +4,7 @@
  * 直播中围栏闭合后 effect 开工成图写缓存（不 setSvg）；收束后若 SVG 缓存已暖，同一帧成图；
  * 否则与收束预取共用 `renderMermaidSvg`，立刻跟进的重挂不取消已开工的成图。
  * 缓存命中重挂不再 render / setSvg；远窗 FenceImmediateHighlightContext 为假时未命中成图推到下一帧。
+ * 成图前后共用 `mermaid-slot`，不换 CodeArtifactShell 的第一层子节点类型。
  * @see src/components/ARCH.md
  */
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -13,6 +14,7 @@ import {
   readUiMermaidTheme,
   renderMermaidSvg,
   resolveLiveMermaidSvg,
+  shouldShowMermaidSvg,
   shouldRenderLiveMermaid,
   shouldStartMermaidPaintJob,
   shouldDeferMermaidPaintJob,
@@ -132,34 +134,29 @@ export function MermaidBlock({
     }
   }, [paint, source, theme, closed, stream, preferImmediate])
 
-  const shell = (children: ReactNode, bodyClassName?: string, ariaLabel?: string) => (
+  const showSvg = shouldShowMermaidSvg({
+    closed,
+    hasSource: Boolean(source.trim()),
+    failed,
+    svg: shownSvg
+  })
+  const aspect = showSvg ? mermaidSvgAspectStyle(shownSvg) : undefined
+  return (
     <CodeArtifactShell
       className="live-fence-tail"
       label={fenceLang}
       copyText={source}
-      bodyClassName={bodyClassName}
-      ariaLabel={ariaLabel ?? `${fenceLang} 代码块`}
-      followTail={!closed && !shownSvg}
+      bodyClassName={showSvg ? 'mermaid-block-scroll' : undefined}
+      ariaLabel={failed ? 'mermaid 解析失败' : showSvg ? 'mermaid 图' : `${fenceLang} 代码块`}
+      followTail={!closed && !showSvg}
     >
-      {children}
+      <div className="mermaid-slot" style={{ minHeight: reserved }}>
+        {showSvg ? (
+          <div className="mermaid-block" style={aspect} dangerouslySetInnerHTML={{ __html: shownSvg }} />
+        ) : (
+          placeholder(<ArtifactCodeLines code={source} />)
+        )}
+      </div>
     </CodeArtifactShell>
-  )
-
-  if (!closed || !source.trim() || failed || !shownSvg) {
-    return shell(
-      placeholder(<ArtifactCodeLines code={source} />),
-      undefined,
-      failed ? 'mermaid 解析失败' : undefined
-    )
-  }
-  const aspect = mermaidSvgAspectStyle(shownSvg)
-  return shell(
-    <div
-      className="mermaid-block"
-      style={{ ...aspect, minHeight: reserved }}
-      dangerouslySetInnerHTML={{ __html: shownSvg }}
-    />,
-    'mermaid-block-scroll',
-    'mermaid 图'
   )
 }
