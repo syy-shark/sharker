@@ -2,7 +2,7 @@
  * 聊天主视图：消息列表、流式展示、排队气泡；输入区在 ChatComposerInputs（不接收直播 token）。
  * 贴底跟随在 ResizeObserver 回调里同帧写 scrollTop（内容、滚动视口与输入区都盯）。
  * 开轮 / 收束不拆这只 observer，未贴底也记下 `lastHeight`，以免归零或陈旧高度误跟（对标 Codex #37849 / #37872）。
- * pin 列 / 历史源 / pin 后缺口 / pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220）。
+ * pin 列 / 历史源 / pin 后缺口 / pinned / 冻结 pinned / 无 pin / 活动 / handoff 槽 `useMemo`；persist 入列复用同一 gap 与 pin id，冻结槽不跟 loading，收束不重挂上一轮直播树；直播槽不订 `historyHasReserved`，贴底 setState / persist 入列不重建历史行与直播槽（对标 Codex #22860 / #38220 / #37849）。
  * 历史行才盯 ResizeObserver 量内在高度；量到远窗真高后 rAF 写在行上并同帧补视口上方 scrollTop，不抬 React state、不重建 `historicalRows`（对标 Codex #22860 / #39120 / #38220）。
  * ⌘F 查找条与「新消息」芯片都在滚动层外占位；柱尾安全距留给操作条（对标 Codex #40788 / #38220 / #41155）。
  * 查找把直播命中与历史命中拆开，token 不重挂历史气泡；直播命中只订 `streaming` 正文，命中列表没变不抬对话柱，当前命中在直播行时就地重标（对标 Codex #33907 / #22860）。
@@ -76,6 +76,7 @@ import {
   shouldPinActiveLiveAssistant,
   shouldRenderLiveAssistantRow,
   shouldStreamLiveAssistant,
+  nextFrozenPinnedLiveSlots,
   nextPinnedAfterGaps,
   nextPinnedLiveAssistantIds,
   nextPinnedTranscriptGaps,
@@ -83,6 +84,7 @@ import {
   frozenHistoricalArticle,
   shouldMountActiveLiveSlot,
   shouldStreamPinnedLiveAssistant,
+  type FrozenPinnedLiveSlotIdentity,
   type RetiredLiveArticle
 } from '../../shared/session-runtime'
 import { liveHasAssistantBody, type LiveAnswerView } from '../../shared/live-stream-core'
@@ -219,6 +221,9 @@ const EMPTY_RETIRED_ARTICLES: readonly RetiredLiveArticle[] = []
 const EMPTY_HISTORICAL_MESSAGES: ChatMessage[] = []
 const EMPTY_PINNED_AFTER_ROWS: readonly ReactNode[][] = []
 const EMPTY_PINNED_LIVE_ROWS: readonly ReactNode[] = []
+const EMPTY_FROZEN_PINNED_SLOTS: ReadonlyMap<string, ReactNode> = new Map()
+const EMPTY_FROZEN_PINNED_IDENTITIES: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity> =
+  new Map()
 
 /** 贴回底部：只有真正滚到尽头才恢复跟随 */
 const AT_BOTTOM_PX = 16
@@ -1161,6 +1166,11 @@ export const ChatView = memo(function ChatView({
     pinnedGapsHeldRef.current = null
     pinnedGapsSessionRef.current = sessionKey
     pinnedLiveIdsHeldRef.current = []
+    frozenPinnedSlotsHeldRef.current = {
+      slots: EMPTY_FROZEN_PINNED_SLOTS,
+      identities: EMPTY_FROZEN_PINNED_IDENTITIES
+    }
+    frozenPinnedSessionRef.current = sessionKey
     intrinsicHeightsRef.current = new Map()
     onCopyPickerClose?.()
   }, [sessionKey, onCopyPickerClose])
@@ -1173,6 +1183,11 @@ export const ChatView = memo(function ChatView({
   const pinnedGapsHeldRef = useRef<ChatMessage[][] | null>(null)
   const pinnedGapsSessionRef = useRef(sessionKey)
   const pinnedLiveIdsHeldRef = useRef<string[]>([])
+  const frozenPinnedSlotsHeldRef = useRef<{
+    slots: ReadonlyMap<string, ReactNode>
+    identities: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity>
+  }>({ slots: EMPTY_FROZEN_PINNED_SLOTS, identities: EMPTY_FROZEN_PINNED_IDENTITIES })
+  const frozenPinnedSessionRef = useRef(sessionKey)
   const nearLiveImmediateSessionRef = useRef(sessionKey)
   if (nearLiveImmediateSessionRef.current !== sessionKey) {
     nearLiveImmediateSessionRef.current = sessionKey
@@ -2915,24 +2930,37 @@ export const ChatView = memo(function ChatView({
     toolOutputDisplay
   ])
 
-  const pinnedLiveRows = useMemo(() => {
-    if (pinnedLiveIds.length === 0) return EMPTY_PINNED_LIVE_ROWS
-    return pinnedLiveIds.map((id, index) => {
+  const frozenPinnedSlots = useMemo(() => {
+    if (frozenPinnedSessionRef.current !== sessionKey) {
+      frozenPinnedSessionRef.current = sessionKey
+      frozenPinnedSlotsHeldRef.current = {
+        slots: EMPTY_FROZEN_PINNED_SLOTS,
+        identities: EMPTY_FROZEN_PINNED_IDENTITIES
+      }
+    }
+    const identities = new Map<string, FrozenPinnedLiveSlotIdentity>()
+    for (const id of pinnedLiveIds) {
       const article = retiredLiveArticle(retiredArticles, id)
-      const frozen = Boolean(article)
-      return (
-        <Fragment key={id}>
+      if (!article) continue
+      identities.set(id, {
+        article,
+        findHit: liveMemoryFindHits.length > 0 && liveRowId === id,
+        findCurrent: currentFindMessageId === id
+      })
+    }
+    const next = nextFrozenPinnedLiveSlots(
+      frozenPinnedSlotsHeldRef.current.slots,
+      frozenPinnedSlotsHeldRef.current.identities,
+      identities,
+      (id) => {
+        const article = retiredLiveArticle(retiredArticles, id)
+        return (
           <LiveAssistantSlot
             key={id}
             liveRowId={id}
-            loading={loading}
-            isStreaming={shouldStreamPinnedLiveAssistant({
-              pinnedId: id,
-              liveAssistantId,
-              frozen,
-              liveStreaming
-            })}
-            frozen={frozen}
+            loading={false}
+            isStreaming={false}
+            frozen
             frozenParts={article?.parts ?? null}
             frozenMeta={article?.meta ?? null}
             frozenStartedAt={article?.startedAt ?? null}
@@ -2940,17 +2968,68 @@ export const ChatView = memo(function ChatView({
             frozenProcess={article?.process ?? null}
             findHit={liveMemoryFindHits.length > 0 && liveRowId === id}
             findCurrent={currentFindMessageId === id}
-            modelLabel={modelLabel}
-            approval={frozen ? null : approval}
-            approvalResponding={approvalResponding}
-            onApproval={onApproval}
-            userInput={frozen ? null : userInput}
-            userInputResponding={userInputResponding}
-            onUserInput={onUserInput}
             onOpenSubAgent={onOpenSubAgent}
             toolOutputDisplay={toolOutputDisplay}
             onNeedFullMessage={onNeedFullMessage}
           />
+        )
+      }
+    )
+    frozenPinnedSlotsHeldRef.current = next
+    return next.slots
+  }, [
+    currentFindMessageId,
+    liveMemoryFindHits,
+    liveRowId,
+    onNeedFullMessage,
+    onOpenSubAgent,
+    pinnedLiveIds,
+    retiredArticles,
+    sessionKey,
+    toolOutputDisplay
+  ])
+
+  const pinnedLiveRows = useMemo(() => {
+    if (pinnedLiveIds.length === 0) return EMPTY_PINNED_LIVE_ROWS
+    return pinnedLiveIds.map((id, index) => {
+      const article = retiredLiveArticle(retiredArticles, id)
+      const frozen = Boolean(article)
+      const slot = frozen
+        ? frozenPinnedSlots.get(id)
+        : (
+            <LiveAssistantSlot
+              key={id}
+              liveRowId={id}
+              loading={loading}
+              isStreaming={shouldStreamPinnedLiveAssistant({
+                pinnedId: id,
+                liveAssistantId,
+                frozen,
+                liveStreaming
+              })}
+              frozen={frozen}
+              frozenParts={article?.parts ?? null}
+              frozenMeta={article?.meta ?? null}
+              frozenStartedAt={article?.startedAt ?? null}
+              frozenCopyable={article?.copyable ?? undefined}
+              frozenProcess={article?.process ?? null}
+              findHit={liveMemoryFindHits.length > 0 && liveRowId === id}
+              findCurrent={currentFindMessageId === id}
+              modelLabel={modelLabel}
+              approval={approval}
+              approvalResponding={approvalResponding}
+              onApproval={onApproval}
+              userInput={userInput}
+              userInputResponding={userInputResponding}
+              onUserInput={onUserInput}
+              onOpenSubAgent={onOpenSubAgent}
+              toolOutputDisplay={toolOutputDisplay}
+              onNeedFullMessage={onNeedFullMessage}
+            />
+          )
+      return (
+        <Fragment key={id}>
+          {slot}
           {pinnedAfterRows[index]}
         </Fragment>
       )
@@ -2959,6 +3038,7 @@ export const ChatView = memo(function ChatView({
     approval,
     approvalResponding,
     currentFindMessageId,
+    frozenPinnedSlots,
     liveAssistantId,
     liveMemoryFindHits,
     liveRowId,
@@ -2969,6 +3049,7 @@ export const ChatView = memo(function ChatView({
     onNeedFullMessage,
     onOpenSubAgent,
     onUserInput,
+    frozenPinnedSlots,
     pinnedAfterRows,
     pinnedLiveIds,
     retiredArticles,

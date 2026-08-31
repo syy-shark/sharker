@@ -5,6 +5,7 @@
  * `pinActiveLive` 钉进 map 的当前行由 `shouldStreamPinnedLiveAssistant` 继续跟秒表。
  * `nextPinnedTranscriptGaps` / `nextPinnedAfterGaps` 给 ChatView 稳定的历史缺口；预留行 persist 入列后复用同一 gap 引用，不重建历史行。
  * `nextPinnedLiveAssistantIds` 在 hideReserved 翻转但 id 没变时复用同一 pin 列，贴底 setState 不重建 pinned 槽。
+ * `nextFrozenPinnedLiveSlots` 冻结槽不跟 loading / 秒表，收束不重挂上一轮直播树。
  * `shouldPublishEmptyLiveBodyOnBeginTurn` 开轮不先发空直播体，留给同一帧的准备中 seed。
  * 再掉出 ejected 环的行进 parts 归档（当前对话不截断，切对话清掉），不抬 `EJECTED_LIVE_LIMIT`。
  * 归档行带过程快照，重挂不丢 Thought / 时间线、不塌行高。
@@ -837,6 +838,64 @@ export function nextPinnedLiveAssistantIds(
   options: Parameters<typeof pinnedLiveAssistantIds>[0]
 ): string[] {
   return reusePinnedLiveIds(prev, pinnedLiveAssistantIds(options))
+}
+
+/** 冻结 pinned 槽的身份：article 引用与找词位没变才复用元素 */
+export type FrozenPinnedLiveSlotIdentity = {
+  article: unknown
+  findHit: boolean
+  findCurrent: boolean
+}
+
+const EMPTY_FROZEN_PINNED_MAP: ReadonlyMap<string, never> = new Map()
+
+/** 冻结行不跟 loading / 秒表；article 与找词没变才复用上一份元素（对标 Codex #22860 / #37849）。 */
+export function sameFrozenPinnedLiveSlotIdentity(
+  prev: FrozenPinnedLiveSlotIdentity | undefined,
+  next: FrozenPinnedLiveSlotIdentity
+): boolean {
+  if (!prev) return false
+  return (
+    prev.article === next.article &&
+    prev.findHit === next.findHit &&
+    prev.findCurrent === next.findCurrent
+  )
+}
+
+/**
+ * 只给仍在 retired 环的 id 建槽。身份没变的 id 留下上一份元素，
+ * 收束 loading 翻转不重挂冻结直播树（对标 Codex #22860 / #37849）。
+ */
+export function nextFrozenPinnedLiveSlots<T>(
+  prevSlots: ReadonlyMap<string, T> | null | undefined,
+  prevIdentities: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity> | null | undefined,
+  nextIdentities: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity>,
+  build: (id: string) => T
+): {
+  slots: ReadonlyMap<string, T>
+  identities: ReadonlyMap<string, FrozenPinnedLiveSlotIdentity>
+} {
+  if (nextIdentities.size === 0) {
+    return {
+      slots: EMPTY_FROZEN_PINNED_MAP as ReadonlyMap<string, T>,
+      identities: EMPTY_FROZEN_PINNED_MAP
+    }
+  }
+  const slots = new Map<string, T>()
+  let reusedAll = Boolean(prevSlots && prevSlots.size === nextIdentities.size)
+  for (const [id, identity] of nextIdentities) {
+    const held = prevSlots?.get(id)
+    if (held != null && sameFrozenPinnedLiveSlotIdentity(prevIdentities?.get(id), identity)) {
+      slots.set(id, held)
+    } else {
+      reusedAll = false
+      slots.set(id, build(id))
+    }
+  }
+  if (reusedAll && prevSlots && prevIdentities) {
+    return { slots: prevSlots, identities: prevIdentities }
+  }
+  return { slots, identities: nextIdentities }
 }
 
 /**

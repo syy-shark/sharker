@@ -35,6 +35,8 @@ import {
   nextPinnedLiveAssistantIds,
   reusePinnedLiveIds,
   nextPinnedAfterGaps,
+  nextFrozenPinnedLiveSlots,
+  sameFrozenPinnedLiveSlotIdentity,
   shouldMountActiveLiveSlot,
   shouldMountUnpinnedLiveSlot,
   shouldStreamPinnedLiveAssistant,
@@ -706,6 +708,54 @@ describe('commitAssistantReply persist targeting', () => {
     const emptyPins = reusePinnedLiveIds(['a-live'], [])
     expect(emptyPins).toEqual([])
     expect(reusePinnedLiveIds(['gone'], [])).toBe(emptyPins)
+    const frozenArticle = { id: 'a-live' }
+    const frozenId = {
+      article: frozenArticle,
+      findHit: false,
+      findCurrent: false
+    }
+    expect(sameFrozenPinnedLiveSlotIdentity(undefined, frozenId)).toBe(false)
+    expect(sameFrozenPinnedLiveSlotIdentity(frozenId, frozenId)).toBe(true)
+    expect(
+      sameFrozenPinnedLiveSlotIdentity(frozenId, { ...frozenId, findHit: true })
+    ).toBe(false)
+    const frozenPrev = new Map([['a-live', 'slot-a']])
+    const frozenIdentities = new Map([['a-live', frozenId]])
+    let frozenBuilt = 0
+    const frozenSame = nextFrozenPinnedLiveSlots(
+      frozenPrev,
+      frozenIdentities,
+      new Map([['a-live', frozenId]]),
+      () => {
+        frozenBuilt += 1
+        return 'next-a'
+      }
+    )
+    expect(frozenSame.slots).toBe(frozenPrev)
+    expect(frozenBuilt).toBe(0)
+    const frozenEmpty = nextFrozenPinnedLiveSlots(
+      frozenPrev,
+      frozenIdentities,
+      new Map(),
+      () => 'gone'
+    )
+    expect(frozenEmpty.slots.size).toBe(0)
+    expect(
+      nextFrozenPinnedLiveSlots(frozenEmpty.slots, frozenEmpty.identities, new Map(), () => 'x')
+        .slots
+    ).toBe(frozenEmpty.slots)
+    const grownArticle = { id: 'b-live' }
+    const frozenGrown = nextFrozenPinnedLiveSlots(
+      frozenPrev,
+      frozenIdentities,
+      new Map([
+        ['a-live', frozenId],
+        ['b-live', { article: grownArticle, findHit: false, findCurrent: false }]
+      ]),
+      (id) => `slot-${id}`
+    )
+    expect(frozenGrown.slots.get('a-live')).toBe('slot-a')
+    expect(frozenGrown.slots.get('b-live')).toBe('slot-b-live')
     expect(nextPinnedTranscriptGaps([], [], [])).toBeNull()
     const u1 = { id: 'u1', role: 'user' as const, content: 'hi' }
     const liveDraft = { id: 'a-live', role: 'assistant' as const, content: 'draft' }
