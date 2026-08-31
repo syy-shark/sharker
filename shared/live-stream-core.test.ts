@@ -1600,16 +1600,21 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedTranscriptGaps')
     expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveAssistantIds')
     expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveRows')
-    expect(src('../src/components/ChatView.tsx')).toContain('frozenPinnedSlots')
-    expect(src('../src/components/ChatView.tsx')).toContain('nextFrozenPinnedLiveSlots')
-    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_FROZEN_PINNED_SLOTS')
-    expect(src('../src/components/ChatView.tsx')).toContain('activePinnedLiveSlots')
-    expect(src('../src/components/ChatView.tsx')).toContain('nextActivePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('pinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('nextPinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).toContain('EMPTY_PINNED_LIVE_SLOTS')
+    expect(src('../src/components/ChatView.tsx')).not.toContain('frozenPinnedSlots')
+    expect(src('../src/components/ChatView.tsx')).not.toContain('activePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).not.toContain('nextFrozenPinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).not.toContain('nextActivePinnedLiveSlots')
+    expect(src('../src/components/ChatView.tsx')).not.toContain(
+      'frozen ? (frozenPinnedSlots.get(id)'
+    )
     expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveApprovalToPinnedSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('shouldAttachLiveLoadingToPinnedSlot')
     expect(src('../src/components/ChatView.tsx')).toContain('liveHandoffId')
     expect(src('../src/components/ChatView.tsx')).toContain(
-      'shouldAttachLiveLoadingToPinnedSlot({\n          pinnedId: id,\n          liveAssistantId,\n          liveHandoffId'
+      'shouldAttachLiveLoadingToPinnedSlot({\n              pinnedId: id,\n              liveAssistantId,\n              liveHandoffId'
     )
     expect(src('../src/components/ChatView.tsx')).toContain('loading={identity?.loading ?? false}')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
@@ -1636,9 +1641,10 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
       'return historicalSource.map((m, index, rows) =>'
     )
     expect(src('../src/components/ChatView.tsx')).not.toContain(
-      'liveStreaming,\n    loading,\n    modelLabel,\n    onApproval,\n    onNeedFullMessage,\n    onOpenSubAgent,\n    onUserInput,\n    frozenPinnedSlots'
+      'liveStreaming,\n    loading,\n    modelLabel,\n    onApproval,\n    onNeedFullMessage,\n    onOpenSubAgent,\n    onUserInput,\n    pinnedLiveSlots'
     )
-    expect(src('../src/components/ChatView.tsx')).toContain('loading={false}')
+    expect(src('../src/components/ChatView.tsx')).toContain('loading: frozen\n          ? false')
+    expect(src('../src/components/ChatView.tsx')).toContain('isStreaming: frozen\n          ? false')
     expect(src('../src/components/ChatView.tsx')).not.toContain(
       'sessionKey,\n    toolOutputDisplay,\n    loading'
     )
@@ -1741,6 +1747,8 @@ describe('live-stream-core (16ms path without combinatorial table)', () => {
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveAssistantIds')
     expect(src('session-runtime.ts')).toContain('nextFrozenPinnedLiveSlots')
     expect(src('session-runtime.ts')).toContain('sameFrozenPinnedLiveSlotIdentity')
+    expect(src('session-runtime.ts')).toContain('nextPinnedLiveSlots')
+    expect(src('session-runtime.ts')).toContain('samePinnedLiveSlotIdentity')
     expect(src('session-runtime.ts')).toContain('nextPinnedLiveRowNodes')
     expect(src('session-runtime.ts')).toContain('nextHistoricalRowNodes')
     expect(src('session-runtime.ts')).toContain('sameHistoricalRowIdentity')

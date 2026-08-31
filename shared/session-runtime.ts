@@ -16,6 +16,7 @@
  * `shouldPublishPendingLiveOnHandoffRestore` 切回时 store 给新槽看下一轮，retired 环保住冻结 hold。
  * `shouldMountLiveHandoffThinking` 已有新预留 id 时不另挂 Thinking 行。
  * `nextActivePinnedLiveSlots` 身份没变就留下未冻结槽，审批出现不重挂 hold 行。
+ * `nextPinnedLiveSlots` 同一 map 收 active→frozen，跟进冻结只换 props、不换槽归属。
  * `nextPinnedLiveRowNodes` 槽与 after 没变就留下同一 Fragment，loading 翻转不重挂冻结行。
  * `nextHistoricalRowNodes` 挤出冻结行时只重画该 id，其余历史行留下。
  * `nextPinnedAfterRowNodes` 挤出冻结行时只换该 pin 后缺口，其余 after 数组留下以免重挂冻结 Fragment。
@@ -1096,6 +1097,64 @@ export function nextActivePinnedLiveSlots<T>(
     prevIdentities,
     nextIdentities,
     sameActivePinnedLiveSlotIdentity,
+    build
+  )
+}
+
+/** pinned 槽身份：冻结与活动同一份，active→frozen 只换 props、不换 map */
+export type PinnedLiveSlotIdentity = {
+  frozen: boolean
+  article: unknown
+  loading: boolean
+  isStreaming: boolean
+  findHit: boolean
+  findCurrent: boolean
+  approval: unknown
+  userInput: unknown
+  approvalResponding: boolean
+  userInputResponding: boolean
+  toolOutputDisplay?: string
+}
+
+/** 冻结位与 article / loading / 审批没变才复用上一份元素（对标 Codex #22860）。 */
+export function samePinnedLiveSlotIdentity(
+  prev: PinnedLiveSlotIdentity | undefined,
+  next: PinnedLiveSlotIdentity
+): boolean {
+  if (!prev) return false
+  return (
+    prev.frozen === next.frozen &&
+    prev.article === next.article &&
+    prev.loading === next.loading &&
+    prev.isStreaming === next.isStreaming &&
+    prev.findHit === next.findHit &&
+    prev.findCurrent === next.findCurrent &&
+    prev.approval === next.approval &&
+    prev.userInput === next.userInput &&
+    prev.approvalResponding === next.approvalResponding &&
+    prev.userInputResponding === next.userInputResponding &&
+    prev.toolOutputDisplay === next.toolOutputDisplay
+  )
+}
+
+/**
+ * 全部 pinned id 同一 map。跟进冻结只改该 id 的 frozen / article，
+ * 不把槽从 active map 挪到 frozen map（对标 Codex #22860 / #37849）。
+ */
+export function nextPinnedLiveSlots<T>(
+  prevSlots: ReadonlyMap<string, T> | null | undefined,
+  prevIdentities: ReadonlyMap<string, PinnedLiveSlotIdentity> | null | undefined,
+  nextIdentities: ReadonlyMap<string, PinnedLiveSlotIdentity>,
+  build: (id: string) => T
+): {
+  slots: ReadonlyMap<string, T>
+  identities: ReadonlyMap<string, PinnedLiveSlotIdentity>
+} {
+  return nextHeldSlotMap(
+    prevSlots,
+    prevIdentities,
+    nextIdentities,
+    samePinnedLiveSlotIdentity,
     build
   )
 }

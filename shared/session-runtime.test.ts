@@ -45,11 +45,13 @@ import {
   nextPinnedAfterGaps,
   nextActivePinnedLiveSlots,
   nextFrozenPinnedLiveSlots,
+  nextPinnedLiveSlots,
   nextPinnedLiveRowNodes,
   nextHistoricalRowNodes,
   nextPinnedAfterRowNodes,
   sameActivePinnedLiveSlotIdentity,
   sameFrozenPinnedLiveSlotIdentity,
+  samePinnedLiveSlotIdentity,
   sameHistoricalRowIdentity,
   shouldAttachLiveApprovalToPinnedSlot,
   shouldAttachLiveLoadingToPinnedSlot,
@@ -1020,6 +1022,70 @@ describe('commitAssistantReply persist targeting', () => {
     )
     expect(handoffAfterFollowUp.slots.get('a-live')).toBe('hold-a')
     expect(handoffBuilt).toBe(0)
+    const unifiedActive = {
+      frozen: false,
+      article: null,
+      loading: false,
+      isStreaming: false,
+      findHit: false,
+      findCurrent: false,
+      approval: null,
+      userInput: null,
+      approvalResponding: false,
+      userInputResponding: false
+    }
+    const unifiedFrozen = { ...unifiedActive, frozen: true, article: frozenArticle }
+    expect(samePinnedLiveSlotIdentity(undefined, unifiedActive)).toBe(false)
+    expect(samePinnedLiveSlotIdentity(unifiedActive, unifiedActive)).toBe(true)
+    expect(samePinnedLiveSlotIdentity(unifiedActive, unifiedFrozen)).toBe(false)
+    const unifiedPrev = new Map([['a-live', 'hold-a']])
+    let freezeBuilt = 0
+    const afterFreeze = nextPinnedLiveSlots(
+      unifiedPrev,
+      new Map([['a-live', unifiedActive]]),
+      new Map([['a-live', unifiedFrozen]]),
+      () => {
+        freezeBuilt += 1
+        return 'frozen-a'
+      }
+    )
+    expect(afterFreeze.slots.get('a-live')).toBe('frozen-a')
+    expect(freezeBuilt).toBe(1)
+    let freezeAgain = 0
+    const afterFreezeStable = nextPinnedLiveSlots(
+      afterFreeze.slots,
+      afterFreeze.identities,
+      new Map([['a-live', unifiedFrozen]]),
+      () => {
+        freezeAgain += 1
+        return 'frozen-a-remount'
+      }
+    )
+    expect(afterFreezeStable.slots.get('a-live')).toBe('frozen-a')
+    expect(freezeAgain).toBe(0)
+    const unifiedLive = { ...unifiedActive, loading: true, isStreaming: true }
+    let siblingBuilt = 0
+    const afterSiblingLoading = nextPinnedLiveSlots(
+      new Map([
+        ['a-live', 'frozen-a'],
+        ['b-live', 'live-b']
+      ]),
+      new Map([
+        ['a-live', unifiedFrozen],
+        ['b-live', unifiedLive]
+      ]),
+      new Map([
+        ['a-live', unifiedFrozen],
+        ['b-live', { ...unifiedLive, loading: false }]
+      ]),
+      (id) => {
+        siblingBuilt += 1
+        return `next-${id}`
+      }
+    )
+    expect(afterSiblingLoading.slots.get('a-live')).toBe('frozen-a')
+    expect(afterSiblingLoading.slots.get('b-live')).toBe('next-b-live')
+    expect(siblingBuilt).toBe(1)
     const rowAfter = [['u2']]
     const rowSlots = new Map<string, unknown>([
       ['a-live', 'frozen-a'],
