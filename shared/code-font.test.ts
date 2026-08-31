@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CODE_FONT_LABEL, codeFontStack, parseCodeFont } from './code-font'
+import { CODE_FONT_INTRO, CODE_FONT_LABEL, codeFontStack, parseCodeFont } from './code-font'
 import { DEFAULT_SETTINGS } from './types'
 import { normalizeSettings } from './workspace'
 
@@ -36,8 +36,11 @@ describe('code font', () => {
 
   it('uses official Code font settings copy', () => {
     expect(CODE_FONT_LABEL).toBe('Code font')
+    expect(CODE_FONT_INTRO).toMatch(/same font for the review pane/)
+    expect(CODE_FONT_INTRO).toMatch(/Settings pane as Code font/)
     const appearanceSrc = readFileSync(new URL('../src/components/settings/AppearanceSettings.tsx', import.meta.url), 'utf8')
     expect(appearanceSrc).toContain('CODE_FONT_LABEL')
+    expect(appearanceSrc).toContain('CODE_FONT_INTRO')
     expect(appearanceSrc).not.toContain('title="代码字体"')
   })
 })

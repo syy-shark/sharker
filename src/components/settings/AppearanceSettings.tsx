@@ -17,6 +17,7 @@ import {
   UI_FONT_SCALE_MIN
 } from '../../../shared/ui-font-scale'
 import {
+  CODE_FONT_INTRO,
   CODE_FONT_LABEL,
   CODE_FONT_OPTIONS,
   codeFontStack,
@@ -254,7 +255,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
           </SettingsRow>
           <SettingsRow
             title={CODE_FONT_LABEL}
-            description="对标 Codex Code font。审查、终端与对话代码共用这一栈。"
+            description={CODE_FONT_INTRO}
             last
           >
             <SettingsSelect

@@ -32,6 +32,8 @@ import {
   parseFollowUpBehavior,
   resolveApprovalHotkey,
   resolveComposerSubmit,
+  RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT,
+  RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT,
   restorePreviousComposerPrompt,
   SEND_LABEL,
   STOP_LABEL,
@@ -90,6 +92,9 @@ describe('composer submit', () => {
     expect(PLAN_MODE_LABEL).toBe('Plan mode')
     expect(TOGGLE_PLAN_MODE_LABEL).toBe('Toggle plan mode')
     expect(FOLLOW_UP_BEHAVIOR_LABEL).toBe('Follow-up behavior')
+    expect(RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT).toMatch(/wrong target/)
+    expect(RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT).toMatch(/up arrow key/)
+    expect(RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT).toMatch(/cancel worktree creation/)
     expect(FOLLOW_UP_BEHAVIOR_INTRO).toMatch(/steer the current run or wait for the next run/)
     expect(FOLLOW_UP_BEHAVIOR_INTRO).toMatch(/Queued messages appear above the composer/)
     expect(QUEUE_SAVES_THE_MESSAGE_LABEL).toMatch(/wait until the current work finishes/)

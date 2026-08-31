@@ -98,6 +98,8 @@ import {
   resolveApprovalHotkey,
   resolveComposerSubmit,
   restorePreviousComposerPrompt,
+  RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT,
+  RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT,
   isPlanModeToggleKey,
   shouldEditLastUserOnEscape,
   shouldQueueComposerSlash,
@@ -1943,6 +1945,7 @@ export const ComposerDock = memo(
               className="slash-menu popover-enter"
               role="listbox"
               aria-label={RESTORE_PREVIOUS_COMPOSER_PROMPT_LABEL}
+              title={RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT}
               aria-activedescendant={
                 promptHits[promptSearchIndex] ? `prompt-option-${promptSearchIndex}` : undefined
               }
@@ -2539,8 +2542,9 @@ export const ComposerDock = memo(
                     type="button"
                     className={`composer-thread-chip${threadMode === 'worktree' ? ' is-active' : ''}`}
                     aria-pressed={threadMode === 'worktree'}
+                    aria-label={WORKTREE_ENVIRONMENT_DESCRIPTION}
                     onClick={() => onThreadModeChange('worktree')}
-                    title={WORKTREE_ENVIRONMENT_DESCRIPTION}
+                    title={RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT}
                   >
                     {WORKTREE_LABEL}
                   </button>

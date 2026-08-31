@@ -6,6 +6,9 @@
 
 /** Official Settings pane name (learn.chatgpt.com troubleshooting: configure the font as Code font). */
 export const CODE_FONT_LABEL = 'Code font'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const CODE_FONT_INTRO =
+  'Codex uses the same font for the review pane, integrated terminal and any other code displayed inside the app. You can configure the font inside the Settings pane as Code font.'
 
 /** 可选代码字体 id；空 / 未知回退 system */
 export const CODE_FONT_IDS = [

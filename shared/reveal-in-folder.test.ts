@@ -587,6 +587,8 @@ describe('reveal in folder', () => {
     expect(dockSrc).toContain('CODEX_ENVIRONMENTS_LABEL')
     expect(dockSrc).toContain('LOCAL_ENVIRONMENT_DESCRIPTION')
     expect(dockSrc).toContain('WORKTREE_ENVIRONMENT_DESCRIPTION')
+    expect(dockSrc).toContain('RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT')
+    expect(dockSrc).toContain('RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT')
     expect(dockSrc).toContain('WORKTREE_DETACHED_HEAD_HINT')
     expect(dockSrc).not.toContain('线程模式')
     expect(dockSrc).not.toContain('title={HAND_OFF_LABEL}')

@@ -259,6 +259,13 @@ export function resetRememberedSubmittedComposerPrompt(): void {
   rememberedSubmittedPrompt = ''
 }
 
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const RECOVER_PROMPT_AFTER_WRONG_TARGET_HINT =
+  'If you started a chat with the wrong target (Local, Worktree, or Cloud) by accident, you can cancel the current run and recover your previous prompt by pressing the up arrow key in the composer.'
+/** Official leftover (learn.chatgpt.com/docs/reference/troubleshooting). */
+export const RECOVER_PROMPT_AFTER_WORKTREE_CANCEL_HINT =
+  'If you cancel worktree creation by mistake and lose your prompt, press the up arrow key in the composer to recover it.'
+
 /** 输入框为空时 ↑ 恢复刚提交或上一条用户提示（对标 Codex Restore previous composer prompt） */
 export function restorePreviousComposerPrompt(options: {
   input: string
