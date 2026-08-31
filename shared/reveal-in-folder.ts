@@ -153,6 +153,16 @@ export const SETTINGS_LABEL = 'Settings'
 export const REMOVE_LABEL = 'Remove'
 /** Official Projects view / sidebar section. */
 export const PROJECTS_LABEL = 'Projects'
+/** Official Projects view intro (learn.chatgpt.com/docs/projects). */
+export const PROJECTS_VIEW_INTRO =
+  'The Projects view brings ChatGPT projects and local projects into one place.'
+/** Official start-without-a-project copy (learn.chatgpt.com/docs/projects). */
+export const START_WITHOUT_A_PROJECT_INTRO =
+  "Start a chat without a project when the work is self-contained and doesn't need shared project context."
+export const CREATE_A_PROJECT_FIRST_HINT =
+  'Create a project first when several chats will depend on the same context.'
+/** Official project pin (learn.chatgpt.com/docs/projects). */
+export const PIN_A_PROJECT_HINT = 'Pin a project to keep it near the top of the sidebar.'
 /** Official empty chats copy (do not show when chats exist). */
 export const NO_CHATS_LABEL = 'No chats'
 /** Official empty Projects copy (openai/codex #19290). */

@@ -127,7 +127,11 @@ import {
   SETTINGS_LABEL,
   REMOVE_LABEL,
   SAVE_LABEL,
+  PIN_A_PROJECT_HINT,
   PROJECTS_LABEL,
+  PROJECTS_VIEW_INTRO,
+  START_WITHOUT_A_PROJECT_INTRO,
+  CREATE_A_PROJECT_FIRST_HINT,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
   SEARCH_PROJECTS_LABEL,
@@ -282,6 +286,10 @@ describe('reveal in folder', () => {
     expect(SETTINGS_LABEL).toBe('Settings')
     expect(REMOVE_LABEL).toBe('Remove')
     expect(PROJECTS_LABEL).toBe('Projects')
+    expect(PROJECTS_VIEW_INTRO).toMatch(/ChatGPT projects and local projects/)
+    expect(START_WITHOUT_A_PROJECT_INTRO).toMatch(/without a project/)
+    expect(CREATE_A_PROJECT_FIRST_HINT).toMatch(/Create a project first/)
+    expect(PIN_A_PROJECT_HINT).toMatch(/Pin a project/)
     expect(NO_CHATS_LABEL).toBe('No chats')
     expect(NO_PROJECTS_LABEL).toBe('No projects')
     expect(SEARCH_PROJECTS_LABEL).toBe('Search projects')
@@ -443,6 +451,16 @@ describe('reveal in folder', () => {
       'utf8'
     )
     expect(sidebarSrc).toContain('PERMISSIONS_LABEL')
+    expect(sidebarSrc).toContain('PROJECTS_VIEW_INTRO')
+    expect(sidebarSrc).toContain('PIN_A_PROJECT_HINT')
+    const chatViewSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/components/ChatView.tsx'),
+      'utf8'
+    )
+    expect(chatViewSrc).toContain('START_WITHOUT_A_PROJECT_INTRO')
+    expect(chatViewSrc).toContain('CREATE_A_PROJECT_FIRST_HINT')
+    expect(chatViewSrc).toContain('isLocalProjectWorkspace')
+    expect(chatViewSrc).not.toContain('请先在侧栏或设置中添加一个工作区文件夹')
     const permissionsSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/components/settings/PermissionsSettings.tsx'),
       'utf8'

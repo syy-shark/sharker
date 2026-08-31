@@ -34,7 +34,7 @@ import type {
   ProviderConfig,
   WorkspaceItem
 } from '../../shared/types'
-import { sortWorkspaces } from '../../shared/workspace'
+import { isLocalProjectWorkspace, sortWorkspaces } from '../../shared/workspace'
 import type { QueuedPrompt, PromptSubmitMode } from '../types/chat'
 import { AssistantMessage } from './AssistantMessage'
 import { FenceImmediateHighlightContext } from './CodeArtifactBlock'
@@ -183,11 +183,13 @@ import {
 } from '../lib/find-highlight'
 import { textForSpeech } from '../../shared/composer-dictation'
 import {
+  CREATE_A_PROJECT_FIRST_HINT,
   FILE_CLOSE_LABEL,
   FIND_IN_CHAT_LABEL,
   FIND_NEXT_MATCH_LABEL,
   FIND_PREVIOUS_MATCH_LABEL,
   RESTORE_LABEL,
+  START_WITHOUT_A_PROJECT_INTRO,
   WORKTREE_RESTORE_BANNER
 } from '../../shared/reveal-in-folder'
 import {
@@ -1409,6 +1411,7 @@ export const ChatView = memo(function ChatView({
     sortWorkspaces(workspaces ?? []).find((w) => w.id === activeWorkspaceId) ??
     sortWorkspaces(workspaces ?? [])[0]
   const hasWorkspace = Boolean(activeWorkspace?.path?.trim())
+  const hasLocalProject = isLocalProjectWorkspace(activeWorkspace)
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const modelLabel = activeProvider?.model?.trim() || activeProvider?.name
 
@@ -3076,9 +3079,9 @@ export const ChatView = memo(function ChatView({
 
       <div className="composer-stage" ref={composerStageRef}>
         {/* 空对话不再堆欢迎语 / 快捷卡片 / 最近对话，只留输入区 */}
-        {isEmpty && !hasWorkspace && (
+        {isEmpty && !hasLocalProject && (
           <h2 className="chat-empty-prompt chat-empty-prompt--hint">
-            请先在侧栏或设置中添加一个工作区文件夹，然后开始对话。
+            {START_WITHOUT_A_PROJECT_INTRO} {CREATE_A_PROJECT_FIRST_HINT}
           </h2>
         )}
         {isEmpty && hasWorkspace && suggestedPrompts.length > 0 && onSuggestedPrompt ? (

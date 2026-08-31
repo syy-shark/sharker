@@ -25,6 +25,17 @@ import { normalizeExtraFolderPaths } from './workspace-folders'
 /** 全局聊天工作区（不绑定具体项目目录） */
 export const GLOBAL_WORKSPACE_ID = 'sharker-global'
 
+/** Official `/task`: folder-backed local projects only, not the global no-project workspace. */
+export function isLocalProjectWorkspace(ws?: {
+  id?: string
+  isHome?: boolean
+  path?: string
+} | null): boolean {
+  if (!ws) return false
+  if (ws.isHome || ws.id === GLOBAL_WORKSPACE_ID) return false
+  return Boolean(String(ws.path ?? '').trim())
+}
+
 /** 全局工作区默认显示名 */
 export const GLOBAL_WORKSPACE_LABEL = '对话'
 

@@ -73,7 +73,9 @@ import {
   TOGGLE_ACTIVITY_VIEW_LABEL,
   NO_CHATS_LABEL,
   NO_PROJECTS_LABEL,
+  PIN_A_PROJECT_HINT,
   PROJECTS_LABEL,
+  PROJECTS_VIEW_INTRO,
   REMOVE_LABEL,
   SEARCH_CHATS_LABEL,
   SETTINGS_LABEL,
@@ -855,6 +857,8 @@ export const Sidebar = memo(function Sidebar({
                 <button
                   type="button"
                   role="menuitem"
+                  title={PIN_A_PROJECT_HINT}
+                  aria-label={PIN_A_PROJECT_HINT}
                   onClick={(e) => {
                     e.stopPropagation()
                     closeProjectMenu()
@@ -1006,13 +1010,13 @@ export const Sidebar = memo(function Sidebar({
 
         <div className="sidebar-scroll">
           {pinnedWorkspaces.length > 0 ? (
-            <section className="sidebar-section">
+            <section className="sidebar-section" title={PIN_A_PROJECT_HINT} aria-label={PIN_A_PROJECT_HINT}>
               <h3 className="sidebar-section-label">{PINNED_LABEL}</h3>
               {pinnedWorkspaces.map((ws) => renderProject(ws, 'pin-'))}
             </section>
           ) : null}
 
-          <section className="sidebar-section">
+          <section className="sidebar-section" title={PROJECTS_VIEW_INTRO} aria-label={PROJECTS_VIEW_INTRO}>
             <h3 className="sidebar-section-label">{PROJECTS_LABEL}</h3>
             {workspaces.length === 0 ? (
               <p className="sidebar-section-empty">{NO_PROJECTS_LABEL}</p>

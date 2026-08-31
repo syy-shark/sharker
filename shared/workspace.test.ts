@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from './types'
-import { filterWorkspaces, normalizeSettings } from './workspace'
+import {
+  filterWorkspaces,
+  GLOBAL_WORKSPACE_ID,
+  isLocalProjectWorkspace,
+  normalizeSettings
+} from './workspace'
 
 describe('workspace settings', () => {
   it('migrates requireModEnter into composerEnterBehavior', () => {
@@ -79,5 +84,12 @@ describe('workspace project picker', () => {
     )
     const item = withExtra.workspaces.find((w) => w.id === 'ws-1')
     expect(item?.extraPaths).toEqual(['/extra'])
+    expect(isLocalProjectWorkspace({ id: 'ws-1', path: '/repo' })).toBe(true)
+    expect(isLocalProjectWorkspace({ id: GLOBAL_WORKSPACE_ID, path: '/home/u/.sharker/global' })).toBe(
+      false
+    )
+    expect(isLocalProjectWorkspace({ id: 'home', path: '/repo', isHome: true })).toBe(false)
+    expect(isLocalProjectWorkspace({ id: 'ws-2', path: '' })).toBe(false)
+    expect(isLocalProjectWorkspace(null)).toBe(false)
   })
 })
