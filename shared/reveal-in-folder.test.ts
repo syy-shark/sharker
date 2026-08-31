@@ -264,7 +264,7 @@ describe('reveal in folder', () => {
     expect(skillsSrc).toContain('SKILLS_MATCH_HINT')
     expect(skillsSrc).toContain('SKILLS_DETECT_HINT')
     expect(skillsSrc).toContain('SKILLS_SKILL_MD_HINT')
-    expect(skillsSrc).not.toContain('progressive disclosure')
+    expect(skillsSrc).not.toMatch(/progressive disclosure/)
     expect(skillsSrc).toContain('CHATS_SECTION_LABEL')
     expect(skillsSrc).toContain('reloadNonce')
     const skillReloadComposerSrc = readFileSync(

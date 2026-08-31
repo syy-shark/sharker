@@ -1,6 +1,6 @@
 /**
  * 侧栏 Skills 页：浏览各项目已安装 Skill（对标 Codex open Skills in the sidebar）。
- * 说明含官方 `$` 调用、slash 列表、implicit match、SKILL.md 与自动检测。不发明 progressive disclosure。
+ * 说明含官方 `$` 调用、slash 列表、implicit match、SKILL.md 与自动检测。
  * 命令面板 Force reload skills 用 `reloadNonce` 重扫盘上 SKILL.md。
  * @see src/pages/ARCH.md
  */
