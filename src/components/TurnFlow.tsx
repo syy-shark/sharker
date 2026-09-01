@@ -214,7 +214,7 @@ function dedupeChronological(steps: ProcessPhaseStep[]): ProcessPhaseStep[] {
  * 直播：实质步骤按序出现；纯元信息在尚无实质步骤时折叠进顶部「处理中」。
  * 完成：去掉元信息与内联演示（演示在消息主区）。
  */
-function visibleSteps(steps: ProcessPhaseStep[], isStreaming: boolean): ProcessPhaseStep[] {
+function filterVisibleSteps(steps: ProcessPhaseStep[], isStreaming: boolean): ProcessPhaseStep[] {
   const unique = dedupeChronological(steps).filter((s) => !PHASE_ECHO.has(s.title.trim()))
 
   if (isStreaming) {
@@ -842,7 +842,7 @@ export const TurnFlow = memo(function TurnFlow({
     return next
   }, [frozenSteps, isStreaming, segments])
   const steps = useMemo(
-    () => visibleSteps(chronological, isStreaming),
+    () => filterVisibleSteps(chronological, isStreaming),
     [chronological, isStreaming]
   )
 

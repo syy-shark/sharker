@@ -2,4 +2,4 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-exec npm run dev
+exec npm run dev:sharker

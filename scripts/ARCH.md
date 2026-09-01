@@ -14,8 +14,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `dev.cjs` | 调用 `electron-vite dev` 启动开发模式 |
-| `launch-sharker.sh` | 进入仓库根并 `npm run dev` |
+| `dev.cjs` | 根目录 `npm run dev`：在 `src/maka-core` 装好依赖后启动 Maka 桌面，不挂 Sharker 壳 |
+| `dev-sharker.cjs` | `npm run dev:sharker`：原来的 `electron-vite dev` Sharker 壳 |
+| `launch-sharker.sh` | 进入仓库根并 `npm run dev:sharker` |
 | `setup-browser-use.sh` | 安装 Chrome native messaging manifest（Browser Use） |
 | `setup-cua-driver.sh` | cua-driver 检测与 doctor（可选桌面自动化后端） |
 | `install-kokoro-runtime.sh` | 安装 Kokoro TTS 运行时（Python venv + 模型） |

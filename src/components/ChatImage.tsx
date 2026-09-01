@@ -451,7 +451,7 @@ export function ChatImage({
             document.body
           )
         : null}
-      {lightbox && paintedSrc && typeof document !== 'undefined'}
+      {lightbox && paintedSrc && typeof document !== 'undefined'
         ? createPortal(
             <div className="chat-image-lightbox" role="presentation">
               <button

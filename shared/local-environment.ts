@@ -4,7 +4,6 @@
  * 不发明 Settings 编辑器、嵌套 `[actions.macos]` 或 `CODEX_WORKTREE_PATH`。
  * @see shared/ARCH.md
  */
-import path from 'node:path'
 
 /** `[setup]` 新建时跑；`[cleanup]` 删除托管 worktree 前跑 */
 export type LocalEnvironmentScriptKind = 'setup' | 'cleanup'
@@ -20,8 +19,8 @@ export interface LocalEnvironmentAction {
   platform?: LocalEnvironmentHost
 }
 
-/** 官方项目内本地环境文件（对标 Codex Local environments） */
-export const LOCAL_ENVIRONMENT_REL = path.join('.codex', 'environments', 'environment.toml')
+/** 官方项目内本地环境文件（对标 Codex Local environments）。正斜线，渲染进程也能拼。 */
+export const LOCAL_ENVIRONMENT_REL = '.codex/environments/environment.toml'
 /** Official leftover (learn.chatgpt.com/docs/environments/local-environment). No Settings editor. */
 export const LOCAL_ENVIRONMENT_ACTIONS_INTRO =
   "Use actions to define common tasks like starting your app's development server or running your test suite. These actions appear in the ChatGPT desktop app top bar for quick access. The actions run within the app's integrated terminal."
@@ -38,7 +37,7 @@ export const SHARED_LOCAL_ENVIRONMENT_HINT =
 export function localEnvironmentTomlPath(root: string): string {
   const base = String(root || '').trim()
   if (!base) return LOCAL_ENVIRONMENT_REL
-  return path.join(base, LOCAL_ENVIRONMENT_REL)
+  return `${base.replace(/[\\/]+$/, '')}/${LOCAL_ENVIRONMENT_REL}`
 }
 
 /**

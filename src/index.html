@@ -5,9 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sharker</title>
     <style>
-      html, body, #root { height: 100%; margin: 0; background: #e8eaed; color: #1d1d1f; }
-      html.theme-dark, html.theme-dark body, html.theme-dark #root { background: #0b0d11; color: #f2f4f8; }
+      html, body, #root { height: 100%; margin: 0; background: oklch(0.975 0 0); color: oklch(0.17 0.005 286); }
+      html.theme-dark, html.theme-dark body, html.theme-dark #root { background: oklch(0.18 0.004 286); color: oklch(0.95 0.004 286); }
     </style>
+    <script>
+      window.addEventListener('error', function (event) {
+        var root = document.getElementById('root')
+        if (!root || root.childElementCount) return
+        var err = event.error || event.message
+        root.textContent = String(err && (err.stack || err.message || err))
+        root.style.cssText = 'padding:24px;white-space:pre-wrap;font:13px/1.45 ui-monospace,monospace;color:#b91c1c'
+      })
+      window.addEventListener('unhandledrejection', function (event) {
+        var root = document.getElementById('root')
+        if (!root || root.childElementCount) return
+        var err = event.reason
+        root.textContent = String(err && (err.stack || err.message || err))
+        root.style.cssText = 'padding:24px;white-space:pre-wrap;font:13px/1.45 ui-monospace,monospace;color:#b91c1c'
+      })
+    </script>
   </head>
   <body>
     <div id="root"></div>

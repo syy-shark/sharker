@@ -59,11 +59,13 @@ npm install
 npm run dev
 ```
 
-要求 macOS、Node 20+。打开后选工作区，配好 OpenAI 兼容的 Base URL / Key / 模型，直接说要做什么。
+`npm run dev` 启动 **Maka** 桌面（`src/maka-core`）。Sharker 源码仍在仓库里，要用原来的壳时跑 `npm run dev:sharker`。
+
+要求 macOS、Node 22+。打开后选工作区，配好模型，直接说要做什么。
 
 ```bash
-npm run build      # 生产构建
-npm run preview    # 预览产物
+npm run build      # 生产构建 Sharker
+npm run preview    # 预览 Sharker 产物
 ```
 
 ## 文档

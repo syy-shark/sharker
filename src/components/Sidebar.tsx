@@ -313,6 +313,14 @@ export const Sidebar = memo(function Sidebar({
   const [projectMenuClosingId, setProjectMenuClosingId] = useState<string | null>(null)
   const projectMenuClosingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const projectMenuRef = useRef<HTMLDivElement>(null)
+  const [threadMenu, setThreadMenu] = useState<{
+    conversationId: string
+    workspaceId: string
+    folderPath: string
+    pinned: boolean
+    x: number
+    y: number
+  } | null>(null)
 
   useEffect(() => {
     projectMenuIdRef.current = projectMenuId
@@ -468,14 +476,6 @@ export const Sidebar = memo(function Sidebar({
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
   const renameCancelRef = useRef(false)
-  const [threadMenu, setThreadMenu] = useState<{
-    conversationId: string
-    workspaceId: string
-    folderPath: string
-    pinned: boolean
-    x: number
-    y: number
-  } | null>(null)
 
   useEffect(() => {
     if (!renameRequestId) return

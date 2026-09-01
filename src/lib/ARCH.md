@@ -22,4 +22,5 @@
 | `thread-runtime.test.ts` | 当前会话用内存态、后台会话读落盘 |
 | `thread-goal.ts` | 会话 `/goal` 本机记忆（含 `startedAt` / `pausedAt`）；后台 turn 读落盘、仅 active 注入 |
 | `thread-goal.test.ts` | 读写、`startedAt` / `pausedAt` 与注入开关 |
+| `maka-bridge.ts` | Sharker 对话 / StreamChunk ↔ Maka SessionSummary / StoredMessage / LiveTurn 事件 |
 | `ARCH.md` | 本层架构说明 |

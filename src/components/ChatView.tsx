@@ -152,6 +152,7 @@ import {
 } from '../../shared/live-display'
 import {
   captureTranscriptScroll,
+  resolveRestoredScrollTop,
   scrollTopToCenterChild,
   shouldDeferScrollRestore,
   withTranscriptRowHeights,

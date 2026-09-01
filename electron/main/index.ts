@@ -513,16 +513,15 @@ function applyAppIcon(icon: Electron.NativeImage): void {
   }
 }
 
-/** 按设置应用 macOS 窗口材质：浅色大面积玻璃 vibrancy / 深色金属实色 */
+/** 按设置应用 macOS 窗口材质：浅色跟 Maka sidebar vibrancy / 深色实色 */
 function applyWindowAppearance(win: BrowserWindow, s: AppSettings): void {
   const dark = s.uiTheme === 'dark'
   if (!dark) {
-    // 浅色：透明窗 + under-window 磨砂（刚才可用组合）
-    win.setBackgroundColor('#e8eaed')
-    const effects: Array<'under-window' | 'fullscreen-ui' | 'sidebar' | 'header' | 'hud'> = [
+    win.setBackgroundColor('#f6f6f6')
+    const effects: Array<'sidebar' | 'under-window' | 'fullscreen-ui' | 'header' | 'hud'> = [
+      'sidebar',
       'under-window',
       'fullscreen-ui',
-      'sidebar',
       'header',
       'hud'
     ]
@@ -544,7 +543,7 @@ function applyWindowAppearance(win: BrowserWindow, s: AppSettings): void {
     } catch {
       /* ignore */
     }
-    win.setBackgroundColor('#0b0d11')
+    win.setBackgroundColor('#2b2b30')
   }
   if (!win.isVisible()) {
     win.show()
@@ -597,6 +596,10 @@ function dialogParent(event?: Electron.IpcMainInvokeEvent): BrowserWindow | unde
   return undefined
 }
 
+/** 与 Maka `--h-titlebar: 36px` 对齐；titleBarOverlay 只开 height，让 env(titlebar-area-x) 能读到红绿灯右缘 */
+const TITLEBAR_OVERLAY_HEIGHT = 36
+const TRAFFIC_LIGHT_POSITION = { x: 17, y: 14 } as const
+
 /** 创建全尺寸应用窗（对标 Codex File → New window）。不覆盖其它已开窗。 */
 function createWindow(): void {
   const icon = resolveAppIcon()
@@ -611,14 +614,15 @@ function createWindow(): void {
     minHeight: 600,
     title: 'Sharker',
     show: false,
-    backgroundColor: useGlass ? '#e8eaed' : '#0b0d11',
-    /* 仅浅色玻璃需要透明；深色金属用实色底，避免窗口“看不见” */
-    transparent: false, // 避免无 vibrancy 时整窗纯黑；材质用 CSS 玻璃层表达
-    vibrancy: useGlass ? 'under-window' : undefined,
+    backgroundColor: useGlass ? '#f6f6f6' : '#2b2b30',
+    /* 浅色跟 Maka canvas；深色跟 Maka surface-base。侧栏 vibrancy 给 darwin 留透 */
+    transparent: false,
+    vibrancy: useGlass ? 'sidebar' : undefined,
     visualEffectState: 'active',
     frame: true,
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
+    trafficLightPosition: TRAFFIC_LIGHT_POSITION,
+    titleBarOverlay: { height: TITLEBAR_OVERLAY_HEIGHT },
     autoHideMenuBar: true,
     icon,
     webPreferences: {
@@ -699,13 +703,14 @@ function createThreadWindow(workspaceId: string, conversationId: string, title: 
     minHeight: 480,
     title: title || '对话',
     show: false,
-    backgroundColor: useGlass ? '#e8eaed' : '#0b0d11',
+    backgroundColor: useGlass ? '#f6f6f6' : '#2b2b30',
     transparent: false,
-    vibrancy: useGlass ? 'under-window' : undefined,
+    vibrancy: useGlass ? 'sidebar' : undefined,
     visualEffectState: 'active',
     frame: true,
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
+    trafficLightPosition: TRAFFIC_LIGHT_POSITION,
+    titleBarOverlay: { height: TITLEBAR_OVERLAY_HEIGHT },
     autoHideMenuBar: true,
     icon,
     webPreferences: {

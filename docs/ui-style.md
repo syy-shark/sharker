@@ -1,125 +1,113 @@
 # Sharker UI 风格规范
 
-> **拍板结论（2026-08）**  
-> 外观只有两套：**浅色水滴玻璃**、**深色金属**。  
-> 以后加功能、加组件、改页面，**浅色必须按本规范的水滴玻璃风格**，不要另起一套材质。
+> **拍板结论（2026-08-31）**  
+> 桌面壳层跟 **Maka**：灰底 canvas + 白浮板 raised。  
+> 不要再把 Maka 表面 token 改写成水滴玻璃，也不要铺平 `.mainColumn`。
 
-本文档给人和 AI 共用。改 UI 前先读；改材质/主题后同步更新本文档与 `src/ARCH.md`。
+本文档给人和 AI 共用。改 UI 前先读；改材质/主题后同步更新本文档与 `src/ARCH.md`。权威细节在 `src/maka-core/DESIGN.md`。
 
 ## 1. 两套外观（不可再扩）
 
 | 主题 | `uiTheme` | 材质 | 用户可见描述 |
 |------|-----------|------|--------------|
-| 浅色 | `light` | 苹果控制中心式 **水滴玻璃**（透、磨砂、高光边） | 苹果玻璃透明感 |
-| 深色 | `dark` | **深金属**（石墨、镜面高光，无磨砂模糊） | 深金属质感 |
+| 浅色 | `light` | Maka 灰底 + 白内容板；darwin 侧栏可透 `sidebar` vibrancy | 冷静、原生、紧凑 |
+| 深色 | `dark` | Maka 深色表面阶梯（sunken / base / raised / overlay） | 石墨底板 + 亮阅读面 |
 
 规则：
 
 - 设置 → 外观 **只保留这两种**，不要透明度滑杆、不要第三套主题。
-- 历史字段 `uiGlass` 仅兼容旧设置；浅色运行时约 `0.82`，深色 `0`。**UI 不暴露调节。**
-- 不要为单个页面发明独立配色体系；语义色（成功/危险/警告）可保留，但表面材质必须走 token。
+- 历史字段 `uiGlass` 仅兼容旧设置。**UI 不暴露调节。**
+- 不要为单个页面发明独立配色体系；语义色（成功/危险/警告）走 Maka token。
+- 壳层几何：`variant="elevated"`、`.maka-panel-detail` 的 4px 缝、`.mainColumn` 的 `--radius-modal` 浮板。
 
-## 2. 浅色：水滴玻璃（默认与新增 UI 基准）
+## 2. 浅色：Maka 灰底白浮板
 
 ### 2.1 目标观感
 
-- **透**：最后面大背景能透出系统 vibrancy / 环境色，不是实心白/灰板。
-- **水滴玻璃**：顶部高光、底部轻微密度、发丝亮边；像控制中心磁贴，不是“白雾毛玻璃塑料”。
-- **层次**：大背景最透 → 卡片/输入框稍密 → 嵌套控件再密一点。
-- **干净**：不要彩色氛围光、不要强饱和渐变底。
+- **Canvas recedes**：侧栏与主区地板同色（`--surface-canvas` / `--agents-layout-bg`）。
+- **内容抬起**：对话板、composer 卡走 `--surface-raised` / `--agents-content-area-bg`，纯白。
+- **一条缝**：浮板与地板只靠 4px gap 分开，不要再画一条侧栏竖线，也不要叠玻璃渐变。
+- **干净**：不要彩色氛围光、不要强饱和渐变底、不要通用玻璃拟态。
 
 ### 2.2 实现要点
 
 | 层 | 要求 |
 |----|------|
-| 窗口 | macOS `transparent` + `vibrancy`（优先 `under-window`）；背景色 `#00000000` |
-| 最后面大背景 | 主要在 `app-shell` 一层做透玻璃；`main` / 聊天区 / 设置页本身 **透明**，避免多层叠实 |
-| 壳层布局 | **通顶**：侧栏与主区同高到窗口顶，**不要**整条 TitleBar 压在侧栏上方。红绿灯落在侧栏顶拖区 |
-| 侧栏结构 | **ChatGPT 风格**：顶栏收起/新对话 · 主导航（新对话）· 置顶 / 项目 / 最近 |
-| 侧栏收起 | 收起为 **图标轨**（约 52px），不占对话区；展开后完整列表 |
-| 主区顶栏 | `.chat-toolbar` 极薄/透明：对话标题 + 操作；可拖窗口，无厚玻璃板 |
-| 对话柱 | 消息与输入 `max-width ≈ 720px` 居中；输入框底部悬浮，无顶部分隔条 |
-| 壳层材质 | `.sidebar` / `.chat-toolbar` 只留极薄分隔与高光，不要厚填充 |
-| 卡片/输入框 | 用 `glass-*` 类或等价 token：半透白 + `backdrop-filter` + 内高光边 + 轻阴影 |
-| 模糊 | 中等 blur + 适度 saturate；不要把 blur 叠很多层 |
+| 窗口 | macOS `vibrancy: sidebar`（浅色）；背景跟 canvas（约 `#f6f6f6`） |
+| 最后面大背景 | `.appFrame` 画 `--surface-canvas`；darwin 可由 Maka `theme-glass.css` 透出侧栏 vibrancy |
+| 壳层布局 | **通顶**：侧栏与主区同高到窗口顶。拖拽只走 `.maka-window-titlebar` |
+| 侧栏结构 | Maka `SessionListPanel`：新任务 / 扩展 / 定时任务 · 按时间/按项目 · 最近 · 设置 |
+| 侧栏收起 | 跟 Maka：收起为 0 宽，标题栏按钮展开；不要自造 52px 图标轨 |
+| 主区浮板 | `.maka-panel-detail` 留缝，`.mainColumn` 画 raised + 圆角 |
+| 对话柱 | 消息与输入 `max-width = --maka-reading-measure`（720px）居中 |
+| 卡片/输入框 | 走 Maka / Astryx token；不要给 `.maka-composer-astryx` 再套一层 glass |
 
 ### 2.3 推荐 token / 类
 
-- Token：`src/styles/global.css` 中 `:root` / `html.theme-light`（`--glass-fill*`、`--glass-edge*`、`--glass-rim*`、`--glass-blur*`、`--glass-facet*`）
-- 共用材质类：`src/styles/glass.css`
-  - `.glass-tile` / `.glass-pill` / `.glass-card` / `.glass-popover` / `.glass-chip` / `.glass-orb`
-- 主题类：`html.theme-light` + `html.ui-glass`（由 `App.tsx` / `AppearanceSettings` 写入）
+- Token：`src/maka-core/apps/desktop/src/renderer/maka-tokens.css`（`--surface-*`、`--foreground*`、`--border*`）
+- 壳层：`src/maka-core/apps/desktop/src/renderer/styles/shell-layout.css`
+- 接入层：`src/styles/maka-shell.css` 只补 Electron 拖拽与设置页宿主
+- 旧设置页原语仍可用 `src/styles/glass.css`，但不要覆盖 Maka 壳层
 
 ### 2.4 禁止（浅色）
 
-- 大面积不透明白底 / 实心灰底当主背景
-- 多层 `backdrop-filter` + 高 alpha 白填充叠在一起（会变成塑料板或纯白）
-- 为“更好看”加彩色径向氛围底（用户已明确不要）
-- 硬编码 `#fff` / `rgba(255,255,255,0.9+)` 大面板，而不走 glass token
-- 新组件只在控件上玻璃化、背景仍实色（背景与控件必须同一套材质语言）
+- 把 `--surface-*` / `--agents-*-bg` 改成 `transparent` 再铺玻璃渐变
+- 用 `!important` 把 `.maka-shell-astryx` / `.mainColumn` 背景冲掉
+- 为“更好看”加彩色径向氛围底
+- 新组件只在控件上玻璃化、背景另起一套材质语言
 
-## 3. 深色：深金属（对照，勿混用浅色玻璃）
+## 3. 深色：Maka 表面阶梯（对照，勿混用浅色玻璃）
 
-- 不透明 / 近不透明石墨金属面
-- **禁用**重 blur 磨砂（`backdrop-filter: none`）
-- 镜面高光边 + 冷灰蓝金属边，不是深色毛玻璃
-- 新增深色 UI 时复用 `html.theme-dark` token，不要把浅色 glass 配方直接反色
+- 走 Maka `--surface-sunken` / `--surface-base` / `--surface-raised` / `--surface-overlay`
+- 阅读面仍是该模式下最亮的一档；不要把浅色 glass 配方直接反色
+- 新增深色 UI 时复用 `html.theme-dark` + Maka token
 
 ## 4. 新功能 / 新组件清单
 
 做任何新 UI 前过一遍：
 
 1. **主题**：是否同时适配 `theme-light` 与 `theme-dark`？
-2. **材质**：浅色是否用 glass token / `.glass-*`，而不是实色卡片？
-3. **背景**：页面/面板背景是否透明或半透，让最后面玻璃露出来？
-4. **边与高光**：是否有细边 + 顶沿高光，而不是粗描边/无边色块？
-5. **文字对比**：半透底上文字是否仍清晰（优先 `--text` / `--text-secondary`）？
+2. **材质**：是否走 Maka `--surface-*` / `--foreground*`，而不是自造玻璃层？
+3. **背景**：页面是否坐在 `.mainColumn` 浮板上，而不是再铺一块实色/透明罩？
+4. **边与高光**：分隔是否只选 fill / line / shadow 之一（Maka One Means Rule）？
+5. **文字对比**：优先 `--foreground` / `--foreground-secondary` / `--muted-foreground`
 6. **动效**：复用 `styles/motion.css` 时长与曲线；直播过程用 `.live-text-shimmer` 表示存活，思考用可折叠旁白而不是灰卡片；尊重 `prefers-reduced-motion`。
 7. **硬编码**：是否避免写死仅浅色可用的颜色？
 
 ### 推荐写法
 
 ```tsx
-// 卡片 / 浮层
-<div className="glass-card">...</div>
-
-// 或语义容器 + 主题 CSS
 <section className="my-panel">...</section>
 ```
 
 ```css
-/* 优先 token */
 .my-panel {
-  background: var(--glass-fill-raised);
-  border: 0.5px solid var(--glass-edge);
-  box-shadow: var(--glass-shadow-card), var(--glass-rim);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: var(--surface-raised);
+  border: var(--border-width-hairline) solid var(--border-soft);
+  border-radius: var(--radius-container);
+  color: var(--foreground);
 }
-
-/* 仅当 token 不够时，用 theme-light / theme-dark 微调，不要写死单主题 */
-html.theme-light .my-panel { /* 可更透 */ }
-html.theme-dark .my-panel { /* 金属面，无 blur */ }
 ```
 
 ## 5. 关键文件
 
 | 文件 | 职责 |
 |------|------|
-| `src/styles/global.css` | 主题 token、浅色透玻璃壳层、深色金属 token |
-| `src/styles/glass.css` | 共用 glass 组件材质 |
+| `src/maka-core/DESIGN.md` | Maka 表面 / 墨水 / 圆角权威 |
+| `src/styles/maka-shell.css` | 接入 Maka `styles.css`；只补拖拽与设置宿主 |
+| `src/styles/global.css` | 旧设置页与遗留控件 token |
 | `src/styles/motion.css` | 动效 |
-| `src/App.tsx` | 根据 `uiTheme` 写 `theme-light` / `theme-dark` 与 CSS 变量 |
+| `src/App.tsx` | `variant="elevated"` 壳 + `theme-light` / `theme-dark` |
 | `src/components/settings/AppearanceSettings.tsx` | 外观设置（仅两主题） |
-| `electron/main/index.ts` | 窗口透明与 vibrancy（浅色）/ 实色（深色） |
+| `electron/main/index.ts` | 浅色 `sidebar` vibrancy / 深色实色 |
 | `shared/types.ts` | `uiTheme` / `uiGlass` 字段说明 |
 
 ## 6. 验收标准（浅色）
 
-- 主区域 / 侧栏 **不是**一整块不透明白或灰
-- 能感觉到环境/桌面透过（vibrancy 生效时）
-- 输入框、设置卡片像控制中心磁贴：透 + 顶光 + 细边
-- 新页面与旧页面放在一起，材质语言一致
+- 能看出灰地板和白浮板两档，不是一整块通透玻璃
+- 侧栏与主区地板同色；对话板有圆角和 4px 缝
+- 输入框是 Maka composer 卡，不是自造玻璃岛
+- 新页面与旧页面放在一起，壳层材质语言一致
 
 ## 7. 文档维护
 

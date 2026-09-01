@@ -1,5 +1,5 @@
 /**
- * 外观：仅两套固定主题 —— 浅色苹果玻璃 / 深色金属。
+ * 外观：仅两套固定主题 —— 浅色 Maka 灰底白浮板 / 深色表面阶梯。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
  * Reduce Motion 写 `html.reduce-motion`，关掉直播思考扫光（对标 Codex #16857）。
  * Keep a chat near your work / Always on top 写新弹出窗默认置顶。
@@ -59,6 +59,7 @@ export function applyAppearanceDom(
   root.dataset.theme = theme
   root.classList.toggle('theme-dark', theme === 'dark')
   root.classList.toggle('theme-light', theme === 'light')
+  root.classList.toggle('dark', theme === 'dark')
   root.classList.toggle('reduce-motion', reduceMotion)
   // 固定材质：浅色始终玻璃，深色始终金属；不再暴露透明度滑杆
   root.classList.toggle('ui-glass', theme === 'light')
@@ -172,7 +173,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
             <span className="appearance-theme-swatch appearance-theme-swatch--light" />
             <span className="appearance-theme-meta">
               <strong>浅色</strong>
-              <span>苹果玻璃透明感</span>
+              <span>灰底白浮板</span>
             </span>
             <span className="appearance-theme-check" aria-hidden />
           </button>
@@ -186,7 +187,7 @@ export function AppearanceSettings({ draft, setDraft, onSave }: Props) {
             <span className="appearance-theme-swatch appearance-theme-swatch--dark" />
             <span className="appearance-theme-meta">
               <strong>深色</strong>
-              <span>深金属质感</span>
+              <span>深色表面阶梯</span>
             </span>
             <span className="appearance-theme-check" aria-hidden />
           </button>
