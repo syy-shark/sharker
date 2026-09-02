@@ -59,7 +59,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` 启动 **Maka** 桌面（`src/maka-core`）。Sharker 源码仍在仓库里，要用原来的壳时跑 `npm run dev:sharker`。
+`npm run dev` 启动 **Sharker** 桌面（`src/sharker-core`）。Sharker 源码仍在仓库里，要用原来的壳时跑 `npm run dev:sharker`。
 
 要求 macOS、Node 22+。打开后选工作区，配好模型，直接说要做什么。
 

@@ -11,5 +11,5 @@
     "types": ["vite/client"]
   },
   "include": ["src/**/*"],
-  "exclude": ["src/maka-core/**"]
+  "exclude": ["src/sharker-core/**"]
 }

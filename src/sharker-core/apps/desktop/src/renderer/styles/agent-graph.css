@@ -1,0 +1,207 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+.sharker-agent-graph-panel {
+  width: min(var(--sharker-reading-measure), calc(100% - var(--space-8)));
+  max-height: min(300px, 36vh);
+  margin: var(--space-2) auto;
+  padding: var(--space-3);
+  overflow: auto;
+  border: var(--border-width-hairline) solid var(--border);
+  border-radius: var(--radius-surface);
+  /* In-flow reading plate: raised fill + line only (DESIGN.md One Means). */
+  background: var(--surface-raised);
+  color: var(--foreground);
+}
+
+.sharker-agent-graph-panel[data-collapsed="true"] {
+  max-height: none;
+  overflow: visible;
+}
+
+.sharker-agent-graph-heading,
+.sharker-agent-graph-heading > div,
+.sharker-agent-graph-results {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sharker-agent-graph-heading {
+  justify-content: space-between;
+}
+
+.sharker-agent-graph-heading-copy {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.sharker-agent-graph-epoch-selector {
+  min-width: 9rem;
+  max-width: 15rem;
+}
+
+.sharker-agent-graph-heading-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.sharker-agent-graph-collapse-toggle svg {
+  transition: transform var(--duration-quick) var(--ease-out-strong);
+}
+
+.sharker-agent-graph-collapse-toggle[aria-expanded="false"] svg {
+  transform: rotate(180deg);
+}
+
+.sharker-agent-graph-heading strong {
+  font: var(--sharker-text-heading-4);
+}
+
+.sharker-agent-graph-progress,
+.sharker-agent-graph-empty,
+.sharker-agent-graph-omitted,
+.sharker-agent-graph-results {
+  font: var(--sharker-text-supporting);
+  color: var(--muted-foreground);
+}
+
+.sharker-agent-graph-empty {
+  margin: var(--space-2) 0 0;
+}
+
+/* Not in the muted-text group above: it names its own role, and a rule that
+   supplies a role to a selector another rule also gives a role to leaves the
+   first one dead — which is how a grouped role silently moves a site a size
+   tier when someone retunes the group. */
+.sharker-agent-graph-section-label {
+  font: var(--sharker-text-heading-5);
+  color: var(--muted-foreground);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+
+.sharker-agent-graph-operators {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sharker-agent-graph-operators li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--h-control-md);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--foreground-2);
+}
+
+.sharker-agent-graph-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--muted-foreground);
+}
+
+.sharker-agent-graph-operators li[data-status="running"] .sharker-agent-graph-status-dot,
+.sharker-agent-graph-operators li[data-status="runnable"] .sharker-agent-graph-status-dot {
+  background: var(--status-running);
+}
+
+.sharker-agent-graph-operators li[data-status="completed"] .sharker-agent-graph-status-dot {
+  background: var(--success);
+}
+
+.sharker-agent-graph-operators li[data-status="failed"] .sharker-agent-graph-status-dot,
+.sharker-agent-graph-operators li[data-status="aborted"] .sharker-agent-graph-status-dot {
+  background: var(--destructive);
+}
+
+.sharker-agent-graph-operator-copy {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-0-5);
+}
+
+.sharker-agent-graph-operator-copy strong,
+.sharker-agent-graph-operator-copy span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sharker-agent-graph-operator-copy strong {
+  font: var(--sharker-text-label);
+}
+
+.sharker-agent-graph-operator-copy span,
+.sharker-agent-graph-operator-status {
+  font: var(--sharker-text-supporting);
+}
+
+.sharker-agent-graph-wait {
+  color: var(--warning-text);
+}
+
+.sharker-agent-graph-operator-status {
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.sharker-agent-graph-results {
+  align-items: baseline;
+  margin-top: var(--space-2);
+}
+
+/* The label is a fixed cost of the row, not a share of it: leave it shrinkable
+   and flex takes it down to min-content, which in a script without break
+   opportunities is one glyph wide — the label stacks vertically while the id
+   list it names keeps its single line. The ids are the part with room to give,
+   so they take the whole remainder and ellipsis out of it. */
+.sharker-agent-graph-results > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.sharker-agent-graph-results code {
+  flex: 1 1 0;
+  font: var(--sharker-text-supporting);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .sharker-agent-graph-operators li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .sharker-agent-graph-operator-status {
+    display: none;
+  }
+}

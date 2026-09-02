@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "paths": {
+      "@sharker/ui": ["../../packages/ui/src/index.ts"],
+      "@sharker/ui/icons": ["../../packages/ui/src/icons.tsx"],
+      "@sharker/ui/artifact-preview-registry": ["../../packages/ui/src/artifact-preview-registry.ts"],
+      "@sharker/ui/assistant-stream": ["../../packages/ui/src/assistant-stream.ts"],
+      "@sharker/ui/sharker-uri": ["../../packages/ui/src/sharker-uri.ts"],
+    }
+  },
+  "include": [
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    ".storybook/**/*.d.ts",
+    "stories/**/*.ts",
+    "stories/**/*.tsx",
+    "src/global.d.ts",
+    "../../packages/ui/stories/**/*.ts",
+    "../../packages/ui/stories/**/*.tsx"
+  ]
+}

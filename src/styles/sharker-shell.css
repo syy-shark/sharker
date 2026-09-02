@@ -1,0 +1,68 @@
+/**
+ * Sharker 桌面壳层：原样接入灰底 canvas + 白浮板。
+ * 只补 Sharker 的 Electron 拖拽与设置页宿主，不要再铺平浮板或改写成玻璃。
+ * @see src/styles/ARCH.md
+ */
+@import "../sharker-core/apps/desktop/src/renderer/styles.css";
+
+.sharker-shell {
+  position: relative;
+  isolation: isolate;
+  height: 100%;
+}
+
+/*
+ * 红绿灯占顶栏。Astryx SideNav 的 StyleX padding 会盖掉 layered 的
+ * `.sharker-session-panel { padding-top }`，所以把留白写在壳外层 wrapper 上。
+ */
+.sharker-shell .sharker-sidenav-motion {
+  padding-top: var(--h-titlebar);
+  box-sizing: border-box;
+}
+
+.sharker-shell .sharker-shell-astryx .sharker-session-panel {
+  padding-top: 0;
+}
+
+/* overlay 未就绪时 env(titlebar-area-x) 是 0，darwin 仍要给红绿灯让位 */
+html[data-os='darwin'] .sharker-shell {
+  --sharker-titlebar-gutter-left: max(78px, var(--sharker-titlebar-area-x), var(--space-6));
+}
+
+.sharker-shell .astryx-layout-content,
+.sharker-shell .sharker-session-panel button,
+.sharker-shell .sharker-session-panel [role='button'],
+.sharker-shell .sharker-composer,
+.sharker-shell .sharker-settings-host {
+  -webkit-app-region: no-drag;
+}
+
+.sharker-settings-host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--agents-content-area-bg);
+}
+
+.sharker-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.sharker-settings-tabs button {
+  border: 0;
+  border-radius: var(--radius-element);
+  padding: var(--space-1) var(--space-2-5);
+  background: transparent;
+  color: var(--foreground-secondary);
+  font: var(--sharker-text-label);
+  cursor: pointer;
+}
+
+.sharker-settings-tabs button.is-active {
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}

@@ -19,14 +19,14 @@
 | [types/](./types/ARCH.md) | 仅 UI 侧类型（导航、排队 prompt） |
 | [assets/](./assets/ARCH.md) | Logo 等静态图 |
 | [shims/](./shims/ARCH.md) | 渲染进程里替 `node:crypto` / `node:util` |
-| [maka-core/](./maka-core/README.zh-CN.md) | 整包 Maka。根目录 `npm run dev` 启动这里的桌面，不经过 Sharker 壳。Sharker 源码仍保留，`npm run dev:sharker` 才挂 `src/App.tsx`。`packages/core/src/model-metadata.generated.ts` 由 `npm run sync:maka-metadata` 从快照生成（gitignore） |
+| [sharker-core/](./sharker-core/README.zh-CN.md) | 整包 Sharker。根目录 `npm run dev` 启动这里的桌面，不经过 Sharker 壳。Sharker 源码仍保留，`npm run dev:sharker` 才挂 `src/App.tsx`。`packages/core/src/model-metadata.generated.ts` 由 `npm run sync:sharker-metadata` 从快照生成（gitignore） |
 
 ## 同级文件
 
 | 文件 | 说明 |
 |------|------|
 | `main.tsx` | React 入口：挂载根节点 + ErrorBoundary |
-| `App.tsx` | Maka 管线 + 原版灰底白浮板：`variant="elevated"`，`.maka-panel-detail` 留 4px 缝，`.mainColumn` 是 raised 板；空态不挂会话面包屑；直播走 `LiveTurnProjection`（`applySharkerChunk` 把 StreamChunk 折成 thinking/text/tools 步），壳层只订低熵 snapshot |
+| `App.tsx` | Sharker 管线 + 原版灰底白浮板：`variant="elevated"`，`.sharker-panel-detail` 留 4px 缝，`.mainColumn` 是 raised 板；空态不挂会话面包屑；直播走 `LiveTurnProjection`（`applySharkerChunk` 把 StreamChunk 折成 thinking/text/tools 步），壳层只订低熵 snapshot |
 | `App.css` | 应用根布局样式 |
 | `index.html` | 渲染进程 HTML 壳 |
 | `vite-env.d.ts` | `window.sharker` 与资源模块类型声明 |

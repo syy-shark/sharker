@@ -1,5 +1,5 @@
 /**
- * 启动 Sharker 自己的 electron-vite 壳（默认 `npm run dev` 已改走 Maka）。
+ * 启动 Sharker 自己的 electron-vite 壳（默认 `npm run dev` 已改走 Sharker）。
  * @see scripts/ARCH.md
  */
 const { spawn } = require("node:child_process");

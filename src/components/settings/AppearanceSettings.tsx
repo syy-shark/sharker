@@ -1,5 +1,5 @@
 /**
- * 外观：仅两套固定主题 —— 浅色 Maka 灰底白浮板 / 深色表面阶梯。
+ * 外观：仅两套固定主题 —— 浅色 Sharker 灰底白浮板 / 深色表面阶梯。
  * 界面字号、代码字号与代码字体立刻写 DOM（`--ui-font-scale` / `--code-font-scale` / `--mono`）。
  * Reduce Motion 写 `html.reduce-motion`，关掉直播思考扫光（对标 Codex #16857）。
  * Keep a chat near your work / Always on top 写新弹出窗默认置顶。

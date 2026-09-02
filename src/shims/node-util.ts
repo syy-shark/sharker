@@ -1,5 +1,5 @@
 /**
- * 浏览器端 `node:util` 替身，给 Maka core 的 inspect / format 走文本。
+ * 浏览器端 `node:util` 替身，给 Sharker core 的 inspect / format 走文本。
  * @see src/ARCH.md
  */
 

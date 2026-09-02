@@ -2,7 +2,7 @@
 
 ## 职责
 
-- 给抄来的 Maka `@maka/core` 在浏览器里提供 `node:crypto` / `node:util`
+- 给抄来的 Sharker `@sharker/core` 在浏览器里提供 `node:crypto` / `node:util`
 - **不**当密码学或 Node 完整实现用
 
 ## 同级目录

@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node scripts/dev.cjs",
     "dev:sharker": "node scripts/dev-sharker.cjs",
-    "sync:maka-metadata": "npm --prefix src/maka-core run sync:model-metadata",
-    "postinstall": "bash scripts/fix-node-pty.sh && (patch -p1 -N -i patches/@astryxdesign+core+0.5.0.patch || true) && npm run sync:maka-metadata",
+    "sync:sharker-metadata": "npm --prefix src/sharker-core run sync:model-metadata",
+    "postinstall": "bash scripts/fix-node-pty.sh && (patch -p1 -N -i patches/@astryxdesign+core+0.5.0.patch || true) && npm run sync:sharker-metadata",
     "fix:pty": "bash scripts/fix-node-pty.sh",
     "test": "node --stack-size=16384 ./node_modules/vitest/vitest.mjs run",
     "build": "electron-vite build",

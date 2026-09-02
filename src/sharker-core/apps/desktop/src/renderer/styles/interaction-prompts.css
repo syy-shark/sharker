@@ -1,0 +1,178 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+/* Turn-scoped interactions take over the composer's in-flow slot so the
+   conversation and any live browser remain visible while Sharker waits. */
+.sharker-composer-interaction-slot {
+  display: contents;
+}
+
+.sharker-sandbox-boundary-prompt-inner {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.sharker-sandbox-boundary-copy h2,
+.sharker-sandbox-boundary-copy p {
+  margin: 0;
+}
+
+.sharker-sandbox-boundary-copy h2 {
+  font: var(--sharker-text-heading-4);
+  color: var(--text-primary);
+}
+
+.sharker-sandbox-boundary-copy p {
+  font: var(--sharker-text-supporting);
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.sharker-sandbox-boundary-scopes {
+  display: grid;
+  gap: var(--space-1);
+  max-height: min(208px, 40vh);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.sharker-sandbox-boundary-scopes li {
+  font: var(--sharker-text-supporting);
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.sharker-sandbox-boundary-scopes code {
+  min-width: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.sharker-sandbox-boundary-scopes span {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+.sharker-sandbox-boundary-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.sharker-composer-interaction {
+  width: 100%;
+}
+
+.sharker-composer-interaction-inner {
+  width: min(var(--sharker-reading-measure), 100%);
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 auto;
+  padding: var(--space-2-5);
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--background);
+  box-shadow: 0 0 0 1px oklch(from var(--foreground) l c h / var(--composer-ring-alpha, 0.035));
+  container-type: inline-size;
+}
+
+.sharker-question-progress {
+  font: var(--sharker-text-supporting);
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sharker-question-options {
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.sharker-question-other-answer {
+  width: 100%;
+  min-width: 0;
+}
+
+.sharker-interaction-actions.sharker-question-actions {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
+.sharker-question-submit {
+  grid-column: 4;
+}
+
+.sharker-interaction-header {
+  min-width: 0;
+}
+
+.sharker-interaction-title-row {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sharker-interaction-title {
+  font: var(--sharker-text-heading-3);
+  min-width: 0;
+  margin: 0;
+  color: var(--foreground);
+}
+
+.sharker-interaction-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-top: var(--space-1-5);
+  border-top: var(--border-width-hairline) solid var(--border);
+}
+
+@container (max-width: 460px) {
+  .sharker-interaction-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sharker-interaction-actions.sharker-question-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-direction: initial;
+  }
+
+  .sharker-question-actions > button {
+    width: 100%;
+  }
+
+  .sharker-question-submit {
+    grid-column: auto;
+  }
+}

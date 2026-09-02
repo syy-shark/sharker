@@ -9,7 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import './styles/motion.css'
 import './styles/global.css'
 import './styles/glass.css'
-import './styles/maka-shell.css'
+import './styles/sharker-shell.css'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')

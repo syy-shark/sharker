@@ -222,7 +222,7 @@ Settings → Personalization → **Choose a personality**，或 `/personality [p
 
 | 工具 | 说明 |
 |------|------|
-| `browser_navigate` / `browser_snapshot` | 无头 Chromium 打开/快照 |
+| `browser_navigate` / `browser_snapshot` | 右侧内置浏览器打开/快照（http(s) 或工作区 `.html` / `.htm`） |
 | `browser_click` / `browser_type` | 页面交互（需审批） |
 | `browser_screenshot` / `browser_close` | 截图 / 关闭会话 |
 

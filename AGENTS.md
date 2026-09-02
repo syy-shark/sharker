@@ -8,7 +8,7 @@
 2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构与数据流
 3. [docs/DOC-GUIDE.md](docs/DOC-GUIDE.md) — 文档规范（含 **逐层架构说明**）
 4. 你要改的 **那个目录** 下的 `ARCH.md`（如 `agent/ARCH.md`、`tools/builtins/ARCH.md`）
-5. 改 UI / 新组件时再读 [docs/ui-style.md](docs/ui-style.md) — Maka 灰底白浮板 / 深色表面阶梯
+5. 改 UI / 新组件时再读 [docs/ui-style.md](docs/ui-style.md) — Sharker 灰底白浮板 / 深色表面阶梯
 
 ## 开发约定
 
@@ -16,14 +16,14 @@
 - **逐层架构说明（强制）**：每一个有源码/配置意义的目录都要有 `ARCH.md`，只说明 **本层同级** 的文件夹与文件；子目录各自再有一份，递归下去。新建目录/文件时同步更新本层与父层表格。细则见 [docs/DOC-GUIDE.md](docs/DOC-GUIDE.md)
 - **Harness 逻辑**在 `agent/` 与 `tools/`，不在 React 组件里
 - **类型契约**在 `shared/types.ts`，IPC 在 `shared/ipc.ts`
-- **UI 材质**：桌面壳层跟 Maka（灰底 canvas + 白浮板）；新功能/组件按 [docs/ui-style.md](docs/ui-style.md)
+- **UI 材质**：桌面壳层跟 Sharker（灰底 canvas + 白浮板）；新功能/组件按 [docs/ui-style.md](docs/ui-style.md)
 - 不提交 API Key；设置经 `safeStorage` 加密
 
 ## 常用命令
 
 ```bash
 npm install
-npm run dev           # 启动 Maka 桌面（src/maka-core）
+npm run dev           # 启动 Sharker 桌面（src/sharker-core）
 npm run dev:sharker   # 仍可用的 Sharker 壳
 npm run build         # 构建 Sharker
 ```

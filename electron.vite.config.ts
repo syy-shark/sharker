@@ -26,8 +26,8 @@ function copyAppIconPlugin(): Plugin {
 
 /** 项目根目录（依赖 process.cwd()） */
 const projectRoot = resolve('.')
-const makaUiSrc = resolve(projectRoot, 'src/maka-core/packages/ui/src')
-const makaCoreSrc = resolve(projectRoot, 'src/maka-core/packages/core/src')
+const sharkerUiSrc = resolve(projectRoot, 'src/sharker-core/packages/ui/src')
+const sharkerCoreSrc = resolve(projectRoot, 'src/sharker-core/packages/core/src')
 
 export default defineConfig({
   main: {
@@ -54,12 +54,12 @@ export default defineConfig({
       alias: [
         { find: 'node:crypto', replacement: resolve(projectRoot, 'src/shims/node-crypto.ts') },
         { find: 'node:util', replacement: resolve(projectRoot, 'src/shims/node-util.ts') },
-        { find: '@maka/ui/icons', replacement: resolve(makaUiSrc, 'icons.tsx') },
-        { find: '@maka/ui/styles.css', replacement: resolve(makaUiSrc, 'styles.css') },
-        { find: '@maka/ui/assistant-stream', replacement: resolve(makaUiSrc, 'assistant-stream.ts') },
-        { find: '@maka/ui/maka-uri', replacement: resolve(makaUiSrc, 'maka-uri.ts') },
-        { find: /^@maka\/ui$/, replacement: resolve(makaUiSrc, 'index.ts') },
-        { find: /^@maka\/core\/(.*)$/, replacement: `${makaCoreSrc}/$1` }
+        { find: '@sharker/ui/icons', replacement: resolve(sharkerUiSrc, 'icons.tsx') },
+        { find: '@sharker/ui/styles.css', replacement: resolve(sharkerUiSrc, 'styles.css') },
+        { find: '@sharker/ui/assistant-stream', replacement: resolve(sharkerUiSrc, 'assistant-stream.ts') },
+        { find: '@sharker/ui/sharker-uri', replacement: resolve(sharkerUiSrc, 'sharker-uri.ts') },
+        { find: /^@sharker\/ui$/, replacement: resolve(sharkerUiSrc, 'index.ts') },
+        { find: /^@sharker\/core\/(.*)$/, replacement: `${sharkerCoreSrc}/$1` }
       ]
     },
     server: {

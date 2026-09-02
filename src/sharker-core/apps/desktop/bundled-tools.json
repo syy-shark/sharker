@@ -1,0 +1,16 @@
+{
+  "sharkerCu": {
+    "repo": "sharker-agent/sharker-cu",
+    "branch": "sharker/base",
+    "commit": "4a9787d2c7f2fbc6a29b33d691916c6b84543661",
+    "expectedProtocolVersion": "sharker.cu/2",
+    "binaryName": "sharker-cu",
+    "binarySizeBytes": 3269920,
+    "binarySha256": "e457a3143544ba8385c489e5259f206d9450feb1c692eb562413b41b9f38de21",
+    "buildProvenance": "local-source-build",
+    "signature": "adhoc",
+    "hardenedRuntime": false,
+    "notarization": "missing",
+    "distributionReady": false
+  }
+}

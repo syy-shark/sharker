@@ -513,7 +513,7 @@ function applyAppIcon(icon: Electron.NativeImage): void {
   }
 }
 
-/** 按设置应用 macOS 窗口材质：浅色跟 Maka sidebar vibrancy / 深色实色 */
+/** 按设置应用 macOS 窗口材质：浅色跟 Sharker sidebar vibrancy / 深色实色 */
 function applyWindowAppearance(win: BrowserWindow, s: AppSettings): void {
   const dark = s.uiTheme === 'dark'
   if (!dark) {
@@ -596,7 +596,7 @@ function dialogParent(event?: Electron.IpcMainInvokeEvent): BrowserWindow | unde
   return undefined
 }
 
-/** 与 Maka `--h-titlebar: 36px` 对齐；titleBarOverlay 只开 height，让 env(titlebar-area-x) 能读到红绿灯右缘 */
+/** 与 Sharker `--h-titlebar: 36px` 对齐；titleBarOverlay 只开 height，让 env(titlebar-area-x) 能读到红绿灯右缘 */
 const TITLEBAR_OVERLAY_HEIGHT = 36
 const TRAFFIC_LIGHT_POSITION = { x: 17, y: 14 } as const
 
@@ -615,7 +615,7 @@ function createWindow(): void {
     title: 'Sharker',
     show: false,
     backgroundColor: useGlass ? '#f6f6f6' : '#2b2b30',
-    /* 浅色跟 Maka canvas；深色跟 Maka surface-base。侧栏 vibrancy 给 darwin 留透 */
+    /* 浅色跟 Sharker canvas；深色跟 Sharker surface-base。侧栏 vibrancy 给 darwin 留透 */
     transparent: false,
     vibrancy: useGlass ? 'sidebar' : undefined,
     visualEffectState: 'active',

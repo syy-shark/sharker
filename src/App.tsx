@@ -1,5 +1,5 @@
 /**
- * Sharker 主界面：Maka 灰底白浮板壳（elevated + panel-detail）+ ChatView / Composer。
+ * Sharker 主界面：Sharker 灰底白浮板壳（elevated + panel-detail）+ ChatView / Composer。
  * @see src/ARCH.md
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
@@ -9,7 +9,7 @@ import { IconButton } from '@astryxdesign/core/IconButton'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { Tooltip } from '@astryxdesign/core/Tooltip'
-import type { SessionSummary } from '@maka/core/session'
+import type { SessionSummary } from '@sharker/core/session'
 import {
   AstryxLocaleProvider,
   ChatSurfaceLayout,
@@ -23,12 +23,12 @@ import {
   deriveTitlebarProjectName,
   type LiveTurnProjection,
   type NavSelection
-} from '@maka/ui'
-import { PanelLeftClose, PanelLeftOpen } from '@maka/ui/icons'
-import { makaTheme } from './maka-core/apps/desktop/src/renderer/astryx-theme/maka'
-import { useAstryxThemeMode } from './maka-core/apps/desktop/src/renderer/astryx-theme-mode'
-import { useShellLiveTurn } from './maka-core/apps/desktop/src/renderer/use-shell-live-turn'
-import { deriveLiveTurnSnapshot } from './maka-core/apps/desktop/src/renderer/live-turn-snapshot'
+} from '@sharker/ui'
+import { PanelLeftClose, PanelLeftOpen } from '@sharker/ui/icons'
+import { sharkerTheme } from './sharker-core/apps/desktop/src/renderer/astryx-theme/sharker'
+import { useAstryxThemeMode } from './sharker-core/apps/desktop/src/renderer/astryx-theme-mode'
+import { useShellLiveTurn } from './sharker-core/apps/desktop/src/renderer/use-shell-live-turn'
+import { deriveLiveTurnSnapshot } from './sharker-core/apps/desktop/src/renderer/live-turn-snapshot'
 import type { ConversationSummary } from '../shared/conversation'
 import { DEFAULT_SETTINGS, type AppSettings, type ChatMessage } from '../shared/types'
 import { GLOBAL_WORKSPACE_ID, getActiveWorkspace } from '../shared/workspace'
@@ -40,11 +40,11 @@ import { AutomationsPage } from './pages/AutomationsPage'
 import type { SettingsTab } from './types/navigation'
 import {
   applySharkerChunk,
-  toMakaPermission,
+  toSharkerPermission,
   toSessionSummary,
   toStoredMessages
-} from './lib/maka-bridge'
-import './styles/maka-shell.css'
+} from './lib/sharker-bridge'
+import './styles/sharker-shell.css'
 
 type ShellPage = 'chat' | 'settings' | 'skills' | 'automations'
 
@@ -63,11 +63,11 @@ const SETTINGS_TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: 'archived', label: '已归档' }
 ]
 
-/** 根：Astryx Theme + Maka 壳 */
+/** 根：Astryx Theme + Sharker 壳 */
 export default function App() {
   const astryxMode = useAstryxThemeMode()
   return (
-    <Theme theme={makaTheme} mode={astryxMode}>
+    <Theme theme={sharkerTheme} mode={astryxMode}>
       <LocaleProvider locale="zh">
         <AstryxLocaleProvider>
           <ToastProvider>
@@ -81,7 +81,7 @@ export default function App() {
   )
 }
 
-/** Maka 双栏壳 + Sharker IPC */
+/** Sharker 双栏壳 + Sharker IPC */
 function SharkerShell() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [settingsDraft, setSettingsDraft] = useState<AppSettings>(DEFAULT_SETTINGS)
@@ -329,7 +329,7 @@ function SharkerShell() {
   const homeSurfaceActive = page === 'chat' && messages.length === 0 && !liveSnapshot.phase
   const frameStyle = sidebarCollapsed
     ? undefined
-    : ({ '--maka-sidenav-width': `${sidebarWidth}px` } as CSSProperties)
+    : ({ '--sharker-sidenav-width': `${sidebarWidth}px` } as CSSProperties)
 
   return (
     <div
@@ -338,15 +338,15 @@ function SharkerShell() {
       data-sidebar-state={sidebarCollapsed ? 'collapsed' : 'expanded'}
       style={frameStyle}
     >
-      <header className="maka-window-titlebar">
-        <div className="maka-shell-topbar-rail" role="group" aria-label="窗口操作">
+      <header className="sharker-window-titlebar">
+        <div className="sharker-shell-topbar-rail" role="group" aria-label="窗口操作">
           <Tooltip content={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>
             <IconButton
               label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
               icon={<Icon icon={sidebarCollapsed ? PanelLeftOpen : PanelLeftClose} size="sm" color="secondary" />}
               variant="ghost"
               size="md"
-              className="maka-titlebar-action"
+              className="sharker-titlebar-action"
               onClick={() => setSidebarCollapsed((value) => !value)}
               aria-expanded={!sidebarCollapsed}
             />
@@ -365,15 +365,15 @@ function SharkerShell() {
       </header>
       <SessionRailProvider data={railData} chrome={railChrome}>
         <AstryxAppShell
-          className="app maka-shell-astryx agents-layout-body"
+          className="app sharker-shell-astryx agents-layout-body"
           variant="elevated"
           height="fill"
           contentPadding={0}
           mobileNav={{ breakpoint: 'none', hasToggle: false }}
           sideNav={<SessionListPanel />}
         >
-          <div className="maka-panel maka-panel-detail">
-            <div className="maka-detail-with-artifacts">
+          <div className="sharker-panel sharker-panel-detail">
+            <div className="sharker-detail-with-artifacts">
               <div className="mainColumn" data-home-surface={homeSurfaceActive ? 'true' : undefined}>
               {page === 'settings' ? (
                 <div className="sharker-settings-host">
@@ -444,7 +444,7 @@ function SharkerShell() {
                       void stop()
                     }}
                     draftKey={activeId ?? 'new'}
-                    permissionMode={toMakaPermission(settings.permissionMode)}
+                    permissionMode={toSharkerPermission(settings.permissionMode)}
                     activeSession={activeSession as SessionSummary | undefined}
                   />
                 }

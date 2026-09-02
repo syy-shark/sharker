@@ -14,7 +14,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `dev.cjs` | 根目录 `npm run dev`：在 `src/maka-core` 装好依赖后启动 Maka 桌面，不挂 Sharker 壳 |
+| `dev.cjs` | 根目录 `npm run dev`：在 `src/sharker-core` 装好依赖后启动 Sharker 桌面，不挂 Sharker 壳 |
 | `dev-sharker.cjs` | `npm run dev:sharker`：原来的 `electron-vite dev` Sharker 壳 |
 | `launch-sharker.sh` | 进入仓库根并 `npm run dev:sharker` |
 | `setup-browser-use.sh` | 安装 Chrome native messaging manifest（Browser Use） |
