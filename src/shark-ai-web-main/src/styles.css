@@ -1,0 +1,583 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --color-bg: #eef2f6;
+  --color-bg-elevated: #ffffff;
+  --color-bg-subtle: #f3f5f8;
+  --color-fg: #1d2521;
+  --color-fg-muted: #5c6560;
+  --color-fg-subtle: #8b938e;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-fg: #ffffff;
+  --color-primary-soft: #dbeafe;
+  --color-border: rgb(29 37 33 / 0.07);
+  --color-border-strong: rgb(29 37 33 / 0.11);
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-mock: #f4f5f7;
+  --color-mock-chrome: #f0f1f3;
+  --color-ready: #16a34a;
+  --color-attention: #ea580c;
+
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman",
+    serif;
+
+  --radius-pill: 9999px;
+  --shadow-nav: 0 4px 24px rgb(29 37 33 / 0.08), 0 1px 2px rgb(29 37 33 / 0.04);
+  --shadow-float: 0 24px 64px rgb(29 37 33 / 0.12), 0 2px 6px rgb(29 37 33 / 0.04),
+    0 0 0 1px rgb(29 37 33 / 0.04);
+  --shadow-soft: 0 1px 2px rgb(29 37 33 / 0.04), 0 8px 24px rgb(29 37 33 / 0.05);
+  --shadow-btn: 0 1px 2px rgb(37 99 235 / 0.2), 0 6px 16px rgb(59 130 246 / 0.28);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-primary) 24%, white);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.12;
+  }
+
+  .page-canvas {
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
+    background: #e6eef5;
+  }
+  .page-canvas::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      linear-gradient(
+        180deg,
+        rgb(220 232 244 / 0.48) 0%,
+        rgb(232 238 246 / 0.25) 16%,
+        rgb(238 242 246 / 0.48) 36%,
+        rgb(236 241 247 / 0.55) 52%,
+        rgb(228 238 246 / 0.5) 68%,
+        rgb(210 228 240 / 0.45) 84%,
+        rgb(190 218 234 / 0.4) 100%
+      ),
+      url("/hero-mountains.jpg") center top / cover no-repeat;
+    background-attachment: fixed;
+    pointer-events: none;
+  }
+  .page-canvas > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .band {
+    position: relative;
+  }
+  .band-soft::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.28) 18%,
+      rgb(255 255 255 / 0.38) 50%,
+      rgb(255 255 255 / 0.28) 82%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+  .band-mist::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(243 246 250 / 0.45) 20%,
+      rgb(243 246 250 / 0.55) 50%,
+      rgb(243 246 250 / 0.45) 80%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  /* ── Sharker desktop window（灰底 + 白浮板）── */
+  .mock-window {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #f6f6f6;
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.06),
+      0 1px 2px rgb(15 23 32 / 0.04),
+      0 12px 24px rgb(15 23 32 / 0.06),
+      0 40px 80px -12px rgb(15 23 32 / 0.18);
+  }
+  .mock-window--compact {
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.06),
+      0 8px 28px rgb(15 23 32 / 0.1);
+  }
+  .mock-titlebar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 14px;
+    background: #f6f6f6;
+  }
+  .mock-app-frame {
+    display: grid;
+    min-height: 540px;
+    padding: 0 4px 4px;
+    gap: 4px;
+  }
+  @media (min-width: 768px) {
+    .mock-app-frame {
+      grid-template-columns: 228px 1fr;
+    }
+  }
+  .mock-sidebar {
+    background: #f6f6f6;
+  }
+  .mock-raised {
+    display: flex;
+    min-height: 540px;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.04),
+      0 1px 2px rgb(15 23 32 / 0.03);
+  }
+  .mock-segment {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border-radius: 8px;
+    background: rgb(15 23 32 / 0.05);
+    padding: 2px;
+  }
+  .mock-segment__item {
+    border-radius: 6px;
+    padding: 5px 0;
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 550;
+    color: var(--color-fg-muted);
+  }
+  .mock-segment__item.is-on {
+    background: #fff;
+    color: var(--color-fg);
+    box-shadow: 0 0 0 1px rgb(15 23 32 / 0.04);
+  }
+  .mock-surface {
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.05),
+      0 1px 2px rgb(15 23 32 / 0.04);
+  }
+  .mock-new-task {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 11px;
+    background: #fff;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.05),
+      0 1px 2px rgb(15 23 32 / 0.04);
+    transition: box-shadow 150ms ease, background 150ms ease;
+  }
+  .mock-new-task:hover {
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.08),
+      0 2px 6px rgb(15 23 32 / 0.06);
+  }
+  .mock-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+  }
+  .mock-composer {
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.07),
+      0 1px 2px rgb(15 23 32 / 0.04),
+      0 4px 12px rgb(15 23 32 / 0.03);
+  }
+
+  /* Legacy shell (used by other mock cards on the page) */
+  .mock-shell {
+    box-shadow:
+      0 0 0 1px rgb(15 23 32 / 0.06),
+      0 1px 2px rgb(15 23 32 / 0.04),
+      0 12px 24px rgb(15 23 32 / 0.06),
+      0 32px 64px -12px rgb(15 23 32 / 0.14);
+    background: var(--color-bg-elevated);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  /*
+   * Shoreline: ocean photo feathered in from the top so mountains
+   * dissolve into sea — no hard horizontal cut.
+   */
+  .ocean-shore {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-top: -6rem;
+    padding-top: 6rem;
+    min-height: min(92vh, 860px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .ocean-shore__photo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("/ocean-horizon.jpg");
+    background-position: center 58%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(0 0 0 / 0.08) 12%,
+      rgb(0 0 0 / 0.28) 24%,
+      rgb(0 0 0 / 0.55) 38%,
+      rgb(0 0 0 / 0.82) 52%,
+      #000 68%,
+      #000 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(0 0 0 / 0.08) 12%,
+      rgb(0 0 0 / 0.28) 24%,
+      rgb(0 0 0 / 0.55) 38%,
+      rgb(0 0 0 / 0.82) 52%,
+      #000 68%,
+      #000 100%
+    );
+  }
+  .ocean-shore__veil {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(220 232 242 / 0.18) 10%,
+      rgb(210 226 238 / 0.12) 22%,
+      transparent 40%,
+      transparent 70%,
+      rgb(25 45 60 / 0.06) 100%
+    );
+  }
+  .ocean-shore__content {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(3rem, 8vh, 5.5rem);
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .marquee-mask {
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    gap: 0.5rem;
+    animation: marquee 48s linear infinite;
+  }
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* ── Tutorial 独立页舞台 ── */
+  .tutorial-stage {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (min-width: 960px) {
+    .tutorial-stage {
+      grid-template-columns: 220px 1fr;
+      align-items: start;
+      gap: 1.75rem;
+    }
+  }
+  .tutorial-steps {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 959px) {
+    .tutorial-steps {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .tutorial-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    border-radius: 14px;
+    border: 1px solid rgb(255 255 255 / 0.55);
+    background: rgb(255 255 255 / 0.52);
+    padding: 0.7rem 0.8rem;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    color: var(--color-fg-muted);
+  }
+  .tutorial-step.is-current {
+    border-color: rgb(59 130 246 / 0.28);
+    background: rgb(255 255 255 / 0.88);
+    color: var(--color-fg);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.08), var(--shadow-soft);
+  }
+  .tutorial-step.is-done {
+    color: var(--color-fg);
+  }
+  .tutorial-step__mark {
+    display: grid;
+    width: 1.4rem;
+    height: 1.4rem;
+    place-items: center;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 650;
+    box-shadow: 0 0 0 1px rgb(15 23 32 / 0.06);
+  }
+  .tutorial-step.is-done .tutorial-step__mark {
+    background: #16a34a;
+    color: #fff;
+    box-shadow: none;
+  }
+  .tutorial-step.is-current .tutorial-step__mark {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: none;
+  }
+  .tutorial-step__title {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .tutorial-step__hint {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 12px;
+    color: var(--color-fg-subtle);
+  }
+  .tutorial-viewport {
+    position: relative;
+    min-height: 640px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: rgb(255 255 255 / 0.4);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.6),
+      var(--shadow-float);
+    backdrop-filter: blur(16px);
+  }
+  .tutorial-scene {
+    position: relative;
+    min-height: 640px;
+    padding: 1rem;
+  }
+  .tutorial-term {
+    overflow: hidden;
+    border-radius: 12px;
+    background: #11151a;
+    box-shadow: 0 18px 48px rgb(15 23 32 / 0.18);
+    transition: opacity 380ms ease, transform 380ms ease;
+  }
+  .tutorial-term.is-out {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    pointer-events: none;
+    position: absolute;
+    inset: 1rem;
+  }
+  .tutorial-term__bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    background: #1a2027;
+  }
+  .tutorial-term__title {
+    margin-left: 8px;
+    font-size: 11px;
+    color: #8b938e;
+  }
+  .tutorial-term__body {
+    min-height: 280px;
+    padding: 16px 18px 20px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e8eef4;
+  }
+  .tutorial-term__cmd {
+    margin: 0 0 0.35rem;
+  }
+  .tutorial-term__ps {
+    color: #7dd3fc;
+    font-weight: 650;
+  }
+  .tutorial-term__out {
+    margin: 0 0 0.85rem;
+    color: #9aa3ad;
+    font-size: 12.5px;
+  }
+  .tutorial-term__out--ok {
+    color: #86efac;
+  }
+  .tutorial-caret {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: #e8eef4;
+    animation: tutorial-blink 1s steps(1) infinite;
+  }
+  .tutorial-app {
+    transition: opacity 500ms ease, transform 500ms ease;
+  }
+  .tutorial-app.is-out {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+    pointer-events: none;
+    position: absolute;
+    inset: 1rem;
+  }
+  .tutorial-app.is-in {
+    opacity: 1;
+    transform: none;
+  }
+  .tutorial-callouts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tutorial-callouts li {
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.92);
+    padding: 0.45rem 0.8rem;
+    font-size: 12.5px;
+    color: var(--color-fg-muted);
+    box-shadow: var(--shadow-soft);
+  }
+  .tutorial-callouts strong {
+    color: var(--color-primary);
+    font-weight: 650;
+    margin-right: 0.2rem;
+  }
+}
+
+@keyframes tutorial-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .marquee-track {
+    animation: none;
+  }
+  .page-canvas::before {
+    background-attachment: scroll;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

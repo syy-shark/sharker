@@ -20,6 +20,7 @@
 | [assets/](./assets/ARCH.md) | Logo 等静态图 |
 | [shims/](./shims/ARCH.md) | 渲染进程里替 `node:crypto` / `node:util` |
 | [sharker-core/](./sharker-core/README.zh-CN.md) | 整包 Sharker。根目录 `npm run dev` 启动这里的桌面，不经过 Sharker 壳。Sharker 源码仍保留，`npm run dev:sharker` 才挂 `src/App.tsx`。`packages/core/src/model-metadata.generated.ts` 由 `npm run sync:sharker-metadata` 从快照生成（gitignore） |
+| [shark-ai-web-main/](./shark-ai-web-main/ARCH.md) | Sharker 官网：主页营销 + 独立 Tutorial 演示页 |
 
 ## 同级文件
 
