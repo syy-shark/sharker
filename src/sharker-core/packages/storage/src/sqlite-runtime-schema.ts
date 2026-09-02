@@ -19,7 +19,7 @@
 
 import type { DatabaseSync } from 'node:sqlite';
 
-export const SQLITE_RUNTIME_SCHEMA_VERSION = 14;
+export const SQLITE_RUNTIME_SCHEMA_VERSION = 15;
 export const RUNTIME_RECOVERY_AUTHORITY_CAPABILITY = 'runtime_recovery_authority';
 export const RUNTIME_RECOVERY_AUTHORITY_CAPABILITY_VERSION = 1;
 export const RUNTIME_CONTINUATION_AUTHORITY_CAPABILITY = 'runtime_continuation_authority';
@@ -441,6 +441,163 @@ const MIGRATIONS: ReadonlyMap<number, string> = new Map([
       FOREIGN KEY (workspace_id, workspace_epoch_id)
         REFERENCES runtime_workspace_epochs(workspace_id, workspace_epoch_id)
     );
+    `,
+  ],
+  [
+    15,
+    `
+    ALTER TABLE runtime_managed_mutation_reservations
+      RENAME TO runtime_managed_mutation_reservations_v14;
+    ALTER TABLE runtime_workspace_heads RENAME TO runtime_workspace_heads_v14;
+    ALTER TABLE runtime_workspace_versions RENAME TO runtime_workspace_versions_v14;
+    ALTER TABLE runtime_workspace_epochs RENAME TO runtime_workspace_epochs_v14;
+
+    CREATE TABLE runtime_workspace_epochs (
+      workspace_id TEXT NOT NULL,
+      workspace_epoch_id TEXT NOT NULL UNIQUE,
+      repository_id TEXT NOT NULL,
+      workspace_instance_id TEXT NOT NULL UNIQUE,
+      mode TEXT NOT NULL CHECK (mode = 'managed_worktree'),
+      object_format TEXT NOT NULL CHECK (object_format IN ('sha1', 'sha256')),
+      source_commit_oid TEXT NOT NULL,
+      source_tree_oid TEXT NOT NULL,
+      initial_workspace_version_id TEXT NOT NULL UNIQUE,
+      materialization_profile_digest TEXT NOT NULL,
+      materialization_semantics TEXT NOT NULL
+        CHECK (materialization_semantics = 'git_tree_materialized_with_fixed_config_v1'),
+      policy_hash TEXT NOT NULL,
+      authority_session_id TEXT NOT NULL CHECK (authority_session_id = 'sharker_workspace_authority'),
+      authority_invocation_id TEXT NOT NULL UNIQUE,
+      authority_run_id TEXT NOT NULL UNIQUE,
+      authority_turn_id TEXT NOT NULL UNIQUE,
+      epoch_opened_event_id TEXT NOT NULL UNIQUE REFERENCES runtime_events(event_id),
+      protocol_version INTEGER NOT NULL CHECK (protocol_version = 1),
+      committed_at INTEGER NOT NULL,
+      PRIMARY KEY (workspace_id, workspace_epoch_id)
+    );
+
+    INSERT INTO runtime_workspace_epochs (
+      workspace_id, workspace_epoch_id, repository_id, workspace_instance_id,
+      mode, object_format, source_commit_oid, source_tree_oid,
+      initial_workspace_version_id, materialization_profile_digest,
+      materialization_semantics, policy_hash, authority_session_id,
+      authority_invocation_id, authority_run_id, authority_turn_id,
+      epoch_opened_event_id, protocol_version, committed_at
+    )
+    SELECT
+      workspace_id, workspace_epoch_id, repository_id, workspace_instance_id,
+      mode, object_format, source_commit_oid, source_tree_oid,
+      initial_workspace_version_id, materialization_profile_digest,
+      materialization_semantics, policy_hash,
+      CASE authority_session_id
+        WHEN 'maka_workspace_authority' THEN 'sharker_workspace_authority'
+        ELSE authority_session_id
+      END,
+      authority_invocation_id, authority_run_id, authority_turn_id,
+      epoch_opened_event_id, protocol_version, committed_at
+    FROM runtime_workspace_epochs_v14;
+
+    CREATE TABLE runtime_workspace_versions (
+      workspace_version_id TEXT PRIMARY KEY,
+      repository_id TEXT NOT NULL,
+      workspace_id TEXT NOT NULL,
+      workspace_epoch_id TEXT NOT NULL,
+      object_format TEXT NOT NULL CHECK (object_format IN ('sha1', 'sha256')),
+      origin_kind TEXT NOT NULL CHECK (origin_kind IN ('baseline', 'tool_mutation')),
+      origin_event_id TEXT NOT NULL,
+      parents_json TEXT NOT NULL,
+      operation_id TEXT,
+      dispatch_event_id TEXT REFERENCES runtime_events(event_id),
+      outcome_event_id TEXT REFERENCES runtime_events(event_id),
+      base_head_revision INTEGER CHECK (base_head_revision IS NULL OR base_head_revision > 0),
+      execution_profile_digest TEXT,
+      commit_oid TEXT NOT NULL,
+      tree_oid TEXT NOT NULL,
+      policy_hash TEXT NOT NULL,
+      tree_delta_digest TEXT NOT NULL,
+      changed_file_count INTEGER NOT NULL CHECK (changed_file_count >= 0),
+      deleted_file_count INTEGER NOT NULL CHECK (deleted_file_count >= 0),
+      accepted_event_id TEXT NOT NULL UNIQUE REFERENCES runtime_events(event_id),
+      protocol_version INTEGER NOT NULL CHECK (protocol_version = 1),
+      committed_at INTEGER NOT NULL,
+      changed_paths_json TEXT NOT NULL DEFAULT '[]',
+      FOREIGN KEY (workspace_id, workspace_epoch_id)
+        REFERENCES runtime_workspace_epochs(workspace_id, workspace_epoch_id),
+      UNIQUE (
+        workspace_id,
+        workspace_epoch_id,
+        workspace_version_id,
+        accepted_event_id
+      ),
+      CHECK (
+        (origin_kind = 'baseline' AND parents_json = '[]' AND operation_id IS NULL
+          AND dispatch_event_id IS NULL AND outcome_event_id IS NULL
+          AND base_head_revision IS NULL AND execution_profile_digest IS NULL)
+        OR
+        (origin_kind = 'tool_mutation' AND parents_json <> '[]' AND operation_id IS NOT NULL
+          AND dispatch_event_id IS NOT NULL AND outcome_event_id IS NOT NULL
+          AND base_head_revision IS NOT NULL AND execution_profile_digest IS NOT NULL)
+      )
+    );
+
+    INSERT INTO runtime_workspace_versions
+    SELECT * FROM runtime_workspace_versions_v14;
+
+    CREATE TABLE runtime_workspace_heads (
+      workspace_id TEXT NOT NULL,
+      workspace_epoch_id TEXT NOT NULL,
+      repository_id TEXT NOT NULL,
+      workspace_version_id TEXT NOT NULL,
+      accepted_event_id TEXT NOT NULL,
+      commit_oid TEXT NOT NULL,
+      tree_oid TEXT NOT NULL,
+      revision INTEGER NOT NULL CHECK (revision > 0),
+      PRIMARY KEY (workspace_id, workspace_epoch_id),
+      FOREIGN KEY (workspace_id, workspace_epoch_id)
+        REFERENCES runtime_workspace_epochs(workspace_id, workspace_epoch_id),
+      FOREIGN KEY (
+        workspace_id,
+        workspace_epoch_id,
+        workspace_version_id,
+        accepted_event_id
+      ) REFERENCES runtime_workspace_versions(
+        workspace_id,
+        workspace_epoch_id,
+        workspace_version_id,
+        accepted_event_id
+      )
+    );
+
+    INSERT INTO runtime_workspace_heads
+    SELECT * FROM runtime_workspace_heads_v14;
+
+    CREATE TABLE runtime_managed_mutation_reservations (
+      workspace_instance_id TEXT PRIMARY KEY,
+      repository_id TEXT NOT NULL,
+      workspace_id TEXT NOT NULL,
+      workspace_epoch_id TEXT NOT NULL,
+      operation_id TEXT NOT NULL UNIQUE REFERENCES tool_operations(operation_id),
+      dispatch_event_id TEXT NOT NULL UNIQUE REFERENCES runtime_events(event_id),
+      base_workspace_version_id TEXT NOT NULL,
+      base_accepted_event_id TEXT NOT NULL,
+      base_head_revision INTEGER NOT NULL CHECK (base_head_revision > 0),
+      base_commit_oid TEXT NOT NULL,
+      base_tree_oid TEXT NOT NULL,
+      expected_paths_json TEXT NOT NULL,
+      execution_profile_digest TEXT NOT NULL,
+      protocol_version INTEGER NOT NULL CHECK (protocol_version = 1),
+      reserved_at INTEGER NOT NULL,
+      FOREIGN KEY (workspace_id, workspace_epoch_id)
+        REFERENCES runtime_workspace_epochs(workspace_id, workspace_epoch_id)
+    );
+
+    INSERT INTO runtime_managed_mutation_reservations
+    SELECT * FROM runtime_managed_mutation_reservations_v14;
+
+    DROP TABLE runtime_managed_mutation_reservations_v14;
+    DROP TABLE runtime_workspace_heads_v14;
+    DROP TABLE runtime_workspace_versions_v14;
+    DROP TABLE runtime_workspace_epochs_v14;
     `,
   ],
 ]);

@@ -30,6 +30,50 @@ import { SQLITE_SESSION_METADATA_SCHEMA_VERSION } from '../sqlite-session-metada
 import { SQLITE_USAGE_SCHEMA_VERSION } from '../sqlite-usage-schema.js';
 import { createSqliteSessionMetadataStore } from '../sqlite-session-metadata-store.js';
 
+test('opens a v14 database whose workspace-epoch CHECK still names maka', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'sharker-operational-maka-epoch-check-'));
+  try {
+    const created = acquireOperationalStateDatabase(root);
+    created.close();
+
+    const rewritten = new DatabaseSync(join(root, 'runtime.sqlite'));
+    try {
+      rewritten.exec(`
+        PRAGMA writable_schema = ON;
+        UPDATE sqlite_schema
+        SET sql = REPLACE(
+          sql,
+          'sharker_workspace_authority',
+          'maka_workspace_authority'
+        )
+        WHERE name = 'runtime_workspace_epochs';
+        PRAGMA writable_schema = OFF;
+        PRAGMA user_version = 14;
+        UPDATE operational_schema_migrations
+        SET version = 14
+        WHERE scope = 'runtime';
+      `);
+    } finally {
+      rewritten.close();
+    }
+
+    const reopened = acquireOperationalStateDatabase(root);
+    try {
+      const sql = (
+        reopened.database
+          .prepare(`SELECT sql FROM sqlite_schema WHERE name = 'runtime_workspace_epochs'`)
+          .get() as { sql: string }
+      ).sql;
+      assert.match(sql, /sharker_workspace_authority/);
+      assert.doesNotMatch(sql, /maka_workspace_authority/);
+    } finally {
+      reopened.close();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('shares one operational database and produces an online backup', async () => {
   const root = await mkdtemp(join(tmpdir(), 'sharker-operational-state-'));
   const backupPath = join(root, 'backup.sqlite');

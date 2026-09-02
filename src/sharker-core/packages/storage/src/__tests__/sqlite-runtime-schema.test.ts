@@ -23,6 +23,7 @@ import { describe, it } from 'node:test';
 import {
   SQLITE_RUNTIME_SCHEMA_VERSION,
   migrateSqliteRuntimeDatabase,
+  readUserVersion,
 } from '../sqlite-runtime-schema.js';
 
 describe('SQLite runtime schema migration', () => {
@@ -100,6 +101,44 @@ describe('SQLite runtime schema migration', () => {
       assert.equal(lockedVersionRead, true);
     } finally {
       real.close();
+    }
+  });
+
+  it('rewrites the v14 maka workspace-authority CHECK onto the current table', () => {
+    const db = new DatabaseSync(':memory:');
+    try {
+      migrateSqliteRuntimeDatabase(db);
+      db.exec(`
+        PRAGMA writable_schema = ON;
+        UPDATE sqlite_schema
+        SET sql = REPLACE(
+          sql,
+          'sharker_workspace_authority',
+          'maka_workspace_authority'
+        )
+        WHERE name = 'runtime_workspace_epochs';
+        PRAGMA writable_schema = OFF;
+        PRAGMA user_version = 14;
+      `);
+      assert.match(
+        (
+          db
+            .prepare(`SELECT sql FROM sqlite_schema WHERE name = 'runtime_workspace_epochs'`)
+            .get() as { sql: string }
+        ).sql,
+        /maka_workspace_authority/,
+      );
+      migrateSqliteRuntimeDatabase(db);
+      assert.equal(readUserVersion(db), SQLITE_RUNTIME_SCHEMA_VERSION);
+      const sql = (
+        db
+          .prepare(`SELECT sql FROM sqlite_schema WHERE name = 'runtime_workspace_epochs'`)
+          .get() as { sql: string }
+      ).sql;
+      assert.match(sql, /sharker_workspace_authority/);
+      assert.doesNotMatch(sql, /maka_workspace_authority/);
+    } finally {
+      db.close();
     }
   });
 });
