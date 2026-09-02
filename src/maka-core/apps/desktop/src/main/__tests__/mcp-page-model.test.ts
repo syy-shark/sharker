@@ -140,16 +140,9 @@ test('kind changes preserve an explicit protocol choice and derive only unselect
   assert.equal(mcpDraftProtocolPreference(pinned), '2026-07-28');
 });
 
-test('the MCP catalog opts every bundled remote entry into auto negotiation', () => {
-  const remoteEntries = MCP_CATALOG.filter((entry) => !isMcpStdioConfig(entry.config));
-
-  assert.deepEqual(
-    remoteEntries.map((entry) => entry.id),
-    ['notion', 'vercel', 'supabase'],
-  );
-  for (const entry of remoteEntries) {
-    assert.equal(!isMcpStdioConfig(entry.config) && entry.config.protocol, 'auto');
-  }
+test('the MCP catalog ships only the Playwright stdio entry', () => {
+  assert.deepEqual(MCP_CATALOG.map((entry) => entry.id), ['playwright']);
+  assert.ok(MCP_CATALOG.every((entry) => isMcpStdioConfig(entry.config)));
 });
 
 test('an edit that does not touch OAuth preserves the block through save', () => {

@@ -75,7 +75,7 @@ function createHarness(options: {
   confirm?: () => Promise<boolean>;
   connections?: LlmConnection[];
   messages?: StoredMessage[];
-  permissionModeResult?: 'ask' | 'bypass';
+  permissionModeResult?: 'ask' | 'bypass' | 'explore';
 } = {}) {
   const activeIdRef = { current: 'session-a' as string | undefined };
   const sessions = [session('session-a'), session('session-b')];
@@ -98,7 +98,7 @@ function createHarness(options: {
     value: {
       maka: {
         sessions: {
-          setPermissionMode: async (sessionId: string, mode: 'ask' | 'bypass') => {
+          setPermissionMode: async (sessionId: string, mode: 'ask' | 'bypass' | 'explore') => {
             permissionCalls.push(`${sessionId}:${mode}`);
             return {
               ...session(sessionId),
@@ -203,6 +203,26 @@ describe('AppShell session settings actions', () => {
 
     assert.equal(switched, false);
     assert.deepEqual(harness.permissionCalls, ['session-a:bypass']);
+  });
+
+  it('switches an existing session into the Ask (explore) boundary', async () => {
+    const harness = createHarness();
+
+    const switched = await harness.actions.setPermissionMode('explore');
+
+    assert.equal(switched, true);
+    assert.deepEqual(harness.permissionCalls, ['session-a:explore']);
+  });
+
+  it('does not write explore onto a new-task draft', async () => {
+    const harness = createHarness();
+    harness.activeIdRef.current = undefined;
+
+    const switched = await harness.actions.setPermissionMode('explore');
+
+    assert.equal(switched, false);
+    assert.deepEqual(harness.newTaskPermissionModes, []);
+    assert.deepEqual(harness.permissionCalls, []);
   });
 
   it('treats an already-active permission mode as successful without prompting', async () => {

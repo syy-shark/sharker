@@ -353,7 +353,7 @@ describe('Runtime Host Skill catalog protocol', () => {
     assertInvalidResponse('skill.catalog.query', page('bundled', [pages[2].items[0]]));
   });
 
-  test('encodes actual bundled catalog metadata through the Host output codec', async () => {
+  test('encodes an empty bundled catalog through the Host output codec', async () => {
     const base = await mkdtemp(join(tmpdir(), 'maka-skill-catalog-protocol-'));
     const dataRoot = join(base, 'data');
     const projectRoot = join(base, 'project');
@@ -385,11 +385,7 @@ describe('Runtime Host Skill catalog protocol', () => {
       );
       assert.deepEqual(
         bundledItems.map((item) => item.id),
-        ['computer-use'],
-      );
-      assert.equal(
-        bundledItems.every((item) => item.category.length > 0),
-        true,
+        [],
       );
 
       const frame = response('skill.catalog.query', {

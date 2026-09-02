@@ -31,6 +31,25 @@ export interface DesktopSessionRef extends DesktopHostRef {
 
 export interface DesktopTargetSessionRef extends DesktopSessionRef, DesktopTargetScope {}
 
+/**
+ * 新任务工作栏还没有 Session 时用的合成 id。
+ * 不能走 `desktopSessionKey`：预加载层会 `JSON.parse` 会话键，字面量 `new-task` 会直接炸掉。
+ */
+export const NEW_TASK_WORKBAR_SESSION_ID = 'new-task';
+
+/** 是否为新任务工作栏的合成 Session id。 */
+export function isNewTaskWorkbarSessionId(sessionId: string): boolean {
+  return sessionId === NEW_TASK_WORKBAR_SESSION_ID;
+}
+
+/**
+ * 渲染层看到的 Session id。合成新任务 id 保持原样，真实 Session 编成 Host 键。
+ */
+export function projectRendererSessionId(hostId: string, sessionId: string): string {
+  if (isNewTaskWorkbarSessionId(sessionId)) return sessionId;
+  return desktopSessionKey({ hostId, sessionId });
+}
+
 export function runtimeHostChangeRetiresSession(
   change: { readonly removed?: boolean; readonly readiness: string },
   activeSessionId: string | undefined,

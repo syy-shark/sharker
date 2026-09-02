@@ -189,6 +189,13 @@ export function createAppShellChatActions(deps: {
    * without this the next task on the same target would silently re-send it.
    */
   clearNewChatPermissionChoice: () => void;
+  /**
+   * 新任务草稿选了 Ask。创建时不能直接要 `explore`（产品模式才授），
+   * 所以在 Session 落地后再写一次权限。
+   */
+  newChatAskMode?: boolean;
+  /** Ask 选择已经落到 Session 上之后清掉草稿，避免下一条空任务带着走。 */
+  clearNewChatAskMode?: () => void;
   newChatCollaborationMode: CollaborationMode;
   newChatOrchestrationMode: OrchestrationMode;
   newTaskTarget: DesktopNewTaskTarget | undefined;
@@ -220,6 +227,8 @@ export function createAppShellChatActions(deps: {
     pendingNewChatThinkingLevel,
     newChatPermissionChoice,
     clearNewChatPermissionChoice,
+    newChatAskMode = false,
+    clearNewChatAskMode = () => undefined,
     newChatCollaborationMode,
     newChatOrchestrationMode,
     newTaskTarget,
@@ -462,6 +471,10 @@ export function createAppShellChatActions(deps: {
           orchestrationMode: newChatOrchestrationMode,
         });
         unsentSessionId = session.id;
+        if (newChatAskMode) {
+          await window.maka.sessions.setPermissionMode(session.id, 'explore');
+          clearNewChatAskMode();
+        }
         optimisticSessionId = session.id;
         optimisticMessageId = messageId;
         // Stage the first row before activation. `setActiveId` projects this

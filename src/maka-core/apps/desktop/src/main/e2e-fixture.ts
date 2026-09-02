@@ -65,6 +65,7 @@ const E2E_FIXTURE_SCENARIOS = new Set<E2eFixtureScenario>([
   'chat-prompt-rail',
   'chat-partial-history',
   'settings-general',
+  'settings-search',
   'settings-usage',
   'module-skills',
   'module-mcp',
@@ -180,6 +181,8 @@ export function getE2eFixtureState(fixture: E2eFixture | null): E2eFixtureState 
       return { ...state, activeSessionId: PARTIAL_HISTORY_SESSION_ID, workbarCollapsed: true };
     case 'settings-general':
       return { ...state, activeSessionId: TURN_SESSION_ID, openSettingsSection: 'general' };
+    case 'settings-search':
+      return { ...state, activeSessionId: TURN_SESSION_ID, openSettingsSection: 'search' };
     case 'settings-usage':
       return { ...state, activeSessionId: TURN_SESSION_ID, openSettingsSection: 'usage' };
     case 'module-skills':

@@ -375,7 +375,9 @@ dialog:modal {
 
    Both plates below reserve the full `--h-titlebar` (`.mainColumn` via
    `--maka-plate-titlebar-clearance`, `.maka-session-panel` directly), so this
-   strip is empty for its whole width and the label collides with nothing.
+   strip is empty for its whole width and the label collides with nothing —
+   except a fullscreen right workbar, whose tab toolbar occupies the same
+   band. That state hides this identity (see workbar/shell.css).
 
    `min-width: 0` + `justify-self: start`: the column is `minmax(0, 1fr)`, so on
    a narrow window this is what gives way, truncating its own segments instead

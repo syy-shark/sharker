@@ -18,7 +18,7 @@
  */
 
 import {
-  desktopSessionKey,
+  projectRendererSessionId,
   type DesktopTargetScope,
 } from '../shared/runtime-host-identity.js';
 
@@ -57,7 +57,7 @@ export function projectProtocolSessionIds<T>(hostId: string, value: T): T {
     Object.entries(value).map(([key, entry]) => [
       key,
       SESSION_ID_FIELDS.has(key) && typeof entry === 'string'
-        ? desktopSessionKey({ hostId, sessionId: entry })
+        ? projectRendererSessionId(hostId, entry)
         : projectProtocolSessionIds(hostId, entry),
     ]),
   ) as T;

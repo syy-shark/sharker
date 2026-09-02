@@ -902,7 +902,7 @@
           "useNewTaskChoice": 1,
           "useOnboardingSnapshot": 1,
           "usePlanModeState": 1,
-          "useRef": 25,
+          "useRef": 26,
           "useSessionCollaborationDialog": 1,
           "useSessionEventHealthPolling": 1,
           "useSessionNavigationReads": 1,
@@ -917,7 +917,7 @@
           "useShellRunUpdates": 1,
           "useShellSearch": 1,
           "useStableActions": 7,
-          "useState": 17,
+          "useState": 18,
           "useSystemUiLocale": 1,
           "useTaskEntryController": 1,
           "useTaskSubmissionReadiness": 1,
@@ -2578,19 +2578,18 @@
       "src/renderer/settings/general-settings-page.tsx": {
         "bridgePaths": {},
         "environmentCapabilities": {
-          "window": 4
+          "window": 3
         },
         "hookCalls": {
-          "useActionGuard": 2,
+          "useActionGuard": 1,
           "useEffect": 1,
           "useKeyedActionGuard": 1,
           "useMountedRef": 2,
-          "useOptimisticSettingsDraft": 1,
           "useOptionalRuntimeHostSettingsTarget": 2,
-          "useRuntimeHostSettingsTarget": 2,
-          "useState": 7,
-          "useToast": 4,
-          "useUiLocale": 4
+          "useRuntimeHostSettingsTarget": 1,
+          "useState": 6,
+          "useToast": 3,
+          "useUiLocale": 3
         },
         "lifecycleMethods": {},
         "unresolvedDependencies": 0,
@@ -2598,9 +2597,7 @@
         "dependencyPaths": {
           "../locales/settings-preferences-copy.js": 1,
           "../locales/settings-shared-copy.js": 1,
-          "../locales/settings-test-result-copy.js": 1,
           "../locales/shell-copy.js": 1,
-          "./password-input": 1,
           "./personalization-settings-section": 1,
           "./provider-brand-marks": 1,
           "./runtime-host-settings-bridge.js": 1,
@@ -2610,12 +2607,10 @@
           "./settings-section": 1,
           "./settings-skeleton.js": 1,
           "./use-action-guard": 1,
-          "./use-optimistic-settings-draft": 1,
           "@maka/core/chat-model-choice": 1,
           "@maka/core/llm-connections": 1,
           "@maka/core/model-thinking": 1,
-          "@maka/core/settings": 3,
-          "@maka/core/settings/network-settings": 1,
+          "@maka/core/settings": 1,
           "@maka/ui": 2,
           "react": 1
         }
@@ -3426,7 +3421,6 @@
           "window.maka.settings.getClient": 1,
           "window.maka.settings.subscribeClientChanged": 1,
           "window.maka.settings.subscribeExternalChanged": 1,
-          "window.maka.settings.testNetworkProxy": 1,
           "window.maka.settings.update": 1,
           "window.maka.settings.updateClient": 1,
           "window.maka.settings.usageStats": 1

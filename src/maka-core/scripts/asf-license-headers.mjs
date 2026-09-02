@@ -227,12 +227,6 @@ export const exclusionRules = [
     ),
   },
   {
-    id: 'verbatim-runtime-payloads',
-    justification:
-      'Bundled skill payloads are embedded in the generated catalog verbatim, pinned there by content digest, and delivered to the model as instructions. A header would be republished as agent prompt text and would invalidate the recorded digests. Each payload is listed, so a new bundled skill is reviewed rather than inheriting this reason from its directory.',
-    matches: isOneOf('packages/runtime/resources/bundled-skills/computer-use/SKILL.md'),
-  },
-  {
     id: 'verbatim-github-templates',
     justification:
       'GitHub copies this file into every new pull request description. A header here would be republished into unrelated prose instead of licensing a source file.',

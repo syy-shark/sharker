@@ -249,13 +249,11 @@ const baseComposerProps: ComposerProps = {
   onPermissionModeChange: noop,
   // Fidelity: production app-shell always wires these (app-shell.tsx
   // ~1851-1960), so the daily composer renders the upload button, the
-  // mode controls (Plan / orchestration), and the Skills picker. Omitting them
+  // mode controls (Agent / Ask), and the Skills picker. Omitting them
   // here understated the persistent element count in every shell story.
   onPickAttachments: noop,
-  planModeActive: false,
-  onPlanModeChange: noop,
-  orchestrationMode: 'default',
-  onOrchestrationModeChange: noop,
+  interactionMode: 'agent',
+  onInteractionModeChange: noop,
   // Production wires this for every Session it can interact with locally
   // (app-shell.tsx), so the ＋ menu always carries the Goal entry.
   onSetGoal: noop,
@@ -1349,39 +1347,20 @@ export const TitlebarIdentityTruncated: Story = {
   ),
 };
 
-// Real path: 开启 Plan Mode from the ＋ menu. The mode is session-scoped — it
-// survives the send — so it reads as a mark at the tail of the composer's
-// footer controls rather than as staged context in the drawer (#1897). It
-// trails the model + thinking pair so switching it never shifts those two.
-export const PlanModeOn: Story = {
-  render: () => <ComposedShell composer={{ planModeActive: true }} />,
-};
-
-// Real path: the same for the orchestration side. All marks share the one
-// product accent, so the icon is what has to keep the modes distinguishable —
-// this story is where that carries its own weight.
-export const SwarmModeOn: Story = {
-  render: () => <ComposedShell composer={{ orchestrationMode: 'swarm' }} />,
-};
-
-// Real path: Plan and orchestration are separate Session fields with separate
-// lifetimes, so both can be on at once — Plan is a temporary excursion, Swarm
-// is the standing default the execution afterwards runs under. This is the
-// widest the mode tail ever gets next to a real model name.
-export const PlanAndSwarmModeOn: Story = {
-  render: () => (
-    <ComposedShell composer={{ planModeActive: true, orchestrationMode: 'swarm' }} />
-  ),
+// Real path: 从 ＋ 菜单切到 Ask。模式挂在 Session 上，发送后还在，
+// 所以页脚左控件末尾有一条标记，而不是抽屉里的暂存上下文（#1897）。
+export const AskModeOn: Story = {
+  render: () => <ComposedShell composer={{ interactionMode: 'ask' }} />,
 };
 
 // Real path: a mode is on AND context is staged for the next send. The point of
 // the story is the split: the drawer badge counts the two attachments only,
-// while Plan reads off the footer — the mode is not something the send consumes.
+// while Ask reads off the footer — the mode is not something the send consumes.
 export const ModeOnWithPendingAttachments: Story = {
   render: () => (
     <ComposedShell
       composer={{
-        planModeActive: true,
+        interactionMode: 'ask',
         pendingAttachments: [
           { displayName: 'design-review.pdf', kind: 'pdf', size: 182_400 },
           { displayName: 'composer.tsx', kind: 'code', size: 41_200 },

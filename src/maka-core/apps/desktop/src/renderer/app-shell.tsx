@@ -48,6 +48,7 @@ import { hasSettledInitialOnboarding } from '@maka/core/onboarding-milestone';
 import {
   ChatSurfaceLayout,
   type ComposerHandle,
+  type ComposerInteractionMode,
   type ComposerSendMetadata,
   type ComposerSlashCommandOption,
   type MakaUriDest,
@@ -449,6 +450,8 @@ function AppShellContent({
   // Plan toggle and one orchestration value, not one fused choice.
   const [newChatPlanModeActive, setNewChatPlanModeActive] = useState(false);
   const [newChatOrchestrationMode, setNewChatOrchestrationMode] = useState<OrchestrationMode>('default');
+  const [newChatInteractionMode, setNewChatInteractionMode] = useState<ComposerInteractionMode>('agent');
+  const lastAgentPermissionRef = useRef<ChatDefaultPermissionMode>('ask');
   const [newTaskPermissionChoice, setNewTaskPermissionChoice, clearNewTaskPermissionChoice] =
     useNewTaskChoice<ChatDefaultPermissionMode>(currentNewTaskDraftKey);
   const [historyLoadPendingSessionId, setHistoryLoadPendingSessionId] = useState<string>();
@@ -1103,6 +1106,30 @@ function AppShellContent({
     return setOrchestrationMode('default');
   }
 
+  /**
+   * ＋ 菜单的 Agent / Ask。Ask 落到只读 `explore`；Agent 回到上一次
+   * 可写权限（自动或完全权限）。顺手清掉 Plan / Swarm / Graph，避免
+   * 菜单里已经拿掉的模式还挂在 Session 上。
+   */
+  async function setInteractionMode(mode: ComposerInteractionMode): Promise<void> {
+    if (!activeId) {
+      setNewChatInteractionMode(mode);
+      setNewChatPlanModeActive(false);
+      setNewChatOrchestrationMode('default');
+      return;
+    }
+    if (mode === activeInteractionMode) return;
+    if (activePlanMode) await setPlanMode(false);
+    if (activeOrchestrationMode !== 'default') await setOrchestrationMode('default');
+    if (mode === 'ask') {
+      await setPermissionMode('explore');
+      return;
+    }
+    if (activePermissionMode === 'explore') {
+      await setPermissionMode(lastAgentPermissionRef.current);
+    }
+  }
+
   // Handed to ChatView, which calls it with the turns its transcript projection
   // produced. The shell no longer materializes the transcript a second time to
   // derive these props, so the turn objects the projection kept are also what
@@ -1276,9 +1303,16 @@ function AppShellContent({
   const activeBoundarySurface = deriveDesktopExecutionBoundarySurface(
     activeId,
     activeExecutionBoundary,
-    activeId ? (activeSessionForView?.permissionMode ?? 'ask') : newTaskPermissionMode,
+    activeId
+      ? (activeSessionForView?.permissionMode ?? 'ask')
+      : newChatInteractionMode === 'ask' ? 'explore' : newTaskPermissionMode,
   );
   const activePermissionMode = activeBoundarySurface.permissionMode;
+  const activeInteractionMode: ComposerInteractionMode =
+    activePermissionMode === 'explore' ? 'ask' : 'agent';
+  if (activePermissionMode === 'ask' || activePermissionMode === 'bypass') {
+    lastAgentPermissionRef.current = activePermissionMode;
+  }
   const planMode = usePlanModeState(sharedSessionActive ? undefined : activeSessionForView);
   const planConversationItems = (planMode.state?.proposals ?? []).map((proposal) => ({
     id: proposal.proposalId,
@@ -1582,8 +1616,10 @@ function AppShellContent({
   const openNewTaskSurface = useCallback(() => {
     startNewSession();
     // Only Plan resets: a new task starts out of Plan, in whatever
-    // orchestration the last one was set to.
+    // orchestration the last one was set to. Ask is a draft-only choice
+    // and must not leak into the next empty composer.
     setNewChatPlanModeActive(false);
+    setNewChatInteractionMode('agent');
     setNavSelection({ section: 'sessions' });
     setSearchScrollTarget(null);
     // New-task affordances reset to the empty-state composer; move focus
@@ -1655,7 +1691,8 @@ function AppShellContent({
     newSessionCollaborationMode: newChatPlanModeActive ? 'plan' : 'agent',
     // Refresh only; Desktop Main re-reads the authoritative default before
     // constructing the Runtime Host preview target.
-    newSessionPermissionMode: newTaskPermissionMode,
+    newSessionPermissionMode:
+      newChatInteractionMode === 'ask' ? 'explore' : newTaskPermissionMode,
   };
 
   const hasModalOpen = helpOpen || paletteOpen || searchModalOpen || sharedSessionDialog.target !== undefined;
@@ -1856,6 +1893,8 @@ function AppShellContent({
     pendingNewChatThinkingLevel: newChatThinkingLevel ?? null,
     newChatPermissionChoice: newTaskPermissionChoice,
     clearNewChatPermissionChoice: clearNewTaskPermissionChoice,
+    newChatAskMode: newChatInteractionMode === 'ask',
+    clearNewChatAskMode: () => setNewChatInteractionMode('agent'),
     newChatCollaborationMode: newChatPlanModeActive ? 'plan' : 'agent',
     newChatOrchestrationMode: newChatOrchestrationMode,
     newTaskTarget: taskEntry.selectors.target,
@@ -3059,10 +3098,16 @@ function AppShellContent({
                   onPermissionModeChange={
                     activeBoundarySurface.localInteractionAvailable
                       ? async (mode) => {
+                          if (!activeId) setNewChatInteractionMode('agent');
                           await setPermissionMode(mode);
                         }
                       : undefined
                   }
+                  interactionMode={activeInteractionMode}
+                  interactionModeDisabledReason={modeChangeDisabledReason}
+                  onInteractionModeChange={(mode) => {
+                    void setInteractionMode(mode);
+                  }}
                   planModeActive={activePlanMode}
                   // No pending-keyed disable while a toggle commits: the
                   // pending registries already swallow re-entrant toggles, and

@@ -17,6 +17,7 @@
  * under the License.
  */
 
+/// <reference path="./css-modules.d.ts" />
 import type { Decorator, Preview } from '@storybook/react-vite';
 import '../src/renderer/styles.css';
 import { Theme } from '@astryxdesign/core/theme';

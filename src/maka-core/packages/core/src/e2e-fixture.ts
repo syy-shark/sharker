@@ -29,6 +29,7 @@ export type E2eFixtureScenario =
   | 'chat-prompt-rail'
   | 'chat-partial-history'
   | 'settings-general'
+  | 'settings-search'
   | 'settings-usage'
   | 'module-skills'
   | 'module-mcp'

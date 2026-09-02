@@ -24,8 +24,8 @@
 // icon sources, unified behind one `BrandMark` model that carries each source's
 // NATIVE viewBox so no path is rescaled or redrawn:
 //   - `simple-icons` (CC0) — the de-facto brand set; 24×24 viewBox, single path.
-//     Covers LINE, Google Calendar, Figma, Vercel, Supabase, Notion and
-//     Apple (macOS 应用). Per-icon *named* ESM imports so the bundler tree-shakes
+//     Covers LINE, Google Calendar, Google Chrome (浏览器自动化), Figma, Vercel,
+//     Supabase, Notion and Apple (macOS 应用). Per-icon *named* ESM imports so the bundler tree-shakes
 //     the multi-thousand icon catalog down to only the marks we render.
 //   - Slack: vendored from the repo's bot-channel logo asset (Simple Icons,
 //     CC0-1.0 — see packages/ui/src/bot-brand-logo.tsx). simple-icons dropped
@@ -58,7 +58,7 @@ import type { AbstractNode } from '@ant-design/icons-svg/es/types.js';
 import DingtalkOutlined from '@ant-design/icons-svg/es/asn/DingtalkOutlined.js';
 import type { CSSProperties, ReactElement } from 'react';
 import type { SimpleIcon } from 'simple-icons';
-import { siApple, siFigma, siGooglecalendar, siLine, siNotion, siSupabase, siVercel } from 'simple-icons';
+import { siApple, siFigma, siGooglecalendar, siGooglechrome, siLine, siNotion, siSupabase, siVercel } from 'simple-icons';
 import { shouldUseCurrentColorOnDark } from './mcp-brand-contrast.js';
 import type { McpCatalogEntry } from './mcp-catalog';
 
@@ -141,6 +141,7 @@ const MCP_BRAND_MARKS: Record<string, BrandMark> = {
   supabase: fromSimpleIcon(siSupabase),
   notion: fromSimpleIcon(siNotion),
   'macos-apps': fromSimpleIcon(siApple),
+  playwright: fromSimpleIcon(siGooglechrome),
   dingtalk: DINGTALK_MARK,
   feishu: FEISHU_MARK,
 };

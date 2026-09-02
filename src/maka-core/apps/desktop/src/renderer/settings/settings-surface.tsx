@@ -1118,9 +1118,6 @@ function SettingsPageBody(props: {
           runtimeHostSettingsStatus={props.runtimeHostSettingsStatus}
           runtimeHostConnectionsStatus={props.runtimeHostConnectionsStatus}
           runtimeHostErrorMessage={props.runtimeHostErrorMessage}
-          testNetworkProxy={props.runtimeHost
-            ? (input) => window.maka.settings.testNetworkProxy(input, props.runtimeHost)
-            : undefined}
           onUpdate={props.onUpdateSettings}
           onRefreshConnections={props.onRefreshConnections}
           onRetryRuntimeHost={props.onRetryRuntimeHost}

@@ -163,6 +163,7 @@ export function BrowserPanel(props: { sessionId: string; hidden: boolean }) {
     const ownerSessionId = sessionId;
     void browser.navigate(ownerSessionId, url).catch(() => {
       if (isBrowserPanelSessionCurrent(ownerSessionId)) {
+        setHomeOpen(true);
         toast.error(
           copy.navigationFailed,
           copy.navigationFailedDetail,

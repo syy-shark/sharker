@@ -171,6 +171,12 @@ export interface ConversationCopy {
     thinkingDisabledStreaming: string;
     thinkingDisabledRunning: string;
     thinkingDisabledPermission: string;
+    interactionModeAriaLabel: string;
+    agentModeLabel: string;
+    agentModeHint: string;
+    askModeLabel: string;
+    askModeHint: string;
+    askModeOnTitle: string;
     orchestrationModeAriaLabel: string;
     planModeLabel: string;
     enablePlanMode: string;
@@ -455,6 +461,10 @@ const CONVERSATION_COPY = {
       setGoal: '设定 Goal…', goalAlreadySet: '当前会话已有进行中的 Goal',
       switchDisabledStreaming: '当前任务正在流式输出，等结束后再切换模型。', switchDisabledRunning: '当前任务正在运行，等结束后再切换模型。', switchDisabledPermission: '当前有工具调用正在等待确认，处理后再切换模型。',
       thinkingDisabledStreaming: '当前任务正在流式输出，等结束后再切换思考级别。', thinkingDisabledRunning: '当前任务正在运行，等结束后再切换思考级别。', thinkingDisabledPermission: '当前有工具调用正在等待确认，处理后再切换思考级别。',
+      interactionModeAriaLabel: '对话模式',
+      agentModeLabel: 'Agent 模式', agentModeHint: '可改文件、跑命令、使用工具。',
+      askModeLabel: 'Ask 模式', askModeHint: '只读问答，不改文件、不上网。',
+      askModeOnTitle: 'Ask 模式已启用，点击回到 Agent 模式',
       orchestrationModeAriaLabel: '编排模式',
       planModeLabel: 'Plan', enablePlanMode: '开启 Plan Mode', disablePlanMode: '退出 Plan Mode',
       planModeOnTitle: 'Plan 模式已启用，点击关闭',
@@ -606,6 +616,10 @@ const CONVERSATION_COPY = {
       setGoal: 'Set a goal…', goalAlreadySet: 'This session already has a goal in progress',
       switchDisabledStreaming: 'Wait for the current response to finish before switching models.', switchDisabledRunning: 'Wait for the current run to finish before switching models.', switchDisabledPermission: 'Resolve the pending tool permission before switching models.',
       thinkingDisabledStreaming: 'Wait for the current response to finish before changing the thinking level.', thinkingDisabledRunning: 'Wait for the current run to finish before changing the thinking level.', thinkingDisabledPermission: 'Resolve the pending tool permission before changing the thinking level.',
+      interactionModeAriaLabel: 'Chat mode',
+      agentModeLabel: 'Agent mode', agentModeHint: 'Can edit files, run commands, and use tools.',
+      askModeLabel: 'Ask mode', askModeHint: 'Read-only Q&A — no file writes or network.',
+      askModeOnTitle: 'Ask mode is on — click to return to Agent',
       orchestrationModeAriaLabel: 'Orchestration mode',
       planModeLabel: 'Plan', enablePlanMode: 'Enable Plan Mode', disablePlanMode: 'Disable Plan Mode',
       planModeOnTitle: 'Plan mode is on — click to turn off',

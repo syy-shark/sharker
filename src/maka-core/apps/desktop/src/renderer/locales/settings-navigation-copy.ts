@@ -34,7 +34,7 @@ const SETTINGS_NAVIGATION_COPY_BY_LOCALE = {
       activity: '活动',
     },
     sections: {
-      general: { label: '通用', description: '显示名称与界面语言、隐私与通知、任务默认与网络代理。' },
+      general: { label: '通用', description: '显示名称与界面语言、隐私与通知、任务默认。' },
       appearance: { label: '外观', description: '界面主题与调色板。' },
       models: { label: '模型', description: '模型连接、API key 与 OAuth 订阅管理。' },
       usage: { label: '使用统计', description: 'token、模型、工具使用走势与配额追踪。' },
@@ -50,7 +50,7 @@ const SETTINGS_NAVIGATION_COPY_BY_LOCALE = {
       activity: 'Activity',
     },
     sections: {
-      general: { label: 'General', description: 'Display name and interface language, privacy and notifications, task defaults, and network proxy.' },
+      general: { label: 'General', description: 'Display name and interface language, privacy and notifications, and task defaults.' },
       appearance: { label: 'Appearance', description: 'Interface theme and color palette.' },
       models: { label: 'Models', description: 'Model connections, API keys, and OAuth subscriptions.' },
       usage: { label: 'Usage', description: 'Token, model, tool usage trends, and quota tracking.' },

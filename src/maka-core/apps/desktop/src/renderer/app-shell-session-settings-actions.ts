@@ -104,12 +104,14 @@ export function createAppShellSessionSettingsActions(deps: {
   }
 
   async function setPermissionMode(mode: PermissionMode): Promise<boolean> {
-    if (mode !== 'ask' && mode !== 'bypass') return false;
+    if (mode !== 'ask' && mode !== 'bypass' && mode !== 'explore') return false;
     const sessionId = activeIdRef.current;
     const currentMode = sessionId
       ? sessionsRef.current.find((session) => session.id === sessionId)?.permissionMode
       : undefined;
     if (currentMode === mode) return true;
+    // Ask 模式（explore）在新任务草稿上由 host 自己记，chatDefaults 不能存它。
+    if (!sessionId && mode === 'explore') return false;
     // No session means the chat default, which has no row to mark pending. It
     // still needs a key of its own so two rapid switches cannot both run.
     const pendingKey = sessionId ?? '__global_permission_mode__';
@@ -136,9 +138,12 @@ export function createAppShellSessionSettingsActions(deps: {
       let nextMode = mode;
       if (sessionId) {
         const next = await window.maka.sessions.setPermissionMode(sessionId, mode);
-        nextMode = next.permissionMode === 'bypass' ? 'bypass' : 'ask';
+        nextMode =
+          next.permissionMode === 'bypass' || next.permissionMode === 'explore'
+            ? next.permissionMode
+            : 'ask';
       } else {
-        await setNewTaskPermissionMode(mode);
+        await setNewTaskPermissionMode(mode === 'bypass' ? 'bypass' : 'ask');
       }
       toastApi.success(
         copy.permissionSwitched(copy.permissionLabels[nextMode]),

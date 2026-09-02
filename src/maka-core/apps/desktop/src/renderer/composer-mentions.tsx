@@ -18,7 +18,7 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { ChatDefaultPermissionMode } from '@maka/core/settings';
+import type { PermissionMode } from '@maka/core/permission';
 import type { InvocableSkillEntry } from '@maka/runtime/skill-invocation';
 import type { DesktopNewTaskTarget } from '../preload/bridge-contract.js';
 
@@ -62,7 +62,7 @@ export interface ComposerMentionsSurface {
   projectPath?: string;
   newSessionModel?: { llmConnectionSlug: string; model: string };
   newSessionCollaborationMode?: 'agent' | 'plan';
-  newSessionPermissionMode?: ChatDefaultPermissionMode;
+  newSessionPermissionMode?: PermissionMode;
   newTaskTarget?: DesktopNewTaskTarget;
 }
 
@@ -150,7 +150,7 @@ function useComposerMentions(options: ComposerMentionsSurface): ComposerMentions
       const context = {
         ...(newSessionModel ?? {}),
         collaborationMode: newSessionCollaborationMode ?? 'agent',
-        ...(newSessionPermissionMode
+        ...(newSessionPermissionMode && newSessionPermissionMode !== 'explore'
           ? { permissionMode: newSessionPermissionMode }
           : {}),
       } as const;

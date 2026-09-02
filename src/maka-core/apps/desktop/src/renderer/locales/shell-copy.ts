@@ -324,7 +324,7 @@ type ShellCopy = {
     runtimeFailures: Record<'not_found' | 'blocked_path' | 'state_error' | 'write_failed', string>;
   };
   sessionSettingsActions: {
-    permissionLabels: Record<ChatDefaultPermissionMode, string>;
+    permissionLabels: Record<PermissionMode, string>;
     permissionDescriptions: Record<PermissionMode, string>;
     bypassConfirmTitle: string;
     bypassConfirmDescription: string;
@@ -966,6 +966,7 @@ const SHELL_COPY_BY_LOCALE = {
     },
     sessionSettingsActions: {
       permissionLabels: {
+        explore: 'Ask 模式',
         ask: '自动',
         bypass: '完全权限',
       },
@@ -1495,6 +1496,7 @@ const SHELL_COPY_BY_LOCALE = {
     },
     sessionSettingsActions: {
       permissionLabels: {
+        explore: 'Ask mode',
         ask: 'Auto',
         bypass: 'Full access',
       },

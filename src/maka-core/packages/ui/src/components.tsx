@@ -68,9 +68,11 @@ export { Composer } from './composer.js';
 export type {
   ComposerProps,
   ComposerHandle,
+  ComposerInteractionMode,
   ComposerSendMetadata,
   ComposerSlashCommandOption,
 } from './composer.js';
+export { COMPOSER_INTERACTION_MODES } from './composer.js';
 export {
   getPermissionModeMeta,
   PERMISSION_MODE_ORDER,

@@ -24,7 +24,6 @@ import {
   Cpu,
   ListTodo,
   Palette,
-  Search,
   Settings as SettingsIcon,
   type LucideProps,
 } from '@maka/ui/icons';
@@ -58,7 +57,6 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: 'appearance', Icon: Palette, enabled: true, group: 'preferences' },
   { id: 'models', Icon: Cpu, enabled: true, group: 'capabilities' },
   { id: 'memory', Icon: Brain, enabled: true, group: 'capabilities' },
-  { id: 'search', Icon: Search, enabled: true, group: 'capabilities', badge: 'Beta' },
   { id: 'usage', Icon: BarChart3, enabled: true, group: 'activity' },
   { id: 'archived-tasks', Icon: ListTodo, enabled: true, group: 'activity' },
 ];

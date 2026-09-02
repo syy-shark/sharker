@@ -225,8 +225,9 @@ import {
 } from '@maka/runtime-host/protocol';
 import type { AgentGraphEpochDirectory } from '@maka/runtime-host/client';
 import {
-  desktopSessionKey,
+  isNewTaskWorkbarSessionId,
   parseDesktopSessionKey,
+  projectRendererSessionId,
   requireDesktopTargetScope,
   type DesktopTargetScope,
 } from '../shared/runtime-host-identity.js';
@@ -272,7 +273,7 @@ function runtimeHostMetadataFor(scope: DesktopTargetScope) {
 }
 
 function recordRuntimeHostSessionScope(scope: DesktopTargetScope, sessionId: string): string {
-  const projected = desktopSessionKey({ hostId: scope.hostId, sessionId });
+  const projected = projectRendererSessionId(scope.hostId, sessionId);
   runtimeHostSessionScopes.set(projected, runtimeHostScopeKey(scope));
   return projected;
 }
@@ -388,6 +389,11 @@ async function runtimeHostSessionRef(sessionId: string): Promise<{
   readonly scope: DesktopTargetScope;
   readonly sessionId: string;
 }> {
+  if (isNewTaskWorkbarSessionId(sessionId)) {
+    const scope = await activeRuntimeHostRef();
+    runtimeHostSessionScopes.set(sessionId, runtimeHostScopeKey(scope));
+    return { scope, sessionId };
+  }
   const ref = parseDesktopSessionKey(sessionId);
   await runtimeHostScopeList();
   const recordedScopeKey = runtimeHostSessionScopes.get(sessionId);

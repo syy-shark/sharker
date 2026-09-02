@@ -52,6 +52,9 @@ remounted when the active session changes.
   `selectors.hiddenSessionIds` filters ephemeral companion forks from the rail.
 - The new-task composer (no Session yet) still hosts the right workbar under
   `NEW_TASK_WORKBAR_SESSION_ID`, and opening that surface reveals the column.
+  Browser IPC treats that synthetic id as the default Runtime Host (it is not
+  a `desktopSessionKey`), so navigate / state stay on the same `'new-task'`
+  string the panel already uses.
 
 ## Lifecycle invariants
 

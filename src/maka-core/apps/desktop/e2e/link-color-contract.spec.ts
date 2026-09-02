@@ -60,10 +60,6 @@ async function renderedLinkColors(page: Page, dark: boolean) {
 test('link text follows the solid accent tier in light and dark palettes', async ({
   linkColorWindow: page,
 }) => {
-  await page.getByRole('navigation', { name: '设置分组' }).getByRole('button', {
-    name: '联网搜索',
-    exact: true,
-  }).click();
   await expect(page.getByRole('link', { name: 'tavily.com' })).toBeVisible();
   const light = await renderedLinkColors(page, false);
   const dark = await renderedLinkColors(page, true);

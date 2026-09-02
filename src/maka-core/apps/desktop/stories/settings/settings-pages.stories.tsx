@@ -1580,11 +1580,6 @@ export const MemoryPopulated: Story = {
     expect(await canvas.findByRole('button', { name: stableName! })).toHaveTextContent(/^归档$/);
   },
 };
-// Real path: 设置 → 联网搜索.
-export const WebSearch: Story = {
-  decorators: [withSettingsBridge],
-  render: () => <SettingsStory section="search" />,
-};
 // Runtime-Host-only pages share one mutation fence while a cached Host target
 // is being confirmed. The wrapper is layout-transparent but interaction-inert.
 export const ModelsCachedHostRevalidation: Story = {

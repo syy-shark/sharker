@@ -27,7 +27,6 @@ import { join } from 'node:path';
 import { afterEach, test } from 'node:test';
 import { promisify } from 'node:util';
 import {
-  BUNDLED_SKILL_CATALOG,
   buildStarterSkillTemplate,
   createManagedSkillLock,
 } from '@maka/runtime/skills';
@@ -556,14 +555,14 @@ test('empty publication targets occupy starter ids and participate in revision',
 
 test('root-owned rejected and empty placeholders can be deleted and reinstalled', async () => {
   const fixture = await createFixture();
-  const source = BUNDLED_SKILL_CATALOG[0];
-  assert.ok(source);
-  await createSkill(join(fixture.root, 'skills'), source.id, '# invalid\n');
+  const sourceId = 'reinstall-me';
+  await createSkill(fixture.sources, sourceId, skillBody('Reinstall Me', 'managed source'));
+  await createSkill(join(fixture.root, 'skills'), sourceId, '# invalid\n');
   await mkdir(join(fixture.root, 'skills', 'empty-placeholder'), { recursive: true });
   const repository = fixture.repository();
 
   const initial = await start(repository, fixture.project, 'governance');
-  const rejected = governanceItem(initial, `workspace:legacy:${source.id}`);
+  const rejected = governanceItem(initial, `workspace:legacy:${sourceId}`);
   const empty = governanceItem(initial, 'workspace:legacy:empty-placeholder');
   assert.equal(rejected.manageable, true);
   assert.equal(empty.manageable, true);
@@ -583,10 +582,10 @@ test('root-owned rejected and empty placeholders can be deleted and reinstalled'
 
   const installed = await repository.mutate({
     expectedRevision: deletedEmpty.revision,
-    mutation: { kind: 'install', sourceType: 'bundled', sourceId: source.id },
+    mutation: { kind: 'install', sourceType: 'managed', sourceId },
   });
   assert.equal(installed.kind, 'committed');
-  assert.match(await readFile(join(fixture.root, 'skills', source.id, 'SKILL.md'), 'utf8'), /---/);
+  assert.match(await readFile(join(fixture.root, 'skills', sourceId, 'SKILL.md'), 'utf8'), /---/);
 });
 
 test('delete revision covers nested references, scripts, assets, and empty directories', async () => {
@@ -1102,49 +1101,51 @@ test('malformed installed artifacts retain raw revision hashes but cannot enter 
 });
 
 test('install rejects invalid and case-only workspace occupants', async () => {
-  const source = BUNDLED_SKILL_CATALOG[0];
-  assert.ok(source);
+  const sourceId = 'occupant';
 
   const invalidFixture = await createFixture();
-  await createSkill(join(invalidFixture.root, 'skills'), source.id, '# invalid\n');
+  await createSkill(invalidFixture.sources, sourceId, skillBody('Occupant', 'managed source'));
+  await createSkill(join(invalidFixture.root, 'skills'), sourceId, '# invalid\n');
   const invalidRepository = invalidFixture.repository();
-  const invalidSnapshot = await start(invalidRepository, invalidFixture.project, 'bundled');
+  const invalidSnapshot = await start(invalidRepository, invalidFixture.project, 'managed_sources');
   assert.deepEqual(
     await invalidRepository.mutate({
       expectedRevision: invalidSnapshot.revision,
-      mutation: { kind: 'install', sourceType: 'bundled', sourceId: source.id },
+      mutation: { kind: 'install', sourceType: 'managed', sourceId },
     }),
     { kind: 'rejected', reason: 'already_exists' },
   );
 
   const emptyFixture = await createFixture();
-  await mkdir(join(emptyFixture.root, 'skills', source.id), { recursive: true });
+  await createSkill(emptyFixture.sources, sourceId, skillBody('Occupant', 'managed source'));
+  await mkdir(join(emptyFixture.root, 'skills', sourceId), { recursive: true });
   const emptyRepository = emptyFixture.repository();
-  const emptySnapshot = await start(emptyRepository, emptyFixture.project, 'bundled');
+  const emptySnapshot = await start(emptyRepository, emptyFixture.project, 'managed_sources');
   assert.deepEqual(
     await emptyRepository.mutate({
       expectedRevision: emptySnapshot.revision,
-      mutation: { kind: 'install', sourceType: 'bundled', sourceId: source.id },
+      mutation: { kind: 'install', sourceType: 'managed', sourceId },
     }),
     { kind: 'rejected', reason: 'already_exists' },
   );
 
   const caseFixture = await createFixture();
+  await createSkill(caseFixture.sources, sourceId, skillBody('Occupant', 'managed source'));
   await createSkill(
     join(caseFixture.root, 'skills'),
-    source.id.toUpperCase(),
+    sourceId.toUpperCase(),
     skillBody('Case Occupant', 'case-only duplicate'),
   );
   const caseRepository = caseFixture.repository();
-  const caseSnapshot = await start(caseRepository, caseFixture.project, 'bundled');
+  const caseSnapshot = await start(caseRepository, caseFixture.project, 'managed_sources');
   const caseProjection = caseSnapshot.items.find(
-    (item) => item.kind === 'bundled' && item.id === source.id,
+    (item) => item.kind === 'managed_source' && item.id === sourceId,
   );
-  assert.equal(caseProjection?.kind === 'bundled' && caseProjection.installed, true);
+  assert.equal(caseProjection?.kind === 'managed_source' && caseProjection.installed, true);
   assert.deepEqual(
     await caseRepository.mutate({
       expectedRevision: caseSnapshot.revision,
-      mutation: { kind: 'install', sourceType: 'bundled', sourceId: source.id },
+      mutation: { kind: 'install', sourceType: 'managed', sourceId },
     }),
     { kind: 'rejected', reason: 'already_exists' },
   );
@@ -1194,14 +1195,14 @@ test('durable transaction uncertainty is not reported as success and the next sc
     },
   };
   const repository = fixture.repository(transactionOptions);
-  const initial = await start(repository, fixture.project, 'bundled');
-  const source = BUNDLED_SKILL_CATALOG[0];
-  assert.ok(source);
+  const sourceId = 'txn-skill';
+  await createSkill(fixture.sources, sourceId, skillBody('Txn Skill', 'managed source'));
+  const initial = await start(repository, fixture.project, 'managed_sources');
 
   await assert.rejects(
     repository.mutate({
       expectedRevision: initial.revision,
-      mutation: { kind: 'install', sourceType: 'bundled', sourceId: source.id },
+      mutation: { kind: 'install', sourceType: 'managed', sourceId },
     }),
     (error: unknown) => {
       assert.ok(error instanceof SkillCatalogRepositoryError);
@@ -1214,7 +1215,7 @@ test('durable transaction uncertainty is not reported as success and the next sc
   const recovered = await start(repository, fixture.project, 'governance');
   assert.ok(
     recovered.items.some(
-      (item) => item.kind === 'skill' && item.ref === `workspace:legacy:${source.id}`,
+      (item) => item.kind === 'skill' && item.ref === `workspace:legacy:${sourceId}`,
     ),
   );
 });

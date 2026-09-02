@@ -544,7 +544,7 @@ export const test = base.extend<{
     await withE2eWindow({
       seed: false,
       readinessSelector: '.settingsSurface',
-      e2eFixtureScenario: 'settings-general',
+      e2eFixtureScenario: 'settings-search',
     }, use);
   },
   // A real project with several sessions. Shown because the contract under

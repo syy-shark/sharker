@@ -126,7 +126,10 @@ export function registerBrowserIpc(deps: BrowserIpcDeps): BrowserIpcController {
 
   ipcMain.handle('browser:navigate', async (_event, scope: unknown, target: unknown, url: unknown) => {
     const resourceKey = requireBrowserTarget(scope, target);
-    if (!resourceKey || resourceKey !== shownBrowserSessionId) return;
+    if (!resourceKey) return;
+    if (shownBrowserSessionId && resourceKey !== shownBrowserSessionId) return;
+    shownBrowserSessionId = resourceKey;
+    deps.mainWindowController.getBrowserViews().hideAllExcept(shownBrowserSessionId);
     await deps.mainWindowController.getBrowserViews().getOrCreate(resourceKey).navigate(String(url ?? ''));
   });
   ipcMain.handle('browser:back', (_event, scope: unknown, target: unknown) => {

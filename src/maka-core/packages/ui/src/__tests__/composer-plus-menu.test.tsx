@@ -20,13 +20,10 @@
 /**
  * The ＋ menu's mode rows and the divider above them.
  *
- * Each row gets the control its field is. Plan is a Session field of its own
- * and an independent switch. Swarm and Graph are the two values of one other
- * field, so they are one group and picking one is picking away from the other
- * — announced as a set rather than left for a screen reader to miss. Neither
- * is chosen at rest, and no row stands for that; every prop that feeds them is
- * optional, so a host can wire the modes alone, and then there is nothing
- * above the divider to divide.
+ * Agent and Ask are the two values of one field, so they are one radio
+ * group: picking one is picking away from the other. Agent is on at rest.
+ * Every prop that feeds them is optional, so a host can wire the modes
+ * alone, and then there is nothing above the divider to divide.
  *
  * Astryx mounts DropdownMenu layers from a client ref, so the rows are not in
  * server markup. The assertions observe the same document after that mount.
@@ -115,10 +112,8 @@ function tagsWith(markup: string, ...attributes: readonly string[]): readonly st
 const base = {
   onSend: () => undefined,
   onStop: () => undefined,
-  planModeActive: false,
-  onPlanModeChange: () => undefined,
-  orchestrationMode: 'default' as const,
-  onOrchestrationModeChange: () => undefined,
+  interactionMode: 'agent' as const,
+  onInteractionModeChange: () => undefined,
 };
 
 test('the mode controls alone open the menu on a row, not on a rule', async () => {
@@ -130,17 +125,25 @@ test('an action row above the mode controls keeps the divider', async () => {
   assert.equal(withAction.includes('astryx-dropdown-menu-divider'), true);
 });
 
-test('each mode row is the control its field is, and none of them is on', async () => {
+test('Agent and Ask are one exclusive pair, and Agent is on at rest', async () => {
   const menu = await plusMenu(base);
-  assert.equal(count(menu, 'role="menuitemcheckbox"'), 1, 'Plan alone is a switch');
-  // Two rows, not three: the field's third value is this group holding none.
-  assert.equal(count(menu, 'role="menuitemradio"'), 2, 'Swarm and Graph, no neutral row');
+  assert.equal(count(menu, 'role="menuitemcheckbox"'), 0, 'no leftover Plan switch');
+  assert.equal(count(menu, 'role="menuitemradio"'), 2, 'Agent and Ask');
   assert.equal(
-    tagsWith(menu, 'role="group"', 'aria-label="Orchestration mode"').length,
+    tagsWith(menu, 'role="group"', 'aria-label="Chat mode"').length,
     1,
     'the exclusive pair is announced as one named set',
   );
-  assert.equal(count(menu, 'aria-checked="true"'), 0, 'nothing on is nothing checked');
+  assert.equal(
+    tagsWith(menu, 'role="menuitemradio"', 'aria-checked="true"').length,
+    1,
+    'Agent is checked at rest',
+  );
+  assert.equal(count(menu, 'Agent mode'), 1);
+  assert.equal(count(menu, 'Ask mode'), 1);
+  assert.equal(count(menu, '>Plan<'), 0);
+  assert.equal(count(menu, '>Swarm<'), 0);
+  assert.equal(count(menu, '>Graph<'), 0);
 });
 
 /** The Skills entry is the menu's only plain-menuitem row under these props. */
@@ -152,10 +155,10 @@ function skillsRow(menu: string): string {
 
 test('a refreshing skill catalog is not "no skills": the row stays put', async () => {
   // The host clears `mentionSkills` while it re-fetches the projection (a
-  // Plan toggle or model change does that with this menu open) but holds its
-  // settled verdict steady. Painting the transient `[]` as "no skills
-  // available" grows the row by a description line and grays it, then snaps
-  // back — the menu visibly jumps.
+  // mode change does that with this menu open) but holds its settled verdict
+  // steady. Painting the transient `[]` as "no skills available" grows the
+  // row by a description line and grays it, then snaps back — the menu
+  // visibly jumps.
   const menu = await plusMenu({ ...base, mentionSkills: [], mentionSkillsUnavailable: false });
   assert.equal(count(menu, 'Choose skills'), 1, 'the Skills row is rendered');
   assert.equal(count(menu, 'No skills available'), 0, 'no transient empty-state line');
@@ -225,7 +228,7 @@ test('a settled catalog carries no busy announcement', async () => {
   }
 });
 
-test('a loading refresh from a settled-empty catalog holds the empty look', async () => {
+test('a loading refresh from a settled-empty catalog holds the empty input', async () => {
   const menu = await plusMenu({
     ...base,
     mentionSkills: [],
@@ -236,22 +239,14 @@ test('a loading refresh from a settled-empty catalog holds the empty look', asyn
   assert.equal(skillsRow(menu).includes('aria-disabled="true"'), true);
 });
 
-test('Plan and an orchestration mode are both on at once', async () => {
-  const markup = await render({ ...base, planModeActive: true, orchestrationMode: 'swarm' });
+test('Ask mode checks the Ask row and paints a footer mark', async () => {
+  const markup = await render({ ...base, interactionMode: 'ask' });
   assert.ok(markup.includes('maka-composer-plus-menu'), 'the composer rendered no ＋ menu');
-  assert.equal(
-    tagsWith(markup, 'role="menuitemcheckbox"', 'aria-checked="true"').length,
-    1,
-    'Plan is not checked',
-  );
   assert.equal(
     tagsWith(markup, 'role="menuitemradio"', 'aria-checked="true"').length,
     1,
-    'Swarm is not checked, or Graph is checked with it',
+    'exactly one of Agent / Ask is checked',
   );
-  // Each one keeps its own readout and its own way out, so neither hides the
-  // other: a Plan excursion does not clear the orchestration default.
-  assert.equal(count(markup, 'maka-composer-mode-button'), 2);
-  assert.ok(markup.includes('data-mode="plan"'));
-  assert.ok(markup.includes('data-mode="swarm"'));
+  assert.equal(count(markup, 'maka-composer-mode-button'), 1);
+  assert.ok(markup.includes('data-mode="ask"'));
 });

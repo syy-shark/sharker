@@ -30,18 +30,14 @@ import type {
   AppSettings,
   ChatDefaultPermissionMode,
   ShellPreference,
-  NetworkProxySettings,
   UpdateAppSettingsResult,
 } from '@maka/core/settings';
 import type { ThinkingLevel } from '@maka/core/model-thinking';
 import type { IdentifiedLlmConnection } from '@maka/core/llm-connections';
-import type { TestProxyInput } from "@maka/core/settings/network-settings";
 import { buildChatModelChoices } from "@maka/core/chat-model-choice";
 import {
   Button,
-  FormLayout,
   TextInput,
-  NumberInput,
   ModelPicker,
   PermissionModeSelect,
   Selector,
@@ -55,13 +51,10 @@ import {
   Banner,
 } from "@maka/ui";
 import { ProviderBrandMark } from "./provider-brand-marks";
-import { PasswordInput } from "./password-input";
 import { getConversationCopy } from '@maka/ui';
 import { settingsActionErrorMessage } from "./settings-error-copy";
 import { useActionGuard, useKeyedActionGuard } from "./use-action-guard";
-import { useOptimisticSettingsDraft } from "./use-optimistic-settings-draft";
 import { getSettingsPreferencesCopy } from "../locales/settings-preferences-copy.js";
-import { settingsTestResultMessage } from "../locales/settings-test-result-copy.js";
 import { getShellCopy } from "../locales/shell-copy.js";
 import type { RuntimeHostSettingsConnectionsBridge } from './runtime-host-settings-bridge.js';
 import { getSettingsSharedCopy } from '../locales/settings-shared-copy.js';
@@ -82,7 +75,6 @@ export function GeneralSettingsPage(props: {
   runtimeHostSettingsStatus: SettingsResourceStatus;
   runtimeHostConnectionsStatus: SettingsResourceStatus;
   runtimeHostErrorMessage?: string;
-  testNetworkProxy?(input: TestProxyInput): Promise<import('@maka/core/settings').SettingsTestResult>;
   onUpdate(
     patch: Parameters<typeof window.maka.settings.update>[0],
   ): Promise<UpdateAppSettingsResult>;
@@ -96,8 +88,7 @@ export function GeneralSettingsPage(props: {
   const sharedCopy = getSettingsSharedCopy(locale);
   const toast = useToast();
   const hostDiagnosticTarget = host ? { profileId: host.profileId } : undefined;
-  const runtimeHostSettingsAvailable =
-    props.runtimeHostSettingsStatus.hasSnapshot && props.testNetworkProxy !== undefined;
+  const runtimeHostSettingsAvailable = props.runtimeHostSettingsStatus.hasSnapshot;
   const runtimeHostConnectionsAvailable =
     props.runtimeHostConnectionsStatus.hasSnapshot && props.connectionsBridge !== undefined;
   const runtimeHostTargetVerified =
@@ -264,24 +255,6 @@ export function GeneralSettingsPage(props: {
             width="2.5rem"
           />
         ) : null}
-        <SettingsRow
-          label={copy.workHub}
-          description={copy.workHubHelp}
-          end={
-            <Switch
-              label={copy.workHub}
-              isLabelHidden
-              value={props.settings.workHub.enabled}
-              changeAction={async (enabled) => {
-                try {
-                  await props.onUpdate({ workHub: { enabled } });
-                } catch (error: unknown) {
-                  toast.error(copy.workHubFailed, settingsActionErrorMessage(error, locale));
-                }
-              }}
-            />
-          }
-        />
       </SettingsSection>
       {showRuntimeHostDefaults ? (
         <GeneralDefaultsCard
@@ -301,41 +274,19 @@ export function GeneralSettingsPage(props: {
         />
       ) : null}
       {runtimeHostSettingsAvailable ? (
-        <>
-          <ShellSettingsSection
-            settings={props.settings}
-            isInteractive={runtimeHostSettingsInteractive}
-            onUpdate={props.onUpdate}
-          />
-          <SettingsSection
-            title={sections.network}
-            description={sections.networkHelp}
-          >
-            <NetworkProxySection
-              settings={props.settings}
-              isInteractive={runtimeHostSettingsInteractive}
-              onUpdate={props.onUpdate}
-              testNetworkProxy={props.testNetworkProxy!}
-            />
-          </SettingsSection>
-        </>
+        <ShellSettingsSection
+          settings={props.settings}
+          isInteractive={runtimeHostSettingsInteractive}
+          onUpdate={props.onUpdate}
+        />
       ) : showRuntimeHostSettingsPlaceholder ? (
-        <>
-          <SettingsSection title={sections.shell} description={sections.shellHelp}>
-            <SettingsRowSkeleton
-              label={copy.shellPreference}
-              description={copy.shellPreferenceHelp}
-              width="6rem"
-            />
-          </SettingsSection>
-          <SettingsSection title={sections.network} description={sections.networkHelp}>
-            <SettingsRowSkeleton
-              label={copy.proxy}
-              description={copy.proxyHelp}
-              width="6rem"
-            />
-          </SettingsSection>
-        </>
+        <SettingsSection title={sections.shell} description={sections.shellHelp}>
+          <SettingsRowSkeleton
+            label={copy.shellPreference}
+            description={copy.shellPreferenceHelp}
+            width="6rem"
+          />
+        </SettingsSection>
       ) : null}
     </SettingsPage>
   );
@@ -733,230 +684,4 @@ function GeneralDefaultsCard(props: {
       ) : null}
     </SettingsSection>
   );
-}
-
-function NetworkProxySection(props: {
-  settings: AppSettings;
-  isInteractive: boolean;
-  testNetworkProxy(input: TestProxyInput): Promise<import('@maka/core/settings').SettingsTestResult>;
-  onUpdate(
-    patch: Parameters<typeof window.maka.settings.update>[0],
-  ): Promise<UpdateAppSettingsResult>;
-}) {
-  const host = useRuntimeHostSettingsTarget();
-  const locale = useUiLocale();
-  const copy = getSettingsPreferencesCopy(locale).general;
-  const persistedProxy = props.settings.network.proxy;
-  const [testing, setTesting] = useState(false);
-  const proxyTestGuard = useActionGuard<"test">();
-  const toast = useToast();
-  const {
-    draft: proxyDraft,
-    draftRef: proxyDraftRef,
-    mountedRef: networkPageMountedRef,
-    update,
-  } = useOptimisticSettingsDraft<NetworkProxySettings>(
-    persistedProxy,
-    (patch) =>
-      props
-        .onUpdate({ network: { proxy: patch } })
-        .then((result) => result.settings.network.proxy),
-    {
-      onError: (error) =>
-        toast.error(
-          copy.saveNetworkFailed,
-          settingsActionErrorMessage(error, locale),
-          undefined,
-          { profileId: host.profileId },
-        ),
-    },
-  );
-
-  function updateProxy(patch: Partial<NetworkProxySettings>) {
-    if (!props.isInteractive) return Promise.resolve();
-    return update(patch);
-  }
-
-  async function testProxy() {
-    if (!props.isInteractive) return;
-    if (!proxyTestGuard.begin("test")) return;
-    setTesting(true);
-    try {
-      const result = await props.testNetworkProxy(toProxyTestInput(proxyDraftRef.current));
-      const latency =
-        result.latencyMs !== undefined ? ` · ${result.latencyMs} ms` : "";
-      const message = settingsTestResultMessage(result, locale);
-      if (result.ok && networkPageMountedRef.current) {
-        toast.success(copy.proxyReachable, `${message}${latency}`);
-      } else if (networkPageMountedRef.current) {
-        toast.error(
-          copy.proxyTestFailed,
-          message,
-          undefined,
-          { profileId: host.profileId },
-        );
-      }
-    } catch (error) {
-      if (networkPageMountedRef.current) {
-        toast.error(
-          copy.proxyTestError,
-          settingsActionErrorMessage(error, locale),
-          undefined,
-          { profileId: host.profileId },
-        );
-      }
-    } finally {
-      proxyTestGuard.finish();
-      if (networkPageMountedRef.current) {
-        setTesting(false);
-      }
-    }
-  }
-
-  return (
-    <>
-      <SettingsRow
-        label={copy.proxy}
-        description={copy.proxyHelp}
-        end={
-          <Switch
-            label={copy.enableProxy}
-            isLabelHidden
-            value={proxyDraft.enabled}
-            isDisabled={!props.isInteractive}
-            onChange={(enabled) => void updateProxy({ enabled })}
-          />
-        }
-      />
-      {proxyDraft.enabled && (
-        <>
-          <SettingsField>
-            <FormLayout direction="horizontal">
-              <Selector
-                value={proxyDraft.protocol}
-                label={copy.proxyProtocol}
-                options={[
-                  { value: "http", label: "HTTP/HTTPS" },
-                  { value: "https", label: "HTTPS" },
-                  { value: "socks5", label: "SOCKS5" },
-                ]}
-                width="100%"
-                isDisabled={!props.isInteractive}
-                onChange={(protocol) =>
-                  void updateProxy({
-                    protocol: protocol as NetworkProxySettings["protocol"],
-                  })
-                }
-              />
-              <TextInput
-                value={proxyDraft.host}
-                onChange={(value) => void updateProxy({ host: value })}
-                placeholder="127.0.0.1"
-                label={copy.serverAddress}
-                isDisabled={!props.isInteractive}
-              />
-              <NumberInput
-                label={copy.port}
-                value={proxyDraft.port || null}
-                isIntegerOnly
-                onChange={(value) => void updateProxy({ port: value ?? 0 })}
-                placeholder="7890"
-                isDisabled={!props.isInteractive}
-              />
-            </FormLayout>
-          </SettingsField>
-
-          <SettingsRow
-            label={copy.proxyAuth}
-            description={copy.proxyAuthHelp}
-            end={
-              <Switch
-                label={copy.enableProxyAuth}
-                isLabelHidden
-                value={proxyDraft.authEnabled}
-                isDisabled={!props.isInteractive}
-                onChange={(authEnabled) => void updateProxy({ authEnabled })}
-              />
-            }
-          />
-
-          {proxyDraft.authEnabled && (
-            <SettingsField>
-              <FormLayout direction="horizontal">
-                <TextInput
-                  value={proxyDraft.username}
-                  onChange={(value) => void updateProxy({ username: value })}
-                  label={copy.username}
-                  isDisabled={!props.isInteractive}
-                />
-                <PasswordInput
-                  value={proxyDraft.password}
-                  onChange={(next) => void updateProxy({ password: next })}
-                  label={copy.password}
-                  isDisabled={!props.isInteractive}
-                />
-              </FormLayout>
-            </SettingsField>
-          )}
-
-          <SettingsField>
-            <TextInput
-              value={proxyDraft.bypassList.join(", ")}
-              onChange={(value) =>
-                void updateProxy({ bypassList: csvList(value) })
-              }
-              placeholder="metaso.cn, baidu.com"
-              label={copy.bypassList}
-              description={copy.bypassHelp}
-              width="100%"
-              isDisabled={!props.isInteractive}
-            />
-          </SettingsField>
-
-          <SettingsField>
-            <Banner
-              status="info"
-              title={copy.autoBypass(proxyDraft.autoBypassDomains.length)}
-            />
-          </SettingsField>
-
-          <SettingsActions>
-            <Button
-              variant="primary"
-              isLoading={testing}
-              isDisabled={!props.isInteractive}
-              onClick={() => void testProxy()}
-              label={copy.testCurrent}
-            />
-          </SettingsActions>
-        </>
-      )}
-    </>
-  );
-}
-
-function toProxyTestInput(proxy: NetworkProxySettings): TestProxyInput {
-  return {
-    proxy: {
-      enabled: proxy.enabled,
-      type: proxy.protocol,
-      host: proxy.host.trim(),
-      port: proxy.port,
-      authEnabled: proxy.authEnabled,
-      username:
-        proxy.authEnabled && proxy.username.trim()
-          ? proxy.username.trim()
-          : undefined,
-      password:
-        proxy.authEnabled && proxy.password ? proxy.password : undefined,
-      bypassList: proxy.bypassList,
-    },
-  };
-}
-
-function csvList(value: string): string[] {
-  return value
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
 }

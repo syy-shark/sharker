@@ -42,8 +42,8 @@ export const SESSION_BOTTOM_PANEL_DEFAULT_HEIGHT = 300;
 export const SESSION_BOTTOM_PANEL_MIN_HEIGHT = 180;
 export const SESSION_BOTTOM_PANEL_MAX_HEIGHT = 520;
 
-/** Workbar session key while the new-task composer has no Session yet. */
-export const NEW_TASK_WORKBAR_SESSION_ID = 'new-task';
+/** 新任务工作栏还没有 Session 时用的合成 id。 */
+export { NEW_TASK_WORKBAR_SESSION_ID } from '../../../../shared/runtime-host-identity.js';
 
 export interface WorkbarLayoutState {
   panels: SessionWorkbarPanelsState;

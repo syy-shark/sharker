@@ -229,8 +229,6 @@ describe('ASF header classification', () => {
       'packages/ui/src/astryx-chat-reasoning.tsx': 'third-party-source',
       'packages/runtime/src/bundled-skill-catalog.generated.ts': 'generated-files',
       'scripts/model-metadata/models-dev-api.snapshot.json': 'no-comment-syntax',
-      'packages/runtime/resources/bundled-skills/computer-use/SKILL.md':
-        'verbatim-runtime-payloads',
       '.github/pull_request_template.md': 'verbatim-github-templates',
       'packages/storage/test-fixtures/workflow-schema-v8.sql': 'byte-significant-fixtures',
       '.gitattributes': 'no-creative-content',

@@ -239,6 +239,14 @@
   min-width: 0;
 }
 
+/* Astryx's footer-left slot sizes to max-content. Shrink that wrapper or the
+   send circle is pushed past the card when the column is narrow (home +
+   open workbar). Side Chat already had the same rule. */
+.maka-composer-astryx div:has(> .maka-composer-left-controls) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Quiet footer: ＋ and permission are both ghost icon buttons. */
 .maka-composer-left-controls .permissionModeIcon,
 .maka-composer-left-controls .maka-composer-plus-menu {

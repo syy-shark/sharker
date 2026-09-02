@@ -151,12 +151,38 @@
 .maka-session-workbar[data-placement="right"] > .maka-session-workbar-toolbar {
   /* The window titlebar is a transparent drag overlay at z-titlebar. This
      panel-local toolbar intentionally occupies the same band, so it must sit
-     above that hit-test surface while its empty space remains draggable. */
+     above that hit-test surface while its empty space remains draggable.
+     Paint the plate colour: without it the session trail and share control
+     show through the toolbar's empty cells. */
   z-index: calc(var(--z-titlebar) + 1);
   height: var(--maka-plate-titlebar-clearance);
   padding-inline: var(--space-2)
     calc(var(--space-6) + var(--maka-titlebar-overlay-right-width));
+  background: var(--agents-content-area-bg);
   -webkit-app-region: drag;
+}
+
+/* Fullscreen workbar owns this band. The titlebar identity still lays out in
+   the same strip (project › session + share) and sits under the toolbar, so
+   "浏览器" and "简短问候语" paint on top of each other. */
+.appFrame:has(.maka-session-workbar[data-fullscreen]) .maka-titlebar-identity {
+  display: none;
+}
+.appFrame[data-sidebar-state="collapsed"]
+  .maka-session-workbar[data-placement="right"][data-fullscreen]
+  > .maka-session-workbar-toolbar {
+  /* Shift the toolbar box past traffic lights + titlebar actions, and shrink
+     its width so + / fullscreen / panel toggle stay inside the window. */
+  --maka-workbar-traffic-clearance: calc(
+    var(--maka-titlebar-gutter-left)
+      + var(--size-element-md) * 2
+      + var(--space-1)
+      + var(--maka-titlebar-gap)
+  );
+  padding-left: var(--space-2);
+  margin-left: var(--maka-workbar-traffic-clearance);
+  width: calc(100% - var(--maka-workbar-traffic-clearance));
+  max-width: calc(100% - var(--maka-workbar-traffic-clearance));
 }
 
 .maka-session-workbar[data-placement="right"]

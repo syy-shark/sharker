@@ -59,16 +59,6 @@ async function releaseBridgeLatch(
   await page.evaluate((latchKey) => window.makaE2eLatch?.release(latchKey), key);
 }
 
-async function rejectBridgeLatch(
-  page: import('@playwright/test').Page,
-  key: LatchKey,
-): Promise<void> {
-  await page.evaluate(
-    (latchKey) => window.makaE2eLatch?.reject(latchKey, 'forced E2E bridge failure'),
-    key,
-  );
-}
-
 // The fake echo can paint before Runtime Host publishes terminal turn ownership.
 // Use the catalog's known-empty live set as the barrier before latching its next read.
 async function waitForSessionTurnToSettle(
@@ -85,14 +75,14 @@ async function waitForSessionTurnToSettle(
 }
 
 /**
- * Toggling Plan from the ＋ menu must not move the menu.
+ * Switching Agent / Ask from the ＋ menu must not move the menu.
  *
- * The toggle changes the new chat's collaboration mode, which re-fetches the
+ * The switch changes the draft's permission boundary, which re-fetches the
  * invocable-Skill projection. That refresh clears the list fail-closed for the
  * `/` popup, and the regression this spec pins is the Skills row reading the
  * transient `[]` as "no skills available": it grayed out and grew a
  * description line for the length of the round trip, so the open menu's
- * geometry blinked on every Plan click (MatrixA/fix-plan-click-flicker).
+ * geometry blinked on every mode click (MatrixA/fix-plan-click-flicker).
  *
  * The watcher is armed in-page BEFORE the click: the blink lives inside one
  * IPC round trip and is gone by the time a polling assertion could look.
@@ -101,7 +91,7 @@ async function waitForSessionTurnToSettle(
 interface PlusMenuWatch {
   noSkillsTextAppeared: boolean;
   skillsRowDisabled: boolean;
-  planRowDisabled: boolean;
+  modeRowDisabled: boolean;
   heights: number[];
 }
 
@@ -112,18 +102,20 @@ declare global {
   }
 }
 
-test('toggling Plan keeps the ＋ menu open, enabled and the same size', async ({
+test('switching Agent / Ask keeps the ＋ menu open, enabled and the same size', async ({
   invocableSkillsWindow: page,
 }) => {
   await page.getByRole('button', { name: '添加上下文' }).click();
   const menu = page.getByRole('menu', { name: '添加上下文' });
   await expect(menu).toBeVisible();
 
-  const planRow = menu.getByRole('menuitemcheckbox', { name: 'Plan' });
+  const agentRow = menu.getByRole('menuitemradio', { name: 'Agent 模式' });
+  const askRow = menu.getByRole('menuitemradio', { name: 'Ask 模式' });
   const skillsRow = menu.getByRole('menuitem', { name: /选择技能/ });
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
+  await expect(agentRow).toHaveAttribute('aria-checked', 'true');
+  await expect(askRow).toHaveAttribute('aria-checked', 'false');
   // The seeded catalog has settled before the fixture yields the page, so the
-  // baseline is an enabled row with no caveat — what must survive the toggle.
+  // baseline is an enabled row with no caveat — what must survive the switch.
   await expect(skillsRow).not.toHaveAttribute('aria-disabled', 'true');
   await expect(menu).not.toContainText('当前没有可用技能');
 
@@ -141,7 +133,7 @@ test('toggling Plan keeps the ＋ menu open, enabled and the same size', async (
     const watch: PlusMenuWatch = {
       noSkillsTextAppeared: false,
       skillsRowDisabled: false,
-      planRowDisabled: false,
+      modeRowDisabled: false,
       heights: [menuElement.getBoundingClientRect().height],
     };
     const inspect = () => {
@@ -150,7 +142,7 @@ test('toggling Plan keeps the ＋ menu open, enabled and the same size', async (
       }
       for (const row of menuElement.querySelectorAll('[aria-disabled="true"]')) {
         if (row.textContent?.includes('选择技能')) watch.skillsRowDisabled = true;
-        if (row.getAttribute('role') === 'menuitemcheckbox') watch.planRowDisabled = true;
+        if (row.getAttribute('role') === 'menuitemradio') watch.modeRowDisabled = true;
       }
       const height = menuElement.getBoundingClientRect().height;
       const last = watch.heights[watch.heights.length - 1] ?? height;
@@ -170,18 +162,18 @@ test('toggling Plan keeps the ＋ menu open, enabled and the same size', async (
     };
   });
 
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
+  await askRow.click();
+  await expect(askRow).toHaveAttribute('aria-checked', 'true');
   // The mode mark lands on the footer while the menu stays where it was.
-  await expect(page.locator('.maka-composer-mode-button[data-mode="plan"]')).toBeVisible();
+  await expect(page.locator('.maka-composer-mode-button[data-mode="ask"]')).toBeVisible();
   await expect(menu).toBeVisible();
 
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
-  await expect(page.locator('.maka-composer-mode-button[data-mode="plan"]')).toHaveCount(0);
+  await agentRow.click();
+  await expect(agentRow).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('.maka-composer-mode-button[data-mode="ask"]')).toHaveCount(0);
   await expect(menu).toBeVisible();
 
-  // Both refreshes the two toggles kicked off have reached the backend once
+  // Both refreshes the two switches kicked off have reached the backend once
   // this resolves; the margin covers the renderer commit that follows.
   await waitForInvocableSkills(page, ['project-only', 'workspace-only']);
   await page.waitForTimeout(250);
@@ -193,7 +185,7 @@ test('toggling Plan keeps the ＋ menu open, enabled and the same size', async (
   expect(watch, 'the in-page watcher survived the journey').toBeTruthy();
   expect(watch?.noSkillsTextAppeared, 'no transient "no skills" line').toBe(false);
   expect(watch?.skillsRowDisabled, 'the Skills row never grayed out').toBe(false);
-  expect(watch?.planRowDisabled, 'the Plan row never grayed out').toBe(false);
+  expect(watch?.modeRowDisabled, 'the mode rows never grayed out').toBe(false);
   expect(watch?.heights, 'the menu kept one height throughout').toHaveLength(1);
 });
 
@@ -208,13 +200,13 @@ test('a Skills click during the catalog refresh does nothing, then works settled
   const composer = page.locator(COMPOSER_INPUT);
   await page.getByRole('button', { name: '添加上下文' }).click();
   const menu = page.getByRole('menu', { name: '添加上下文' });
-  const planRow = menu.getByRole('menuitemcheckbox', { name: 'Plan' });
+  const askRow = menu.getByRole('menuitemradio', { name: 'Ask 模式' });
   const skillsRow = menu.getByRole('menuitem', { name: /选择技能/ });
 
-  // The Plan toggle starts the (now latched) refresh; the row announces the
+  // The Ask switch starts the (now latched) refresh; the row announces the
   // held state — busy to assistive technology, a class for styling and tests
   // — and a click inside the window has no effect at all.
-  await planRow.click();
+  await askRow.click();
   await expect(skillsRow).toHaveClass(/maka-composer-skills-loading/);
   await expect(skillsRow).toHaveAttribute('aria-busy', 'true');
   await skillsRow.click();
@@ -274,7 +266,7 @@ test('a context switch re-enters loading instead of holding the old catalog', as
   await expect(page.getByRole('listbox', { name: /技能/ })).toBeVisible();
 });
 
-test('two rapid Plan toggles land on the last requested state', async ({
+test('Ask then Agent lands on Agent', async ({
   invocableSkillsWindow: page,
 }) => {
   const composer = page.locator(COMPOSER_INPUT);
@@ -285,87 +277,29 @@ test('two rapid Plan toggles land on the last requested state', async ({
 
   await page.getByRole('button', { name: '添加上下文' }).click();
   const menu = page.getByRole('menu', { name: '添加上下文' });
-  const planRow = menu.getByRole('menuitemcheckbox', { name: 'Plan' });
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
-  // The echo can land while the turn is still settling, and mode changes are
-  // refused mid-turn; wait for the row to become actionable.
-  await expect(planRow).not.toHaveAttribute('aria-disabled', 'true');
+  const agentRow = menu.getByRole('menuitemradio', { name: 'Agent 模式' });
+  const askRow = menu.getByRole('menuitemradio', { name: 'Ask 模式' });
+  await expect(agentRow).toHaveAttribute('aria-checked', 'true');
+  await expect(askRow).not.toHaveAttribute('aria-disabled', 'true');
 
-  // The session-list refresh is the tail of a Plan commit: latching its next
-  // call keeps the commit pending — deterministically — after the mode has
-  // already landed and the row repainted checked. Armed only now, so the
-  // send's own refreshes above cannot consume the latch.
-  await armBridgeLatch(page, 'sessions.list', { oneShot: true });
-
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
-
-  // Second click while the first commit is still pending: the latest ask is
-  // OFF, and it must not be dropped just because the registry is busy.
-  await planRow.click();
-
-  // The queued intent drains after the in-flight commit settles: OFF wins.
-  await releaseBridgeLatch(page, 'sessions.list');
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
-});
-
-test('a failed catalog refresh keeps the committed Plan state visible', async ({
-  invocableSkillsWindow: page,
-}) => {
-  const composer = page.locator(COMPOSER_INPUT);
-  await composer.fill('alpha-marker');
-  await composer.press('Enter');
-  await expect(page.getByText(/Fake backend received: alpha-marker/)).toBeVisible();
-  await waitForSessionTurnToSettle(page);
-
-  await page.getByRole('button', { name: '添加上下文' }).click();
-  const menu = page.getByRole('menu', { name: '添加上下文' });
-  const planRow = menu.getByRole('menuitemcheckbox', { name: 'Plan' });
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
-  await expect(planRow).not.toHaveAttribute('aria-disabled', 'true');
-
-  await armBridgeLatch(page, 'sessions.list', { oneShot: true });
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
-
-  await rejectBridgeLatch(page, 'sessions.list');
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
-});
-
-test('latest Plan intent still reaches the Host after a catalog refresh fails', async ({
-  invocableSkillsWindow: page,
-}) => {
-  const composer = page.locator(COMPOSER_INPUT);
-  await composer.fill('alpha-marker');
-  await composer.press('Enter');
-  await expect(page.getByText(/Fake backend received: alpha-marker/)).toBeVisible();
-  await waitForSessionTurnToSettle(page);
-
-  await page.getByRole('button', { name: '添加上下文' }).click();
-  const planRow = page.getByRole('menu', { name: '添加上下文' })
-    .getByRole('menuitemcheckbox', { name: 'Plan' });
-  await expect(planRow).not.toHaveAttribute('aria-disabled', 'true');
-
-  await armBridgeLatch(page, 'sessions.list', { oneShot: true });
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
-  await planRow.click();
-  await rejectBridgeLatch(page, 'sessions.list');
-
+  await askRow.click();
+  await expect(askRow).toHaveAttribute('aria-checked', 'true');
   await expect.poll(async () => page.evaluate(async () => {
     const sessions = await window.maka.sessions.list();
-    return sessions[0]?.collaborationMode;
-  })).toBe('agent');
-  await expect(planRow).toHaveAttribute('aria-checked', 'false');
+    return sessions[0]?.permissionMode;
+  })).toBe('explore');
+
+  await agentRow.click();
+  await expect(agentRow).toHaveAttribute('aria-checked', 'true');
+  await expect.poll(async () => page.evaluate(async () => {
+    const sessions = await window.maka.sessions.list();
+    return sessions[0]?.permissionMode;
+  })).toBe('ask');
 });
 
-test('deleting the session while a toggle is pending settles clean', async ({
+test('deleting the session while Ask is on settles clean', async ({
   invocableSkillsWindow: page,
 }) => {
-  // pending → cleanup → settle: the Session's renderer lifecycle ends while a
-  // mode commit (and a queued follow-up intent) is still in flight. Cleanup
-  // must drop the queued ask with the rest of the Session state, so the
-  // commit's tail has nothing to replay against the removed Session.
   const composer = page.locator(COMPOSER_INPUT);
   await composer.fill('alpha-marker');
   await composer.press('Enter');
@@ -374,13 +308,10 @@ test('deleting the session while a toggle is pending settles clean', async ({
 
   await page.getByRole('button', { name: '添加上下文' }).click();
   const menu = page.getByRole('menu', { name: '添加上下文' });
-  const planRow = menu.getByRole('menuitemcheckbox', { name: 'Plan' });
-  // Mode changes are refused mid-turn; wait for the row to become actionable.
-  await expect(planRow).not.toHaveAttribute('aria-disabled', 'true');
-  await armBridgeLatch(page, 'sessions.list', { oneShot: true });
-  await planRow.click();
-  await expect(planRow).toHaveAttribute('aria-checked', 'true');
-  await planRow.click();
+  const askRow = menu.getByRole('menuitemradio', { name: 'Ask 模式' });
+  await expect(askRow).not.toHaveAttribute('aria-disabled', 'true');
+  await askRow.click();
+  await expect(askRow).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
   await expect(menu).not.toBeVisible();
 
@@ -393,11 +324,8 @@ test('deleting the session while a toggle is pending settles clean', async ({
   const confirm = page.getByRole('alertdialog');
   await confirm.getByRole('button', { name: '删除', exact: true }).click();
 
-  await releaseBridgeLatch(page, 'sessions.list');
   await expect(sidebar.locator('[data-maka-contract="session-row"]')).toHaveCount(0);
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  // The composer is back on a clean new chat: no error surfaced and no stale
-  // Plan state re-applied by the drained commit.
   await expect(composer).toBeVisible();
-  await expect(page.locator('.maka-composer-mode-button[data-mode="plan"]')).toHaveCount(0);
+  await expect(page.locator('.maka-composer-mode-button[data-mode="ask"]')).toHaveCount(0);
 });
