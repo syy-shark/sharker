@@ -54,7 +54,7 @@ flowchart LR
 
 ## 本地体验
 
-现在没有现成安装包。在 **Apple Silicon Mac** 上把代码拉下来跑即可。
+现在没有现成安装包。在 **Apple Silicon Mac** 上把代码拉下来跑即可。也可以把这段说明丢给你的智能体，让它帮你 clone、安装并启动。
 
 **需要：** macOS、[Node.js 22+](https://nodejs.org/)（建议 22.19 或更高）、Git。
 
