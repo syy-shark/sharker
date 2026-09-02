@@ -52,21 +52,38 @@ flowchart LR
 
 界面在渲染进程。循环、工具、加密 Key 在主进程。完整数据流：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
-## 启动
+## 本地体验
+
+现在没有现成安装包。在 **Apple Silicon Mac** 上把代码拉下来跑即可。
+
+**需要：** macOS、[Node.js 22+](https://nodejs.org/)（建议 22.19 或更高）、Git。
 
 ```bash
+git clone https://github.com/syy-shark/sharker.git
+cd sharker
 npm install
 npm run dev
 ```
 
-`npm run dev` 启动 **Sharker** 桌面（`src/sharker-core`）。Sharker 源码仍在仓库里，要用原来的壳时跑 `npm run dev:sharker`。
+第一次 `npm run dev` 会在 `src/sharker-core` 里再装一层工作区依赖，可能要一两分钟。终端出现 `[dev] starting Sharker desktop` 之后会弹出桌面窗口。
 
-要求 macOS、Node 22+。打开后选工作区，配好模型，直接说要做什么。
+打开后：
+
+1. 选一个本地工作区（你要让它改的那个仓库或文件夹）
+2. 打开设置，填 OpenAI 兼容的 API Key 和模型
+3. 直接说要做什么
+
+Key 只存在本机，经 `safeStorage` 加密。不要把 Key 写进仓库。
+
+已经 clone 过、想跟到最新：
 
 ```bash
-npm run build      # 生产构建 Sharker
-npm run preview    # 预览 Sharker 产物
+git pull
+npm install
+npm run dev
 ```
+
+Computer / Browser / Voice 等系统权限见 [docs/computer-use-setup.md](docs/computer-use-setup.md)。要改这个仓库本身，先读 [AGENTS.md](AGENTS.md)。
 
 ## 文档
 
