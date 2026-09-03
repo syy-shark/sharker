@@ -26,10 +26,6 @@ export function AppMock({ compact, className }: AppMockProps) {
           <span className="size-[12px] rounded-full bg-[#febc2e] shadow-[inset_0_-0.5px_0_rgb(0_0_0_/_0.12)]" />
           <span className="size-[12px] rounded-full bg-[#28c840] shadow-[inset_0_-0.5px_0_rgb(0_0_0_/_0.12)]" />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 flex items-center justify-center gap-1.5 text-[12px] font-medium tracking-[-0.01em] text-fg-muted">
-          <SharkMark className="size-4" />
-          Sharker
-        </div>
       </div>
 
       <div className="mock-app-frame">
