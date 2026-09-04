@@ -93,3 +93,4 @@ Computer / Browser / Voice 等系统权限见 [docs/computer-use-setup.md](docs/
 - [改这个仓库](AGENTS.md)
 
 索引在 [docs/ARCH.md](docs/ARCH.md)。每一层源码目录都有同级 `ARCH.md`。设置经 `safeStorage` 加密，记忆在 `~/.sharker/memory-db`。不要提交 API Key。
+特此感谢 Codex OpenCode Maka 提供的思路
