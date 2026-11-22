@@ -58,6 +58,7 @@ This page is the authority map for Sharker documentation. Code and contract test
 - [Agent Swarm](./agent-swarm.md)
 - [Agent Graph stream scheduling](./architecture/agent-graph-stream-scheduling-draft.md) ([中文](./architecture/agent-graph-stream-scheduling-draft.zh-CN.md))
 - [IM 扫码接入 runtime architecture](./architecture/bot-onboarding-runtime.zh-CN.md)
+- [Devin 任务派发适配（接入准备）](./architecture/devin-task-adapter.zh-CN.md)
 - [Backend architecture chapters](./architecture/)
 
 ### Computer use
