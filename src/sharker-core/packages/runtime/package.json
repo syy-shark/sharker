@@ -28,6 +28,7 @@
     "./network/proxy-test": "./dist/network/proxy-test.js",
     "./telemetry": "./dist/telemetry/index.js",
     "./bots": "./dist/bots/index.js",
+    "./devin-task": "./dist/devin-task/index.js",
     "./runtime-event-read-model": "./dist/runtime-event-read-model.js",
     "./runtime-resume": "./dist/runtime-resume.js",
     "./runtime-kernel": "./dist/runtime-kernel.js",

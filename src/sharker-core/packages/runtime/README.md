@@ -31,6 +31,7 @@ The package root barrel and the subpaths declared in `package.json` are supporte
 - Session execution-boundary APIs for managed sandbox expansion and explicit bypass.
 - `buildBuiltinTools()` and the workspace executor interfaces for tool composition.
 - `RuntimeKernel`, runtime events, projections, and recovery helpers for execution lifecycle.
+- `@sharker/runtime/devin-task` accepts a local coding task, dispatches it through an injected transport, and listens for a Devin session result. It is preparation only: it is not wired into `SessionManager`, the IM bot registry, or the scheduler, and constructing it does not call the network. See [the adapter note](../../docs/architecture/devin-task-adapter.zh-CN.md).
 
 Desktop composition lives in `apps/desktop/src/main/main.ts`. Other clients execute Sharker through Runtime Host rather than composing Runtime directly.
 
